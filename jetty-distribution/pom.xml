@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.16-SNAPSHOT</version>
+    <version>9.4.20-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-distribution</artifactId>
@@ -426,6 +426,27 @@
     <dependency>
       <groupId>org.eclipse.jetty.example-async-rest</groupId>
       <artifactId>example-async-rest-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-jaas-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-jndi-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-spec-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <optional>true</optional>

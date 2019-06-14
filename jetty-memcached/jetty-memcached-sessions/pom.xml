@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.memcached</groupId>
     <artifactId>memcached-parent</artifactId>
-    <version>9.4.16-SNAPSHOT</version>
+    <version>9.4.20-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -24,7 +24,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
-      <version>1.7.9</version>
+      <version>${slf4j.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

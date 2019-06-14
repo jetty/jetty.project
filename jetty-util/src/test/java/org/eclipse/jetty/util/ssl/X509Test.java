@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.security.cert.X509Certificate;
 
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class X509Test
 {

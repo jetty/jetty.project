@@ -131,11 +131,7 @@ public class MultiPartParser
     private HttpTokens.Token next(ByteBuffer buffer)
     {
         byte ch = buffer.get();
-
         HttpTokens.Token t = HttpTokens.TOKENS[0xff & ch];
-        
-        if (DEBUG)
-            LOG.debug("token={}",t);
         
         switch(t.getType())
         {
@@ -271,6 +267,9 @@ public class MultiPartParser
     /* ------------------------------------------------------------------------------- */
     private void parsePreamble(ByteBuffer buffer)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("parsePreamble({})", BufferUtil.toDetailString(buffer));
+
         if (_partialBoundary > 0)
         {
             int partial = _delimiterSearch.startsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), _partialBoundary);
@@ -307,6 +306,9 @@ public class MultiPartParser
     /* ------------------------------------------------------------------------------- */
     private void parseDelimiter(ByteBuffer buffer)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("parseDelimiter({})", BufferUtil.toDetailString(buffer));
+
         while (__delimiterStates.contains(_state) && hasNextByte(buffer))
         {
             HttpTokens.Token t = next(buffer);
@@ -354,6 +356,9 @@ public class MultiPartParser
      */
     protected boolean parseMimePartHeaders(ByteBuffer buffer)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("parseMimePartHeaders({})", BufferUtil.toDetailString(buffer));
+
         // Process headers
         while (_state == State.BODY_PART && hasNextByte(buffer))
         {
@@ -575,6 +580,8 @@ public class MultiPartParser
     
     protected boolean parseOctetContent(ByteBuffer buffer)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("parseOctetContent({})", BufferUtil.toDetailString(buffer));
         
         // Starts With
         if (_partialBoundary > 0)

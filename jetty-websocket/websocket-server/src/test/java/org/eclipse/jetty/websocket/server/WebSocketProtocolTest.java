@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Server;
@@ -32,7 +33,6 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.websocket.server.helper.EchoSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -103,12 +103,13 @@ public class WebSocketProtocolTest
         {
             byte[] key = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
             StringBuilder request = new StringBuilder();
+            String secWebSocketKey = Base64.getEncoder().encodeToString(key);
             request.append("GET /ws HTTP/1.1\r\n")
                     .append("Host: localhost\r\n")
                     .append("Connection: Upgrade\r\n")
                     .append("Upgrade: websocket\r\n")
                     .append("Sec-WebSocket-version: 13\r\n")
-                    .append("Sec-WebSocket-Key:").append(B64Code.encode(key)).append("\r\n")
+                    .append("Sec-WebSocket-Key:").append(secWebSocketKey).append("\r\n")
                     .append("Sec-WebSocket-Protocol: echo\r\n")
                     .append("\r\n");
 

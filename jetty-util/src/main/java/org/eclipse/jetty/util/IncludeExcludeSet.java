@@ -40,7 +40,7 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     private final Predicate<P> _includePredicate;
     private final Set<T> _excludes;
     private final Predicate<P> _excludePredicate;
-    
+
     private static class SetContainsPredicate<T> implements Predicate<T>
     {
         private final Set<T> set;
@@ -168,14 +168,14 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     
     /**
      * Test Included and not Excluded
-     * @param t The item to test
-     * @return Boolean.TRUE if t is included, Boolean.FALSE if t is excluded and null if neither
+     * @param item The item to test
+     * @return Boolean.TRUE if item is included, Boolean.FALSE if item is excluded and null if neither
      */
-    public Boolean isIncludedAndNotExcluded(P t)
+    public Boolean isIncludedAndNotExcluded(P item)
     {
-        if (_excludePredicate.test(t))
+        if (_excludePredicate.test(item))
             return Boolean.FALSE;
-        if (_includePredicate.test(t))
+        if (_includePredicate.test(item))
             return Boolean.TRUE;
         
         return null;
@@ -210,7 +210,11 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     @Override
     public String toString()
     {
-        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}",this.getClass().getSimpleName(),hashCode(),_includes,_includePredicate,_excludes,_excludePredicate);
+        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}",this.getClass().getSimpleName(),hashCode(),
+            _includes,
+            _includePredicate==_includes?"SELF":_includePredicate,
+            _excludes,
+            _excludePredicate==_excludes?"SELF":_excludePredicate);
     }
 
     public boolean isEmpty()

@@ -19,10 +19,10 @@
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,8 +34,6 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import javax.servlet.DispatcherType;
 import javax.servlet.HttpConstraintElement;
 import javax.servlet.HttpMethodConstraintElement;
 import javax.servlet.ServletException;
@@ -62,7 +60,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
@@ -74,10 +71,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isIn;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -419,7 +417,7 @@ public class ConstraintTest
         uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
         assertNotNull(uncoveredPaths);
         assertEquals(1, uncoveredPaths.size());
-        assertThat("/user/*", isIn(uncoveredPaths));
+        assertThat("/user/*", is(in(uncoveredPaths)));
         
         //Test an explicitly named method with a http-method-omission to cover all other methods
         Constraint constraint2a = new Constraint();
@@ -447,7 +445,7 @@ public class ConstraintTest
         _security.addConstraintMapping(mapping3);
         uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
         assertNotNull(uncoveredPaths);
-        assertThat("/omit/*", isIn(uncoveredPaths));
+        assertThat("/omit/*", is(in(uncoveredPaths)));
         
         _security.setDenyUncoveredHttpMethods(true);
         uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
@@ -499,7 +497,7 @@ public class ConstraintTest
         scenarios.add(Arguments.of(
                 new Scenario(
                         "GET /ctx/auth/info HTTP/1.0\r\n" +
-                                "Authorization: Basic " + B64Code.encode("user:wrong") + "\r\n" +
+                                "Authorization: Basic " + authBase64("user:wrong") + "\r\n" +
                                 "\r\n",
                         HttpStatus.UNAUTHORIZED_401,
                         (response) -> {
@@ -510,7 +508,7 @@ public class ConstraintTest
         ));
 
 //        rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-//                "Authorization: Basic " + B64Code.encode("user:wrong") + "\r\n" +
+//                "Authorization: Basic " + authBase64("user:wrong") + "\r\n" +
 //                "\r\n");
 //        assertThat(rawResponse, startsWith("HTTP/1.1 401 Unauthorized"));
 //        assertThat(rawResponse, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
@@ -518,14 +516,14 @@ public class ConstraintTest
         scenarios.add(Arguments.of(
                 new Scenario(
                         "GET /ctx/auth/info HTTP/1.0\r\n" +
-                                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
+                                "Authorization: Basic " + authBase64("user:password") + "\r\n" +
                                 "\r\n",
                         HttpStatus.OK_200
                 )
         ));
 
 //        rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-//                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
+//                "Authorization: Basic " + authBase64("user:password") + "\r\n" +
 //                "\r\n");
 //        assertThat(rawResponse, startsWith("HTTP/1.1 200 OK"));
 
@@ -548,7 +546,7 @@ public class ConstraintTest
         scenarios.add(Arguments.of(
                 new Scenario(
                         "GET /ctx/admin/info HTTP/1.0\r\n" +
-                                "Authorization: Basic " + B64Code.encode("admin:wrong") + "\r\n" +
+                                "Authorization: Basic " + authBase64("admin:wrong") + "\r\n" +
                                 "\r\n",
                         HttpStatus.UNAUTHORIZED_401,
                         (response) -> {
@@ -561,7 +559,7 @@ public class ConstraintTest
         scenarios.add(Arguments.of(
                 new Scenario(
                         "GET /ctx/admin/info HTTP/1.0\r\n" +
-                                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
+                                "Authorization: Basic " + authBase64("user:password") + "\r\n" +
                                 "\r\n",
                         HttpStatus.FORBIDDEN_403,
                         (response) -> {
@@ -574,7 +572,7 @@ public class ConstraintTest
         scenarios.add(Arguments.of(
                 new Scenario(
                         "GET /ctx/admin/info HTTP/1.0\r\n" +
-                                "Authorization: Basic " + B64Code.encode("admin:password") + "\r\n" +
+                                "Authorization: Basic " + authBase64("admin:password") + "\r\n" +
                                 "\r\n",
                         HttpStatus.OK_200)
         ));
@@ -590,7 +588,7 @@ public class ConstraintTest
         scenarios.add(Arguments.of(
                 new Scenario(
                         "GET /ctx/omit/x HTTP/1.0\r\n" +
-                                "Authorization: Basic " + B64Code.encode("admin:password") + "\r\n" +
+                                "Authorization: Basic " + authBase64("admin:password") + "\r\n" +
                                 "\r\n",
                         HttpStatus.OK_200
 
@@ -601,7 +599,7 @@ public class ConstraintTest
         scenarios.add(Arguments.of(
                 new Scenario(
                         "POST /ctx/omit/x HTTP/1.0\r\n" +
-                                "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
+                                "Authorization: Basic " + authBase64("user2:password") + "\r\n" +
                                 "\r\n", HttpStatus.OK_200)
         ));
 
@@ -609,7 +607,7 @@ public class ConstraintTest
         scenarios.add(Arguments.of(
                 new Scenario(
                         "POST /ctx/omit/x HTTP/1.0\r\n" +
-                                "Authorization: Basic " + B64Code.encode("user3:password") + "\r\n" +
+                                "Authorization: Basic " + authBase64("user3:password") + "\r\n" +
                                 "\r\n",
                         HttpStatus.OK_200)
         ));
@@ -618,7 +616,7 @@ public class ConstraintTest
         scenarios.add(Arguments.of(
                 new Scenario(
                         "HEAD /ctx/omit/x HTTP/1.0\r\n" +
-                                "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
+                                "Authorization: Basic " + authBase64("user2:password") + "\r\n" +
                                 "\r\n",
                         HttpStatus.FORBIDDEN_403)
         ));
@@ -691,17 +689,17 @@ public class ConstraintTest
         MessageDigest md = MessageDigest.getInstance("MD5");
         byte[] ha1;
         // calc A1 digest
-        md.update(username.getBytes(StandardCharsets.ISO_8859_1));
+        md.update(username.getBytes(ISO_8859_1));
         md.update((byte) ':');
-        md.update("TestRealm".getBytes(StandardCharsets.ISO_8859_1));
+        md.update("TestRealm".getBytes(ISO_8859_1));
         md.update((byte) ':');
-        md.update(password.getBytes(StandardCharsets.ISO_8859_1));
+        md.update(password.getBytes(ISO_8859_1));
         ha1 = md.digest();
         // calc A2 digest
         md.reset();
-        md.update("GET".getBytes(StandardCharsets.ISO_8859_1));
+        md.update("GET".getBytes(ISO_8859_1));
         md.update((byte) ':');
-        md.update(uri.getBytes(StandardCharsets.ISO_8859_1));
+        md.update(uri.getBytes(ISO_8859_1));
         byte[] ha2 = md.digest();
 
         // calc digest
@@ -711,17 +709,17 @@ public class ConstraintTest
         // request-digest = <"> < KD ( H(A1), unq(nonce-value) ":" H(A2)
         // ) > <">
 
-        md.update(TypeUtil.toString(ha1, 16).getBytes(StandardCharsets.ISO_8859_1));
+        md.update(TypeUtil.toString(ha1, 16).getBytes(ISO_8859_1));
         md.update((byte) ':');
-        md.update(nonce.getBytes(StandardCharsets.ISO_8859_1));
+        md.update(nonce.getBytes(ISO_8859_1));
         md.update((byte) ':');
-        md.update(nc.getBytes(StandardCharsets.ISO_8859_1));
+        md.update(nc.getBytes(ISO_8859_1));
         md.update((byte) ':');
-        md.update(CNONCE.getBytes(StandardCharsets.ISO_8859_1));
+        md.update(CNONCE.getBytes(ISO_8859_1));
         md.update((byte) ':');
-        md.update("auth".getBytes(StandardCharsets.ISO_8859_1));
+        md.update("auth".getBytes(ISO_8859_1));
         md.update((byte) ':');
-        md.update(TypeUtil.toString(ha2, 16).getBytes(StandardCharsets.ISO_8859_1));
+        md.update(TypeUtil.toString(ha2, 16).getBytes(ISO_8859_1));
         byte[] digest = md.digest();
 
         // check digest
@@ -835,7 +833,7 @@ public class ConstraintTest
         assertThat(response, containsString("Expires"));
         assertThat(response, containsString("URI=/ctx/testLoginPage"));
 
-        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -855,7 +853,7 @@ public class ConstraintTest
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -890,7 +888,7 @@ public class ConstraintTest
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, containsString("JSESSIONID="));
-        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n"+
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -919,7 +917,7 @@ public class ConstraintTest
         assertThat(response, containsString("/ctx/auth/info"));
         assertThat(response, containsString("JSESSIONID="));
         assertThat(response, not(containsString("JSESSIONID=" + session)));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -956,7 +954,7 @@ public class ConstraintTest
                 "test_parameter=test_value\r\n");
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
-        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n"+
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -982,7 +980,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         // sneak in other request
         response = _connector.getResponse("GET /ctx/auth/other HTTP/1.0\r\n" +
@@ -1045,7 +1043,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info;jsessionid="+session+";other HTTP/1.0\r\n" +
                 "\r\n");
@@ -1081,7 +1079,7 @@ public class ConstraintTest
         //login
         response = _connector.getResponse("GET /ctx/prog?action=login HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
         response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
@@ -1095,7 +1093,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
         if (response.contains("JSESSIONID"))
         {
-            session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+            session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
             response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
                     "Cookie: JSESSIONID=" + session + "\r\n" +
                     "\r\n");
@@ -1112,7 +1110,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
         response = _connector.getResponse("GET /ctx/prog?action=login HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
         response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
@@ -1124,7 +1122,7 @@ public class ConstraintTest
         _server.start();
         response = _connector.getResponse("GET /ctx/prog?action=loginlogin HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 500 Server Error"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
         response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
@@ -1136,7 +1134,7 @@ public class ConstraintTest
         _server.start();
         response = _connector.getResponse("GET /ctx/prog?action=loginlogout HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
         response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
@@ -1148,7 +1146,7 @@ public class ConstraintTest
         _server.start();
         response = _connector.getResponse("GET /ctx/prog?action=loginlogoutlogin HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
         response = _connector.getResponse("GET /ctx/prog?x=y HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
@@ -1164,7 +1162,7 @@ public class ConstraintTest
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, containsString("JSESSIONID="));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n"+
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1182,7 +1180,7 @@ public class ConstraintTest
         assertThat(response, containsString("/ctx/auth/info"));
         assertThat(response, containsString("JSESSIONID="));
         assertThat(response, not(containsString("JSESSIONID=" + session)));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
         response = _connector.getResponse("GET /ctx/prog?action=constraintlogin HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
@@ -1195,7 +1193,7 @@ public class ConstraintTest
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, containsString("JSESSIONID="));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n"+
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1213,7 +1211,7 @@ public class ConstraintTest
         assertThat(response, containsString("/ctx/auth/info"));
         assertThat(response, containsString("JSESSIONID="));
         assertThat(response, not(containsString("JSESSIONID=" + session)));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
         response = _connector.getResponse("GET /ctx/prog?action=logout HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
@@ -1243,18 +1241,18 @@ public class ConstraintTest
         assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("user:wrong") + "\r\n" +
+                "Authorization: Basic " + authBase64("user:wrong") + "\r\n" +
                 "\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
         assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("user3:password") + "\r\n" +
+                "Authorization: Basic " + authBase64("user3:password") + "\r\n" +
                 "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
+                "Authorization: Basic " + authBase64("user2:password") + "\r\n" +
                 "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
@@ -1265,20 +1263,20 @@ public class ConstraintTest
         assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("admin:wrong") + "\r\n" +
+                "Authorization: Basic " + authBase64("admin:wrong") + "\r\n" +
                 "\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
         assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
+                "Authorization: Basic " + authBase64("user:password") + "\r\n" +
                 "\r\n");
 
         assertThat(response, startsWith("HTTP/1.1 403 "));
         assertThat(response, containsString("!role"));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("admin:password") + "\r\n" +
+                "Authorization: Basic " + authBase64("admin:password") + "\r\n" +
                 "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
@@ -1309,7 +1307,7 @@ public class ConstraintTest
         assertThat(response, containsString("Expires"));
         assertThat(response, containsString("URI=/ctx/testLoginPage"));
 
-        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1329,7 +1327,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1349,7 +1347,7 @@ public class ConstraintTest
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
 //        assertThat(response,startsWith("HTTP/1.1 302 "));
 //        assertThat(response,containsString("testLoginPage"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1360,7 +1358,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1379,7 +1377,7 @@ public class ConstraintTest
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
 //        assertThat(response,startsWith("HTTP/1.1 302 "));
 //        assertThat(response,containsString("testLoginPage"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1390,7 +1388,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1421,7 +1419,7 @@ public class ConstraintTest
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("http://wibble.com:8888/ctx/testLoginPage"));
 
-        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1440,7 +1438,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1460,7 +1458,7 @@ public class ConstraintTest
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("testLoginPage"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1471,7 +1469,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
@@ -1491,7 +1489,7 @@ public class ConstraintTest
         response = _connector.getResponse("GET /ctx/starstar/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("testLoginPage"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1502,7 +1500,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/starstar/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/starstar/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1514,7 +1512,7 @@ public class ConstraintTest
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
 //        assertThat(response,startsWith("HTTP/1.1 302 "));
 //        assertThat(response,containsString("testLoginPage"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1525,7 +1523,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1599,7 +1597,7 @@ public class ConstraintTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
         rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
+                "Authorization: Basic " + authBase64("user2:password") + "\r\n" +
                 "\r\n", 100000, TimeUnit.MILLISECONDS);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
@@ -1614,7 +1612,7 @@ public class ConstraintTest
         _server.start();
 
         rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
+                "Authorization: Basic " + authBase64("user2:password") + "\r\n" +
                 "\r\n", 100000, TimeUnit.MILLISECONDS);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -1634,13 +1632,13 @@ public class ConstraintTest
         assertThat(response, containsString("user=null"));
 
         response = _connector.getResponse("GET /ctx/noauth/info HTTP/1.0\r\n"+
-                "Authorization: Basic " + B64Code.encode("admin:wrong") + "\r\n" +
+                "Authorization: Basic " + authBase64("admin:wrong") + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("user=null"));
 
         response = _connector.getResponse("GET /ctx/noauth/info HTTP/1.0\r\n"+
-                "Authorization: Basic " + B64Code.encode("admin:password") + "\r\n" +
+                "Authorization: Basic " + authBase64("admin:password") + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("user=admin"));
@@ -1662,6 +1660,13 @@ public class ConstraintTest
         response = _connector.getResponse("GET /ctx/forbid/post HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));  // This is so stupid, but it is the S P E C
     }
+
+    private static String authBase64(String authorization)
+    {
+        byte raw[] = authorization.getBytes(ISO_8859_1);
+        return Base64.getEncoder().encodeToString(raw);
+    }
+
     private class RequestHandler extends AbstractHandler
     {
         @Override

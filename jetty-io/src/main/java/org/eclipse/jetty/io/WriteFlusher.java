@@ -307,9 +307,36 @@ abstract public class WriteFlusher
 
     private void fail(Callback callback, Throwable... suppressed)
     {
-        FailedState failed = (FailedState)_state.get();
+        Throwable cause;
+        loop:
+        while (true)
+        {
+            State state = _state.get();
 
-        Throwable cause = failed.getCause();
+            switch (state.getType())
+            {
+                case FAILED:
+                {
+                    FailedState failed = (FailedState)state;
+                    cause = failed.getCause();
+                    break loop;
+                }
+
+                case IDLE:
+                    for (Throwable t : suppressed)
+                        LOG.warn(t);
+                    return;
+
+                default:
+                    Throwable t = new IllegalStateException();
+                    if (!_state.compareAndSet(state, new FailedState(t)))
+                        continue;
+
+                    cause = t;
+                    break loop;
+            }
+        }
+
         for (Throwable t : suppressed)
         {
             if (t != cause)
@@ -389,9 +416,9 @@ abstract public class WriteFlusher
         boolean progress = true;
         while (progress && buffers != null)
         {
-            long before = remaining(buffers);
+            long before = BufferUtil.remaining(buffers);
             boolean flushed = _endPoint.flush(buffers);
-            long after = remaining(buffers);
+            long after = BufferUtil.remaining(buffers);
             long written = before - after;
 
             if (LOG.isDebugEnabled())
@@ -439,16 +466,6 @@ abstract public class WriteFlusher
         // This is probably SSL being unable to flush the encrypted buffer, so return EMPTY_BUFFERS
         // and that will keep this WriteFlusher pending.
         return buffers == null ? EMPTY_BUFFERS : buffers;
-    }
-
-    private long remaining(ByteBuffer[] buffers)
-    {
-        if (buffers == null)
-            return 0;
-        long result = 0;
-        for (ByteBuffer buffer : buffers)
-            result += buffer.remaining();
-        return result;
     }
 
     /**

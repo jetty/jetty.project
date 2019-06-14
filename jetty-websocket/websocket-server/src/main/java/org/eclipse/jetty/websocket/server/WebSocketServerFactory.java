@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -64,6 +63,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
+import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
@@ -81,7 +81,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketContainerScope, WebSocketServletFactory, WebSocketSessionListener
+public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketContainerScope, WebSocketServletFactory
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
     
@@ -97,6 +97,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final WebSocketExtensionFactory extensionFactory;
     private final ServletContext context; // can be null when this factory is used from WebSocketHandler
     private final List<SessionFactory> sessionFactories = new ArrayList<>();
+    private final SessionTracker sessionTracker = new SessionTracker();
     private final List<Class<?>> registeredSocketClasses = new ArrayList<>();
     private Executor executor;
     private DecoratedObjectFactory objectFactory;
@@ -163,7 +164,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         this.handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
         this.sessionFactories.add(new WebSocketSessionFactory(this));
-        
+
         // Create supportedVersions
         List<Integer> versions = new ArrayList<>();
         for (int v : handshakes.keySet())
@@ -184,7 +185,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         
         addBean(scheduler);
         addBean(bufferPool);
-        listeners.add(this);
+        addBean(sessionTracker);
+        listeners.add(this.sessionTracker);
     }
 
     @Override
@@ -445,7 +447,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     
     public Collection<WebSocketSession> getOpenSessions()
     {
-        return getBeans(WebSocketSession.class);
+        return this.sessionTracker.getSessions();
     }
     
     @Override
@@ -514,25 +516,20 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         
         if (!"HTTP/1.1".equals(request.getProtocol()))
         {
-            LOG.debug("Not a 'HTTP/1.1' request (was [" + request.getProtocol() + "])");
+            if ("HTTP/2".equals(request.getProtocol()))
+            {
+                LOG.warn("WebSocket Bootstrap from HTTP/2 (RFC8441) not supported in Jetty 9.x");
+            }
+            else
+            {
+                LOG.warn("Not a 'HTTP/1.1' request (was [" + request.getProtocol() + "])");
+            }
             return false;
         }
         
         return true;
     }
     
-    @Override
-    public void onSessionOpened(WebSocketSession session)
-    {
-        addManaged(session);
-    }
-
-    @Override
-    public void onSessionClosed(WebSocketSession session)
-    {
-        removeBean(session);
-    }
-
     @Override
     public void register(Class<?> websocketPojo)
     {
@@ -562,6 +559,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             throw new IllegalStateException("Not a 'WebSocket: Upgrade' request");
         }
+
         if (!"HTTP/1.1".equals(request.getHttpVersion()))
         {
             throw new IllegalStateException("Not a 'HTTP/1.1' request");

@@ -1025,10 +1025,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         throws Exception
     {
         //if the configuration instances have been set explicitly, use them
-        if (_configurations.size()>0)
+        if (!_configurations.isEmpty())
             return;
         
-        if (_configurationClasses.size()==0) {
+        if (_configurationClasses.isEmpty()) {
             _configurationClasses.addAll(Configuration.ClassList.serverDefault(getServer()));
         }
         for (String configClass : _configurationClasses)

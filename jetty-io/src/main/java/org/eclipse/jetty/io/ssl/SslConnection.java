@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -584,7 +584,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             if (LOG.isDebugEnabled())
                                 LOG.debug("unwrap net_filled={} {} encryptedBuffer={} unwrapBuffer={} appBuffer={}",
                                         net_filled,
-                                        unwrapResult.toString().replace('\n', ' '),
+                                        StringUtil.replace(unwrapResult.toString(), '\n', ' '),
                                         BufferUtil.toSummaryString(_encryptedInput),
                                         BufferUtil.toDetailString(app_in),
                                         BufferUtil.toDetailString(buffer));
@@ -835,6 +835,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             LOG.debug("flush b[{}]={}", i++, BufferUtil.toDetailString(b));
                     }
 
+                    // finish of any previous flushes
+                    if (BufferUtil.hasContent(_encryptedOutput) && !getEndPoint().flush(_encryptedOutput))
+                        return false;
+
+                    boolean isEmpty = BufferUtil.isEmpty(appOuts);
+
                     Boolean result = null;
                     try
                     {
@@ -866,7 +872,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         if (filled < 0)
                                             throw new IOException("Broken pipe");
                                     }
-                                    return result = false;
+                                    return result = isEmpty;
 
                                 default:
                                     throw new IllegalStateException("Unexpected HandshakeStatus " + status);
@@ -889,16 +895,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             }
                             if (LOG.isDebugEnabled())
                                 LOG.debug("wrap {} {} ioDone={}/{}",
-                                        wrapResult.toString().replace('\n', ' '),
+                                        StringUtil.replace(wrapResult.toString(), '\n', ' '),
                                         BufferUtil.toSummaryString(_encryptedOutput),
                                         _sslEngine.isInboundDone(),
                                         _sslEngine.isOutboundDone());
 
                             // Was all the data consumed?
-                            boolean allConsumed = true;
-                            for (ByteBuffer b : appOuts)
-                                if (BufferUtil.hasContent(b))
-                                    allConsumed = false;
+                            isEmpty = BufferUtil.isEmpty(appOuts);
 
                             // if we have net bytes, let's try to flush them
                             boolean flushed = true;
@@ -906,7 +909,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 flushed = getEndPoint().flush(_encryptedOutput);
 
                             if (LOG.isDebugEnabled())
-                                LOG.debug("net flushed={}, ac={}", flushed, allConsumed);
+                                LOG.debug("net flushed={}, ac={}", flushed, isEmpty);
 
                             // Now deal with the results returned from the wrap
                             Status wrap = wrapResult.getStatus();
@@ -919,7 +922,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     if (!flushed)
                                         return result = false;
                                     getEndPoint().shutdownOutput();
-                                    if (allConsumed)
+                                    if (isEmpty)
                                         return result = true;
                                     throw new IOException("Broken pipe");
                                 }
@@ -936,15 +939,20 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     if (isRenegotiating() && !allowRenegotiate())
                                     {
                                         getEndPoint().shutdownOutput();
-                                        if (allConsumed && BufferUtil.isEmpty(_encryptedOutput))
+                                        if (isEmpty && BufferUtil.isEmpty(_encryptedOutput))
                                             return result = true;
                                         throw new IOException("Broken pipe");
                                     }
 
                                     if (!flushed)
                                         return result = false;
-                                    if (allConsumed)
-                                        return result = true;
+
+                                    if (isEmpty)
+                                    {
+                                        if (wrapResult.getHandshakeStatus() != HandshakeStatus.NEED_WRAP ||
+                                                wrapResult.bytesProduced() == 0)
+                                            return result = true;
+                                    }
                                     break;
 
                                 default:
@@ -1073,14 +1081,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public void doShutdownOutput()
         {
+            final EndPoint endp = getEndPoint();
             try
             {
                 boolean close;
                 boolean flush = false;
                 synchronized (_decryptedEndPoint)
                 {
-                    boolean ishut = getEndPoint().isInputShutdown();
-                    boolean oshut = getEndPoint().isOutputShutdown();
+                    boolean ishut = endp.isInputShutdown();
+                    boolean oshut = endp.isOutputShutdown();
                     if (LOG.isDebugEnabled())
                         LOG.debug("shutdownOutput: {} oshut={}, ishut={} {}", SslConnection.this, oshut, ishut);
 
@@ -1097,16 +1106,28 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 }
 
                 if (flush)
-                    flush(BufferUtil.EMPTY_BUFFER); // Send the TLS close message.
+                {
+                    if (!flush(BufferUtil.EMPTY_BUFFER) && !close)
+                    {
+                        Thread.yield();
+                        // if we still can't flush, but we are not closing the endpoint,
+                        // let's just flush the encrypted output in the background.
+                        // and continue as if we are closed. The assumption here is that
+                        // the encrypted buffer will contain the entire close handshake
+                        // and that a call to flush(EMPTY_BUFFER) is not needed.
+                        endp.write(Callback.from(() -> {}, t -> endp.close()), _encryptedOutput);
+                    }
+                }
+
                 if (close)
-                    getEndPoint().close();
+                    endp.close();
                 else
                     ensureFillInterested();
             }
             catch (Throwable x)
             {
                 LOG.ignore(x);
-                getEndPoint().close();
+                endp.close();
             }
         }
 

@@ -18,6 +18,21 @@
 
 package org.eclipse.jetty.http;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.eclipse.jetty.http.HttpParser.State;
+import org.eclipse.jetty.toolchain.test.Net;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.StacklessLogging;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -28,19 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.eclipse.jetty.http.HttpParser.State;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.StacklessLogging;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 public class HttpParserTest
 {
@@ -2048,6 +2050,7 @@ public class HttpParserTest
     @Test
     public void testIPv6Host() throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "GET / HTTP/1.1\r\n"
                         + "Host: [::1]\r\n"
@@ -2129,6 +2132,7 @@ public class HttpParserTest
     @Test
     public void testIPv6HostPort() throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "GET / HTTP/1.1\r\n"
                         + "Host: [::1]:8888\r\n"

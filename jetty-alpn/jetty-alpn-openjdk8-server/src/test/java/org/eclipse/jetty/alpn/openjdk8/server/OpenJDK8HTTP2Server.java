@@ -45,7 +45,7 @@ public class OpenJDK8HTTP2Server
         httpsConfig.setSendServerVersion(true);
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");

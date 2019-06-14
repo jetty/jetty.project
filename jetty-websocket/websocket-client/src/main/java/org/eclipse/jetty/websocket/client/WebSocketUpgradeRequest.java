@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -425,7 +425,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
     {
         byte[] bytes = new byte[16];
         ThreadLocalRandom.current().nextBytes(bytes);
-        return new String(B64Code.encode(bytes));
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     private ExtensionFactory getExtensionFactory()
@@ -582,7 +582,11 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         if (connectionListeners != null)
         {
-            connectionListeners.forEach((listener) -> connection.addListener(listener));
+            connectionListeners.forEach((listener) ->
+            {
+                if (!(listener instanceof WebSocketSession))
+                    connection.addListener(listener);
+            });
         }
 
         URI requestURI = this.getURI();

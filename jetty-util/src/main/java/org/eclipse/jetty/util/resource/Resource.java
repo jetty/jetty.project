@@ -31,22 +31,26 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 
 /* ------------------------------------------------------------ */
-/** 
+/**
  * Abstract resource class.
  * <p>
  * This class provides a resource abstraction, where a resource may be
@@ -75,7 +79,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return __defaultUseCaches;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Construct a resource from a uri.
      * @param uri A URI.
@@ -87,7 +91,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return newResource(uri.toURL());
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Construct a resource from a url.
      * @param url A URL.
@@ -97,8 +101,8 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return newResource(url, __defaultUseCaches);
     }
-    
-    /* ------------------------------------------------------------ */   
+
+    /* ------------------------------------------------------------ */
     /**
      * Construct a resource from a url.
      * @param url the url for which to make the resource
@@ -136,8 +140,8 @@ public abstract class Resource implements ResourceFactory, Closeable
         return new URLResource(url,null,useCaches);
     }
 
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /** Construct a resource from a string.
      * @param resource A URL or filename.
@@ -149,7 +153,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return newResource(resource, __defaultUseCaches);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Construct a resource from a string.
      * @param resource A URL or filename.
@@ -219,7 +223,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /** Construct a system resource from a string.
      * The resource is tried as classloader resource before being
      * treated as a normal resource.
-     * @param resource Resource as string representation 
+     * @param resource Resource as string representation
      * @return The new Resource
      * @throws IOException Problem accessing resource.
      */
@@ -256,17 +260,17 @@ public abstract class Resource implements ResourceFactory, Closeable
                     url=loader.getResource(resource.substring(1));
             }
         }
-        
+
         if (url==null)
         {
             url=ClassLoader.getSystemResource(resource);
             if (url==null && resource.startsWith("/"))
                 url=ClassLoader.getSystemResource(resource.substring(1));
         }
-        
+
         if (url==null)
             return null;
-        
+
         return newResource(url);
     }
 
@@ -288,21 +292,21 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
      * @param name The relative name of the resource
      * @param useCaches True if URL caches are to be used.
-     * @param checkParents True if forced searching of parent Classloaders is performed to work around 
+     * @param checkParents True if forced searching of parent Classloaders is performed to work around
      * loaders with inverted priorities
      * @return Resource or null
      */
     public static Resource newClassPathResource(String name,boolean useCaches,boolean checkParents)
     {
         URL url=Resource.class.getResource(name);
-        
+
         if (url==null)
             url=Loader.getResource(name);
         if (url==null)
             return null;
         return newResource(url,useCaches);
     }
-    
+
     /* ------------------------------------------------------------ */
     public static boolean isContainedIn (Resource r, Resource containingResource) throws MalformedURLException
     {
@@ -315,11 +319,11 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         close();
     }
-    
+
     /* ------------------------------------------------------------ */
     public abstract boolean isContainedIn (Resource r) throws MalformedURLException;
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /** Release any temporary resources held by the resource.
      * @deprecated use {@link #close()}
@@ -340,7 +344,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @return true if the represented resource exists.
      */
     public abstract boolean exists();
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -353,7 +357,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /* ------------------------------------------------------------ */
     /**
      * Time resource was last modified.
-     * 
+     *
      * @return the last modified time as milliseconds since unix epoch
      */
     public abstract long lastModified();
@@ -362,16 +366,16 @@ public abstract class Resource implements ResourceFactory, Closeable
     /* ------------------------------------------------------------ */
     /**
      * Length of the resource.
-     * 
+     *
      * @return the length of the resource
      */
     public abstract long length();
-    
+
 
     /* ------------------------------------------------------------ */
     /**
      * URL representing the resource.
-     * 
+     *
      * @return an URL representing the given resource
      * @deprecated use {{@link #getURI()}.toURL() instead.
      */
@@ -381,7 +385,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /* ------------------------------------------------------------ */
     /**
      * URI representing the resource.
-     * 
+     *
      * @return an URI representing the given resource
      */
     public URI getURI()
@@ -395,43 +399,43 @@ public abstract class Resource implements ResourceFactory, Closeable
             throw new RuntimeException(e);
         }
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /**
      * File representing the given resource.
-     * 
+     *
      * @return an File representing the given resource or NULL if this
      * is not possible.
-     * @throws IOException if unable to get the resource due to permissions 
+     * @throws IOException if unable to get the resource due to permissions
      */
     public abstract File getFile()
         throws IOException;
-    
+
 
     /* ------------------------------------------------------------ */
     /**
      * The name of the resource.
-     * 
+     *
      * @return the name of the resource
      */
     public abstract String getName();
-    
+
 
     /* ------------------------------------------------------------ */
     /**
      * Input stream to the resource
-     * 
+     *
      * @return an input stream to the resource
      * @throws IOException if unable to open the input stream
      */
     public abstract InputStream getInputStream()
         throws IOException;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Readable ByteChannel for the resource.
-     * 
+     *
      * @return an readable bytechannel to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
      */
@@ -443,11 +447,11 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Deletes the given resource
      * @return true if resource was found and successfully deleted, false if resource didn't exist or was unable to
      * be deleted.
-     * @throws SecurityException if unable to delete due to permissions 
+     * @throws SecurityException if unable to delete due to permissions
      */
     public abstract boolean delete()
         throws SecurityException;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Rename the given resource
@@ -457,7 +461,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract boolean renameTo(Resource dest)
         throws SecurityException;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * list of resource names contained in the given resource.
@@ -501,7 +505,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * @param uri the uri to encode
      * @return null (this is deprecated)
      * @deprecated use {@link URIUtil} or {@link UrlEncoded} instead
@@ -511,7 +515,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return null;
     }
-        
+
     /* ------------------------------------------------------------ */
     // FIXME: this appears to not be used
     @SuppressWarnings("javadoc")
@@ -536,7 +540,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return getAlias()!=null;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return The canonical Alias of this resource or null if none.
@@ -545,76 +549,298 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the resource list as a HTML directory listing.
      * @param base The base URL
      * @param parent True if the parent directory should be included
      * @return String of HTML
      * @throws IOException if unable to get the list of resources as HTML
+     * @deprecated use {@link #getListHTML(String, boolean, String)} instead and supply raw query string.
      */
-    public String getListHTML(String base,boolean parent)
-        throws IOException
+    @Deprecated
+    public String getListHTML(String base, boolean parent) throws IOException
+    {
+        return getListHTML(base, parent, null);
+    }
+
+    /** Get the resource list as a HTML directory listing.
+     * @param base The base URL
+     * @param parent True if the parent directory should be included
+     * @param query query params
+     * @return String of HTML
+     */
+    public String getListHTML(String base, boolean parent, String query) throws IOException
     {
         base=URIUtil.canonicalPath(base);
         if (base==null || !isDirectory())
             return null;
-        
-        String[] ls = list();
-        if (ls==null)
-            return null;
-        Arrays.sort(ls);
-        
-        String decodedBase = URIUtil.decodePath(base);
-        String title = "Directory: "+deTag(decodedBase);
 
-        StringBuilder buf=new StringBuilder(4096);
-        buf.append("<HTML><HEAD>");
-        buf.append("<LINK HREF=\"").append("jetty-dir.css").append("\" REL=\"stylesheet\" TYPE=\"text/css\"/><TITLE>");
+        String[] rawListing = list();
+        if (rawListing == null)
+        {
+            return null;
+        }
+
+        boolean sortOrderAscending = true;
+        String sortColumn = "N"; // name (or "M" for Last Modified, or "S" for Size)
+
+        // check for query
+        if (query != null)
+        {
+            MultiMap<String> params = new MultiMap<>();
+            UrlEncoded.decodeUtf8To(query, 0, query.length(), params);
+
+            String paramO = params.getString("O");
+            String paramC = params.getString("C");
+            if (StringUtil.isNotBlank(paramO))
+            {
+                if (paramO.equals("A"))
+                {
+                    sortOrderAscending = true;
+                }
+                else if (paramO.equals("D"))
+                {
+                    sortOrderAscending = false;
+                }
+            }
+            if (StringUtil.isNotBlank(paramC))
+            {
+                if (paramC.equals("N") || paramC.equals("M") || paramC.equals("S"))
+                {
+                    sortColumn = paramC;
+                }
+            }
+        }
+
+        // Gather up entries
+        List<Resource> items = new ArrayList<>();
+        for (String l : rawListing)
+        {
+            Resource item = addPath(l);
+            items.add(item);
+        }
+
+        // Perform sort
+        if (sortColumn.equals("M"))
+        {
+            Collections.sort(items, ResourceCollators.byLastModified(sortOrderAscending));
+        }
+        else if (sortColumn.equals("S"))
+        {
+            Collections.sort(items, ResourceCollators.bySize(sortOrderAscending));
+        }
+        else
+        {
+            Collections.sort(items, ResourceCollators.byName(sortOrderAscending));
+        }
+
+        String decodedBase = URIUtil.decodePath(base);
+        String title = "Directory: " + deTag(decodedBase);
+
+        StringBuilder buf = new StringBuilder(4096);
+
+        // Doctype Declaration (HTML5)
+        buf.append("<!DOCTYPE html>\n");
+        buf.append("<html lang=\"en\">\n");
+
+        // HTML Header
+        buf.append("<head>\n");
+        buf.append("<meta charset=\"utf-8\">\n");
+        buf.append("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />\n");
+        buf.append("<title>");
         buf.append(title);
-        buf.append("</TITLE></HEAD><BODY>\n<H1>");
-        buf.append(title);
-        buf.append("</H1>\n<TABLE BORDER=0>\n");
-        
+        buf.append("</title>\n");
+        buf.append("</head>\n");
+
+        // HTML Body
+        buf.append("<body>\n");
+        buf.append("<h1 class=\"title\">").append(title).append("</h1>\n");
+
+        // HTML Table
+        final String ARROW_DOWN = "&nbsp; &#8681;";
+        final String ARROW_UP = "&nbsp; &#8679;";
+        String arrow;
+        String order;
+
+        buf.append("<table class=\"listing\">\n");
+        buf.append("<thead>\n");
+
+        arrow = "";
+        order = "A";
+        if (sortColumn.equals("N"))
+        {
+            if(sortOrderAscending)
+            {
+                order = "D";
+                arrow = ARROW_UP;
+            }
+            else
+            {
+                order = "A";
+                arrow = ARROW_DOWN;
+            }
+        }
+
+        buf.append("<tr><th class=\"name\"><a href=\"?C=N&O=").append(order).append("\">");
+        buf.append("Name").append(arrow);
+        buf.append("</a></th>");
+
+        arrow = "";
+        order = "A";
+        if (sortColumn.equals("M"))
+        {
+            if(sortOrderAscending)
+            {
+                order = "D";
+                arrow = ARROW_UP;
+            }
+            else
+            {
+                order = "A";
+                arrow = ARROW_DOWN;
+            }
+        }
+
+        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&O=").append(order).append("\">");
+        buf.append("Last Modified").append(arrow);
+        buf.append("</a></th>");
+
+        arrow = "";
+        order = "A";
+        if (sortColumn.equals("S"))
+        {
+            if(sortOrderAscending)
+            {
+                order = "D";
+                arrow = ARROW_UP;
+            }
+            else
+            {
+                order = "A";
+                arrow = ARROW_DOWN;
+            }
+        }
+        buf.append("<th class=\"size\"><a href=\"?C=S&O=").append(order).append("\">");
+        buf.append("Size").append(arrow);
+        buf.append("</a></th></tr>\n");
+        buf.append("</thead>\n");
+
+        buf.append("<tbody>\n");
+
+        String encodedBase = hrefEncodeURI(base);
+
         if (parent)
         {
-            buf.append("<TR><TD><A HREF=\"");
-            buf.append(URIUtil.addEncodedPaths(base,"../"));
-            buf.append("\">Parent Directory</A></TD><TD></TD><TD></TD></TR>\n");
+            // Name
+            buf.append("<tr><td class=\"name\"><a href=\"");
+            buf.append(URIUtil.addPaths(encodedBase,"../"));
+            buf.append("\">Parent Directory</a></td>");
+            // Last Modified
+            buf.append("<td class=\"lastmodified\">-</td>");
+            // Size
+            buf.append("<td>-</td>");
+            buf.append("</tr>\n");
         }
-        
-        String encodedBase = hrefEncodeURI(base);
-        
+
         DateFormat dfmt=DateFormat.getDateTimeInstance(DateFormat.MEDIUM,
                                                        DateFormat.MEDIUM);
-        for (int i=0 ; i< ls.length ; i++)
+        for (Resource item: items)
         {
-            Resource item = addPath(ls[i]);
-            
-            buf.append("\n<TR><TD><A HREF=\"");
-            String path=URIUtil.addEncodedPaths(encodedBase,URIUtil.encodePath(ls[i]));
-            
+            String name = item.getFileName();
+            if (StringUtil.isBlank(name))
+            {
+                continue; // skip
+            }
+
+            if (item.isDirectory() && !name.endsWith("/"))
+            {
+                name += URIUtil.SLASH;
+            }
+
+            // Name
+            buf.append("<tr><td class=\"name\"><a href=\"");
+            String path=URIUtil.addEncodedPaths(encodedBase,URIUtil.encodePath(name));
             buf.append(path);
-            
-            if (item.isDirectory() && !path.endsWith("/"))
-                buf.append(URIUtil.SLASH);
-            
-            // URIUtil.encodePath(buf,path);
             buf.append("\">");
-            buf.append(deTag(ls[i]));
+            buf.append(deTag(name));
             buf.append("&nbsp;");
-            buf.append("</A></TD><TD ALIGN=right>");
-            buf.append(item.length());
-            buf.append(" bytes&nbsp;</TD><TD>");
-            buf.append(dfmt.format(new Date(item.lastModified())));
-            buf.append("</TD></TR>");
+            buf.append("</a></td>");
+
+            // Last Modified
+            buf.append("<td class=\"lastmodified\">");
+            long lastModified = item.lastModified();
+            if (lastModified > 0)
+            {
+                buf.append(dfmt.format(new Date(item.lastModified())));
+            }
+            buf.append("&nbsp;</td>");
+
+            // Size
+            buf.append("<td class=\"size\">");
+            long length = item.length();
+            if (length >= 0)
+            {
+                buf.append(String.format("%,d bytes", item.length()));
+            }
+            buf.append("&nbsp;</td></tr>\n");
         }
-        buf.append("</TABLE>\n");
-        buf.append("</BODY></HTML>\n");
-        
+        buf.append("</tbody>\n");
+        buf.append("</table>\n");
+        buf.append("</body></html>\n");
+
         return buf.toString();
     }
-    
+
+    /**
+     * Get the raw (decoded if possible) Filename for this Resource.
+     * This is the last segment of the path.
+     * @return the raw / decoded filename for this resource
+     */
+    private String getFileName()
+    {
+        try
+        {
+            // if a Resource supports File
+            File file = getFile();
+            if (file != null)
+            {
+                return file.getName();
+            }
+        }
+        catch (Throwable ignore)
+        {
+        }
+
+        // All others use raw getName
+        try
+        {
+            String rawName = getName(); // gets long name "/foo/bar/xxx"
+            int idx = rawName.lastIndexOf('/');
+            if (idx == rawName.length()-1)
+            {
+                // hit a tail slash, aka a name for a directory "/foo/bar/"
+                idx = rawName.lastIndexOf('/', idx-1);
+            }
+
+            String encodedFileName;
+            if (idx >= 0)
+            {
+                encodedFileName = rawName.substring(idx + 1);
+            }
+            else
+            {
+                encodedFileName = rawName; // entire name
+            }
+            return UrlEncoded.decodeString(encodedFileName, 0, encodedFileName.length(), UTF_8);
+        }
+        catch (Throwable ignore)
+        {
+        }
+
+        return null;
+    }
+
     /**
      * Encode any characters that could break the URI string in an HREF.
      * Such as <a href="/path/to;<script>Window.alert("XSS"+'%20'+"here");</script>">Link</a>
@@ -679,7 +905,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     
     /* ------------------------------------------------------------ */
     /** 
-     * @param out the output stream to write to 
+     * @param out the output stream to write to
      * @param start First byte to write
      * @param count Bytes to write or -1 for all of them.
      * @throws IOException if unable to copy the Resource to the output
@@ -702,7 +928,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Copy the Resource to the new destination file.
      * <p>
      * Will not replace existing destination file.
-     * 
+     *
      * @param destination the destination file to create
      * @throws IOException if unable to copy the resource
      */
@@ -711,7 +937,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         if (destination.exists())
             throw new IllegalArgumentException(destination + " exists");
-        
+
         try (OutputStream out = new FileOutputStream(destination))
         {
             writeTo(out,0,-1);
@@ -721,37 +947,42 @@ public abstract class Resource implements ResourceFactory, Closeable
     /* ------------------------------------------------------------ */
     /**
      * Generate a weak ETag reference for this Resource.
-     * 
+     *
      * @return the weak ETag reference for this resource.
      */
     public String getWeakETag()
     {
         return getWeakETag("");
     }
-    
+
     public String getWeakETag(String suffix)
     {
-        try
+        StringBuilder b = new StringBuilder(32);
+        b.append("W/\"");
+
+        String name=getName();
+        int length=name.length();
+        long lhash=0;
+        for (int i=0; i<length;i++)
+            lhash=31*lhash+name.charAt(i);
+
+        Base64.Encoder encoder = Base64.getEncoder().withoutPadding();
+        b.append(encoder.encodeToString(longToBytes(lastModified() ^ lhash)));
+        b.append(encoder.encodeToString(longToBytes(length() ^ lhash)));
+        b.append(suffix);
+        b.append('"');
+        return b.toString();
+    }
+
+    private static byte[] longToBytes(long value)
+    {
+        byte[] result = new byte[Long.BYTES];
+        for (int i = Long.BYTES - 1; i >= 0; i--)
         {
-            StringBuilder b = new StringBuilder(32);
-            b.append("W/\"");
-            
-            String name=getName();
-            int length=name.length();
-            long lhash=0;
-            for (int i=0; i<length;i++)
-                lhash=31*lhash+name.charAt(i);
-            
-            B64Code.encode(lastModified()^lhash,b);
-            B64Code.encode(length()^lhash,b);
-            b.append(suffix);
-            b.append('"');
-            return b.toString();
-        } 
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
+            result[i] = (byte) (value & 0xFF);
+            value >>= 8;
         }
+        return result;
     }
     
     /* ------------------------------------------------------------ */

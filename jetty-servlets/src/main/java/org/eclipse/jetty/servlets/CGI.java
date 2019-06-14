@@ -29,7 +29,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -324,7 +323,7 @@ public class CGI extends HttpServlet
             if (name.equalsIgnoreCase("Proxy"))
                 continue;
             String value = req.getHeader(name);
-            env.set("HTTP_" + name.toUpperCase(Locale.ENGLISH).replace('-', '_'), value);
+            env.set("HTTP_" + StringUtil.replace(name.toUpperCase(Locale.ENGLISH), '-', '_'), value);
         }
 
         // these extra ones were from printenv on www.dev.nomura.co.uk

@@ -26,7 +26,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -368,8 +367,8 @@ public class CrossOriginFilter implements Filter
 
     private String parseAllowedWildcardOriginToRegex(String allowedOrigin)
     {
-        String regex = allowedOrigin.replace(".", "\\.");
-        return regex.replace("*", ".*"); // we want to be greedy here to match multiple subdomains, thus we use .*
+        String regex = StringUtil.replace(allowedOrigin, ".", "\\.");
+        return StringUtil.replace(regex, "*", ".*"); // we want to be greedy here to match multiple subdomains, thus we use .*
     }
 
     private boolean isSimpleRequest(HttpServletRequest request)

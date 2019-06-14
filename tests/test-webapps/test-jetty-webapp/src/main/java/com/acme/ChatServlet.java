@@ -133,7 +133,7 @@ public class ChatServlet extends HttpServlet
             synchronized (member)
             {
                 LOG.debug("Queue size: {}", member._queue.size());
-                if (member._queue.size() > 0)
+                if (!member._queue.isEmpty())
                 {
                     sendSingleMessage(response, member);
                 }

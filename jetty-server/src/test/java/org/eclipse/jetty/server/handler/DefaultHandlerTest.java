@@ -89,9 +89,9 @@ public class DefaultHandlerTest
             HttpTester.Response response = HttpTester.parseResponse(input);
 
             assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
-            assertEquals("text/html;charset=ISO-8859-1", response.get(HttpHeader.CONTENT_TYPE));
+            assertEquals("text/html;charset=UTF-8", response.get(HttpHeader.CONTENT_TYPE));
 
-            String content = new String(response.getContentBytes(),StandardCharsets.ISO_8859_1);
+            String content = new String(response.getContentBytes(),StandardCharsets.UTF_8);
             assertThat(content,containsString("Contexts known to this server are:"));
             assertThat(content,containsString("/foo"));
             assertThat(content,containsString("/bar"));

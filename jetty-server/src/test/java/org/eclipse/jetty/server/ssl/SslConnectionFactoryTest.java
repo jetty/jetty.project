@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -59,9 +54,13 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SslConnectionFactoryTest
 {
@@ -87,7 +86,7 @@ public class SslConnectionFactoryTest
         https_config.addCustomizer(new SecureRequestCustomizer());
 
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
@@ -210,7 +209,7 @@ public class SslConnectionFactoryTest
 
     private String getResponse(String sniHost, String reqHost, String cn) throws Exception
     {
-        SslContextFactory clientContextFactory = new SslContextFactory(true);
+        SslContextFactory clientContextFactory = new SslContextFactory.Client(true);
         clientContextFactory.start();
         SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
 

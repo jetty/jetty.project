@@ -928,7 +928,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max number of HTTP redirects that are followed
+     * @return the max number of HTTP redirects that are followed in a conversation
      * @see #setMaxRedirects(int)
      */
     public int getMaxRedirects()
@@ -937,7 +937,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param maxRedirects the max number of HTTP redirects that are followed
+     * @param maxRedirects the max number of HTTP redirects that are followed in a conversation, or -1 for unlimited redirects
      * @see #setFollowRedirects(boolean)
      */
     public void setMaxRedirects(int maxRedirects)

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.16-SNAPSHOT</version>
+    <version>9.4.20-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -12,7 +12,7 @@
   <name>Jetty :: Hazelcast Session Manager</name>
 
   <properties>
-    <hazelcast.version>3.9.3</hazelcast.version>
+    <hazelcast.version>3.9.4</hazelcast.version>
     <bundle-symbolic-name>${project.groupId}.hazelcast</bundle-symbolic-name>
   </properties>
 
@@ -22,6 +22,7 @@
       <artifactId>hazelcast</artifactId>
       <version>${hazelcast.version}</version>
       <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.hazelcast</groupId>

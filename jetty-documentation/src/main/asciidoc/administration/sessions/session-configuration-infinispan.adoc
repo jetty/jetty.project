@@ -24,10 +24,6 @@
 
 When using the Jetty distribution, you will first need to enable the `session-store-infinispan-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
-____
-[IMPORTANT]
-If you are running Jetty with JDK 9 or greater, enable `session-store-infinispan-remote-910.mod` instead.
-____
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -52,7 +48,7 @@ INFO  : server          transitively enabled, ini template available with --add-
 INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
 INFO  : session-store-infinispan-remote initialized in ${jetty.base}/start.d/session-store-infinispan-remote.ini
 MKDIR : ${jetty.base}/lib/infinispan
-DOWNLD: https://repo1.maven.org/maven2/org/infinispan/infinispan-remote/7.1.1.Final/infinispan-remote-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-remote-7.1.1.Final.jar
+DOWNLD: https://repo1.maven.org/maven2/org/infinispan/infinispan-remote-it/9.4.8.Final/infinispan-remote-it-9.4.8.Final.jar to ${jetty.base}/lib/infinispan/infinispan-remote-it-9.4.8.Final.jar
 MKDIR : ${jetty.base}/resources
 COPY  : ${jetty.home}/modules/session-store-infinispan-remote/resources/hotrod-client.properties to ${jetty.base}/resources/hotrod-client.properties
 INFO  : Base directory was modified
@@ -93,13 +89,17 @@ Opening the `start.d/session-store-infinispan-remote.ini` will show a list of al
 jetty.session.infinispan.remoteCacheName::
 Name of the cache in Infinispan where sessions will be stored.
 jetty.session.infinispan.idleTimeout.seconds::
-Amount of time, in seconds, that the system allows the connector to remain idle before closing the connection.
+Amount of time, in seconds, that a session entry in infinispan can be idle (ie not read or written) before infinispan will delete its entry.
+Usually, you do *not* want to set a value for this, as you want jetty to handle all session expiration (and call any SessionListeners).
+However, if there is the possibility that sessions can be left in infinispan but no longer referenced by any jetty node (so called "zombie" or "orphan" sessions), then you might want to use this feature.
+You should make sure that the number of seconds you specify is sufficiently large to avoid the situation where a session is still being referenced by jetty, but is rarely accessed and thus deleted by infinispan.
+Alternatively, you can enable the `infinispan-remote-query` module, which will allow jetty to search the infinispan session cache to proactively find and properly (ie calling any SessionListeners) scavenge defunct sessions.
 jetty.session.gracePeriod.seconds::
 Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
 jetty.session.savePeriod.seconds=0::
 By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
 A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
-+
+
 ____
 [NOTE]
 Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
@@ -107,6 +107,19 @@ In a clustered environment, there is a risk of the last access time of the sessi
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
 ____
+
+==== Configuring the Remote Infinispan Query Module
+
+Enabling this module allows jetty to search infinispan for expired sessions that are no longer being referenced by any jetty node.
+Note that this is an *additional* module, to be used in conjuction with the `session-store-infinispan-remote` module.
+
+[source, screen, subs="{sub-order}"]
+----
+java -jar ../start.jar --add-to-start=infinispan-remote-query
+----
+
+There are no configuration properties associated with this module.
+
 
 ==== Configuring Embedded Inifinspan Clustering
 
@@ -137,7 +150,7 @@ Proceed (y/N)? y
 INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
 INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
 INFO : session-store-infinispan-embedded initialised in ${jetty.base}/start.d/session-store-infinispan-embedded.ini
-DOWNLOAD: https://repo1.maven.org/maven2/org/infinispan/infinispan-embedded/7.1.1.Final/infinispan-embedded-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-embedded-7.1.1.Final.jar
+DOWNLOAD: https://repo1.maven.org/maven2/org/infinispan/infinispan-embedded-it/9.4.8.Final/infinispan-embedded-it-9.4.8.Final.jar to ${jetty.base}/lib/infinispan/infinispan-embedded-it-9.4.8.Final.jar
 INFO : Base directory was modified
 ----
 
@@ -179,6 +192,19 @@ In a clustered environment, there is a risk of the last access time of the sessi
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
 ____
+
+
+==== Configuring Inifinspan Embedded Query
+
+Similarly to the `session-store-infinispan-remote` module, the `session-store-infinispan-embedded` module has an adjunct module `infinispan-embedded-query`, which when enabled, will allow jetty to detect and properly scavenge defunct sessions stranded in infinispan.
+
+[source, screen, subs="{sub-order}"]
+----
+java -jar ../start.jar --add-to-start=infinispan-embedded-query
+----
+
+There are no configuration properties associated with this module.
+
 
 ==== Converting session format for jetty-9.4.13
 

@@ -370,11 +370,22 @@ public class SessionHandler extends ScopedHandler
         
         if (_sessionListeners!=null)
         {
-            HttpSessionEvent event=new HttpSessionEvent(session);      
-            for (int i = _sessionListeners.size()-1; i>=0; i--)
+            //We annoint the calling thread with
+            //the webapp's classloader because the calling thread may
+            //come from the scavenger, rather than a request thread
+            Runnable r = new Runnable()
             {
-                _sessionListeners.get(i).sessionDestroyed(event);
-            }
+                @Override
+                public void run ()
+                {
+                    HttpSessionEvent event=new HttpSessionEvent(session);
+                    for (int i = _sessionListeners.size()-1; i>=0; i--)
+                    {
+                        _sessionListeners.get(i).sessionDestroyed(event);
+                    }
+                }
+            };
+            _sessionContext.run(r);
         }
     }
     
@@ -725,7 +736,7 @@ public class SessionHandler extends ScopedHandler
         if (isUsingCookies())
         {
             String sessionPath = (_cookieConfig.getPath()==null) ? contextPath : _cookieConfig.getPath();
-            sessionPath = (sessionPath==null||sessionPath.length()==0) ? "/" : sessionPath;
+            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
             String id = getExtendedId(session);
             HttpCookie cookie = null;
             if (_sessionComment == null)

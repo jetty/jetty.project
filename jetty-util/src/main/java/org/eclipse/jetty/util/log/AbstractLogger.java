@@ -198,35 +198,61 @@ public abstract class AbstractLogger implements Logger
      *            the fully qualified class name
      * @return the condensed name
      */
+    @SuppressWarnings("Duplicates")
     protected static String condensePackageString(String classname)
     {
-        if(classname == null || classname.isEmpty())
+        if (classname == null || classname.isEmpty())
         {
             return "";
         }
-        // strip non-allowed character
-        String allowed = classname.replaceAll("[^\\w.]", "");
-        int len = allowed.length();
-        // find end of classname (strip empty sections. eg: "org.Foo.")
-        while(allowed.charAt(--len) == '.');
-        String parts[] = allowed.substring(0,len+1).split("\\.");
-        StringBuilder dense = new StringBuilder();
-        for (int i = 0; i < (parts.length - 1); i++)
+
+        int rawLen = classname.length();
+        StringBuilder dense = new StringBuilder(rawLen);
+        boolean foundStart = false;
+        boolean hasPackage = false;
+        int startIdx = -1;
+        int endIdx = -1;
+        for (int i = 0; i < rawLen; i++)
         {
-            String part = parts[i].trim();
-            if(!part.isEmpty())
+            char c = classname.charAt(i);
+            if (!foundStart)
             {
-                dense.append(part.charAt(0));
+                foundStart = Character.isJavaIdentifierStart(c);
+                if (foundStart)
+                {
+                    if (startIdx >= 0)
+                    {
+                        dense.append(classname.charAt(startIdx));
+                        hasPackage = true;
+                    }
+                    startIdx = i;
+                }
+            }
+
+            if (foundStart)
+            {
+                if (!Character.isJavaIdentifierPart(c))
+                {
+                    foundStart = false;
+                }
+                else
+                {
+                    endIdx = i;
+                }
             }
         }
-        if (dense.length() > 0)
+        // append remaining from startIdx
+        if ((startIdx >= 0) && (endIdx >= startIdx))
         {
-            dense.append('.');
+            if (hasPackage)
+            {
+                dense.append('.');
+            }
+            dense.append(classname, startIdx, endIdx + 1);
         }
-        dense.append(parts[parts.length - 1]);
+
         return dense.toString();
     }
-
 
     @Override
     public void debug(String msg, long arg)

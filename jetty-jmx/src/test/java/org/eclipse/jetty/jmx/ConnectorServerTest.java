@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.jmx;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -39,6 +35,10 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Running the tests of this class in the same JVM results often in
@@ -227,7 +227,7 @@ public class ConnectorServerTest
     @Test
     public void testJMXOverTLS() throws Exception
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         String keyStorePath = MavenTestingUtils.getTestResourcePath("keystore.jks").toString();
         String keyStorePassword = "storepwd";
         sslContextFactory.setKeyStorePath(keyStorePath);

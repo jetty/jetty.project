@@ -61,24 +61,35 @@ public class ConscryptHTTP2ServerTest
 
     private Server server = new Server();
 
-    private SslContextFactory newSslContextFactory()
+    private SslContextFactory.Server newServerSslContextFactory()
+    {
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        configureSslContextFactory(sslContextFactory);
+        return sslContextFactory;
+    }
+
+    private SslContextFactory.Client newClientSslContextFactory()
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        configureSslContextFactory(sslContextFactory);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        return sslContextFactory;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
     {
         Path path = Paths.get("src", "test", "resources");
         File keys = path.resolve("keystore").toFile();
-
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
         sslContextFactory.setKeyManagerPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
-        sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setProvider("Conscrypt");
-        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         if (JavaVersion.VERSION.getPlatform() < 9)
         {
             // Conscrypt enables TLSv1.3 by default but it's not supported in Java 8.
             sslContextFactory.addExcludeProtocols("TLSv1.3");
         }
-        return sslContextFactory;
     }
 
     @BeforeEach
@@ -95,7 +106,7 @@ public class ConscryptHTTP2ServerTest
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(http.getProtocol());
-        SslConnectionFactory ssl = new SslConnectionFactory(newSslContextFactory(), alpn.getProtocol());
+        SslConnectionFactory ssl = new SslConnectionFactory(newServerSslContextFactory(), alpn.getProtocol());
 
         ServerConnector http2Connector = new ServerConnector(server, ssl, alpn, h2, http);
         http2Connector.setPort(0);
@@ -125,7 +136,7 @@ public class ConscryptHTTP2ServerTest
     public void testSimpleRequest() throws Exception
     {
         HTTP2Client h2Client = new HTTP2Client();
-        HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client), newSslContextFactory());
+        HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client), newClientSslContextFactory());
         client.start();
         try
         {

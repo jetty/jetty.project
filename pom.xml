@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.16-SNAPSHOT</version>
+  <version>9.4.20-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -20,16 +20,17 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <log4j2.version>2.11.1</log4j2.version>
+    <log4j2.version>2.11.2</log4j2.version>
+    <disruptor.version>3.4.2</disruptor.version>
     <logback.version>1.2.3</logback.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
-    <jsp.version>8.5.35.1</jsp.version>
+    <jsp.version>8.5.40</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
-    <conscrypt.version>2.0.0</conscrypt.version>
-    <asm.version>7.0</asm.version>
+    <conscrypt.version>2.1.0</conscrypt.version>
+    <asm.version>7.1</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.2.0</tycho-version>
@@ -46,8 +47,8 @@
     <jpms-module-name>${bundle-symbolic-name}</jpms-module-name>
 
     <!-- some maven plugins versions -->
-    <maven.surefire.version>3.0.0-M2</maven.surefire.version>
-    <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
+    <maven.surefire.version>3.0.0-M3</maven.surefire.version>
+    <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.1.1</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
     <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
@@ -56,7 +57,7 @@
 
     <!-- testing -->
     <it.debug>false</it.debug>
-    <jetty.test.version>5.2</jetty.test.version>
+    <jetty.test.version>5.3</jetty.test.version>
     <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
     <jsr250-api.version>1.0</jsr250-api.version>
     <javax.annotation-api>1.3</javax.annotation-api>
@@ -282,7 +283,7 @@
           <autoVersionSubmodules>true</autoVersionSubmodules>
           <useReleaseProfile>false</useReleaseProfile>
           <goals>javadoc:aggregate-jar deploy</goals>
-          <arguments>-Peclipse-release -Paggregate-javadoc-jar</arguments>
+          <arguments>-Peclipse-release</arguments>
           <preparationGoals>clean install</preparationGoals>
           <mavenExecutorId>forked-path</mavenExecutorId>
         </configuration>
@@ -448,6 +449,11 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven.compiler.plugin.version}</version>
           <configuration>
@@ -512,7 +518,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
           <configuration>
             <archive>
               <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
@@ -528,18 +534,18 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>3.1.0</version>
           <configuration>
+            <source>8</source>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
-            <additionalparam>-html5</additionalparam>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>false</detectJavaApiLink>
             <show>protected</show>
             <attach>true</attach>
-            <excludePackageNames>com.acme,org.slf4j*,org.mortbay*,*.jmh*,org.eclipse.jetty.embedded*,org.eclipse.jetty.example.asyncrest*,org.eclipse.jetty.test*</excludePackageNames>
+            <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
           </configuration>
         </plugin>
         <plugin>
@@ -891,9 +897,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <version>${junit.version}</version>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -1051,22 +1056,7 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
-        <version>0.20</version>
-      </dependency>
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.12</version>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-core</artifactId>
-        <version>1.3</version>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-library</artifactId>
-        <version>1.3</version>
+        <version>0.22</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -1130,6 +1120,27 @@
                 <minSeverity>info</minSeverity>
                 <comparisonVersion>9.4.6.v20170531</comparisonVersion>
                 <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>jdk11</id>
+      <activation>
+        <jdk>[11,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <additionalJOption>--no-module-directories</additionalJOption>
+                <additionalOptions>-html5</additionalOptions>
+                <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
               </configuration>
             </plugin>
           </plugins>
@@ -1242,9 +1253,17 @@
     </profile>
     <profile>
       <id>ci</id>
-      <modules>
-        <module>aggregates/jetty-all</module>
-      </modules>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <version>${maven.surefire.version}</version>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
     </profile>
     <profile>
       <id>update-version</id>
@@ -1804,6 +1823,30 @@
       </properties>
     </profile>
     <profile>
+      <id>8u211</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_211</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u212</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_212</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
       <id>jdk9</id>
       <activation>
         <jdk>[1.9,)</jdk>
@@ -1833,7 +1876,7 @@
             <enabled>true</enabled>
           </snapshots>
         </repository>
-        <repository>
+        <!--repository>
           <id>apache.snapshots</id>
           <url>https://repository.apache.org/content/repositories/snapshots</url>
           <releases>
@@ -1842,22 +1885,11 @@
           <snapshots>
             <enabled>true</enabled>
           </snapshots>
-        </repository>
+        </repository-->
         <repository>
           <id>oss.snapshots</id>
           <name>OSS Snapshots</name>
           <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </repository>
-        <repository>
-          <id>jetty.snapshots</id>
-          <name>Jetty Snapshots</name>
-          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
           <releases>
             <enabled>false</enabled>
           </releases>
@@ -1996,6 +2028,7 @@
     </site>
   </distributionManagement>
 
+  <!-- comment this until if we do not need some Apache maven plugins SNAPSHOT versions -->
   <pluginRepositories>
     <pluginRepository>
       <id>apache.snapshots</id>

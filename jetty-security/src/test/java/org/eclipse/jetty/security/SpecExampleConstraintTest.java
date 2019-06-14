@@ -18,16 +18,11 @@
 
 package org.eclipse.jetty.security;
 
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,13 +35,18 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
@@ -297,37 +297,41 @@ public class SpecExampleConstraintTest
         response = _connector.getResponse("HEAD /ctx/index.html HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
 
+        Base64.Encoder authEncoder = Base64.getEncoder();
+        String encodedHarry = authEncoder.encodeToString("harry:password".getBytes(ISO_8859_1));
+        String encodedChris = authEncoder.encodeToString("chris:password".getBytes(ISO_8859_1));
+
         response = _connector.getResponse("HEAD /ctx/index.html HTTP/1.0\r\n" +
-                "Authorization: Basic " + B64Code.encode("harry:password") + "\r\n" +
+                "Authorization: Basic " + encodedHarry + "\r\n" +
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
 
         response = _connector.getResponse("HEAD /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + B64Code.encode("harry:password") + "\r\n" +
+                                           "Authorization: Basic " + encodedHarry + "\r\n" +
                                            "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
         
         response = _connector.getResponse("HEAD /ctx/acme/retail/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + B64Code.encode("harry:password") + "\r\n" +
+                                           "Authorization: Basic " + encodedHarry + "\r\n" +
                                            "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
         
         //a user in role CONTRACTOR can do a GET
         response = _connector.getResponse("GET /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + B64Code.encode("chris:password") + "\r\n" +
+                                           "Authorization: Basic " + encodedChris + "\r\n" +
                                            "\r\n");
 
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
         
         //a user in role CONTRACTOR can only do a post if confidential
         response = _connector.getResponse("POST /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + B64Code.encode("chris:password") + "\r\n" +
+                                           "Authorization: Basic " + encodedChris + "\r\n" +
                                            "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 !"));
         
         //a user in role HOMEOWNER can do a GET
         response = _connector.getResponse("GET /ctx/acme/retail/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + B64Code.encode("harry:password") + "\r\n" +
+                                           "Authorization: Basic " + encodedHarry + "\r\n" +
                                            "\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));   
     }

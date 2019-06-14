@@ -75,5 +75,19 @@ public interface TryExecutor extends Executor
         }
     }
 
-    public static final TryExecutor NO_TRY = task -> false;
+    TryExecutor NO_TRY = new TryExecutor()
+    {
+        @Override
+        public boolean tryExecute(Runnable task)
+        {
+            return false;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "NO_TRY";
+        }
+    };
+
 }

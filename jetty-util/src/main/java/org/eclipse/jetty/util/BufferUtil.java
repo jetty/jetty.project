@@ -237,6 +237,7 @@ public class BufferUtil
         }
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param buf the buffer to check
      * @return true if buf is equal to EMPTY_BUFFER
@@ -256,6 +257,36 @@ public class BufferUtil
     public static boolean isEmpty(ByteBuffer buf)
     {
         return buf == null || buf.remaining() == 0;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Check for an empty or null buffers.
+     * @param buf the buffer to check
+     * @return true if the buffer is null or empty.
+     */
+    public static boolean isEmpty(ByteBuffer[] buf)
+    {
+        if (buf==null || buf.length==0)
+            return true;
+        for (ByteBuffer b : buf)
+            if (b!=null && b.hasRemaining())
+                return false;
+        return true;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the remaining bytes in 0 or more buffers.
+     * @param buf the buffers to check
+     * @return number of bytes remaining in all buffers.
+     */
+    public static long remaining(ByteBuffer... buf)
+    {
+        long remaining = 0;
+        if (buf!=null)
+        for (ByteBuffer b : buf)
+            if (b!=null)
+                remaining += b.remaining();
+        return remaining;
     }
 
     /* ------------------------------------------------------------ */
@@ -1051,6 +1082,8 @@ public class BufferUtil
 
     private static void appendDebugString(StringBuilder buf,ByteBuffer buffer)
     {
+        // Take a readonly copy so we can adjust the limit
+        buffer = buffer.asReadOnlyBuffer();
         try
         {
             for (int i = 0; i < buffer.position(); i++)

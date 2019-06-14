@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -184,8 +183,8 @@ public class PushCacheFilter implements Filter
                     port = request.isSecure() ? 443 : 80;
             }
 
-            boolean referredFromHere = _hosts.size() > 0 ? _hosts.contains(host) : host.equals(request.getServerName());
-            referredFromHere &= _ports.size() > 0 ? _ports.contains(port) : port == request.getServerPort();
+            boolean referredFromHere = !_hosts.isEmpty()? _hosts.contains(host) : host.equals(request.getServerName());
+            referredFromHere &= !_ports.isEmpty()? _ports.contains(port) : port == request.getServerPort();
 
             if (referredFromHere)
             {

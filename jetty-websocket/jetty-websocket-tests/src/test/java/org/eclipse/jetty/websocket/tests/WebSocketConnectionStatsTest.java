@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -64,20 +65,21 @@ public class WebSocketConnectionStatsTest
     public static class ClientSocket
     {
         CountDownLatch closed = new CountDownLatch(1);
-
+        int closeStatus;
+        String closeReason;
         String behavior;
 
         @OnWebSocketConnect
         public void onOpen(Session session)
         {
             behavior = session.getPolicy().getBehavior().name();
-            System.err.println(toString() + " Socket Connected: " + session);
         }
 
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
         {
-            System.err.println(toString() + " Socket Closed: " + statusCode + ":" + reason);
+            closeStatus = statusCode;
+            closeReason = reason;
             closed.countDown();
         }
 
@@ -109,7 +111,7 @@ public class WebSocketConnectionStatsTest
         @Override
         public void configure(WebSocketServletFactory factory)
         {
-            factory.setCreator((req, resp)->new EchoSocket());
+            factory.setCreator((req, resp) -> new EchoSocket());
         }
     }
 
@@ -164,7 +166,7 @@ public class WebSocketConnectionStatsTest
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator generator = new Generator(WebSocketPolicy.newClientPolicy(), bufferPool);
-        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength()+10, true);
+        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength() + 10, true);
         int pos = BufferUtil.flipToFill(buffer);
         generator.generateWholeFrame(frame, buffer);
         return buffer.position() - pos;
@@ -189,11 +191,15 @@ public class WebSocketConnectionStatsTest
             upgradeSentBytes = statistics.getSentBytes();
             upgradeReceivedBytes = statistics.getReceivedBytes();
 
-            for (int i=0; i<numMessages; i++)
+            for (int i = 0; i < numMessages; i++)
+            {
                 session.getRemote().sendString(msgText);
+            }
+            session.close(StatusCode.NORMAL, null);
+
+            assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
         }
-        assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
-        assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
 
         assertThat(statistics.getConnectionsMax(), is(1L));
         assertThat(statistics.getConnections(), is(0L));
@@ -202,16 +208,22 @@ public class WebSocketConnectionStatsTest
         assertThat(statistics.getReceivedMessages(), is(numMessages + 2L));
 
         WebSocketFrame textFrame = new TextFrame().setPayload(msgText);
-        WebSocketFrame closeFrame = new CloseInfo(StatusCode.NORMAL).asFrame();
+        WebSocketFrame closeFrame = new CloseInfo(socket.closeStatus, socket.closeReason).asFrame();
 
         final long textFrameSize = getFrameByteSize(textFrame);
         final long closeFrameSize = getFrameByteSize(closeFrame);
         final int maskSize = 4; // We use 4 byte mask for client frames
 
-        final long expectedSent = upgradeSentBytes + numMessages*textFrameSize + closeFrameSize;
-        final long expectedReceived = upgradeReceivedBytes + numMessages*(textFrameSize+maskSize) + closeFrameSize+maskSize;
+        // Pointless Sanity Checks
+        // assertThat("Upgrade Sent Bytes", upgradeSentBytes, is(197L));
+        // assertThat("Upgrade Received Bytes", upgradeReceivedBytes, is(261L));
+        // assertThat("Text Frame Size", textFrameSize, is(13L));
+        // assertThat("Close Frame Size", closeFrameSize, is(4L));
 
-        assertThat(statistics.getSentBytes(), is(expectedSent));
-        assertThat(statistics.getReceivedBytes(), is(expectedReceived));
+        final long expectedSent = upgradeSentBytes + numMessages * textFrameSize + closeFrameSize;
+        final long expectedReceived = upgradeReceivedBytes + numMessages * (textFrameSize + maskSize) + closeFrameSize + maskSize;
+
+        assertThat("stats.sendBytes", statistics.getSentBytes(), is(expectedSent));
+        assertThat("stats.receivedBytes", statistics.getReceivedBytes(), is(expectedReceived));
     }
 }

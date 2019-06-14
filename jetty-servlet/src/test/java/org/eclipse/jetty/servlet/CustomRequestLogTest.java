@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.io.File;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -84,7 +85,7 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET /context/servlet/info HTTP/1.0\n\n");
         String log = _entries.poll(5,TimeUnit.SECONDS);
-        assertThat(log, is("Filename: " + _tmpDir + "/servlet/info"));
+        assertThat(log, is("Filename: " + _tmpDir + File.separator + "servlet" + File.separator + "info"));
     }
 
 

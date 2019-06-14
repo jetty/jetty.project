@@ -18,21 +18,6 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static org.eclipse.jetty.toolchain.test.matchers.RegexMatcher.matchesPattern;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
@@ -40,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
@@ -50,6 +34,22 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesRegex;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class SslContextFactoryTest
 {
     private SslContextFactory cf;
@@ -57,7 +57,7 @@ public class SslContextFactoryTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        cf = new SslContextFactory();
+        cf = new SslContextFactory.Server();
 
         java.security.cert.CertPathBuilder certPathBuilder = java.security.cert.CertPathBuilder.getInstance("PKIX");
         java.security.cert.PKIXRevocationChecker revocationChecker = (java.security.cert.PKIXRevocationChecker)certPathBuilder.getRevocationChecker();
@@ -85,7 +85,7 @@ public class SslContextFactoryTest
 
         for(String enabledCipher : cipherDump.enabled)
         {
-            assertThat("Enabled Cipher Suite", enabledCipher, not(matchesPattern(".*_RSA_.*(SHA1|MD5|SHA)")));
+            assertThat("Enabled Cipher Suite", enabledCipher, not(matchesRegex(".*_RSA_.*(SHA1|MD5|SHA)")));
         }
     }
 
@@ -325,18 +325,36 @@ public class SslContextFactoryTest
     @Test
     public void testNonDefaultKeyStoreTypeUsedForTrustStore() throws Exception
     {
-        cf = new SslContextFactory();
+        cf = new SslContextFactory.Server();
         cf.setKeyStoreResource(Resource.newSystemResource("keystore.p12"));
         cf.setKeyStoreType("pkcs12");
         cf.setKeyStorePassword("storepwd");
         cf.start();
         cf.stop();
 
-        cf = new SslContextFactory();
+        cf = new SslContextFactory.Server();
         cf.setKeyStoreResource(Resource.newSystemResource("keystore.jce"));
         cf.setKeyStoreType("jceks");
         cf.setKeyStorePassword("storepwd");
         cf.start();
         cf.stop();
+    }
+
+    @Test
+    public void testClientSslContextFactory() throws Exception
+    {
+        cf = new SslContextFactory.Client();
+        cf.start();
+
+        assertEquals("HTTPS", cf.getEndpointIdentificationAlgorithm());
+    }
+
+    @Test
+    public void testServerSslContextFactory() throws Exception
+    {
+        cf = new SslContextFactory.Server();
+        cf.start();
+
+        assertNull(cf.getEndpointIdentificationAlgorithm());
     }
 }

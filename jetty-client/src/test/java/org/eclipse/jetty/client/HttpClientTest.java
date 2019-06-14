@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -60,7 +50,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -91,6 +80,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
@@ -106,11 +96,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @ExtendWith(WorkDirExtension.class)
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
     public WorkDir testdir;
-
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
@@ -744,6 +743,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testSendToIPv6Address(Scenario scenario) throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(scenario, new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("[::1]", connector.getLocalPort())
@@ -1529,7 +1529,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 };
             }
-        }, scenario.newSslContextFactory());
+        }, scenario.newClientSslContextFactory());
         client.start();
 
         final CountDownLatch latch = new CountDownLatch(2);
@@ -1613,6 +1613,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void test_IPv6_Host(Scenario scenario) throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(scenario, new AbstractHandler()
         {
             @Override

@@ -91,7 +91,7 @@ public class SessionDump extends HttpServlet
             {
                 if (action.equals("Invalidate"))
                     session.invalidate();
-                else if (action.equals("Set") && name!=null && name.length()>0)
+                else if (action.equals("Set") && name!=null && !name.isEmpty())
                     session.setAttribute(name,value);
                 else if (action.equals("Remove"))
                     session.removeAttribute(name);

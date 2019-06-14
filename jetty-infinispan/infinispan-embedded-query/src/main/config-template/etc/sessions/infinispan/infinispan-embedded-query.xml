@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to the default local cache.                           -->
+  <!-- ===================================================================== -->
+  
+  <!--  TODO allow users to add more properties  -->
+  <New id="properties" class="java.util.Properties">
+    <Call name="put">
+      <Arg>
+        <Get class="org.hibernate.search.cfg.Environment" name="MODEL_MAPPING"/>
+      </Arg>
+      <Arg>
+        <New class="org.hibernate.search.cfg.SearchMapping">
+          <Call name="entity">
+            <Arg>
+              <Get class="org.eclipse.jetty.server.session.SessionData" name="class"/>
+            </Arg>
+            <Call name="indexed">
+              <Call name="providedId">
+                <Call name="property">
+                  <Arg type="String">expiry</Arg>
+                  <Arg>
+                    <Get class="java.lang.annotation.ElementType" name="FIELD"/>
+                  </Arg>
+                  <Call name="field"/>
+                </Call>
+              </Call>
+            </Call>
+          </Call>
+        </New>
+      </Arg>
+    </Call>
+  </New>
+  
+  <New id="cacheMgr" class="org.infinispan.manager.DefaultCacheManager">
+    <Arg>
+      <Property name="jetty.base" default="."/>/etc/infinispan.xml
+    </Arg>
+    <Get id="defaultConfig" name="defaultCacheConfiguration"/>
+  </New>
+   
+   
+  <New class="org.infinispan.configuration.cache.ConfigurationBuilder">
+    <Call name="read">
+      <Arg>
+        <Ref refid="defaultConfig"/>
+      </Arg>
+      <Call name="indexing">
+        <Call name="index">
+          <Arg>
+            <Get class="org.infinispan.configuration.cache.Index" name="ALL"/>
+          </Arg>
+          <Call name="addIndexedEntity">
+            <Arg>
+              <Get class="org.eclipse.jetty.server.session.SessionData" name="class"/>
+            </Arg>
+            <Call name="withProperties">
+              <Arg>
+                <Ref refid="properties"/>
+              </Arg>
+              <Call id="config" name="build"/>
+            </Call>
+          </Call>
+        </Call>
+      </Call>
+    </Call>
+  </New>
+  
+  <Ref refid="cacheMgr">
+    <Call name="defineConfiguration">
+      <Arg>jetty-query-sessions</Arg>
+      <Arg><Ref refid="config"/></Arg>
+    </Call>
+    
+    <Get id="cache" name="cache"/>
+  </Ref>
+  
+  <!-- set queryMgrFactory reference to EmbeddedQueryManagerFactory -->
+  <New id="queryMgrFactory" class="org.eclipse.jetty.session.infinispan.EmbeddedQueryManagerFactory"/>
+  
+</Configure> 

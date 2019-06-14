@@ -22,6 +22,7 @@ package org.eclipse.jetty.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,10 +36,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -488,7 +491,7 @@ public class ClasspathPattern extends AbstractSet<String>
     }
 
     Map<String,Entry> _entries = new HashMap<>();
-    IncludeExcludeSet<Entry,String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
+    IncludeExcludeSet<Entry,String> _packageOrNamePatterns = new IncludeExcludeSet<>(ByPackageOrName.class);
     IncludeExcludeSet<Entry,URI> _locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
     
     public ClasspathPattern()
@@ -590,9 +593,9 @@ public class ClasspathPattern extends AbstractSet<String>
         else
         {
             if (entry.isInclusive())
-                _patterns.include(entry);
+                _packageOrNamePatterns.include(entry);
             else
-                _patterns.exclude(entry);
+                _packageOrNamePatterns.exclude(entry);
         }
         return true;
     }
@@ -619,7 +622,7 @@ public class ClasspathPattern extends AbstractSet<String>
     public void clear()
     {
         _entries.clear();
-        _patterns.clear();
+        _packageOrNamePatterns.clear();
         _locations.clear();
     }
 
@@ -672,7 +675,7 @@ public class ClasspathPattern extends AbstractSet<String>
      */
     public boolean match(String name)
     {       
-        return _patterns.test(name);
+        return _packageOrNamePatterns.test(name);
     }
     
     /**
@@ -685,21 +688,7 @@ public class ClasspathPattern extends AbstractSet<String>
     {       
         try
         {
-            Boolean byName = _patterns.isIncludedAndNotExcluded(clazz.getName());
-            if (Boolean.FALSE.equals(byName))
-                return byName; // Already excluded so no need to check location.
-            URI location = TypeUtil.getLocationOfClass(clazz);
-            Boolean byLocation = location == null ? null
-                    : _locations.isIncludedAndNotExcluded(location);
-            
-            if (LOG.isDebugEnabled())
-                LOG.debug("match {} from {} byName={} byLocation={} in {}",clazz,location,byName,byLocation,this);
-            
-            // Combine the tri-state match of both IncludeExclude Sets
-            boolean included = Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation)
-                || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
-            boolean excluded = Boolean.FALSE.equals(byName) || Boolean.FALSE.equals(byLocation);
-            return included && !excluded;
+            return combine(_packageOrNamePatterns, clazz.getName(), _locations, ()->TypeUtil.getLocationOfClass(clazz));
         }
         catch (Exception e)
         {
@@ -715,32 +704,35 @@ public class ClasspathPattern extends AbstractSet<String>
             name=name.substring(0,name.length()-6);
         
         // Treat path elements as packages for name matching
-        name=name.replace("/",".");
+        name = StringUtil.replace(name, '/', '.');
 
-        Boolean byName = _patterns.isIncludedAndNotExcluded(name);
-        if (Boolean.FALSE.equals(byName))
-            return byName; // Already excluded so no need to check location.
-        
-        // Try to find a file path for location matching
-        Boolean byLocation = null;
-        try
+        return combine(_packageOrNamePatterns, name, _locations, ()->
         {
-            URI jarUri = URIUtil.getJarSource(url.toURI());
-            if ("file".equalsIgnoreCase(jarUri.getScheme()))
+            try
             {
-                byLocation = _locations.isIncludedAndNotExcluded(jarUri);
+                return URIUtil.getJarSource(url.toURI());
             }
-        }
-        catch(Exception e)
-        {
-            LOG.ignore(e);
-        }
+            catch (URISyntaxException e)
+            {
+                LOG.ignore(e);
+                return null;
+            }
+        });
+    }
 
-        // Combine the tri-state match of both IncludeExclude Sets
-        boolean included = Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation)
-            || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
-        boolean excluded = Boolean.FALSE.equals(byName) || Boolean.FALSE.equals(byLocation);
-        return included && !excluded;
+    private static boolean combine(IncludeExcludeSet<Entry, String> names, String name, IncludeExcludeSet<Entry, URI> locations, Supplier<URI> location)
+    {
+        Boolean byName = names.isIncludedAndNotExcluded(name);
+        if (Boolean.FALSE==byName)
+            return false;
+
+        Boolean byLocation = locations.isIncludedAndNotExcluded(location.get());
+        if (Boolean.FALSE==byLocation)
+            return false;
+
+        return Boolean.TRUE.equals(byName)
+            || Boolean.TRUE.equals(byLocation)
+            || !(names.hasIncludes() || locations.hasIncludes());
     }
     
 }

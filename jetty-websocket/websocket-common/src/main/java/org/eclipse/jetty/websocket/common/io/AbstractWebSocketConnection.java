@@ -94,8 +94,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         @Override
         public void onCompleteFailure(Throwable failure)
         {
-            super.onCompleteFailure(failure);
             AbstractWebSocketConnection.this.close(failure);
+            super.onCompleteFailure(failure);
         }
     }
 
@@ -424,27 +424,34 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("{} onFillable()", policy.getBehavior());
         }
         stats.countOnFillableEvents.incrementAndGet();
-
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(), true);
+        onFillable(buffer);
+    }
+
+    private void onFillable(ByteBuffer buffer)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{} onFillable(ByteBuffer): {}", policy.getBehavior(), buffer);
+        }
 
         try
         {
             if (readMode == ReadMode.PARSE)
-            {
                 readMode = readParse(buffer);
-            }
             else
-            {
                 readMode = readDiscard(buffer);
-            }
         }
-        finally
+        catch (Throwable t)
         {
             bufferPool.release(buffer);
+            throw t;
         }
+
 
         if (readMode == ReadMode.EOF)
         {
+            bufferPool.release(buffer);
             readState.eof();
 
             // Handle case where the remote connection was abruptly terminated without a close frame
@@ -453,6 +460,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
         else if (!readState.suspend())
         {
+            bufferPool.release(buffer);
             fillInterested();
         }
     }
@@ -557,8 +565,24 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         try
         {
             // Process the content from the Endpoint next
-            while (true)  // TODO: should this honor the LogicalConnection.suspend() ?
+            while (true)
             {
+                // We may start with a non empty buffer, consume before filling
+                while (buffer.hasRemaining())
+                {
+                    if (readState.suspendParse(buffer))
+                    {
+                        if (LOG.isDebugEnabled())
+                        {
+                            LOG.debug("suspending parse {}", buffer);
+                        }
+
+                        return ReadMode.PARSE;
+                    }
+                    else
+                        parser.parseSingleFrame(buffer);
+                }
+
                 int filled = endPoint.fill(buffer);
                 if (filled < 0)
                 {
@@ -578,7 +602,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     LOG.debug("Filled {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
                 }
-                parser.parse(buffer);
             }
         }
         catch (Throwable t)
@@ -591,10 +614,22 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void resume()
     {
-        if (readState.resume())
+        ByteBuffer resume = readState.resume();
+        if (resume == null)
         {
             fillInterested();
         }
+        else if (resume != ReadState.NO_ACTION)
+        {
+            onFillable(resume);
+        }
+    }
+
+    @Override
+    public SuspendToken suspend()
+    {
+        readState.suspending();
+        return this;
     }
 
     /**
@@ -623,13 +658,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void setMaxIdleTimeout(long ms)
     {
         getEndPoint().setIdleTimeout(ms);
-    }
-
-    @Override
-    public SuspendToken suspend()
-    {
-        readState.suspending();
-        return this;
     }
 
     @Override

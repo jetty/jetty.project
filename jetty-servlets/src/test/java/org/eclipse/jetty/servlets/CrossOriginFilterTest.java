@@ -18,19 +18,11 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isIn;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -42,9 +34,17 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CrossOriginFilterTest
 {
@@ -95,7 +95,7 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String otherOrigin = origin.replace("localhost", "127.0.0.1");
+        String otherOrigin = StringUtil.replace(origin, "localhost", "127.0.0.1");
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
@@ -107,8 +107,8 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, not(isIn(fieldNames)));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(isIn(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, not(is(in(fieldNames))));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(is(in(fieldNames))));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
     
@@ -133,9 +133,9 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), "Vary", isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), "Vary", is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -162,9 +162,9 @@ public class CrossOriginFilterTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
 
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), "Vary", isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), "Vary", is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -190,9 +190,9 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), "Vary", isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), "Vary", is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -218,10 +218,10 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.TIMING_ALLOW_ORIGIN_HEADER, not(isIn(fieldNames)));
-        assertThat(response.toString(), "Vary", isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.TIMING_ALLOW_ORIGIN_HEADER, not(is(in(fieldNames))));
+        assertThat(response.toString(), "Vary", is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -285,7 +285,7 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://localhost";
-        String otherOrigin = origin.replace("localhost", "127.0.0.1");
+        String otherOrigin = StringUtil.replace(origin, "localhost", "127.0.0.1");
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, origin + "," + otherOrigin);
         tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -304,9 +304,9 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), "Vary", isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), "Vary", is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -331,8 +331,8 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(isIn(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(is(in(fieldNames))));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -360,8 +360,8 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -389,8 +389,8 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -418,9 +418,9 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_HEADERS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_HEADERS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -449,11 +449,11 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_MAX_AGE_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_METHODS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_HEADERS_HEADER, isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_MAX_AGE_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_METHODS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_HEADERS_HEADER, is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
 
         // Preflight request was ok, now make the actual request
@@ -468,8 +468,8 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
     }
 
     @Test
@@ -498,11 +498,11 @@ public class CrossOriginFilterTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
 
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_MAX_AGE_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_METHODS_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_HEADERS_HEADER, isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_MAX_AGE_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_METHODS_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_HEADERS_HEADER, is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
 
         // Preflight request was ok, now make the actual request
@@ -519,8 +519,8 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, isIn(fieldNames));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, is(in(fieldNames)));
     }
 
     @Test
@@ -547,8 +547,8 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, not(isIn(fieldNames)));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(isIn(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, not(is(in(fieldNames))));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(is(in(fieldNames))));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         // The preflight request failed because header X-Custom is not allowed, actual request not issued
     }
@@ -574,8 +574,8 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, not(isIn(fieldNames)));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(isIn(fieldNames)));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, not(is(in(fieldNames))));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(is(in(fieldNames))));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -600,7 +600,7 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_EXPOSE_HEADERS_HEADER, isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_EXPOSE_HEADERS_HEADER, is(in(fieldNames)));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -628,7 +628,7 @@ public class CrossOriginFilterTest
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_METHODS_HEADER, isIn(fieldNames));
+        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_METHODS_HEADER, is(in(fieldNames)));
         assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
 

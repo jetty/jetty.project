@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,7 +50,7 @@ public class ReadStateTest
         assertTrue(readState.suspending());
         assertThat("Suspending doesn't take effect immediately", readState.isSuspended(), is(false));
 
-        assertThat("Resume from suspending requires no followup", readState.resume(), is(false));
+        assertThat("Resume from suspending requires no followup", readState.resume(), is(ReadState.NO_ACTION));
         assertThat("Resume from suspending requires no followup", readState.isSuspended(), is(false));
 
         assertThat("Suspending was discarded", readState.suspend(), is(false));
@@ -68,7 +69,7 @@ public class ReadStateTest
         assertThat("Suspended", readState.suspend(), is(true));
         assertThat("Suspended", readState.isSuspended(), is(true));
 
-        assertThat("Resumed", readState.resume(), is(true));
+        assertNull(readState.resume(), "Resumed");
         assertThat("Resumed", readState.isSuspended(), is(false));
     }
 
@@ -88,7 +89,7 @@ public class ReadStateTest
         assertThat(readState.suspend(), is(true));
         assertThat(readState.isSuspended(), is(true));
 
-        assertThat(readState.resume(), is(false));
+        assertThat(readState.resume(), is(ReadState.NO_ACTION));
         assertThat(readState.isSuspended(), is(true));
     }
 }

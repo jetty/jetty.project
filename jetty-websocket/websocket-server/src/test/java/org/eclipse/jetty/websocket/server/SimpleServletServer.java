@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.net.URI;
+
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HttpVersion;
@@ -87,11 +88,10 @@ public class SimpleServletServer
             http_config.setSendServerVersion(true);
             http_config.setSendDateHeader(false);
 
-            sslContextFactory = new SslContextFactory();
+            sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
-            sslContextFactory.setEndpointIdentificationAlgorithm(null);
 
             // SSL HTTP Configuration
             HttpConfiguration https_config = new HttpConfiguration(http_config);

@@ -139,7 +139,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
             File keys = path.resolve("etc").resolve("keystore").toFile();
 
             HTTP2Client http2Client = new HTTP2Client();
-            SslContextFactory sslContextFactory = new SslContextFactory();
+            SslContextFactory sslContextFactory = new SslContextFactory.Client();
             sslContextFactory.setKeyManagerPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());

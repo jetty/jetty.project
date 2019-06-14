@@ -45,6 +45,7 @@ import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -89,13 +90,25 @@ public class HttpClientTLSTest
         client.start();
     }
 
-    private SslContextFactory createSslContextFactory()
+    private SslContextFactory.Server createServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        configureSslContextFactory(sslContextFactory);
+        return sslContextFactory;
+    }
+
+    private SslContextFactory.Client createClientSslContextFactory()
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        configureSslContextFactory(sslContextFactory);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        return sslContextFactory;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
-        return sslContextFactory;
     }
 
     @AfterEach
@@ -110,7 +123,7 @@ public class HttpClientTLSTest
     @Test
     public void testNoCommonTLSProtocol() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         serverTLSFactory.setIncludeProtocols("TLSv1.3");
         startServer(serverTLSFactory, new EmptyServerHandler());
 
@@ -124,7 +137,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         clientTLSFactory.setIncludeProtocols("TLSv1.2");
         startClient(clientTLSFactory);
 
@@ -151,7 +164,7 @@ public class HttpClientTLSTest
     @Test
     public void testNoCommonTLSCiphers() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         serverTLSFactory.setIncludeCipherSuites("TLS_RSA_WITH_AES_128_CBC_SHA");
         startServer(serverTLSFactory, new EmptyServerHandler());
 
@@ -165,7 +178,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         clientTLSFactory.setExcludeCipherSuites(".*_SHA$");
         startClient(clientTLSFactory);
 
@@ -192,7 +205,7 @@ public class HttpClientTLSTest
     @Test
     public void testMismatchBetweenTLSProtocolAndTLSCiphersOnServer() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         // TLS 1.1 protocol, but only TLS 1.2 ciphers.
         serverTLSFactory.setIncludeProtocols("TLSv1.1");
         serverTLSFactory.setIncludeCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
@@ -208,7 +221,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         startClient(clientTLSFactory);
 
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -237,7 +250,7 @@ public class HttpClientTLSTest
     @Test
     public void testMismatchBetweenTLSProtocolAndTLSCiphersOnClient() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
         CountDownLatch serverLatch = new CountDownLatch(1);
@@ -250,7 +263,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         // TLS 1.1 protocol, but only TLS 1.2 ciphers.
         clientTLSFactory.setIncludeProtocols("TLSv1.1");
         clientTLSFactory.setIncludeCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
@@ -279,7 +292,7 @@ public class HttpClientTLSTest
     @Test
     public void testHandshakeSucceeded() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
         CountDownLatch serverLatch = new CountDownLatch(1);
@@ -292,7 +305,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         startClient(clientTLSFactory);
 
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -318,7 +331,7 @@ public class HttpClientTLSTest
     @Test
     public void testHandshakeSucceededWithSessionResumption() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
         AtomicReference<byte[]> serverSession = new AtomicReference<>();
@@ -331,7 +344,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         startClient(clientTLSFactory);
 
         AtomicReference<byte[]> clientSession = new AtomicReference<>();
@@ -398,10 +411,10 @@ public class HttpClientTLSTest
     @Test
     public void testClientRawCloseDoesNotInvalidateSession() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         clientTLSFactory.start();
 
         String host = "localhost";
@@ -453,13 +466,13 @@ public class HttpClientTLSTest
     @Test
     public void testServerRawCloseDetectedByClient() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         serverTLSFactory.start();
         try (ServerSocket server = new ServerSocket(0))
         {
             QueuedThreadPool clientThreads = new QueuedThreadPool();
             clientThreads.setName("client");
-            client = new HttpClient(createSslContextFactory())
+            client = new HttpClient(createClientSslContextFactory())
             {
                 @Override
                 protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
@@ -489,7 +502,7 @@ public class HttpClientTLSTest
                 while (true)
                 {
                     String line = reader.readLine();
-                    if (line == null || line.isEmpty())
+                    if (StringUtil.isEmpty(line))
                         break;
                 }
 
@@ -523,10 +536,10 @@ public class HttpClientTLSTest
     @Test
     public void testHostNameVerificationFailure() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         // Make sure the host name is not verified at the TLS level.
         clientTLSFactory.setEndpointIdentificationAlgorithm(null);
         // Add host name verification after the TLS handshake.

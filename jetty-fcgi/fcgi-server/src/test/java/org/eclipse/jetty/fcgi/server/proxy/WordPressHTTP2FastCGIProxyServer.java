@@ -43,8 +43,7 @@ public class WordPressHTTP2FastCGIProxyServer
     {
         int tlsPort = 8443;
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");

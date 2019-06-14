@@ -70,7 +70,6 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Servlet Holder")
 public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable<ServletHolder>
 {
-
     /* ---------------------------------------------------------------- */
     private static final Logger LOG = Log.getLogger(ServletHolder.class);
     private int _initOrder = -1;
@@ -89,11 +88,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private boolean _enabled = true;
     private UnavailableException _unavailableEx;
 
-
     public static final String APACHE_SENTINEL_CLASS = "org.apache.tomcat.InstanceManager";
     public static final  String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.servlet.jspPackagePrefix";
-    public static final Map<String,String> NO_MAPPED_ROLES = Collections.emptyMap();
-    public static enum JspContainer {APACHE, OTHER};
+    public enum JspContainer {APACHE, OTHER}
 
     /* ---------------------------------------------------------------- */
     /** Constructor .
@@ -747,11 +744,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         //cleaned up correctly
         if (((Registration)getRegistration()).getMultipartConfig() != null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("multipart cleanup listener added for {}", this);
+
             //Register a listener to delete tmp files that are created as a result of this
             //servlet calling Request.getPart() or Request.getParts()
-
             ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
-            ch.addEventListener(MultiPartCleanerListener.INSTANCE);
+            if(!Arrays.asList(ch.getEventListeners()).contains(MultiPartCleanerListener.INSTANCE))
+                ch.addEventListener(MultiPartCleanerListener.INSTANCE);
         }
     }
 
@@ -963,7 +963,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
         catch (Exception e)
         {
-            String tmp = jsp.replace('.','_');
+            String tmp = StringUtil.replace(jsp, '.', '_');
             if (LOG.isDebugEnabled())
             {
                 LOG.warn("JspUtil.makeJavaIdentifier failed for jsp "+jsp +" using "+tmp+" instead");
@@ -1000,9 +1000,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 s = 1;
             
             //remove the element after last slash, which should be name of jsp
-            tmp = tmp.substring(s,i);
+            tmp = tmp.substring(s,i).trim();
 
-            tmp = tmp.replace('/','.').trim();
+            tmp = StringUtil.replace(tmp, '/', '.');
             tmp = (".".equals(tmp)? "": tmp);
             if (LOG.isDebugEnabled())
             {
@@ -1301,9 +1301,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         try
         {
             ServletContext ctx = getServletHandler().getServletContext();
-            if (ctx instanceof ServletContextHandler.Context)
-                return ((ServletContextHandler.Context)ctx).createServlet(getHeldClass());
-            return getHeldClass().getDeclaredConstructor().newInstance();
+            if (ctx == null)
+                return getHeldClass().getDeclaredConstructor().newInstance();
+            return ctx.createServlet(getHeldClass());
         }
         catch (ServletException se)
         {

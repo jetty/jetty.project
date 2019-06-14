@@ -79,7 +79,7 @@ public class ManyHandlers
                                                           ServletException
         {
             Map<String, String[]> params = request.getParameterMap();
-            if (params.size() > 0)
+            if (!params.isEmpty())
             {
                 response.setContentType("text/plain");
                 response.getWriter().println(JSON.toString(params));

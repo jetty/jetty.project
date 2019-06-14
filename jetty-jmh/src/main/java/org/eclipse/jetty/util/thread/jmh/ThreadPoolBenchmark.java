@@ -18,11 +18,12 @@
 
 package org.eclipse.jetty.util.thread.jmh;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -38,31 +39,25 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-import org.openjdk.jmh.runner.options.TimeValue;
 
 @State(Scope.Benchmark)
-@Threads(4)
-@Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 8, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 3, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 public class ThreadPoolBenchmark
 {
     public enum Type
     {
-        QTP, ETP;
+        QTP, ETP, LQTP, LETP, AQTP, AETP;
     }
 
-    @Param({ "QTP", "ETP"})
+    @Param({ "QTP", "ETP" /*, "LQTP", "LETP", "AQTP", "AETP" */ })
     Type type;
 
-    @Param({ "50"})
-    int tasks;
-    
-    @Param({ "200", "2000"})
+    @Param({ "200" })
     int size;
 
     ThreadPool pool;
@@ -73,11 +68,39 @@ public class ThreadPoolBenchmark
         switch(type)
         {
             case QTP:
-                pool = new QueuedThreadPool(size);
+            {
+                QueuedThreadPool qtp = new QueuedThreadPool(size, size, new BlockingArrayQueue<>(32768, 32768));
+                qtp.setReservedThreads(0);
+                pool = qtp;
                 break;
+            }
                 
             case ETP:
-                pool = new ExecutorThreadPool(size);
+                pool = new ExecutorThreadPool(size, size, new BlockingArrayQueue<>(32768, 32768));
+                break;
+                
+            case LQTP:
+            {
+                QueuedThreadPool qtp = new QueuedThreadPool(size, size, new LinkedBlockingQueue<>());
+                qtp.setReservedThreads(0);
+                pool = qtp;
+                break;
+            }
+                
+            case LETP:
+                pool = new ExecutorThreadPool(size, size, new LinkedBlockingQueue<>());
+                break;
+                
+            case AQTP:
+            {
+                QueuedThreadPool qtp = new QueuedThreadPool(size, size, new ArrayBlockingQueue<>(32768));
+                qtp.setReservedThreads(0);
+                pool = qtp;
+                break;
+            }
+                
+            case AETP:
+                pool = new ExecutorThreadPool(size, size, new ArrayBlockingQueue<>(32768));
                 break;
         }
         LifeCycle.start(pool);
@@ -85,9 +108,27 @@ public class ThreadPoolBenchmark
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testPool()
+    @Threads(1)
+    public void testFew() throws Exception
     {
-        doWork().join();
+        doJob();
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @Threads(4)
+    public void testSome() throws Exception
+    {
+        doJob();
+    }
+
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @Threads(200)
+    public void testMany() throws Exception
+    {
+        doJob();
     }
 
     @TearDown // (Level.Iteration)
@@ -97,33 +138,20 @@ public class ThreadPoolBenchmark
         pool = null;
     }
 
-    CompletableFuture<Void> doWork()
+    void doJob() throws Exception
     {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        for (int i = 0; i < tasks; i++)
-        {
-            final CompletableFuture<Void> f = new CompletableFuture<Void>();
-            futures.add(f);
-            pool.execute(() -> {
-                Blackhole.consumeCPU(64);
-                f.complete(null);
-            });
-        }
-
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CountDownLatch latch = new CountDownLatch(1);
+        pool.execute(latch::countDown);
+        latch.await();
     }
 
     public static void main(String[] args) throws RunnerException 
     {
         Options opt = new OptionsBuilder()
                 .include(ThreadPoolBenchmark.class.getSimpleName())
-                .warmupIterations(2)
-                .measurementIterations(3)
                 .forks(1)
-                .threads(400)
+                // .threads(400)
                 // .syncIterations(true) // Don't start all threads at same time
-                .warmupTime(new TimeValue(10000,TimeUnit.MILLISECONDS))
-                .measurementTime(new TimeValue(10000,TimeUnit.MILLISECONDS))
                 // .addProfiler(CompilerProfiler.class)
                 // .addProfiler(LinuxPerfProfiler.class)
                 // .addProfiler(LinuxPerfNormProfiler.class)

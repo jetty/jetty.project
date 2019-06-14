@@ -100,7 +100,7 @@ public class HttpField
     {
         if (search==null)
             return _value==null;
-        if (search.length()==0)
+        if (search.isEmpty())
             return false;
         if (_value==null)
             return false;
@@ -276,12 +276,9 @@ public class HttpField
 
     public boolean isSameName(HttpField field)
     {
-        @SuppressWarnings("ReferenceEquality")
-        boolean sameObject = (field==this);
-
         if (field==null)
             return false;
-        if (sameObject)
+        if (field==this)
             return true;
         if (_header!=null && _header==field.getHeader())
             return true;

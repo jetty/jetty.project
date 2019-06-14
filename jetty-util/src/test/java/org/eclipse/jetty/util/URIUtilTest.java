@@ -18,17 +18,21 @@
 
 package org.eclipse.jetty.util;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-
-import org.junit.jupiter.api.Test;
-
 
 /**
  * URIUtil Tests.
@@ -313,5 +317,110 @@ public class URIUtilTest
         assertThat(URIUtil.getJarSource(new URI("file:///tmp/")),is(new URI("file:///tmp/")));
         assertThat(URIUtil.getJarSource(new URI("jar:file:///tmp/foo.jar")),is(new URI("file:///tmp/foo.jar")));
         assertThat(URIUtil.getJarSource(new URI("jar:file:///tmp/foo.jar!/some/path")),is(new URI("file:///tmp/foo.jar")));
+    }
+
+    public static Stream<String[]> encodeSpaces()
+    {
+        List<String[]> data = new ArrayList<>();
+
+        // [raw, expected]
+
+        // null
+        data.add(new String[]{null, null});
+
+        // no spaces
+        data.add(new String[]{"abc", "abc"});
+
+        // match
+        data.add(new String[]{"a c", "a%20c"});
+        data.add(new String[]{"   ", "%20%20%20"});
+        data.add(new String[]{"a%20space", "a%20space"});
+
+        return data.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "encodeSpaces")
+    public void testEncodeSpaces(String raw, String expected)
+    {
+        assertThat(URIUtil.encodeSpaces(raw), is(expected));
+    }
+
+    public static Stream<String[]> encodeSpecific()
+    {
+        List<String[]> data = new ArrayList<>();
+
+        // [raw, chars, expected]
+
+        // null input
+        data.add(new String[]{null, null, null});
+
+        // null chars
+        data.add(new String[]{"abc", null, "abc"});
+
+        // empty chars
+        data.add(new String[]{"abc", "", "abc"});
+
+        // no matches
+        data.add(new String[]{"abc", ".;", "abc"});
+        data.add(new String[]{"xyz", ".;", "xyz"});
+        data.add(new String[]{":::", ".;", ":::"});
+
+        // matches
+        data.add(new String[]{"a c", " ", "a%20c"});
+        data.add(new String[]{"name=value", "=", "name%3Dvalue"});
+        data.add(new String[]{"This has fewer then 10% hits.", ".%", "This has fewer then 10%25 hits%2E"});
+
+        // partially encoded already
+        data.add(new String[]{"a%20name=value%20pair", "=", "a%20name%3Dvalue%20pair"});
+        data.add(new String[]{"a%20name=value%20pair", "=%", "a%2520name%3Dvalue%2520pair"});
+
+        return data.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "encodeSpecific")
+    public void testEncodeSpecific(String raw, String chars, String expected)
+    {
+        assertThat(URIUtil.encodeSpecific(raw, chars), is(expected));
+    }
+
+    public static Stream<String[]> decodeSpecific()
+    {
+        List<String[]> data = new ArrayList<>();
+
+        // [raw, chars, expected]
+
+        // null input
+        data.add(new String[]{null, null, null});
+
+        // null chars
+        data.add(new String[]{"abc", null, "abc"});
+
+        // empty chars
+        data.add(new String[]{"abc", "", "abc"});
+
+        // no matches
+        data.add(new String[]{"abc", ".;", "abc"});
+        data.add(new String[]{"xyz", ".;", "xyz"});
+        data.add(new String[]{":::", ".;", ":::"});
+
+        // matches
+        data.add(new String[]{"a%20c", " ", "a c"});
+        data.add(new String[]{"name%3Dvalue", "=", "name=value"});
+        data.add(new String[]{"This has fewer then 10%25 hits%2E", ".%", "This has fewer then 10% hits."});
+
+        // partially decode
+        data.add(new String[]{"a%20name%3Dvalue%20pair", "=", "a%20name=value%20pair"});
+        data.add(new String[]{"a%2520name%3Dvalue%2520pair", "=%", "a%20name=value%20pair"});
+
+        return data.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "decodeSpecific")
+    public void testDecodeSpecific(String raw, String chars, String expected)
+    {
+        assertThat(URIUtil.decodeSpecific(raw, chars), is(expected));
     }
 }

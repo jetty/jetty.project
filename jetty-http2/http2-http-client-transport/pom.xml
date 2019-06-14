@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-parent</artifactId>
-        <version>9.4.16-SNAPSHOT</version>
+        <version>9.4.20-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -103,11 +103,6 @@
             <groupId>org.eclipse.jetty.http2</groupId>
             <artifactId>http2-server</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -20,7 +20,7 @@ package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-
+import java.util.Base64;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -32,7 +32,6 @@ import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 
 /**
@@ -82,7 +81,7 @@ public class BasicAuthenticator extends LoginAuthenticator
                     if ("basic".equalsIgnoreCase(method))
                     {
                         credentials = credentials.substring(space+1);
-                        credentials = B64Code.decode(credentials, StandardCharsets.ISO_8859_1);
+                        credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
                         int i = credentials.indexOf(':');
                         if (i>0)
                         {

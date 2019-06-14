@@ -308,6 +308,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     public void setUsingSecurityManager(boolean usingSecurityManager)
     {
+        if (usingSecurityManager && System.getSecurityManager() == null)
+            throw new IllegalStateException("No security manager");
         _usingSecurityManager = usingSecurityManager;
     }
 
@@ -1605,9 +1607,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
         {
-            Handler[] contextCollections = getServer().getChildHandlersByClass(ContextHandlerCollection.class);
-            for (int h = 0; contextCollections != null && h < contextCollections.length; h++)
-                ((ContextHandlerCollection)contextCollections[h]).mapContexts();
+            Class<ContextHandlerCollection> handlerClass = ContextHandlerCollection.class;
+            Handler[] contextCollections = getServer().getChildHandlersByClass(handlerClass);
+            if (contextCollections != null)
+            {
+                for (Handler contextCollection : contextCollections)
+                    handlerClass.cast(contextCollection).mapContexts();
+            }
         }
     }
 
@@ -2608,7 +2614,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     else
                         callerLoader = callerLoader.getParent();
                 }
-                AccessController.checkPermission(new RuntimePermission("getClassLoader"));
+                System.getSecurityManager().checkPermission(new RuntimePermission("getClassLoader"));
                 return _classLoader;
             }
         }

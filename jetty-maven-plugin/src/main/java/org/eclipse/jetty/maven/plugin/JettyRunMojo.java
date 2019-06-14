@@ -21,13 +21,15 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -38,9 +40,10 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.util.StringUtils;
+import org.eclipse.jetty.maven.plugin.utils.MavenProjectHelper;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -284,8 +287,15 @@ public class JettyRunMojo extends AbstractJettyMojo
        if (useTestScope && (testClassesDirectory != null))
            webApp.setTestClasses (testClassesDirectory);
 
-       webApp.setWebInfLib(getDependencyFiles());
-
+        MavenProjectHelper mavenProjectHelper = new MavenProjectHelper(project);
+        List<File> webInfLibs = getWebInfLibArtifacts(project).stream()
+                .map(a -> {
+                    Path p = mavenProjectHelper.getArtifactPath(a);
+                    getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
+                    return p.toFile();
+                }).collect(Collectors.toList());
+        getLog().debug("WEB-INF/lib initialized (at root)");
+        webApp.setWebInfLib(webInfLibs);
 
        //if we have not already set web.xml location, need to set one up
        if (webApp.getDescriptor() == null)
@@ -518,64 +528,41 @@ public class JettyRunMojo extends AbstractJettyMojo
         startScanner();
         getLog().info("Restart completed at "+new Date().toString());
     }
-    
-    
-    
-    
-    /**
-     * @return
-     */
-    private List<File> getDependencyFiles()
+
+    private Collection<Artifact> getWebInfLibArtifacts(Set<Artifact> artifacts)
     {
-        List<File> dependencyFiles = new ArrayList<>();
-        for ( Artifact artifact : projectArtifacts)
-        {
-            // Include runtime and compile time libraries, and possibly test libs too
-            if(artifact.getType().equals("war"))
-                continue;
-
-            if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
-                continue; //never add dependencies of scope=provided to the webapp's classpath (see also <useProvidedScope> param)
-
-            if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
-                continue; //only add dependencies of scope=test if explicitly required
-
-            MavenProject mavenProject = getProjectReference( artifact, project );
-            if (mavenProject != null)
-            {
-                File projectPath = Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile();
-                getLog().debug( "Adding project directory " + projectPath.toString() );
-                dependencyFiles.add( projectPath );
-                continue;
-            }
-
-            dependencyFiles.add(artifact.getFile());
-            getLog().debug( "Adding artifact " + artifact.getFile().getName() + " with scope "+artifact.getScope()+" for WEB-INF/lib " );   
-        }
-              
-        return dependencyFiles; 
+        return artifacts.stream()
+                .filter(this::canPutArtifactInWebInfLib)
+                .collect(Collectors.toList());
     }
 
-    protected MavenProject getProjectReference(Artifact artifact, MavenProject project )
+    private Collection<Artifact> getWebInfLibArtifacts(MavenProject mavenProject)
     {
-        if ( project.getProjectReferences() == null || project.getProjectReferences().isEmpty() )
+        String type = mavenProject.getArtifact().getType();
+        if (!"war".equalsIgnoreCase(type) && !"zip".equalsIgnoreCase(type))
         {
-            return null;
+            return Collections.emptyList();
         }
-        Collection<MavenProject> mavenProjects = project.getProjectReferences().values();
-        for ( MavenProject mavenProject : mavenProjects )
-        {
-            if ( StringUtils.equals( mavenProject.getId(), artifact.getId() ) )
-            {
-                return mavenProject;
-            }
-        }
-        return null;
+        return getWebInfLibArtifacts(mavenProject.getArtifacts());
     }
 
+    private boolean canPutArtifactInWebInfLib(Artifact artifact)
+    {
+        if ("war".equalsIgnoreCase(artifact.getType()))
+        {
+            return false;
+        }
+        if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
+        {
+            return false;
+        }
+        if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
+        {
+            return false;
+        }
+        return true;
+    }
 
-    
-    
     private List<Overlay> getOverlays()
     throws Exception
     {
@@ -675,7 +662,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         int i = name.lastIndexOf('/');
         if (i>0)
             name = name.substring(i+1,name.length());
-        name = name.replace('.', '_');
+        name = StringUtil.replace(name, '.', '_');
         //name = name+(++COUNTER); //add some digits to ensure uniqueness
         File overlaysDir = new File (project.getBuild().getDirectory(), "jetty_overlays");
         File dir = new File(overlaysDir, name);

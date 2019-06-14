@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.16-SNAPSHOT</version>
+    <version>9.4.20-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -144,6 +144,11 @@
             <!-- we use the servlet jar from orbit -->
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <!-- cannot override core java classes with Java 9+ -->
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.osgi.foundation</artifactId>
           </exclusion>
         </exclusions>
       </dependency>

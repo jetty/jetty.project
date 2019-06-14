@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- ===================================================================== -->
+  <!-- Read hotrod-client.properties file                                    -->
+  <!-- ===================================================================== -->
+    <New id="properties" class="java.util.Properties">
+    <Call name="load">
+      <Arg>
+          <New class="java.io.FileInputStream">
+              <Arg><Property name="jetty.base" default="."/>/resources/hotrod-client.properties</Arg>
+          </New>
+      </Arg>
+    </Call>
+  </New>
+
+  <!-- ===================================================================== -->
+  <!-- Convert properties to configuration                                   -->
+  <!-- ===================================================================== -->
+  <New class="org.infinispan.client.hotrod.configuration.ConfigurationBuilder">
+    <Call name="withProperties">
+      <Arg><Ref refid="properties"/></Arg>
+    </Call>
+    <Call name="marshaller">
+      <Arg>
+          <New class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller"/>
+       </Arg>
+    </Call>
+    <Call id="config" name="build"/>
+  </New>
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to the remote cachemanager.                           -->
+  <!-- ===================================================================== -->
+  <New id="hotrodMgr" class="org.infinispan.client.hotrod.RemoteCacheManager">
+    <Arg><Ref refid="config"/></Arg>
+  </New>
+
+
+  <!-- ===================================================================== -->
+  <!-- Set up custom session serialization.                                  -->
+  <!-- ===================================================================== -->
+  <Call id="serial_context" class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller" name="getSerializationContext">
+    <Arg>
+      <Ref refid="hotrodMgr"/>
+    </Arg>
+    <Call name="registerProtoFiles">
+      <Arg>
+        <New class="org.infinispan.protostream.FileDescriptorSource">
+          <Call name="addProtoFiles">
+            <Arg>
+              <Array type="java.lang.String">
+                <Item>/session.proto</Item>
+              </Array>
+            </Arg>
+          </Call>
+        </New>
+      </Arg>
+    </Call>
+    <Call name="registerMarshaller">
+      <Arg>
+        <New class="org.eclipse.jetty.session.infinispan.SessionDataMarshaller"/>
+      </Arg>
+    </Call>
+  </Call>
+
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to the remote cache.                                  -->
+  <!-- ===================================================================== -->
+  <Ref refid="hotrodMgr">
+    <Call id="cache" name="getCache">
+      <Arg><Property name="jetty.session.infinispan.remoteCacheName" default="sessions"/></Arg>
+    </Call>
+  </Ref>
+  
+  <!-- ===================================================================== -->
+  <!-- Set queryMgrFactory reference to NullQueryManagerFactory              -->
+  <!-- ===================================================================== -->
+  <New id="queryMgrFactory" class="org.eclipse.jetty.session.infinispan.NullQueryManagerFactory"/>
+  
+</Configure> 
