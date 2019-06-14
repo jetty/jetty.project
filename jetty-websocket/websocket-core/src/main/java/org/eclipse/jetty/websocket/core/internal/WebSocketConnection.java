@@ -39,8 +39,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 /**
@@ -84,23 +82,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         ByteBufferPool bufferPool,
         WebSocketCoreSession coreSession)
     {
-        this(endp, executor, scheduler, bufferPool, coreSession, true);
-    }
-
-    /**
-     * Create a WSConnection.
-     * <p>
-     * It is assumed that the WebSocket Upgrade Handshake has already
-     * completed successfully before creating this connection.
-     * </p>
-     */
-    public WebSocketConnection(EndPoint endp,
-        Executor executor,
-        Scheduler scheduler,
-        ByteBufferPool bufferPool,
-        WebSocketCoreSession coreSession,
-        boolean validating)
-    {
         super(endp, executor);
 
         Objects.requireNonNull(endp, "EndPoint");
@@ -113,18 +94,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.coreSession = coreSession;
 
         this.generator = new Generator(bufferPool);
-        this.parser = new Parser(bufferPool, coreSession.isAutoFragment())
-        {
-            @Override
-            protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
-            {
-                super.checkFrameSize(opcode, payloadLength);
-                if (!coreSession.isAutoFragment() && coreSession.getMaxFrameSize() > 0 && payloadLength > coreSession.getMaxFrameSize())
-                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + coreSession.getMaxFrameSize());
-            }
-
-        };
-
+        this.parser = new Parser(bufferPool, coreSession);
         this.flusher = new Flusher(scheduler, coreSession.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(coreSession.getInputBufferSize());
 
@@ -178,7 +148,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         flusher.onClose(cause);
         super.onClose(cause);
     }
-
 
     @Override
     public boolean onIdleExpired()

@@ -28,6 +28,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
+import org.eclipse.jetty.websocket.core.FrameHandler.ConfigurationCustomizer;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
@@ -51,7 +53,7 @@ public class Parser
 
     private static final Logger LOG = Log.getLogger(Parser.class);
     private final ByteBufferPool bufferPool;
-    private final boolean autoFragment;
+    private final Configuration configuration;
 
     // State specific
     private State state = State.START;
@@ -63,13 +65,13 @@ public class Parser
 
     public Parser(ByteBufferPool bufferPool)
     {
-        this(bufferPool, true);
+        this(bufferPool, new ConfigurationCustomizer());
     }
 
-    public Parser(ByteBufferPool bufferPool, boolean autoFragment)
+    public Parser(ByteBufferPool bufferPool, Configuration configuration)
     {
         this.bufferPool = bufferPool;
-        this.autoFragment = autoFragment;
+        this.configuration = configuration;
     }
 
     public void reset()
@@ -253,6 +255,10 @@ public class Parser
     {
         if (OpCode.isControlFrame(opcode) && payloadLength > Frame.MAX_CONTROL_PAYLOAD)
             throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
+
+        long maxFrameSize = configuration.getMaxFrameSize();
+        if (!configuration.isAutoFragment() && maxFrameSize > 0 && payloadLength > maxFrameSize)
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
     }
 
     protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
@@ -287,7 +293,7 @@ public class Parser
                 // not enough to complete this frame 
 
                 // Can we auto-fragment
-                if (autoFragment && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
+                if (configuration.isAutoFragment() && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
                 {
                     payloadLength -= available;
 

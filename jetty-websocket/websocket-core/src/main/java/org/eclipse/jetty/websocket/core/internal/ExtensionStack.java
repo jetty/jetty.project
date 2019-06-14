@@ -56,6 +56,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     private List<Extension> extensions;
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
+    private String[] rsvClaims = new String[3];
 
     public ExtensionStack(WebSocketExtensionRegistry factory, Behavior behavior)
     {
@@ -121,8 +122,6 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             LOG.debug("Extension Configs={}", negotiatedConfigs);
 
         this.extensions = new ArrayList<>();
-
-        String rsvClaims[] = new String[3];
 
         for (ExtensionConfig config : negotiatedConfigs)
         {
@@ -260,6 +259,21 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
         for (Extension extension : extensions)
             extension.setWebSocketCoreSession(coreSession);
+    }
+
+    public boolean isRsv1Used()
+    {
+        return (rsvClaims[0] != null);
+    }
+
+    public boolean isRsv2Used()
+    {
+        return (rsvClaims[1] != null);
+    }
+
+    public boolean isRsv3Used()
+    {
+        return (rsvClaims[2] != null);
     }
 
     @Override
