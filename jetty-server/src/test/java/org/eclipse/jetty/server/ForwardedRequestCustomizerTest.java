@@ -568,7 +568,7 @@ public class ForwardedRequestCustomizerTest
     @Test
     public void testRemote_Port_For() throws Exception
     {
-        _customizer.setForwardedPortHeaderRemote(true);
+        _customizer.setForwardedPortAsAuthority(false);
         HttpTester.Response response = HttpTester.parseResponse(
             _connector.getResponse(
                 "GET / HTTP/1.1\n" +
