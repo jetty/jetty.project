@@ -42,6 +42,8 @@ import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 
@@ -94,7 +96,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
      * @param webSocketComponents the {@link WebSocketComponents} instance to use
      * @param executor            the {@link Executor} to use
      */
-    public JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, Executor executor)
+    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, Executor executor)
     {
         this.webSocketMapping = webSocketMapping;
         this.webSocketComponents = webSocketComponents;

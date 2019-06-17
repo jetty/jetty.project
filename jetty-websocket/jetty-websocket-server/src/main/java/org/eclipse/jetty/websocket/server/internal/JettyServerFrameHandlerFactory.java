@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.server.internal;
 
 import javax.servlet.ServletContext;
 

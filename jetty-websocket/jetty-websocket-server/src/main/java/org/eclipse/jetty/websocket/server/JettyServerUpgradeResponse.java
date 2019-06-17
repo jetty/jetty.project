@@ -32,7 +32,7 @@ public class JettyServerUpgradeResponse
 {
     private ServletUpgradeResponse upgradeResponse;
 
-    public JettyServerUpgradeResponse(ServletUpgradeResponse response)
+    JettyServerUpgradeResponse(ServletUpgradeResponse response)
     {
         upgradeResponse = response;
     }

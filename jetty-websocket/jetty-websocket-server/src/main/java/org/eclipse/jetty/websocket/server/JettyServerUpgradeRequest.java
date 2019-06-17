@@ -43,7 +43,7 @@ public class JettyServerUpgradeRequest
 {
     private ServletUpgradeRequest upgradeRequest;
 
-    public JettyServerUpgradeRequest(ServletUpgradeRequest request)
+    JettyServerUpgradeRequest(ServletUpgradeRequest request)
     {
         upgradeRequest = request;
     }

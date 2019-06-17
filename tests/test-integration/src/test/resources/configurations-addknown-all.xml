@@ -17,7 +17,7 @@
         <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
         <Item>org.eclipse.jetty.webapp.JmxConfiguration</Item>
         <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
-        <Item>org.eclipse.jetty.websocket.server.JettyWebSocketConfiguration</Item>
+        <Item>org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration</Item>
         <Item>org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketConfiguration</Item>
       </Array>
     </Arg>

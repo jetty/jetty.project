@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.examples.MyAdvancedEchoServlet;
 import org.eclipse.jetty.websocket.tests.examples.MyAuthedServlet;
 import org.eclipse.jetty.websocket.tests.examples.MyEchoServlet;

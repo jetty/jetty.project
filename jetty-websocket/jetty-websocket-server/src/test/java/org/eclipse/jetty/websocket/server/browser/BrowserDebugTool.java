@@ -29,7 +29,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -47,8 +46,8 @@ import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
 /**
  * Tool to help debug websocket circumstances reported around browsers.
@@ -144,7 +143,7 @@ public class BrowserDebugTool
             LOG.debug("Configuring WebSocketServerFactory ...");
 
             // Setup the desired Socket to use for all incoming upgrade requests
-            factory.addMapping(new ServletPathSpec("/"), new BrowserSocketCreator());
+            factory.addMapping("/", new BrowserSocketCreator());
 
             // Set the timeout
             factory.setIdleTimeout(Duration.ofSeconds(30));
