@@ -67,17 +67,17 @@ public class ForwardedRequestCustomizer implements Customizer
     private static final Logger LOG = Log.getLogger(ForwardedRequestCustomizer.class);
 
     private HostPortHttpField _forcedHost;
+    private boolean _proxyAsAuthority = false;
+    private boolean _forwardedPortAsAuthority = true;
     private String _forwardedHeader = HttpHeader.FORWARDED.toString();
     private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
     private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
     private String _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
     private String _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
     private String _forwardedPortHeader = HttpHeader.X_FORWARDED_PORT.toString();
-    private boolean _forwardedPortHeaderRemote = false;
     private String _forwardedHttpsHeader = "X-Proxied-Https";
     private String _forwardedCipherSuiteHeader = "Proxy-auth-cert";
     private String _forwardedSslSessionIdHeader = "Proxy-ssl-id";
-    private boolean _proxyAsAuthority = false;
     private boolean _sslIsSecure = true;
     private Trie<MethodHandle> _handles;
 
@@ -252,14 +252,23 @@ public class ForwardedRequestCustomizer implements Customizer
         }
     }
 
-    public boolean isForwardedPortHeaderRemote()
+    /**
+     * @return if true, the X-Forwarded-Port header applies to the authority,
+     * else it applies to the remote client address
+     */
+    public boolean getForwardedPortAsAuthority()
     {
-        return _forwardedPortHeaderRemote;
+        return _forwardedPortAsAuthority;
     }
 
-    public void setForwardedPortHeaderRemote(boolean forwardedPortHeaderRemote)
+    /**
+     * Set if the X-Forwarded-Port header will be used for Authority
+     * @param forwardedPortAsAuthority if true, the X-Forwarded-Port header applies to the authority,
+     * else it applies to the remote client address
+     */
+    public void setForwardedPortAsAuthority(boolean forwardedPortAsAuthority)
     {
-        _forwardedPortHeaderRemote = forwardedPortHeaderRemote;
+        _forwardedPortAsAuthority = forwardedPortAsAuthority;
     }
 
     /**
@@ -563,7 +572,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handleHost(HttpField field)
         {
-            if (!_forwardedPortHeaderRemote && !StringUtil.isEmpty(_forwardedPortHeader))
+            if (_forwardedPortAsAuthority && !StringUtil.isEmpty(_forwardedPortHeader))
             {
                 if (_host == null)
                     _host = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
@@ -591,7 +600,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handleFor(HttpField field)
         {
-            if (_forwardedPortHeaderRemote && !StringUtil.isEmpty(_forwardedPortHeader))
+            if (!_forwardedPortAsAuthority && !StringUtil.isEmpty(_forwardedPortHeader))
             {
                 if (_for == null)
                     _for = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
@@ -606,7 +615,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handlePort(HttpField field)
         {
-            if (_forwardedPortHeaderRemote)
+            if (!_forwardedPortAsAuthority)
             {
                 if (_for == null)
                     _for = new PortSetHostPort(_request.getRemoteHost(), field.getIntValue());
@@ -647,7 +656,7 @@ public class ForwardedRequestCustomizer implements Customizer
                             break;
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        if (_host == null || !(_host instanceof Rfc7239HostPort))
+                        if (_proxyAsAuthority && (_host == null || !(_host instanceof Rfc7239HostPort)))
                             _host = new Rfc7239HostPort(value);
                         break;
                     case "for":
