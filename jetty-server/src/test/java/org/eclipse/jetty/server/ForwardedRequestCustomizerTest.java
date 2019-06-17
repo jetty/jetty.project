@@ -560,6 +560,31 @@ public class ForwardedRequestCustomizerTest
         assertThat("requestURL", _requestURL.get(), is("http://myhost:4444/"));
     }
 
+
+
+    /**
+     * Resetting the server port via a forwarding header
+     */
+    @Test
+    public void testRemote_Port_For() throws Exception
+    {
+        _customizer.setForwardedPortHeaderRemote(true);
+        HttpTester.Response response = HttpTester.parseResponse(
+            _connector.getResponse(
+                "GET / HTTP/1.1\n" +
+                    "Host: myhost\n" +
+                    "X-Forwarded-Port: 4444\n" +
+                    "X-Forwarded-For: 192.168.1.200\n" +
+                    "\n"));
+        assertThat("status", response.getStatus(), is(200));
+        assertThat("scheme", _scheme.get(), is("http"));
+        assertThat("serverName", _serverName.get(), is("myhost"));
+        assertThat("serverPort", _serverPort.get(), is(80));
+        assertThat("remoteAddr", _remoteAddr.get(), is("192.168.1.200"));
+        assertThat("remotePort", _remotePort.get(), is(4444));
+        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
+    }
+
     /**
      * Test setting the server Port before the "Host" header has been seen.
      */
