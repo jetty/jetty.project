@@ -16,8 +16,15 @@ etc/jetty-http-forwarded.xml
 [ini-template]
 ### ForwardedRequestCustomizer Configuration
 
+## If true, only the RFC7239 Forwarded header is accepted
 # jetty.httpConfig.forwardedOnly=false
+
+## if true, the proxy address obtained from X-Forwarded-Server or RFC7239 is used as the request authority.
 # jetty.httpConfig.forwardedProxyAsAuthority=false
+
+## if true, the X-Forwarded-Port header applies to the authority, else it applies to the remote client address
+# jetty.httpConfig.forwardedPortAsAuthority=true
+
 # jetty.httpConfig.forwardedHeader=Forwarded
 # jetty.httpConfig.forwardedHostHeader=X-Forwarded-Host
 # jetty.httpConfig.forwardedServerHeader=X-Forwarded-Server
