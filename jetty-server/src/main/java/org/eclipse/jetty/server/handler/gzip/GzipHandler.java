@@ -153,7 +153,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
-    public static final int DEFAULT_MIN_GZIP_SIZE=16;
+    public static final int DEFAULT_MIN_GZIP_SIZE=2048;
     public static final int COMPRESSION_LEVEL = Deflater.DEFAULT_COMPRESSION;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding","gzip");

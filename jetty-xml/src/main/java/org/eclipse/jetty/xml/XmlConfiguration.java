@@ -105,6 +105,7 @@ public class XmlConfiguration
         URL config76 = klass.getResource("configure_7_6.dtd");
         URL config90 = klass.getResource("configure_9_0.dtd");
         URL config93 = klass.getResource("configure_9_3.dtd");
+        URL config100 = klass.getResource("configure_10_0.dtd");
         parser.redirectEntity("configure.dtd",config93);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);
@@ -114,6 +115,7 @@ public class XmlConfiguration
         parser.redirectEntity("configure_7_6.dtd",config76);
         parser.redirectEntity("configure_9_0.dtd",config90);
         parser.redirectEntity("configure_9_3.dtd",config93);
+        parser.redirectEntity("configure_10_0.dtd",config100);
 
         parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config93);
         parser.redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd",config93);
@@ -122,9 +124,10 @@ public class XmlConfiguration
         parser.redirectEntity("https://www.eclipse.org/jetty/configure.dtd",config93);
         parser.redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd",config93);
         parser.redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd",config93);
+        parser.redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd",config100);
 
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config93);
-        parser.redirectEntity("-//Jetty//Configure//EN",config93);
+        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config100);
+        parser.redirectEntity("-//Jetty//Configure//EN",config100);
 
         return parser;
     }
@@ -502,8 +505,23 @@ public class XmlConfiguration
         private void set(Object obj, XmlParser.Node node) throws Exception
         {
             String attr = node.getAttribute("name");
+            String id = node.getAttribute("id");
+            String property = node.getAttribute("property");
+            String propertyValue = null;
+            // Look for a property value
+            if (property!=null)
+            {
+                Map<String, String> properties = _configuration.getProperties();
+                propertyValue = properties.get(property);
+                // If no property value, then do not set
+                if (propertyValue == null)
+                    return;
+            }
+
             String name = "set" + attr.substring(0, 1).toUpperCase(Locale.ENGLISH) + attr.substring(1);
             Object value = value(obj, node);
+            if (value == null)
+                value = propertyValue;
             Object[] arg = {value};
 
             Class<?> oClass = nodeClass(node);
@@ -521,122 +539,135 @@ public class XmlConfiguration
 
             MultiException me = new MultiException();
 
-            // Try for trivial match
-            try
-            {
-                Method set = oClass.getMethod(name, vClass);
-                invokeMethod(set, obj, arg);
-                return;
-            }
-            catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
-            {
-                LOG.ignore(e);
-                me.add(e);
-            }
-
-            // Try for native match
-            try
-            {
-                Field type = vClass[0].getField("TYPE");
-                vClass[0] = (Class<?>)type.get(null);
-                Method set = oClass.getMethod(name, vClass);
-                invokeMethod(set, obj, arg);
-                return;
-            }
-            catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
-            {
-                LOG.ignore(e);
-                me.add(e);
-            }
-
-            // Try a field
-            try
-            {
-                Field field = oClass.getField(attr);
-                if (Modifier.isPublic(field.getModifiers()))
-                {
-                    setField(field, obj, value);
-                    return;
-                }
-            }
-            catch (NoSuchFieldException e)
-            {
-                LOG.ignore(e);
-                me.add(e);
-            }
-
-            // Search for a match by trying all the set methods
-            Method[] sets = oClass.getMethods();
-            Method set = null;
             String types = null;
-            for (Method setter : sets)
+            Object setValue = value;
+            try
             {
-                if (setter.getParameterCount() != 1)
-                    continue;
-                Class<?>[] paramTypes = setter.getParameterTypes();
-                if (name.equals(setter.getName()))
-                {
-                    types = types == null ? paramTypes[0].getName() : (types + "," + paramTypes[0].getName());
-                    // lets try it
-                    try
-                    {
-                        set = setter;
-                        invokeMethod(set, obj, arg);
-                        return;
-                    }
-                    catch (IllegalArgumentException | IllegalAccessException e)
-                    {
-                        LOG.ignore(e);
-                        me.add(e);
-                    }
-
-                    try
-                    {
-                        for (Class<?> c : __supportedCollections)
-                        {
-                            if (paramTypes[0].isAssignableFrom(c))
-                            {
-                                invokeMethod(setter, obj, convertArrayToCollection(value, c));
-                                return;
-                            }
-                        }
-                    }
-                    catch (IllegalAccessException e)
-                    {
-                        LOG.ignore(e);
-                        me.add(e);
-                    }
-                }
-            }
-
-            // Try converting the arg to the last set found.
-            if (set != null)
-            {
+                // Try for trivial match
                 try
                 {
-                    Class<?> sClass = set.getParameterTypes()[0];
-                    if (sClass.isPrimitive())
-                    {
-                        for (int t = 0; t < __primitives.length; t++)
-                        {
-                            if (sClass.equals(__primitives[t]))
-                            {
-                                sClass = __boxedPrimitives[t];
-                                break;
-                            }
-                        }
-                    }
-                    Constructor<?> cons = sClass.getConstructor(vClass);
-                    arg[0] = cons.newInstance(arg);
-                    _configuration.initializeDefaults(arg[0]);
+                    Method set = oClass.getMethod(name, vClass);
                     invokeMethod(set, obj, arg);
                     return;
                 }
-                catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
+                catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
                     LOG.ignore(e);
                     me.add(e);
                 }
+
+                // Try for native match
+                try
+                {
+                    Field type = vClass[0].getField("TYPE");
+                    vClass[0] = (Class<?>)type.get(null);
+                    Method set = oClass.getMethod(name, vClass);
+                    invokeMethod(set, obj, arg);
+                    return;
+                }
+                catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
+                {
+                    LOG.ignore(e);
+                    me.add(e);
+                }
+
+                // Try a field
+                try
+                {
+                    Field field = oClass.getField(attr);
+                    if (Modifier.isPublic(field.getModifiers()))
+                    {
+                        setField(field, obj, value);
+                        return;
+                    }
+                }
+                catch (NoSuchFieldException e)
+                {
+                    LOG.ignore(e);
+                    me.add(e);
+                }
+
+                // Search for a match by trying all the set methods
+                Method[] sets = oClass.getMethods();
+                Method set = null;
+                for (Method setter : sets)
+                {
+                    if (setter.getParameterCount() != 1)
+                        continue;
+                    Class<?>[] paramTypes = setter.getParameterTypes();
+                    if (name.equals(setter.getName()))
+                    {
+                        types = types == null ? paramTypes[0].getName() : (types + "," + paramTypes[0].getName());
+                        // lets try it
+                        try
+                        {
+                            set = setter;
+                            invokeMethod(set, obj, arg);
+                            return;
+                        }
+                        catch (IllegalArgumentException | IllegalAccessException e)
+                        {
+                            LOG.ignore(e);
+                            me.add(e);
+                        }
+
+                        try
+                        {
+                            for (Class<?> c : __supportedCollections)
+                            {
+                                if (paramTypes[0].isAssignableFrom(c))
+                                {
+                                    setValue = convertArrayToCollection(value, c);
+                                    invokeMethod(setter, obj, setValue);
+                                    return;
+                                }
+                            }
+                        }
+                        catch (IllegalAccessException e)
+                        {
+                            LOG.ignore(e);
+                            me.add(e);
+                        }
+                    }
+                }
+
+                // Try converting the arg to the last set found.
+                if (set != null)
+                {
+                    try
+                    {
+                        Class<?> sClass = set.getParameterTypes()[0];
+                        if (sClass.isPrimitive())
+                        {
+                            for (int t = 0; t < __primitives.length; t++)
+                            {
+                                if (sClass.equals(__primitives[t]))
+                                {
+                                    sClass = __boxedPrimitives[t];
+                                    break;
+                                }
+                            }
+                        }
+                        Constructor<?> cons = sClass.getConstructor(vClass);
+                        arg[0] = cons.newInstance(arg);
+                        _configuration.initializeDefaults(arg[0]);
+                        invokeMethod(set, obj, arg);
+                        setValue = arg[0];
+                        return;
+                    }
+                    catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
+                    {
+                        LOG.ignore(e);
+                        me.add(e);
+                    }
+                }
+
+                setValue = null;
+            }
+            finally
+            {
+                if (id!=null && setValue!=null)
+                    _configuration.getIdMap().put(id, setValue);
             }
 
             // No Joy
