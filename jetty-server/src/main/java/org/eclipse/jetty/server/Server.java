@@ -28,7 +28,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -47,7 +46,6 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
@@ -55,6 +53,7 @@ import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.AttributeContainerMap;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -75,7 +74,7 @@ public class Server extends HandlerWrapper implements Attributes
 {
     private static final Logger LOG = Log.getLogger(Server.class);
 
-    private final AttributesMap _attributes = new AttributesMap();
+    private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
@@ -107,6 +106,7 @@ public class Server extends HandlerWrapper implements Attributes
         ServerConnector connector=new ServerConnector(this);
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
+        addBean(_attributes);
     }
 
     /* ------------------------------------------------------------ */
@@ -613,9 +613,6 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void clearAttributes()
     {
-        Enumeration<String> names = _attributes.getAttributeNames();
-        while (names.hasMoreElements())
-            removeBean(_attributes.getAttribute(names.nextElement()));
         _attributes.clearAttributes();
     }
 
@@ -636,7 +633,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        return AttributesMap.getAttributeNamesCopy(_attributes);
+        return _attributes.getAttributeNames();
     }
 
     /* ------------------------------------------------------------ */
@@ -646,9 +643,6 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void removeAttribute(String name)
     {
-        Object bean=_attributes.getAttribute(name);
-        if (bean!=null)
-            removeBean(bean);
         _attributes.removeAttribute(name);
     }
 
@@ -659,9 +653,6 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void setAttribute(String name, Object attribute)
     {
-        // TODO this is a crude way to get attribute values managed by JMX.
-        Object old=_attributes.getAttribute(name);
-        updateBean(old,attribute);        
         _attributes.setAttribute(name, attribute);
     }
 
@@ -722,7 +713,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
-        dumpObjects(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()),_attributes);
+        dumpObjects(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()));
     }
 
     /* ------------------------------------------------------------ */
@@ -743,6 +734,5 @@ public class Server extends HandlerWrapper implements Attributes
             _seconds = seconds;
             _dateField = dateField;
         }
-
     }
 }
