@@ -31,10 +31,8 @@ public class XmlParserTest
     {
         XmlParser parser = new XmlParser();
 
-        URL configURL = XmlConfiguration.class.getClassLoader().getResource("org/eclipse/jetty/xml/configure_9_3.dtd");
-        parser.redirectEntity("configure.dtd", configURL);
-        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", configURL);
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", configURL);
+        URL configURL = XmlConfiguration.class.getClassLoader().getResource("org/eclipse/jetty/xml/configure_10_0.dtd");
+        parser.redirectEntity("configure_10_0.dtd", configURL);
 
         URL url = XmlParserTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/configureWithAttr.xml");
         XmlParser.Node testDoc = parser.parse(url.toString());
