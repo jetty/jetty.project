@@ -702,7 +702,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     @Override
     public String toString()
     {
-        return "WebAppClassLoader=" + _name+"@"+Long.toHexString(hashCode());
+        return String.format("%s{%s}@%x", this.getClass().getSimpleName(), _name, hashCode());
     }
 
     @Override

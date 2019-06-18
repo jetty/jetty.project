@@ -550,13 +550,17 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     public <T> Collection<T> getBeans(Class<T> clazz)
     {
-        ArrayList<T> beans = new ArrayList<>();
+        ArrayList<T> beans = null;
         for (Bean b : _beans)
         {
             if (clazz.isInstance(b._bean))
+            {
+                if (beans == null)
+                    beans = new ArrayList<>();
                 beans.add(clazz.cast(b._bean));
+            }
         }
-        return beans;
+        return beans == null ? Collections.emptyList() : beans;
     }
 
     @Override
@@ -808,7 +812,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
     /**
      * @param clazz the class of the beans
-     * @return the list of beans of the given class from the entire managed hierarchy
+     * @return the list of beans of the given class from the entire Container hierarchy
      * @param <T> the Bean type
      */
     @Override
@@ -822,7 +826,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     /**
      * @param clazz the class of the beans
      * @param <T> the Bean type
-     * @param beans the collection to add beans of the given class from the entire managed hierarchy
+     * @param beans the collection to add beans of the given class from the entire Container hierarchy
      */
     protected <T> void getContainedBeans(Class<T> clazz, Collection<T> beans)
     {
