@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,29 +26,44 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.BufferUtil;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A Memory only Resource with static content.
  */
-public class MemoryResource extends Resource
+public class ByteBufferResource extends Resource
 {
-    private final byte[] content;
+    private final ByteBuffer content;
     private final long lastModified;
+    private String name = "buffer";
 
-    public MemoryResource(String rawContents)
+    public ByteBufferResource(String rawContents, Charset charset)
     {
-        this.content = rawContents.getBytes(UTF_8);
+        this(rawContents.getBytes(charset));
+    }
+
+    public ByteBufferResource(byte[] bytes)
+    {
+        this(bytes, 0, bytes.length);
+    }
+
+    public ByteBufferResource(byte[] buffer, int offset, int length)
+    {
+        this(ByteBuffer.wrap(buffer, offset, length));
+    }
+
+    public ByteBufferResource(ByteBuffer byteBuffer)
+    {
+        this.content = byteBuffer;
         this.lastModified = System.currentTimeMillis();
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x[size=%d]", this.getClass().getSimpleName(), this.hashCode(), this.content.length);
+        return String.format("%s@%x[size=%d]", this.getClass().getSimpleName(), this.hashCode(), this.content.remaining());
     }
 
     @Override
@@ -86,7 +100,7 @@ public class MemoryResource extends Resource
     @Override
     public long length()
     {
-        return content.length;
+        return content.remaining();
     }
 
     @Override
@@ -105,7 +119,7 @@ public class MemoryResource extends Resource
     @Override
     public URI getURI()
     {
-        return URI.create("memory://");
+        return URI.create("buffer://");
     }
 
     @Override
@@ -117,17 +131,22 @@ public class MemoryResource extends Resource
     @Override
     public String getName()
     {
-        return "memory";
+        return name;
     }
 
-    @Override
-    public InputStream getInputStream() throws IOException
+    public void setName(String name)
     {
-        return new ByteArrayInputStream(content);
+        this.name = name;
     }
 
     @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
+    public InputStream getInputStream()
+    {
+        return new ByteBufferInputStream(content);
+    }
+
+    @Override
+    public ReadableByteChannel getReadableByteChannel()
     {
         return new ByteBufferChannel(content);
     }
@@ -141,7 +160,7 @@ public class MemoryResource extends Resource
     @Override
     public boolean renameTo(Resource dest) throws SecurityException
     {
-        if (dest instanceof MemoryResource)
+        if (dest instanceof ByteBufferResource)
             return true;
         return false;
     }
@@ -153,19 +172,37 @@ public class MemoryResource extends Resource
     }
 
     @Override
-    public Resource addPath(String path) throws IOException, MalformedURLException
+    public Resource addPath(String path)
     {
         // memory has no paths, so it always returns the same location
         return this;
+    }
+
+    private static class ByteBufferInputStream extends InputStream
+    {
+        private final ByteBuffer content;
+
+        public ByteBufferInputStream(ByteBuffer buffer)
+        {
+            this.content = buffer.slice();
+        }
+
+        @Override
+        public int read() throws IOException
+        {
+            if (this.content.position() >= this.content.limit())
+                return -1;
+            return this.content.get();
+        }
     }
 
     private static class ByteBufferChannel implements ReadableByteChannel
     {
         private final ByteBuffer content;
 
-        public ByteBufferChannel(byte[] buf)
+        public ByteBufferChannel(ByteBuffer buffer)
         {
-            content = BufferUtil.toBuffer(buf);
+            content = buffer.slice();
         }
 
         @Override

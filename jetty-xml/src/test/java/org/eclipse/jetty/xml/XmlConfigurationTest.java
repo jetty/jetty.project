@@ -33,11 +33,12 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
-import org.eclipse.jetty.util.resource.MemoryResource;
+import org.eclipse.jetty.util.resource.ByteBufferResource;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -238,13 +239,13 @@ public class XmlConfigurationTest
     @Test
     public void testGetClass() throws Exception
     {
-        XmlConfiguration configuration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\"><Get name=\"class\"/></Set></Configure>"));
+        XmlConfiguration configuration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\"><Get name=\"class\"/></Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         configuration.configure(tc);
         assertEquals(TestConfiguration.class,tc.testObject);
 
         configuration =
-            new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\"><Get class=\"java.lang.String\" name=\"class\"><Get id=\"simple\" name=\"simpleName\"/></Get></Set></Configure>"));
+            new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\"><Get class=\"java.lang.String\" name=\"class\"><Get id=\"simple\" name=\"simpleName\"/></Get></Set></Configure>", UTF_8));
         configuration.configure(tc);
         assertEquals(String.class,tc.testObject);
         assertEquals("String",configuration.getIdMap().get("simple"));
@@ -253,7 +254,7 @@ public class XmlConfigurationTest
     @Test
     public void testStringConfiguration() throws Exception
     {
-        XmlConfiguration configuration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\">SetValue</Set><Set name=\"Test\" type=\"int\">2</Set></Configure>"));
+        XmlConfiguration configuration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\">SetValue</Set><Set name=\"Test\" type=\"int\">2</Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         configuration.configure(tc);
         assertEquals("SetValue", tc.testObject, "Set String 3");
@@ -263,7 +264,7 @@ public class XmlConfigurationTest
     @Test
     public void testMeaningfullSetException() throws Exception
     {
-        XmlConfiguration configuration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"PropertyTest\"><Property name=\"null\"/></Set></Configure>"));
+        XmlConfiguration configuration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"PropertyTest\"><Property name=\"null\"/></Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
 
         NoSuchMethodException e = assertThrows(NoSuchMethodException.class, () -> {
@@ -276,9 +277,9 @@ public class XmlConfigurationTest
     @Test
     public void testListConstructorArg() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
             + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">"
-            + STRING_ARRAY_XML + "</Arg></New></Set></Configure>"));
+            + STRING_ARRAY_XML + "</Arg></New></Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -289,11 +290,11 @@ public class XmlConfigurationTest
     @Test
     public void testTwoArgumentListConstructorArg() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
             + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\">"
             + "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>"
             + "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>"
-            + "</New></Set></Configure>"));
+            + "</New></Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -304,8 +305,8 @@ public class XmlConfigurationTest
     @Test
     public void testListNotContainingArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-            + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">Some String</Arg></New></Configure>"));
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+            + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">Some String</Arg></New></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
 
         assertThrows(IllegalArgumentException.class, ()-> {
@@ -316,9 +317,9 @@ public class XmlConfigurationTest
     @Test
     public void testSetConstructorArg() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
             + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">"
-            + STRING_ARRAY_XML + "</Arg></New></Set></Configure>"));
+            + STRING_ARRAY_XML + "</Arg></New></Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet",tc.getSet(),is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -329,8 +330,8 @@ public class XmlConfigurationTest
     @Test
     public void testSetNotContainingArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-            + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">Some String</Arg></New></Configure>"));
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+            + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">Some String</Arg></New></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThrows(IllegalArgumentException.class, ()->{
             xmlConfiguration.configure(tc);
@@ -340,8 +341,8 @@ public class XmlConfigurationTest
     @Test
     public void testListSetterWithStringArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
-            + STRING_ARRAY_XML + "</Set></Configure>"));
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
+            + STRING_ARRAY_XML + "</Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -351,8 +352,8 @@ public class XmlConfigurationTest
     @Test
     public void testListSetterWithPrimitiveArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
-            + INT_ARRAY_XML + "</Set></Configure>"));
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
+            + INT_ARRAY_XML + "</Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -362,8 +363,8 @@ public class XmlConfigurationTest
     @Test
     public void testNotSupportedLinkedListSetter() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"LinkedList\">"
-            + INT_ARRAY_XML + "</Set></Configure>"));
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"LinkedList\">"
+            + INT_ARRAY_XML + "</Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         assertThrows(NoSuchMethodException.class, ()->{
@@ -374,8 +375,8 @@ public class XmlConfigurationTest
     @Test
     public void testArrayListSetter() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"ArrayList\">"
-            + INT_ARRAY_XML + "</Set></Configure>"));
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"ArrayList\">"
+            + INT_ARRAY_XML + "</Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -385,8 +386,8 @@ public class XmlConfigurationTest
     @Test
     public void testSetSetter() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
-            + STRING_ARRAY_XML + "</Set></Configure>"));
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
+            + STRING_ARRAY_XML + "</Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -396,8 +397,8 @@ public class XmlConfigurationTest
     @Test
     public void testSetSetterWithPrimitiveArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
-            + INT_ARRAY_XML + "</Set></Configure>"));
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
+            + INT_ARRAY_XML + "</Set></Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -407,7 +408,7 @@ public class XmlConfigurationTest
     @Test
     public void testMap() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
             "    <Set name=\"map\">" +
             "        <Map>" +
@@ -421,7 +422,7 @@ public class XmlConfigurationTest
             "            </Entry>" +
             "        </Map>" +
             "    </Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
         TestConfiguration tc = new TestConfiguration();
         assertNull(tc.map, "tc.map is null as it's not configured yet");
         xmlConfiguration.configure(tc);
@@ -431,12 +432,12 @@ public class XmlConfigurationTest
     @Test
     public void testConstructorNamedInjection() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg>arg1</Arg>  " +
             "  <Arg>arg2</Arg>  " +
             "  <Arg>arg3</Arg>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -448,12 +449,12 @@ public class XmlConfigurationTest
     @Test
     public void testConstructorNamedInjectionOrdered() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg name=\"first\">arg1</Arg>  " +
             "  <Arg name=\"second\">arg2</Arg>  " +
             "  <Arg name=\"third\">arg3</Arg>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -465,12 +466,12 @@ public class XmlConfigurationTest
     @Test
     public void testConstructorNamedInjectionUnOrdered() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg name=\"first\">arg1</Arg>  " +
             "  <Arg name=\"third\">arg3</Arg>  " +
             "  <Arg name=\"second\">arg2</Arg>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -482,12 +483,12 @@ public class XmlConfigurationTest
     @Test
     public void testConstructorNamedInjectionOrderedMixed() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
                 "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
                 "  <Arg name=\"first\">arg1</Arg>  " +
                 "  <Arg>arg2</Arg>  " +
                 "  <Arg name=\"third\">arg3</Arg>  " +
-                "</Configure>"));
+                "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -499,12 +500,12 @@ public class XmlConfigurationTest
     @Test
     public void testConstructorNamedInjectionUnorderedMixed() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg name=\"third\">arg3</Arg>  " +
             "  <Arg>arg2</Arg>  " +
             "  <Arg name=\"first\">arg1</Arg>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -516,7 +517,7 @@ public class XmlConfigurationTest
     @Test
     public void testNestedConstructorNamedInjection() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg>arg1</Arg>  " +
             "  <Arg>arg2</Arg>  " +
@@ -528,7 +529,7 @@ public class XmlConfigurationTest
             "      <Arg>arg3</Arg>  " +
             "    </New>" +
             "  </Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -544,7 +545,7 @@ public class XmlConfigurationTest
     @Test
     public void testNestedConstructorNamedInjectionOrdered() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg name=\"first\">arg1</Arg>  " +
             "  <Arg name=\"second\">arg2</Arg>  " +
@@ -556,7 +557,7 @@ public class XmlConfigurationTest
             "      <Arg name=\"third\">arg3</Arg>  " +
             "    </New>" +
             "  </Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -571,7 +572,7 @@ public class XmlConfigurationTest
     @Test
     public void testNestedConstructorNamedInjectionUnOrdered() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg name=\"first\">arg1</Arg>  " +
             "  <Arg name=\"third\">arg3</Arg>  " +
@@ -583,7 +584,7 @@ public class XmlConfigurationTest
             "      <Arg name=\"second\">arg2</Arg>  " +
             "    </New>" +
             "  </Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -598,7 +599,7 @@ public class XmlConfigurationTest
     @Test
     public void testNestedConstructorNamedInjectionOrderedMixed() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg name=\"first\">arg1</Arg>  " +
             "  <Arg>arg2</Arg>  " +
@@ -610,7 +611,7 @@ public class XmlConfigurationTest
             "      <Arg name=\"third\">arg3</Arg>  " +
             "    </New>" +
             "  </Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -625,7 +626,7 @@ public class XmlConfigurationTest
     @Test
     public void testArgumentsGetIgnoredMissingDTD() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg>arg1</Arg>  " +
             "  <Arg>arg2</Arg>  " +
@@ -637,7 +638,7 @@ public class XmlConfigurationTest
             "      <Arg>arg3</Arg>\n" +
             "    </New>" +
             "  </Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -652,7 +653,7 @@ public class XmlConfigurationTest
     @Test
     public void testSetGetIgnoredMissingDTD() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
             "  <Set name=\"first\">arg1</Set>  " +
             "  <Set name=\"second\">arg2</Set>  " +
@@ -664,7 +665,7 @@ public class XmlConfigurationTest
             "      <Set name=\"third\">arg3</Set>  " +
             "    </New>" +
             "  </Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         DefaultTestConfiguration atc = (DefaultTestConfiguration)xmlConfiguration.configure();
 
@@ -679,7 +680,7 @@ public class XmlConfigurationTest
     @Test
     public void testNestedConstructorNamedInjectionUnorderedMixed() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
             "  <Arg name=\"third\">arg3</Arg>  " +
             "  <Arg>arg2</Arg>  " +
@@ -691,7 +692,7 @@ public class XmlConfigurationTest
             "      <Arg name=\"first\">arg1</Arg>  " +
             "    </New>" +
             "  </Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -744,10 +745,10 @@ public class XmlConfigurationTest
     @Test
     public void testSetBooleanTrue() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
             "  <Set name=\"boolean\">true</Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
         assertTrue(bh.getBoolean());
@@ -756,10 +757,10 @@ public class XmlConfigurationTest
     @Test
     public void testSetBooleanFalse() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
             "  <Set name=\"boolean\">false</Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
         assertFalse(bh.getBoolean());
@@ -769,10 +770,10 @@ public class XmlConfigurationTest
     @Disabled
     public void testSetBadBoolean() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
             "  <Set name=\"boolean\">tru</Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
         assertTrue(bh.getBoolean(), "boolean['tru']");
@@ -781,10 +782,10 @@ public class XmlConfigurationTest
     @Test
     public void testSetBadInteger() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
             "  <Set name=\"integer\">bad</Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         assertThrows(InvocationTargetException.class, ()->{
             xmlConfiguration.configure();
@@ -794,10 +795,10 @@ public class XmlConfigurationTest
     @Test
     public void testSetBadExtraInteger() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
             "  <Set name=\"integer\">100 bas</Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         assertThrows(InvocationTargetException.class, ()->{
             xmlConfiguration.configure();
@@ -807,10 +808,10 @@ public class XmlConfigurationTest
     @Test
     public void testSetBadFloatInteger() throws Exception
     {
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
             "  <Set name=\"integer\">1.5</Set>" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         assertThrows(InvocationTargetException.class, ()->{
             xmlConfiguration.configure();
@@ -822,10 +823,10 @@ public class XmlConfigurationTest
     {
         // No properties
         String defolt = "baz";
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
             "  <Set name=\"first\"><Property name=\"wibble\" deprecated=\"foo,bar\" default=\"" + defolt + "\"/></Set>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(defolt, config.getFirst());
     }
@@ -835,10 +836,10 @@ public class XmlConfigurationTest
     {
         String name = "foo";
         String value = "foo";
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
             "  <Set name=\"first\"><Property name=\"" + name + "\" deprecated=\"other,bar\" default=\"baz\"/></Set>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
@@ -849,10 +850,10 @@ public class XmlConfigurationTest
     {
         String name = "bar";
         String value = "bar";
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
             "  <Set name=\"first\"><Property name=\"foo\" deprecated=\"" + name + "\" default=\"baz\"/></Set>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
@@ -863,10 +864,10 @@ public class XmlConfigurationTest
     {
         String name = "bar";
         String value = "bar";
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
             "  <Set name=\"first\"><Property name=\"foo\" deprecated=\"other," + name + "\" default=\"baz\"/></Set>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
@@ -877,7 +878,7 @@ public class XmlConfigurationTest
     {
         String name = "bar";
         String value = "bar";
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
             "  <Set name=\"first\">" +
             "  <Property>  " +
@@ -887,7 +888,7 @@ public class XmlConfigurationTest
             "    <Default>baz</Default>" +
             "  </Property>  " +
             "  </Set>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
@@ -900,7 +901,7 @@ public class XmlConfigurationTest
         String value = "bar";
         String defaultValue = "_<Property name=\"bar\"/>_<Property name=\"bar\"/>_";
         String expectedValue = "_" + value + "_" + value + "_";
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
             "  <Set name=\"first\">" +
             "    <Property>" +
@@ -908,7 +909,7 @@ public class XmlConfigurationTest
             "      <Default>" + defaultValue + "</Default>" +
             "    </Property>" +
             "  </Set>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(expectedValue, config.getFirst());
@@ -918,14 +919,14 @@ public class XmlConfigurationTest
     public void testPropertyNotFoundWithPropertyInDefaultValueNotFoundWithDefault() throws Exception
     {
         String value = "bar";
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
             "  <Set name=\"first\">" +
             "    <Property name=\"not_found\">" +
             "      <Default><Property name=\"also_not_found\" default=\"" + value + "\"/></Default>" +
             "    </Property>" +
             "  </Set>  " +
-            "</Configure>"));
+            "</Configure>", UTF_8));
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
     }
@@ -941,12 +942,12 @@ public class XmlConfigurationTest
         for(String propName: propNames)
         {
             XmlConfiguration configuration =
-                new XmlConfiguration(new MemoryResource("" +
+                new XmlConfiguration(new ByteBufferResource("" +
                     "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
                     "  <Set name=\"TestString\">" +
                     "    <Property name=\"" + propName + "\"/>" +
                     "  </Set>" +
-                    "</Configure>"));
+                    "</Configure>", UTF_8));
 
             configuration.setJettyStandardIdsAndProperties(null, null);
 
@@ -969,12 +970,12 @@ public class XmlConfigurationTest
         for(String propName: propNames)
         {
             XmlConfiguration configuration =
-                new XmlConfiguration(new MemoryResource("" +
+                new XmlConfiguration(new ByteBufferResource("" +
                     "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
                     "  <Set name=\"TestString\">" +
                     "    <Property name=\"" + propName + "\"/>" +
                     "  </Set>" +
-                    "</Configure>"));
+                    "</Configure>", UTF_8));
 
             configuration.setJettyStandardIdsAndProperties(null, null);
 
@@ -990,14 +991,14 @@ public class XmlConfigurationTest
     public void testDeprecated() throws Exception
     {
         Class<?> testClass = AnnotatedTestConfiguration.class;
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(new MemoryResource("" +
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(new ByteBufferResource("" +
             "<Configure class=\"" + testClass.getName() + "\">" +
             "  <Set name=\"deprecated\">foo</Set>" +
             "  <Set name=\"obsolete\">" +
             "    <Call name=\"setDeprecated\"><Arg><Get name=\"deprecated\" /></Arg></Call>" +
             "  </Set>" +
             "  <Get name=\"obsolete\" />" +
-            "</Configure>"));
+            "</Configure>", UTF_8));
 
         ByteArrayOutputStream logBytes = null;
         Logger logger = Log.getLogger(XmlConfiguration.class);
