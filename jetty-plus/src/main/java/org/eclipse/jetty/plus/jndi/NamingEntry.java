@@ -49,14 +49,7 @@ public abstract class NamingEntry
     protected String _namingEntryNameString; //the name of the NamingEntry relative to the context it is stored in
     protected String _objectNameString; //the name of the object relative to the context it is stored in
    
-   
-    @Override
-    public String toString()
-    {
-        return _jndiName;
-    }
- 
-    
+
     /**
      * Create a naming entry.
      * 
@@ -173,21 +166,21 @@ public abstract class NamingEntry
     /**
      * Save the NamingEntry for later use.
      * <p>
-     * Saving is done by binding the NamingEntry
+     * Saving is done by binding both the NamingEntry
      * itself, and the value it represents into
      * JNDI. In this way, we can link to the
      * value it represents later, but also
      * still retrieve the NamingEntry itself too.
      * <p>
-     * The object is bound at the jndiName passed in.
-     * This NamingEntry is bound at __/jndiName.
+     * The object is bound at scope/jndiName and
+     * the NamingEntry is bound at scope/__/jndiName.
      * <p>
      * eg
      * <pre>
      * jdbc/foo    : DataSource
      * __/jdbc/foo : NamingEntry
      * </pre>
-     * 
+     * @see NamingEntryUtil#getNameForScope(Object)
      * @param object the object to save 
      * @throws NamingException if unable to save
      */
@@ -212,5 +205,18 @@ public abstract class NamingEntry
         _objectNameString = objectName.toString();
         NamingUtil.bind(ic, _objectNameString, object);
     } 
-    
+
+    protected String toStringMetaData()
+    {
+        return null;
+    }
+
+    @Override
+    public String toString()
+    {
+        String metadata = toStringMetaData();
+        if (metadata == null)
+            return String.format("%s@%x{name=%s}", this.getClass().getName(), hashCode(), getJndiName());
+        return String.format("%s@%x{name=%s,%s}", this.getClass().getName(), hashCode(), getJndiName(), metadata);
+    }
 }
