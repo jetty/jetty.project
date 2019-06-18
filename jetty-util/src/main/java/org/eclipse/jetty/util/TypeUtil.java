@@ -562,10 +562,14 @@ public class TypeUtil
             
             String resourceName = clazz.getName().replace('.', '/') + ".class";
             ClassLoader loader = clazz.getClassLoader();
-            URL url = (loader == null ? ClassLoader.getSystemClassLoader() : loader).getResource(resourceName);
-            if (url != null)
+            // null means bootstrap classloader, primitive, void, or dynamic in-memory class
+            if (loader != null)
             {
-                return URIUtil.getJarSource(url.toURI());
+                URL url = loader.getResource(resourceName);
+                if (url != null)
+                {
+                    return URIUtil.getJarSource(url.toURI());
+                }
             }
         }
         catch (URISyntaxException e)

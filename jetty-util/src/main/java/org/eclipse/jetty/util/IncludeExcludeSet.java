@@ -169,7 +169,7 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     /**
      * Test Included and not Excluded
      * @param item The item to test
-     * @return Boolean.TRUE if item is included, Boolean.FALSE if item is excluded and null if neither
+     * @return Boolean.TRUE if item is included, Boolean.FALSE if item is excluded or neither
      */
     public Boolean isIncludedAndNotExcluded(P item)
     {
@@ -178,7 +178,7 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
         if (_includePredicate.test(item))
             return Boolean.TRUE;
         
-        return null;
+        return Boolean.FALSE;
     }
     
     public boolean hasIncludes()

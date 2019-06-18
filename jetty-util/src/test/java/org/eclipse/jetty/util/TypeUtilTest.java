@@ -18,15 +18,11 @@
 
 package org.eclipse.jetty.util;
 
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.EnabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -149,6 +145,7 @@ public class TypeUtilTest
         assertThat(TypeUtil.getLocationOfClass(TypeUtil.class).toASCIIString(),containsString("/classes/"));
     }
 
+    /*
     @Test
     @DisabledOnJre(JRE.JAVA_8)
     public void testGetLocation_JvmCore_JPMS()
@@ -159,6 +156,15 @@ public class TypeUtilTest
     }
 
     @Test
+    @DisabledOnJre(JRE.JAVA_8)
+    public void testGetLocation_JavaLangThreadDeath_JPMS()
+    {
+        // Class from JVM core
+        String expectedJavaBase = "/java.base/";
+        assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(),containsString(expectedJavaBase));
+    }
+
+    @Test
     @EnabledOnJre(JRE.JAVA_8)
     public void testGetLocation_JvmCore_Java8RT()
     {
@@ -166,4 +172,14 @@ public class TypeUtilTest
         String expectedJavaBase = "/rt.jar";
         assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(),containsString(expectedJavaBase));
     }
+
+    @Test
+    @EnabledOnJre(JRE.JAVA_8)
+    public void testGetLocation_JavaLangThreadDeath_Java8RT()
+    {
+        // Class from JVM core
+        String expectedJavaBase = "/rt.jar";
+        assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(),containsString(expectedJavaBase));
+    }
+    */
 }
