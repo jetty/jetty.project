@@ -48,11 +48,12 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
     private class RunningJob implements Runnable
     {
-        private final CountDownLatch _run = new CountDownLatch(1);
-        private final CountDownLatch _stopping = new CountDownLatch(1);
-        private final CountDownLatch _stopped = new CountDownLatch(1);
-        private final String _name;
-        private final boolean _fail;
+        final CountDownLatch _run = new CountDownLatch(1);
+        final CountDownLatch _stopping = new CountDownLatch(1);
+        final CountDownLatch _stopped = new CountDownLatch(1);
+        final String _name;
+        final boolean _fail;
+
         RunningJob()
         {
             this(null, false);
@@ -118,7 +119,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
     private class CloseableJob extends RunningJob implements Closeable
     {
-        private final CountDownLatch _closed = new CountDownLatch(1);
+        final CountDownLatch _closed = new CountDownLatch(1);
 
         @Override
         public void close() throws IOException
@@ -382,24 +383,24 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         // Wait until the first 2 start running
         waitForThreads(tp,2);
         waitForIdle(tp,0);
+        assertTrue(job0._run.await(200, TimeUnit.MILLISECONDS));
+        assertTrue(job1._run.await(200, TimeUnit.MILLISECONDS));
 
         // Queue should be empty after thread pool is stopped
         tp.stop();
         assertThat(tp.getQueue().size(), is(0));
 
         // First 2 jobs closed by InterruptedException
-        assertThat(job0._stopped.await(200, TimeUnit.MILLISECONDS), is(true));
-        assertThat(job1._stopped.await(200, TimeUnit.MILLISECONDS), is(true));
+        assertTrue(job0._stopped.await(200, TimeUnit.MILLISECONDS));
+        assertTrue(job1._stopped.await(200, TimeUnit.MILLISECONDS));
 
         // Verify RunningJobs in the queue have not been run
-        assertThat(job2._run.await(200, TimeUnit.MILLISECONDS), is(false));
-        assertThat(job4._run.await(200, TimeUnit.MILLISECONDS), is(false));
+        assertFalse(job2._run.await(200, TimeUnit.MILLISECONDS));
+        assertFalse(job4._run.await(200, TimeUnit.MILLISECONDS));
 
         // Verify ClosableJobs have not been run but have been closed
-        assertThat(job4._run.await(200, TimeUnit.MILLISECONDS), is(false));
-        assertThat(job3._closed.await(200, TimeUnit.MILLISECONDS), is(true));
-
-        tp.stop();
+        assertFalse(job3._run.await(200, TimeUnit.MILLISECONDS));
+        assertTrue(job3._closed.await(200, TimeUnit.MILLISECONDS));
     }
 
 
