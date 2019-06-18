@@ -25,7 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -302,17 +302,20 @@ public class ForwardedRequestCustomizerTest
     @Test
     public void testRFC7239_IPv6() throws Exception
     {
+        HttpTester.Response response = HttpTester.parseResponse(
         _connector.getResponse(
             "GET / HTTP/1.1\n"+
              "Host: myhost\n"+
              "Forwarded: for=\"[2001:db8:cafe::1]\";by=\"[2001:db8:cafe::2]\";host=\"[2001:db8:cafe::3]:8888\"\n"+
-            "\n");
+            "\n"));
 
-        assertEquals("http",_results.poll());
-        assertEquals("[2001:db8:cafe::3]",_results.poll());
-        assertEquals("8888",_results.poll());
-        assertEquals("[2001:db8:cafe::1]",_results.poll());
-        assertEquals("0",_results.poll());
+        assertThat("status", response.getStatus(), is(200));
+        assertThat("scheme", _scheme.get(), is("http"));
+        assertThat("serverName", _serverName.get(), is("[2001:db8:cafe::3]"));
+        assertThat("serverPort", _serverPort.get(), is(8888));
+        assertThat("remoteAddr", _remoteAddr.get(), is("[2001:db8:cafe::1]"));
+        assertThat("remotePort", _remotePort.get(), is(0));
+        assertThat("requestURL", _requestURL.get(), is("http://[2001:db8:cafe::3]:8888/"));
     }
 
     @Test
