@@ -274,6 +274,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         // Support Late Binding of Object Factory (for CDI)
         this.objectFactorySupplier = () -> scope.getObjectFactory();
         this.extensionRegistry = new WebSocketExtensionFactory(this);
+        addBean(extensionRegistry);
 
         this.eventDriverFactory = eventDriverFactory == null ? new EventDriverFactory(this) : eventDriverFactory;
         this.sessionFactory = sessionFactory == null ? new WebSocketSessionFactory(this) : sessionFactory;

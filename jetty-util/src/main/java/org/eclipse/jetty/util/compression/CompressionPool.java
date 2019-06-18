@@ -22,7 +22,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class CompressionPool<T>
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+
+public abstract class CompressionPool<T> extends AbstractLifeCycle
 {
     public static final int INFINITE_CAPACITY = -1;
 
@@ -116,5 +118,17 @@ public abstract class CompressionPool<T>
                 }
             }
         }
+    }
+
+    @Override
+    public void doStop()
+    {
+        T t = _pool.poll();
+        while (t != null)
+        {
+            end(t);
+            t = _pool.poll();
+        }
+        _numObjects.set(0);
     }
 }

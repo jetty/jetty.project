@@ -18,64 +18,22 @@
 
 package org.eclipse.jetty.websocket.api.extensions;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.Set;
 
-public abstract class ExtensionFactory implements Iterable<Class<? extends Extension>>
+public interface ExtensionFactory extends Iterable<Class<? extends Extension>>
 {
-    private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
-    private Map<String, Class<? extends Extension>> availableExtensions;
+    Map<String, Class<? extends Extension>> getAvailableExtensions();
 
-    public ExtensionFactory()
-    {
-        availableExtensions = new HashMap<>();
-        for (Extension ext : extensionLoader)
-        {
-            if (ext != null)
-            {
-                availableExtensions.put(ext.getName(),ext.getClass());
-            }
-        }
-    }
+    Class<? extends Extension> getExtension(String name);
 
-    public Map<String, Class<? extends Extension>> getAvailableExtensions()
-    {
-        return availableExtensions;
-    }
+    Set<String> getExtensionNames();
 
-    public Class<? extends Extension> getExtension(String name)
-    {
-        return availableExtensions.get(name);
-    }
+    boolean isAvailable(String name);
 
-    public Set<String> getExtensionNames()
-    {
-        return availableExtensions.keySet();
-    }
+    Extension newInstance(ExtensionConfig config);
 
-    public boolean isAvailable(String name)
-    {
-        return availableExtensions.containsKey(name);
-    }
+    void register(String name, Class<? extends Extension> extension);
 
-    @Override
-    public Iterator<Class<? extends Extension>> iterator()
-    {
-        return availableExtensions.values().iterator();
-    }
-
-    public abstract Extension newInstance(ExtensionConfig config);
-
-    public void register(String name, Class<? extends Extension> extension)
-    {
-        availableExtensions.put(name,extension);
-    }
-
-    public void unregister(String name)
-    {
-        availableExtensions.remove(name);
-    }
+    void unregister(String name);
 }

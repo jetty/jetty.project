@@ -18,9 +18,15 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -31,16 +37,50 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.extensions.compress.CompressExtension;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
-public class WebSocketExtensionFactory extends ExtensionFactory
+public class WebSocketExtensionFactory extends ContainerLifeCycle implements ExtensionFactory
 {
     private WebSocketContainerScope container;
+    private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
+    private Map<String, Class<? extends Extension>> availableExtensions;
     private final InflaterPool inflaterPool = new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
     private final DeflaterPool deflaterPool = new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
 
     public WebSocketExtensionFactory(WebSocketContainerScope container)
     {
-        super();
+        availableExtensions = new HashMap<>();
+        for (Extension ext : extensionLoader)
+        {
+            if (ext != null)
+                availableExtensions.put(ext.getName(),ext.getClass());
+        }
+
         this.container = container;
+        addBean(inflaterPool);
+        addBean(deflaterPool);
+    }
+
+    @Override
+    public Map<String, Class<? extends Extension>> getAvailableExtensions()
+    {
+        return availableExtensions;
+    }
+
+    @Override
+    public Class<? extends Extension> getExtension(String name)
+    {
+        return availableExtensions.get(name);
+    }
+
+    @Override
+    public Set<String> getExtensionNames()
+    {
+        return availableExtensions.keySet();
+    }
+
+    @Override
+    public boolean isAvailable(String name)
+    {
+        return availableExtensions.containsKey(name);
     }
 
     @Override
@@ -85,5 +125,23 @@ public class WebSocketExtensionFactory extends ExtensionFactory
         {
             throw new WebSocketException("Cannot instantiate extension: " + extClass,e);
         }
+    }
+
+    @Override
+    public void register(String name, Class<? extends Extension> extension)
+    {
+        availableExtensions.put(name,extension);
+    }
+
+    @Override
+    public void unregister(String name)
+    {
+        availableExtensions.remove(name);
+    }
+
+    @Override
+    public Iterator<Class<? extends Extension>> iterator()
+    {
+        return availableExtensions.values().iterator();
     }
 }

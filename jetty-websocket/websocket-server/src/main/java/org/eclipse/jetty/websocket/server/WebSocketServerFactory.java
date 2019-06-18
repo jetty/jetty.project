@@ -186,6 +186,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         addBean(scheduler);
         addBean(bufferPool);
         addBean(sessionTracker);
+        addBean(extensionFactory);
         listeners.add(this.sessionTracker);
     }
 
