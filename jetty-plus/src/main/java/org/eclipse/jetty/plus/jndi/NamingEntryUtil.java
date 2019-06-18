@@ -30,6 +30,7 @@ import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -238,8 +239,9 @@ public class NamingEntryUtil
         if (scope==null)
             return "";
 
-        String str = scope.getClass().getName()+"@"+Long.toHexString(scope.hashCode());
-        str=str.replace('/', '_').replace(' ', '_');
+        String str = scope.getClass().getName() + "@" + Long.toHexString(scope.hashCode());
+        str = StringUtil.replace(str, '/', '_');
+        str = StringUtil.replace(str, ' ', '_');
         return str;
     }
 }

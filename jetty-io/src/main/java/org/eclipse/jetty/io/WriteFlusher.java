@@ -307,9 +307,36 @@ abstract public class WriteFlusher
 
     private void fail(Callback callback, Throwable... suppressed)
     {
-        FailedState failed = (FailedState)_state.get();
+        Throwable cause;
+        loop:
+        while (true)
+        {
+            State state = _state.get();
 
-        Throwable cause = failed.getCause();
+            switch (state.getType())
+            {
+                case FAILED:
+                {
+                    FailedState failed = (FailedState)state;
+                    cause = failed.getCause();
+                    break loop;
+                }
+
+                case IDLE:
+                    for (Throwable t : suppressed)
+                        LOG.warn(t);
+                    return;
+
+                default:
+                    Throwable t = new IllegalStateException();
+                    if (!_state.compareAndSet(state, new FailedState(t)))
+                        continue;
+
+                    cause = t;
+                    break loop;
+            }
+        }
+
         for (Throwable t : suppressed)
         {
             if (t != cause)

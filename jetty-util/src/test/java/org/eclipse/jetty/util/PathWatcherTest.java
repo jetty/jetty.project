@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.ADDED;
-import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.DELETED;
-import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.MODIFIED;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -51,6 +42,15 @@ import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.ADDED;
+import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.DELETED;
+import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.MODIFIED;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled
 @ExtendWith(WorkDirExtension.class)
@@ -111,7 +111,7 @@ public class PathWatcherTest
             synchronized (events)
             {
                 Path relativePath = this.baseDir.relativize(event.getPath());
-                String key = relativePath.toString().replace(File.separatorChar,'/');
+                String key = StringUtil.replace(relativePath.toString(), File.separatorChar, '/');
 
                 List<PathWatchEventType> types = this.events.get(key);
                 if (types == null)

@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
@@ -93,15 +94,24 @@ public interface Dumpable
             if (o==null)
                 s = "null";
             else if (o instanceof Dumpable)
-                s = ((Dumpable)o).dumpSelf().replace("\r\n","|").replace("\n","|");
+            {
+                s = ((Dumpable)o).dumpSelf();
+                s = StringUtil.replace(s, "\r\n", "|");
+                s = StringUtil.replace(s, '\n', '|');
+            }
             else if (o instanceof Collection)
                 s = String.format("%s@%x(size=%d)",o.getClass().getName(),o.hashCode(),((Collection)o).size());
             else if (o.getClass().isArray())
                 s = String.format("%s@%x[size=%d]",o.getClass().getComponentType(),o.hashCode(), Array.getLength(o));
             else if (o instanceof Map)
                 s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Map<?,?>)o).size());
+            
             else
-                s = String.valueOf(o).replace("\r\n","|").replace("\n","|");
+            {
+                s = String.valueOf(o);
+                s = StringUtil.replace(s, "\r\n", "|");
+                s = StringUtil.replace(s, '\n', '|');
+            }
 
             if (o instanceof LifeCycle)
                 out.append(s).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");

@@ -33,6 +33,13 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <!-- avoid depending on a range dependency from a transitive dependency -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-core</artifactId>
+      <version>1.0.1</version>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>com.google.auto.value</groupId>
       <artifactId>auto-value</artifactId>

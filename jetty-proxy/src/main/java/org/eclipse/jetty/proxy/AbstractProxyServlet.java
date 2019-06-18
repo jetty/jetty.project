@@ -29,7 +29,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -207,7 +207,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
     protected Logger createLogger()
     {
         String servletName = getServletConfig().getServletName();
-        servletName = servletName.replace('-', '.');
+        servletName = StringUtil.replace(servletName, '-', '.');
         if ((getClass().getPackage() != null) && !servletName.startsWith(getClass().getPackage().getName()))
         {
             servletName = getClass().getName() + "." + servletName;
