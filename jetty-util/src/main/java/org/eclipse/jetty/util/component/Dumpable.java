@@ -105,7 +105,6 @@ public interface Dumpable
                 s = String.format("%s@%x[size=%d]",o.getClass().getComponentType(),o.hashCode(), Array.getLength(o));
             else if (o instanceof Map)
                 s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Map<?,?>)o).size());
-            
             else
             {
                 s = String.valueOf(o);
