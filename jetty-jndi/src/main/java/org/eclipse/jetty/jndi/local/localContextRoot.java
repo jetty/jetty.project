@@ -270,7 +270,7 @@ public class localContextRoot implements Context
         if (cname == null || cname.isEmpty())
         {
             //If no name create copy of this context with same bindings, but with copy of the environment so it can be modified
-            return __root.shallowCopy();
+            return __root.shallowCopy(_env);
         }
 
         if (cname.size() == 0)
@@ -339,7 +339,7 @@ public class localContextRoot implements Context
 
         if ((cname == null) || cname.isEmpty())
         {
-            return __root.shallowCopy();
+            return __root.shallowCopy(_env);
         }
 
         if (cname.size() == 1)

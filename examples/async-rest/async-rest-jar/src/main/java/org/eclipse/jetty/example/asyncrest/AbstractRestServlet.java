@@ -24,7 +24,6 @@ import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.util.Map;
 import java.util.Queue;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -67,12 +66,25 @@ public class AbstractRestServlet extends HttpServlet
             _appid = servletConfig.getInitParameter(APPID_PARAM);
     }
 
-
-    public static String sanitize(String s)
+    // TODO: consider using StringUtil.sanitizeFileSystemName instead of this?
+    // might introduce jetty-util dependency though
+    public static String sanitize(String str)
     {
-        if (s==null)
+        if (str == null)
             return null;
-        return s.replace("<","?").replace("&","?").replace("\n","?");
+
+        char[] chars = str.toCharArray();
+        int len = chars.length;
+        for (int i = 0; i < len; i++)
+        {
+            char c = chars[i];
+            if ((c <= 0x1F) || // control characters
+                (c == '<') || (c == '&'))
+            {
+                chars[i] = '?';
+            }
+        }
+        return String.valueOf(chars);
     }
     
     protected String restURL(String item) 

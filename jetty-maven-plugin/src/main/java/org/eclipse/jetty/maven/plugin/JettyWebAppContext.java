@@ -514,7 +514,7 @@ public class JettyWebAppContext extends WebAppContext
                         int i=0;
                         while (res == null && (i < _webInfClasses.size()))
                         {
-                            String newPath = uri.replace(WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                            String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                             res = Resource.newResource(newPath);
                             if (!res.exists())
                             {
@@ -529,7 +529,7 @@ public class JettyWebAppContext extends WebAppContext
                 {
                     // Return the real jar file for all accesses to
                     // /WEB-INF/lib/*.jar
-                    String jarName = uri.replace(WEB_INF_LIB_PREFIX, "");
+                    String jarName = StringUtil.strip(uri, WEB_INF_LIB_PREFIX);
                     if (jarName.startsWith("/") || jarName.startsWith("\\")) 
                         jarName = jarName.substring(1);
                     if (jarName.length()==0) 
@@ -581,7 +581,7 @@ public class JettyWebAppContext extends WebAppContext
                
                 while (i < _webInfClasses.size())
                 {
-                    String newPath = path.replace(WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                    String newPath = StringUtil.replace(path, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                     allPaths.addAll(super.getResourcePaths(newPath));
                     i++;
                 }

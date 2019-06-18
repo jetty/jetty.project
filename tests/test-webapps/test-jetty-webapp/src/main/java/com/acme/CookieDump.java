@@ -21,14 +21,12 @@ package com.acme;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 
 /** 
  * Test Servlet Cookies.
@@ -117,9 +115,9 @@ public class CookieDump extends HttpServlet
     {
         if (string==null)
             return null;
-        string=string.replace("&", "&amp;");
-        string=string.replace( "<", "&lt;");
-        string=string.replace( ">", "&gt;");
+        string = string.replace("&", "&amp;");
+        string = string.replace( "<", "&lt;");
+        string = string.replace( ">", "&gt;");
         return string;
     }
 

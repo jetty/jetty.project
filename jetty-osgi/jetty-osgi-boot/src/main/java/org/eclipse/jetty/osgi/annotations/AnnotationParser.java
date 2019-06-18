@@ -30,6 +30,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.objectweb.asm.Opcodes;
 import org.osgi.framework.Bundle;
@@ -209,7 +210,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
                 continue;
             }
             //transform into a classname to pass to the resolver
-            String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+            String shortName = StringUtil.replace(name, '/', '.').substring(0, name.length() - 6);
 
             addParsedClass(shortName, getResource(bundle));
             try (InputStream classInputStream = classUrl.openStream())

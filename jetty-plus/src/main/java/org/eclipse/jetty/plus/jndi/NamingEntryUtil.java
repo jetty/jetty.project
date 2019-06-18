@@ -30,6 +30,7 @@ import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -117,7 +118,7 @@ public class NamingEntryUtil
      * @return all NameEntries of a certain type in the given naming environment scope (server-wide names or context-specific names)
      * @throws NamingException if unable to lookup the naming entries
      */
-    public static List<Object> lookupNamingEntries (Object scope, Class<?> clazz)
+    public static <T> List<? extends T> lookupNamingEntries (Object scope, Class<T> clazz)
     throws NamingException
     {
         try
@@ -126,7 +127,7 @@ public class NamingEntryUtil
             Context namingEntriesContext = (Context)scopeContext.lookup(NamingEntry.__contextName);
             ArrayList<Object> list = new ArrayList<Object>();
             lookupNamingEntries(list, namingEntriesContext, clazz);
-            return list;
+            return (List<T>)list;
         }
         catch (NameNotFoundException e)
         {
@@ -238,8 +239,9 @@ public class NamingEntryUtil
         if (scope==null)
             return "";
 
-        String str = scope.getClass().getName()+"@"+Long.toHexString(scope.hashCode());
-        str=str.replace('/', '_').replace(' ', '_');
+        String str = scope.getClass().getName() + "@" + Long.toHexString(scope.hashCode());
+        str = StringUtil.replace(str, '/', '_');
+        str = StringUtil.replace(str, ' ', '_');
         return str;
     }
 }

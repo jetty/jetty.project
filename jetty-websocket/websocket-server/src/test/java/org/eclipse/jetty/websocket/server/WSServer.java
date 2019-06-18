@@ -37,6 +37,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -82,7 +83,7 @@ public class WSServer
     public void copyClass(Class<?> clazz) throws Exception
     {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        String endpointPath = clazz.getName().replace('.','/') + ".class";
+        String endpointPath = TypeUtil.toClassReference(clazz);
         URL classUrl = cl.getResource(endpointPath);
         assertThat("Class URL for: " + clazz,classUrl,notNullValue());
         File destFile = new File(classesDir,FS.separators(endpointPath));

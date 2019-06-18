@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 import org.apache.tools.ant.AntClassLoader;
 import org.eclipse.jetty.util.PatternMatcher;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -88,7 +89,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
                             }
                             catch (URISyntaxException e)
                             {
-                                containerUris[i] = new URI(u.toString().replaceAll(" ", "%20"));
+                                containerUris[i] = new URI(URIUtil.encodeSpaces(u.toString()));
                             }  
                             i++;
                         }

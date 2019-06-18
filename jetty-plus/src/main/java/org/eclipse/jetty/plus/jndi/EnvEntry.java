@@ -56,4 +56,10 @@ public class EnvEntry extends NamingEntry
     {
         return this.overrideWebXml;
     }
+
+    @Override
+    protected String toStringMetaData()
+    {
+        return "OverrideWebXml=" + overrideWebXml;
+    }
 }

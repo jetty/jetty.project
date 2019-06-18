@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -339,7 +340,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         }
         catch (URISyntaxException e)
         {
-            uri = new URI(url.toString().replaceAll(" ", "%20"));
+            uri = new URI(URIUtil.encodeSpaces(url.toString()));
         }
         String key = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
         resourceMap.put(key + ";" + fragment.getSymbolicName(), Resource.newResource(uri));

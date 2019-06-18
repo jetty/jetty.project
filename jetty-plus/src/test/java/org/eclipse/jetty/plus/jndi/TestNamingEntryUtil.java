@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.plus.jndi;
 
+import java.util.List;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.Name;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingException;
+
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -26,16 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
-
-import java.util.List;
-
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.Name;
-import javax.naming.NameNotFoundException;
-import javax.naming.NamingException;
-
-import org.junit.jupiter.api.Test;
 
 public class TestNamingEntryUtil
 {
@@ -122,7 +121,7 @@ public class TestNamingEntryUtil
     public void testLookupNamingEntries() throws Exception
     {
         ScopeA scope = new ScopeA();
-        List<?> list = NamingEntryUtil.lookupNamingEntries(scope, MyNamingEntry.class);
+        List<? extends MyNamingEntry> list = NamingEntryUtil.lookupNamingEntries(scope, MyNamingEntry.class);
         assertThat(list, is(empty()));
 
         MyNamingEntry mne1 = new MyNamingEntry(scope, "a/b", 1);
