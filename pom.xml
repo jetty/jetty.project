@@ -535,8 +535,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1-SNAPSHOT</version>
           <configuration>
+            <verbose>true</verbose>
+            <debug>true</debug>
             <source>11</source>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
