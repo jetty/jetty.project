@@ -84,7 +84,10 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 
         if (ssl == null)
         {
-            this.sslContextFactory = new SslContextFactory.Server();
+            if (policy.getBehavior() == WebSocketBehavior.CLIENT)
+                this.sslContextFactory = new SslContextFactory.Client();
+            else if (policy.getBehavior() == WebSocketBehavior.SERVER)
+                this.sslContextFactory = new SslContextFactory.Server();
         }
         else
         {
