@@ -31,8 +31,8 @@ import java.util.Set;
  */
 public class AnnotationIntrospector
 {
-    protected final Set<Class<?>> _introspectedClasses = new HashSet<>();
-    protected final List<IntrospectableAnnotationHandler> _handlers = new ArrayList<IntrospectableAnnotationHandler>();
+    private final Set<Class<?>> _introspectedClasses = new HashSet<>();
+    private final List<IntrospectableAnnotationHandler> _handlers = new ArrayList<IntrospectableAnnotationHandler>();
     
     /**
      * IntrospectableAnnotationHandler

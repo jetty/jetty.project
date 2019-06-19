@@ -47,24 +47,20 @@ public abstract class LifeCycleCallback
 
     public LifeCycleCallback(String className, String methodName)
     {
-        Objects.requireNonNull(className);
-        Objects.requireNonNull(methodName);
-        _className = className;
-        _methodName = methodName;
+        _className = Objects.requireNonNull(className);
+        _methodName =Objects.requireNonNull(methodName);
     }
     
     public LifeCycleCallback (Class<?> clazz, String methodName)
     {
-        Objects.requireNonNull(clazz);
-        Objects.requireNonNull(methodName);
+        _targetClass = Objects.requireNonNull(clazz);
+        _methodName = Objects.requireNonNull(methodName);
         try
         {
             Method method = IntrospectionUtil.findMethod(clazz, methodName, null, true, true);
             validate(clazz, method);
             _target = method;
-            _targetClass = clazz;
             _className = clazz.getName();
-            _methodName = methodName;
         }
         catch (NoSuchMethodException e)
         {
@@ -167,13 +163,13 @@ public abstract class LifeCycleCallback
         if (o==null)
             return false;
 
+        if (this == o)
+            return true;
+        
         if (!LifeCycleCallback.class.isInstance(o))
             return false;
 
         LifeCycleCallback callback = (LifeCycleCallback)o;
-        
-        if (this == callback)
-            return true;
         
         if (getTargetClassName().equals(callback.getTargetClassName())
             && getMethodName().equals(callback.getMethodName()))

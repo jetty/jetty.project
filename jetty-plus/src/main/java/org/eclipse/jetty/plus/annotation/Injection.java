@@ -52,10 +52,8 @@ public class Injection
 
     public Injection (Class<?> clazz, Field field, Class<?> resourceType, String jndiName, String mappingName)
     {
-        Objects.requireNonNull(clazz);
-        Objects.requireNonNull(field);
-        _targetClass = clazz;
-        _target = field;
+        _targetClass = Objects.requireNonNull(clazz);
+        _target = Objects.requireNonNull(field);
         _resourceClass = resourceType;
         _paramClass = null;
         _jndiName = jndiName;
@@ -64,10 +62,8 @@ public class Injection
     
     public Injection (Class<?> clazz, Method method, Class<?> arg, Class<?> resourceType, String jndiName, String mappingName)
     {
-        Objects.requireNonNull(clazz);
-        Objects.requireNonNull(method);
-        _targetClass = clazz;
-        _target = method;
+        _targetClass = Objects.requireNonNull(clazz);
+        _target = Objects.requireNonNull(method);
         _resourceClass = resourceType;
         _paramClass = arg;
         _jndiName = jndiName;
@@ -76,9 +72,8 @@ public class Injection
 
     public Injection (Class<?> clazz, String target, Class<?> resourceType, String jndiName, String mappingName)
     {
-        Objects.requireNonNull(clazz);
+        _targetClass = Objects.requireNonNull(clazz);
         Objects.requireNonNull(target);
-        _targetClass = clazz;
         _resourceClass = resourceType;
         _jndiName = jndiName;
         _mappingName = mappingName;
@@ -90,7 +85,8 @@ public class Injection
         String setter = "set"+target.substring(0,1).toUpperCase(Locale.ENGLISH)+target.substring(1);
         try
         {
-            LOG.debug("Looking for method for setter: "+setter+" with arg "+_resourceClass);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Looking for method for setter: "+setter+" with arg {}", _resourceClass);
             tmpTarget = IntrospectionUtil.findMethod(clazz, setter, new Class[] {_resourceClass}, true, false);
             tmpParamClass = _resourceClass;
         }

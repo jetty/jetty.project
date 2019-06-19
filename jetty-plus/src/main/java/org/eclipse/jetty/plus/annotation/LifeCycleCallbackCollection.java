@@ -62,7 +62,8 @@ public class LifeCycleCallbackCollection
     {
         if (callback == null)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Ignoring empty LifeCycleCallback");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring empty LifeCycleCallback");
             return;
         }
 

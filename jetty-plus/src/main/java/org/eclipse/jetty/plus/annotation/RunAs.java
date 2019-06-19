@@ -34,10 +34,8 @@ public class RunAs
 
     public RunAs(String className, String roleName)
     {
-        Objects.requireNonNull(className);
-        Objects.requireNonNull(roleName);
-        _className = className;
-        _roleName = roleName;
+        _className = Objects.requireNonNull(className);
+        _roleName = Objects.requireNonNull(roleName);
     }
     
     public String getTargetClassName()
