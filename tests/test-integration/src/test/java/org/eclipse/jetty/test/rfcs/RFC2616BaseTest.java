@@ -1062,12 +1062,10 @@ public abstract class RFC2616BaseTest
     {
         String specId;
 
-        String serverURI = server.getServerURI().toASCIIString();
-
         // HTTP/1.0
-
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /redirect/ HTTP/1.0\n");
+        req1.append("Host: myhost:1234\n");
         req1.append("Connection: Close\n");
         req1.append("\n");
 
@@ -1075,7 +1073,7 @@ public abstract class RFC2616BaseTest
 
         specId = "10.3 Redirection HTTP/1.0 - basic";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(serverURI + "/tests/", response.get("Location"),specId);
+        assertEquals("http://myhost:1234/tests/", response.get("Location"),specId);
     }
 
     /**
