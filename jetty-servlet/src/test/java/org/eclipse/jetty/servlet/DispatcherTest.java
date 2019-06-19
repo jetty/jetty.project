@@ -52,6 +52,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -163,7 +164,7 @@ public class DispatcherTest
     @Test
     public void testForwardWithBadParams() throws Exception
     {
-        try(StacklessLogging nostack = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging nostack = new StacklessLogging(HttpChannel.class))
         {
             Log.getLogger(ServletHandler.class).info("Expect Not valid UTF8 warnings...");
             _contextHandler.addServlet(AlwaysForwardServlet.class, "/forward/*");

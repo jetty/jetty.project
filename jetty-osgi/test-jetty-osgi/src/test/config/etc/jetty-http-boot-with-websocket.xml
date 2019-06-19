@@ -38,8 +38,8 @@
             </New>
           </Arg>
         </Call>
-        <Set name="host" property="jetty.http.host" />
-        <Set name="port"><Property name="jetty.http.port" default="80" /></Set>
+        <Set name="host" property="jetty.http.host"/>
+        <Set name="port"><Property name="jetty.http.port" default="80"/></Set>
         <Set name="idleTimeout"><Property name="jetty.http.idleTimeout" default="30000"/></Set>
       </New>
     </Arg>

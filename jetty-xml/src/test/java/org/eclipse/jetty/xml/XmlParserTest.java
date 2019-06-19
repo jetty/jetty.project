@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
 
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
 public class XmlParserTest
@@ -31,8 +32,10 @@ public class XmlParserTest
     {
         XmlParser parser = new XmlParser();
 
-        URL configURL = XmlConfiguration.class.getClassLoader().getResource("org/eclipse/jetty/xml/configure_10_0.dtd");
+        URL configURL = XmlConfiguration.class.getResource("configure_10_0.dtd");
         parser.redirectEntity("configure_10_0.dtd", configURL);
+        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", configURL);
+        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", configURL);
 
         URL url = XmlParserTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/configureWithAttr.xml");
         XmlParser.Node testDoc = parser.parse(url.toString());

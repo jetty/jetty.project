@@ -32,7 +32,7 @@
           </Arg>
         </Call>
         <Set name="host" property="jetty.host"/>
-        <Set name="port"><Property name="jetty.port" default="0" />0</Set>
+        <Set name="port" property="jetty.port"/>
         <Set name="idleTimeout">30000</Set>
       </New>
     </Arg>

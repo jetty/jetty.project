@@ -6,7 +6,7 @@
       <New class="org.eclipse.jetty.server.ForwardedRequestCustomizer">
         <Set name="forwardedOnly" property="jetty.httpConfig.forwardedOnly"/>
         <Set name="proxyAsAuthority" property="jetty.httpConfig.forwardedProxyAsAuthority"/>
-        <Set name="forwardedPortAsAuthority" property name="jetty.httpConfig.forwardedPortAsAuthority"/>
+        <Set name="forwardedPortAsAuthority" property="jetty.httpConfig.forwardedPortAsAuthority"/>
         <Set name="forwardedHeader" property="jetty.httpConfig.forwardedHeader"/>
         <Set name="forwardedHostHeader" property="jetty.httpConfig.forwardedHostHeader"/>
         <Set name="forwardedServerHeader" property="jetty.httpConfig.forwardedServerHeader"/>

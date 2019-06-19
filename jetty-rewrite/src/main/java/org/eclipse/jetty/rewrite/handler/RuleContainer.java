@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -33,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Base container to group rules. Can be extended so that the contained rules
  * will only be applied under certain conditions
  */
-public class RuleContainer extends Rule
+public class RuleContainer extends Rule implements Dumpable
 {
     public static final String ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX = ".QUERYSTRING";
     private static final Logger LOG = Log.getLogger(RuleContainer.class);
@@ -213,5 +214,11 @@ public class RuleContainer extends Rule
         }
 
         return target;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, _rules);
     }
 }

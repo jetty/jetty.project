@@ -106,6 +106,7 @@ public class XmlConfiguration
         URL config90 = klass.getResource("configure_9_0.dtd");
         URL config93 = klass.getResource("configure_9_3.dtd");
         URL config100 = klass.getResource("configure_10_0.dtd");
+
         parser.redirectEntity("configure.dtd",config93);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);
