@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -97,7 +96,7 @@ public class WebSocketStatsTest
         contextHandler.addServlet(MyWebSocketServlet.class, "/testPath");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
         client = new WebSocketClient();
 
         server.start();

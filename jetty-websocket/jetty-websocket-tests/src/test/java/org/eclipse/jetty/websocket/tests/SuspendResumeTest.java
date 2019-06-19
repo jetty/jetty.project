@@ -85,7 +85,7 @@ public class SuspendResumeTest
         server.setHandler(contextHandler);
         contextHandler.addServlet(new ServletHolder(new UpgradeServlet()), "/suspend");
 
-        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
 
         server.start();
         client.start();

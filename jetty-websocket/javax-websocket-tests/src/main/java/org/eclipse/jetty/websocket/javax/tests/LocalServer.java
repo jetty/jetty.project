@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.tests;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiConsumer;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.OnMessage;
@@ -168,7 +167,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
         servletContextHandler.setContextPath("/");
-        serverContainer = JavaxWebSocketServletContainerInitializer.configureContext(servletContextHandler);
+        JavaxWebSocketServletContainerInitializer.configure(servletContextHandler, null);
         serverContainer.addSessionListener(trackingListener);
         configureServletContextHandler(servletContextHandler);
         return servletContextHandler;
@@ -283,6 +282,15 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
 
     public ServerContainer getServerContainer()
     {
+        if (!servletContextHandler.isRunning())
+        {
+            throw new IllegalStateException("Cannot access ServerContainer when ServletContextHandler isn't running");
+        }
+
+        if (serverContainer == null)
+        {
+            serverContainer = (JavaxWebSocketServerContainer)servletContextHandler.getAttribute(JavaxWebSocketServerContainer.JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE);
+        }
         return serverContainer;
     }
 

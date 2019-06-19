@@ -19,12 +19,10 @@
 package org.eclipse.jetty.websocket.server.browser;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -92,7 +90,8 @@ public class BrowserDebugTool
         return connector.getLocalPort();
     }
 
-    public void prepare(int port) throws IOException, URISyntaxException {
+    public void prepare(int port)
+    {
         server = new Server();
         connector = new ServerConnector(server);
         connector.setPort(port);
@@ -100,7 +99,7 @@ public class BrowserDebugTool
 
         ServletContextHandler context = new ServletContextHandler();
 
-        JettyWebSocketServletContainerInitializer.configureContext(context);
+        JettyWebSocketServletContainerInitializer.configure(context, null);
 
         context.setContextPath("/");
         Resource staticResourceBase = findStaticResources();

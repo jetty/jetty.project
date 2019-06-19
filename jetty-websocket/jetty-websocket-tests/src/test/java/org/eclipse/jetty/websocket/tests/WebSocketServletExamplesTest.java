@@ -73,7 +73,7 @@ public class WebSocketServletExamplesTest
         _context.addServlet(MyAdvancedEchoServlet.class, "/advancedEcho");
         _context.addServlet(MyAuthedServlet.class, "/authed");
 
-        JettyWebSocketServletContainerInitializer.configureContext(_context);
+        JettyWebSocketServletContainerInitializer.configure(_context, null);
         _server.start();
     }
 

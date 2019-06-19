@@ -22,11 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
-
 import javax.servlet.ServletContext;
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
-import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
@@ -51,7 +49,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 @ManagedObject("JSR356 Server Container")
 public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer implements javax.websocket.server.ServerContainer, LifeCycle.Listener
 {
-    public static final String JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE = ServerContainer.class.getName();
+    public static final String JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE = javax.websocket.server.ServerContainer.class.getName();
     private static final Logger LOG = Log.getLogger(JavaxWebSocketServerContainer.class);
 
     public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext)

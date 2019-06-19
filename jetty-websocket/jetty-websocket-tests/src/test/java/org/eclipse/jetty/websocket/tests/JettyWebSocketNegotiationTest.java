@@ -32,7 +32,6 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,8 +74,9 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testBadRequest() throws Exception
     {
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->new EchoSocket());
+        JettyWebSocketServletContainerInitializer.configure(contextHandler,
+            (context, container) -> container.addMapping("/", (req, resp)->new EchoSocket()));
+
 
         URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
         EventSocket socket = new EventSocket();
@@ -93,12 +93,12 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testServerError() throws Exception
     {
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->
-        {
-            resp.setAcceptedSubProtocol("errorSubProtocol");
-            return new EchoSocket();
-        });
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+            container.addMapping("/", (req, resp) ->
+            {
+                resp.setAcceptedSubProtocol("errorSubProtocol");
+                return new EchoSocket();
+            }));
 
         URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
         EventSocket socket = new EventSocket();

@@ -238,6 +238,7 @@ public interface RemoteEndpoint
      * Get the InetSocketAddress for the established connection.
      *
      * @return the InetSocketAddress for the established connection. (or null, if there is none)
+     * @deprecated use {@link #getRemoteAddress()} instead
      */
     @Deprecated
     InetSocketAddress getInetSocketAddress();
