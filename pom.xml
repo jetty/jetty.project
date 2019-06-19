@@ -547,8 +547,10 @@
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>false</detectJavaApiLink>
+            <detectOfflineLinks>false</detectOfflineLinks>
             <show>protected</show>
             <attach>true</attach>
+            <isOffline>true</isOffline>
             <!--failOnError>false</failOnError-->
             <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
           </configuration>
