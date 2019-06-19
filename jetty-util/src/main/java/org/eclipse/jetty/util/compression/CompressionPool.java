@@ -88,7 +88,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         if (object == null)
             return;
 
-        if (_capacity == 0)
+        if (_capacity == 0 || isStopped())
         {
             end(object);
             return;

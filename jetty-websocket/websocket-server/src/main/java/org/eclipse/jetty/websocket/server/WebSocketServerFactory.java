@@ -338,6 +338,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         super.doStart();
     }
 
+    @Override
+    protected void doStop() throws Exception
+    {
+        sessionTracker.stop();
+        extensionFactory.stop();
+        super.doStop();
+    }
+
     /**
      * Attempt to find the DecoratedObjectFactory that should be used.
      * @return the DecoratedObjectFactory that should be used. (never null)

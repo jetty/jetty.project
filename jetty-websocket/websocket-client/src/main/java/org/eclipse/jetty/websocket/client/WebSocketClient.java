@@ -400,6 +400,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         ShutdownThread.deregister(this);
 
+        sessionTracker.stop();
+        extensionRegistry.stop();
         super.doStop();
 
         if (LOG.isDebugEnabled())
