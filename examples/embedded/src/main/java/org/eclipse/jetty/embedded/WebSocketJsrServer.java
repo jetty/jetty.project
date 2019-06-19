@@ -53,22 +53,19 @@ public class WebSocketJsrServer
 
         HandlerList handlers = new HandlerList();
 
-        ServletContextHandler context = new ServletContextHandler(
+        ServletContextHandler contextHandler = new ServletContextHandler(
                 ServletContextHandler.SESSIONS);
-        context.setContextPath("/");
-        handlers.addHandler(context);
+        contextHandler.setContextPath("/");
+        handlers.addHandler(contextHandler);
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
 
         // Enable javax.websocket configuration for the context
-        ServerContainer wsContainer = JavaxWebSocketServletContainerInitializer
-                .configureContext(context);
-
-        // Add your websockets to the container
-        wsContainer.addEndpoint(EchoJsrSocket.class);
+        JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container)->
+                container.addEndpoint(EchoJsrSocket.class));
 
         server.start();
-        context.dumpStdErr();
+        contextHandler.dumpStdErr();
         server.join();
     }
 }
