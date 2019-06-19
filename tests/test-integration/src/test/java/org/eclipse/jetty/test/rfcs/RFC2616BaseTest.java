@@ -1073,7 +1073,7 @@ public abstract class RFC2616BaseTest
 
         specId = "10.3 Redirection HTTP/1.0 - basic";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals("http://myhost:1234/tests/", response.get("Location"),specId);
+        assertEquals(server.getScheme() + "://myhost:1234/tests/", response.get("Location"),specId);
     }
 
     /**
