@@ -47,7 +47,7 @@ public class JettyWebSocketTest
         server.addXmlConfiguration("NIOHttp.xml");
 
         server.load();
-        server.getServer().setDumpAfterStart(true);
+        // server.getServer().setDumpAfterStart(true);
         server.start();
     }
 
