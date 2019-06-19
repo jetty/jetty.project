@@ -50,7 +50,7 @@ pipeline {
             maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
           }
         }
-/*
+
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
@@ -59,9 +59,8 @@ pipeline {
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
           }
         }
-*/
 
-        stage("Checkstyle") {
+        stage("Checkstyle ") {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
@@ -72,7 +71,6 @@ pipeline {
             )
           }
         }
-
       }
     }
   }
