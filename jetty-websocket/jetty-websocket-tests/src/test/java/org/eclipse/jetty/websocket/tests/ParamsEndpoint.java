@@ -19,18 +19,31 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
 @WebSocket
-public class EchoSocket
+public class ParamsEndpoint
 {
-    @OnWebSocketMessage
-    public void onMessage(Session session, String msg) throws IOException
+    @OnWebSocketConnect
+    public void onConnect(Session session) throws IOException
     {
-        session.getRemote().sendString(msg);
+        Map<String, List<String>> params = session.getUpgradeRequest().getParameterMap();
+        StringBuilder msg = new StringBuilder();
+
+        for (String key : params.keySet())
+        {
+            msg.append("Params[").append(key).append("]=");
+            msg.append(params.get(key).stream().collect(Collectors.joining(", ", "[", "]")));
+            msg.append("\n");
+        }
+
+        session.getRemote().sendString(msg.toString());
     }
 }

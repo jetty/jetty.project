@@ -21,16 +21,18 @@ package org.eclipse.jetty.websocket.tests;
 import java.io.IOException;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
 @WebSocket
-public class EchoSocket
+public class GetAuthHeaderEndpoint
 {
-    @OnWebSocketMessage
-    public void onMessage(Session session, String msg) throws IOException
+    @OnWebSocketConnect
+    public void onConnect(Session session) throws IOException
     {
-        session.getRemote().sendString(msg);
+        String authHeaderName = "Authorization";
+        String authHeaderValue = session.getUpgradeRequest().getHeader(authHeaderName);
+        session.getRemote().sendString("Header[" + authHeaderName + "]=" + authHeaderValue);
     }
 }
