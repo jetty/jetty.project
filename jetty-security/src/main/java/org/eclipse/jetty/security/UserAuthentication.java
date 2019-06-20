@@ -39,10 +39,4 @@ public class UserAuthentication extends AbstractUserAuthentication
         return "{User,"+getAuthMethod()+","+_userIdentity+"}";
     }
 
-    @Override
-    @Deprecated
-    public void logout()
-    {
-    }
-
 }

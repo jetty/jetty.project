@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -58,9 +57,6 @@ public class ContextHandlerCollection extends HandlerCollection
 {
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
     private final SerializedExecutor _serializedExecutor = new SerializedExecutor();
-
-    @Deprecated
-    private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
 
     /* ------------------------------------------------------------ */
     public ContextHandlerCollection()
@@ -241,33 +237,6 @@ public class ContextHandlerCollection extends HandlerCollection
 
     /* ------------------------------------------------------------ */
     /**
-     * Adds a context handler.
-     *
-     * @param contextPath  The context path to add
-     * @param resourceBase the base (root) Resource
-     * @return the ContextHandler just added
-     * @deprecated Unused convenience method no longer supported.
-     */
-    @Deprecated
-    public ContextHandler addContext(String contextPath,String resourceBase)
-    {
-        try
-        {
-            ContextHandler context = _contextClass.getDeclaredConstructor().newInstance();
-            context.setContextPath(contextPath);
-            context.setResourceBase(resourceBase);
-            addHandler(context);
-            return context;
-        }
-        catch (Exception e)
-        {
-            LOG.debug(e);
-            throw new Error(e);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * Thread safe deploy of a Handler.
      * <p>
      *     This method is the equivalent of {@link #addHandler(Handler)},
@@ -331,30 +300,6 @@ public class ContextHandlerCollection extends HandlerCollection
                 callback.failed(throwable);
             }
         });
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The class to use to add new Contexts
-     * @deprecated Unused convenience mechanism not used.
-     */
-    @Deprecated
-    public Class<?> getContextClass()
-    {
-        return _contextClass;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param contextClass The class to use to add new Contexts
-     * @deprecated Unused convenience mechanism not used.
-     */
-    @Deprecated
-    public void setContextClass(Class<? extends ContextHandler> contextClass)
-    {
-        if (contextClass ==null || !(ContextHandler.class.isAssignableFrom(contextClass)))
-            throw new IllegalArgumentException();
-        _contextClass = contextClass;
     }
 
     /* ------------------------------------------------------------ */

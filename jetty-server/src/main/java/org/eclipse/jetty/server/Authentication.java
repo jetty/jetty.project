@@ -50,8 +50,6 @@ public interface Authentication
         String getAuthMethod();
         UserIdentity getUserIdentity(); 
         boolean isUserInRole(UserIdentity.Scope scope,String role);
-        @Deprecated
-        void logout();
     }
     
     /* ------------------------------------------------------------ */
