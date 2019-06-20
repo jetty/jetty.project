@@ -21,21 +21,17 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
-import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
@@ -111,17 +107,10 @@ public class PartialEchoTest
     @BeforeAll
     public static void startServer() throws Exception
     {
-        server = new LocalServer()
-        {
-            @Override
-            protected void configureServletContextHandler(ServletContextHandler context) throws Exception
-            {
-                ServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(context);
-                container.addEndpoint(PartialTextSocket.class);
-                container.addEndpoint(PartialTextSessionSocket.class);
-            }
-        };
+        server = new LocalServer();
         server.start();
+        server.getServerContainer().addEndpoint(PartialTextSocket.class);
+        server.getServerContainer().addEndpoint(PartialTextSessionSocket.class);
     }
 
     @AfterAll

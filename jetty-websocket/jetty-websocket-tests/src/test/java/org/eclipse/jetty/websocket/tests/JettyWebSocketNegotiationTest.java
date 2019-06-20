@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +59,7 @@ public class JettyWebSocketNegotiationTest
         contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
-
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
         server.start();
         client = new WebSocketClient();
         client.start();
@@ -75,7 +75,7 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testBadRequest() throws Exception
     {
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
         container.addMapping("/", (req, resp)->new EchoSocket());
 
         URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
@@ -93,8 +93,8 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testServerError() throws Exception
     {
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
+        container.addMapping("/", (req, resp) ->
         {
             resp.setAcceptedSubProtocol("errorSubProtocol");
             return new EchoSocket();

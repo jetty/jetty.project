@@ -43,7 +43,6 @@ public class JettyWebSocketTest
         server.setScheme(HttpScheme.HTTP.asString());
         server.addXmlConfiguration("basic-server.xml");
         server.addXmlConfiguration("login-service.xml");
-        // server.addXmlConfiguration("configurations-addknown-all.xml");
         server.addXmlConfiguration("deploy.xml");
         server.addXmlConfiguration("NIOHttp.xml");
 

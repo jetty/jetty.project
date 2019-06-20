@@ -30,11 +30,11 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 
-public class DelegatedJettyServletUpgradeRequest implements UpgradeRequest
+public class UpgradeRequestAdapter implements UpgradeRequest
 {
     private final ServletUpgradeRequest servletRequest;
 
-    public DelegatedJettyServletUpgradeRequest(ServletUpgradeRequest servletRequest)
+    public UpgradeRequestAdapter(ServletUpgradeRequest servletRequest)
     {
         this.servletRequest = servletRequest;
     }
@@ -61,8 +61,8 @@ public class DelegatedJettyServletUpgradeRequest implements UpgradeRequest
     public List<ExtensionConfig> getExtensions()
     {
         return this.servletRequest.getExtensions().stream()
-            .map((ext) -> new JettyExtensionConfig(ext.getName(), ext.getParameters()))
-            .collect(Collectors.toList());
+                .map((ext) -> new JettyExtensionConfig(ext.getName(), ext.getParameters()))
+                .collect(Collectors.toList());
     }
 
     @Override

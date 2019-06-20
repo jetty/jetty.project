@@ -160,7 +160,6 @@ public class XmlBasedJettyServer
 
         this._server = foundServer;
         this._server.setStopTimeout(1000);
-        
     }
 
     public String getScheme()
@@ -194,11 +193,11 @@ public class XmlBasedJettyServer
         _server.stop();
     }
 
-    public URI getServerURI() throws UnknownHostException
+    public URI getServerURI()
     {
         StringBuffer uri = new StringBuffer();
         uri.append(this._scheme).append("://");
-        uri.append(InetAddress.getLocalHost().getHostAddress());
+        uri.append(InetAddress.getLoopbackAddress().getHostAddress());
         uri.append(":").append(this._serverPort);
         return URI.create(uri.toString());
     }

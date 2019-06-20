@@ -118,7 +118,7 @@ public class NamingEntryUtil
      * @return all NameEntries of a certain type in the given naming environment scope (server-wide names or context-specific names)
      * @throws NamingException if unable to lookup the naming entries
      */
-    public static List<Object> lookupNamingEntries (Object scope, Class<?> clazz)
+    public static <T> List<? extends T> lookupNamingEntries (Object scope, Class<T> clazz)
     throws NamingException
     {
         try
@@ -127,7 +127,7 @@ public class NamingEntryUtil
             Context namingEntriesContext = (Context)scopeContext.lookup(NamingEntry.__contextName);
             ArrayList<Object> list = new ArrayList<Object>();
             lookupNamingEntries(list, namingEntriesContext, clazz);
-            return list;
+            return (List<T>)list;
         }
         catch (NameNotFoundException e)
         {

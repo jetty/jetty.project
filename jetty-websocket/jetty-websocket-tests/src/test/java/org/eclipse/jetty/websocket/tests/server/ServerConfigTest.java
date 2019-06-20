@@ -42,10 +42,9 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -187,12 +186,14 @@ public class ServerConfigTest
         contextHandler.addServlet(new ServletHolder(new WebSocketSessionConfigServlet()), "/sessionConfig");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.setIdleTimeout(Duration.ofMillis(idleTimeout));
-        container.setMaxTextMessageSize(maxMessageSize);
-        container.setMaxBinaryMessageSize(maxMessageSize);
-        container.setInputBufferSize(inputBufferSize);
-        container.addMapping("/containerConfig", (req, resp)->standardEndpoint);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) -> {
+            container.setIdleTimeout(Duration.ofMillis(idleTimeout));
+            container.setMaxTextMessageSize(maxMessageSize);
+            container.setMaxBinaryMessageSize(maxMessageSize);
+            container.setInputBufferSize(inputBufferSize);
+            container.addMapping("/containerConfig", (req, resp)->standardEndpoint);
+        });
+
         server.start();
 
         client = new WebSocketClient();

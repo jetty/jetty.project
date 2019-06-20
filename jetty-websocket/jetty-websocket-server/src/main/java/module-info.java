@@ -19,8 +19,8 @@
 import javax.servlet.ServletContainerInitializer;
 
 import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.websocket.server.JettyWebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
 module org.eclipse.jetty.websocket.jetty.server
 {

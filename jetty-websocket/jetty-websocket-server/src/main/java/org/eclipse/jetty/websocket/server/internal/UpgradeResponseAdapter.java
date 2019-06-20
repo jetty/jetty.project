@@ -54,8 +54,8 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     public List<ExtensionConfig> getExtensions()
     {
         return this.servletResponse.getExtensions().stream()
-            .map((ext) -> new JettyExtensionConfig(ext.getName(), ext.getParameters()))
-            .collect(Collectors.toList());
+                .map((ext) -> new JettyExtensionConfig(ext.getName(), ext.getParameters()))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -104,8 +104,8 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     public void setExtensions(List<ExtensionConfig> extensions)
     {
         List<org.eclipse.jetty.websocket.core.ExtensionConfig> coreExtensionConfigs = extensions.stream()
-            .map((ext) -> new org.eclipse.jetty.websocket.core.ExtensionConfig(ext.getName(), ext.getParameters()))
-            .collect(Collectors.toList());
+                .map((ext) -> new org.eclipse.jetty.websocket.core.ExtensionConfig(ext.getName(), ext.getParameters()))
+                .collect(Collectors.toList());
         this.servletResponse.setExtensions(coreExtensionConfigs);
     }
 

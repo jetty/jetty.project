@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
+@SuppressWarnings("unused")
 @WebSocket
 public class EchoSocket extends EventSocket
 {

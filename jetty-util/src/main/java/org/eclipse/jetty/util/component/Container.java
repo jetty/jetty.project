@@ -132,7 +132,7 @@ public interface Container
 
     /**
      * @param clazz the class of the beans
-     * @return the list of beans of the given class from the entire managed hierarchy
+     * @return the list of beans of the given class from the entire Container hierarchy
      * @param <T> the Bean type
      */
     public <T> Collection<T> getContainedBeans(Class<T> clazz);

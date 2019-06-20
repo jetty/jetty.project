@@ -16,24 +16,26 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.tests;
 
-import javax.servlet.FilterConfig;
+import java.io.IOException;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-/**
- * @deprecated Moved to #org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter
- */
-@Deprecated
-public class WebSocketUpgradeFilter extends org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter
+public class SimpleStatusServlet extends HttpServlet
 {
-    @Override
-    public void init(FilterConfig config) throws ServletException
+    private final int statusCode;
+
+    public SimpleStatusServlet(int statusCode)
     {
-        super.init(config);
-        config.getServletContext().log(
-            WebSocketUpgradeFilter.class.getName() +
-                " is deprecated. Use " +
-                org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter.class.getName());
+        this.statusCode = statusCode;
+    }
+
+    @Override
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    {
+        resp.setStatus(this.statusCode);
     }
 }
