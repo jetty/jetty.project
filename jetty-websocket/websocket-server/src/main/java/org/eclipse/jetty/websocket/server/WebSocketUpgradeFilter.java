@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -34,7 +33,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -54,43 +52,65 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
     public static final String CONFIG_ATTRIBUTE_KEY = "configAttributeKey";
+    public static final String ATTR_KEY = WebSocketUpgradeFilter.class.getName();
+
+    /**
+     * Configure the default WebSocketUpgradeFilter.
+     *
+     * <p>
+     *     This will return the default {@link WebSocketUpgradeFilter} on the
+     *     provided {@link ServletContextHandler}, creating the filter if necessary.
+     * </p>
+     * <p>
+     *     The default {@link WebSocketUpgradeFilter} is also available via
+     *     the {@link ServletContext} attribute named {@code org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
+     * </p>
+     *
+     * @param context the {@link ServletContextHandler} to use
+     * @return the configured default {@link WebSocketUpgradeFilter} instance
+     * @throws ServletException if the filer cannot be configured
+     */
+    public static WebSocketUpgradeFilter configure(ServletContextHandler context) throws ServletException
+    {
+        // Prevent double configure
+        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter) context.getAttribute(ATTR_KEY);
+        if (filter == null)
+        {
+            // Dynamically add filter
+            NativeWebSocketConfiguration configuration = NativeWebSocketServletContainerInitializer.initialize(context);
+            filter = new WebSocketUpgradeFilter(configuration);
+            filter.setToAttribute(context, ATTR_KEY);
+
+            String name = "Jetty_WebSocketUpgradeFilter";
+            String pathSpec = "/*";
+            EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
+
+            FilterHolder fholder = new FilterHolder(filter);
+            fholder.setName(name);
+            fholder.setAsyncSupported(true);
+            fholder.setInitParameter(CONTEXT_ATTRIBUTE_KEY, WebSocketUpgradeFilter.class.getName());
+            context.addFilter(fholder, pathSpec, dispatcherTypes);
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Adding [{}] {} mapped to {} to {}", name, filter, pathSpec, context);
+            }
+        }
+
+        return filter;
+    }
 
     /**
      *
      * @param context the {@link ServletContextHandler} to use
      * @return a configured {@link WebSocketUpgradeFilter} instance
      * @throws ServletException if the filer cannot be configured
+     * @deprecated use {@link #configure(ServletContextHandler)} instead
      */
+    @Deprecated
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
-        // Prevent double configure
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter) context.getAttribute(WebSocketUpgradeFilter.class.getName());
-        if (filter != null)
-        {
-            return filter;
-        }
-        
-        // Dynamically add filter
-        NativeWebSocketConfiguration configuration = NativeWebSocketServletContainerInitializer.getDefaultFrom(context.getServletContext());
-        filter = new WebSocketUpgradeFilter(configuration);
-        filter.setToAttribute(context, WebSocketUpgradeFilter.class.getName());
-        
-        String name = "Jetty_WebSocketUpgradeFilter";
-        String pathSpec = "/*";
-        EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
-        
-        FilterHolder fholder = new FilterHolder(filter);
-        fholder.setName(name);
-        fholder.setAsyncSupported(true);
-        fholder.setInitParameter(CONTEXT_ATTRIBUTE_KEY, WebSocketUpgradeFilter.class.getName());
-        context.addFilter(fholder, pathSpec, dispatcherTypes);
-        
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Adding [{}] {} mapped to {} to {}", name, filter, pathSpec, context);
-        }
-        
-        return filter;
+        return configure(context);
     }
     
     /**
@@ -102,19 +122,12 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     @Deprecated
     public static WebSocketUpgradeFilter configureContext(ServletContext context) throws ServletException
     {
-        ContextHandler handler = ContextHandler.getContextHandler(context);
-        
+        ServletContextHandler handler = ServletContextHandler.getServletContextHandler(context);
         if (handler == null)
         {
             throw new ServletException("Not running on Jetty, WebSocket support unavailable");
         }
-        
-        if (!(handler instanceof ServletContextHandler))
-        {
-            throw new ServletException("Not running in Jetty ServletContextHandler, WebSocket support via " + WebSocketUpgradeFilter.class.getName() + " unavailable");
-        }
-        
-        return configureContext((ServletContextHandler) handler);
+        return configure(handler);
     }
     
     private NativeWebSocketConfiguration configuration;

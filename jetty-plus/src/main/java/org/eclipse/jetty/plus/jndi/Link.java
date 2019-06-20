@@ -52,4 +52,10 @@ public class Link extends NamingEntry
     {
         return _link;
     }
+
+    @Override
+    protected String toStringMetaData()
+    {
+        return _link;
+    }
 }

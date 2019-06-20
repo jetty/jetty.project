@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanRegistrationException;
@@ -39,6 +38,7 @@ import javax.management.ObjectName;
 import javax.management.modelmbean.ModelMBean;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
@@ -394,15 +394,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
      */
     public String makeName(String basis)
     {
-        if (basis == null)
-            return null;
-        return basis
-                .replace(':', '_')
-                .replace('*', '_')
-                .replace('?', '_')
-                .replace('=', '_')
-                .replace(',', '_')
-                .replace(' ', '_');
+        return StringUtil.sanitizeFileSystemName(basis);
     }
 
     @Override

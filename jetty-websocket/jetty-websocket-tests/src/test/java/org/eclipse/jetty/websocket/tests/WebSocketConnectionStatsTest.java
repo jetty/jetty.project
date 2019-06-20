@@ -34,12 +34,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
@@ -58,52 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketConnectionStatsTest
 {
-
-    @WebSocket
-    public static class ClientSocket
-    {
-        CountDownLatch closed = new CountDownLatch(1);
-        int closeStatus;
-        String closeReason;
-        String behavior;
-
-        @OnWebSocketConnect
-        public void onOpen(Session session)
-        {
-            behavior = session.getPolicy().getBehavior().name();
-        }
-
-        @OnWebSocketClose
-        public void onClose(int statusCode, String reason)
-        {
-            closeStatus = statusCode;
-            closeReason = reason;
-            closed.countDown();
-        }
-
-        @OnWebSocketError
-        public void onError(Throwable cause)
-        {
-            cause.printStackTrace(System.err);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("[%s@%s]", behavior, Integer.toHexString(hashCode()));
-        }
-    }
-
-    @WebSocket
-    public static class EchoSocket extends ClientSocket
-    {
-        @OnWebSocketMessage
-        public void onMessage(Session session, String message)
-        {
-            session.getRemote().sendString(message, null);
-        }
-    }
-
     public static class MyWebSocketServlet extends WebSocketServlet
     {
         @Override
@@ -113,11 +63,12 @@ public class WebSocketConnectionStatsTest
         }
     }
 
-    Server server;
-    WebSocketClient client;
-    ConnectionStatistics statistics;
-    CountDownLatch wsUpgradeComplete = new CountDownLatch(1);
-    CountDownLatch wsConnectionClosed = new CountDownLatch(1);
+    private Server server;
+    private ServerConnector connector;
+    private WebSocketClient client;
+    private ConnectionStatistics statistics;
+    private CountDownLatch wsUpgradeComplete = new CountDownLatch(1);
+    private CountDownLatch wsConnectionClosed = new CountDownLatch(1);
 
     @BeforeEach
     public void start() throws Exception
@@ -137,8 +88,7 @@ public class WebSocketConnectionStatsTest
         };
 
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector = new ServerConnector(server);
         connector.addBean(statistics);
         server.addConnector(connector);
 
@@ -173,8 +123,8 @@ public class WebSocketConnectionStatsTest
     @Test
     public void echoStatsTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/testPath");
-        ClientSocket socket = new ClientSocket();
+        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/testPath");
+        EventSocket socket = new EventSocket();
         Future<Session> connect = client.connect(socket, uri);
 
         final long numMessages = 10000;
@@ -193,9 +143,11 @@ public class WebSocketConnectionStatsTest
             {
                 session.getRemote().sendString(msgText);
             }
+            session.close(StatusCode.NORMAL, null);
+
+            assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
         }
-        assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
-        assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
 
         assertThat(statistics.getConnectionsMax(), is(1L));
         assertThat(statistics.getConnections(), is(0L));
@@ -204,7 +156,7 @@ public class WebSocketConnectionStatsTest
         assertThat(statistics.getReceivedMessages(), is(numMessages + 2L));
 
         WebSocketFrame textFrame = new TextFrame().setPayload(msgText);
-        WebSocketFrame closeFrame = new CloseInfo(socket.closeStatus, socket.closeReason).asFrame();
+        WebSocketFrame closeFrame = new CloseInfo(socket.closeCode, socket.closeReason).asFrame();
 
         final long textFrameSize = getFrameByteSize(textFrame);
         final long closeFrameSize = getFrameByteSize(closeFrame);

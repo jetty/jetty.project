@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
@@ -92,16 +93,24 @@ public interface Dumpable
             String s;
             if (o==null)
                 s = "null";
+            else if (o instanceof Dumpable)
+            {
+                s = ((Dumpable)o).dumpSelf();
+                s = StringUtil.replace(s, "\r\n", "|");
+                s = StringUtil.replace(s, '\n', '|');
+            }
             else if (o instanceof Collection)
                 s = String.format("%s@%x(size=%d)",o.getClass().getName(),o.hashCode(),((Collection)o).size());
             else if (o.getClass().isArray())
                 s = String.format("%s@%x[size=%d]",o.getClass().getComponentType(),o.hashCode(), Array.getLength(o));
             else if (o instanceof Map)
                 s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Map<?,?>)o).size());
-            else if (o instanceof Dumpable)
-                s = ((Dumpable)o).dumpSelf().replace("\r\n","|").replace("\n","|");
             else
-                s = String.valueOf(o).replace("\r\n","|").replace("\n","|");
+            {
+                s = String.valueOf(o);
+                s = StringUtil.replace(s, "\r\n", "|");
+                s = StringUtil.replace(s, '\n', '|');
+            }
 
             if (o instanceof LifeCycle)
                 out.append(s).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
@@ -130,7 +139,7 @@ public interface Dumpable
     {
         dumpObject(out,object);
 
-        int size = extraChildren==null?0:extraChildren.length;
+        int extras = extraChildren==null?0:extraChildren.length;
 
         if (object instanceof Stream)
             object = ((Stream)object).toArray();
@@ -139,92 +148,117 @@ public interface Dumpable
 
         if (object instanceof Container)
         {
-            Container container = (Container)object;
-            ContainerLifeCycle containerLifeCycle = container instanceof ContainerLifeCycle ? (ContainerLifeCycle)container : null;
-            for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext();)
-            {
-                Object bean = i.next();
-                String nextIndent = indent + ((i.hasNext() || size>0) ? "|  " : "   ");
-                if (bean instanceof LifeCycle)
-                {
-                    if (container.isManaged(bean))
-                    {
-                        out.append(indent).append("+= ");
-                        if (bean instanceof Dumpable)
-                            ((Dumpable)bean).dump(out,nextIndent);
-                        else
-                            dumpObjects(out, nextIndent, bean);
-                    }
-                    else if (containerLifeCycle != null && containerLifeCycle.isAuto(bean))
-                    {
-                        out.append(indent).append("+? ");
-                        if (bean instanceof Dumpable)
-                            ((Dumpable)bean).dump(out,nextIndent);
-                        else
-                            dumpObjects(out, nextIndent, bean);
-                    }
-                    else
-                    {
-                        out.append(indent).append("+~ ");
-                        dumpObject(out, bean);
-                    }
-                }
-                else if (containerLifeCycle != null && containerLifeCycle.isUnmanaged(bean))
-                {
-                    out.append(indent).append("+~ ");
-                    dumpObject(out, bean);
-                }
-                else
-                {
-                    out.append(indent).append("+- ");
-                    if (bean instanceof Dumpable)
-                        ((Dumpable)bean).dump(out,nextIndent);
-                    else
-                        dumpObjects(out, nextIndent, bean);
-                }
-            }
+            dumpContainer(out, indent, (Container)object, extras==0);
         }
         if (object instanceof Iterable)
         {
-            for (Iterator i = ((Iterable<?>)object).iterator(); i.hasNext();)
-            {
-                Object item = i.next();
-                String nextIndent = indent + ((i.hasNext() || size>0) ? "|  " : "   ");
-                out.append(indent).append("+: ");
-                if (item instanceof Dumpable)
-                    ((Dumpable)item).dump(out,nextIndent);
-                else
-                    dumpObjects(out,nextIndent, item);
-            }
+            dumpIterable(out, indent, (Iterable<?>)object, extras==0);
         }
         else if (object instanceof Map)
         {
-            for (Iterator<? extends Map.Entry<?, ?>> i = ((Map<?,?>)object).entrySet().iterator(); i.hasNext();)
-            {
-                Map.Entry entry = i.next();
-                String nextIndent = indent + ((i.hasNext() || size>0) ? "|  " : "   ");
-                out.append(indent).append("+@ ").append(String.valueOf(entry.getKey())).append('=');
-                Object item = entry.getValue();
-                if (item instanceof Dumpable)
-                    ((Dumpable)item).dump(out,nextIndent);
-                else
-                    dumpObjects(out,nextIndent, item);
-            }
+            dumpMapEntries(out, indent, (Map<?,?>)object, extras==0);
         }
 
-        if (size==0)
+        if (extras==0)
             return;
 
         int i = 0;
         for (Object item : extraChildren)
         {
             i++;
-            String nextIndent = indent + (i<size ? "|  " : "   ");
+            String nextIndent = indent + (i<extras ? "|  " : "   ");
             out.append(indent).append("+> ");
             if (item instanceof Dumpable)
                 ((Dumpable)item).dump(out,nextIndent);
             else
                 dumpObjects(out, nextIndent, item);
         }
+    }
+
+    static void dumpContainer(Appendable out, String indent, Container object, boolean last) throws IOException
+    {
+        Container container = object;
+        ContainerLifeCycle containerLifeCycle = container instanceof ContainerLifeCycle ? (ContainerLifeCycle)container : null;
+        for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext();)
+        {
+            Object bean = i.next();
+            String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
+            if (bean instanceof LifeCycle)
+            {
+                if (container.isManaged(bean))
+                {
+                    out.append(indent).append("+= ");
+                    if (bean instanceof Dumpable)
+                        ((Dumpable)bean).dump(out,nextIndent);
+                    else
+                        dumpObjects(out, nextIndent, bean);
+                }
+                else if (containerLifeCycle != null && containerLifeCycle.isAuto(bean))
+                {
+                    out.append(indent).append("+? ");
+                    if (bean instanceof Dumpable)
+                        ((Dumpable)bean).dump(out,nextIndent);
+                    else
+                        dumpObjects(out, nextIndent, bean);
+                }
+                else
+                {
+                    out.append(indent).append("+~ ");
+                    dumpObject(out, bean);
+                }
+            }
+            else if (containerLifeCycle != null && containerLifeCycle.isUnmanaged(bean))
+            {
+                out.append(indent).append("+~ ");
+                dumpObject(out, bean);
+            }
+            else
+            {
+                out.append(indent).append("+- ");
+                if (bean instanceof Dumpable)
+                    ((Dumpable)bean).dump(out,nextIndent);
+                else
+                    dumpObjects(out, nextIndent, bean);
+            }
+        }
+    }
+
+    static void dumpIterable(Appendable out, String indent, Iterable<?> iterable, boolean last) throws IOException
+    {
+        for (Iterator i = iterable.iterator(); i.hasNext();)
+        {
+            Object item = i.next();
+            String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
+            out.append(indent).append("+: ");
+            if (item instanceof Dumpable)
+                ((Dumpable)item).dump(out,nextIndent);
+            else
+                dumpObjects(out,nextIndent, item);
+        }
+
+    }
+
+    static void dumpMapEntries(Appendable out, String indent, Map<?,?> map, boolean last) throws IOException
+    {
+        for (Iterator<? extends Map.Entry<?, ?>> i = map.entrySet().iterator(); i.hasNext();)
+        {
+            Map.Entry entry = i.next();
+            String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
+            out.append(indent).append("+@ ").append(String.valueOf(entry.getKey())).append(" = ");
+            Object item = entry.getValue();
+            if (item instanceof Dumpable)
+                ((Dumpable)item).dump(out,nextIndent);
+            else
+                dumpObjects(out,nextIndent, item);
+        }
+    }
+
+    static Dumpable named(String name, Object object)
+    {
+        return (out, indent) ->
+        {
+            out.append(name).append(": ");
+            Dumpable.dumpObjects(out, indent, object);
+        };
     }
 }

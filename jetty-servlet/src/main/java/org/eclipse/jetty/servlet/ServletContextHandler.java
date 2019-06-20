@@ -739,6 +739,16 @@ public class ServletContextHandler extends ContextHandler
         _objFactory.destroy(filter);
     }
 
+    public static ServletContextHandler getServletContextHandler(ServletContext context)
+    {
+        ContextHandler handler = getContextHandler(context);
+        if (handler == null)
+            return null;
+        if (handler instanceof ServletContextHandler)
+            return (ServletContextHandler) handler;
+        return null;
+    }
+
     /* ------------------------------------------------------------ */
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
     {

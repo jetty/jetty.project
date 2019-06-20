@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletSecurityElement;
@@ -1040,15 +1039,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public String toString()
     {
         if (_war!=null)
-        {
-            String war=_war;
-            if (war.indexOf("/webapps/")>=0)
-                war=war.substring(war.indexOf("/webapps/")+8);
-            return super.toString()+"{"+war+"}";
-        }
+            return super.toString()+"{"+_war+"}";
         return super.toString();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void dump(Appendable out, String indent) throws IOException
@@ -1066,15 +1060,39 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             server_classes=new ArrayList<>(_serverClasses);
             Collections.sort(server_classes);
         }
-        
+
+        String name = getDisplayName();
+        if (name == null)
+        {
+            if (_war != null)
+            {
+                if (_war.indexOf("/webapps/") >= 0)
+                    name = _war.substring(_war.indexOf("/webapps/") + 8);
+                else
+                    name = _war;
+            }
+            else if (getResourceBase() != null)
+            {
+                name = getResourceBase();
+                if (name.indexOf("/webapps/") >= 0)
+                    name =  name.substring(name.indexOf("/webapps/") + 8);
+            }
+            else
+            {
+                name = this.getClass().getSimpleName();
+            }
+        }
+
+        name = String.format("%s@%x", name, hashCode());
+
         dumpObjects(out,indent,
             new ClassLoaderDump(getClassLoader()),
-            new DumpableCollection("Systemclasses "+this,system_classes),
-            new DumpableCollection("Serverclasses "+this,server_classes),
-            new DumpableCollection("Configurations "+this,_configurations),
-            new DumpableCollection("Handler attributes "+this,((AttributesMap)getAttributes()).getAttributeEntrySet()),
-            new DumpableCollection("Context attributes "+this,((Context)getServletContext()).getAttributeEntrySet()),
-            new DumpableCollection("Initparams "+this,getInitParams().entrySet())
+            new DumpableCollection("Systemclasses " + name, system_classes),
+            new DumpableCollection("Serverclasses " + name, server_classes),
+            new DumpableCollection("Configurations " + name, _configurations),
+            new DumpableCollection("Handler attributes " + name, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
+            new DumpableCollection("Context attributes " + name, ((Context)getServletContext()).getAttributeEntrySet()),
+            new DumpableCollection("Initparams " + name, getInitParams().entrySet())
             );
     }
     

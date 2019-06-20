@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.jar.JarFile;
-
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperFactory;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -61,12 +61,12 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     public static void addClassThatIdentifiesAJarThatMustBeRejected(Class<?> zclass)
     {
-        JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED.add(zclass.getName().replace('.', '/') + ".class");
+        JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED.add(TypeUtil.toClassReference(zclass.getName()));
     }
 
     public static void addClassThatIdentifiesAJarThatMustBeRejected(String zclassName)
     {
-        JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED.add(zclassName.replace('.', '/') + ".class");
+        JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED.add(TypeUtil.toClassReference(zclassName));
     }
 
     static

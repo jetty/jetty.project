@@ -52,12 +52,10 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -237,7 +235,7 @@ public class Response implements HttpServletResponse
             if (i >= 0)
             {
                 httpOnly = true;
-                comment = comment.replace(HTTP_ONLY_COMMENT, "").trim();
+                comment = StringUtil.strip(comment.trim(), HTTP_ONLY_COMMENT);
                 if (comment.length() == 0)
                     comment = null;
             }
@@ -1146,7 +1144,7 @@ public class Response implements HttpServletResponse
             return;
 
         _locale = locale;
-        _fields.put(HttpHeader.CONTENT_LANGUAGE, locale.toString().replace('_', '-'));
+        _fields.put(HttpHeader.CONTENT_LANGUAGE, StringUtil.replace(locale.toString(), '_', '-'));
 
         if (_outputType != OutputType.NONE)
             return;

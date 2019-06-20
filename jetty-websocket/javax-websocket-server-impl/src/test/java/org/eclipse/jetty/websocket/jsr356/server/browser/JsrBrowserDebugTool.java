@@ -19,13 +19,9 @@
 package org.eclipse.jetty.websocket.jsr356.server.browser;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Objects;
-
-import javax.servlet.ServletException;
-import javax.websocket.DeploymentException;
 
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -37,7 +33,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
 /**
@@ -68,7 +63,6 @@ public class JsrBrowserDebugTool
             JsrBrowserDebugTool tool = new JsrBrowserDebugTool();
             tool.setupServer(port);
             tool.server.start();
-            tool.server.dumpStdErr();
             LOG.info("Server available at {}", tool.server.getURI());
             tool.server.join();
         }
@@ -80,11 +74,9 @@ public class JsrBrowserDebugTool
 
     private Server server;
 
-    private ServerContainer setupServer(int port) throws DeploymentException, ServletException, URISyntaxException, MalformedURLException, IOException
+    private void setupServer(int port) throws URISyntaxException, IOException
     {
         server = new Server();
-        
-        server.setDumpAfterStart(true);
         
         HttpConfiguration httpConf = new HttpConfiguration();
         httpConf.setSendServerVersion(true);
@@ -106,10 +98,9 @@ public class JsrBrowserDebugTool
         holder.setInitParameter("dirAllowed","true");
         server.setHandler(context);
 
-        ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
-        container.addEndpoint(JsrBrowserSocket.class);
+        WebSocketServerContainerInitializer.configure(context,
+            (servletContext, container) -> container.addEndpoint(JsrBrowserSocket.class));
 
         LOG.info("{} setup on port {}",this.getClass().getName(),port);
-        return container;
     }
 }
