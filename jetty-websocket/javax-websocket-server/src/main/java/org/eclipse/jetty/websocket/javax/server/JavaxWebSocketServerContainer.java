@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import javax.servlet.ServletContext;
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
-import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
@@ -51,8 +50,13 @@ import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 @ManagedObject("JSR356 Server Container")
 public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer implements javax.websocket.server.ServerContainer, LifeCycle.Listener
 {
-    public static final String JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE = ServerContainer.class.getName();
+    public static final String JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE = javax.websocket.server.ServerContainer.class.getName();
     private static final Logger LOG = Log.getLogger(JavaxWebSocketServerContainer.class);
+
+    public static JavaxWebSocketServerContainer getContainer(ServletContext servletContext)
+    {
+        return (JavaxWebSocketServerContainer)servletContext.getAttribute(JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE);
+    }
 
     public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
@@ -60,7 +64,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
-        JavaxWebSocketServerContainer container = (JavaxWebSocketServerContainer)servletContext.getAttribute(JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE);
+        JavaxWebSocketServerContainer container = getContainer(servletContext);
         if (container==null)
         {
             Supplier<WebSocketCoreClient> coreClientSupplier = () ->

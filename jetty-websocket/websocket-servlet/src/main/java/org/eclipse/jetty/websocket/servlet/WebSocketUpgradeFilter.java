@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -90,6 +89,22 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return null;
     }
 
+    /**
+     * Configure the default WebSocketUpgradeFilter.
+     *
+     * <p>
+     *     This will return the default {@link WebSocketUpgradeFilter} on the
+     *     provided {@link ServletContext}, creating the filter if necessary.
+     * </p>
+     * <p>
+     *     The default {@link WebSocketUpgradeFilter} is also available via
+     *     the {@link ServletContext} attribute named {@code org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
+     * </p>
+     *
+     * @param servletContext the {@link ServletContext} to use
+     * @return the configured default {@link WebSocketUpgradeFilter} instance
+     * @throws ServletException if the filer cannot be configured
+     */
     public static FilterHolder ensureFilter(ServletContext servletContext)
     {
         FilterHolder existingFilter = WebSocketUpgradeFilter.getFilter(servletContext);

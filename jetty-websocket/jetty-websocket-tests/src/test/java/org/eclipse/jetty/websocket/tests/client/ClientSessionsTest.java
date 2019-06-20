@@ -83,7 +83,7 @@ public class ClientSessionsTest
         handlers.addHandler(context);
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
-        JettyWebSocketServletContainerInitializer.configureContext(context);
+        JettyWebSocketServletContainerInitializer.configure(context, null);
 
         server.start();
     }

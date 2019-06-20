@@ -19,26 +19,20 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
 @WebSocket
-public class EchoSocket extends EventSocket
+public class GetAuthHeaderEndpoint
 {
-    @Override
-    public void onMessage(String message) throws IOException
+    @OnWebSocketConnect
+    public void onConnect(Session session) throws IOException
     {
-        super.onMessage(message);
-        session.getRemote().sendString(message);
-    }
-
-    @Override
-    public void onMessage(byte[] buf, int offset, int len)
-    {
-        super.onMessage(buf, offset, len);
-        session.getRemote().sendBytes(ByteBuffer.wrap(buf, offset, len), WriteCallback.NOOP);
+        String authHeaderName = "Authorization";
+        String authHeaderValue = session.getUpgradeRequest().getHeader(authHeaderName);
+        session.getRemote().sendString("Header[" + authHeaderName + "]=" + authHeaderValue);
     }
 }

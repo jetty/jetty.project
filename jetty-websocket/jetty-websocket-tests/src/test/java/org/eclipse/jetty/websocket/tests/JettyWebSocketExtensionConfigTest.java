@@ -36,7 +36,6 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,25 +65,26 @@ public class JettyWebSocketExtensionConfigTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->
-        {
-            assertEquals(req.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
-            assertEquals(resp.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler,
+            (context, container) -> container.addMapping("/", (req, resp) ->
+            {
+                assertEquals(req.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
+                assertEquals(resp.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
 
-            ExtensionConfig nonRequestedExtension = ExtensionConfig.parse("identity");
-            assertNotNull(nonRequestedExtension);
+                ExtensionConfig nonRequestedExtension = ExtensionConfig.parse("identity");
+                assertNotNull(nonRequestedExtension);
 
-            assertThrows(IllegalArgumentException.class,
-                    ()->resp.setExtensions(List.of(nonRequestedExtension)),
+                assertThrows(IllegalArgumentException.class,
+                    () -> resp.setExtensions(List.of(nonRequestedExtension)),
                     "should not allow extensions not requested");
 
-            // Check identity extension was not added because it was not requested
-            assertEquals(resp.getExtensions().stream().filter(config -> config.getName().equals("identity")).count(), 0);
-            assertEquals(resp.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
+                // Check identity extension was not added because it was not requested
+                assertEquals(resp.getExtensions().stream().filter(config -> config.getName().equals("identity")).count(), 0);
+                assertEquals(resp.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
 
-            return new EchoSocket();
-        });
+                return new EchoSocket();
+            }));
+
         server.start();
 
         client = new WebSocketClient();
@@ -101,7 +101,7 @@ public class JettyWebSocketExtensionConfigTest
     @Test
     public void testJettyExtensionConfig() throws Exception
     {
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
 
         UpgradeRequest request = new ClientUpgradeRequest();
@@ -115,7 +115,7 @@ public class JettyWebSocketExtensionConfigTest
             {
 
                 String extensions = response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
-                if("permessage-deflate".equals(extensions))
+                if ("permessage-deflate".equals(extensions))
                     correctResponseExtensions.countDown();
                 else
                     throw new IllegalStateException("Unexpected Negotiated Extensions: " + extensions);
@@ -123,7 +123,7 @@ public class JettyWebSocketExtensionConfigTest
         };
 
         CompletableFuture<Session> connect = client.connect(socket, uri, request, listener);
-        try(Session session = connect.get(5, TimeUnit.SECONDS))
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             session.getRemote().sendString("hello world");
         }

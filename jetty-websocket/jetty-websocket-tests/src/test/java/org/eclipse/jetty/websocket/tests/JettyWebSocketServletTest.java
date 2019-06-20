@@ -66,7 +66,7 @@ public class JettyWebSocketServletTest
 
         contextHandler.addServlet(MyWebSocketServlet.class, "/servletPath");
 
-        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
         server.start();
 
         client = new WebSocketClient();

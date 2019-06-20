@@ -19,26 +19,23 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.api.WriteCallback;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-@SuppressWarnings("unused")
-@WebSocket
-public class EchoSocket extends EventSocket
+public class SimpleStatusServlet extends HttpServlet
 {
-    @Override
-    public void onMessage(String message) throws IOException
+    private final int statusCode;
+
+    public SimpleStatusServlet(int statusCode)
     {
-        super.onMessage(message);
-        session.getRemote().sendString(message);
+        this.statusCode = statusCode;
     }
 
     @Override
-    public void onMessage(byte[] buf, int offset, int len)
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        super.onMessage(buf, offset, len);
-        session.getRemote().sendBytes(ByteBuffer.wrap(buf, offset, len), WriteCallback.NOOP);
+        resp.setStatus(this.statusCode);
     }
 }

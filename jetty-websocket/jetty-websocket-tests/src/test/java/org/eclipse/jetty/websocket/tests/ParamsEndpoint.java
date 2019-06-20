@@ -19,26 +19,31 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
 @WebSocket
-public class EchoSocket extends EventSocket
+public class ParamsEndpoint
 {
-    @Override
-    public void onMessage(String message) throws IOException
+    @OnWebSocketConnect
+    public void onConnect(Session session) throws IOException
     {
-        super.onMessage(message);
-        session.getRemote().sendString(message);
-    }
+        Map<String, List<String>> params = session.getUpgradeRequest().getParameterMap();
+        StringBuilder msg = new StringBuilder();
 
-    @Override
-    public void onMessage(byte[] buf, int offset, int len)
-    {
-        super.onMessage(buf, offset, len);
-        session.getRemote().sendBytes(ByteBuffer.wrap(buf, offset, len), WriteCallback.NOOP);
+        for (String key : params.keySet())
+        {
+            msg.append("Params[").append(key).append("]=");
+            msg.append(params.get(key).stream().collect(Collectors.joining(", ", "[", "]")));
+            msg.append("\n");
+        }
+
+        session.getRemote().sendString(msg.toString());
     }
 }

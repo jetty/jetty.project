@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,8 +53,8 @@ public class JettyWebSocketFilterTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->new EchoSocket());
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+            container.addMapping("/", (req, resp) -> new EchoSocket()));
         server.start();
 
         client = new WebSocketClient();

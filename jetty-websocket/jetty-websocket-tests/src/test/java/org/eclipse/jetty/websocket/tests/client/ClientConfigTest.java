@@ -38,7 +38,6 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.EventSocket;
@@ -83,8 +82,9 @@ public class ClientConfigTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->serverSocket);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler,
+            (context, container) -> container.addMapping("/", (req, resp) -> serverSocket));
+
         server.start();
 
         client = new WebSocketClient();

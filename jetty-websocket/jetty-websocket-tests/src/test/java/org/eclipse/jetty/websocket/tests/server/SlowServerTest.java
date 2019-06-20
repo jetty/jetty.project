@@ -86,7 +86,7 @@ public class SlowServerTest
         handlers.addHandler(new DefaultHandler());
 
         server.setHandler(handlers);
-        JettyWebSocketServletContainerInitializer.configureContext(context);
+        JettyWebSocketServletContainerInitializer.configure(context, null);
 
         server.start();
     }

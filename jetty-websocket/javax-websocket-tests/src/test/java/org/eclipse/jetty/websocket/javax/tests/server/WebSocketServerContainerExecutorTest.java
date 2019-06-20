@@ -141,6 +141,13 @@ public class WebSocketServerContainerExecutorTest
         }
     }
 
+    private Executor getJavaxServerContainerExecutor(ServletContextHandler servletContextHandler)
+    {
+        JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(
+                servletContextHandler.getServletContext());
+        return serverContainer.getExecutor();
+    }
+
     @Test
     public void testClientExecutor() throws Exception
     {
@@ -160,15 +167,16 @@ public class WebSocketServerContainerExecutorTest
 
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        javax.websocket.server.ServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addEndpoint(EchoSocket.class);
+        JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+            container.addEndpoint(EchoSocket.class));
+
         try
         {
             server.start();
             String response = GET(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
 
-            Executor containerExecutor = ((JavaxWebSocketServerContainer)container).getExecutor();
+            Executor containerExecutor = getJavaxServerContainerExecutor(contextHandler);
             assertThat(containerExecutor, sameInstance(executor));
         }
         finally
@@ -189,15 +197,15 @@ public class WebSocketServerContainerExecutorTest
 
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        javax.websocket.server.ServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addEndpoint(EchoSocket.class);
+        JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+            container.addEndpoint(EchoSocket.class));
         try
         {
             server.start();
             String response = GET(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
 
-            Executor containerExecutor = ((JavaxWebSocketServerContainer)container).getExecutor();
+            Executor containerExecutor = getJavaxServerContainerExecutor(contextHandler);
             assertThat(containerExecutor, sameInstance(executor));
         }
         finally
