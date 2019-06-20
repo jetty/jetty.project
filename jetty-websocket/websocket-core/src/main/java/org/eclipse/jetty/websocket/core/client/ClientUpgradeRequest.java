@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.client;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
@@ -48,7 +49,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -406,7 +406,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     {
         byte[] bytes = new byte[16];
         ThreadLocalRandom.current().nextBytes(bytes);
-        return new String(B64Code.encode(bytes));
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     private void initWebSocketHeaders()
