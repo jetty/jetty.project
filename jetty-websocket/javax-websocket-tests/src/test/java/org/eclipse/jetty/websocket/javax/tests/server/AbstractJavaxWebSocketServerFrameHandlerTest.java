@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.server.Server;
@@ -46,7 +47,7 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
         server.setHandler(context);
         JavaxWebSocketServletContainerInitializer.configure(context, null);
         server.start();
-        container = (JavaxWebSocketServerContainer)context.getServletContext().getAttribute(JavaxWebSocketServerContainer.JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE);
+        container = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
     }
 
     @AfterAll

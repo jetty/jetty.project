@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.javax.server;
 
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -111,7 +112,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         context.addEventListener(ContainerInitializer.asContextListener(new JavaxWebSocketServletContainerInitializer())
             .afterStartup((servletContext) ->
             {
-                ServerContainer serverContainer = (ServerContainer)servletContext.getAttribute(ATTR_JAVAX_SERVER_CONTAINER);
+                JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(servletContext);
                 if (configurator != null)
                 {
                     try
@@ -149,7 +150,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
      */
     public static JavaxWebSocketServerContainer initialize(ServletContextHandler context)
     {
-        JavaxWebSocketServerContainer serverContainer = (JavaxWebSocketServerContainer) context.getAttribute(ATTR_JAVAX_SERVER_CONTAINER);
+        JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
         if(serverContainer == null)
         {
             WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(context.getServletContext());

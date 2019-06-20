@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.server.Server;
@@ -112,16 +113,16 @@ public class ClientConnectTest
         context.setContextPath("/");
 
         JettyWebSocketServletContainerInitializer.configure(context,
-            (servletContext, configuration) ->
+            (servletContext, container) ->
             {
-                configuration.setIdleTimeout(Duration.ofSeconds(10));
-                configuration.addMapping("/echo", (req, resp) ->
+                container.setIdleTimeout(Duration.ofSeconds(10));
+                container.addMapping("/echo", (req, resp) ->
                 {
                     if (req.hasSubProtocol("echo"))
                         resp.setAcceptedSubProtocol("echo");
                     return new EchoSocket();
                 });
-                configuration.addMapping("/get-auth-header", (req, resp) -> new GetAuthHeaderEndpoint());
+                container.addMapping("/get-auth-header", (req, resp) -> new GetAuthHeaderEndpoint());
             });
 
         context.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));

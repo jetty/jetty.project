@@ -21,10 +21,10 @@ package org.eclipse.jetty.websocket.javax.tests;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.OnMessage;
-import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.http.HttpVersion;
@@ -77,7 +77,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     private ServerConnector connector;
     private LocalConnector localConnector;
     private ServletContextHandler servletContextHandler;
-    private JavaxWebSocketServerContainer serverContainer;
     private TrackingListener trackingListener = new TrackingListener();
     private URI serverUri;
     private URI wsUri;
@@ -167,8 +166,8 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
         servletContextHandler.setContextPath("/");
-        JavaxWebSocketServletContainerInitializer.configure(servletContextHandler, null);
-        serverContainer.addSessionListener(trackingListener);
+        JavaxWebSocketServletContainerInitializer.configure(servletContextHandler, (context, container) ->
+                ((JavaxWebSocketServerContainer)container).addSessionListener(trackingListener));
         configureServletContextHandler(servletContextHandler);
         return servletContextHandler;
     }
@@ -280,18 +279,12 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         servletContextHandler.addServlet(holder, urlPattern);
     }
 
-    public ServerContainer getServerContainer()
+    public JavaxWebSocketServerContainer getServerContainer()
     {
         if (!servletContextHandler.isRunning())
-        {
             throw new IllegalStateException("Cannot access ServerContainer when ServletContextHandler isn't running");
-        }
 
-        if (serverContainer == null)
-        {
-            serverContainer = (JavaxWebSocketServerContainer)servletContextHandler.getAttribute(JavaxWebSocketServerContainer.JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE);
-        }
-        return serverContainer;
+        return JavaxWebSocketServerContainer.getContainer(servletContextHandler.getServletContext());
     }
 
     public Server getServer()

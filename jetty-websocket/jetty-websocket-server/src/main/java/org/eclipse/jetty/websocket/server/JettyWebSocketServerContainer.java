@@ -51,13 +51,18 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 {
     public static final String JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE = WebSocketContainer.class.getName();
 
+    public static JettyWebSocketServerContainer getContainer(ServletContext servletContext)
+    {
+        return (JettyWebSocketServerContainer)servletContext.getAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE);
+    }
+
     public static JettyWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
         ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
-        JettyWebSocketServerContainer container = (JettyWebSocketServerContainer)servletContext.getAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE);
+        JettyWebSocketServerContainer container = getContainer(servletContext);
         if (container == null)
         {
             // Find Pre-Existing executor

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
+
 import javax.servlet.ServletContext;
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
@@ -52,13 +53,18 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     public static final String JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE = javax.websocket.server.ServerContainer.class.getName();
     private static final Logger LOG = Log.getLogger(JavaxWebSocketServerContainer.class);
 
+    public static JavaxWebSocketServerContainer getContainer(ServletContext servletContext)
+    {
+        return (JavaxWebSocketServerContainer)servletContext.getAttribute(JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE);
+    }
+
     public static JavaxWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
         ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
-        JavaxWebSocketServerContainer container = (JavaxWebSocketServerContainer)servletContext.getAttribute(JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE);
+        JavaxWebSocketServerContainer container = getContainer(servletContext);
         if (container==null)
         {
             Supplier<WebSocketCoreClient> coreClientSupplier = () ->
