@@ -725,13 +725,18 @@ public class ClasspathPattern extends AbstractSet<String>
         if (Boolean.FALSE==byName)
             return false;
 
-        Boolean byLocation = locations.isIncludedAndNotExcluded(location.get());
-        if (Boolean.FALSE==byLocation)
-            return false;
+        URI uri = location.get();
+        if (uri != null)
+        {
+            Boolean byLocation = locations.isIncludedAndNotExcluded(uri);
+            if (Boolean.FALSE == byLocation)
+                return false;
 
-        return Boolean.TRUE.equals(byName)
-            || Boolean.TRUE.equals(byLocation)
-            || !(names.hasIncludes() || locations.hasIncludes());
+            return Boolean.TRUE.equals(byName)
+                || Boolean.TRUE.equals(byLocation)
+                || !(names.hasIncludes() || locations.hasIncludes());
+        }
+        return false;
     }
     
 }
