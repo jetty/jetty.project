@@ -23,6 +23,7 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -48,7 +49,10 @@ public class JettyServerFrameHandlerFactory
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse)
     {
-        return super.newJettyFrameHandler(websocketPojo);
+        JettyWebSocketFrameHandler frameHandler = super.newJettyFrameHandler(websocketPojo);
+        frameHandler.setUpgradeRequest(new UpgradeRequestAdapter(upgradeRequest));
+        frameHandler.setUpgradeResponse(new UpgradeResponseAdapter(upgradeResponse));
+        return frameHandler;
     }
 
     @Override
