@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
 
 /**
@@ -53,7 +54,7 @@ public class ContainerEndpoint extends AbstractCloseEndpoint
             {
                 ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
             }
-            session.getRemote().sendStringByFuture(ret.toString());
+            session.getRemote().sendString(ret.toString(), WriteCallback.NOOP);
         }
         session.close(StatusCode.NORMAL,"ContainerEndpoint");
     }

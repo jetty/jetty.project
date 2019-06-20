@@ -19,15 +19,12 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -102,16 +99,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     }
 
     @Override
-    public Future<Void> sendBytesByFuture(ByteBuffer data)
-    {
-        FutureCallback callback = new FutureCallback();
-        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
-                callback,
-                isBatch());
-        return callback;
-    }
-
-    @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
         try (SharedBlockingCallback.Blocker b = blocker.acquire())
@@ -128,14 +115,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     }
 
     @Override
-    public Future<Void> sendPartialBytesByFuture(ByteBuffer fragment, boolean isLast)
-    {
-        FutureCallback callback = new FutureCallback();
-        sendPartialBytes(fragment, isLast, callback);
-        return callback;
-    }
-
-    @Override
     public void sendString(String text) throws IOException
     {
         sendBlocking(new Frame(OpCode.TEXT).setPayload(text));
@@ -149,16 +128,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     }
 
     @Override
-    public Future<Void> sendStringByFuture(String text)
-    {
-        FutureCallback callback = new FutureCallback();
-        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text),
-                callback,
-                isBatch());
-        return callback;
-    }
-
-    @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
         try (SharedBlockingCallback.Blocker b = blocker.acquire())
@@ -169,17 +138,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     }
 
     @Override
-    public void sendPartialString(String fragment, boolean isLast, WriteCallback callback) throws IOException
+    public void sendPartialString(String fragment, boolean isLast, WriteCallback callback)
     {
         sendPartialText(fragment, isLast, Callback.from(callback::writeSuccess, callback::writeFailed));
-    }
-
-    @Override
-    public Future<Void> sendPartialStringByFuture(String fragment, boolean isLast) throws IOException
-    {
-        FutureCallback callback = new FutureCallback();
-        sendPartialText(fragment, isLast, callback);
-        return callback;
     }
 
     @Override
@@ -196,14 +157,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     }
 
     @Override
-    public Future<Void> sendPingByFuture(ByteBuffer applicationData)
-    {
-        FutureCallback callback = new FutureCallback();
-        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData), callback, false);
-        return callback;
-    }
-
-    @Override
     public void sendPong(ByteBuffer applicationData) throws IOException
     {
         sendBlocking(new Frame(OpCode.PONG).setPayload(applicationData));
@@ -214,14 +167,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData),
                 Callback.from(callback::writeSuccess, callback::writeFailed), false);
-    }
-
-    @Override
-    public Future<Void> sendPongByFuture(ByteBuffer applicationData)
-    {
-        FutureCallback callback = new FutureCallback();
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData), callback, false);
-        return callback;
     }
 
     private void sendPartialBytes(ByteBuffer fragment, boolean isLast, Callback callback)
@@ -309,16 +254,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     private boolean isBatch()
     {
         return BatchMode.ON == batchMode;
-    }
-
-    @Override
-    public InetSocketAddress getInetSocketAddress()
-    {
-        SocketAddress remoteAddress = coreSession.getRemoteAddress();
-        if (remoteAddress instanceof InetSocketAddress)
-            return (InetSocketAddress)remoteAddress;
-
-        return null;
     }
 
     @Override

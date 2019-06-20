@@ -50,13 +50,6 @@ public @interface WebSocket
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
-     * @deprecated use {@link #idleTimeout()} instead
-     */
-    @Deprecated
-    int maxIdleTime() default -1;
-
-    /**
-     * The time in ms (milliseconds) that a websocket may be idle before closing.
      */
     int idleTimeout() default -1;
 

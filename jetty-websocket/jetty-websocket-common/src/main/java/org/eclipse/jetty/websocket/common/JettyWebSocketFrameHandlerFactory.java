@@ -296,8 +296,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         if (max>=0)
             metadata.setMaxTextMessageSize(max);
         max = anno.idleTimeout();
-        if (max<0)
-            max = anno.maxIdleTime();
         if (max>=0)
             metadata.setIdleTimeout(Duration.ofMillis(max));
         metadata.setBatchMode(anno.batchMode());
