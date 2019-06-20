@@ -59,6 +59,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -80,6 +81,7 @@ public class ClientConnectTest
         assertThat("ExecutionException.cause", cause, errorMatcher);
 
         // Validate websocket captured cause
+        assertDoesNotThrow(() -> wsocket.errorLatch.await(5, TimeUnit.SECONDS));
         Throwable capcause = wsocket.error.get();
         assertThat("Error", capcause, notNullValue());
         assertThat("Error", capcause, errorMatcher);
