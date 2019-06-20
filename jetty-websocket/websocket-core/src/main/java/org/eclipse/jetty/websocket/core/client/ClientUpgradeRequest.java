@@ -239,7 +239,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             Throwable failure = result.getFailure();
             boolean wrapFailure = !((failure instanceof java.net.SocketException) ||
                                     (failure instanceof java.io.InterruptedIOException) ||
-                                    (failure instanceof HttpResponseException) ||
                                     (failure instanceof UpgradeException));
             if (wrapFailure)
                 failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);

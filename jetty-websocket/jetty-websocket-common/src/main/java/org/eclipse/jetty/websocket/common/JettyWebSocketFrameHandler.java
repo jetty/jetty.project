@@ -473,7 +473,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             session.getCoreSession().demand(1);
     }
 
-    static Throwable convertCause(Throwable cause)
+    public static Throwable convertCause(Throwable cause)
     {
         if (cause instanceof MessageTooLargeException)
             return new org.eclipse.jetty.websocket.api.MessageTooLargeException(cause.getMessage(), cause);
@@ -494,7 +494,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             return new org.eclipse.jetty.websocket.api.InvalidWebSocketException(cause.getMessage(), cause);
 
         if (cause instanceof UpgradeException)
-            return new org.eclipse.jetty.websocket.api.UpgradeException(((UpgradeException)cause).getRequestURI(), cause);
+        {
+            UpgradeException ue = (UpgradeException)cause;
+            return new org.eclipse.jetty.websocket.api.UpgradeException(ue.getRequestURI(), ue.getResponseStatusCode(), cause);
+        }
 
         return cause;
     }

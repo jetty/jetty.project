@@ -152,7 +152,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         {
             if (error != null)
             {
-                futureSession.completeExceptionally(error);
+                futureSession.completeExceptionally(JettyWebSocketFrameHandler.convertCause(error));
                 return;
             }
 
