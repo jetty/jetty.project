@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.stream.Stream;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -26,9 +29,6 @@ import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.nio.ByteBuffer;
-import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -70,7 +70,7 @@ public class ParserBadCloseStatusCodesTest
     @MethodSource("data")
     public void testBadStatusCode(int closeCode, String description)
     {
-        ParserCapture capture = new ParserCapture(new Parser(bufferPool));
+        ParserCapture capture = new ParserCapture();
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);
@@ -93,7 +93,7 @@ public class ParserBadCloseStatusCodesTest
     @MethodSource("data")
     public void testBadStatusCode_WithReasonPhrase(int closeCode, String description)
     {
-        ParserCapture capture = new ParserCapture(new Parser(bufferPool));
+        ParserCapture capture = new ParserCapture();
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);

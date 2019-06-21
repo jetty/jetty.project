@@ -58,17 +58,8 @@ public class ParserTest
 
     private ParserCapture parse(Behavior behavior, int maxAllowedFrameSize, ByteBuffer buffer, boolean copy)
     {
-        Parser parser = new Parser(new MappedByteBufferPool())
-        {
-            @Override
-            protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
-            {
-                super.checkFrameSize(opcode, payloadLength);
-                if (payloadLength > maxAllowedFrameSize)
-                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxAllowedFrameSize);
-            }
-        };
-        ParserCapture capture = new ParserCapture(parser, copy, behavior);
+        ParserCapture capture = new ParserCapture(copy, behavior);
+        capture.getCoreSession().setMaxFrameSize(maxAllowedFrameSize);
         capture.parse(buffer);
         return capture;
     }
@@ -860,7 +851,7 @@ public class ParserTest
     @Test
     public void testParse_RFC6455_FragmentedUnmaskedTextMessage() throws InterruptedException
     {
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture();
 
         ByteBuffer buf = ByteBuffer.allocate(16);
         BufferUtil.clearToFill(buf);
@@ -1007,7 +998,7 @@ public class ParserTest
         }
         buf.flip();
 
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture();
         capture.parse(buf);
 
         capture.assertHasFrame(OpCode.BINARY, 1);
@@ -1310,7 +1301,10 @@ public class ParserTest
         Generator.putPayload(buf, utf);
         buf.flip();
 
-        assertThrows(MessageTooLargeException.class, () -> parse(Behavior.SERVER, maxAllowedFrameSize, buf, true));
+        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
+        capture.getCoreSession().setMaxFrameSize(maxAllowedFrameSize);
+        capture.getCoreSession().setAutoFragment(false);
+        assertThrows(MessageTooLargeException.class, () -> capture.parse(buf));
     }
 
     @Test
@@ -1361,7 +1355,8 @@ public class ParserTest
         ByteBuffer networkBytes = generate(Behavior.CLIENT, frames);
 
         // Parse, in 4096 sized windows
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(), false), true, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
+        capture.getCoreSession().setAutoFragment(false);
 
         while (networkBytes.remaining() > 0)
         {
@@ -1548,7 +1543,7 @@ public class ParserTest
         int limit = data.limit();
         ByteBuffer buffer = BufferUtil.allocate(32);
 
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()), false, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(false, Behavior.SERVER);
 
         data.limit(6 + 5);
         BufferUtil.append(buffer, data);
@@ -1592,7 +1587,8 @@ public class ParserTest
         int limit = data.limit();
         ByteBuffer buffer = BufferUtil.allocate(32);
 
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(), false), false);
+        ParserCapture capture = new ParserCapture(false);
+        capture.getCoreSession().setAutoFragment(false);
 
         data.limit(5);
         BufferUtil.append(buffer, data);
@@ -1626,7 +1622,7 @@ public class ParserTest
         int limit = data.limit();
         ByteBuffer buffer = BufferUtil.allocate(32);
 
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(), true), false);
+        ParserCapture capture = new ParserCapture(false);
 
         data.limit(5);
         BufferUtil.append(buffer, data);

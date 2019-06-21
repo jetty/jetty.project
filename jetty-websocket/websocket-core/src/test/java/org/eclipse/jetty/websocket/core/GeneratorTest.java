@@ -36,7 +36,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
-import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -1230,7 +1229,7 @@ public class GeneratorTest
         assertThat("Generated Buffer", completeBuffer.remaining(), is(expectedSize));
 
         // Parse complete buffer.
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()), true, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
 
         capture.parse(completeBuffer);
 
