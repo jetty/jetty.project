@@ -28,8 +28,10 @@ import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.rewrite.handler.MsieSslRule;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
+import org.eclipse.jetty.rewrite.handler.ValidUrlRule;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.AsyncRequestLogWriter;
 import org.eclipse.jetty.server.CustomRequestLog;
@@ -104,7 +106,7 @@ public class LikeJettyXml
         server.setHandler(handlers);
 
         // Extra options
-        server.setDumpAfterStart(false);
+        server.setDumpAfterStart(true);
         server.setDumpBeforeStop(false);
         server.setStopAtShutdown(true);
 
@@ -182,6 +184,8 @@ public class LikeJettyXml
         RewriteHandler rewrite = new RewriteHandler();
         rewrite.setHandler(server.getHandler());
         server.setHandler(rewrite);
+        rewrite.addRule(new MsieSslRule());
+        rewrite.addRule(new ValidUrlRule());
 
         // === jetty-requestlog.xml ===
         AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(jetty_home + "/logs/yyyy_mm_dd.request.log");
