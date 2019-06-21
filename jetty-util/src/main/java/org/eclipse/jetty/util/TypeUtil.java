@@ -684,10 +684,14 @@ public class TypeUtil
                 {
                     URI uri = url.toURI();
                     String uriStr = uri.toASCIIString();
-                    int idx = uriStr.indexOf(".jar!/");
-                    if (idx > 0)
+                    if(uriStr.startsWith("jar:file:"))
                     {
-                        return URI.create(uriStr.substring(0, idx + 4));
+                        uriStr = uriStr.substring(4);
+                        int idx = uriStr.indexOf("!/");
+                        if (idx > 0)
+                        {
+                            return URI.create(uriStr.substring(0, idx));
+                        }
                     }
                     return uri;
                 }
