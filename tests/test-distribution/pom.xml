@@ -92,6 +92,13 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-felix-webapp</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>war</type>
+    </dependency>
   </dependencies>
 
   <build>
