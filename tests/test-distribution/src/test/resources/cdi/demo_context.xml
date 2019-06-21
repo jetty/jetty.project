@@ -4,7 +4,7 @@
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/demo</Set>
   <Set name="war"><Property name="jetty.webapps"/>/demo/</Set>
-  <Get name="serverClasspathPattern">
+  <Get name="serverClassMatcher">
     <Call name="add">
       <Arg>-org.eclipse.jetty.util.Decorator</Arg>
     </Call>

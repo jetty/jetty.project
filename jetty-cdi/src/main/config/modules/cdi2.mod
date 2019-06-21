@@ -9,9 +9,6 @@ annotations
 [lib]
 lib/apache-jsp/org.mortbay.jasper.apache-el-*.jar
 
-[xml]
-etc/cdi2/jetty-cdi2.xml
-
 [ini]
 jetty.webapp.addServerClasses+=,-org.eclipse.jetty.util.Decorator,-org.eclipse.jetty.util.DecoratedObjectFactory
 jetty.webapp.addServerClasses+=,-org.eclipse.jetty.server.handler.ContextHandler.,-org.eclipse.jetty.server.handler.ContextHandler,-org.eclipse.jetty.servlet.ServletContextHandler
