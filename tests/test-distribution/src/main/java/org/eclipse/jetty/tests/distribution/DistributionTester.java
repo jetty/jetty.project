@@ -191,15 +191,17 @@ public class DistributionTester
      *
      * @param warFile the war file to install
      * @param context the context path
+     * @return the path to the installed webapp exploded directory
      * @throws IOException if the installation fails
      */
-    public void installWarFile(File warFile, String context) throws IOException
+    public Path installWarFile(File warFile, String context) throws IOException
     {
         //webapps
         Path webapps = config.jettyBase.resolve("webapps").resolve(context);
         if (!Files.exists(webapps))
             Files.createDirectories(webapps);
         unzip(warFile, webapps.toFile());
+        return webapps;
     }
 
     /**
