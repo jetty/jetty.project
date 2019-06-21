@@ -283,6 +283,55 @@ public class XmlConfigurationTest
     }
 
     @Test
+    public void testSetWithProperty() throws Exception
+    {
+        XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"TestString\" property=\"prop\" id=\"test\"/></Configure>");
+        configuration.getProperties().put("prop", "This is a property value");
+        TestConfiguration tc = new TestConfiguration();
+        tc.setTestString("default");
+        configuration.configure(tc);
+        assertEquals("This is a property value", tc.getTestString());
+        assertEquals(configuration.getIdMap().get("test"),"This is a property value");
+    }
+
+    @Test
+    public void testSetWithNullProperty() throws Exception
+    {
+        XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"TestString\" property=\"prop\" id=\"test\"/></Configure>");
+        configuration.getProperties().remove("prop");
+        TestConfiguration tc = new TestConfiguration();
+        tc.setTestString("default");
+        configuration.configure(tc);
+        assertEquals("default", tc.getTestString());
+        assertEquals(configuration.getIdMap().get("test"),null);
+    }
+
+    @Test
+    public void testSetWithPropertyAndValue() throws Exception
+    {
+        XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"TestString\" property=\"prop\" id=\"test\">Value</Set></Configure>");
+        configuration.getProperties().put("prop", "This is a property value");
+        TestConfiguration tc = new TestConfiguration();
+        tc.setTestString("default");
+        configuration.configure(tc);
+        assertEquals("Value", tc.getTestString());
+        assertEquals(configuration.getIdMap().get("test"),"Value");
+    }
+
+    @Test
+    public void testSetWithNullPropertyAndValue() throws Exception
+    {
+        XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"TestString\" property=\"prop\" id=\"test\">Value</Set></Configure>");
+        configuration.getProperties().remove("prop");
+        TestConfiguration tc = new TestConfiguration();
+        tc.setTestString("default");
+        configuration.configure(tc);
+        assertEquals("default", tc.getTestString());
+        assertEquals(configuration.getIdMap().get("test"),null);
+    }
+
+
+    @Test
     public void testMeaningfullSetException() throws Exception
     {
         XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"PropertyTest\"><Property name=\"null\"/></Set></Configure>");

@@ -469,6 +469,7 @@ public class GzipDefaultTest
     {
         GzipTester tester = new GzipTester(testingdir.getEmptyPathDir(),compressionType);
         tester.setContentServlet(HttpContentTypeWithEncoding.class);
+        tester.getGzipHandler().setMinGzipSize(16);
         tester.getGzipHandler().addIncludedMimeTypes("text/plain");
         tester.getGzipHandler().setExcludedAgentPatterns();
         try
