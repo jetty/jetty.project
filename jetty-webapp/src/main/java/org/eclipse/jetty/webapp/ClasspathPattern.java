@@ -353,6 +353,8 @@ public class ClasspathPattern extends AbstractSet<String>
         @Override
         public boolean test(URI uri)
         {
+            if ((uri == null) || (!uri.isAbsolute()))
+                return false;
             if (!uri.getScheme().equals("file"))
                 return false;
             Path path = Paths.get(uri);
@@ -390,6 +392,8 @@ public class ClasspathPattern extends AbstractSet<String>
         @Override
         public boolean test(URI uri)
         {
+            if ((uri == null) || (!uri.isAbsolute()))
+                return false;
             if (!uri.getScheme().equalsIgnoreCase("jrt"))
                 return false;
             String module = uri.getPath();
@@ -443,6 +447,8 @@ public class ClasspathPattern extends AbstractSet<String>
         @Override
         public boolean test(URI name)
         {
+            if ((name == null) || (!name.isAbsolute()))
+                return false;
             return _byLocation.test(name) || _byModule.test(name);
         }
 
