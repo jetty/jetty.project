@@ -519,16 +519,16 @@ public interface FrameHandler extends IncomingFrames
         void customize(Configuration configurable);
     }
 
-    class ConfigurationCustomizer implements Customizer, Configuration
+    class ConfigurationHolder implements Configuration
     {
-        private Duration idleTimeout;
-        private Duration writeTimeout;
-        private Boolean autoFragment;
-        private Long maxFrameSize;
-        private Integer outputBufferSize;
-        private Integer inputBufferSize;
-        private Long maxBinaryMessageSize;
-        private Long maxTextMessageSize;
+        protected Duration idleTimeout;
+        protected Duration writeTimeout;
+        protected Boolean autoFragment;
+        protected Long maxFrameSize;
+        protected Integer outputBufferSize;
+        protected Integer inputBufferSize;
+        protected Long maxBinaryMessageSize;
+        protected Long maxTextMessageSize;
 
         @Override
         public Duration getIdleTimeout()
@@ -625,7 +625,10 @@ public interface FrameHandler extends IncomingFrames
         {
             this.maxTextMessageSize = maxTextMessageSize;
         }
+    }
 
+    class ConfigurationCustomizer extends ConfigurationHolder implements Customizer
+    {
         @Override
         public void customize(Configuration configurable)
         {

@@ -41,7 +41,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -81,9 +80,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
 
-    public WebSocketCoreSession(FrameHandler handler,
-                                Behavior behavior,
-                                Negotiated negotiated)
+    public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated)
     {
         this.handler = handler;
         this.behavior = behavior;
@@ -102,9 +99,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
     public void assertValidIncoming(Frame frame)
     {
-        assertValid(frame);
+        assertValidFrame(frame);
 
-        // Assert Behavior Required by RFC-6455 / Section 5.1
+        // Assert Incoming Frame Behavior Required by RFC-6455 / Section 5.1
         switch (behavior)
         {
             case SERVER:
@@ -121,15 +118,15 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
     public void assertValidOutgoing(Frame frame) throws CloseException
     {
-        // TODO check that it is not masked, since masking is done later
+        assertValidFrame(frame);
+    }
 
+    public void assertValidFrame(Frame frame)
+    {
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
 
-        assertValid(frame);
-
         int payloadLength = (frame.getPayload() == null)?0:frame.getPayload().remaining();
-
         if (frame.isControlFrame())
         {
             if (!frame.isFin())
@@ -137,24 +134,13 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
             if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
                 throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
-        }
-    }
 
-    private void assertValid(Frame frame)
-    {
-
-        // Control Frame Validation
-        if (frame.isControlFrame())
-        {
             if (frame.isRsv1())
                 throw new ProtocolException("Cannot have RSV1==true on Control frames");
-
             if (frame.isRsv2())
                 throw new ProtocolException("Cannot have RSV2==true on Control frames");
-
             if (frame.isRsv3())
                 throw new ProtocolException("Cannot have RSV3==true on Control frames");
-
 
             /*
              * RFC 6455 Section 5.5.1
@@ -168,42 +154,20 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         }
         else
         {
-            // TODO should we validate UTF-8 for text frames
-            if (frame.getOpCode() == OpCode.TEXT)
-            {
-            }
+            /*
+             * RFC 6455 Section 5.2
+             *
+             * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
+             * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
+             */
+            ExtensionStack extensionStack = negotiated.getExtensions();
+            if (frame.isRsv1() && !extensionStack.isRsv1Used())
+                throw new ProtocolException("RSV1 not allowed to be set");
+            if (frame.isRsv2() && !extensionStack.isRsv2Used())
+                throw new ProtocolException("RSV2 not allowed to be set");
+            if (frame.isRsv3() && !extensionStack.isRsv3Used())
+                throw new ProtocolException("RSV3 not allowed to be set");
         }
-
-        /*
-         * RFC 6455 Section 5.2
-         *
-         * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
-         * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
-         */
-        //TODO save these values to not iterate through extensions every frame
-        List<? extends Extension> exts = getExtensionStack().getExtensions();
-
-        boolean isRsv1InUse = false;
-        boolean isRsv2InUse = false;
-        boolean isRsv3InUse = false;
-        for (Extension ext : exts)
-        {
-            if (ext.isRsv1User())
-                isRsv1InUse = true;
-            if (ext.isRsv2User())
-                isRsv2InUse = true;
-            if (ext.isRsv3User())
-                isRsv3InUse = true;
-        }
-
-        if (frame.isRsv1() && !isRsv1InUse)
-            throw new ProtocolException("RSV1 not allowed to be set");
-
-        if (frame.isRsv2() && !isRsv2InUse)
-            throw new ProtocolException("RSV2 not allowed to be set");
-
-        if (frame.isRsv3() && !isRsv3InUse)
-            throw new ProtocolException("RSV3 not allowed to be set");
     }
 
     public ExtensionStack getExtensionStack()
@@ -491,12 +455,12 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
     public WebSocketConnection getConnection()
     {
-        return this.connection;
+        return connection;
     }
 
     public Executor getExecutor()
     {
-        return this.connection.getExecutor();
+        return connection.getExecutor();
     }
 
     @Override
@@ -799,7 +763,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         return String.format("WSCoreSession@%x{%s,%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
             hashCode(),
             behavior,
-                sessionState,
+            sessionState,
             negotiated,
             autoFragment,
             inputBufferSize,
