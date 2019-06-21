@@ -19,22 +19,34 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.module.Configuration;
+import java.lang.module.ModuleReference;
+import java.lang.module.ResolvedModule;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.AccessController;
 import java.security.CodeSource;
+import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static java.lang.invoke.MethodType.methodType;
 
 
 /* ------------------------------------------------------------ */
@@ -168,6 +180,29 @@ public class TypeUtil
         catch(Exception e)
         {
             throw new Error(e);
+        }
+    }
+
+    private static final MethodHandle[] LOCATION_METHODS;
+
+    static
+    {
+        List<MethodHandle> locationMethods = new ArrayList<>();
+
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodType type = methodType(URI.class, Class.class);
+
+        try
+        {
+            locationMethods.add(lookup.findStatic(TypeUtil.class, "getCodeSourceLocation", type));
+            locationMethods.add(lookup.findStatic(TypeUtil.class, "getModuleLocation", type));
+            locationMethods.add(lookup.findStatic(TypeUtil.class, "getClassLoaderLocation", type));
+            locationMethods.add(lookup.findStatic(TypeUtil.class, "getSystemClassLoaderLocation", type));
+            LOCATION_METHODS = locationMethods.toArray(new MethodHandle[0]);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Unable to establish Location Lookup Handles", e);
         }
     }
 
@@ -564,35 +599,147 @@ public class TypeUtil
     }
     
     /* ------------------------------------------------------------ */
+
+    /**
+     * Attempt to find the Location of a loaded Class.
+     * <p>
+     *     This can be null for primitives, void, and in-memory classes.
+     * </p>
+     * @param clazz the loaded class to find a location for.
+     * @return the location as a URI (this is a URI pointing to a holder of the class: a directory,
+     *      a jar file, a {@code jrt://} resource, etc), or null of no location available.
+     */
     public static URI getLocationOfClass(Class<?> clazz)
+    {
+        URI location;
+
+        for (MethodHandle locationMethod : LOCATION_METHODS)
+        {
+            try
+            {
+                location = (URI)locationMethod.invoke(clazz);
+                if (location != null)
+                {
+                    return location;
+                }
+            }
+            catch (Throwable cause)
+            {
+                cause.printStackTrace(System.err);
+            }
+        }
+        return null;
+    }
+
+    public static URI getClassLoaderLocation(Class<?> clazz)
+    {
+        return getClassLoaderLocation(clazz, clazz.getClassLoader());
+    }
+
+    public static URI getSystemClassLoaderLocation(Class<?> clazz)
+    {
+        return getClassLoaderLocation(clazz, ClassLoader.getSystemClassLoader());
+    }
+
+    public static URI getClassLoaderLocation(Class<?> clazz, ClassLoader loader)
+    {
+        if (loader == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            String resourceName = TypeUtil.toClassReference(clazz);
+            if (loader != null)
+            {
+                URL url = loader.getResource(resourceName);
+                if (url != null)
+                {
+                    URI uri = url.toURI();
+                    String uriStr = uri.toASCIIString();
+                    if(uriStr.startsWith("jar:file:"))
+                    {
+                        uriStr = uriStr.substring(4);
+                        int idx = uriStr.indexOf("!/");
+                        if (idx > 0)
+                        {
+                            return URI.create(uriStr.substring(0, idx));
+                        }
+                    }
+                    return uri;
+                }
+            }
+        }
+        catch (URISyntaxException ignore)
+        {
+        }
+        return null;
+    }
+
+    public static URI getCodeSourceLocation(Class<?> clazz)
     {
         try
         {
-            ProtectionDomain domain = clazz.getProtectionDomain();
+            ProtectionDomain domain = AccessController.doPrivileged((PrivilegedAction<ProtectionDomain>)() -> clazz.getProtectionDomain());
             if (domain != null)
             {
                 CodeSource source = domain.getCodeSource();
                 if (source != null)
                 {
                     URL location = source.getLocation();
-                    
+
                     if (location != null)
+                    {
                         return location.toURI();
+                    }
                 }
             }
-            
-            String resourceName = TypeUtil.toClassReference(clazz);
-            ClassLoader loader = clazz.getClassLoader();
-            URL url = (loader == null ? ClassLoader.getSystemClassLoader() : loader).getResource(resourceName);
-            if (url != null)
-            {
-                return URIUtil.getJarSource(url.toURI());
-            }
         }
-        catch (URISyntaxException e)
+        catch (URISyntaxException ignore)
         {
-            LOG.debug(e);
         }
+        return null;
+    }
+
+    public static URI getModuleLocation(Class<?> clazz)
+    {
+        Module module = clazz.getModule();
+        if (module == null)
+        {
+            return null;
+        }
+
+        ModuleLayer layer = module.getLayer();
+        if (layer == null)
+        {
+            return null;
+        }
+
+        Configuration configuration = layer.configuration();
+        if (configuration == null)
+        {
+            return null;
+        }
+
+        Optional<ResolvedModule> resolvedModule = configuration.findModule(module.getName());
+        if ((resolvedModule == null) || !resolvedModule.isPresent())
+        {
+            return null;
+        }
+
+        ModuleReference moduleReference = resolvedModule.get().reference();
+        if (moduleReference == null)
+        {
+            return null;
+        }
+
+        Optional<URI> location = moduleReference.location();
+        if (location.isPresent())
+        {
+            return location.get();
+        }
+
         return null;
     }
 

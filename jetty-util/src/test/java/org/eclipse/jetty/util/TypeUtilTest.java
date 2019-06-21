@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.util;
 
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnJre;
@@ -105,7 +102,7 @@ public class TypeUtilTest
     }
 
     @Test
-    public void testIsTrue() throws Exception
+    public void testIsTrue()
     {
         assertTrue(TypeUtil.isTrue(Boolean.TRUE));
         assertTrue(TypeUtil.isTrue(true));
@@ -120,7 +117,7 @@ public class TypeUtilTest
     }
 
     @Test
-    public void testIsFalse() throws Exception
+    public void testIsFalse()
     {
         assertTrue(TypeUtil.isFalse(Boolean.FALSE));
         assertTrue(TypeUtil.isFalse(false));
@@ -135,19 +132,21 @@ public class TypeUtilTest
     }
     
     @Test
-    @Disabled // TODO fails if the mavenRepo is a symbolic link
-    public void testGetLocationOfClass() throws Exception
+    public void testGetLocationOfClass_FromMavenRepo()
     {
-        String mavenRepoPathProperty = System.getProperty( "mavenRepoPath");
+        String mavenRepoPathProperty = System.getProperty("mavenRepoPath");
         assumeTrue(mavenRepoPathProperty != null);
-        Path mavenRepoPath = Paths.get( mavenRepoPathProperty );
+        Path mavenRepoPath = Paths.get(mavenRepoPathProperty);
 
-        System.err.println("mavenRepoPath "+mavenRepoPath);
         String mavenRepo = mavenRepoPath.toFile().getPath().replaceAll("\\\\", "/");
 
         // Classes from maven dependencies
-        assertThat(TypeUtil.getLocationOfClass(Assertions.class).toASCIIString(),containsString(mavenRepo));
-        
+        assertThat(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString(), containsString(mavenRepo));
+    }
+
+    @Test
+    public void getLocationOfClass_ClassDirectory()
+    {
         // Class from project dependencies
         assertThat(TypeUtil.getLocationOfClass(TypeUtil.class).toASCIIString(),containsString("/classes/"));
     }
@@ -157,8 +156,17 @@ public class TypeUtilTest
     public void testGetLocation_JvmCore_JPMS()
     {
         // Class from JVM core
-        String expectedJavaBase = "/java.base/";
+        String expectedJavaBase = "/java.base";
         assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(),containsString(expectedJavaBase));
+    }
+
+    @Test
+    @DisabledOnJre(JRE.JAVA_8)
+    public void testGetLocation_JavaLangThreadDeath_JPMS()
+    {
+        // Class from JVM core
+        String expectedJavaBase = "/java.base";
+        assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(),containsString(expectedJavaBase));
     }
 
     @Test
@@ -168,5 +176,14 @@ public class TypeUtilTest
         // Class from JVM core
         String expectedJavaBase = "/rt.jar";
         assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(),containsString(expectedJavaBase));
+    }
+
+    @Test
+    @EnabledOnJre(JRE.JAVA_8)
+    public void testGetLocation_JavaLangThreadDeath_Java8RT()
+    {
+        // Class from JVM core
+        String expectedJavaBase = "/rt.jar";
+        assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(),containsString(expectedJavaBase));
     }
 }
