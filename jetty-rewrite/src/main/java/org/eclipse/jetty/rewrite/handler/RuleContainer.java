@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Base container to group rules. Can be extended so that the contained rules
  * will only be applied under certain conditions
  */
-public class RuleContainer extends Rule implements Dumpable
+public class RuleContainer extends Rule
 {
     public static final String ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX = ".QUERYSTRING";
     private static final Logger LOG = Log.getLogger(RuleContainer.class);
@@ -214,11 +214,5 @@ public class RuleContainer extends Rule implements Dumpable
         }
 
         return target;
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        Dumpable.dumpObjects(out, indent, this, _rules);
     }
 }
