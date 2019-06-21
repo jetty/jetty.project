@@ -54,6 +54,7 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,8 @@ public class ClientCloseTest
         {
             // Send message from client to server
             final String echoMsg = "echo-test";
-            Future<Void> testFut = clientSocket.getRemote().sendStringByFuture(echoMsg);
+            FutureWriteCallback testFut = new FutureWriteCallback();
+            clientSocket.getRemote().sendString(echoMsg, testFut);
 
             // Wait for send future
             testFut.get(5, SECONDS);

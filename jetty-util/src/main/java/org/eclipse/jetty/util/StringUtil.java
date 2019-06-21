@@ -355,16 +355,6 @@ public class StringUtil
         return buf.toString();
     }
 
-    /** Remove single or double quotes.
-     * @param s the input string
-     * @return the string with quotes removed
-     */
-    @Deprecated
-    public static String unquote(String s)
-    {
-        return QuotedStringTokenizer.unquote(s);
-    }
-
     /** Append substring to StringBuilder
      * @param buf StringBuilder to append to
      * @param s String to append from

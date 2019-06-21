@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -537,26 +536,7 @@ public class TypeUtil
         }
     }
 
-    @Deprecated
-    public static Object call(Class<?> oClass, String methodName, Object obj, Object[] arg) throws InvocationTargetException, NoSuchMethodException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    public static Object construct(Class<?> klass, Object[] arguments) throws InvocationTargetException, NoSuchMethodException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    public static Object construct(Class<?> klass, Object[] arguments, Map<String, Object> namedArgMap) throws InvocationTargetException, NoSuchMethodException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /* ------------------------------------------------------------ */
-    /** 
+    /**
      * @param o Object to test for true
      * @return True if passed object is not null and is either a Boolean with value true or evaluates to a string that evaluates to true.
      */
