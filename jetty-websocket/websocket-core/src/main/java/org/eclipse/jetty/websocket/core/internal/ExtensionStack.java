@@ -174,17 +174,20 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             // Check RSV
             if (ext.isRsv1User() && (rsvClaims[0] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV1", config, rsvClaims[0]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not adding extension {}. Extension {} already claimed RSV1", config, rsvClaims[0]);
                 continue;
             }
             if (ext.isRsv2User() && (rsvClaims[1] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV2", config, rsvClaims[1]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not adding extension {}. Extension {} already claimed RSV2", config, rsvClaims[1]);
                 continue;
             }
             if (ext.isRsv3User() && (rsvClaims[2] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV3", config, rsvClaims[2]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not adding extension {}. Extension {} already claimed RSV3", config, rsvClaims[2]);
                 continue;
             }
 
@@ -196,17 +199,11 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
             // Record RSV Claims
             if (ext.isRsv1User())
-            {
                 rsvClaims[0] = ext.getName();
-            }
             if (ext.isRsv2User())
-            {
                 rsvClaims[1] = ext.getName();
-            }
             if (ext.isRsv3User())
-            {
                 rsvClaims[2] = ext.getName();
-            }
         }
 
         // Wire up Extensions
