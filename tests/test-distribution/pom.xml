@@ -78,6 +78,11 @@
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-cdi2-webapp</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>test-jetty-webapp</artifactId>
+      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
