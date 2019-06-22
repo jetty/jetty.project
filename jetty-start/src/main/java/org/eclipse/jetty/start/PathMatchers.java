@@ -226,7 +226,7 @@ public class PathMatchers
     /**
      * Determine if part is a glob pattern.
      *
-     * @param part the string to check
+     * @param c the char to check
      * @param syntaxed true if overall pattern is syntaxed with <code>"glob:"</code> or <code>"regex:"</code>
      * @return true if part has glob characters
      */
