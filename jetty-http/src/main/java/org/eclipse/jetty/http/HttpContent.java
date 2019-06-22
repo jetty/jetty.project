@@ -77,7 +77,7 @@ public interface HttpContent
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
-    public interface ContentFactory
+    interface ContentFactory
     {
         /**
          * @param path The path within the context to the resource

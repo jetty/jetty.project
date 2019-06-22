@@ -411,13 +411,13 @@ public class ServerProxyImpl implements ServerProxy
         if (requestLog != null)
             server.setRequestLog(requestLog);
 
-        contexts = (ContextHandlerCollection)server
-            .getChildHandlerByClass(ContextHandlerCollection.class);
+        contexts = server
+                       .getChildHandlerByClass(ContextHandlerCollection.class);
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
-            HandlerCollection handlers = (HandlerCollection)server
-                .getChildHandlerByClass(HandlerCollection.class);
+            HandlerCollection handlers = server
+                                             .getChildHandlerByClass(HandlerCollection.class);
             if (handlers == null)
             {
                 handlers = new HandlerCollection();
@@ -447,8 +447,7 @@ public class ServerProxyImpl implements ServerProxy
     {
         if (jettyXml != null && jettyXml.exists())
         {
-            TaskLog.log("Configuring jetty from xml configuration file = "
-                + jettyXml.getAbsolutePath());
+            TaskLog.log("Configuring jetty from xml configuration file = " + jettyXml.getAbsolutePath());
             XmlConfiguration configuration;
             try
             {
@@ -486,8 +485,7 @@ public class ServerProxyImpl implements ServerProxy
 
             List<File> scanList = awc.getScanFiles();
 
-            TaskLog.log("Web application '" + awc + "': starting scanner at interval of "
-                + scanIntervalSecs + " seconds.");
+            TaskLog.log("Web application '" + awc + "': starting scanner at interval of " + scanIntervalSecs + " seconds.");
             Scanner.Listener changeListener = new WebAppScannerListener(awc);
             Scanner scanner = new Scanner();
             scanner.setScanInterval(scanIntervalSecs);

@@ -47,7 +47,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         }
     };
 
-    private final static boolean NOISY = Boolean.getBoolean(LeakTrackingByteBufferPool.class.getName() + ".NOISY");
+    private static final boolean NOISY = Boolean.getBoolean(LeakTrackingByteBufferPool.class.getName() + ".NOISY");
     private final ByteBufferPool delegate;
     private final AtomicLong leakedReleases = new AtomicLong(0);
     private final AtomicLong leakedAcquires = new AtomicLong(0);

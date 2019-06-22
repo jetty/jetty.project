@@ -274,7 +274,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request) throws IOException
     {
-        return connect(websocket, toUri, request, (UpgradeListener)null);
+        return connect(websocket, toUri, request, null);
     }
 
     /**

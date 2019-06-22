@@ -83,6 +83,6 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
         String name = node.getTag();
         Method m = _visitors.get(name);
         if (m != null)
-            m.invoke(this, new Object[]{context, descriptor, node});
+            m.invoke(this, context, descriptor, node);
     }
 }

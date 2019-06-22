@@ -102,11 +102,7 @@ public class WebAppProvider extends ScanningAppProvider
                     return false;
 
                 //is it a sccs dir?
-                if ("cvs".equals(lowername) || "cvsroot".equals(lowername))
-                    return false;
-
-                // OK to deploy it then
-                return true;
+                return !"cvs".equals(lowername) && !"cvsroot".equals(lowername);// OK to deploy it then
             }
 
             // else is it a war file
@@ -117,10 +113,7 @@ public class WebAppProvider extends ScanningAppProvider
             }
 
             // else is it a context XML file 
-            if (lowername.endsWith(".xml"))
-                return true;
-
-            return false;
+            return lowername.endsWith(".xml");
         }
     }
 
@@ -214,7 +207,7 @@ public class WebAppProvider extends ScanningAppProvider
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        _configurationClasses = configurations == null ? null : (String[])configurations.clone();
+        _configurationClasses = configurations == null ? null : configurations.clone();
     }
 
     @ManagedAttribute("configuration classes for webapps to be processed through")

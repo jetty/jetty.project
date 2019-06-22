@@ -56,9 +56,9 @@ public class StatisticsServlet extends HttpServlet
     {
         ServletContext context = getServletContext();
         ContextHandler.Context scontext = (ContextHandler.Context)context;
-        Server _server = scontext.getContextHandler().getServer();
+        Server server = scontext.getContextHandler().getServer();
 
-        Handler handler = _server.getChildHandlerByClass(StatisticsHandler.class);
+        Handler handler = server.getChildHandlerByClass(StatisticsHandler.class);
 
         if (handler != null)
         {
@@ -71,7 +71,7 @@ public class StatisticsServlet extends HttpServlet
         }
 
         _memoryBean = ManagementFactory.getMemoryMXBean();
-        _connectors = _server.getConnectors();
+        _connectors = server.getConnectors();
 
         if (getInitParameter("restrictToLocalhost") != null)
         {
@@ -192,7 +192,7 @@ public class StatisticsServlet extends HttpServlet
 
             ConnectionStatistics connectionStats = null;
             if (connector instanceof AbstractConnector)
-                connectionStats = ((AbstractConnector)connector).getBean(ConnectionStatistics.class);
+                connectionStats = connector.getBean(ConnectionStatistics.class);
             if (connectionStats != null)
             {
                 sb.append("      <statsOn>true</statsOn>\n");
@@ -211,7 +211,7 @@ public class StatisticsServlet extends HttpServlet
             {
                 ConnectorStatistics connectorStats = null;
                 if (connector instanceof AbstractConnector)
-                    connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
+                    connectorStats = connector.getBean(ConnectorStatistics.class);
                 if (connectorStats != null)
                 {
                     sb.append("      <statsOn>true</statsOn>\n");
@@ -264,7 +264,7 @@ public class StatisticsServlet extends HttpServlet
 
             ConnectionStatistics connectionStats = null;
             if (connector instanceof Container)
-                connectionStats = ((Container)connector).getBean(ConnectionStatistics.class);
+                connectionStats = connector.getBean(ConnectionStatistics.class);
             if (connectionStats != null)
             {
                 sb.append("Total connections: ").append(connectionStats.getConnectionsTotal()).append("<br />\n");
@@ -282,7 +282,7 @@ public class StatisticsServlet extends HttpServlet
             {
                 ConnectorStatistics connectorStats = null;
                 if (connector instanceof AbstractConnector)
-                    connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
+                    connectorStats = connector.getBean(ConnectorStatistics.class);
                 if (connectorStats != null)
                 {
                     sb.append("Statistics gathering started ").append(connectorStats.getStartedMillis()).append("ms ago").append("<br />\n");

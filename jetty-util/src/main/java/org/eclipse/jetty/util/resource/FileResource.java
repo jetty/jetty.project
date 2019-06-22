@@ -81,16 +81,16 @@ public class FileResource extends Resource
             try
             {
                 // Assume that File.toURL produced unencoded chars. So try encoding them.
-                String file_url = "file:" + URIUtil.encodePath(url.toString().substring(5));
-                URI uri = new URI(file_url);
+                String fileUrl = "file:" + URIUtil.encodePath(url.toString().substring(5));
+                URI uri = new URI(fileUrl);
                 if (uri.getAuthority() == null)
                     file = new File(uri);
                 else
                     file = new File("//" + uri.getAuthority() + URIUtil.decodePath(url.getFile()));
             }
-            catch (Exception e2)
+            catch (Exception ex2)
             {
-                LOG.ignore(e2);
+                LOG.ignore(ex2);
                 // Still can't get the file.  Doh! try good old hack!
                 URLConnection connection = url.openConnection();
                 Permission perm = connection.getPermission();
@@ -109,12 +109,12 @@ public class FileResource extends Resource
         _file = file;
         try
         {
-            URI file_uri = _file.toURI();
+            URI fileUri = _file.toURI();
             _uri = normalizeURI(_file, uri);
             assertValidPath(file.toString());
 
             // Is it a URI alias?
-            if (!URIUtil.equalsIgnoreEncodings(_uri.toASCIIString(), file_uri.toString()))
+            if (!URIUtil.equalsIgnoreEncodings(_uri.toASCIIString(), fileUri.toString()))
                 _alias = _file.toURI();
             else
                 _alias = checkFileAlias(_uri, _file);
@@ -228,9 +228,9 @@ public class FileResource extends Resource
             {
                 return new URI("http://eclipse.org/bad/canonical/alias");
             }
-            catch (Exception e2)
+            catch (Exception ex2)
             {
-                LOG.ignore(e2);
+                LOG.ignore(ex2);
                 throw new RuntimeException(e);
             }
         }
@@ -240,7 +240,7 @@ public class FileResource extends Resource
 
     @Override
     public Resource addPath(String path)
-        throws IOException, MalformedURLException
+        throws IOException
     {
         assertValidPath(path);
         path = org.eclipse.jetty.util.URIUtil.canonicalPath(path);

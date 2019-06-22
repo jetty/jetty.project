@@ -51,8 +51,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(PathResource.class);
-    private final static LinkOption NO_FOLLOW_LINKS[] = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-    private final static LinkOption FOLLOW_LINKS[] = new LinkOption[]{};
+    private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+    private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
 
     private final Path path;
     private final Path alias;
@@ -349,16 +349,10 @@ public class PathResource extends Resource
         PathResource other = (PathResource)obj;
         if (path == null)
         {
-            if (other.path != null)
-            {
-                return false;
-            }
+            return other.path == null;
         }
-        else if (!path.equals(other.path))
-        {
-            return false;
-        }
-        return true;
+        else
+            return path.equals(other.path);
     }
 
     @Override

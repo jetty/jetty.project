@@ -501,7 +501,7 @@ public class LocalConnector extends AbstractConnector
 
             HttpParser parser = new HttpParser(handler);
             parser.setHeadResponse(head);
-            try (ByteArrayOutputStream2 bout = new ByteArrayOutputStream2();)
+            try (ByteArrayOutputStream2 bout = new ByteArrayOutputStream2())
             {
                 loop:
                 while (true)

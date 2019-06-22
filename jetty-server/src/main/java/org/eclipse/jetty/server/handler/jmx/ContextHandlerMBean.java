@@ -45,7 +45,7 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
         Enumeration<String> en = attrs.getAttributeNames();
         while (en.hasMoreElements())
         {
-            String name = (String)en.nextElement();
+            String name = en.nextElement();
             Object value = attrs.getAttribute(name);
             map.put(name, value);
         }

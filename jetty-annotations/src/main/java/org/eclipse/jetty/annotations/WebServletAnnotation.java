@@ -79,7 +79,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             return;
         }
 
-        WebServlet annotation = (WebServlet)clazz.getAnnotation(WebServlet.class);
+        WebServlet annotation = clazz.getAnnotation(WebServlet.class);
 
         if (annotation.urlPatterns().length > 0 && annotation.value().length > 0)
         {

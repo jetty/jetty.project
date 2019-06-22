@@ -42,17 +42,17 @@ public interface BundleClassLoaderHelper
     /**
      * The name of the custom implementation for this interface in a fragment.
      */
-    public static final String CLASS_NAME = "org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperImpl";
+    String CLASS_NAME = "org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperImpl";
 
     /**
      * The default instance supports felix and equinox
      */
-    public static BundleClassLoaderHelper DEFAULT = new DefaultBundleClassLoaderHelper();
+    BundleClassLoaderHelper DEFAULT = new DefaultBundleClassLoaderHelper();
 
     /**
      * @param bundle the bundle
      * @return The classloader of a given bundle. Assuming the bundle is
      * started.
      */
-    public ClassLoader getBundleClassLoader(Bundle bundle);
+    ClassLoader getBundleClassLoader(Bundle bundle);
 }

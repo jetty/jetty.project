@@ -30,8 +30,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
-    final private Context _context;
-    final private AsyncContextState _asyncContext;
+    private final Context _context;
+    private final AsyncContextState _asyncContext;
     private volatile HttpChannelState _state;
     private ServletContext _dispatchContext;
     private String _dispatchPath;

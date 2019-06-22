@@ -119,13 +119,12 @@ public class Parser
                 {
                     throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
                 }
-                // fall thru
+                // fallthru
             case OpCode.PING:
             case OpCode.PONG:
                 if (len > ControlFrame.MAX_CONTROL_PAYLOAD)
                 {
-                    throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
-                        + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
+                    throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["                        + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
                 }
                 break;
             case OpCode.TEXT:
@@ -520,7 +519,7 @@ public class Parser
 
                 case MASK:
                 {
-                    byte m[] = new byte[4];
+                    byte[] m = new byte[4];
                     frame.setMask(m);
                     if (buffer.remaining() >= 4)
                     {

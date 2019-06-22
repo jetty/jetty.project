@@ -45,9 +45,9 @@ public class ClientParser extends Parser
 
     public interface Listener extends Parser.Listener
     {
-        public void onBegin(int request, int code, String reason);
+        void onBegin(int request, int code, String reason);
 
-        public static class Adapter extends Parser.Listener.Adapter implements Listener
+        class Adapter extends Parser.Listener.Adapter implements Listener
         {
             @Override
             public void onBegin(int request, int code, String reason)

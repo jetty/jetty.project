@@ -62,7 +62,7 @@ public class OptionalSessionCallableMethod extends CallableMethod
     {
         if (wantsSession)
         {
-            Object fullArgs[] = new Object[args.length + 1];
+            Object[] fullArgs = new Object[args.length + 1];
             fullArgs[0] = connection;
             System.arraycopy(args, 0, fullArgs, 1, args.length);
             call(obj, fullArgs);

@@ -275,7 +275,8 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
                                 }
                                 else
                                 {
-                                    int low = 0, high = 255;
+                                    int low = 0;
+                                    int high = 255;
 
                                     String[] bounds = part.split("-", -2);
                                     if (bounds.length != 2)

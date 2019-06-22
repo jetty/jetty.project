@@ -32,13 +32,13 @@ public interface Container
      * @param o the bean object to add
      * @return true if the bean was added, false if it was already present
      */
-    public boolean addBean(Object o);
+    boolean addBean(Object o);
 
     /**
      * @return the list of beans known to this aggregate
      * @see #getBean(Class)
      */
-    public Collection<Object> getBeans();
+    Collection<Object> getBeans();
 
     /**
      * @param clazz the class of the beans
@@ -47,14 +47,14 @@ public interface Container
      * @see #getBeans()
      * @see #getContainedBeans(Class)
      */
-    public <T> Collection<T> getBeans(Class<T> clazz);
+    <T> Collection<T> getBeans(Class<T> clazz);
 
     /**
      * @param clazz the class of the bean
      * @param <T> the Bean type
      * @return the first bean of a specific class (or subclass), or null if no such bean exist
      */
-    public <T> T getBean(Class<T> clazz);
+    <T> T getBean(Class<T> clazz);
 
     /**
      * Removes the given bean.
@@ -63,7 +63,7 @@ public interface Container
      * @param o the bean to remove
      * @return whether the bean was removed
      */
-    public boolean removeBean(Object o);
+    boolean removeBean(Object o);
 
     /**
      * Add an event listener.
@@ -71,7 +71,7 @@ public interface Container
      * @param listener the listener to add
      * @see Container#addBean(Object)
      */
-    public void addEventListener(Listener listener);
+    void addEventListener(Listener listener);
 
     /**
      * Remove an event listener.
@@ -79,7 +79,7 @@ public interface Container
      * @param listener the listener to remove
      * @see Container#removeBean(Object)
      */
-    public void removeEventListener(Listener listener);
+    void removeEventListener(Listener listener);
 
     /**
      * Unmanages a bean already contained by this aggregate, so that it is not started/stopped/destroyed with this
@@ -119,7 +119,7 @@ public interface Container
      * If an added bean implements this interface it will receive the events
      * for this container.
      */
-    public interface Listener
+    interface Listener
     {
         void beanAdded(Container parent, Object child);
 
@@ -131,7 +131,7 @@ public interface Container
      * If an added bean implements this interface, then it will
      * be added to all contained beans that are themselves Containers
      */
-    public interface InheritedListener extends Listener
+    interface InheritedListener extends Listener
     {
     }
 
@@ -140,5 +140,5 @@ public interface Container
      * @param <T> the Bean type
      * @return the list of beans of the given class from the entire Container hierarchy
      */
-    public <T> Collection<T> getContainedBeans(Class<T> clazz);
+    <T> Collection<T> getContainedBeans(Class<T> clazz);
 }

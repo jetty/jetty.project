@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  */
 public abstract class FillInterest
 {
-    private final static Logger LOG = Log.getLogger(FillInterest.class);
+    private static final Logger LOG = Log.getLogger(FillInterest.class);
     private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
 
     protected FillInterest()
@@ -168,5 +168,5 @@ public abstract class FillInterest
      *
      * @throws IOException if unable to fulfill interest in fill
      */
-    abstract protected void needsFillInterest() throws IOException;
+    protected abstract void needsFillInterest() throws IOException;
 }

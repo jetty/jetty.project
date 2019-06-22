@@ -37,7 +37,7 @@ class FauxContinuation implements FilteredContinuation
 {
     // common exception used for all continuations.
     // Turn on debug in ContinuationFilter to see real stack trace.
-    private final static ContinuationThrowable __exception = new ContinuationThrowable();
+    private static final ContinuationThrowable __exception = new ContinuationThrowable();
 
     private static final int __HANDLING = 1;   // Request dispatched to filter/servlet
     private static final int __SUSPENDING = 2;   // Suspend called, but not yet returned to container
@@ -401,7 +401,7 @@ class FauxContinuation implements FilteredContinuation
 
     private void fauxSuspend()
     {
-        long expire_at = System.currentTimeMillis() + _timeoutMs;
+        long expireAt = System.currentTimeMillis() + _timeoutMs;
         long wait = _timeoutMs;
         while (_timeoutMs > 0 && wait > 0)
         {
@@ -413,7 +413,7 @@ class FauxContinuation implements FilteredContinuation
             {
                 break;
             }
-            wait = expire_at - System.currentTimeMillis();
+            wait = expireAt - System.currentTimeMillis();
         }
 
         if (_timeoutMs > 0 && wait <= 0)
@@ -437,13 +437,13 @@ class FauxContinuation implements FilteredContinuation
         synchronized (this)
         {
             return
-                ((_state == __HANDLING) ? "HANDLING" :
-                    (_state == __SUSPENDING) ? "SUSPENDING" :
-                        (_state == __SUSPENDED) ? "SUSPENDED" :
-                            (_state == __RESUMING) ? "RESUMING" :
-                                (_state == __UNSUSPENDING) ? "UNSUSPENDING" :
-                                    (_state == __COMPLETING) ? "COMPLETING" :
-                                        ("???" + _state)) +
+                ((_state == __HANDLING) ? "HANDLING"
+                     : (_state == __SUSPENDING) ? "SUSPENDING"
+                           : (_state == __SUSPENDED) ? "SUSPENDED"
+                                 : (_state == __RESUMING) ? "RESUMING"
+                                       : (_state == __UNSUSPENDING) ? "UNSUSPENDING"
+                                             : (_state == __COMPLETING) ? "COMPLETING"
+                                                   : ("???" + _state)) +
                     (_initial ? ",initial" : "") +
                     (_resumed ? ",resumed" : "") +
                     (_timeout ? ",timeout" : "");

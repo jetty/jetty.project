@@ -61,12 +61,10 @@ public final class Edge
             return false;
         if (_to == null)
         {
-            if (other._to != null)
-                return false;
+            return other._to == null;
         }
-        else if (!_to.equals(other._to))
-            return false;
-        return true;
+        else
+            return _to.equals(other._to);
     }
 
     public Node getFrom()

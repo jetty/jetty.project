@@ -42,7 +42,7 @@ public class TextFile implements Iterable<String>
     private final List<String> lines = new ArrayList<>();
     private final List<String> allLines = new ArrayList<>();
 
-    public TextFile(Path file) throws FileNotFoundException, IOException
+    public TextFile(Path file) throws IOException
     {
         this.file = file;
         init();

@@ -60,8 +60,6 @@ public class PostConstructCallback extends LifeCycleCallback
     @Override
     public boolean equals(Object o)
     {
-        if (super.equals(o) && (o instanceof PostConstructCallback))
-            return true;
-        return false;
+        return super.equals(o) && (o instanceof PostConstructCallback);
     }
 }

@@ -52,7 +52,7 @@ public class ContinuationSupport
                 servlet3Support = true;
             }
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
         }
         finally
@@ -66,7 +66,7 @@ public class ContinuationSupport
         {
             waiting = ContinuationSupport.class.getClassLoader().loadClass("org.mortbay.util.ajax.WaitingContinuation");
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
         }
         finally

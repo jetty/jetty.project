@@ -38,10 +38,10 @@ public class StringUtil
 {
     private static final Logger LOG = Log.getLogger(StringUtil.class);
 
-    private final static Trie<String> CHARSETS = new ArrayTrie<>(256);
+    private static final Trie<String> CHARSETS = new ArrayTrie<>(256);
 
     public static final String ALL_INTERFACES = "0.0.0.0";
-    public static final String CRLF = "\015\012";
+    public static final String CRLF = IO.CRLF;
 
     /**
      * @deprecated use {@link System#lineSeparator()} instead
@@ -50,8 +50,8 @@ public class StringUtil
     public static final String __LINE_SEPARATOR = System.lineSeparator();
 
     public static final String __ISO_8859_1 = "iso-8859-1";
-    public final static String __UTF8 = "utf-8";
-    public final static String __UTF16 = "utf-16";
+    public static final String __UTF8 = "utf-8";
+    public static final String __UTF16 = "utf-16";
 
     static
     {
@@ -90,6 +90,8 @@ public class StringUtil
         String n = CHARSETS.get(s, offset, length);
         return (n == null) ? s.substring(offset, offset + length) : n;
     }
+
+    // @checkstyle-disable-check : IllegalTokenTextCheck
 
     public static final char[] lowercases = {
         '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
@@ -720,7 +722,7 @@ public class StringUtil
         sidString.append("S-");
 
         // Add SID revision level (expect 1 but may change someday)
-        sidString.append(Byte.toString(sidBytes[0])).append('-');
+        sidString.append(sidBytes[0]).append('-');
 
         StringBuilder tmpBuilder = new StringBuilder();
 

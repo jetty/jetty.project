@@ -47,9 +47,7 @@ import org.eclipse.jetty.util.resource.JarResource;
 public class SelectiveJarResource extends JarResource
 {
     private static final Logger LOG = Log.getLogger(SelectiveJarResource.class);
-    public static final List<String> DEFAULT_INCLUDES = Arrays.asList(new String[]{
-        "**"
-    });// No includes supplied, so set it to 'matches all'
+    public static final List<String> DEFAULT_INCLUDES = Arrays.asList("**");// No includes supplied, so set it to 'matches all'
     public static final List<String> DEFAULT_EXCLUDES = Collections.emptyList(); //No includes, set to no exclusions
 
     List<String> _includes = null;

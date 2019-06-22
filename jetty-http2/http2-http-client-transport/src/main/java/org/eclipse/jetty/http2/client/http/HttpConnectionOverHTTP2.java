@@ -191,9 +191,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (!isClosed())
             return false;
-        if (sweeps.incrementAndGet() < 4)
-            return false;
-        return true;
+        return sweeps.incrementAndGet() >= 4;
     }
 
     @Override

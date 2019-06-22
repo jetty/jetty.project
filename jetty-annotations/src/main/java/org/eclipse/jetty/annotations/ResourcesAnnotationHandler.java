@@ -42,7 +42,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
     @Override
     public void doHandle(Class<?> clazz)
     {
-        Resources resources = (Resources)clazz.getAnnotation(Resources.class);
+        Resources resources = clazz.getAnnotation(Resources.class);
         if (resources != null)
         {
             Resource[] resArray = resources.value();

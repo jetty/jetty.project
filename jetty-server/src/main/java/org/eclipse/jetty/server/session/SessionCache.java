@@ -53,9 +53,9 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface SessionCache extends LifeCycle
 {
-    public static final int NEVER_EVICT = -1;
-    public static final int EVICT_ON_SESSION_EXIT = 0;
-    public static final int EVICT_ON_INACTIVITY = 1; //any number equal or greater is time in seconds
+    int NEVER_EVICT = -1;
+    int EVICT_ON_SESSION_EXIT = 0;
+    int EVICT_ON_INACTIVITY = 1; //any number equal or greater is time in seconds
 
     /**
      * @param context the {@link SessionContext} to use for this cache

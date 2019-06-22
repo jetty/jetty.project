@@ -356,7 +356,7 @@ public class CookieCutter
             }
         }
 
-        _cookies = (Cookie[])cookies.toArray(new Cookie[cookies.size()]);
+        _cookies = cookies.toArray(new Cookie[cookies.size()]);
         _lastCookies = _cookies;
     }
 }

@@ -70,9 +70,9 @@ public class XmlParser
     public XmlParser()
     {
         SAXParserFactory factory = SAXParserFactory.newInstance();
-        boolean validating_dft = factory.getClass().toString().startsWith("org.apache.xerces.");
-        String validating_prop = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validating_dft ? "true" : "false");
-        boolean validating = Boolean.valueOf(validating_prop).booleanValue();
+        boolean validatingDft = factory.getClass().toString().startsWith("org.apache.xerces.");
+        String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDft ? "true" : "false");
+        boolean validating = Boolean.valueOf(validatingProp).booleanValue();
         setValidating(validating);
     }
 
@@ -259,9 +259,9 @@ public class XmlParser
 
         URL entity = null;
         if (pid != null)
-            entity = (URL)_redirectMap.get(pid);
+            entity = _redirectMap.get(pid);
         if (entity == null)
-            entity = (URL)_redirectMap.get(sid);
+            entity = _redirectMap.get(sid);
         if (entity == null)
         {
             String dtd = sid;
@@ -270,7 +270,7 @@ public class XmlParser
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Can't exact match entity in redirect map, trying " + dtd);
-            entity = (URL)_redirectMap.get(dtd);
+            entity = _redirectMap.get(dtd);
         }
 
         if (entity != null)
@@ -356,7 +356,7 @@ public class XmlParser
                 boolean match = false;
                 for (int i = LazyList.size(_xpaths); !match && i-- > 0; )
                 {
-                    String xpath = (String)LazyList.get(_xpaths, i);
+                    String xpath = LazyList.get(_xpaths, i);
 
                     match = path.equals(xpath) || xpath.startsWith(path) && xpath.length() > path.length() && xpath.charAt(path.length()) == '/';
                 }
@@ -379,13 +379,13 @@ public class XmlParser
 
             ContentHandler observer = null;
             if (_observerMap != null)
-                observer = (ContentHandler)_observerMap.get(name);
+                observer = _observerMap.get(name);
             _observers.push(observer);
 
             for (int i = 0; i < _observers.size(); i++)
             {
                 if (_observers.get(i) != null)
-                    ((ContentHandler)_observers.get(i)).startElement(uri, localName, qName, attrs);
+                    _observers.get(i).startElement(uri, localName, qName, attrs);
             }
         }
 
@@ -396,29 +396,29 @@ public class XmlParser
             for (int i = 0; i < _observers.size(); i++)
             {
                 if (_observers.get(i) != null)
-                    ((ContentHandler)_observers.get(i)).endElement(uri, localName, qName);
+                    _observers.get(i).endElement(uri, localName, qName);
             }
             _observers.pop();
         }
 
         @Override
-        public void ignorableWhitespace(char buf[], int offset, int len) throws SAXException
+        public void ignorableWhitespace(char[] buf, int offset, int len) throws SAXException
         {
             for (int i = 0; i < _observers.size(); i++)
             {
                 if (_observers.get(i) != null)
-                    ((ContentHandler)_observers.get(i)).ignorableWhitespace(buf, offset, len);
+                    _observers.get(i).ignorableWhitespace(buf, offset, len);
             }
         }
 
         @Override
-        public void characters(char buf[], int offset, int len) throws SAXException
+        public void characters(char[] buf, int offset, int len) throws SAXException
         {
             _context.add(new String(buf, offset, len));
             for (int i = 0; i < _observers.size(); i++)
             {
                 if (_observers.get(i) != null)
-                    ((ContentHandler)_observers.get(i)).characters(buf, offset, len);
+                    _observers.get(i).characters(buf, offset, len);
             }
         }
 

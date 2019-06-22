@@ -48,8 +48,8 @@ public class PathMatchers
         }
     }
 
-    private static final char GLOB_CHARS[] = "*?".toCharArray();
-    private static final char SYNTAXED_GLOB_CHARS[] = "{}[]|:".toCharArray();
+    private static final char[] GLOB_CHARS = "*?".toCharArray();
+    private static final char[] SYNTAXED_GLOB_CHARS = "{}[]|:".toCharArray();
     private static final Path EMPTY_PATH = new File(".").toPath();
 
     /**

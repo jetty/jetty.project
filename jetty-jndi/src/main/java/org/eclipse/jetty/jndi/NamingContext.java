@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class NamingContext implements Context, Dumpable
 {
     private static final Logger LOG = Log.getLogger(NamingContext.class);
-    private final static List<Binding> __empty = Collections.emptyList();
+    private static final List<Binding> __empty = Collections.emptyList();
     public static final String DEEP_BINDING = "org.eclipse.jetty.jndi.deepBinding";
     public static final String LOCK_PROPERTY = "org.eclipse.jetty.jndi.lock";
     public static final String UNLOCK_PROPERTY = "org.eclipse.jetty.jndi.unlock";

@@ -40,10 +40,10 @@ public class ContainerInitializer
 {
     private static final Logger LOG = Log.getLogger(ContainerInitializer.class);
 
-    final protected ServletContainerInitializer _target;
-    final protected Class<?>[] _interestedTypes;
-    final protected Set<String> _applicableTypeNames = ConcurrentHashMap.newKeySet();
-    final protected Set<String> _annotatedTypeNames = ConcurrentHashMap.newKeySet();
+    protected final ServletContainerInitializer _target;
+    protected final Class<?>[] _interestedTypes;
+    protected final Set<String> _applicableTypeNames = ConcurrentHashMap.newKeySet();
+    protected final Set<String> _annotatedTypeNames = ConcurrentHashMap.newKeySet();
 
     public ContainerInitializer(ServletContainerInitializer target, Class<?>[] classes)
     {
@@ -182,7 +182,7 @@ public class ContainerInitializer
                 addApplicableTypeName(name);
 
                 //find and add the classes that inherit the annotation               
-                addInheritedTypes(classMap, (Set<String>)classMap.get(name));
+                addInheritedTypes(classMap, classMap.get(name));
             }
         }
 
@@ -196,7 +196,7 @@ public class ContainerInitializer
                 {
                     //find and add the classes that implement or extend the class.
                     //but not including the class itself
-                    addInheritedTypes(classMap, (Set<String>)classMap.get(c.getName()));
+                    addInheritedTypes(classMap, classMap.get(c.getName()));
                 }
             }
         }
@@ -213,7 +213,7 @@ public class ContainerInitializer
             addApplicableTypeName(s);
 
             //walk the hierarchy and find all types that extend or implement the class
-            addInheritedTypes(classMap, (Set<String>)classMap.get(s));
+            addInheritedTypes(classMap, classMap.get(s));
         }
     }
 }

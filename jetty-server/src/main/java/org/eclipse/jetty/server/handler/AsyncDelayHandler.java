@@ -36,7 +36,7 @@ import org.eclipse.jetty.server.Request;
  */
 public class AsyncDelayHandler extends HandlerWrapper
 {
-    public final static String AHW_ATTR = "o.e.j.s.h.AsyncHandlerWrapper";
+    public static final String AHW_ATTR = "o.e.j.s.h.AsyncHandlerWrapper";
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -47,11 +47,11 @@ public class AsyncDelayHandler extends HandlerWrapper
         // Get the dispatcher types
         DispatcherType ctype = baseRequest.getDispatcherType();
         DispatcherType dtype = (DispatcherType)baseRequest.getAttribute(AHW_ATTR);
-        Object async_context_path = null;
-        Object async_path_info = null;
-        Object async_query_string = null;
-        Object async_request_uri = null;
-        Object async_servlet_path = null;
+        Object asyncContextPath = null;
+        Object asyncPathInfo = null;
+        Object asyncQueryString = null;
+        Object asyncRequestUri = null;
+        Object asyncServletPath = null;
 
         // Is this request a restarted one?
         boolean restart = false;
@@ -62,15 +62,15 @@ public class AsyncDelayHandler extends HandlerWrapper
             baseRequest.setDispatcherType(dtype);
             restart = true;
 
-            async_context_path = baseRequest.getAttribute(AsyncContext.ASYNC_CONTEXT_PATH);
+            asyncContextPath = baseRequest.getAttribute(AsyncContext.ASYNC_CONTEXT_PATH);
             baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, null);
-            async_path_info = baseRequest.getAttribute(AsyncContext.ASYNC_PATH_INFO);
+            asyncPathInfo = baseRequest.getAttribute(AsyncContext.ASYNC_PATH_INFO);
             baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, null);
-            async_query_string = baseRequest.getAttribute(AsyncContext.ASYNC_QUERY_STRING);
+            asyncQueryString = baseRequest.getAttribute(AsyncContext.ASYNC_QUERY_STRING);
             baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, null);
-            async_request_uri = baseRequest.getAttribute(AsyncContext.ASYNC_REQUEST_URI);
+            asyncRequestUri = baseRequest.getAttribute(AsyncContext.ASYNC_REQUEST_URI);
             baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, null);
-            async_servlet_path = baseRequest.getAttribute(AsyncContext.ASYNC_SERVLET_PATH);
+            asyncServletPath = baseRequest.getAttribute(AsyncContext.ASYNC_SERVLET_PATH);
             baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, null);
         }
 
@@ -96,11 +96,11 @@ public class AsyncDelayHandler extends HandlerWrapper
             {
                 // reset the request
                 baseRequest.setDispatcherType(ctype);
-                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, async_context_path);
-                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, async_path_info);
-                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, async_query_string);
-                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, async_request_uri);
-                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, async_servlet_path);
+                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, asyncContextPath);
+                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, asyncPathInfo);
+                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, asyncQueryString);
+                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, asyncRequestUri);
+                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, asyncServletPath);
             }
 
             // signal the request is leaving the handler

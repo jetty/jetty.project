@@ -89,7 +89,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class JSON
 {
     static final Logger LOG = Log.getLogger(JSON.class);
-    public final static JSON DEFAULT = new JSON();
+    public static final JSON DEFAULT = new JSON();
 
     private Map<String, Convertor> _convertors = new ConcurrentHashMap<String, Convertor>();
     private int _stringBufferSize = 1024;
@@ -779,11 +779,11 @@ public class JSON
 
     public Object parse(Source source, boolean stripOuterComment)
     {
-        int comment_state = 0; // 0=no comment, 1="/", 2="/*", 3="/* *" -1="//"
+        int commentState = 0; // 0=no comment, 1="/", 2="/*", 3="/* *" -1="//"
         if (!stripOuterComment)
             return parse(source);
 
-        int strip_state = 1; // 0=no strip, 1=wait for /*, 2= wait for */
+        int stripState = 1; // 0=no strip, 1=wait for /*, 2= wait for */
 
         Object o = null;
         while (source.hasNext())
@@ -791,52 +791,52 @@ public class JSON
             char c = source.peek();
 
             // handle // or /* comment
-            if (comment_state == 1)
+            if (commentState == 1)
             {
                 switch (c)
                 {
                     case '/':
-                        comment_state = -1;
+                        commentState = -1;
                         break;
                     case '*':
-                        comment_state = 2;
-                        if (strip_state == 1)
+                        commentState = 2;
+                        if (stripState == 1)
                         {
-                            comment_state = 0;
-                            strip_state = 2;
+                            commentState = 0;
+                            stripState = 2;
                         }
                 }
             }
             // handle  comment
-            else if (comment_state > 1)
+            else if (commentState > 1)
             {
                 switch (c)
                 {
                     case '*':
-                        comment_state = 3;
+                        commentState = 3;
                         break;
                     case '/':
-                        if (comment_state == 3)
+                        if (commentState == 3)
                         {
-                            comment_state = 0;
-                            if (strip_state == 2)
+                            commentState = 0;
+                            if (stripState == 2)
                                 return o;
                         }
                         else
-                            comment_state = 2;
+                            commentState = 2;
                         break;
                     default:
-                        comment_state = 2;
+                        commentState = 2;
                 }
             }
             // handle // comment
-            else if (comment_state < 0)
+            else if (commentState < 0)
             {
                 switch (c)
                 {
                     case '\r':
                     case '\n':
-                        comment_state = 0;
+                        commentState = 0;
                     default:
                         break;
                 }
@@ -847,9 +847,9 @@ public class JSON
                 if (!Character.isWhitespace(c))
                 {
                     if (c == '/')
-                        comment_state = 1;
+                        commentState = 1;
                     else if (c == '*')
-                        comment_state = 3;
+                        commentState = 3;
                     else if (o == null)
                     {
                         o = parse(source);
@@ -866,50 +866,50 @@ public class JSON
 
     public Object parse(Source source)
     {
-        int comment_state = 0; // 0=no comment, 1="/", 2="/*", 3="/* *" -1="//"
+        int commentState = 0; // 0=no comment, 1="/", 2="/*", 3="/* *" -1="//"
 
         while (source.hasNext())
         {
             char c = source.peek();
 
             // handle // or /* comment
-            if (comment_state == 1)
+            if (commentState == 1)
             {
                 switch (c)
                 {
                     case '/':
-                        comment_state = -1;
+                        commentState = -1;
                         break;
                     case '*':
-                        comment_state = 2;
+                        commentState = 2;
                 }
             }
             // handle  comment
-            else if (comment_state > 1)
+            else if (commentState > 1)
             {
                 switch (c)
                 {
                     case '*':
-                        comment_state = 3;
+                        commentState = 3;
                         break;
                     case '/':
-                        if (comment_state == 3)
-                            comment_state = 0;
+                        if (commentState == 3)
+                            commentState = 0;
                         else
-                            comment_state = 2;
+                            commentState = 2;
                         break;
                     default:
-                        comment_state = 2;
+                        commentState = 2;
                 }
             }
             // handle // comment
-            else if (comment_state < 0)
+            else if (commentState < 0)
             {
                 switch (c)
                 {
                     case '\r':
                     case '\n':
-                        comment_state = 0;
+                        commentState = 0;
                         break;
                     default:
                         break;
@@ -946,7 +946,7 @@ public class JSON
                         return null;
 
                     case '/':
-                        comment_state = 1;
+                        commentState = 1;
                         break;
 
                     default:
@@ -1146,8 +1146,8 @@ public class JSON
                             scratch[i++] = '\t';
                             break;
                         case 'u':
-                            char uc = (char)((TypeUtil.convertHexDigit((byte)source.next()) << 12) + (TypeUtil.convertHexDigit((byte)source.next()) << 8)
-                                + (TypeUtil.convertHexDigit((byte)source.next()) << 4) + (TypeUtil.convertHexDigit((byte)source.next())));
+                            char uc = (char)((TypeUtil.convertHexDigit((byte)source.next()) << 12) + (TypeUtil.convertHexDigit((byte)source.next()) << 8) +
+                                                 (TypeUtil.convertHexDigit((byte)source.next()) << 4) + (TypeUtil.convertHexDigit((byte)source.next())));
                             scratch[i++] = uc;
                             break;
                         default:
@@ -1212,8 +1212,8 @@ public class JSON
                         builder.append('\t');
                         break;
                     case 'u':
-                        char uc = (char)((TypeUtil.convertHexDigit((byte)source.next()) << 12) + (TypeUtil.convertHexDigit((byte)source.next()) << 8)
-                            + (TypeUtil.convertHexDigit((byte)source.next()) << 4) + (TypeUtil.convertHexDigit((byte)source.next())));
+                        char uc = (char)((TypeUtil.convertHexDigit((byte)source.next()) << 12) + (TypeUtil.convertHexDigit((byte)source.next()) << 8) +
+                                             (TypeUtil.convertHexDigit((byte)source.next()) << 4) + (TypeUtil.convertHexDigit((byte)source.next())));
                         builder.append(uc);
                         break;
                     default:
@@ -1630,17 +1630,17 @@ public class JSON
      */
     public interface Output
     {
-        public void addClass(Class c);
+        void addClass(Class c);
 
-        public void add(Object obj);
+        void add(Object obj);
 
-        public void add(String name, Object value);
+        void add(String name, Object value);
 
-        public void add(String name, double value);
+        void add(String name, double value);
 
-        public void add(String name, long value);
+        void add(String name, long value);
 
-        public void add(String name, boolean value);
+        void add(String name, boolean value);
     }
 
     /**
@@ -1656,9 +1656,9 @@ public class JSON
      */
     public interface Convertible
     {
-        public void toJSON(Output out);
+        void toJSON(Output out);
 
-        public void fromJSON(Map object);
+        void fromJSON(Map object);
     }
 
     /**
@@ -1674,9 +1674,9 @@ public class JSON
      */
     public interface Convertor
     {
-        public void toJSON(Object obj, Output out);
+        void toJSON(Object obj, Output out);
 
-        public Object fromJSON(Map object);
+        Object fromJSON(Map object);
     }
 
     /**
@@ -1686,7 +1686,7 @@ public class JSON
      */
     public interface Generator
     {
-        public void addJSON(Appendable buffer);
+        void addJSON(Appendable buffer);
     }
 
     /**

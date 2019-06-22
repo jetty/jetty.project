@@ -138,8 +138,8 @@ public class TestConnection implements Producer
                 if (file.exists())
                 {
                     response.append("contentType: ").append("file").append(System.lineSeparator());
-                    response.append("lastModified: ").append(Long.toString(file.lastModified())).append(System.lineSeparator());
-                    response.append("contentLength: ").append(Long.toString(file.length())).append(System.lineSeparator());
+                    response.append("lastModified: ").append(file.lastModified()).append(System.lineSeparator());
+                    response.append("contentLength: ").append(file.length()).append(System.lineSeparator());
                     response.append("content: ").append("This should be content from a file, but lets pretend it was cached").append(System.lineSeparator());
                 }
                 else

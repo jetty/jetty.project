@@ -41,14 +41,14 @@ public interface TryExecutor extends Executor
             throw new RejectedExecutionException();
     }
 
-    public static TryExecutor asTryExecutor(Executor executor)
+    static TryExecutor asTryExecutor(Executor executor)
     {
         if (executor instanceof TryExecutor)
             return (TryExecutor)executor;
         return new NoTryExecutor(executor);
     }
 
-    public static class NoTryExecutor implements TryExecutor
+    class NoTryExecutor implements TryExecutor
     {
         private final Executor executor;
 

@@ -53,7 +53,7 @@ public interface SslHandshakeListener extends EventListener
     /**
      * <p>The event object carrying information about TLS handshake events.</p>
      */
-    public static class Event extends EventObject
+    class Event extends EventObject
     {
         public Event(Object source)
         {

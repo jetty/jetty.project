@@ -42,10 +42,7 @@ public class IntrospectionUtil
         if (!method.getName().startsWith("set"))
             return false;
 
-        if (method.getParameterCount() != 1)
-            return false;
-
-        return true;
+        return method.getParameterCount() == 1;
     }
 
     public static Method findMethod(Class<?> clazz, String methodName, Class<?>[] args, boolean checkInheritance, boolean strictArgs)
@@ -121,10 +118,7 @@ public class IntrospectionUtil
             return true;
         if (Modifier.isProtected(modifiers))
             return true;
-        if (!Modifier.isPrivate(modifiers) && pack.equals(member.getDeclaringClass().getPackage()))
-            return true;
-
-        return false;
+        return !Modifier.isPrivate(modifiers) && pack.equals(member.getDeclaringClass().getPackage());
     }
 
     public static boolean checkParams(Class<?>[] formalParams, Class<?>[] actualParams, boolean strict)
@@ -156,12 +150,7 @@ public class IntrospectionUtil
             }
         }
 
-        if (j != formalParams.length)
-        {
-            return false;
-        }
-
-        return true;
+        return j == formalParams.length;
     }
 
     public static boolean isSameSignature(Method methodA, Method methodB)
@@ -174,12 +163,7 @@ public class IntrospectionUtil
         List<Class<?>> parameterTypesA = Arrays.asList(methodA.getParameterTypes());
         List<Class<?>> parameterTypesB = Arrays.asList(methodB.getParameterTypes());
 
-        if (methodA.getName().equals(methodB.getName())
-            &&
-            parameterTypesA.containsAll(parameterTypesB))
-            return true;
-
-        return false;
+        return methodA.getName().equals(methodB.getName()) && parameterTypesA.containsAll(parameterTypesB);
     }
 
     public static boolean isTypeCompatible(Class<?> formalType, Class<?> actualType, boolean strict)
@@ -243,9 +227,9 @@ public class IntrospectionUtil
         Method[] methods = clazz.getDeclaredMethods();
         for (int i = 0; i < methods.length && method == null; i++)
         {
-            if (methods[i].getName().equals(methodName)
-                && isInheritable(pack, methods[i])
-                && checkParams(methods[i].getParameterTypes(), args, strictArgs))
+            if (methods[i].getName().equals(methodName) &&
+                    isInheritable(pack, methods[i]) &&
+                    checkParams(methods[i].getParameterTypes(), args, strictArgs))
                 method = methods[i];
         }
         if (method != null)

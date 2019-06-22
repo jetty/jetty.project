@@ -60,7 +60,7 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
             else if (callbacks[i] instanceof PasswordCallback)
             {
                 if (getCredential() instanceof Password)
-                    ((PasswordCallback)callbacks[i]).setPassword(((Password)getCredential()).toString().toCharArray());
+                    ((PasswordCallback)callbacks[i]).setPassword(getCredential().toString().toCharArray());
                 else if (getCredential() instanceof String)
                 {
                     ((PasswordCallback)callbacks[i]).setPassword(((String)getCredential()).toCharArray());

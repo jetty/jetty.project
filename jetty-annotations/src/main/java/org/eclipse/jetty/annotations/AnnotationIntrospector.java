@@ -35,7 +35,7 @@ public class AnnotationIntrospector
      */
     public interface IntrospectableAnnotationHandler
     {
-        public void handle(Class<?> clazz);
+        void handle(Class<?> clazz);
     }
 
     /**
@@ -44,7 +44,7 @@ public class AnnotationIntrospector
      * Base class for handlers that introspect a class to find a particular annotation.
      * A handler can optionally introspect the parent hierarchy of a class.
      */
-    public static abstract class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
+    public abstract static class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
     {
         private boolean _introspectAncestors;
 

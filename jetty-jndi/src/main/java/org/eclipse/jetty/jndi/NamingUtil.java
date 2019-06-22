@@ -40,7 +40,7 @@ public class NamingUtil
      * @deprecated no replacement, use a logger-per-class idiom instead.
      */
     @Deprecated
-    public final static Logger __log = Log.getLogger("jndi");
+    public static final Logger __log = Log.getLogger("jndi");
     private static final Logger LOG = Log.getLogger(NamingUtil.class);
 
     /**

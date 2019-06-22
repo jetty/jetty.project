@@ -136,7 +136,7 @@ public enum HttpHeader
 
     UNKNOWN("::UNKNOWN::");
 
-    public final static Trie<HttpHeader> CACHE = new ArrayTrie<>(630);
+    public static final Trie<HttpHeader> CACHE = new ArrayTrie<>(630);
 
     static
     {

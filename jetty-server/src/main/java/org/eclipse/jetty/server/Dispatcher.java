@@ -42,17 +42,17 @@ public class Dispatcher implements RequestDispatcher
 {
     private static final Logger LOG = Log.getLogger(Dispatcher.class);
 
-    public final static String __ERROR_DISPATCH = "org.eclipse.jetty.server.Dispatcher.ERROR";
+    public static final String __ERROR_DISPATCH = "org.eclipse.jetty.server.Dispatcher.ERROR";
 
     /**
      * Dispatch include attribute names
      */
-    public final static String __INCLUDE_PREFIX = "javax.servlet.include.";
+    public static final String __INCLUDE_PREFIX = "javax.servlet.include.";
 
     /**
      * Dispatch include attribute names
      */
-    public final static String __FORWARD_PREFIX = "javax.servlet.forward.";
+    public static final String __FORWARD_PREFIX = "javax.servlet.forward.";
 
     private final ContextHandler _contextHandler;
     private final HttpURI _uri;
@@ -145,8 +145,8 @@ public class Dispatcher implements RequestDispatcher
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
         Request baseRequest = Request.getBaseRequest(request);
-        Response base_response = baseRequest.getResponse();
-        base_response.resetForForward();
+        Response baseResponse = baseRequest.getResponse();
+        baseResponse.resetForForward();
 
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
@@ -262,7 +262,7 @@ public class Dispatcher implements RequestDispatcher
                 // Try closing Writer first (based on knowledge in Response obj)
                 response.getWriter().close();
             }
-            catch (IllegalStateException e1)
+            catch (IllegalStateException ex)
             {
                 try
                 {
@@ -270,10 +270,10 @@ public class Dispatcher implements RequestDispatcher
                     // This path is possible due to badly behaving Response wrappers
                     response.getOutputStream().close();
                 }
-                catch (IllegalStateException e2)
+                catch (IllegalStateException ex2)
                 {
-                    ServletException servletException = new ServletException("Unable to commit the response", e2);
-                    servletException.addSuppressed(e1);
+                    ServletException servletException = new ServletException("Unable to commit the response", ex2);
+                    servletException.addSuppressed(ex);
                     throw servletException;
                 }
             }
@@ -285,7 +285,7 @@ public class Dispatcher implements RequestDispatcher
                 // Try closing OutputStream first (based on knowledge in Response obj)
                 response.getOutputStream().close();
             }
-            catch (IllegalStateException e1)
+            catch (IllegalStateException ex)
             {
                 try
                 {
@@ -293,10 +293,10 @@ public class Dispatcher implements RequestDispatcher
                     // This path is possible due to badly behaving Response wrappers
                     response.getWriter().close();
                 }
-                catch (IllegalStateException e2)
+                catch (IllegalStateException ex2)
                 {
-                    ServletException servletException = new ServletException("Unable to commit the response", e2);
-                    servletException.addSuppressed(e1);
+                    ServletException servletException = new ServletException("Unable to commit the response", ex2);
+                    servletException.addSuppressed(ex);
                     throw servletException;
                 }
             }

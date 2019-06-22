@@ -1029,15 +1029,16 @@ public class URIUtil
         {
             char c = uri.charAt(i);
             if (c == ':')
+            {
                 return true;
+            }
             if (!(c >= 'a' && c <= 'z' ||
-                c >= 'A' && c <= 'Z' ||
-                (i > 0 && (c >= '0' && c <= '9' ||
-                    c == '.' ||
-                    c == '+' ||
-                    c == '-'))
+                      c >= 'A' && c <= 'Z' ||
+                      (i > 0 && (c >= '0' && c <= '9' || c == '.' || c == '+' || c == '-'))
             ))
+            {
                 break;
+            }
         }
         return false;
     }
@@ -1230,9 +1231,9 @@ public class URIUtil
                 return uri;
             // Get SSP (retaining encoded form)
             String s = uri.getRawSchemeSpecificPart();
-            int bang_slash = s.indexOf("!/");
-            if (bang_slash >= 0)
-                s = s.substring(0, bang_slash);
+            int bangSlash = s.indexOf("!/");
+            if (bangSlash >= 0)
+                s = s.substring(0, bangSlash);
             return new URI(s);
         }
         catch (URISyntaxException e)
@@ -1245,7 +1246,7 @@ public class URIUtil
     {
         if (!uri.startsWith("jar:"))
             return uri;
-        int bang_slash = uri.indexOf("!/");
-        return (bang_slash >= 0) ? uri.substring(4, bang_slash) : uri.substring(4);
+        int bangSlash = uri.indexOf("!/");
+        return (bangSlash >= 0) ? uri.substring(4, bangSlash) : uri.substring(4);
     }
 }

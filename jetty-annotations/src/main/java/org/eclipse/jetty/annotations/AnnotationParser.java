@@ -348,25 +348,25 @@ public class AnnotationParser
     /**
      * Signature for all handlers that respond to parsing class files.
      */
-    public static interface Handler
+    public interface Handler
     {
-        public void handle(ClassInfo classInfo);
+        void handle(ClassInfo classInfo);
 
-        public void handle(MethodInfo methodInfo);
+        void handle(MethodInfo methodInfo);
 
-        public void handle(FieldInfo fieldInfo);
+        void handle(FieldInfo fieldInfo);
 
-        public void handle(ClassInfo info, String annotationName);
+        void handle(ClassInfo info, String annotationName);
 
-        public void handle(MethodInfo info, String annotationName);
+        void handle(MethodInfo info, String annotationName);
 
-        public void handle(FieldInfo info, String annotationName);
+        void handle(FieldInfo info, String annotationName);
     }
 
     /**
      * Convenience base class to provide no-ops for all Handler methods.
      */
-    public static abstract class AbstractHandler implements Handler
+    public abstract static class AbstractHandler implements Handler
     {
         @Override
         public void handle(ClassInfo classInfo)

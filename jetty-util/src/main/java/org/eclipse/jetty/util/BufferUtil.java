@@ -97,11 +97,11 @@ public class BufferUtil
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
     static final byte[] DIGIT =
-        {
-            (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
-            (byte)'A', (byte)'B', (byte)'C', (byte)'D',
-            (byte)'E', (byte)'F'
-        };
+    {
+        (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
+        (byte)'A', (byte)'B', (byte)'C', (byte)'D',
+        (byte)'E', (byte)'F'
+    };
 
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
@@ -248,8 +248,8 @@ public class BufferUtil
     public static boolean isTheEmptyBuffer(ByteBuffer buf)
     {
         @SuppressWarnings("ReferenceEquality")
-        boolean isTheEmptyBuffer_ = (buf == EMPTY_BUFFER);
-        return isTheEmptyBuffer_;
+        boolean isTheEmptyBuffer = (buf == EMPTY_BUFFER);
+        return isTheEmptyBuffer;
     }
 
     /**
@@ -927,7 +927,7 @@ public class BufferUtil
      * @param length the length in bytes of the array to use
      * @return ByteBuffer with provided byte array, in flush mode
      */
-    public static ByteBuffer toBuffer(byte array[], int offset, int length)
+    public static ByteBuffer toBuffer(byte[] array, int offset, int length)
     {
         if (array == null)
             return EMPTY_BUFFER;
@@ -973,7 +973,7 @@ public class BufferUtil
     {
         int len = (int)resource.length();
         if (len < 0)
-            throw new IllegalArgumentException("invalid resource: " + String.valueOf(resource) + " len=" + len);
+            throw new IllegalArgumentException("invalid resource: " + resource + " len=" + len);
 
         ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
 
@@ -982,7 +982,7 @@ public class BufferUtil
             BufferUtil.readFrom(resource.getFile(), buffer);
         else
         {
-            try (InputStream is = resource.getInputStream();)
+            try (InputStream is = resource.getInputStream())
             {
                 BufferUtil.readFrom(is, len, buffer);
             }
@@ -1186,13 +1186,13 @@ public class BufferUtil
         return TypeUtil.toHexString(toArray(buffer));
     }
 
-    private final static int[] decDivisors =
+    private static final int[] decDivisors =
         {1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1};
 
-    private final static int[] hexDivisors =
+    private static final int[] hexDivisors =
         {0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1};
 
-    private final static long[] decDivisorsL =
+    private static final long[] decDivisorsL =
         {
             1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L,
             1000000000000L, 100000000000L,

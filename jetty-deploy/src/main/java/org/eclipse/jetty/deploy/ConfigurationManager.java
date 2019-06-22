@@ -27,5 +27,5 @@ import java.util.Map;
  */
 public interface ConfigurationManager
 {
-    public Map<String, String> getProperties();
+    Map<String, String> getProperties();
 }

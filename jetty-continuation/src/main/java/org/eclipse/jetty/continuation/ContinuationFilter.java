@@ -61,7 +61,7 @@ public class ContinuationFilter implements Filter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         filterConfig.getServletContext().log("WARNING: " + this.getClass().getName() + " is now DEPRECATED, use Servlet 3.0 AsyncContext instead.");
-        boolean jetty_7_or_greater = "org.eclipse.jetty.servlet".equals(filterConfig.getClass().getPackage().getName());
+        boolean jetty7OrGreater = "org.eclipse.jetty.servlet".equals(filterConfig.getClass().getPackage().getName());
         _context = filterConfig.getServletContext();
 
         String param = filterConfig.getInitParameter("debug");
@@ -74,12 +74,12 @@ public class ContinuationFilter implements Filter
         if (param != null)
             _faux = Boolean.parseBoolean(param);
         else
-            _faux = !(jetty_7_or_greater || _context.getMajorVersion() >= 3);
+            _faux = !(jetty7OrGreater || _context.getMajorVersion() >= 3);
 
         _filtered = _faux;
         if (_debug)
             _context.log("ContinuationFilter " +
-                " jetty=" + jetty_7_or_greater +
+                " jetty=" + jetty7OrGreater +
                 " faux=" + _faux +
                 " filtered=" + _filtered +
                 " servlet3=" + ContinuationSupport.__servlet3);

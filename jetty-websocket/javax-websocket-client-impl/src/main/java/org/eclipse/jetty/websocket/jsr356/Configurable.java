@@ -25,5 +25,5 @@ import javax.websocket.EndpointConfig;
  */
 public interface Configurable
 {
-    public void init(EndpointConfig config);
+    void init(EndpointConfig config);
 }

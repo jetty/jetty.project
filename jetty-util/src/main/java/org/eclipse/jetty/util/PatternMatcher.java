@@ -91,9 +91,8 @@ public abstract class PatternMatcher
         {
             URI uri = uris[i];
             String s = uri.toString();
-            if ((pattern == null && isNullInclusive)
-                ||
-                (pattern != null && pattern.matcher(s).matches()))
+            if ((pattern == null && isNullInclusive) ||
+                    (pattern != null && pattern.matcher(s).matches()))
             {
                 matched(uris[i]);
             }

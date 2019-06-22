@@ -56,7 +56,7 @@ public class OnMessageTextStreamCallable extends OnMessageCallable
     {
         // Bug-430088 - streaming based calls are dispatched.
         // create a copy of the calling args array to prevent concurrency problems.
-        Object copy[] = new Object[super.args.length];
+        Object[] copy = new Object[super.args.length];
         System.arraycopy(super.args, 0, copy, 0, super.args.length);
         copy[idxMessageObject] = textDecoder.decode(reader);
         return super.call(endpoint, copy);

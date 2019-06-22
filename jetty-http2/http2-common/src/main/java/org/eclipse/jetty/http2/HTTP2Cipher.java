@@ -27,8 +27,8 @@ public class HTTP2Cipher
 {
     public static final Comparator<String> COMPARATOR = new CipherComparator();
 
-    private final static Trie<Boolean> __blackProtocols = new ArrayTrie<>(6 * 5);
-    private final static Trie<Boolean> __blackCiphers = new ArrayTrie<>(275 * 40);
+    private static final Trie<Boolean> __blackProtocols = new ArrayTrie<>(6 * 5);
+    private static final Trie<Boolean> __blackCiphers = new ArrayTrie<>(275 * 40);
 
     static
     {

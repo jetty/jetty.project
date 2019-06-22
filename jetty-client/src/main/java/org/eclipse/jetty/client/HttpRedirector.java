@@ -218,7 +218,7 @@ public class HttpRedirector
                 {
                     return new URI(scheme, authority, path, query, fragment);
                 }
-                catch (URISyntaxException xx)
+                catch (URISyntaxException ex)
                 {
                     // Give up
                 }

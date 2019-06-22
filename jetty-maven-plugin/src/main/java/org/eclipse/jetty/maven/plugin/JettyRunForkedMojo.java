@@ -343,7 +343,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 int attempts = maxChildChecks;
                 while (!Files.exists(tokenFile) && attempts > 0)
                 {
-                    Thread.currentThread().sleep(maxChildCheckInterval);
+                    Thread.sleep(maxChildCheckInterval);
                     --attempts;
                 }
                 if (attempts <= 0)

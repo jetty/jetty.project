@@ -41,9 +41,9 @@ public class ServerParser extends Parser
 
     public interface Listener extends Parser.Listener
     {
-        public void onStart(int request, FCGI.Role role, int flags);
+        void onStart(int request, FCGI.Role role, int flags);
 
-        public static class Adapter extends Parser.Listener.Adapter implements Listener
+        class Adapter extends Parser.Listener.Adapter implements Listener
         {
             @Override
             public void onStart(int request, FCGI.Role role, int flags)

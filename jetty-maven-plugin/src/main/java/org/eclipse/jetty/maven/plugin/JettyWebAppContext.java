@@ -428,7 +428,7 @@ public class JettyWebAppContext extends WebAppContext
 
         // CHECK setShutdown(true);
         //just wait a little while to ensure no requests are still being processed
-        Thread.currentThread().sleep(500L);
+        Thread.sleep(500L);
 
         super.doStop();
 
@@ -574,8 +574,8 @@ public class JettyWebAppContext extends WebAppContext
         try
         {
             cdiInitializer = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.cdi.servlet.JettyWeldInitializer");
-            Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", new Class[]{WebAppContext.class});
-            initWebAppMethod.invoke(null, new Object[]{this});
+            Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", WebAppContext.class);
+            initWebAppMethod.invoke(null, this);
         }
         catch (ClassNotFoundException e)
         {

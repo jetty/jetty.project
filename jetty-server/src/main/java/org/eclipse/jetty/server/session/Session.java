@@ -56,12 +56,12 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
  */
 public class Session implements SessionHandler.SessionIf
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     /**
      *
      */
-    public final static String SESSION_CREATED_SECURE = "org.eclipse.jetty.security.sessionCreatedSecure";
+    public static final String SESSION_CREATED_SECURE = "org.eclipse.jetty.security.sessionCreatedSecure";
 
     /**
      * State
@@ -73,14 +73,10 @@ public class Session implements SessionHandler.SessionIf
         VALID, INVALID, INVALIDATING, CHANGING
     }
 
-    ;
-
     public enum IdState
     {
         SET, CHANGING
     }
-
-    ;
 
     protected final SessionData _sessionData; // the actual data associated with
     // a session
@@ -625,17 +621,12 @@ public class Session implements SessionHandler.SessionIf
         checkLocked();
 
         if (_state == State.INVALID)
-            throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId()
-                + " created="
-                + _sessionData.getCreated()
-                + " accessed="
-                + _sessionData.getAccessed()
-                + " lastaccessed="
-                + _sessionData.getLastAccessed()
-                + " maxInactiveMs="
-                + _sessionData.getMaxInactiveMs()
-                + " expiry="
-                + _sessionData.getExpiry());
+            throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId() +
+                                                " created=" + _sessionData.getCreated() +
+                                                " accessed=" + _sessionData.getAccessed() +
+                                                " lastaccessed=" + _sessionData.getLastAccessed() +
+                                                " maxInactiveMs=" + _sessionData.getMaxInactiveMs() +
+                                                " expiry=" + _sessionData.getExpiry());
 
         if (_state == State.INVALIDATING)
             return; // in the process of being invalidated, listeners may try to
@@ -655,17 +646,12 @@ public class Session implements SessionHandler.SessionIf
         checkLocked();
 
         if (_state == State.INVALID)
-            throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId()
-                + " created="
-                + _sessionData.getCreated()
-                + " accessed="
-                + _sessionData.getAccessed()
-                + " lastaccessed="
-                + _sessionData.getLastAccessed()
-                + " maxInactiveMs="
-                + _sessionData.getMaxInactiveMs()
-                + " expiry="
-                + _sessionData.getExpiry());
+            throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() +
+                                                " created=" + _sessionData.getCreated() +
+                                                " accessed=" + _sessionData.getAccessed() +
+                                                " lastaccessed=" + _sessionData.getLastAccessed() +
+                                                " maxInactiveMs=" + _sessionData.getMaxInactiveMs() +
+                                                " expiry=" + _sessionData.getExpiry());
 
         if (_state == State.INVALIDATING)
             return;

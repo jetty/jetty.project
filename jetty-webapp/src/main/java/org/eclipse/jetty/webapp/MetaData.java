@@ -456,8 +456,8 @@ public class MetaData
     public boolean isDistributable()
     {
         boolean distributable = (
-            (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable())
-                || (_webXmlRoot != null && _webXmlRoot.isDistributable()));
+            (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) ||
+                (_webXmlRoot != null && _webXmlRoot.isDistributable()));
 
         for (WebDescriptor d : _webOverrideRoots)
         {

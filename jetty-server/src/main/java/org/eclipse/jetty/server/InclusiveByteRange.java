@@ -81,11 +81,9 @@ public class InclusiveByteRange
 
     private boolean overlaps(InclusiveByteRange range)
     {
-        return (range.first >= this.first && range.first <= this.last)
-            ||
-            (range.last >= this.first && range.last <= this.last)
-            ||
-            (range.first < this.first && range.last > this.last);
+        return (range.first >= this.first && range.first <= this.last) ||
+                   (range.last >= this.first && range.last <= this.last) ||
+                   (range.first < this.first && range.last > this.last);
     }
 
     public long getSize()
@@ -121,16 +119,16 @@ public class InclusiveByteRange
             return false;
 
         return ((InclusiveByteRange)obj).first == this.first &&
-            ((InclusiveByteRange)obj).last == this.last;
+                   ((InclusiveByteRange)obj).last == this.last;
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder(60);
-        sb.append(Long.toString(first));
+        sb.append(first);
         sb.append(":");
-        sb.append(Long.toString(last));
+        sb.append(last);
         return sb.toString();
     }
 

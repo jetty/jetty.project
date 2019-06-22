@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 @ManagedObject("Connector Statistics")
 public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, Connection.Listener
 {
-    private final static Sample ZERO = new Sample();
+    private static final Sample ZERO = new Sample();
     private final AtomicLong _startMillis = new AtomicLong(-1L);
     private final CounterStatistic _connectionStats = new CounterStatistic();
     private final SampleStatistic _messagesIn = new SampleStatistic();
@@ -255,7 +255,7 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
         for (Connector connector : server.getConnectors())
         {
             if (connector instanceof Container)
-                ((Container)connector).addBean(new ConnectorStatistics());
+                connector.addBean(new ConnectorStatistics());
         }
     }
 

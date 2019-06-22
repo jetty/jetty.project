@@ -112,7 +112,7 @@ public class LifeCycleCallbackCollection
 
         for (int i = 0; i < callbacks.size(); i++)
         {
-            ((LifeCycleCallback)callbacks.get(i)).callback(o);
+            callbacks.get(i).callback(o);
         }
     }
 
@@ -136,7 +136,7 @@ public class LifeCycleCallbackCollection
 
         for (int i = 0; i < callbacks.size(); i++)
         {
-            ((LifeCycleCallback)callbacks.get(i)).callback(o);
+            callbacks.get(i).callback(o);
         }
     }
 

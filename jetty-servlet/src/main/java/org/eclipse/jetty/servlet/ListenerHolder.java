@@ -80,17 +80,17 @@ public class ListenerHolder extends BaseHolder<EventListener>
                 try
                 {
                     _listener = (context instanceof ServletContextHandler.Context)
-                        ? ((ServletContextHandler.Context)context).createListener(getHeldClass())
+                        ? context.createListener(getHeldClass())
                         : getHeldClass().getDeclaredConstructor().newInstance();
                 }
-                catch (ServletException se)
+                catch (ServletException ex)
                 {
-                    Throwable cause = se.getRootCause();
+                    Throwable cause = ex.getRootCause();
                     if (cause instanceof InstantiationException)
                         throw (InstantiationException)cause;
                     if (cause instanceof IllegalAccessException)
                         throw (IllegalAccessException)cause;
-                    throw se;
+                    throw ex;
                 }
             }
             _initialized = true;

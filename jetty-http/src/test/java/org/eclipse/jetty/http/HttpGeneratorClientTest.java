@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpGeneratorClientTest
 {
-    public final static String[] connect = {null, "keep-alive", "close"};
+    public static final String[] connect = {null, "keep-alive", "close"};
 
     class Info extends MetaData.Request
     {

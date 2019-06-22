@@ -49,7 +49,7 @@ public class HttpChannelState
 {
     private static final Logger LOG = Log.getLogger(HttpChannelState.class);
 
-    private final static long DEFAULT_TIMEOUT = Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
+    private static final long DEFAULT_TIMEOUT = Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
 
     /**
      * The state of the HttpChannel,used to control the overall lifecycle.
@@ -408,7 +408,7 @@ public class HttpChannelState
      */
     protected Action unhandle()
     {
-        boolean read_interested = false;
+        boolean readInterested = false;
 
         try (Locker.Lock lock = _locker.lock())
         {
@@ -464,7 +464,7 @@ public class HttpChannelState
                         case REGISTER:
                         case PRODUCING:
                             _asyncRead = AsyncRead.REGISTERED;
-                            read_interested = true;
+                            readInterested = true;
                             break;
 
                         case IDLE:
@@ -517,7 +517,7 @@ public class HttpChannelState
         }
         finally
         {
-            if (read_interested)
+            if (readInterested)
                 _channel.onAsyncWaitForContent();
         }
     }

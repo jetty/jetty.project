@@ -97,14 +97,14 @@ public class StdErrLog extends AbstractLogger
     private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD", "0"));
     private static DateCache _dateCache;
 
-    private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
+    private static final boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
         Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE", "false")));
-    private final static boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG", "false"));
-    private final static boolean __escape = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.ESCAPE", "true"));
+    private static final boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG", "false"));
+    private static final boolean __escape = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.ESCAPE", "true"));
 
     static
     {
-        String deprecatedProperties[] =
+        String[] deprecatedProperties =
             {"DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG"};
 
         // Toss a message to users about deprecated system properties
@@ -226,7 +226,7 @@ public class StdErrLog extends AbstractLogger
         {
             // allow stacktrace display to be controlled by properties as well
             String stacks = getLoggingProperty(Log.__props, _name, "STACKS");
-            _hideStacks = stacks == null ? false : !Boolean.parseBoolean(stacks);
+            _hideStacks = stacks != null && !Boolean.parseBoolean(stacks);
         }
         catch (AccessControlException ignore)
         {
@@ -448,7 +448,7 @@ public class StdErrLog extends AbstractLogger
         format(buffer, level, msg);
         if (isHideStacks())
         {
-            format(buffer, ": " + String.valueOf(thrown));
+            format(buffer, ": " + thrown);
         }
         else
         {
@@ -551,7 +551,7 @@ public class StdErrLog extends AbstractLogger
             else
             {
                 escape(builder, msg.substring(start, bracesIndex));
-                builder.append(String.valueOf(arg));
+                builder.append(arg);
                 start = bracesIndex + braces.length();
             }
         }

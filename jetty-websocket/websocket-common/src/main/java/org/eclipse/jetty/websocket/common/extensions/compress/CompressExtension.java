@@ -84,7 +84,7 @@ public abstract class CompressExtension extends AbstractExtension
      */
     private static final int DECOMPRESS_BUF_SIZE = 8 * 1024;
 
-    private final static boolean NOWRAP = true;
+    private static final boolean NOWRAP = true;
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
@@ -287,7 +287,7 @@ public abstract class CompressExtension extends AbstractExtension
             return false;
         }
 
-        byte input[];
+        byte[] input;
         int inputOffset;
         int len;
 
@@ -327,7 +327,7 @@ public abstract class CompressExtension extends AbstractExtension
             return false;
         }
 
-        byte input[];
+        byte[] input;
         int inputOffset;
         int len;
 

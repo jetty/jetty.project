@@ -35,8 +35,8 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JettyDistribution
 {
-    private final static Logger LOG = Log.getLogger(JettyDistribution.class);
-    public final static Path DISTRIBUTION;
+    private static final Logger LOG = Log.getLogger(JettyDistribution.class);
+    public static final Path DISTRIBUTION;
 
     static
     {
@@ -55,9 +55,9 @@ public class JettyDistribution
                     working = working.getParent();
                 }
             }
-            catch (Throwable th)
+            catch (Throwable cause)
             {
-                LOG.warn(th);
+                LOG.warn(cause);
             }
         }
         DISTRIBUTION = distro;

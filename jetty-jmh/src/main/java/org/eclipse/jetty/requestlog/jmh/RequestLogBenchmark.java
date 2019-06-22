@@ -177,16 +177,12 @@ public class RequestLogBenchmark
         return logFixed(Long.toString(ThreadLocalRandom.current().nextLong()));
     }
 
-    ;
-
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
     public String testIterate()
     {
         return logIterate(Long.toString(ThreadLocalRandom.current().nextLong()));
     }
-
-    ;
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})

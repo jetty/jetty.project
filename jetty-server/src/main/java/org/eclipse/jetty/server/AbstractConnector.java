@@ -141,7 +141,7 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 @ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends ContainerLifeCycle implements Connector, Dumpable
 {
-    protected final Logger LOG = Log.getLogger(AbstractConnector.class);
+    protected static final Logger LOG = Log.getLogger(AbstractConnector.class);
 
     private final Locker _locker = new Locker();
     private final Condition _setAccepting = _locker.newCondition();
@@ -410,7 +410,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (isRunning())
             throw new IllegalStateException(getState());
 
-        Set<ConnectionFactory> to_remove = new HashSet<>();
+        Set<ConnectionFactory> toRemove = new HashSet<>();
         for (String key : factory.getProtocols())
         {
             key = StringUtil.asciiToLowerCase(key);
@@ -419,7 +419,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             {
                 if (old.getProtocol().equals(_defaultProtocol))
                     _defaultProtocol = null;
-                to_remove.add(old);
+                toRemove.add(old);
             }
             _factories.put(key, factory);
         }
@@ -427,11 +427,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         // keep factories still referenced
         for (ConnectionFactory f : _factories.values())
         {
-            to_remove.remove(f);
+            toRemove.remove(f);
         }
 
         // remove old factories
-        for (ConnectionFactory old : to_remove)
+        for (ConnectionFactory old : toRemove)
         {
             removeBean(old);
             if (LOG.isDebugEnabled())

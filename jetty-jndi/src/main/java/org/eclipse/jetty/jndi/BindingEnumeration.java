@@ -52,7 +52,7 @@ public class BindingEnumeration implements NamingEnumeration<Binding>
     public Binding next()
         throws NamingException
     {
-        Binding b = (Binding)_delegate.next();
+        Binding b = _delegate.next();
         return new Binding(b.getName(), b.getClassName(), b.getObject(), true);
     }
 
@@ -65,7 +65,7 @@ public class BindingEnumeration implements NamingEnumeration<Binding>
     @Override
     public Binding nextElement()
     {
-        Binding b = (Binding)_delegate.next();
+        Binding b = _delegate.next();
         return new Binding(b.getName(), b.getClassName(), b.getObject(), true);
     }
 }

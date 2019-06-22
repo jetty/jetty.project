@@ -42,8 +42,8 @@ public abstract class JsrCallable extends CallableMethod
     {
         super(pojo, method);
 
-        Class<?> ptypes[] = method.getParameterTypes();
-        Annotation pannos[][] = method.getParameterAnnotations();
+        Class<?>[] ptypes = method.getParameterTypes();
+        Annotation[][] pannos = method.getParameterAnnotations();
         int len = ptypes.length;
         params = new Param[len];
         for (int i = 0; i < len; i++)

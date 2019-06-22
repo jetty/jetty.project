@@ -36,7 +36,7 @@ public interface ExecutionStrategy
      *
      * @see #produce()
      */
-    public void dispatch();
+    void dispatch();
 
     /**
      * <p>Initiates (or resumes) the task production and consumption.</p>
@@ -45,7 +45,7 @@ public interface ExecutionStrategy
      *
      * @see #dispatch()
      */
-    public void produce();
+    void produce();
 
     /**
      * <p>A producer of {@link Runnable} tasks to run.</p>
@@ -55,7 +55,7 @@ public interface ExecutionStrategy
      * {@link ExecutionStrategy} to be invoked again in case an external event resumes
      * the tasks production.</p>
      */
-    public interface Producer
+    interface Producer
     {
         /**
          * <p>Produces a task to be executed.</p>

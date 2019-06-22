@@ -55,8 +55,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
  */
 public class Log
 {
-    public final static String EXCEPTION = "EXCEPTION ";
-    public final static String IGNORED = "IGNORED EXCEPTION ";
+    public static final String EXCEPTION = "EXCEPTION ";
+    public static final String IGNORED = "IGNORED EXCEPTION ";
 
     /**
      * Logging Configuration Properties
@@ -74,7 +74,7 @@ public class Log
     /**
      * Hold loggers only.
      */
-    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
 
     static
     {
@@ -172,13 +172,13 @@ public class Log
 
             try
             {
-                Class<?> log_class = __logClass == null ? null : Loader.loadClass(Log.class, __logClass);
-                if (LOG == null || (log_class != null && !LOG.getClass().equals(log_class)))
+                Class<?> logClass = __logClass == null ? null : Loader.loadClass(Log.class, __logClass);
+                if (LOG == null || (logClass != null && !LOG.getClass().equals(logClass)))
                 {
-                    LOG = (Logger)log_class.getDeclaredConstructor().newInstance();
+                    LOG = (Logger)logClass.getDeclaredConstructor().newInstance();
                     if (announce)
                     {
-                        LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                        LOG.debug("Logging to {} via {}", LOG, logClass.getName());
                     }
                 }
             }
@@ -197,7 +197,7 @@ public class Log
 
     private static void initStandardLogging(Throwable e)
     {
-        Class<?> log_class;
+        Class<?> logClass;
         if (e != null && __ignored)
         {
             e.printStackTrace(System.err);
@@ -205,13 +205,13 @@ public class Log
 
         if (LOG == null)
         {
-            log_class = StdErrLog.class;
+            logClass = StdErrLog.class;
             LOG = new StdErrLog();
 
             boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
             if (announce)
             {
-                LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                LOG.debug("Logging to {} via {}", LOG, logClass.getName());
             }
         }
     }
@@ -276,7 +276,7 @@ public class Log
             try
             {
                 Class<?> uberlog = loader.getParent().loadClass("org.eclipse.jetty.util.log.Log");
-                Method getLogger = uberlog.getMethod("getLogger", new Class[]{String.class});
+                Method getLogger = uberlog.getMethod("getLogger", String.class);
                 Object logger = getLogger.invoke(null, name);
                 setLog(new LoggerLog(logger));
             }

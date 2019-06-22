@@ -782,25 +782,25 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             BufferUtil.clear(_content);
                         }
 
-                        byte gather_write = 0;
+                        byte gatherWrite = 0;
                         long bytes = 0;
                         if (BufferUtil.hasContent(_header))
                         {
-                            gather_write += 4;
+                            gatherWrite += 4;
                             bytes += _header.remaining();
                         }
                         if (BufferUtil.hasContent(chunk))
                         {
-                            gather_write += 2;
+                            gatherWrite += 2;
                             bytes += chunk.remaining();
                         }
                         if (BufferUtil.hasContent(_content))
                         {
-                            gather_write += 1;
+                            gatherWrite += 1;
                             bytes += _content.remaining();
                         }
                         HttpConnection.this.bytesOut.add(bytes);
-                        switch (gather_write)
+                        switch (gatherWrite)
                         {
                             case 7:
                                 getEndPoint().write(this, _header, chunk, _content);

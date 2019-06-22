@@ -359,7 +359,7 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.MULTIPARTS);
                 assertNotNull(m);
                 ContextHandler.Context c = m.getContext();
                 assertNotNull(c);
@@ -419,7 +419,7 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.MULTIPARTS);
                 assertNotNull(m);
                 ContextHandler.Context c = m.getContext();
                 assertNotNull(c);
@@ -527,7 +527,7 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.MULTIPARTS);
                 assertNotNull(m);
                 ContextHandler.Context c = m.getContext();
                 assertNotNull(c);
@@ -1101,7 +1101,7 @@ public class RequestTest
 
                 // Fake a @MultiPartConfig'd servlet endpoint
                 MultipartConfigElement multipartConfig = new MultipartConfigElement(tmpdir.getAbsolutePath());
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfig);
+                request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, multipartConfig);
 
                 // Normal processing
                 baseRequest.setHandled(true);
@@ -1858,7 +1858,7 @@ public class RequestTest
             {
 
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(), -1, -1, 2);
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 
                 String field1 = request.getParameter("field1");
                 assertNotNull(field1);
@@ -1906,7 +1906,7 @@ public class RequestTest
             {
 
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(), -1, -1, 2);
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 
                 //We should get an error when we getParams if there was a problem parsing the multipart
                 request.getPart("xxx");

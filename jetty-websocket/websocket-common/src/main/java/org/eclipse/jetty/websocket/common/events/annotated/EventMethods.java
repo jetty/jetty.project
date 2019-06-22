@@ -54,16 +54,10 @@ public class EventMethods
         EventMethods other = (EventMethods)obj;
         if (pojoClass == null)
         {
-            if (other.pojoClass != null)
-            {
-                return false;
-            }
+            return other.pojoClass == null;
         }
-        else if (!pojoClass.getName().equals(other.pojoClass.getName()))
-        {
-            return false;
-        }
-        return true;
+        else
+            return pojoClass.getName().equals(other.pojoClass.getName());
     }
 
     public Class<?> getPojoClass()

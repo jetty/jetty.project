@@ -58,8 +58,7 @@ public class OneWebAppWithJsp
             "jetty-distribution/target/distribution/demo-base/webapps/test.war");
         if (!warFile.exists())
         {
-            throw new RuntimeException("Unable to find WAR File: "
-                + warFile.getAbsolutePath());
+            throw new RuntimeException("Unable to find WAR File: " + warFile.getAbsolutePath());
         }
         webapp.setWar(warFile.getAbsolutePath());
         webapp.setExtractWAR(true);

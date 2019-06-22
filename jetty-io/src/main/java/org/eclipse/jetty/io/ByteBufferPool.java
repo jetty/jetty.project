@@ -46,7 +46,7 @@ public interface ByteBufferPool
      * @return the requested buffer
      * @see #release(ByteBuffer)
      */
-    public ByteBuffer acquire(int size, boolean direct);
+    ByteBuffer acquire(int size, boolean direct);
 
     /**
      * <p>Returns a {@link ByteBuffer}, usually obtained with {@link #acquire(int, boolean)}
@@ -55,7 +55,7 @@ public interface ByteBufferPool
      * @param buffer the buffer to return
      * @see #acquire(int, boolean)
      */
-    public void release(ByteBuffer buffer);
+    void release(ByteBuffer buffer);
 
     /**
      * <p>Creates a new ByteBuffer of the given capacity and the given directness.</p>
@@ -69,7 +69,7 @@ public interface ByteBufferPool
         return direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
     }
 
-    public static class Lease
+    class Lease
     {
         private final ByteBufferPool byteBufferPool;
         private final List<ByteBuffer> buffers;
@@ -134,7 +134,7 @@ public interface ByteBufferPool
         }
     }
 
-    public static class Bucket
+    class Bucket
     {
         private final Deque<ByteBuffer> _queue = new ConcurrentLinkedDeque<>();
         private final ByteBufferPool _pool;

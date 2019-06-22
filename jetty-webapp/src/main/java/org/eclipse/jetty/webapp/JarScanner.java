@@ -155,19 +155,19 @@ public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
             if (in == null)
                 return;
 
-            JarInputStream jar_in = new JarInputStream(in);
+            JarInputStream jarIn = new JarInputStream(in);
             try
             {
-                JarEntry entry = jar_in.getNextJarEntry();
+                JarEntry entry = jarIn.getNextJarEntry();
                 while (entry != null)
                 {
                     processEntry(uri, entry);
-                    entry = jar_in.getNextJarEntry();
+                    entry = jarIn.getNextJarEntry();
                 }
             }
             finally
             {
-                jar_in.close();
+                jarIn.close();
             }
         }
     }

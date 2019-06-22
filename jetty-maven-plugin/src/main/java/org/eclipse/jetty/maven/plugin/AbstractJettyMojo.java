@@ -366,8 +366,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             {
                 getLog().debug("Checking " + pluginArtifact);
             }
-            if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) //
-                && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
+            if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) &&
+                pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
                 return true;
         }
 
@@ -569,9 +569,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
 
     public boolean isScanningEnabled()
     {
-        if (scanIntervalSeconds <= 0 || "manual".equalsIgnoreCase(reload))
-            return false;
-        return true;
+        return scanIntervalSeconds > 0 && !"manual".equalsIgnoreCase(reload);
     }
 
     public void stopScanner() throws Exception

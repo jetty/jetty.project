@@ -38,31 +38,31 @@ public interface Connection extends Closeable
      *
      * @param listener the listener to add
      */
-    public void addListener(Listener listener);
+    void addListener(Listener listener);
 
     /**
      * <p>Removes a listener of connection events.</p>
      *
      * @param listener the listener to remove
      */
-    public void removeListener(Listener listener);
+    void removeListener(Listener listener);
 
     /**
      * <p>Callback method invoked when this connection is opened.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
      */
-    public void onOpen();
+    void onOpen();
 
     /**
      * <p>Callback method invoked when this connection is closed.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
      */
-    public void onClose();
+    void onClose();
 
     /**
      * @return the {@link EndPoint} associated with this Connection.
      */
-    public EndPoint getEndPoint();
+    EndPoint getEndPoint();
 
     /**
      * <p>Performs a logical close of this connection.</p>
@@ -71,7 +71,7 @@ public interface Connection extends Closeable
      * before closing the associated {@link EndPoint}.</p>
      */
     @Override
-    public void close();
+    void close();
 
     /**
      * <p>Callback method invoked upon an idle timeout event.</p>
@@ -84,19 +84,19 @@ public interface Connection extends Closeable
      * @return true to let the EndPoint handle the idle timeout,
      * false to tell the EndPoint to halt the handling of the idle timeout.
      */
-    public boolean onIdleExpired();
+    boolean onIdleExpired();
 
-    public long getMessagesIn();
+    long getMessagesIn();
 
-    public long getMessagesOut();
+    long getMessagesOut();
 
-    public long getBytesIn();
+    long getBytesIn();
 
-    public long getBytesOut();
+    long getBytesOut();
 
-    public long getCreatedTimeStamp();
+    long getCreatedTimeStamp();
 
-    public interface UpgradeFrom
+    interface UpgradeFrom
     {
         /**
          * <p>Takes the input buffer from the connection on upgrade.</p>
@@ -109,7 +109,7 @@ public interface Connection extends Closeable
         ByteBuffer onUpgradeFrom();
     }
 
-    public interface UpgradeTo
+    interface UpgradeTo
     {
         /**
          * <p>Callback method invoked when this connection is upgraded.</p>
@@ -131,13 +131,13 @@ public interface Connection extends Closeable
      * the Connector or ConnectionFactory are added as listeners to all new connections
      * </p>
      */
-    public interface Listener
+    interface Listener
     {
-        public void onOpened(Connection connection);
+        void onOpened(Connection connection);
 
-        public void onClosed(Connection connection);
+        void onClosed(Connection connection);
 
-        public static class Adapter implements Listener
+        class Adapter implements Listener
         {
             @Override
             public void onOpened(Connection connection)

@@ -572,14 +572,7 @@ public class MimeTypes
 
             if ('"' == b)
             {
-                if (quote)
-                {
-                    quote = false;
-                }
-                else
-                {
-                    quote = true;
-                }
+                quote = !quote;
 
                 switch (state)
                 {

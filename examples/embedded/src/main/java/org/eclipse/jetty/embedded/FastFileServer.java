@@ -177,7 +177,7 @@ public class FastFileServer
             // can be hard to GC on some JVMs. But for this example we will
             // create a new buffer per file
             ByteBuffer buffer;
-            try (RandomAccessFile raf = new RandomAccessFile(file, "r");)
+            try (RandomAccessFile raf = new RandomAccessFile(file, "r"))
             {
                 buffer = raf.getChannel().map(MapMode.READ_ONLY, 0,
                     raf.length());

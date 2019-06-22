@@ -73,6 +73,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     private static final String CLIENT_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
     private static final String SERVER_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".serverTransformer";
     private static final String CONTINUE_ACTION_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".continueAction";
+    private static final String WRITE_LISTENER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".writeListener";
 
     @Override
     protected void service(HttpServletRequest clientRequest, HttpServletResponse proxyResponse) throws ServletException, IOException
@@ -410,8 +411,6 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     protected class ProxyResponseListener extends Response.Listener.Adapter implements Callback
     {
-        private final String WRITE_LISTENER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".writeListener";
-
         private final Callback complete = new CountingCallback(this, 2);
         private final List<ByteBuffer> buffers = new ArrayList<>();
         private final HttpServletRequest clientRequest;
@@ -696,7 +695,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         /**
          * The identity transformer that does not perform any transformation.
          */
-        public static final ContentTransformer IDENTITY = new IdentityContentTransformer();
+        ContentTransformer IDENTITY = new IdentityContentTransformer();
 
         /**
          * <p>Transforms the given input byte buffers into (possibly multiple) byte buffers.</p>
@@ -744,7 +743,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
          * @param output where to put the transformed output content
          * @throws IOException in case of transformation failures
          */
-        public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException;
+        void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException;
     }
 
     private static class IdentityContentTransformer implements ContentTransformer

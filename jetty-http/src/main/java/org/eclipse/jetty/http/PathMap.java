@@ -424,8 +424,7 @@ public class PathMap<O> extends HashMap<String, O>
             if (!noDefault && pathSpec.length() == 1 || pathSpec.equals(path))
                 return true;
 
-            if (isPathWildcardMatch(pathSpec, path))
-                return true;
+            return isPathWildcardMatch(pathSpec, path);
         }
         else if (c == '*')
             return path.regionMatches(path.length() - pathSpec.length() + 1,
@@ -439,8 +438,7 @@ public class PathMap<O> extends HashMap<String, O>
         int cpl = pathSpec.length() - 2;
         if (pathSpec.endsWith("/*") && path.regionMatches(0, pathSpec, 0, cpl))
         {
-            if (path.length() == cpl || '/' == path.charAt(cpl))
-                return true;
+            return path.length() == cpl || '/' == path.charAt(cpl);
         }
         return false;
     }

@@ -27,7 +27,7 @@ package org.eclipse.jetty.util;
  */
 public class HostPort
 {
-    private final static boolean STRIP_IPV6 = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.HostPort.STRIP_IPV6", "false"));
+    private static final boolean STRIP_IPV6 = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.HostPort.STRIP_IPV6", "false"));
 
     private final String _host;
     private final int _port;

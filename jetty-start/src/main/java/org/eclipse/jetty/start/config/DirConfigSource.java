@@ -198,16 +198,10 @@ public class DirConfigSource implements ConfigSource
         DirConfigSource other = (DirConfigSource)obj;
         if (dir == null)
         {
-            if (other.dir != null)
-            {
-                return false;
-            }
+            return other.dir == null;
         }
-        else if (!dir.equals(other.dir))
-        {
-            return false;
-        }
-        return true;
+        else
+            return dir.equals(other.dir);
     }
 
     @Override

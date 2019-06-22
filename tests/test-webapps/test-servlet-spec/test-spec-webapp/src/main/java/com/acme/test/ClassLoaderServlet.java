@@ -116,9 +116,9 @@ public class ClassLoaderServlet extends HttpServlet
                 return uri;
             // Get SSP (retaining encoded form)
             String s = uri.getRawSchemeSpecificPart();
-            int bang_slash = s.indexOf("!/");
-            if (bang_slash >= 0)
-                s = s.substring(0, bang_slash);
+            int bangSlash = s.indexOf("!/");
+            if (bangSlash >= 0)
+                s = s.substring(0, bangSlash);
             return new URI(s);
         }
         catch (URISyntaxException e)

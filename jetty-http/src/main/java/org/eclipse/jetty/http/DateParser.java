@@ -35,7 +35,7 @@ public class DateParser
         __GMT.setID("GMT");
     }
 
-    final static String __dateReceiveFmt[] =
+    static final String[] __dateReceiveFmt =
         {
             "EEE, dd MMM yyyy HH:mm:ss zzz",
             "EEE, dd-MMM-yy HH:mm:ss",
@@ -47,8 +47,8 @@ public class DateParser
             "dd MMM yyyy HH:mm:ss", "dd-MMM-yy HH:mm:ss zzz", "dd-MMM-yy HH:mm:ss", "MMM dd HH:mm:ss yyyy zzz",
             "MMM dd HH:mm:ss yyyy", "EEE MMM dd HH:mm:ss yyyy zzz",
             "EEE, MMM dd HH:mm:ss yyyy zzz", "EEE, MMM dd HH:mm:ss yyyy", "EEE, dd-MMM-yy HH:mm:ss zzz",
-            "EEE dd-MMM-yy HH:mm:ss zzz", "EEE dd-MMM-yy HH:mm:ss",
-            };
+            "EEE dd-MMM-yy HH:mm:ss zzz", "EEE dd-MMM-yy HH:mm:ss"
+        };
 
     public static long parseDate(String date)
     {
@@ -64,7 +64,7 @@ public class DateParser
         }
     };
 
-    final SimpleDateFormat _dateReceive[] = new SimpleDateFormat[__dateReceiveFmt.length];
+    final SimpleDateFormat[] _dateReceive = new SimpleDateFormat[__dateReceiveFmt.length];
 
     private long parse(final String dateVal)
     {

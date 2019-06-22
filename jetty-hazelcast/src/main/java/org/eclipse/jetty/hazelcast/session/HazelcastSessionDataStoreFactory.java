@@ -69,7 +69,6 @@ public class HazelcastSessionDataStoreFactory
 
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler)
-        throws Exception
     {
         HazelcastSessionDataStore hazelcastSessionDataStore = new HazelcastSessionDataStore();
 
@@ -82,9 +81,9 @@ public class HazelcastSessionDataStoreFactory
                     if (configurationLocation == null)
                     {
                         ClientConfig config = new ClientConfig();
-                        SerializerConfig sc = new SerializerConfig().
-                            setImplementation(new SessionDataSerializer()).
-                            setTypeClass(SessionData.class);
+                        SerializerConfig sc = new SerializerConfig()
+                                                  .setImplementation(new SessionDataSerializer())
+                                                  .setTypeClass(SessionData.class);
                         config.getSerializationConfig().addSerializerConfig(sc);
                         hazelcastInstance = HazelcastClient.newHazelcastClient(config);
                     }
@@ -100,9 +99,9 @@ public class HazelcastSessionDataStoreFactory
                     if (configurationLocation == null)
                     {
 
-                        SerializerConfig sc = new SerializerConfig().
-                            setImplementation(new SessionDataSerializer()).
-                            setTypeClass(SessionData.class);
+                        SerializerConfig sc = new SerializerConfig()
+                                                  .setImplementation(new SessionDataSerializer())
+                                                  .setTypeClass(SessionData.class);
                         config = new Config();
                         config.getSerializationConfig().addSerializerConfig(sc);
                         // configure a default Map if null

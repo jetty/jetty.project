@@ -34,7 +34,7 @@ public interface ProtocolHandler
     /**
      * @return a unique name among protocol handlers
      */
-    public String getName();
+    String getName();
 
     /**
      * <p>Inspects the given {@code request} and {@code response}
@@ -48,11 +48,11 @@ public interface ProtocolHandler
      * @param response the response to accept
      * @return true if this protocol handler can handle the given request and response
      */
-    public boolean accept(Request request, Response response);
+    boolean accept(Request request, Response response);
 
     /**
      * @return a response listener that will handle the request and response
      * on behalf of the application.
      */
-    public Response.Listener getResponseListener();
+    Response.Listener getResponseListener();
 }

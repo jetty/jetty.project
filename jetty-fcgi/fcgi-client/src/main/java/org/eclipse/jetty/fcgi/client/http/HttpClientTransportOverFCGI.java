@@ -57,9 +57,9 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
         {
             HttpClient httpClient = getHttpClient();
             int maxConnections = httpClient.getMaxConnectionsPerDestination();
-            return isMultiplexed() ?
-                new MultiplexConnectionPool(destination, maxConnections, destination, httpClient.getMaxRequestsQueuedPerDestination()) :
-                new DuplexConnectionPool(destination, maxConnections, destination);
+            return isMultiplexed()
+                       ? new MultiplexConnectionPool(destination, maxConnections, destination, httpClient.getMaxRequestsQueuedPerDestination())
+                       : new DuplexConnectionPool(destination, maxConnections, destination);
         });
     }
 
@@ -79,7 +79,7 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     public HttpDestination newHttpDestination(Origin origin)
     {
         return isMultiplexed() ? new MultiplexHttpDestinationOverFCGI(getHttpClient(), origin)
-            : new HttpDestinationOverFCGI(getHttpClient(), origin);
+                   : new HttpDestinationOverFCGI(getHttpClient(), origin);
     }
 
     @Override

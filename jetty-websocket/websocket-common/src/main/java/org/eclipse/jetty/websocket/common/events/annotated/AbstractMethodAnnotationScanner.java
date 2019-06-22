@@ -105,7 +105,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
         boolean valid = false;
 
         // validate parameters
-        Class<?> actual[] = method.getParameterTypes();
+        Class<?>[] actual = method.getParameterTypes();
         for (Class<?>[] params : validParams)
         {
             if (isSameParameters(actual, params))
@@ -152,7 +152,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
         assertIsReturn(method, Void.TYPE);
 
         // validate parameters
-        Class<?> actual[] = method.getParameterTypes();
+        Class<?>[] actual = method.getParameterTypes();
         for (Class<?>[] params : validParams)
         {
             if (isSameParameters(actual, params))
@@ -179,7 +179,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
         {
             for (Method method : clazz.getDeclaredMethods())
             {
-                Annotation annotations[] = method.getAnnotations();
+                Annotation[] annotations = method.getAnnotations();
                 if ((annotations == null) || (annotations.length <= 0))
                 {
                     continue; // skip

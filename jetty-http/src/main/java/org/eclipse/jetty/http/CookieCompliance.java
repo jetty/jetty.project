@@ -22,4 +22,7 @@ package org.eclipse.jetty.http;
  * The compliance for Cookie handling.
  */
 public enum CookieCompliance
-{RFC6265, RFC2965}
+{
+    RFC6265,
+    RFC2965
+}

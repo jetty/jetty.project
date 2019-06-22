@@ -49,7 +49,7 @@ public class RunAsCollection
         if (o == null)
             return null;
 
-        return (RunAs)_runAsMap.get(o.getClass().getCanonicalName());
+        return _runAsMap.get(o.getClass().getCanonicalName());
     }
 
     public void setRunAs(Object o)
@@ -60,7 +60,7 @@ public class RunAsCollection
         if (!ServletHolder.class.isAssignableFrom(o.getClass()))
             return;
 
-        RunAs runAs = (RunAs)_runAsMap.get(o.getClass().getName());
+        RunAs runAs = _runAsMap.get(o.getClass().getName());
         if (runAs == null)
             return;
 

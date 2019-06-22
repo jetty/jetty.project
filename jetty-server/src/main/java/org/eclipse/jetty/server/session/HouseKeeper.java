@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject
 public class HouseKeeper extends AbstractLifeCycle
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     public static final long DEFAULT_PERIOD_MS = 1000L * 60 * 10;
     protected SessionIdManager _sessionIdManager;

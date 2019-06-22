@@ -86,11 +86,11 @@ public interface UserIdentity
         Map<String, String> getRoleRefMap();
     }
 
-    public interface UnauthenticatedUserIdentity extends UserIdentity
+    interface UnauthenticatedUserIdentity extends UserIdentity
     {
     }
 
-    public static final UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
+    UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
     {
         @Override
         public Subject getSubject()

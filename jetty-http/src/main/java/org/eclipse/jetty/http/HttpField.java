@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpField
 {
-    private final static String __zeroquality = "q=0";
+    private static final String ZEROQUALITY = "q=0";
     private final HttpHeader _header;
     private final String _name;
     private final String _value;
@@ -237,7 +237,7 @@ public class HttpField
                     {
                         case ',': // end token
                             // Have we matched the token and not q=0?
-                            if (param != __zeroquality.length() && match == search.length())
+                            if (param != ZEROQUALITY.length() && match == search.length())
                                 return true;
                             param = 0;
                             state = 0;
@@ -250,8 +250,8 @@ public class HttpField
                         default:
                             if (param >= 0)
                             {
-                                if (param < __zeroquality.length())
-                                    param = Character.toLowerCase(c) == __zeroquality.charAt(param) ? (param + 1) : -1;
+                                if (param < ZEROQUALITY.length())
+                                    param = Character.toLowerCase(c) == ZEROQUALITY.charAt(param) ? (param + 1) : -1;
                                 else if (c != '0' && c != '.')
                                     param = -1;
                             }
@@ -263,7 +263,7 @@ public class HttpField
             }
         }
 
-        return param != __zeroquality.length() && match == search.length();
+        return param != ZEROQUALITY.length() && match == search.length();
     }
 
     @Override
@@ -281,9 +281,7 @@ public class HttpField
             return true;
         if (_header != null && _header == field.getHeader())
             return true;
-        if (_name.equalsIgnoreCase(field.getName()))
-            return true;
-        return false;
+        return _name.equalsIgnoreCase(field.getName());
     }
 
     private int nameHashCode()

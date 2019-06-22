@@ -48,15 +48,15 @@ public class FormAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = Log.getLogger(FormAuthModule.class);
 
-    public final static String __J_URI = "org.eclipse.jetty.util.URI";
+    public static final String __J_URI = "org.eclipse.jetty.util.URI";
 
-    public final static String __J_AUTHENTICATED = "org.eclipse.jetty.server.Auth";
+    public static final String __J_AUTHENTICATED = "org.eclipse.jetty.server.Auth";
 
-    public final static String __J_SECURITY_CHECK = "/j_security_check";
+    public static final String __J_SECURITY_CHECK = "/j_security_check";
 
-    public final static String __J_USERNAME = "j_username";
+    public static final String __J_USERNAME = "j_username";
 
-    public final static String __J_PASSWORD = "j_password";
+    public static final String __J_PASSWORD = "j_password";
 
     // private String realmName;
     public static final String LOGIN_PAGE_KEY = "org.eclipse.jetty.security.jaspi.modules.LoginPage";

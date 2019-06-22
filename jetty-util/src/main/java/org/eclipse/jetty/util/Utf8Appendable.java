@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class Utf8Appendable
 {
     protected static final Logger LOG = Log.getLogger(Utf8Appendable.class);
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     public static final char REPLACEMENT = '\ufffd';
     public static final byte[] REPLACEMENT_UTF8 = new byte[]{(byte)0xEF, (byte)0xBF, (byte)0xBD};
     private static final int UTF8_ACCEPT = 0;

@@ -49,7 +49,7 @@ public class JettyJspServlet extends JspServlet
     {
         HttpServletRequest request = null;
         if (req instanceof HttpServletRequest)
-            request = (HttpServletRequest)req;
+            request = req;
         else
             throw new ServletException("Request not HttpServletRequest");
 

@@ -216,7 +216,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 
         this.extensions = new ArrayList<>();
 
-        String rsvClaims[] = new String[3];
+        String[] rsvClaims = new String[3];
 
         for (ExtensionConfig config : configs)
         {

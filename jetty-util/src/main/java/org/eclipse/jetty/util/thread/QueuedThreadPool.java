@@ -49,7 +49,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
     private static Runnable NOOP = () ->
-    {};
+    {
+    };
 
     /**
      * Encodes thread counts:
@@ -114,8 +115,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
     {
         if (maxThreads < minThreads)
-            throw new IllegalArgumentException("max threads (" + maxThreads + ") less than min threads ("
-                + minThreads + ")");
+            throw new IllegalArgumentException("max threads (" + maxThreads + ") less than min threads (" + minThreads + ")");
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);

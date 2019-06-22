@@ -122,7 +122,7 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public Resource addPath(String path) throws IOException, MalformedURLException
+    public Resource addPath(String path) throws IOException
     {
         return null;
     }

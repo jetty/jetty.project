@@ -137,10 +137,10 @@ public class JarFileResource extends JarResource
 
         if (_urlString.endsWith("!/"))
         {
-            String file_url = _urlString.substring(4, _urlString.length() - 2);
+            String fileUrl = _urlString.substring(4, _urlString.length() - 2);
             try
             {
-                return newResource(file_url).exists();
+                return newResource(fileUrl).exists();
             }
             catch (Exception e)
             {
@@ -161,11 +161,11 @@ public class JarFileResource extends JarResource
         else
         {
             // Can we find a file for it?
-            boolean close_jar_file = false;
-            JarFile jar_file = null;
+            boolean closeJarFile = false;
+            JarFile jarFile = null;
             if (check)
                 // Yes
-                jar_file = _jarFile;
+                jarFile = _jarFile;
             else
             {
                 // No - so lets look if the root entry exists.
@@ -173,8 +173,8 @@ public class JarFileResource extends JarResource
                 {
                     JarURLConnection c = (JarURLConnection)((new URL(_jarUrl)).openConnection());
                     c.setUseCaches(getUseCaches());
-                    jar_file = c.getJarFile();
-                    close_jar_file = !getUseCaches();
+                    jarFile = c.getJarFile();
+                    closeJarFile = !getUseCaches();
                 }
                 catch (Exception e)
                 {
@@ -183,10 +183,10 @@ public class JarFileResource extends JarResource
             }
 
             // Do we need to look more closely?
-            if (jar_file != null && _entry == null && !_directory)
+            if (jarFile != null && _entry == null && !_directory)
             {
                 // OK - we have a JarFile, lets look for the entry
-                JarEntry entry = jar_file.getJarEntry(_path);
+                JarEntry entry = jarFile.getJarEntry(_path);
                 if (entry == null)
                 {
                     // the entry does not exist
@@ -200,7 +200,7 @@ public class JarFileResource extends JarResource
                 else
                 {
                     // Let's confirm is a file
-                    JarEntry directory = jar_file.getJarEntry(_path + '/');
+                    JarEntry directory = jarFile.getJarEntry(_path + '/');
                     if (directory != null)
                     {
                         _directory = true;
@@ -215,11 +215,11 @@ public class JarFileResource extends JarResource
                 }
             }
 
-            if (close_jar_file && jar_file != null)
+            if (closeJarFile && jarFile != null)
             {
                 try
                 {
-                    jar_file.close();
+                    jarFile.close();
                 }
                 catch (IOException ioe)
                 {
@@ -336,7 +336,7 @@ public class JarFileResource extends JarResource
                 //when listing jar:file urls, all files and
                 //subdirs have a leading /, which we remove
                 if (dash == 0)
-                    listName = listName.substring(dash + 1, listName.length());
+                    listName = listName.substring(dash + 1);
                 else
                     listName = listName.substring(0, dash + 1);
 

@@ -66,7 +66,6 @@ public class Scanner extends AbstractLifeCycle
         ADDED, CHANGED, REMOVED
     }
 
-    ;
     private final Map<String, Notification> _notifications = new HashMap<String, Notification>();
 
     static class TimeNSize
@@ -115,21 +114,21 @@ public class Scanner extends AbstractLifeCycle
 
     public interface ScanListener extends Listener
     {
-        public void scan();
+        void scan();
     }
 
     public interface DiscreteListener extends Listener
     {
-        public void fileChanged(String filename) throws Exception;
+        void fileChanged(String filename) throws Exception;
 
-        public void fileAdded(String filename) throws Exception;
+        void fileAdded(String filename) throws Exception;
 
-        public void fileRemoved(String filename) throws Exception;
+        void fileRemoved(String filename) throws Exception;
     }
 
     public interface BulkListener extends Listener
     {
-        public void filesChanged(List<String> filenames) throws Exception;
+        void filesChanged(List<String> filenames) throws Exception;
     }
 
     /**
@@ -137,9 +136,9 @@ public class Scanner extends AbstractLifeCycle
      */
     public interface ScanCycleListener extends Listener
     {
-        public void scanStarted(int cycle) throws Exception;
+        void scanStarted(int cycle) throws Exception;
 
-        public void scanEnded(int cycle) throws Exception;
+        void scanEnded(int cycle) throws Exception;
     }
 
     /**
@@ -332,7 +331,10 @@ public class Scanner extends AbstractLifeCycle
         return new TimerTask()
         {
             @Override
-            public void run() { scan(); }
+            public void run()
+            {
+                scan();
+            }
         };
     }
 

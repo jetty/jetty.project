@@ -316,12 +316,12 @@ public class CrossOriginFilter implements Filter
         // protocol that does not accept extra response headers on the upgrade response
         for (Enumeration<String> connections = request.getHeaders("Connection"); connections.hasMoreElements(); )
         {
-            String connection = (String)connections.nextElement();
+            String connection = connections.nextElement();
             if ("Upgrade".equalsIgnoreCase(connection))
             {
                 for (Enumeration<String> upgrades = request.getHeaders("Upgrade"); upgrades.hasMoreElements(); )
                 {
-                    String upgrade = (String)upgrades.nextElement();
+                    String upgrade = upgrades.nextElement();
                     if ("WebSocket".equalsIgnoreCase(upgrade))
                         return false;
                 }
@@ -390,9 +390,7 @@ public class CrossOriginFilter implements Filter
         String method = request.getMethod();
         if (!"OPTIONS".equalsIgnoreCase(method))
             return false;
-        if (request.getHeader(ACCESS_CONTROL_REQUEST_METHOD_HEADER) == null)
-            return false;
-        return true;
+        return request.getHeader(ACCESS_CONTROL_REQUEST_METHOD_HEADER) != null;
     }
 
     private void handleSimpleResponse(HttpServletRequest request, HttpServletResponse response, String origin)

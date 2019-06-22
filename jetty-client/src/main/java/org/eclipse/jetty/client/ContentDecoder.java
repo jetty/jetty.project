@@ -33,14 +33,14 @@ public interface ContentDecoder
      * @param buffer the buffer containing encoded bytes
      * @return a buffer containing decoded bytes, if any
      */
-    public abstract ByteBuffer decode(ByteBuffer buffer);
+    ByteBuffer decode(ByteBuffer buffer);
 
     /**
      * <p>Releases the ByteBuffer returned by {@link #decode(ByteBuffer)}.</p>
      *
      * @param decoded the ByteBuffer returned by {@link #decode(ByteBuffer)}
      */
-    public default void release(ByteBuffer decoded)
+    default void release(ByteBuffer decoded)
     {
     }
 
@@ -53,7 +53,7 @@ public interface ContentDecoder
      * {@link Factory} instances are configured in {@link HttpClient} via
      * {@link HttpClient#getContentDecoderFactories()}.
      */
-    public static abstract class Factory
+    abstract class Factory
     {
         private final String encoding;
 

@@ -172,7 +172,7 @@ public class CertificateValidator
                     throw new InvalidParameterException("Keystore cannot be null");
                 }
 
-                certAlias = keyStore.getCertificateAlias((X509Certificate)cert);
+                certAlias = keyStore.getCertificateAlias(cert);
                 if (certAlias == null)
                 {
                     certAlias = "JETTY" + String.format("%016X", __aliasCount.incrementAndGet());

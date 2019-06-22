@@ -162,9 +162,9 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         long stopTimeout = getStopTimeout();
         if (stopTimeout > 0)
         {
-            long stop_by = System.currentTimeMillis() + stopTimeout;
+            long stopBy = System.currentTimeMillis() + stopTimeout;
             if (LOG.isDebugEnabled())
-                LOG.debug("Graceful shutdown {} by ", this, new Date(stop_by));
+                LOG.debug("Graceful shutdown {} by ", this, new Date(stopBy));
 
             // Wait for shutdowns
             for (Future<Void> future : futures)
@@ -172,7 +172,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
                 try
                 {
                     if (!future.isDone())
-                        future.get(Math.max(1L, stop_by - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                        future.get(Math.max(1L, stopBy - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
                 }
                 catch (Exception e)
                 {

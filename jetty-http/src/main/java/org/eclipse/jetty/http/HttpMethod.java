@@ -131,7 +131,7 @@ public enum HttpMethod
         return null;
     }
 
-    public final static Trie<HttpMethod> INSENSITIVE_CACHE = new ArrayTrie<>();
+    public static final Trie<HttpMethod> INSENSITIVE_CACHE = new ArrayTrie<>();
 
     static
     {
@@ -141,7 +141,7 @@ public enum HttpMethod
         }
     }
 
-    public final static Trie<HttpMethod> CACHE = new ArrayTernaryTrie<>(false);
+    public static final Trie<HttpMethod> CACHE = new ArrayTernaryTrie<>(false);
 
     static
     {

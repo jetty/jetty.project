@@ -80,13 +80,13 @@ public class Response implements HttpServletResponse
      * can be set during include using only {@link #setHeader(String, String)} or
      * {@link #addHeader(String, String)}.
      */
-    public final static String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
+    public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     /**
      * If this string is found within the comment of a cookie added with {@link #addCookie(Cookie)}, then the cookie
      * will be set as HTTP ONLY.
      */
-    public final static String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
+    public static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
 
     private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
@@ -446,9 +446,9 @@ public class Response implements HttpServletResponse
             request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
             request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
             request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, request.getServletName());
-            ErrorHandler error_handler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
-            if (error_handler != null)
-                error_handler.handle(null, request, request, this);
+            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
+            if (errorHandler != null)
+                errorHandler.handle(null, request, request, this);
         }
         if (!request.isAsyncStarted())
             closeOutput();

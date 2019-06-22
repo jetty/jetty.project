@@ -252,8 +252,8 @@ class MetaData
     private static String signature(Method method)
     {
         String signature = Arrays.stream(method.getParameterTypes())
-            .map(Class::getName)
-            .collect(Collectors.joining(","));
+                               .map(Class::getName)
+                               .collect(Collectors.joining(","));
         return String.format("%s(%s)", method.getName(), signature);
     }
 
@@ -360,9 +360,11 @@ class MetaData
 
             Class<?> returnType = getter.getReturnType();
             _convert = isManagedObject(returnType);
-            String signature = _convert ?
-                returnType.isArray() ? ObjectName[].class.getName() : ObjectName.class.getName() :
-                returnType.getName();
+            String signature = _convert
+                                   ? returnType.isArray()
+                                         ? ObjectName[].class.getName()
+                                         : ObjectName.class.getName()
+                                   : returnType.getName();
 
             String description = attribute.value();
             _info = new MBeanAttributeInfo(name, signature, description, true,
@@ -496,9 +498,11 @@ class MetaData
 
             Class<?> returnType = method.getReturnType();
             _convert = isManagedObject(returnType);
-            String returnSignature = _convert ?
-                returnType.isArray() ? ObjectName[].class.getName() : ObjectName.class.getName() :
-                returnType.getName();
+            String returnSignature = _convert
+                                         ? returnType.isArray()
+                                               ? ObjectName[].class.getName()
+                                               : ObjectName.class.getName()
+                                         : returnType.getName();
 
             String impactName = operation.impact();
             int impact = MBeanOperationInfo.UNKNOWN;

@@ -48,13 +48,13 @@ public interface SocketAddressResolver
      * @param port the port of the resulting socket address
      * @param promise the callback invoked when the resolution succeeds or fails
      */
-    public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise);
+    void resolve(String host, int port, Promise<List<InetSocketAddress>> promise);
 
     /**
      * <p>Creates {@link SocketAddress} instances synchronously in the caller thread.</p>
      */
     @ManagedObject("The synchronous address resolver")
-    public static class Sync implements SocketAddressResolver
+    class Sync implements SocketAddressResolver
     {
         @Override
         public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
@@ -105,7 +105,7 @@ public interface SocketAddressResolver
      * </pre>
      */
     @ManagedObject("The asynchronous address resolver")
-    public static class Async implements SocketAddressResolver
+    class Async implements SocketAddressResolver
     {
         private static final Logger LOG = Log.getLogger(SocketAddressResolver.class);
 

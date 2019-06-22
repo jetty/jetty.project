@@ -183,7 +183,7 @@ public class QoSFilterTest
 
                 request.setMethod("GET");
                 request.setHeader("host", "tester");
-                request.setURI("/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY));
+                request.setURI("/context/test?priority=" + (_num % QoSFilter.DEFAULT_MAX_PRIORITY));
                 request.setHeader("num", _num + "");
 
                 String responseString = _connectors[_num].getResponse(BufferUtil.toString(request.generate()));
@@ -213,7 +213,7 @@ public class QoSFilterTest
                 String addr = _tester.createConnector(true);
                 for (int i = 0; i < NUM_LOOPS; i++)
                 {
-                    url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
+                    url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
                     url.getContent();
                 }
             }

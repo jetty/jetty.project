@@ -300,7 +300,7 @@ public class HttpRequest implements Request
     @Override
     public List<HttpCookie> getCookies()
     {
-        return cookies != null ? cookies : Collections.<HttpCookie>emptyList();
+        return cookies != null ? cookies : Collections.emptyList();
     }
 
     @Override
@@ -324,7 +324,7 @@ public class HttpRequest implements Request
     @Override
     public Map<String, Object> getAttributes()
     {
-        return attributes != null ? attributes : Collections.<String, Object>emptyMap();
+        return attributes != null ? attributes : Collections.emptyMap();
     }
 
     @Override
@@ -340,7 +340,7 @@ public class HttpRequest implements Request
         // This method is invoked often in a request/response conversation,
         // so we avoid allocation if there is no need to filter.
         if (type == null || requestListeners == null)
-            return requestListeners != null ? (List<T>)requestListeners : Collections.<T>emptyList();
+            return requestListeners != null ? (List<T>)requestListeners : Collections.emptyList();
 
         ArrayList<T> result = new ArrayList<>();
         for (RequestListener listener : requestListeners)

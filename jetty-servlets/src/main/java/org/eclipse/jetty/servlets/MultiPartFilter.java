@@ -95,8 +95,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class MultiPartFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(MultiPartFilter.class);
-    public final static String CONTENT_TYPE_SUFFIX = ".org.eclipse.jetty.servlet.contentType";
-    private final static String MULTIPART = "org.eclipse.jetty.servlet.MultiPartFile.multiPartInputStream";
+    public static final String CONTENT_TYPE_SUFFIX = ".org.eclipse.jetty.servlet.contentType";
+    private static final String MULTIPART = "org.eclipse.jetty.servlet.MultiPartFile.multiPartInputStream";
     private File tempdir;
     private boolean _deleteFiles;
     private ServletContext _context;
@@ -146,7 +146,7 @@ public class MultiPartFilter implements Filter
             return;
         }
 
-        String content_type = srequest.getContentType();
+        String contentType = srequest.getContentType();
 
         //Get current parameters so we can merge into them
         MultiMap params = new MultiMap();
@@ -160,7 +160,7 @@ public class MultiPartFilter implements Filter
         }
 
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
-        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(request.getInputStream(), content_type, config, tempdir);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(request.getInputStream(), contentType, config, tempdir);
         mpis.setDeleteOnExit(_deleteFiles);
         mpis.setWriteFilesWithFilenames(_writeFilesWithFilenames);
         request.setAttribute(MULTIPART, mpis);

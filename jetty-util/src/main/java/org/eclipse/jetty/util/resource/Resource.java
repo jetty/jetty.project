@@ -112,8 +112,8 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (url == null)
             return null;
 
-        String url_string = url.toExternalForm();
-        if (url_string.startsWith("file:"))
+        String urlString = url.toExternalForm();
+        if (urlString.startsWith("file:"))
         {
             try
             {
@@ -126,11 +126,11 @@ public abstract class Resource implements ResourceFactory, Closeable
                 return new BadResource(url, e.toString());
             }
         }
-        else if (url_string.startsWith("jar:file:"))
+        else if (urlString.startsWith("jar:file:"))
         {
             return new JarFileResource(url, useCaches);
         }
-        else if (url_string.startsWith("jar:"))
+        else if (urlString.startsWith("jar:"))
         {
             return new JarResource(url, useCaches);
         }
@@ -146,7 +146,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @throws MalformedURLException Problem accessing URI
      */
     public static Resource newResource(String resource)
-        throws MalformedURLException, IOException
+        throws IOException
     {
         return newResource(resource, __defaultUseCaches);
     }
@@ -160,7 +160,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @throws MalformedURLException Problem accessing URI
      */
     public static Resource newResource(String resource, boolean useCaches)
-        throws MalformedURLException, IOException
+        throws IOException
     {
         URL url = null;
         try
@@ -788,7 +788,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                 return file.getName();
             }
         }
-        catch (Throwable ignore)
+        catch (Throwable ignored)
         {
         }
 
@@ -814,7 +814,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
             return UrlEncoded.decodeString(encodedFileName, 0, encodedFileName.length(), UTF_8);
         }
-        catch (Throwable ignore)
+        catch (Throwable ignored)
         {
         }
 

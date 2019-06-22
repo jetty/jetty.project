@@ -152,7 +152,7 @@ public class SessionDump extends HttpServlet
                 Enumeration<String> keys = session.getAttributeNames();
                 while (keys.hasMoreElements())
                 {
-                    String name = (String)keys.nextElement();
+                    String name = keys.nextElement();
                     String value = "" + session.getAttribute(name);
 
                     out.println("<b>" + name + ":</b> " + value + "<br/>");

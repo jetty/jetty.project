@@ -172,9 +172,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     continue;
                 return;
             }
-            catch (Throwable th)
+            catch (Throwable ex)
             {
-                LOG.warn(th);
+                LOG.warn(ex);
             }
         }
     }
@@ -385,9 +385,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 {
                     ((Closeable)task).close();
                 }
-                catch (Throwable e2)
+                catch (Throwable ex2)
                 {
-                    LOG.ignore(e2);
+                    LOG.ignore(ex2);
                 }
             }
         }

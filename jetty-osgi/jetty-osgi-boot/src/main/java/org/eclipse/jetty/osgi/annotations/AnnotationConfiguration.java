@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.annotations;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.ServletContainerInitializer;
@@ -84,7 +83,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     }
 
     @Override
-    public Resource getJarFor(ServletContainerInitializer service) throws MalformedURLException, IOException
+    public Resource getJarFor(ServletContainerInitializer service) throws IOException
     {
         Resource resource = super.getJarFor(service);
         // TODO This is not correct, but implemented like this to be bug for bug compatible

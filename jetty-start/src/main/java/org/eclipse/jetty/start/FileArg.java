@@ -26,7 +26,7 @@ public class FileArg
 
     public FileArg(final Module module, final String uriLocation)
     {
-        this(module == null ? (String)null : module.getName(), uriLocation);
+        this(module == null ? null : module.getName(), uriLocation);
     }
 
     public FileArg(final String uriLocation)
@@ -37,7 +37,7 @@ public class FileArg
     private FileArg(final String moduleName, final String uriLocation)
     {
         this.moduleName = moduleName;
-        String parts[] = uriLocation.split("\\|", 3);
+        String[] parts = uriLocation.split("\\|", 3);
         if (parts.length > 2)
         {
             StringBuilder err = new StringBuilder();
@@ -98,16 +98,10 @@ public class FileArg
         }
         if (location == null)
         {
-            if (other.location != null)
-            {
-                return false;
-            }
+            return other.location == null;
         }
-        else if (!location.equals(other.location))
-        {
-            return false;
-        }
-        return true;
+        else
+            return location.equals(other.location);
     }
 
     @Override

@@ -23,7 +23,7 @@ package org.eclipse.jetty.server.session;
  */
 public interface Foo
 {
-    public int getInt();
+    int getInt();
 
-    public void setInt(int i);
+    void setInt(int i);
 }

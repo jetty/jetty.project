@@ -40,7 +40,7 @@ public interface ContinuationListener extends EventListener
      *
      * @param continuation the continuation
      */
-    public void onComplete(Continuation continuation);
+    void onComplete(Continuation continuation);
 
     /**
      * Called when a suspended continuation has timed out.
@@ -50,5 +50,5 @@ public interface ContinuationListener extends EventListener
      *
      * @param continuation the continuation
      */
-    public void onTimeout(Continuation continuation);
+    void onTimeout(Continuation continuation);
 }

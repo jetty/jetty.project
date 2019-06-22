@@ -542,11 +542,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             return false;
         }
-        if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
-        {
-            return false;
-        }
-        return true;
+        return !Artifact.SCOPE_TEST.equals(artifact.getScope()) || useTestScope;
     }
 
     private List<Overlay> getOverlays()
@@ -643,7 +639,7 @@ public class JettyRunMojo extends AbstractJettyMojo
             name = name.substring(0, name.length() - 2);
         int i = name.lastIndexOf('/');
         if (i > 0)
-            name = name.substring(i + 1, name.length());
+            name = name.substring(i + 1);
         name = StringUtil.replace(name, '.', '_');
         //name = name+(++COUNTER); //add some digits to ensure uniqueness
         File overlaysDir = new File(project.getBuild().getDirectory(), "jetty_overlays");
@@ -713,7 +709,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      */
     protected String getJavaBin()
     {
-        String javaexes[] = new String[]
+        String[] javaexes = new String[]
             {"java", "java.exe"};
 
         File javaHomeDir = new File(System.getProperty("java.home"));

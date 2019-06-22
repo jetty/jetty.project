@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class GCloudSessionDataStore extends AbstractSessionDataStore
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
     public static final int DEFAULT_MAX_RETRIES = 5;
@@ -785,9 +785,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
                     try
                     {
-                        Thread.currentThread().sleep(backoff);
+                        Thread.sleep(backoff);
                     }
-                    catch (InterruptedException x)
+                    catch (InterruptedException ignored)
                     {
                     }
                     backoff *= 2;
@@ -925,7 +925,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
         long expiry = entity.getLong(_model.getExpiry());
         long maxInactive = entity.getLong(_model.getMaxInactive());
-        Blob blob = (Blob)entity.getBlob(_model.getAttributes());
+        Blob blob = entity.getBlob(_model.getAttributes());
 
         SessionData session = newSessionData(id, createTime, accessed, lastAccessed, maxInactive);
         session.setLastNode(lastNode);

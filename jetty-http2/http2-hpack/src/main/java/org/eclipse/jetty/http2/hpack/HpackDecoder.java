@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HpackDecoder
 {
     public static final Logger LOG = Log.getLogger(HpackDecoder.class);
-    public final static HttpField.LongValueHttpField CONTENT_LENGTH_0 =
+    public static final HttpField.LongValueHttpField CONTENT_LENGTH_0 =
         new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, 0L);
 
     private final HpackContext _context;
@@ -122,7 +122,7 @@ public class HpackDecoder
                 String value;
 
                 boolean indexed;
-                int name_index;
+                int nameIndex;
 
                 switch (f)
                 {
@@ -142,7 +142,7 @@ public class HpackDecoder
                     case 0: // 7.2.2
                     case 1: // 7.2.3
                         indexed = false;
-                        name_index = NBitInteger.decode(buffer, 4);
+                        nameIndex = NBitInteger.decode(buffer, 4);
                         break;
 
                     case 4: // 7.2.1
@@ -150,7 +150,7 @@ public class HpackDecoder
                     case 6: // 7.2.1
                     case 7: // 7.2.1
                         indexed = true;
-                        name_index = NBitInteger.decode(buffer, 6);
+                        nameIndex = NBitInteger.decode(buffer, 6);
                         break;
 
                     default:
@@ -160,11 +160,11 @@ public class HpackDecoder
                 boolean huffmanName = false;
 
                 // decode the name
-                if (name_index > 0)
+                if (nameIndex > 0)
                 {
-                    Entry name_entry = _context.get(name_index);
-                    name = name_entry.getHttpField().getName();
-                    header = name_entry.getHttpField().getHeader();
+                    Entry nameEntry = _context.get(nameIndex);
+                    name = nameEntry.getHttpField().getName();
+                    header = nameEntry.getHttpField().getHeader();
                 }
                 else
                 {
@@ -237,7 +237,7 @@ public class HpackDecoder
                 {
                     LOG.debug("decoded '{}' by {}/{}/{}",
                         field,
-                        name_index > 0 ? "IdxName" : (huffmanName ? "HuffName" : "LitName"),
+                        nameIndex > 0 ? "IdxName" : (huffmanName ? "HuffName" : "LitName"),
                         huffmanValue ? "HuffVal" : "LitVal",
                         indexed ? "Idx" : "");
                 }

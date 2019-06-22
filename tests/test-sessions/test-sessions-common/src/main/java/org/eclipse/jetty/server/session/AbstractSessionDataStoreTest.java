@@ -508,7 +508,7 @@ public abstract class AbstractSessionDataStoreTest
 
         store.start();
 
-        Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"1234", "5678"}));
+        Set<String> candidates = new HashSet<>(Arrays.asList("1234", "5678"));
         Set<String> expiredIds = store.getExpired(candidates);
         assertThat(expiredIds, containsInAnyOrder("1234", "5678"));
     }
@@ -542,7 +542,7 @@ public abstract class AbstractSessionDataStoreTest
 
         store.start();
 
-        Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"1234", "5678"}));
+        Set<String> candidates = new HashSet<>(Arrays.asList("1234", "5678"));
         Set<String> expiredIds = store.getExpired(candidates);
         assertEquals(0, expiredIds.size());
     }
@@ -564,7 +564,7 @@ public abstract class AbstractSessionDataStoreTest
         store.initialize(sessionContext);
         store.start();
 
-        Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"1234", "5678"}));
+        Set<String> candidates = new HashSet<>(Arrays.asList("1234", "5678"));
         Set<String> expiredIds = store.getExpired(candidates);
         assertThat(expiredIds, containsInAnyOrder("1234", "5678"));
     }

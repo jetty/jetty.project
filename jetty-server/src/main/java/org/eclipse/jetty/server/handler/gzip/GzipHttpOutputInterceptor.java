@@ -44,17 +44,16 @@ import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 {
     public static Logger LOG = Log.getLogger(GzipHttpOutputInterceptor.class);
-    private final static byte[] GZIP_HEADER = new byte[]{(byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
+    private static final byte[] GZIP_HEADER = new byte[]{(byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
 
-    public final static HttpField VARY_ACCEPT_ENCODING_USER_AGENT = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING + ", " + HttpHeader.USER_AGENT);
-    public final static HttpField VARY_ACCEPT_ENCODING = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
+    public static final HttpField VARY_ACCEPT_ENCODING_USER_AGENT = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING + ", " + HttpHeader.USER_AGENT);
+    public static final HttpField VARY_ACCEPT_ENCODING = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
     private enum GZState
     {
         MIGHT_COMPRESS, NOT_COMPRESSING, COMMITTING, COMPRESSING, FINISHED
     }
 
-    ;
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
     private final CRC32 _crc = new CRC32();
 
@@ -165,13 +164,13 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 
             if (sc == 304)
             {
-                String request_etags = (String)_channel.getRequest().getAttribute("o.e.j.s.h.gzip.GzipHandler.etag");
-                String response_etag = response.getHttpFields().get(HttpHeader.ETAG);
-                if (request_etags != null && response_etag != null)
+                String requestEtags = (String)_channel.getRequest().getAttribute("o.e.j.s.h.gzip.GzipHandler.etag");
+                String responseEtag = response.getHttpFields().get(HttpHeader.ETAG);
+                if (requestEtags != null && responseEtag != null)
                 {
-                    String response_etag_gzip = etagGzip(response_etag);
-                    if (request_etags.contains(response_etag_gzip))
-                        response.getHttpFields().put(HttpHeader.ETAG, response_etag_gzip);
+                    String responseEtagGzip = etagGzip(responseEtag);
+                    if (requestEtags.contains(responseEtagGzip))
+                        response.getHttpFields().put(HttpHeader.ETAG, responseEtagGzip);
                 }
             }
 
@@ -216,11 +215,11 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                     fields.add(_vary);
             }
 
-            long content_length = response.getContentLength();
-            if (content_length < 0 && complete)
-                content_length = content.remaining();
+            long contentLength = response.getContentLength();
+            if (contentLength < 0 && complete)
+                contentLength = content.remaining();
 
-            _deflater = _factory.getDeflater(_channel.getRequest(), content_length);
+            _deflater = _factory.getDeflater(_channel.getRequest(), contentLength);
 
             if (_deflater == null)
             {

@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class JDBCSessionDataStore extends AbstractSessionDataStore
 {
-    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     /**
      * Used for Oracle and other databases where "" is treated as NULL
@@ -63,7 +63,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
      */
     public static class SessionTableSchema
     {
-        public final static int MAX_INTERVAL_NOT_SET = -999;
+        public static final int MAX_INTERVAL_NOT_SET = -999;
 
         protected DatabaseAdaptor _dbAdaptor;
         protected String _schemaName = null;
@@ -255,10 +255,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             String stringType = _dbAdaptor.getStringType();
 
             return "create table " + _tableName + " (" + _idColumn + " " + stringType + "(120), " +
-                _contextPathColumn + " " + stringType + "(60), " + _virtualHostColumn + " " + stringType + "(60), " + _lastNodeColumn + " " + stringType + "(60), " + _accessTimeColumn + " " + longType + ", " +
-                _lastAccessTimeColumn + " " + longType + ", " + _createTimeColumn + " " + longType + ", " + _cookieTimeColumn + " " + longType + ", " +
-                _lastSavedTimeColumn + " " + longType + ", " + _expiryTimeColumn + " " + longType + ", " + _maxIntervalColumn + " " + longType + ", " +
-                _mapColumn + " " + blobType + ", primary key(" + _idColumn + ", " + _contextPathColumn + "," + _virtualHostColumn + "))";
+                       _contextPathColumn + " " + stringType + "(60), " + _virtualHostColumn + " " + stringType + "(60), " + _lastNodeColumn + " " + stringType + "(60), " + _accessTimeColumn + " " + longType + ", " +
+                       _lastAccessTimeColumn + " " + longType + ", " + _createTimeColumn + " " + longType + ", " + _cookieTimeColumn + " " + longType + ", " +
+                       _lastSavedTimeColumn + " " + longType + ", " + _expiryTimeColumn + " " + longType + ", " + _maxIntervalColumn + " " + longType + ", " +
+                       _mapColumn + " " + blobType + ", primary key(" + _idColumn + ", " + _contextPathColumn + "," + _virtualHostColumn + "))";
         }
 
         public String getCreateIndexOverExpiryStatementAsString(String indexName)
@@ -292,20 +292,20 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         public String getInsertSessionStatementAsString()
         {
             return "insert into " + getSchemaTableName() +
-                " (" + getIdColumn() + ", " + getContextPathColumn() + ", " + getVirtualHostColumn() + ", " + getLastNodeColumn() +
-                ", " + getAccessTimeColumn() + ", " + getLastAccessTimeColumn() + ", " + getCreateTimeColumn() + ", " + getCookieTimeColumn() +
-                ", " + getLastSavedTimeColumn() + ", " + getExpiryTimeColumn() + ", " + getMaxIntervalColumn() + ", " + getMapColumn() + ") " +
-                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                       " (" + getIdColumn() + ", " + getContextPathColumn() + ", " + getVirtualHostColumn() + ", " + getLastNodeColumn() +
+                       ", " + getAccessTimeColumn() + ", " + getLastAccessTimeColumn() + ", " + getCreateTimeColumn() + ", " + getCookieTimeColumn() +
+                       ", " + getLastSavedTimeColumn() + ", " + getExpiryTimeColumn() + ", " + getMaxIntervalColumn() + ", " + getMapColumn() + ") " +
+                       " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         }
 
         public PreparedStatement getUpdateSessionStatement(Connection connection, String id, SessionContext context)
             throws SQLException
         {
             String s = "update " + getSchemaTableName() +
-                " set " + getLastNodeColumn() + " = ?, " + getAccessTimeColumn() + " = ?, " +
-                getLastAccessTimeColumn() + " = ?, " + getLastSavedTimeColumn() + " = ?, " + getExpiryTimeColumn() + " = ?, " +
-                getMaxIntervalColumn() + " = ?, " + getMapColumn() + " = ? where " + getIdColumn() + " = ? and " + getContextPathColumn() +
-                " = ? and " + getVirtualHostColumn() + " = ?";
+                           " set " + getLastNodeColumn() + " = ?, " + getAccessTimeColumn() + " = ?, " +
+                           getLastAccessTimeColumn() + " = ?, " + getLastSavedTimeColumn() + " = ?, " + getExpiryTimeColumn() + " = ?, " +
+                           getMaxIntervalColumn() + " = ?, " + getMapColumn() + " = ? where " + getIdColumn() + " = ? and " + getContextPathColumn() +
+                           " = ? and " + getVirtualHostColumn() + " = ?";
 
             String cp = context.getCanonicalContextPath();
             if (_dbAdaptor.isEmptyStringNull() && StringUtil.isBlank(cp))
@@ -331,9 +331,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 cp = NULL_CONTEXT_PATH;
 
             PreparedStatement statement = connection.prepareStatement("select " + getIdColumn() + ", " + getExpiryTimeColumn() +
-                " from " + getSchemaTableName() + " where " + getContextPathColumn() + " = ? and " +
-                getVirtualHostColumn() + " = ? and " +
-                getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
+                                                                          " from " + getSchemaTableName() + " where " + getContextPathColumn() + " = ? and " +
+                                                                          getVirtualHostColumn() + " = ? and " +
+                                                                          getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
 
             statement.setString(1, cp);
             statement.setString(2, vhost);
@@ -354,11 +354,11 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 cp = NULL_CONTEXT_PATH;
 
             PreparedStatement statement = connection.prepareStatement("select " + getIdColumn() + ", " + getExpiryTimeColumn() +
-                " from " + getSchemaTableName() + " where " +
-                getLastNodeColumn() + " = ? and " +
-                getContextPathColumn() + " = ? and " +
-                getVirtualHostColumn() + " = ? and " +
-                getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
+                                                                          " from " + getSchemaTableName() + " where " +
+                                                                          getLastNodeColumn() + " = ? and " +
+                                                                          getContextPathColumn() + " = ? and " +
+                                                                          getVirtualHostColumn() + " = ? and " +
+                                                                          getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
 
             statement.setString(1, sessionContext.getWorkerName());
             statement.setString(2, cp);
@@ -374,8 +374,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 throw new IllegalStateException("No DB adaptor");
 
             PreparedStatement statement = connection.prepareStatement("select " + getIdColumn() + ", " + getContextPathColumn() + ", " + getVirtualHostColumn() +
-                " from " + getSchemaTableName() +
-                " where " + getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
+                                                                          " from " + getSchemaTableName() +
+                                                                          " where " + getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
             return statement;
         }
 
@@ -390,10 +390,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 cp = NULL_CONTEXT_PATH;
 
             PreparedStatement statement = connection.prepareStatement("select " + getIdColumn() + ", " + getExpiryTimeColumn() +
-                " from " + getSchemaTableName() +
-                " where " + getIdColumn() + " = ? and " +
-                getContextPathColumn() + " = ? and " +
-                getVirtualHostColumn() + " = ?");
+                                                                          " from " + getSchemaTableName() +
+                                                                          " where " + getIdColumn() + " = ? and " +
+                                                                          getContextPathColumn() + " = ? and " +
+                                                                          getVirtualHostColumn() + " = ?");
             statement.setString(2, cp);
             statement.setString(3, context.getVhost());
             return statement;
@@ -410,8 +410,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 cp = NULL_CONTEXT_PATH;
 
             PreparedStatement statement = connection.prepareStatement("select * from " + getSchemaTableName() +
-                " where " + getIdColumn() + " = ? and " + getContextPathColumn() +
-                " = ? and " + getVirtualHostColumn() + " = ?");
+                                                                          " where " + getIdColumn() + " = ? and " + getContextPathColumn() +
+                                                                          " = ? and " + getVirtualHostColumn() + " = ?");
             statement.setString(1, id);
             statement.setString(2, cp);
             statement.setString(3, contextId.getVhost());
@@ -430,10 +430,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 cp = NULL_CONTEXT_PATH;
 
             String s = "update " + getSchemaTableName() +
-                " set " + getLastNodeColumn() + " = ?, " + getAccessTimeColumn() + " = ?, " +
-                getLastAccessTimeColumn() + " = ?, " + getLastSavedTimeColumn() + " = ?, " + getExpiryTimeColumn() + " = ?, " +
-                getMaxIntervalColumn() + " = ?, " + getMapColumn() + " = ? where " + getIdColumn() + " = ? and " + getContextPathColumn() +
-                " = ? and " + getVirtualHostColumn() + " = ?";
+                           " set " + getLastNodeColumn() + " = ?, " + getAccessTimeColumn() + " = ?, " +
+                           getLastAccessTimeColumn() + " = ?, " + getLastSavedTimeColumn() + " = ?, " + getExpiryTimeColumn() + " = ?, " +
+                           getMaxIntervalColumn() + " = ?, " + getMapColumn() + " = ? where " + getIdColumn() + " = ? and " + getContextPathColumn() +
+                           " = ? and " + getVirtualHostColumn() + " = ?";
 
             PreparedStatement statement = connection.prepareStatement(s);
             statement.setString(8, id);
@@ -455,8 +455,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 cp = NULL_CONTEXT_PATH;
 
             PreparedStatement statement = connection.prepareStatement("delete from " + getSchemaTableName() +
-                " where " + getIdColumn() + " = ? and " + getContextPathColumn() +
-                " = ? and " + getVirtualHostColumn() + " = ?");
+                                                                          " where " + getIdColumn() + " = ? and " + getContextPathColumn() +
+                                                                          " = ? and " + getVirtualHostColumn() + " = ?");
             statement.setString(1, id);
             statement.setString(2, cp);
             statement.setString(3, contextId.getVhost());
@@ -499,12 +499,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                             colResult = metaData.getColumns(null, schemaName, tableName,
                                 _dbAdaptor.convertIdentifier(getMaxIntervalColumn()));
                         }
-                        catch (SQLException s)
+                        catch (SQLException sqlEx)
                         {
                             LOG.warn("Problem checking if " + getTableName() +
-                                " table contains " + getMaxIntervalColumn() + " column. Ensure table contains column definition: \""
-                                + getMaxIntervalColumn() + " long not null default -999\"");
-                            throw s;
+                                         " table contains " + getMaxIntervalColumn() + " column. Ensure table contains column definition: \"" +
+                                         getMaxIntervalColumn() + " long not null default -999\"");
+                            throw sqlEx;
                         }
                         try
                         {
@@ -515,12 +515,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                                     //add the maxinterval column
                                     statement.executeUpdate(getAlterTableForMaxIntervalAsString());
                                 }
-                                catch (SQLException s)
+                                catch (SQLException sqlEx)
                                 {
                                     LOG.warn("Problem adding " + getMaxIntervalColumn() +
-                                        " column. Ensure table contains column definition: \"" + getMaxIntervalColumn() +
-                                        " long not null default -999\"");
-                                    throw s;
+                                                 " column. Ensure table contains column definition: \"" + getMaxIntervalColumn() +
+                                                 " long not null default -999\"");
+                                    throw sqlEx;
                                 }
                             }
                         }

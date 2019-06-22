@@ -650,7 +650,7 @@ public class QuickStartDescriptorGenerator
 
         String ot = n + ".servlet.";
 
-        ServletHolder s = (ServletHolder)holder;
+        ServletHolder s = holder;
         if (s.getForcedPath() != null && s.getClassName() == null)
             out.tag("jsp-file", s.getForcedPath());
         else

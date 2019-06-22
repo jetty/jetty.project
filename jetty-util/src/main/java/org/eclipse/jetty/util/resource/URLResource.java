@@ -269,7 +269,7 @@ public class URLResource extends Resource
      */
     @Override
     public Resource addPath(String path)
-        throws IOException, MalformedURLException
+        throws IOException
     {
         if (path == null)
             return null;

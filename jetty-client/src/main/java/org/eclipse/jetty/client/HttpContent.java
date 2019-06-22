@@ -78,7 +78,7 @@ public class HttpContent implements Callback, Closeable
     public HttpContent(ContentProvider provider)
     {
         this.provider = provider;
-        this.iterator = provider == null ? Collections.<ByteBuffer>emptyIterator() : provider.iterator();
+        this.iterator = provider == null ? Collections.emptyIterator() : provider.iterator();
     }
 
     /**

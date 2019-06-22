@@ -110,12 +110,12 @@ public class ServerInstanceWrapper
             return server;
         }
 
-        Map<String, Object> id_map = new HashMap<>();
+        Map<String, Object> idMap = new HashMap<>();
         if (server != null)
         {
             //Put in a mapping for the id "Server" and the name of the server as the instance being configured
-            id_map.put("Server", server);
-            id_map.put((String)props.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME), server);
+            idMap.put("Server", server);
+            idMap.put((String)props.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME), server);
         }
 
         Map<String, String> properties = new HashMap<>();
@@ -139,7 +139,7 @@ public class ServerInstanceWrapper
                 // Execute a Jetty configuration file
                 XmlConfiguration config = new XmlConfiguration(jettyConfiguration);
 
-                config.getIdMap().putAll(id_map);
+                config.getIdMap().putAll(idMap);
                 config.getProperties().putAll(properties);
 
                 // #334062 compute the URL of the folder that contains the
@@ -157,7 +157,7 @@ public class ServerInstanceWrapper
                 if (server == null)
                     server = (Server)o;
 
-                id_map = config.getIdMap();
+                idMap = config.getIdMap();
             }
             catch (Exception e)
             {
@@ -311,7 +311,7 @@ public class ServerInstanceWrapper
     private void init()
     {
         // Get the context handler
-        _ctxtCollection = (ContextHandlerCollection)_server.getChildHandlerByClass(ContextHandlerCollection.class);
+        _ctxtCollection = _server.getChildHandlerByClass(ContextHandlerCollection.class);
 
         if (_ctxtCollection == null)
             throw new IllegalStateException("ERROR: No ContextHandlerCollection configured in Server");

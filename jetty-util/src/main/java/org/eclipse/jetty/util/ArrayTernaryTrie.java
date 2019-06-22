@@ -302,7 +302,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
             }
         }
 
-        return (V)_value[t];
+        return _value[t];
     }
 
     @Override
@@ -357,7 +357,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     break loop;
             }
         }
-        return (V)_value[node];
+        return _value[node];
     }
 
     @Override
@@ -408,7 +408,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     break loop;
             }
         }
-        return (V)_value[node];
+        return _value[node];
     }
 
     private V getBest(int t, ByteBuffer b, int offset, int len)
@@ -451,7 +451,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     break loop;
             }
         }
-        return (V)_value[node];
+        return _value[node];
     }
 
     @Override

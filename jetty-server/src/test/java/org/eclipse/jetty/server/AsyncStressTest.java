@@ -62,7 +62,7 @@ public class AsyncStressTest
     protected InetAddress _addr;
     protected int _port;
     protected Random _random = new Random();
-    private final static String[][] __paths =
+    private static final String[][] __paths =
         {
             {"/path", "NORMAL"},
             {"/path/info", "NORMAL"},

@@ -148,7 +148,7 @@ public class Injection
             _targetClass = clazz;
             _paramClass = _resourceClass;
         }
-        catch (NoSuchMethodException me)
+        catch (NoSuchMethodException ex)
         {
             //try as a field
             try
@@ -156,7 +156,7 @@ public class Injection
                 _target = IntrospectionUtil.findField(clazz, target, resourceType, true, false);
                 _targetClass = clazz;
             }
-            catch (NoSuchFieldException fe)
+            catch (NoSuchFieldException ex2)
             {
                 throw new IllegalArgumentException("No such field or method " + target + " on class " + _targetClass);
             }
@@ -228,7 +228,7 @@ public class Injection
         {
             boolean accessibility = method.isAccessible();
             method.setAccessible(true);
-            method.invoke(injectable, new Object[]{lookupInjectedValue()});
+            method.invoke(injectable, lookupInjectedValue());
             method.setAccessible(accessibility);
         }
         catch (Exception e)

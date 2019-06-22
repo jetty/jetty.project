@@ -335,7 +335,7 @@ public class Runner
                         }
 
                         //check that everything got configured, and if not, make the handlers
-                        HandlerCollection handlers = (HandlerCollection)_server.getChildHandlerByClass(HandlerCollection.class);
+                        HandlerCollection handlers = _server.getChildHandlerByClass(HandlerCollection.class);
                         if (handlers == null)
                         {
                             handlers = new HandlerCollection();
@@ -343,7 +343,7 @@ public class Runner
                         }
 
                         //check if contexts already configured
-                        _contexts = (ContextHandlerCollection)handlers.getChildHandlerByClass(ContextHandlerCollection.class);
+                        _contexts = handlers.getChildHandlerByClass(ContextHandlerCollection.class);
                         if (_contexts == null)
                         {
                             _contexts = new ContextHandlerCollection();
@@ -409,7 +409,7 @@ public class Runner
                             {
                                 for (Connector connector : connectors)
                                 {
-                                    ((AbstractConnector)connector).addBean(new ConnectionStatistics());
+                                    connector.addBean(new ConnectionStatistics());
                                 }
                             }
                         }

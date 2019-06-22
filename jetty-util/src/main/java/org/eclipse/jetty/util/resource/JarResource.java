@@ -113,7 +113,10 @@ public class JarResource extends URLResource
             return new FilterInputStream(getInputStream(false))
             {
                 @Override
-                public void close() throws IOException {this.in = IO.getClosedStream();}
+                public void close()
+                {
+                    this.in = IO.getClosedStream();
+                }
             };
 
         URL url = new URL(_urlString.substring(4, _urlString.length() - 2));
@@ -140,7 +143,7 @@ public class JarResource extends URLResource
 
         URL jarFileURL = new URL(urlString.substring(startOfJarUrl, endOfJarUrl));
         String subEntryName = (endOfJarUrl + 2 < urlString.length() ? urlString.substring(endOfJarUrl + 2) : null);
-        boolean subEntryIsDir = (subEntryName != null && subEntryName.endsWith("/") ? true : false);
+        boolean subEntryIsDir = (subEntryName != null && subEntryName.endsWith("/"));
 
         if (LOG.isDebugEnabled())
             LOG.debug("Extracting entry = " + subEntryName + " from jar " + jarFileURL);
@@ -169,28 +172,14 @@ public class JarResource extends URLResource
                         //directory. Remove the name of the subdirectory so
                         //that we don't wind up creating it too.
                         entryName = entryName.substring(subEntryName.length());
-                        if (!entryName.equals(""))
-                        {
-                            //the entry is
-                            shouldExtract = true;
-                        }
-                        else
-                            shouldExtract = false;
+                        //the entry is
+                        shouldExtract = !entryName.equals("");
                     }
                     else
                         shouldExtract = true;
                 }
-                else if ((subEntryName != null) && (!entryName.startsWith(subEntryName)))
-                {
-                    //there is a particular entry we are looking for, and this one
-                    //isn't it
-                    shouldExtract = false;
-                }
                 else
-                {
-                    //we are extracting everything
-                    shouldExtract = true;
-                }
+                    shouldExtract = (subEntryName == null) || (entryName.startsWith(subEntryName));
 
                 if (!shouldExtract)
                 {

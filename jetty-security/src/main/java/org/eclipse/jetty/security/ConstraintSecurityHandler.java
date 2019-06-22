@@ -670,7 +670,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
 
     @Override
-    protected boolean isAuthMandatory(Request baseRequest, Response base_response, Object constraintInfo)
+    protected boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo)
     {
         return constraintInfo != null && ((RoleInfo)constraintInfo).isChecked();
     }
@@ -717,12 +717,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
 
         //normal role check
-        if (isUserInRole)
-        {
-            return true;
-        }
-
-        return false;
+        return isUserInRole;
     }
 
     @Override

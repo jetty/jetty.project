@@ -69,10 +69,10 @@ public final class Syntax
             // 0x7F is the DEL control character
             if ((c <= 0x1F) || (c == 0x7F))
                 throw new IllegalArgumentException(msg + ": RFC2616 tokens may not contain control characters");
-            if (c == '(' || c == ')' || c == '<' || c == '>' || c == '@'
-                || c == ',' || c == ';' || c == ':' || c == '\\' || c == '"'
-                || c == '/' || c == '[' || c == ']' || c == '?' || c == '='
-                || c == '{' || c == '}' || c == ' ')
+            if (c == '(' || c == ')' || c == '<' || c == '>' || c == '@' ||
+                    c == ',' || c == ';' || c == ':' || c == '\\' || c == '"' ||
+                    c == '/' || c == '[' || c == ']' || c == '?' || c == '=' ||
+                    c == '{' || c == '}' || c == ' ')
             {
                 throw new IllegalArgumentException(msg + ": RFC2616 tokens may not contain separator character: [" + c + "]");
             }

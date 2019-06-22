@@ -44,7 +44,7 @@ public interface SessionDataMap extends LifeCycle
      * @return the SessionData matching the id
      * @throws Exception if unable to load session data
      */
-    public SessionData load(String id) throws Exception;
+    SessionData load(String id) throws Exception;
 
     /**
      * Store the session data.
@@ -53,7 +53,7 @@ public interface SessionDataMap extends LifeCycle
      * @param data info of session to store
      * @throws Exception if unable to write session data
      */
-    public void store(String id, SessionData data) throws Exception;
+    void store(String id, SessionData data) throws Exception;
 
     /**
      * Delete session data
@@ -62,5 +62,5 @@ public interface SessionDataMap extends LifeCycle
      * @return true if the session was deleted
      * @throws Exception if unable to delete session data
      */
-    public boolean delete(String id) throws Exception;
+    boolean delete(String id) throws Exception;
 }

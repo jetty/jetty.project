@@ -334,7 +334,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 {
                     // The NativeWebSocketConfiguration should have arrived from the NativeWebSocketServletContainerInitializer
                     throw new ServletException("Unable to find required instance of " +
-                        NativeWebSocketConfiguration.class.getName() + " at ServletContext attribute '" + configurationKey + "'");
+                                                   NativeWebSocketConfiguration.class.getName() + " at ServletContext attribute '" + configurationKey + "'");
                 }
             }
             else
@@ -411,9 +411,9 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         if (context.getAttribute(key) != null)
         {
             throw new ServletException(WebSocketUpgradeFilter.class.getName() +
-                " is defined twice for the same context attribute key '" + key
-                + "'.  Make sure you have different init-param '" +
-                CONTEXT_ATTRIBUTE_KEY + "' values set");
+                                           " is defined twice for the same context attribute key '" + key +
+                                           "'.  Make sure you have different init-param '" +
+                                           CONTEXT_ATTRIBUTE_KEY + "' values set");
         }
         context.setAttribute(key, this);
 

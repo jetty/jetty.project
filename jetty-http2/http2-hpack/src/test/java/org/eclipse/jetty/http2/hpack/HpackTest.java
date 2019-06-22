@@ -40,9 +40,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class HpackTest
 {
-    final static HttpField ServerJetty = new PreEncodedHttpField(HttpHeader.SERVER, "jetty");
-    final static HttpField XPowerJetty = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, "jetty");
-    final static HttpField Date = new PreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())));
+    static final HttpField ServerJetty = new PreEncodedHttpField(HttpHeader.SERVER, "jetty");
+    static final HttpField XPowerJetty = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, "jetty");
+    static final HttpField Date = new PreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())));
 
     @Test
     public void encodeDecodeResponseTest() throws Exception

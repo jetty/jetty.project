@@ -68,12 +68,12 @@ public class Version implements Comparable<Version>
      */
     private String suffix = "";
 
-    private static enum ParseState
+    private enum ParseState
     {
         LEGACY,
         MAJOR,
         REVISION,
-        UPDATE;
+        UPDATE
     }
 
     public Version(String versionString)

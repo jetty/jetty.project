@@ -203,7 +203,7 @@ public class CGI extends HttpServlet
             {
                 int index = path.lastIndexOf('/');
                 path = path.substring(0, index);
-                info = pathInContext.substring(index, pathInContext.length());
+                info = pathInContext.substring(index);
                 execCmd = new File(_docRoot, path);
             }
 
@@ -434,7 +434,7 @@ public class CGI extends HttpServlet
             // terminate and clean up...
             LOG.debug("CGI: Client closed connection!", e);
         }
-        catch (InterruptedException ie)
+        catch (InterruptedException e)
         {
             LOG.debug("CGI: interrupted!");
         }

@@ -36,7 +36,7 @@ public class ByteAccumulator
         this.maxSize = maxOverallBufferSize;
     }
 
-    public void copyChunk(byte buf[], int offset, int length)
+    public void copyChunk(byte[] buf, int offset, int length)
     {
         if (this.length + length > maxSize)
         {
@@ -44,7 +44,7 @@ public class ByteAccumulator
             throw new MessageTooLargeException(err);
         }
 
-        byte copy[] = new byte[length - offset];
+        byte[] copy = new byte[length - offset];
         System.arraycopy(buf, offset, copy, 0, length);
 
         chunks.add(copy);

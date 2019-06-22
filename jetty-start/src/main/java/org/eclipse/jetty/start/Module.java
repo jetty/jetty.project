@@ -163,7 +163,7 @@ public class Module implements Comparable<Module>
      */
     private final Set<String> _optional = new HashSet<>();
 
-    public Module(BaseHome basehome, Path path) throws FileNotFoundException, IOException
+    public Module(BaseHome basehome, Path path) throws IOException
     {
         super();
         _path = path;
@@ -225,8 +225,7 @@ public class Module implements Comparable<Module>
 
     public void expandDependencies(Props props)
     {
-        Function<String, String> expander = d ->
-        {return props.expand(d);};
+        Function<String, String> expander = d -> props.expand(d);
 
         List<String> tmp = _depends.stream().map(expander).collect(Collectors.toList());
         _depends.clear();
@@ -331,7 +330,7 @@ public class Module implements Comparable<Module>
         return true;
     }
 
-    public void process(BaseHome basehome) throws FileNotFoundException, IOException
+    public void process(BaseHome basehome) throws IOException
     {
         Pattern section = Pattern.compile("\\s*\\[([^]]*)\\]\\s*");
 
@@ -604,9 +603,9 @@ public class Module implements Comparable<Module>
     @Override
     public int compareTo(Module m)
     {
-        int by_tag = getPrimaryTag().compareTo(m.getPrimaryTag());
-        if (by_tag != 0)
-            return by_tag;
+        int byTag = getPrimaryTag().compareTo(m.getPrimaryTag());
+        if (byTag != 0)
+            return byTag;
         return getName().compareTo(m.getName());
     }
 }

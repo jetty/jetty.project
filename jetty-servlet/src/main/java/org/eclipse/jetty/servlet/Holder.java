@@ -76,7 +76,7 @@ public abstract class Holder<T> extends BaseHolder<T>
     {
         if (_initParams == null)
             return null;
-        return (String)_initParams.get(param);
+        return _initParams.get(param);
     }
 
     public Enumeration<String> getInitParameterNames()

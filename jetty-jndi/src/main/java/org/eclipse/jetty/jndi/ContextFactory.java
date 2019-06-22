@@ -101,7 +101,7 @@ public class ContextFactory implements ObjectFactory
         throws Exception
     {
         //First, see if we have had a context injected into us to use.
-        Context ctx = (Context)__threadContext.get();
+        Context ctx = __threadContext.get();
         if (ctx != null)
         {
             if (LOG.isDebugEnabled())
@@ -111,7 +111,7 @@ public class ContextFactory implements ObjectFactory
 
         //See if there is a classloader to use for finding the comp context
         //Don't use its parent hierarchy if set.
-        ClassLoader loader = (ClassLoader)__threadClassLoader.get();
+        ClassLoader loader = __threadClassLoader.get();
         if (loader != null)
         {
             if (LOG.isDebugEnabled())
@@ -166,7 +166,7 @@ public class ContextFactory implements ObjectFactory
             synchronized (__contextMap)
             {
                 loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
-                ctx = (Context)__contextMap.get(loader);
+                ctx = __contextMap.get(loader);
 
                 if (ctx == null && loader != null)
                 {
@@ -200,8 +200,7 @@ public class ContextFactory implements ObjectFactory
         StringRefAddr parserAddr = (StringRefAddr)ref.get("parser");
         String parserClassName = (parserAddr == null ? null : (String)parserAddr.getContent());
         NameParser parser =
-            (NameParser)(parserClassName == null ?
-                null : loader.loadClass(parserClassName).getDeclaredConstructor().newInstance());
+            (NameParser)(parserClassName == null ? null : loader.loadClass(parserClassName).getDeclaredConstructor().newInstance());
 
         return new NamingContext(env,
             name.get(0),
@@ -220,7 +219,7 @@ public class ContextFactory implements ObjectFactory
         if (loader == null)
             return null;
 
-        return (Context)__contextMap.get(loader);
+        return __contextMap.get(loader);
     }
 
     /**
@@ -232,7 +231,7 @@ public class ContextFactory implements ObjectFactory
      */
     public static Context associateContext(final Context ctx)
     {
-        Context previous = (Context)__threadContext.get();
+        Context previous = __threadContext.get();
         __threadContext.set(ctx);
         return previous;
     }
@@ -244,7 +243,7 @@ public class ContextFactory implements ObjectFactory
 
     public static ClassLoader associateClassLoader(final ClassLoader loader)
     {
-        ClassLoader prev = (ClassLoader)__threadClassLoader.get();
+        ClassLoader prev = __threadClassLoader.get();
         __threadClassLoader.set(loader);
         return prev;
     }

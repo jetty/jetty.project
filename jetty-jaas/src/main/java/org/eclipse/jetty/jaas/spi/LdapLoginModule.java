@@ -314,7 +314,7 @@ public class LdapLoginModule extends AbstractLoginModule
             {
                 rdnValue = (String)attribute.get();        // switch to the value stored in the _userRdnAttribute if we can
             }
-            catch (NamingException e)
+            catch (NamingException ignored)
             {
             }
         }
@@ -569,9 +569,9 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
         }
-        catch (NamingException ne)
+        catch (NamingException ex)
         {
-            throw new FailedLoginException(ne.getMessage());
+            throw new FailedLoginException(ex.getMessage());
         }
 
         if (LOG.isDebugEnabled())
@@ -580,7 +580,7 @@ public class LdapLoginModule extends AbstractLoginModule
         if (!results.hasMoreElements())
             throw new FailedLoginException("User not found.");
 
-        SearchResult searchResult = (SearchResult)results.nextElement();
+        SearchResult searchResult = results.nextElement();
         if (results.hasMoreElements())
             throw new FailedLoginException("Search result contains ambiguous entries");
 
@@ -730,13 +730,13 @@ public class LdapLoginModule extends AbstractLoginModule
 
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{MD5}"))
         {
-            String src = encryptedPassword.substring("{MD5}".length(), encryptedPassword.length());
+            String src = encryptedPassword.substring("{MD5}".length());
             return "MD5:" + base64ToHex(src);
         }
 
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{CRYPT}"))
         {
-            return "CRYPT:" + encryptedPassword.substring("{CRYPT}".length(), encryptedPassword.length());
+            return "CRYPT:" + encryptedPassword.substring("{CRYPT}".length());
         }
 
         return encryptedPassword;

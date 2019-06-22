@@ -24,6 +24,9 @@ import javax.naming.Name;
 import javax.naming.NameParser;
 import javax.naming.NamingException;
 
+// This is the required name for JNDI
+// @checkstyle-disable-check : TypeNameCheck
+
 /**
  * javaNameParser
  */

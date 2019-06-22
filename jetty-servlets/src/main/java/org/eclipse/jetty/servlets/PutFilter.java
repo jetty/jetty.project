@@ -60,10 +60,10 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class PutFilter implements Filter
 {
-    public final static String __PUT = "PUT";
-    public final static String __DELETE = "DELETE";
-    public final static String __MOVE = "MOVE";
-    public final static String __OPTIONS = "OPTIONS";
+    public static final String __PUT = "PUT";
+    public static final String __DELETE = "DELETE";
+    public static final String __MOVE = "MOVE";
+    public static final String __OPTIONS = "OPTIONS";
 
     Set<String> _operations = new HashSet<String>();
     private ConcurrentMap<String, String> _hidden = new ConcurrentHashMap<String, String>();
@@ -303,10 +303,10 @@ public class PutFilter implements Filter
         if (contextPath != null)
             newInfo = newInfo.substring(contextPath.length());
 
-        String new_resource = URIUtil.addEncodedPaths(_baseURI, newInfo);
-        File new_file = new File(new URI(new_resource));
+        String newResource = URIUtil.addEncodedPaths(_baseURI, newInfo);
+        File newFile = new File(new URI(newResource));
 
-        file.renameTo(new_file);
+        file.renameTo(newFile);
 
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         response.flushBuffer();

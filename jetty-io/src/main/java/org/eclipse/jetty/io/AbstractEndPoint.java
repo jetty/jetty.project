@@ -402,8 +402,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         if (connection != null && !connection.onIdleExpired())
             return;
 
-        boolean output_shutdown = isOutputShutdown();
-        boolean input_shutdown = isInputShutdown();
+        boolean outputShutdown = isOutputShutdown();
+        boolean inputShutdown = isInputShutdown();
         boolean fillFailed = _fillInterest.onFail(timeout);
         boolean writeFailed = _writeFlusher.onFail(timeout);
 
@@ -414,7 +414,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         // for a dispatched servlet or suspended request to extend beyond the connections idle
         // time.  So if this test would always close an idle endpoint that is not handled, then
         // we would need a mode to ignore timeouts for some HTTP states
-        if (isOpen() && (output_shutdown || input_shutdown) && !(fillFailed || writeFailed))
+        if (isOpen() && (outputShutdown || inputShutdown) && !(fillFailed || writeFailed))
             close();
         else
             LOG.debug("Ignored idle endpoint {}", this);
@@ -423,16 +423,16 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public void upgrade(Connection newConnection)
     {
-        Connection old_connection = getConnection();
+        Connection oldConnection = getConnection();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} upgrading from {} to {}", this, old_connection, newConnection);
+            LOG.debug("{} upgrading from {} to {}", this, oldConnection, newConnection);
 
-        ByteBuffer buffer = (old_connection instanceof Connection.UpgradeFrom) ?
-            ((Connection.UpgradeFrom)old_connection).onUpgradeFrom() :
-            null;
-        old_connection.onClose();
-        old_connection.getEndPoint().setConnection(newConnection);
+        ByteBuffer buffer = (oldConnection instanceof Connection.UpgradeFrom)
+                                ? ((Connection.UpgradeFrom)oldConnection).onUpgradeFrom()
+                                : null;
+        oldConnection.onClose();
+        oldConnection.getEndPoint().setConnection(newConnection);
 
         if (newConnection instanceof Connection.UpgradeTo)
             ((Connection.UpgradeTo)newConnection).onUpgradeTo(buffer);

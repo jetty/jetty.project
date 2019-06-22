@@ -34,7 +34,7 @@ public class QuickStartWebApp extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(QuickStartWebApp.class);
 
-    public static final String[] __configurationClasses = new String[]
+    public static final String[] __configurationClasses =
         {
             org.eclipse.jetty.quickstart.QuickStartConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
@@ -49,7 +49,7 @@ public class QuickStartWebApp extends WebAppContext
     private String _originAttribute;
     private boolean _generateOrigin;
 
-    public static final String[] __preconfigurationClasses = new String[]
+    public static final String[] __preconfigurationClasses =
         {
             org.eclipse.jetty.webapp.WebInfConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.webapp.WebXmlConfiguration.class.getCanonicalName(),
@@ -57,8 +57,8 @@ public class QuickStartWebApp extends WebAppContext
             org.eclipse.jetty.webapp.FragmentConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName(),
-            };
+            org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName()
+        };
 
     public QuickStartWebApp()
     {

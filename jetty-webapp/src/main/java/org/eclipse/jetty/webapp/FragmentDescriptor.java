@@ -41,7 +41,6 @@ public class FragmentDescriptor extends WebDescriptor
         None, Before, After
     }
 
-    ;
     protected OtherType _otherType = OtherType.None;
 
     protected List<String> _befores = new ArrayList<String>();

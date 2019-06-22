@@ -253,7 +253,7 @@ public class FrameFlusher extends IteratingCallback
 
         int i = 0;
         int bytes = 0;
-        ByteBuffer bufferArray[] = new ByteBuffer[buffers.size()];
+        ByteBuffer[] bufferArray = new ByteBuffer[buffers.size()];
         for (ByteBuffer bb : buffers)
         {
             bytes += bb.limit() - bb.position();

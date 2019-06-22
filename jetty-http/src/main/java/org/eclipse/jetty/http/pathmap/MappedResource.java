@@ -60,16 +60,10 @@ public class MappedResource<E> implements Comparable<MappedResource<E>>
         MappedResource<?> other = (MappedResource<?>)obj;
         if (pathSpec == null)
         {
-            if (other.pathSpec != null)
-            {
-                return false;
-            }
+            return other.pathSpec == null;
         }
-        else if (!pathSpec.equals(other.pathSpec))
-        {
-            return false;
-        }
-        return true;
+        else
+            return pathSpec.equals(other.pathSpec);
     }
 
     @ManagedAttribute(value = "path spec", readonly = true)

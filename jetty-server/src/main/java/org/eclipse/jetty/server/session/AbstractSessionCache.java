@@ -53,7 +53,7 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
 @ManagedObject
 public abstract class AbstractSessionCache extends ContainerLifeCycle implements SessionCache
 {
-    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     /**
      * The authoritative source of session data

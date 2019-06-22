@@ -24,7 +24,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public class ZeroMasker implements Masker
 {
-    private final byte mask[];
+    private final byte[] mask;
 
     public ZeroMasker()
     {

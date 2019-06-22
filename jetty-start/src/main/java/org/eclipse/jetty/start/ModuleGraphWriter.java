@@ -78,7 +78,7 @@ public class ModuleGraphWriter
     public void write(Modules modules, Path outputFile) throws IOException
     {
         try (BufferedWriter writer = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-             PrintWriter out = new PrintWriter(writer);)
+             PrintWriter out = new PrintWriter(writer))
         {
             writeHeaderMessage(out, outputFile);
 

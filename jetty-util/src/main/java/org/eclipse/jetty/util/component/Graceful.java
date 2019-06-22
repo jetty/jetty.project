@@ -27,11 +27,11 @@ import org.eclipse.jetty.util.FutureCallback;
  */
 public interface Graceful
 {
-    public Future<Void> shutdown();
+    Future<Void> shutdown();
 
-    public boolean isShutdown();
+    boolean isShutdown();
 
-    public static class Shutdown implements Graceful
+    class Shutdown implements Graceful
     {
         private final AtomicReference<FutureCallback> _shutdown = new AtomicReference<>();
 
@@ -43,8 +43,7 @@ public interface Graceful
         @Override
         public Future<Void> shutdown()
         {
-            return _shutdown.updateAndGet(fcb ->
-            {return fcb == null ? newShutdownCallback() : fcb;});
+            return _shutdown.updateAndGet(fcb -> fcb == null ? newShutdownCallback() : fcb);
         }
 
         @Override

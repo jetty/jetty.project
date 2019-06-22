@@ -117,9 +117,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         {
             if (muxedConnections.containsKey(connection))
                 return true;
-            if (busyConnections.containsKey(connection))
-                return true;
-            return false;
+            return busyConnections.containsKey(connection);
         }
         finally
         {

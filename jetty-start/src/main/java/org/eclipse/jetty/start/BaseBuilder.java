@@ -43,7 +43,7 @@ import org.eclipse.jetty.start.fileinits.UriFileInitializer;
  */
 public class BaseBuilder
 {
-    public static interface Config
+    public interface Config
     {
         /**
          * Add a module to the start environment in <code>${jetty.base}</code>
@@ -53,7 +53,7 @@ public class BaseBuilder
          * @return The ini file if module was added, null if module was not added.
          * @throws IOException if unable to add the module
          */
-        public String addModule(Module module, Props props) throws IOException;
+        String addModule(Module module, Props props) throws IOException;
     }
 
     private static final String EXITING_LICENSE_NOT_ACKNOWLEDGED = "Exiting: license not acknowledged!";
@@ -120,13 +120,13 @@ public class BaseBuilder
         Modules modules = startArgs.getAllModules();
 
         // Select all the added modules to determine which ones are newly enabled
-        Set<String> newly_added = new HashSet<>();
+        Set<String> newlyAdded = new HashSet<>();
         if (!startArgs.getStartModules().isEmpty())
         {
             for (String name : startArgs.getStartModules())
             {
-                newly_added.addAll(modules.enable(name, "--add-to-start"));
-                if (!newly_added.contains(name))
+                newlyAdded.addAll(modules.enable(name, "--add-to-start"));
+                if (!newlyAdded.contains(name))
                 {
                     Set<String> sources = modules.get(name).getEnableSources();
                     sources.remove("--add-to-start");
@@ -136,13 +136,13 @@ public class BaseBuilder
         }
 
         if (StartLog.isDebugEnabled())
-            StartLog.debug("added=%s", newly_added);
+            StartLog.debug("added=%s", newlyAdded);
 
         // Check the licenses
         if (startArgs.isLicenseCheckRequired())
         {
             Licensing licensing = new Licensing();
-            for (String name : newly_added)
+            for (String name : newlyAdded)
             {
                 licensing.addModule(modules.get(name));
             }
@@ -179,25 +179,25 @@ public class BaseBuilder
             if (Files.exists(startini))
             {
                 int ini = 0;
-                Path startd_startini = startd.resolve("start.ini");
-                while (Files.exists(startd_startini))
+                Path startdStartini = startd.resolve("start.ini");
+                while (Files.exists(startdStartini))
                 {
                     ini++;
-                    startd_startini = startd.resolve("start" + ini + ".ini");
+                    startdStartini = startd.resolve("start" + ini + ".ini");
                 }
-                Files.move(startini, startd_startini);
+                Files.move(startini, startdStartini);
                 modified.set(true);
             }
         }
 
-        if (!newly_added.isEmpty())
+        if (!newlyAdded.isEmpty())
         {
             if (Files.exists(startini) && Files.exists(startd))
                 StartLog.warn("Use both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
 
             boolean useStartD = Files.exists(startd);
             builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
-            newly_added.stream().map(n -> modules.get(n)).forEach(module ->
+            newlyAdded.stream().map(n -> modules.get(n)).forEach(module ->
             {
                 String ini = null;
                 try

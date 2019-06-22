@@ -194,7 +194,7 @@ public class DefaultHandler extends AbstractHandler
             writer.append("<a href=\"http://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
             writer.append("</body>\n</html>\n");
             writer.flush();
-            byte content[] = outputStream.toByteArray();
+            byte[] content = outputStream.toByteArray();
             response.setContentLength(content.length);
             try (OutputStream out = response.getOutputStream())
             {

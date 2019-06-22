@@ -73,8 +73,8 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             try
             {
                 String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME))
-                    || (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
+                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) ||
+                    (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
                 {
                     if (bundleAdded(bundle))
                         return bundle;
@@ -149,7 +149,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             return false;
 
         //If the bundle defines a Web-ContextPath then its probably a webapp and the BundleWebAppProvider should deploy it
-        if ((String)bundle.getHeaders().get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) != null)
+        if (bundle.getHeaders().get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) != null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("BundleContextProvider ignoring bundle {} with {} set", bundle.getSymbolicName(), OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);

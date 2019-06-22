@@ -274,5 +274,5 @@ public interface EndPoint extends Closeable
      *
      * @param newConnection The connection to upgrade to
      */
-    public void upgrade(Connection newConnection);
+    void upgrade(Connection newConnection);
 }

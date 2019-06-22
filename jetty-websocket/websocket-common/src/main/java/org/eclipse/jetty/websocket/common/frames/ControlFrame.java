@@ -44,8 +44,8 @@ public abstract class ControlFrame extends WebSocketFrame
         {
             if (getPayloadLength() > ControlFrame.MAX_CONTROL_PAYLOAD)
             {
-                throw new ProtocolException("Desired payload length [" + getPayloadLength() + "] exceeds maximum control payload length ["
-                    + MAX_CONTROL_PAYLOAD + "]");
+                throw new ProtocolException("Desired payload length [" + getPayloadLength() +
+                    "] exceeds maximum control payload length [" + MAX_CONTROL_PAYLOAD + "]");
             }
 
             if ((finRsvOp & 0x80) == 0)
@@ -105,11 +105,7 @@ public abstract class ControlFrame extends WebSocketFrame
         {
             return false;
         }
-        if (masked != other.masked)
-        {
-            return false;
-        }
-        return true;
+        return masked == other.masked;
     }
 
     @Override

@@ -258,7 +258,7 @@ public class WebDescriptor extends Descriptor
             _metaDataComplete = MetaDataComplete.True; // does not apply before 2.5
         else
         {
-            String s = (String)_root.getAttribute("metadata-complete");
+            String s = _root.getAttribute("metadata-complete");
             if (s == null)
                 _metaDataComplete = MetaDataComplete.NotSet;
             else

@@ -33,7 +33,6 @@ public class Source
         EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION
     }
 
-    ;
     public Origin _origin;
     public String _resource;
 

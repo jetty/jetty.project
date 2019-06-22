@@ -37,7 +37,7 @@ public interface ConfigSource
      *
      * @return the configuration source identifier.
      */
-    public String getId();
+    String getId();
 
     /**
      * The weight of this source, used for proper ordering of the config source search order.
@@ -53,21 +53,21 @@ public interface ConfigSource
      *
      * @return the weight of the config source. (lower value is more important)
      */
-    public int getWeight();
+    int getWeight();
 
     /**
      * The list of Arguments for this ConfigSource
      *
      * @return the list of Arguments for this ConfigSource
      */
-    public RawArgs getArgs();
+    RawArgs getArgs();
 
     /**
      * The properties for this ConfigSource
      *
      * @return the properties for this ConfigSource
      */
-    public Props getProps();
+    Props getProps();
 
     /**
      * Return the value of the specified property.
@@ -75,9 +75,9 @@ public interface ConfigSource
      * @param key the key to lookup
      * @return the value of the property, or null if not found
      */
-    public String getProperty(String key);
+    String getProperty(String key);
 
-    public default Set<StartIni> getStartInis()
+    default Set<StartIni> getStartInis()
     {
         return Collections.emptySet();
     }

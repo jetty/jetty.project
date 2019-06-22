@@ -442,7 +442,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         {
             baseRequest.setHandled(true);
             File tmpDir = MavenTestingUtils.getTargetTestingDir();
-            request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, new MultipartConfigElement(tmpDir.getAbsolutePath()));
+            request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, new MultipartConfigElement(tmpDir.getAbsolutePath()));
             handle(request, response);
         }
 

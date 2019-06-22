@@ -70,8 +70,6 @@ public class PreDestroyCallback extends LifeCycleCallback
     @Override
     public boolean equals(Object o)
     {
-        if (super.equals(o) && (o instanceof PreDestroyCallback))
-            return true;
-        return false;
+        return super.equals(o) && (o instanceof PreDestroyCallback);
     }
 }

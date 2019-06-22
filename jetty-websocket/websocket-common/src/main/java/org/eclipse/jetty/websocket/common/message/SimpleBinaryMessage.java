@@ -64,7 +64,7 @@ public class SimpleBinaryMessage implements MessageAppender
     public void messageComplete()
     {
         finished = true;
-        byte data[] = out.toByteArray();
+        byte[] data = out.toByteArray();
         onEvent.onBinaryMessage(data);
     }
 }

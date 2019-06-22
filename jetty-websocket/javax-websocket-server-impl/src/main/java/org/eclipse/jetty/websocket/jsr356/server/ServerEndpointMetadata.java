@@ -26,5 +26,5 @@ public interface ServerEndpointMetadata extends EndpointMetadata
 {
     ServerEndpointConfig getConfig();
 
-    public String getPath();
+    String getPath();
 }

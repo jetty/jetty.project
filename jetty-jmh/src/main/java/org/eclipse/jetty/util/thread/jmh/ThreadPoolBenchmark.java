@@ -51,7 +51,7 @@ public class ThreadPoolBenchmark
 {
     public enum Type
     {
-        QTP, ETP, LQTP, LETP, AQTP, AETP;
+        QTP, ETP, LQTP, LETP, AQTP, AETP
     }
 
     @Param({"QTP", "ETP" /*, "LQTP", "LETP", "AQTP", "AETP" */})

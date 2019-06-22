@@ -115,7 +115,8 @@ public class LibExtClassLoaderHelper
                     // cheap to tolerate folders so let's do it.
                     URL url = f.toURI().toURL();
                     if (f.isFile())
-                    {// is this necessary anyways?
+                    {
+                        // is this necessary anyways?
                         url = new URL("jar:" + url.toString() + "!/");
                     }
                     urls.add(url);

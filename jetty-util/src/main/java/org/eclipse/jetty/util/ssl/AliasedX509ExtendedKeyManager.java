@@ -131,7 +131,7 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
     }
 
     @Override
-    public String chooseEngineClientAlias(String keyType[], Principal[] issuers, SSLEngine engine)
+    public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
     {
         if (_alias == null)
             return _delegate.chooseEngineClientAlias(keyType, issuers, engine);

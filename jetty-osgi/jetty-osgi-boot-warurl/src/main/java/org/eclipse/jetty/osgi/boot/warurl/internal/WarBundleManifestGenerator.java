@@ -68,7 +68,7 @@ public class WarBundleManifestGenerator
         }
         else
         {
-            String versionInManifest = (String)res.get(Constants.BUNDLE_VERSION);
+            String versionInManifest = res.get(Constants.BUNDLE_VERSION);
             if (versionInManifest == null)
             {
                 res.put(Constants.BUNDLE_VERSION, MISSING_VERSION);
@@ -86,15 +86,14 @@ public class WarBundleManifestGenerator
             int manv = 2;
             try
             {
-                String versionInManifest = (String)res.get(Constants.BUNDLE_MANIFESTVERSION);
+                String versionInManifest = res.get(Constants.BUNDLE_MANIFESTVERSION);
                 if (versionInManifest != null)
                 {
                     manv = Integer.parseInt(versionInManifest.trim());
                 }
             }
-            catch (NumberFormatException nfe)
+            catch (NumberFormatException ignored)
             {
-
             }
             res.put(Constants.BUNDLE_MANIFESTVERSION, String.valueOf(manv < 2 ? 2 : manv));
         }
@@ -107,7 +106,7 @@ public class WarBundleManifestGenerator
         }
         else
         {
-            symbname = (String)res.get(Constants.BUNDLE_SYMBOLICNAME);
+            symbname = res.get(Constants.BUNDLE_SYMBOLICNAME);
             if (symbname == null)
             {
                 //derive the symbolic name from the url.
@@ -168,14 +167,15 @@ public class WarBundleManifestGenerator
         String extraImportPackage = params.getString(Constants.IMPORT_PACKAGE);
         String alreadyImportPackage = res.get(Constants.IMPORT_PACKAGE);
         if (alreadyImportPackage == null)
-        {//The spec does not specify that the jsp imports are optional
+        {
+            //The spec does not specify that the jsp imports are optional
             //kind of nice to have them optional so we can run simple wars in
             //simple environments.
             alreadyImportPackage = "javax.servlet; version=\"2.5\"," +
-                "javax.servlet.http;version=\"2.5\"," +
-                "javax.el;version=\"1.0\"" +
-                "javax.jsp;version=\"2.1\";resolution:=optional," +
-                "javax.jsp.tagext;version=\"2.1\";resolution:=optional";
+                                       "javax.servlet.http;version=\"2.5\"," +
+                                       "javax.el;version=\"1.0\"" +
+                                       "javax.jsp;version=\"2.1\";resolution:=optional," +
+                                       "javax.jsp.tagext;version=\"2.1\";resolution:=optional";
         }
         if (extraImportPackage != null)
         {   //if there is already a manifest and it specifies the Bundle-Classpath.

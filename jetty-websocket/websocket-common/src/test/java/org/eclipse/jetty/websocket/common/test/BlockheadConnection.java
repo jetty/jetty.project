@@ -48,7 +48,7 @@ import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 
 public class BlockheadConnection extends AbstractConnection implements Connection.UpgradeTo
 {
-    private final static int BUFFER_SIZE = 4096;
+    private static final int BUFFER_SIZE = 4096;
     public static final String STATIC_REQUEST_HASH_KEY = "dGhlIHNhbXBsZSBub25jZQ==";
     private final Logger LOG;
     private final WebSocketPolicy policy;

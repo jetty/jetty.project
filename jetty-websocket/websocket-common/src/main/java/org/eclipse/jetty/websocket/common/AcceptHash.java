@@ -34,7 +34,7 @@ public class AcceptHash
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-1.3">Opening Handshake (Section 1.3)</a>
      */
-    private final static byte[] MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(StandardCharsets.ISO_8859_1);
+    private static final byte[] MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(StandardCharsets.ISO_8859_1);
 
     /**
      * Concatenate the provided key with the Magic GUID and return the Base64 encoded form.

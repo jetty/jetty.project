@@ -155,7 +155,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         boolean delim = false;
         for (Map.Entry<String, List<String>> entry : map.entrySet())
         {
-            String key = entry.getKey().toString();
+            String key = entry.getKey();
             List<String> list = entry.getValue();
             int s = list.size();
 
@@ -181,7 +181,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
 
                     if (val != null)
                     {
-                        String str = val.toString();
+                        String str = val;
                         if (str.length() > 0)
                         {
                             result.append('=');
@@ -242,8 +242,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                 {
                     case '&':
                         int l = i - mark - 1;
-                        value = l == 0 ? "" :
-                            (encoded ? decodeString(content, mark + 1, l, charset) : content.substring(mark + 1, i));
+                        value = l == 0 ? "" : (encoded ? decodeString(content, mark + 1, l, charset) : content.substring(mark + 1, i));
                         mark = i;
                         encoded = false;
                         if (key != null)
@@ -282,8 +281,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             else if (mark < content.length())
             {
                 key = encoded
-                    ? decodeString(content, mark + 1, content.length() - mark - 1, charset)
-                    : content.substring(mark + 1);
+                          ? decodeString(content, mark + 1, content.length() - mark - 1, charset)
+                          : content.substring(mark + 1);
                 if (key != null && key.length() > 0)
                 {
                     map.add(key, "");
@@ -630,7 +629,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
 
             int totalLength = 0;
 
-            try (ByteArrayOutputStream2 output = new ByteArrayOutputStream2();)
+            try (ByteArrayOutputStream2 output = new ByteArrayOutputStream2())
             {
                 int size = 0;
 
@@ -935,8 +934,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                 encoded[n++] = (byte)'+';
             }
             else if (b >= 'a' && b <= 'z' ||
-                b >= 'A' && b <= 'Z' ||
-                b >= '0' && b <= '9')
+                         b >= 'A' && b <= 'Z' ||
+                         b >= '0' && b <= '9')
             {
                 encoded[n++] = b;
             }

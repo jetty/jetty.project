@@ -30,7 +30,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *
      * @return the configuration for this extension. never null.
      */
-    public ExtensionConfig getConfig();
+    ExtensionConfig getConfig();
 
     /**
      * The <code>Sec-WebSocket-Extensions</code> name for this extension.
@@ -39,7 +39,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *
      * @return the name of the extension
      */
-    public String getName();
+    String getName();
 
     /**
      * Used to indicate that the extension makes use of the RSV1 bit of the base websocket framing.
@@ -48,7 +48,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *
      * @return true if extension uses RSV1 for its own purposes.
      */
-    public abstract boolean isRsv1User();
+    boolean isRsv1User();
 
     /**
      * Used to indicate that the extension makes use of the RSV2 bit of the base websocket framing.
@@ -57,7 +57,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *
      * @return true if extension uses RSV2 for its own purposes.
      */
-    public abstract boolean isRsv2User();
+    boolean isRsv2User();
 
     /**
      * Used to indicate that the extension makes use of the RSV3 bit of the base websocket framing.
@@ -66,19 +66,19 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *
      * @return true if extension uses RSV3 for its own purposes.
      */
-    public abstract boolean isRsv3User();
+    boolean isRsv3User();
 
     /**
      * Set the next {@link IncomingFrames} to call in the chain.
      *
      * @param nextIncoming the next incoming extension
      */
-    public void setNextIncomingFrames(IncomingFrames nextIncoming);
+    void setNextIncomingFrames(IncomingFrames nextIncoming);
 
     /**
      * Set the next {@link OutgoingFrames} to call in the chain.
      *
      * @param nextOutgoing the next outgoing extension
      */
-    public void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
+    void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
 }

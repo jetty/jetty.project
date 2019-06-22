@@ -28,9 +28,9 @@ public class Uptime
 {
     public static final int NOIMPL = -1;
 
-    public static interface Impl
+    public interface Impl
     {
-        public long getUptime();
+        long getUptime();
     }
 
     public static class DefaultImpl implements Impl
@@ -45,7 +45,7 @@ public class Uptime
             {
                 Class<?> mgmtFactory = Class.forName("java.lang.management.ManagementFactory", true, cl);
                 Class<?> runtimeClass = Class.forName("java.lang.management.RuntimeMXBean", true, cl);
-                Class<?> noparams[] = new Class<?>[0];
+                Class<?>[] noparams = new Class<?>[0];
                 Method mxBeanMethod = mgmtFactory.getMethod("getRuntimeMXBean", noparams);
                 if (mxBeanMethod == null)
                 {

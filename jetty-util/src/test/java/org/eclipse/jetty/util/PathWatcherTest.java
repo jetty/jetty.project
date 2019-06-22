@@ -74,7 +74,7 @@ public class PathWatcherTest
 
     public static class PathWatchEventCapture implements PathWatcher.Listener
     {
-        public final static String FINISH_TAG = "#finished#.tag";
+        public static final String FINISH_TAG = "#finished#.tag";
         private static final Logger LOG = Log.getLogger(PathWatcherTest.PathWatchEventCapture.class);
         private final Path baseDir;
 

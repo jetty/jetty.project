@@ -87,7 +87,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
     }
 
-    protected Resource findWebXml(WebAppContext context) throws IOException, MalformedURLException
+    protected Resource findWebXml(WebAppContext context) throws IOException
     {
         String descriptor = context.getDescriptor();
         if (descriptor != null)
@@ -97,11 +97,11 @@ public class WebXmlConfiguration extends AbstractConfiguration
                 return web;
         }
 
-        Resource web_inf = context.getWebInf();
-        if (web_inf != null && web_inf.isDirectory())
+        Resource webInf = context.getWebInf();
+        if (webInf != null && webInf.isDirectory())
         {
             // do web.xml file
-            Resource web = web_inf.addPath("web.xml");
+            Resource web = webInf.addPath("web.xml");
             if (web.exists())
                 return web;
             if (LOG.isDebugEnabled())

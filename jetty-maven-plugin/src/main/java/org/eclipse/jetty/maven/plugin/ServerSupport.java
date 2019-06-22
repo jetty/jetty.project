@@ -73,7 +73,7 @@ public class ServerSupport
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
-            HandlerCollection handlers = (HandlerCollection)server.getChildHandlerByClass(HandlerCollection.class);
+            HandlerCollection handlers = server.getChildHandlerByClass(HandlerCollection.class);
             if (handlers == null)
             {
                 handlers = new HandlerCollection();

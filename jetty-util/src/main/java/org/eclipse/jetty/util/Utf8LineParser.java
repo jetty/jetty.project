@@ -33,7 +33,7 @@ public class Utf8LineParser
     {
         START,
         PARSE,
-        END;
+        END
     }
 
     private State state;

@@ -314,11 +314,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         URL url = fragment.getEntry(resourcePath);
         if (url == null)
         {
-            throw new IllegalArgumentException("Unable to locate " + resourcePath
-                + " inside "
-                + " the fragment '"
-                + fragment.getSymbolicName()
-                + "'");
+            throw new IllegalArgumentException("Unable to locate " + resourcePath + " inside the fragment '" + fragment.getSymbolicName() + "'");
         }
         url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(url);
         URI uri;

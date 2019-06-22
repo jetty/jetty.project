@@ -36,7 +36,10 @@ public class ReadLineInputStream extends BufferedInputStream
     boolean _skipLF;
     private EnumSet<Termination> _lineTerminations = EnumSet.noneOf(Termination.class);
 
-    public EnumSet<Termination> getLineTerminations() { return _lineTerminations; }
+    public EnumSet<Termination> getLineTerminations()
+    {
+        return _lineTerminations;
+    }
 
     public enum Termination
     {

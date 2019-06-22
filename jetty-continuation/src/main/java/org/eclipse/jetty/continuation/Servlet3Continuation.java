@@ -41,7 +41,7 @@ public class Servlet3Continuation implements Continuation, AsyncListener
 {
     // Exception reused for all continuations
     // Turn on debug in ContinuationFilter to see real stack trace.
-    private final static ContinuationThrowable __exception = new ContinuationThrowable();
+    private static final ContinuationThrowable __exception = new ContinuationThrowable();
 
     private final ServletRequest _request;
     private ServletResponse _response;

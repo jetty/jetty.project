@@ -154,51 +154,51 @@ import org.xml.sax.SAXException;
  */
 public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvider
 {
-    private final static Logger __log = org.eclipse.jetty.util.log.Log.getLogger("OverlayedAppProvider");
+    private static final Logger __log = org.eclipse.jetty.util.log.Log.getLogger("OverlayedAppProvider");
     /**
      * Property set for overlay.xml and template.xml files that gives the root overlay scan directory as a canonical file name.
      */
-    public final static String OVERLAYS_DIR = "overlays.dir";
+    public static final String OVERLAYS_DIR = "overlays.dir";
     /**
      * Property set for overlay.xml and template.xml files that gives the current webapp name, as {@link Webapp#getName()}.
      */
-    public final static String OVERLAY_WEBAPP = "overlay.webapp";
+    public static final String OVERLAY_WEBAPP = "overlay.webapp";
     /**
      * Property set for overlay.xml and template.xml files that gives the current template full name, as {@link Template#getName()}.
      */
-    public final static String OVERLAY_TEMPLATE = "overlay.template";
+    public static final String OVERLAY_TEMPLATE = "overlay.template";
     /**
      * Property set for overlay.xml and template.xml files that gives the current template name, as {@link Template#getTemplateName()}.
      */
-    public final static String OVERLAY_TEMPLATE_NAME = "overlay.template.name";
+    public static final String OVERLAY_TEMPLATE_NAME = "overlay.template.name";
     /**
      * Property set for overlay.xml and template.xml files that gives the current template classifier, as {@link Template#getClassifier()}.
      */
-    public final static String OVERLAY_TEMPLATE_CLASSIFIER = "overlay.template.classifier";
+    public static final String OVERLAY_TEMPLATE_CLASSIFIER = "overlay.template.classifier";
     /**
      * Property set for overlay.xml and template.xml files that gives the current node name, as {@link Node#getName()}.
      */
-    public final static String OVERLAY_NODE = "overlay.node";
+    public static final String OVERLAY_NODE = "overlay.node";
     /**
      * Property set for overlay.xml and template.xml files that gives the current instance name, {@link Instance#getName()}.
      */
-    public final static String OVERLAY_INSTANCE = "overlay.instance";
+    public static final String OVERLAY_INSTANCE = "overlay.instance";
     /**
      * Property set for overlay.xml and template.xml files that gives the current instance clasifier, {@link Instance#getClassifier()}.
      */
-    public final static String OVERLAY_INSTANCE_CLASSIFIER = "overlay.instance.classifier";
+    public static final String OVERLAY_INSTANCE_CLASSIFIER = "overlay.instance.classifier";
 
-    public final static String WEBAPPS = "webapps";
-    public final static String TEMPLATES = "templates";
-    public final static String NODES = "nodes";
-    public final static String INSTANCES = "instances";
+    public static final String WEBAPPS = "webapps";
+    public static final String TEMPLATES = "templates";
+    public static final String NODES = "nodes";
+    public static final String INSTANCES = "instances";
 
-    public final static String LIB = "WEB-INF/lib-overlay";
-    public final static String WEBAPP = ".";
-    public final static String OVERLAY_XML = "WEB-INF/overlay.xml";
-    public final static String TEMPLATE_XML = "WEB-INF/template.xml";
-    public final static String WEB_DEFAULT_XML = "WEB-INF/web-default.xml";
-    public final static String WEB_FRAGMENT_XML = "WEB-INF/web-overlay.xml";
+    public static final String LIB = "WEB-INF/lib-overlay";
+    public static final String WEBAPP = ".";
+    public static final String OVERLAY_XML = "WEB-INF/overlay.xml";
+    public static final String TEMPLATE_XML = "WEB-INF/template.xml";
+    public static final String WEB_DEFAULT_XML = "WEB-INF/web-default.xml";
+    public static final String WEB_FRAGMENT_XML = "WEB-INF/web-overlay.xml";
 
     enum Monitor
     {
@@ -207,7 +207,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
 
     ;
 
-    public final static List<Pattern> __scanPatterns = new ArrayList<Pattern>();
+    public static final List<Pattern> __scanPatterns = new ArrayList<Pattern>();
 
     static
     {

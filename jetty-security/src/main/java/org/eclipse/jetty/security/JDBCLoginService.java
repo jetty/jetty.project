@@ -123,40 +123,33 @@ public class JDBCLoginService extends AbstractLoginService
         _url = properties.getProperty("url");
         _userName = properties.getProperty("username");
         _password = properties.getProperty("password");
-        String _userTable = properties.getProperty("usertable");
+        String userTable = properties.getProperty("usertable");
         _userTableKey = properties.getProperty("usertablekey");
-        String _userTableUserField = properties.getProperty("usertableuserfield");
+        String userTableUserField = properties.getProperty("usertableuserfield");
         _userTablePasswordField = properties.getProperty("usertablepasswordfield");
-        String _roleTable = properties.getProperty("roletable");
-        String _roleTableKey = properties.getProperty("roletablekey");
+        String roleTable = properties.getProperty("roletable");
+        String roleTableKey = properties.getProperty("roletablekey");
         _roleTableRoleField = properties.getProperty("roletablerolefield");
-        String _userRoleTable = properties.getProperty("userroletable");
-        String _userRoleTableUserKey = properties.getProperty("userroletableuserkey");
-        String _userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
+        String userRoleTable = properties.getProperty("userroletable");
+        String userRoleTableUserKey = properties.getProperty("userroletableuserkey");
+        String userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
 
-        if (_jdbcDriver == null || _jdbcDriver.equals("")
-            || _url == null
-            || _url.equals("")
-            || _userName == null
-            || _userName.equals("")
-            || _password == null)
+        if (_jdbcDriver == null || _jdbcDriver.equals("") ||
+                _url == null ||
+                _url.equals("") ||
+                _userName == null ||
+                _userName.equals("") ||
+                _password == null)
         {
             LOG.warn("UserRealm " + getName() + " has not been properly configured");
         }
 
-        _userSql = "select " + _userTableKey + "," + _userTablePasswordField + " from " + _userTable + " where " + _userTableUserField + " = ?";
-        _roleSql = "select r." + _roleTableRoleField
-            + " from "
-            + _roleTable
-            + " r, "
-            + _userRoleTable
-            + " u where u."
-            + _userRoleTableUserKey
-            + " = ?"
-            + " and r."
-            + _roleTableKey
-            + " = u."
-            + _userRoleTableRoleKey;
+        _userSql = "select " + _userTableKey + "," + _userTablePasswordField + " from " + userTable + " where " + userTableUserField + " = ?";
+        _roleSql = "select r." + _roleTableRoleField +
+                       " from " + roleTable +
+                       " r, " + userRoleTable +
+                       " u where u." + userRoleTableUserKey + " = ?" +
+                       " and r." + roleTableKey + " = u." + userRoleTableRoleKey;
 
         Loader.loadClass(_jdbcDriver).getDeclaredConstructor().newInstance();
         super.doStart();

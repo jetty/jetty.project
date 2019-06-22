@@ -255,9 +255,7 @@ public class OverlayConfig
 
     public boolean isCurrentProject()
     {
-        if (this.groupId == null && this.artifactId == null)
-            return true;
-        return false;
+        return this.groupId == null && this.artifactId == null;
     }
 
     /**
@@ -270,12 +268,9 @@ public class OverlayConfig
      */
     public boolean matchesArtifact(String gid, String aid, String cls)
     {
-        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid)))
-            && ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid)))
-            && ((getClassifier() == null) || (getClassifier().equals(cls))))
-            return true;
-
-        return false;
+        return ((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) &&
+                   ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))) &&
+                   ((getClassifier() == null) || (getClassifier().equals(cls)));
     }
 
     /**
@@ -287,11 +282,8 @@ public class OverlayConfig
      */
     public boolean matchesArtifact(String gid, String aid)
     {
-        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid)))
-            && ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))))
-            return true;
-
-        return false;
+        return ((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) &&
+                   ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid)));
     }
 
     @Override

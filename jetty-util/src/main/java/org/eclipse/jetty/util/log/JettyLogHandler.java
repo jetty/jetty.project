@@ -78,7 +78,7 @@ public class JettyLogHandler extends java.util.logging.Handler
 
         try
         {
-            Object params[] = record.getParameters();
+            Object[] params = record.getParameters();
             if ((params == null) || (params.length == 0))
             {
                 return msg;
@@ -106,7 +106,7 @@ public class JettyLogHandler extends java.util.logging.Handler
             {
                 return bundle.getString(record.getMessage());
             }
-            catch (java.util.MissingResourceException ex)
+            catch (java.util.MissingResourceException ignored)
             {
             }
         }
@@ -117,7 +117,7 @@ public class JettyLogHandler extends java.util.logging.Handler
     @Override
     public void publish(LogRecord record)
     {
-        org.eclipse.jetty.util.log.Logger JLOG = getJettyLogger(record.getLoggerName());
+        org.eclipse.jetty.util.log.Logger jettyLogger = getJettyLogger(record.getLoggerName());
 
         int level = record.getLevel().intValue();
         if (level >= Level.OFF.intValue())
@@ -134,11 +134,11 @@ public class JettyLogHandler extends java.util.logging.Handler
             // log at warn
             if (cause != null)
             {
-                JLOG.warn(msg, cause);
+                jettyLogger.warn(msg, cause);
             }
             else
             {
-                JLOG.warn(msg);
+                jettyLogger.warn(msg);
             }
             return;
         }
@@ -148,11 +148,11 @@ public class JettyLogHandler extends java.util.logging.Handler
             // log at info
             if (cause != null)
             {
-                JLOG.info(msg, cause);
+                jettyLogger.info(msg, cause);
             }
             else
             {
-                JLOG.info(msg);
+                jettyLogger.info(msg);
             }
             return;
         }
@@ -162,11 +162,11 @@ public class JettyLogHandler extends java.util.logging.Handler
             // log at debug
             if (cause != null)
             {
-                JLOG.debug(msg, cause);
+                jettyLogger.debug(msg, cause);
             }
             else
             {
-                JLOG.debug(msg);
+                jettyLogger.debug(msg);
             }
             return;
         }
@@ -174,7 +174,7 @@ public class JettyLogHandler extends java.util.logging.Handler
         if (level >= Level.ALL.intValue())
         {
             // only corresponds with ignore (in jetty speak)
-            JLOG.ignore(cause);
+            jettyLogger.ignore(cause);
             return;
         }
     }

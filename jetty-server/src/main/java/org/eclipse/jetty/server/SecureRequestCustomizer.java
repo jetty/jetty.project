@@ -166,8 +166,8 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         EndPoint endp = request.getHttpChannel().getEndPoint();
         if (endp instanceof DecryptedEndPoint)
         {
-            SslConnection.DecryptedEndPoint ssl_endp = (DecryptedEndPoint)endp;
-            SslConnection sslConnection = ssl_endp.getSslConnection();
+            SslConnection.DecryptedEndPoint sslEndp = (DecryptedEndPoint)endp;
+            SslConnection sslConnection = sslEndp.getSslConnection();
             SSLEngine sslEngine = sslConnection.getSSLEngine();
             customize(sslEngine, request);
 

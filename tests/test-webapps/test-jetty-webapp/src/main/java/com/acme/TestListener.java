@@ -112,7 +112,7 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
         ServletRegistration.Dynamic rego = sce.getServletContext().addServlet("RegoTest", RegTest.class.getName());
         rego.addMapping("/rego/*");
         HttpConstraintElement constraintElement = new HttpConstraintElement(ServletSecurity.EmptyRoleSemantic.PERMIT,
-            ServletSecurity.TransportGuarantee.NONE, new String[]{"admin"});
+            ServletSecurity.TransportGuarantee.NONE, "admin");
         ServletSecurityElement securityElement = new ServletSecurityElement(constraintElement, null);
         Set<String> unchanged = rego.setServletSecurity(securityElement);
         //// System.err.println("Security constraints registered: "+unchanged.isEmpty());
@@ -138,7 +138,7 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
         registration.addMappingForUrlPatterns(
             EnumSet.of(DispatcherType.ERROR, DispatcherType.ASYNC, DispatcherType.FORWARD, DispatcherType.INCLUDE, DispatcherType.REQUEST),
             true,
-            new String[]{"/*"});
+            "/*");
     }
 
     @Override

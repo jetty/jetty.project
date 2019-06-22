@@ -43,7 +43,7 @@ public class JspPropertyGroupServlet extends GenericServlet
 {
     private static final long serialVersionUID = 3681783214726776945L;
 
-    public final static String NAME = "__org.eclipse.jetty.servlet.JspPropertyGroupServlet__";
+    public static final String NAME = "__org.eclipse.jetty.servlet.JspPropertyGroupServlet__";
     private final ServletHandler _servletHandler;
     private final ContextHandler _contextHandler;
     private ServletHolder _dftServlet;
@@ -59,9 +59,9 @@ public class JspPropertyGroupServlet extends GenericServlet
     @Override
     public void init() throws ServletException
     {
-        String jsp_name = "jsp";
-        ServletMapping servlet_mapping = _servletHandler.getServletMapping("*.jsp");
-        if (servlet_mapping != null)
+        String jspName = "jsp";
+        ServletMapping servletMapping = _servletHandler.getServletMapping("*.jsp");
+        if (servletMapping != null)
         {
             _starJspMapped = true;
 
@@ -75,20 +75,20 @@ public class JspPropertyGroupServlet extends GenericServlet
                     for (String path : paths)
                     {
                         if ("*.jsp".equals(path) && !NAME.equals(m.getServletName()))
-                            servlet_mapping = m;
+                            servletMapping = m;
                     }
                 }
             }
 
-            jsp_name = servlet_mapping.getServletName();
+            jspName = servletMapping.getServletName();
         }
-        _jspServlet = _servletHandler.getServlet(jsp_name);
+        _jspServlet = _servletHandler.getServlet(jspName);
 
-        String dft_name = "default";
-        ServletMapping default_mapping = _servletHandler.getServletMapping("/");
-        if (default_mapping != null)
-            dft_name = default_mapping.getServletName();
-        _dftServlet = _servletHandler.getServlet(dft_name);
+        String dftName = "default";
+        ServletMapping defaultMapping = _servletHandler.getServletMapping("/");
+        if (defaultMapping != null)
+            dftName = defaultMapping.getServletName();
+        _dftServlet = _servletHandler.getServlet(dftName);
     }
 
     @Override

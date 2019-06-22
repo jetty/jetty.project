@@ -128,8 +128,8 @@ public class MultiPartFormInputStream
             if (MultiPartFormInputStream.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartFormInputStream.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
 
-            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 && _size + 1 > MultiPartFormInputStream.this._config.getFileSizeThreshold()
-                && _file == null)
+            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
+                    _size + 1 > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
                 createFile();
 
             _out.write(b);
@@ -141,8 +141,8 @@ public class MultiPartFormInputStream
             if (MultiPartFormInputStream.this._config.getMaxFileSize() > 0 && _size + length > MultiPartFormInputStream.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
 
-            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0
-                && _size + length > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
+            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
+                    _size + length > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
                 createFile();
 
             _out.write(bytes, offset, length);
@@ -628,7 +628,7 @@ public class MultiPartFormInputStream
             try
             {
                 // Extract content-disposition
-                boolean form_data = false;
+                boolean formData = false;
                 if (contentDisposition == null)
                 {
                     throw new IOException("Missing content-disposition");
@@ -642,7 +642,7 @@ public class MultiPartFormInputStream
                     String t = tok.nextToken().trim();
                     String tl = StringUtil.asciiToLowerCase(t);
                     if (tl.startsWith("form-data"))
-                        form_data = true;
+                        formData = true;
                     else if (tl.startsWith("name="))
                         name = value(t);
                     else if (tl.startsWith("filename="))
@@ -650,7 +650,7 @@ public class MultiPartFormInputStream
                 }
 
                 // Check disposition
-                if (!form_data)
+                if (!formData)
                     throw new IOException("Part not form-data");
 
                 // It is valid for reset and submit buttons to have an empty name.

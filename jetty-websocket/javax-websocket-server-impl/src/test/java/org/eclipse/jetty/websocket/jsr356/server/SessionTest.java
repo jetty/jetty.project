@@ -71,7 +71,7 @@ public class SessionTest
         return cases.stream().map(Arguments::of);
     }
 
-    private final static AtomicInteger ID = new AtomicInteger(0);
+    private static final AtomicInteger ID = new AtomicInteger(0);
     private WSServer server;
     private URI serverUri;
 

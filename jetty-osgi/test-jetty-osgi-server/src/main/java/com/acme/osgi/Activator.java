@@ -73,7 +73,7 @@ public class Activator implements BundleActivator
         });
         server.addBean(list);
         server.setAttribute("org.eclipse.jetty.webapp.configuration", list);
-        list.setServerDefault(server);
+        Configuration.ClassList.setServerDefault(server);
 
         Dictionary serverProps = new Hashtable();
         //define the unique name of the server instance

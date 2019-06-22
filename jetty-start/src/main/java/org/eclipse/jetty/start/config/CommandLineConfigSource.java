@@ -48,7 +48,7 @@ public class CommandLineConfigSource implements ConfigSource
     private final Path homePath;
     private final Path basePath;
 
-    public CommandLineConfigSource(String rawargs[])
+    public CommandLineConfigSource(String[] rawargs)
     {
         this.args = new RawArgs();
         this.props = new Props();
@@ -154,16 +154,10 @@ public class CommandLineConfigSource implements ConfigSource
         CommandLineConfigSource other = (CommandLineConfigSource)obj;
         if (args == null)
         {
-            if (other.args != null)
-            {
-                return false;
-            }
+            return other.args == null;
         }
-        else if (!args.equals(other.args))
-        {
-            return false;
-        }
-        return true;
+        else
+            return args.equals(other.args);
     }
 
     @Override

@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 public class CachedContentFactory implements HttpContent.ContentFactory
 {
     private static final Logger LOG = Log.getLogger(CachedContentFactory.class);
-    private final static Map<CompressedContentFormat, CachedPrecompressedHttpContent> NO_PRECOMPRESSED = Collections.unmodifiableMap(Collections.emptyMap());
+    private static final Map<CompressedContentFormat, CachedPrecompressedHttpContent> NO_PRECOMPRESSED = Collections.unmodifiableMap(Collections.emptyMap());
 
     private final ConcurrentMap<String, CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;
@@ -241,8 +241,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     {
                         compressedContent = null;
                         Resource compressedResource = _factory.getResource(compressedPathInContext);
-                        if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
-                            && compressedResource.length() < resource.length())
+                        if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                            compressedResource.length() < resource.length())
                         {
                             compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);
                             CachedHttpContent added = _cache.putIfAbsent(compressedPathInContext, compressedContent);
@@ -287,8 +287,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
                 // Is there a precompressed resource?
                 Resource compressedResource = _factory.getResource(compressedPathInContext);
-                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
-                    && compressedResource.length() < resource.length())
+                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                    compressedResource.length() < resource.length())
                     compressedContents.put(format,
                         new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
             }

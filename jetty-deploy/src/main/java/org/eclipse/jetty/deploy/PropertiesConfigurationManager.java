@@ -51,7 +51,7 @@ public class PropertiesConfigurationManager implements ConfigurationManager
     }
 
     @ManagedAttribute("A file or URL of properties")
-    public void setFile(String resource) throws MalformedURLException, IOException
+    public void setFile(String resource) throws IOException
     {
         _properties = resource;
         _map.clear();
@@ -78,7 +78,7 @@ public class PropertiesConfigurationManager implements ConfigurationManager
         return new HashMap<>(_map);
     }
 
-    private void loadProperties(String resource) throws FileNotFoundException, IOException
+    private void loadProperties(String resource) throws IOException
     {
         Resource file = Resource.newResource(resource);
         if (file != null && file.exists())

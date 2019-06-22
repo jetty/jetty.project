@@ -39,12 +39,12 @@ public class B64Code
 {
     private static final char __pad = '=';
     private static final char[] __rfc1421alphabet =
-        {
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-            'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
-            'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-            'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
-        };
+    {
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+        'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+        'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
+    };
 
     private static final byte[] __rfc1421nibbles;
 
@@ -63,12 +63,12 @@ public class B64Code
     }
 
     private static final char[] __rfc4648urlAlphabet =
-        {
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-            'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
-            'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-            'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_'
-        };
+    {
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+        'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+        'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_'
+    };
 
     private static final byte[] __rfc4648urlNibbles;
 
@@ -100,7 +100,7 @@ public class B64Code
      */
     public static String encode(String s)
     {
-        // FIXME: no Jetty mainline code uses this anymore
+        // NOTE: no Jetty mainline code uses this anymore
         return encode(s, (Charset)null);
     }
 
@@ -115,7 +115,7 @@ public class B64Code
      */
     public static String encode(String s, String charEncoding)
     {
-        // FIXME: no Jetty mainline code uses this anymore
+        // NOTE: no Jetty mainline code uses this anymore
         byte[] bytes;
         if (charEncoding == null)
             bytes = s.getBytes(StandardCharsets.ISO_8859_1);
@@ -134,7 +134,7 @@ public class B64Code
      */
     public static String encode(String s, Charset charEncoding)
     {
-        // FIXME: no Jetty mainline code uses this anymore
+        // NOTE: no Jetty mainline code uses this anymore
         byte[] bytes = s.getBytes(charEncoding == null ? StandardCharsets.ISO_8859_1 : charEncoding);
         return new String(encode(bytes));
     }
@@ -149,16 +149,18 @@ public class B64Code
      */
     public static char[] encode(byte[] b)
     {
-        // FIXME: no Jetty mainline code uses this anymore
+        // NOTE: no Jetty mainline code uses this anymore
         if (b == null)
             return null;
 
         int bLen = b.length;
         int cLen = ((bLen + 2) / 3) * 4;
-        char c[] = new char[cLen];
+        char[] c = new char[cLen];
         int ci = 0;
         int bi = 0;
-        byte b0, b1, b2;
+        byte b0;
+        byte b1;
+        byte b2;
         int stop = (bLen / 3) * 3;
         while (bi < stop)
         {
@@ -211,7 +213,7 @@ public class B64Code
      */
     public static char[] encode(byte[] b, boolean rfc2045)
     {
-        // FIXME: no Jetty mainline code uses this anymore
+        // NOTE: no Jetty mainline code uses this anymore
         if (b == null)
             return null;
         if (!rfc2045)
@@ -220,10 +222,12 @@ public class B64Code
         int bLen = b.length;
         int cLen = ((bLen + 2) / 3) * 4;
         cLen += 2 + 2 * (cLen / 76);
-        char c[] = new char[cLen];
+        char[] c = new char[cLen];
         int ci = 0;
         int bi = 0;
-        byte b0, b1, b2;
+        byte b0;
+        byte b1;
+        byte b2;
         int stop = (bLen / 3) * 3;
         int l = 0;
         while (bi < stop)
@@ -353,11 +357,14 @@ public class B64Code
 
         // Create result array of exact required size.
         int rLen = ((li + 1) * 3) / 4;
-        byte r[] = new byte[rLen];
+        byte[] r = new byte[rLen];
         int ri = 0;
         int bi = 0;
         int stop = (rLen / 3) * 3;
-        byte b0, b1, b2, b3;
+        byte b0;
+        byte b1;
+        byte b2;
+        byte b3;
         try
         {
             while (ri < stop)
@@ -403,8 +410,7 @@ public class B64Code
         }
         catch (IndexOutOfBoundsException e)
         {
-            throw new IllegalArgumentException("char " + bi
-                + " was not B64 encoded");
+            throw new IllegalArgumentException("char " + bi + " was not B64 encoded");
         }
 
         return r;
@@ -439,7 +445,7 @@ public class B64Code
      * @throws IllegalArgumentException if the input is not a valid
      * B64 encoding.
      */
-    static public void decode(String encoded, ByteArrayOutputStream bout)
+    public static void decode(String encoded, ByteArrayOutputStream bout)
     {
         // FIXME: no Jetty mainline code uses this anymore
         if (encoded == null)
@@ -449,7 +455,7 @@ public class B64Code
             throw new IllegalArgumentException("No outputstream for decoded bytes");
 
         int ci = 0;
-        byte nibbles[] = new byte[4];
+        byte[] nibbles = new byte[4];
         int s = 0;
 
         while (ci < encoded.length())
@@ -508,7 +514,7 @@ public class B64Code
      * @throws IllegalArgumentException if the input is not a valid
      * B64 encoding.
      */
-    static public void decodeRFC4648URL(String encoded, ByteArrayOutputStream bout)
+    public static void decodeRFC4648URL(String encoded, ByteArrayOutputStream bout)
     {
         // FIXME: no Jetty mainline code uses this anymore
         if (encoded == null)
@@ -518,7 +524,7 @@ public class B64Code
             throw new IllegalArgumentException("No outputstream for decoded bytes");
 
         int ci = 0;
-        byte nibbles[] = new byte[4];
+        byte[] nibbles = new byte[4];
         int s = 0;
 
         while (ci < encoded.length())

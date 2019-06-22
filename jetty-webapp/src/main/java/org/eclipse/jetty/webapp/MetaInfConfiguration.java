@@ -71,7 +71,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public static final String METAINF_TLDS = "org.eclipse.jetty.tlds";
     public static final String METAINF_FRAGMENTS = FragmentConfiguration.FRAGMENT_RESOURCES;
     public static final String METAINF_RESOURCES = WebInfConfiguration.RESOURCE_DIRS;
-    public static final List<String> __allScanTypes = (List<String>)Arrays.asList(METAINF_TLDS, METAINF_RESOURCES, METAINF_FRAGMENTS);
+    public static final List<String> __allScanTypes = Arrays.asList(METAINF_TLDS, METAINF_RESOURCES, METAINF_FRAGMENTS);
 
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
@@ -365,7 +365,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug(jar + " tld cache updated");
-                Collection<URL> old = (Collection<URL>)cache.putIfAbsent(jar, tlds);
+                Collection<URL> old = cache.putIfAbsent(jar, tlds);
                 if (old != null)
                     tlds = old;
             }

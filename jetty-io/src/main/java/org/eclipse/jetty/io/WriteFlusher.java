@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  * flush and should organize for the {@link #completeWrite()} method to be called when a subsequent call to flush
  * should  be able to make more progress.
  */
-abstract public class WriteFlusher
+public abstract class WriteFlusher
 {
     private static final Logger LOG = Log.getLogger(WriteFlusher.class);
     private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
@@ -241,7 +241,7 @@ abstract public class WriteFlusher
      * Abstract call to be implemented by specific WriteFlushers. It should schedule a call to {@link #completeWrite()}
      * or {@link #onFail(Throwable)} when appropriate.
      */
-    abstract protected void onIncompleteFlush();
+    protected abstract void onIncompleteFlush();
 
     /**
      * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition

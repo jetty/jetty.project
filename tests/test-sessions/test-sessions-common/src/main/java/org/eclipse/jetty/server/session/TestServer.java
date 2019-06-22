@@ -72,7 +72,7 @@ public class TestServer
         ((DefaultSessionIdManager)_sessionIdManager).setServer(_server);
         _housekeeper = new HouseKeeper();
         _housekeeper.setIntervalSec(_scavengePeriod);
-        ((DefaultSessionIdManager)_sessionIdManager).setSessionHouseKeeper(_housekeeper);
+        _sessionIdManager.setSessionHouseKeeper(_housekeeper);
     }
 
     public SessionIdManager newSessionIdManager()

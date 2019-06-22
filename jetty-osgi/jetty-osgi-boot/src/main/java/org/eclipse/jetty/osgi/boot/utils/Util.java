@@ -50,9 +50,7 @@ public class Util
     {
         if (StringUtil.isBlank(managedServerName) || managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME))
         {
-            return bundleContext.createFilter("(&(objectclass=" + classname
-                + ")(|(managedServerName=" + managedServerName
-                + ")(!(managedServerName=*))))");
+            return bundleContext.createFilter("(&(objectclass=" + classname + ")(|(managedServerName=" + managedServerName + ")(!(managedServerName=*))))");
         }
         else
         {
@@ -75,8 +73,8 @@ public class Util
         if (name == null && altName == null)
             return null;
         if (name != null)
-            return (String)manifest.get(name);
-        return (String)manifest.get(altName);
+            return manifest.get(name);
+        return manifest.get(altName);
     }
 
     /**

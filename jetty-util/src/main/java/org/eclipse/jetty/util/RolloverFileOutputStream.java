@@ -48,10 +48,10 @@ public class RolloverFileOutputStream extends OutputStream
 {
     private static Timer __rollover;
 
-    final static String YYYY_MM_DD = "yyyy_mm_dd";
-    final static String ROLLOVER_FILE_DATE_FORMAT = "yyyy_MM_dd";
-    final static String ROLLOVER_FILE_BACKUP_FORMAT = "HHmmssSSS";
-    final static int ROLLOVER_FILE_RETAIN_DAYS = 31;
+    static final String YYYY_MM_DD = "yyyy_mm_dd";
+    static final String ROLLOVER_FILE_DATE_FORMAT = "yyyy_MM_dd";
+    static final String ROLLOVER_FILE_BACKUP_FORMAT = "HHmmssSSS";
+    static final int ROLLOVER_FILE_RETAIN_DAYS = 31;
 
     private OutputStream _out;
     private RollTask _rollTask;

@@ -413,7 +413,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         if (isRunning())
             throw new IllegalStateException(this.toString());
         if (listener instanceof AcceptListener)
-            addAcceptListener(AcceptListener.class.cast(listener));
+            addAcceptListener((AcceptListener)listener);
     }
 
     public void removeEventListener(EventListener listener)
@@ -421,7 +421,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         if (isRunning())
             throw new IllegalStateException(this.toString());
         if (listener instanceof AcceptListener)
-            removeAcceptListener(AcceptListener.class.cast(listener));
+            removeAcceptListener((AcceptListener)listener);
     }
 
     public void addAcceptListener(AcceptListener listener)

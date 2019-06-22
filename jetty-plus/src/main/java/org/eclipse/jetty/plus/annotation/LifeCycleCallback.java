@@ -161,13 +161,10 @@ public abstract class LifeCycleCallback
             return false;
         if (callback.getTarget() == null)
         {
-            if (getTarget() != null)
-                return false;
+            return getTarget() == null;
         }
-        else if (!callback.getTarget().equals(getTarget()))
-            return false;
-
-        return true;
+        else
+            return callback.getTarget().equals(getTarget());
     }
 
     public abstract void validate(Class<?> clazz, Method m);

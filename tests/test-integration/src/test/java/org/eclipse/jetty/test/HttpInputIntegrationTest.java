@@ -78,9 +78,9 @@ public class HttpInputIntegrationTest
         BLOCKING, ASYNC_DISPATCHED, ASYNC_OTHER_DISPATCHED, ASYNC_OTHER_WAIT
     }
 
-    public final static String EOF = "__EOF__";
-    public final static String DELAY = "__DELAY__";
-    public final static String ABORT = "__ABORT__";
+    public static final String EOF = "__EOF__";
+    public static final String DELAY = "__DELAY__";
+    public static final String ABORT = "__ABORT__";
 
     private static Server __server;
     private static HttpConfiguration __config;

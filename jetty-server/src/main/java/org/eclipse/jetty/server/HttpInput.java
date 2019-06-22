@@ -122,9 +122,9 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    private final static Logger LOG = Log.getLogger(HttpInput.class);
-    final static Content EOF_CONTENT = new EofContent("EOF");
-    final static Content EARLY_EOF_CONTENT = new EofContent("EARLY_EOF");
+    private static final Logger LOG = Log.getLogger(HttpInput.class);
+    static final Content EOF_CONTENT = new EofContent("EOF");
+    static final Content EARLY_EOF_CONTENT = new EofContent("EARLY_EOF");
 
     private final byte[] _oneByteBuffer = new byte[1];
     private Content _content;
@@ -286,8 +286,8 @@ public class HttpInput extends ServletInputStream implements Runnable
                 long period = System.nanoTime() - _firstByteTimeStamp;
                 if (period > 0)
                 {
-                    long minimum_data = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
-                    if (_contentArrived < minimum_data)
+                    long minimumData = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
+                    if (_contentArrived < minimumData)
                     {
                         BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
                             String.format("Request content data rate < %d B/s", minRequestDataRate));
@@ -913,11 +913,11 @@ public class HttpInput extends ServletInputStream implements Runnable
                     listener.onError(e);
                 }
             }
-            catch (Throwable e2)
+            catch (Throwable ex2)
             {
-                LOG.warn(e2.toString());
-                LOG.debug(e2);
-                throw new RuntimeIOException(e2);
+                LOG.warn(ex2.toString());
+                LOG.debug(ex2);
+                throw new RuntimeIOException(ex2);
             }
         }
     }
@@ -1030,7 +1030,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    protected static abstract class State
+    protected abstract static class State
     {
         public boolean blockForContent(HttpInput in) throws IOException
         {

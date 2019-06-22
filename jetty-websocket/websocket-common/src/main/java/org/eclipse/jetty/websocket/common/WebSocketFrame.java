@@ -108,7 +108,7 @@ public abstract class WebSocketFrame implements Frame
     protected byte finRsvOp;
     protected boolean masked = false;
 
-    protected byte mask[];
+    protected byte[] mask;
     /**
      * The payload data.
      * <p>
@@ -193,11 +193,7 @@ public abstract class WebSocketFrame implements Frame
         {
             return false;
         }
-        if (masked != other.masked)
-        {
-            return false;
-        }
-        return true;
+        return masked == other.masked;
     }
 
     @Override

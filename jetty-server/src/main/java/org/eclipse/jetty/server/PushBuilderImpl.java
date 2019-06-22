@@ -37,7 +37,7 @@ public class PushBuilderImpl implements PushBuilder
 {
     private static final Logger LOG = Log.getLogger(PushBuilderImpl.class);
 
-    private final static HttpField JettyPush = new HttpField("x-http2-push", "PushBuilder");
+    private static final HttpField JettyPush = new HttpField("x-http2-push", "PushBuilder");
 
     private final Request _request;
     private final HttpFields _fields;

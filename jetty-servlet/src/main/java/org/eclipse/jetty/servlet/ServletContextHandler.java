@@ -90,15 +90,13 @@ public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = Log.getLogger(ServletContextHandler.class);
 
-    public final static int SESSIONS = 1;
-    public final static int SECURITY = 2;
-    public final static int GZIP = 4;
-    public final static int NO_SESSIONS = 0;
-    public final static int NO_SECURITY = 0;
+    public static final int SESSIONS = 1;
+    public static final int SECURITY = 2;
+    public static final int GZIP = 4;
+    public static final int NO_SESSIONS = 0;
+    public static final int NO_SECURITY = 0;
 
     public interface ServletContainerInitializerCaller extends LifeCycle {}
-
-    ;
 
     protected final DecoratedObjectFactory _objFactory;
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
@@ -174,11 +172,11 @@ public class ServletContextHandler extends ContextHandler
     public void addEventListener(EventListener listener)
     {
         super.addEventListener(listener);
-        if ((listener instanceof HttpSessionActivationListener)
-            || (listener instanceof HttpSessionAttributeListener)
-            || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener)
-            || (listener instanceof HttpSessionIdListener))
+        if ((listener instanceof HttpSessionActivationListener) ||
+                (listener instanceof HttpSessionAttributeListener) ||
+                (listener instanceof HttpSessionBindingListener) ||
+                (listener instanceof HttpSessionListener) ||
+                (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler != null)
                 _sessionHandler.addEventListener(listener);

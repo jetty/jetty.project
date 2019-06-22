@@ -62,7 +62,8 @@ public class ArrayTrie<V> extends AbstractTrie<V>
      * (ISO-8859-1 or UTF8) to an index within a Trie row
      */
     private static final int[] __lookup =
-        { // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+    {
+          // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
           /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
           /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
           /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
@@ -71,7 +72,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
           /*5*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
           /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
           /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-          };
+    };
 
     /**
      * The Trie rows in a single array which allows a lookup of row,character
@@ -249,7 +250,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     return null;
             }
         }
-        return (V)_value[t];
+        return _value[t];
     }
 
     @Override
@@ -305,10 +306,10 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 V best = getBest(t, s, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
-                return (V)_value[t];
+                return _value[t];
             }
         }
-        return (V)_value[t];
+        return _value[t];
     }
 
     private V getBest(int t, byte[] b, int offset, int len)
@@ -346,7 +347,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 break;
             }
         }
-        return (V)_value[t];
+        return _value[t];
     }
 
     private V getBest(int t, ByteBuffer b, int offset, int len)
@@ -385,7 +386,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 break;
             }
         }
-        return (V)_value[t];
+        return _value[t];
     }
 
     @Override

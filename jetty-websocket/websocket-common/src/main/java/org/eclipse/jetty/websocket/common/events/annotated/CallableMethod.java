@@ -62,8 +62,7 @@ public class CallableMethod
 
         if (args.length < paramTypes.length)
         {
-            throw new IllegalArgumentException("Call arguments length [" + args.length + "] must always be greater than or equal to captured args length ["
-                + paramTypes.length + "]");
+            throw new IllegalArgumentException("Call arguments length [" + args.length + "] must always be greater than or equal to captured args length [" + paramTypes.length + "]");
         }
 
         try
@@ -83,7 +82,7 @@ public class CallableMethod
 
         while (ret instanceof InvocationTargetException)
         {
-            ret = ((InvocationTargetException)ret).getCause();
+            ret = ret.getCause();
         }
 
         if (ret instanceof RuntimeException)

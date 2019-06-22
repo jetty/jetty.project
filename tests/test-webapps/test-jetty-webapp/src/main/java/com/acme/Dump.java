@@ -128,7 +128,7 @@ public class Dump extends HttpServlet
         final String chars = request.getParameter("chars");
         final String block = request.getParameter("block");
         final String dribble = request.getParameter("dribble");
-        final boolean flush = request.getParameter("flush") != null ? Boolean.parseBoolean(request.getParameter("flush")) : false;
+        final boolean flush = request.getParameter("flush") != null && Boolean.parseBoolean(request.getParameter("flush"));
 
         if (request.getPathInfo() != null && request.getPathInfo().toLowerCase(Locale.ENGLISH).indexOf("script") != -1)
         {
@@ -440,7 +440,7 @@ public class Dump extends HttpServlet
             pout.write("<table width=\"95%\">");
             pout.write("<tr>\n");
             pout.write("<th align=\"right\">getContentLength:&nbsp;</th>");
-            pout.write("<td>" + Integer.toString(request.getContentLength()) + "</td>");
+            pout.write("<td>" + request.getContentLength() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getContentType:&nbsp;</th>");
             pout.write("<td>" + notag(request.getContentType()) + "</td>");
@@ -461,7 +461,7 @@ public class Dump extends HttpServlet
             pout.write("<td>" + request.getLocalAddr() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getLocalPort:&nbsp;</th>");
-            pout.write("<td>" + Integer.toString(request.getLocalPort()) + "</td>");
+            pout.write("<td>" + request.getLocalPort() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getMethod:&nbsp;</th>");
             pout.write("<td>" + notag(request.getMethod()) + "</td>");
@@ -509,7 +509,7 @@ public class Dump extends HttpServlet
             pout.write("<td>" + notag(request.getServletPath()) + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getServerPort:&nbsp;</th>");
-            pout.write("<td>" + Integer.toString(request.getServerPort()) + "</td>");
+            pout.write("<td>" + request.getServerPort() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getUserPrincipal:&nbsp;</th>");
             pout.write("<td>" + request.getUserPrincipal() + "</td>");
@@ -543,12 +543,12 @@ public class Dump extends HttpServlet
             String name;
             while (h.hasMoreElements())
             {
-                name = (String)h.nextElement();
+                name = h.nextElement();
 
                 Enumeration<String> h2 = request.getHeaders(name);
                 while (h2.hasMoreElements())
                 {
-                    String hv = (String)h2.nextElement();
+                    String hv = h2.nextElement();
                     pout.write("</tr><tr>\n");
                     pout.write("<th align=\"right\">" + notag(name) + ":&nbsp;</th>");
                     pout.write("<td>" + notag(hv) + "</td>");
@@ -560,7 +560,7 @@ public class Dump extends HttpServlet
             h = request.getParameterNames();
             while (h.hasMoreElements())
             {
-                name = (String)h.nextElement();
+                name = h.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">" + notag(name) + ":&nbsp;</th>");
                 pout.write("<td>" + notag(request.getParameter(name)) + "</td>");
@@ -648,7 +648,7 @@ public class Dump extends HttpServlet
             Enumeration<String> a = request.getAttributeNames();
             while (a.hasMoreElements())
             {
-                name = (String)a.nextElement();
+                name = a.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\" valign=\"top\">" + name.replace(".", ZWSP + ".") + ":&nbsp;</th>");
                 Object value = request.getAttribute(name);
@@ -667,7 +667,7 @@ public class Dump extends HttpServlet
             a = getInitParameterNames();
             while (a.hasMoreElements())
             {
-                name = (String)a.nextElement();
+                name = a.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">" + name + ":&nbsp;</th>");
                 pout.write("<td>" + toString(getInitParameter(name)) + "</td>");
@@ -678,7 +678,7 @@ public class Dump extends HttpServlet
             a = getServletContext().getInitParameterNames();
             while (a.hasMoreElements())
             {
-                name = (String)a.nextElement();
+                name = a.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\" valign=\"top\">" + name.replace(".", ZWSP + ".") + ":&nbsp;</th>");
                 pout.write("<td>" + toString(getServletContext().getInitParameter(name)) + "</td>");
@@ -689,7 +689,7 @@ public class Dump extends HttpServlet
             a = getServletContext().getAttributeNames();
             while (a.hasMoreElements())
             {
-                name = (String)a.nextElement();
+                name = a.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\" valign=\"top\">" + name.replace(".", ZWSP + ".") + ":&nbsp;</th>");
                 pout.write("<td>" + "<pre>" + toString(getServletContext().getAttribute(name)) + "</pre>" + "</td>");

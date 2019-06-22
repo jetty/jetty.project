@@ -43,55 +43,55 @@ public interface Connector extends LifeCycle, Container, Graceful
     /**
      * @return the {@link Server} instance associated with this {@link Connector}
      */
-    public Server getServer();
+    Server getServer();
 
     /**
      * @return the {@link Executor} used to submit tasks
      */
-    public Executor getExecutor();
+    Executor getExecutor();
 
     /**
      * @return the {@link Scheduler} used to schedule tasks
      */
-    public Scheduler getScheduler();
+    Scheduler getScheduler();
 
     /**
      * @return the {@link ByteBufferPool} to acquire buffers from and release buffers to
      */
-    public ByteBufferPool getByteBufferPool();
+    ByteBufferPool getByteBufferPool();
 
     /**
      * @param nextProtocol the next protocol
      * @return the {@link ConnectionFactory} associated with the protocol name
      */
-    public ConnectionFactory getConnectionFactory(String nextProtocol);
+    ConnectionFactory getConnectionFactory(String nextProtocol);
 
-    public <T> T getConnectionFactory(Class<T> factoryType);
+    <T> T getConnectionFactory(Class<T> factoryType);
 
     /**
      * @return the default {@link ConnectionFactory} associated with the default protocol name
      */
-    public ConnectionFactory getDefaultConnectionFactory();
+    ConnectionFactory getDefaultConnectionFactory();
 
-    public Collection<ConnectionFactory> getConnectionFactories();
+    Collection<ConnectionFactory> getConnectionFactories();
 
-    public List<String> getProtocols();
+    List<String> getProtocols();
 
     /**
      * @return the max idle timeout for connections in milliseconds
      */
     @ManagedAttribute("maximum time a connection can be idle before being closed (in ms)")
-    public long getIdleTimeout();
+    long getIdleTimeout();
 
     /**
      * @return the underlying socket, channel, buffer etc. for the connector.
      */
-    public Object getTransport();
+    Object getTransport();
 
     /**
      * @return immutable collection of connected endpoints
      */
-    public Collection<EndPoint> getConnectedEndPoints();
+    Collection<EndPoint> getConnectedEndPoints();
 
     /**
      * Get the connector name if set.
@@ -101,5 +101,5 @@ public interface Connector extends LifeCycle, Container, Graceful
      *
      * @return The connector name or null.
      */
-    public String getName();
+    String getName();
 }

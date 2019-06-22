@@ -58,9 +58,9 @@ public class NamingDump implements Dumpable
             else
                 Dumpable.dumpObjects(out, indent, context);
         }
-        catch (Throwable th)
+        catch (Throwable cause)
         {
-            throw new RuntimeException(th);
+            throw new RuntimeException(cause);
         }
         finally
         {

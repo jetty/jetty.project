@@ -160,33 +160,33 @@ public class DigestAuthentication extends AbstractAuthentication
             if (digester == null)
                 return;
 
-            String A1 = user + ":" + realm + ":" + password;
-            String hashA1 = toHexString(digester.digest(A1.getBytes(StandardCharsets.ISO_8859_1)));
+            String a1 = user + ":" + realm + ":" + password;
+            String hashA1 = toHexString(digester.digest(a1.getBytes(StandardCharsets.ISO_8859_1)));
 
             String query = request.getQuery();
             String path = request.getPath();
             String uri = (query == null) ? path : path + "?" + query;
-            String A2 = request.getMethod() + ":" + uri;
+            String a2 = request.getMethod() + ":" + uri;
             if ("auth-int".equals(qop))
-                A2 += ":" + toHexString(digester.digest(content));
-            String hashA2 = toHexString(digester.digest(A2.getBytes(StandardCharsets.ISO_8859_1)));
+                a2 += ":" + toHexString(digester.digest(content));
+            String hashA2 = toHexString(digester.digest(a2.getBytes(StandardCharsets.ISO_8859_1)));
 
             String nonceCount;
             String clientNonce;
-            String A3;
+            String a3;
             if (qop != null)
             {
                 nonceCount = nextNonceCount();
                 clientNonce = newClientNonce();
-                A3 = hashA1 + ":" + nonce + ":" + nonceCount + ":" + clientNonce + ":" + qop + ":" + hashA2;
+                a3 = hashA1 + ":" + nonce + ":" + nonceCount + ":" + clientNonce + ":" + qop + ":" + hashA2;
             }
             else
             {
                 nonceCount = null;
                 clientNonce = null;
-                A3 = hashA1 + ":" + nonce + ":" + hashA2;
+                a3 = hashA1 + ":" + nonce + ":" + hashA2;
             }
-            String hashA3 = toHexString(digester.digest(A3.getBytes(StandardCharsets.ISO_8859_1)));
+            String hashA3 = toHexString(digester.digest(a3.getBytes(StandardCharsets.ISO_8859_1)));
 
             StringBuilder value = new StringBuilder("Digest");
             value.append(" username=\"").append(user).append("\"");

@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.annotation.Name;
  */
 public interface Configuration
 {
-    public final static String ATTR = "org.eclipse.jetty.webapp.configuration";
+    String ATTR = "org.eclipse.jetty.webapp.configuration";
 
     /**
      * Set up for configuration.
@@ -43,7 +43,7 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to pre configure
      */
-    public void preConfigure(WebAppContext context) throws Exception;
+    void preConfigure(WebAppContext context) throws Exception;
 
     /**
      * Configure WebApp.
@@ -54,7 +54,7 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to configure
      */
-    public void configure(WebAppContext context) throws Exception;
+    void configure(WebAppContext context) throws Exception;
 
     /**
      * Clear down after configuration.
@@ -62,7 +62,7 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to post configure
      */
-    public void postConfigure(WebAppContext context) throws Exception;
+    void postConfigure(WebAppContext context) throws Exception;
 
     /**
      * DeConfigure WebApp.
@@ -72,7 +72,7 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to deconfigure
      */
-    public void deconfigure(WebAppContext context) throws Exception;
+    void deconfigure(WebAppContext context) throws Exception;
 
     /**
      * Destroy WebApp.
@@ -82,7 +82,7 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to destroy
      */
-    public void destroy(WebAppContext context) throws Exception;
+    void destroy(WebAppContext context) throws Exception;
 
     /**
      * Clone configuration instance.
@@ -94,9 +94,9 @@ public interface Configuration
      * @param context The context to configure
      * @throws Exception if unable to clone
      */
-    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception;
+    void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception;
 
-    public class ClassList extends ArrayList<String>
+    class ClassList extends ArrayList<String>
     {
 
         /**

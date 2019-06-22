@@ -39,7 +39,7 @@ import org.infinispan.commons.api.BasicCache;
 @ManagedObject
 public class InfinispanSessionDataStore extends AbstractSessionDataStore
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     /**
      * Clustered cache of sessions
@@ -240,9 +240,9 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         //scavenges the session before this timeout occurs, the session will be removed.
         //NOTE: that no session listeners can be called for this.
         if (data.getMaxInactiveMs() > 0 && getInfinispanIdleTimeoutSec() > 0)
-            _cache.put(getCacheKey(id), (InfinispanSessionData)data, -1, TimeUnit.MILLISECONDS, getInfinispanIdleTimeoutSec(), TimeUnit.SECONDS);
+            _cache.put(getCacheKey(id), data, -1, TimeUnit.MILLISECONDS, getInfinispanIdleTimeoutSec(), TimeUnit.SECONDS);
         else
-            _cache.put(getCacheKey(id), (InfinispanSessionData)data);
+            _cache.put(getCacheKey(id), data);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Session {} saved to infinispan, expires {} ", id, data.getExpiry());

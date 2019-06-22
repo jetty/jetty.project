@@ -27,6 +27,9 @@ import javax.naming.spi.ObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+// This is the required name for JNDI
+// @checkstyle-disable-check : TypeNameCheck
+
 /**
  * javaURLContextFactory
  * <p>
@@ -98,4 +101,4 @@ public class javaURLContextFactory implements ObjectFactory
             LOG.debug(">>> No idea what to do, so return a new root context anyway");
         return new javaRootURLContext(env);
     }
-};
+}

@@ -68,7 +68,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     /**
      * Array of MessageHandlerWrappers, indexed by {@link MessageType#ordinal()}
      */
-    private final MessageHandlerWrapper wrappers[];
+    private final MessageHandlerWrapper[] wrappers;
     private Set<MessageHandler> messageHandlerSet;
     private List<Extension> negotiatedExtensions;
     private Map<String, String> pathParameters = new HashMap<>();

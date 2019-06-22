@@ -561,7 +561,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     public void createServletContainerInitializerAnnotationHandlers(WebAppContext context, List<ServletContainerInitializer> scis)
-        throws Exception
     {
         if (scis == null || scis.isEmpty())
             return; // nothing to do
@@ -636,7 +635,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     public Resource getJarFor(ServletContainerInitializer service)
-        throws MalformedURLException, IOException
+        throws IOException
     {
         URI uri = TypeUtil.getLocationOfClass(service.getClass());
         if (uri == null)
@@ -652,10 +651,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @param sci the servlet container initializer
      * @param sciResource the resource for the servlet container initializer
      * @return true if excluded
-     * @throws Exception if unable to determine exclusion
      */
     public boolean isFromExcludedJar(WebAppContext context, ServletContainerInitializer sci, Resource sciResource)
-        throws Exception
     {
         if (sci == null)
             throw new IllegalArgumentException("ServletContainerInitializer null");
@@ -848,8 +845,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
             //check containerInitializerOrdering doesn't exclude it
             String name = sci.getClass().getName();
-            if (initializerOrdering != null
-                && (!initializerOrdering.hasWildcard() && initializerOrdering.getIndexOf(name) < 0))
+            if (initializerOrdering != null &&
+                (!initializerOrdering.hasWildcard() && initializerOrdering.getIndexOf(name) < 0))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} is excluded by ordering", sci);

@@ -60,11 +60,9 @@ public final class Node
         Node other = (Node)obj;
         if (_name == null)
         {
-            if (other._name != null)
-                return false;
+            return other._name == null;
         }
-        else if (!_name.equals(other._name))
-            return false;
-        return true;
+        else
+            return _name.equals(other._name);
     }
 }

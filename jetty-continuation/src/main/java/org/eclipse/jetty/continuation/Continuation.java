@@ -142,7 +142,7 @@ import javax.servlet.ServletResponseWrapper;
 @Deprecated
 public interface Continuation
 {
-    public final static String ATTRIBUTE = "org.eclipse.jetty.continuation";
+    String ATTRIBUTE = "org.eclipse.jetty.continuation";
 
     /**
      * Set the continuation timeout.
@@ -359,7 +359,7 @@ public interface Continuation
      * @param name the attribute name
      * @param attribute the attribute value
      */
-    public void setAttribute(String name, Object attribute);
+    void setAttribute(String name, Object attribute);
 
     /**
      * Get a request attribute.
@@ -370,7 +370,7 @@ public interface Continuation
      * @param name the attribute name
      * @return the attribute value
      */
-    public Object getAttribute(String name);
+    Object getAttribute(String name);
 
     /**
      * Remove a request attribute.
@@ -380,7 +380,7 @@ public interface Continuation
      *
      * @param name the attribute name
      */
-    public void removeAttribute(String name);
+    void removeAttribute(String name);
 
     /**
      * Undispatch the request.
@@ -398,5 +398,5 @@ public interface Continuation
      * @throws ContinuationThrowable thrown if the request is suspended. The instance of the
      * exception may be reused on subsequent calls, so the stack frame may not be accurate.
      */
-    public void undispatch() throws ContinuationThrowable;
+    void undispatch() throws ContinuationThrowable;
 }

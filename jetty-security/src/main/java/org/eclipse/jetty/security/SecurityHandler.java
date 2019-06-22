@@ -569,18 +569,18 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (user == null)
             return;
 
-        LoginService login_service = getLoginService();
-        if (login_service != null)
+        LoginService loginService = getLoginService();
+        if (loginService != null)
         {
-            login_service.logout(user.getUserIdentity());
+            loginService.logout(user.getUserIdentity());
         }
 
-        IdentityService identity_service = getIdentityService();
-        if (identity_service != null)
+        IdentityService identityService = getIdentityService();
+        if (identityService != null)
         {
             // TODO recover previous from threadlocal (or similar)
             Object previous = null;
-            identity_service.disassociate(previous);
+            identityService.disassociate(previous);
         }
     }
 
@@ -588,7 +588,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     protected abstract boolean checkUserDataPermissions(String pathInContext, Request request, Response response, RoleInfo constraintInfo) throws IOException;
 
-    protected abstract boolean isAuthMandatory(Request baseRequest, Response base_response, Object constraintInfo);
+    protected abstract boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo);
 
     protected abstract boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo,
                                                            UserIdentity userIdentity) throws IOException;

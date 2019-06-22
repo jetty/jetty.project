@@ -66,11 +66,11 @@ public class DeferredAuthentication implements Authentication.Deferred
             Authentication authentication = _authenticator.validateRequest(request, __deferredResponse, true);
             if (authentication != null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
             {
-                LoginService login_service = _authenticator.getLoginService();
-                IdentityService identity_service = login_service.getIdentityService();
+                LoginService loginService = _authenticator.getLoginService();
+                IdentityService identityService = loginService.getIdentityService();
 
-                if (identity_service != null)
-                    _previousAssociation = identity_service.associate(((Authentication.User)authentication).getUserIdentity());
+                if (identityService != null)
+                    _previousAssociation = identityService.associate(((Authentication.User)authentication).getUserIdentity());
 
                 return authentication;
             }
@@ -91,12 +91,12 @@ public class DeferredAuthentication implements Authentication.Deferred
     {
         try
         {
-            LoginService login_service = _authenticator.getLoginService();
-            IdentityService identity_service = login_service.getIdentityService();
+            LoginService loginService = _authenticator.getLoginService();
+            IdentityService identityService = loginService.getIdentityService();
 
             Authentication authentication = _authenticator.validateRequest(request, response, true);
-            if (authentication instanceof Authentication.User && identity_service != null)
-                _previousAssociation = identity_service.associate(((Authentication.User)authentication).getUserIdentity());
+            if (authentication instanceof Authentication.User && identityService != null)
+                _previousAssociation = identityService.associate(((Authentication.User)authentication).getUserIdentity());
             return authentication;
         }
         catch (ServerAuthException e)
@@ -118,10 +118,10 @@ public class DeferredAuthentication implements Authentication.Deferred
         UserIdentity identity = _authenticator.login(username, password, request);
         if (identity != null)
         {
-            IdentityService identity_service = _authenticator.getLoginService().getIdentityService();
+            IdentityService identityService = _authenticator.getLoginService().getIdentityService();
             UserAuthentication authentication = new UserAuthentication("API", identity);
-            if (identity_service != null)
-                _previousAssociation = identity_service.associate(identity);
+            if (identityService != null)
+                _previousAssociation = identityService.associate(identity);
             return authentication;
         }
         return null;
@@ -136,8 +136,8 @@ public class DeferredAuthentication implements Authentication.Deferred
             security.logout(null);
             if (_authenticator instanceof LoginAuthenticator)
             {
-                ((LoginAuthenticator)_authenticator).logout(request);
-                return new LoggedOutAuthentication((LoginAuthenticator)_authenticator);
+                _authenticator.logout(request);
+                return new LoggedOutAuthentication(_authenticator);
             }
         }
 
@@ -158,7 +158,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         return response == __deferredResponse;
     }
 
-    final static HttpServletResponse __deferredResponse = new HttpServletResponse()
+    static final HttpServletResponse __deferredResponse = new HttpServletResponse()
     {
         @Override
         public void addCookie(Cookie cookie)

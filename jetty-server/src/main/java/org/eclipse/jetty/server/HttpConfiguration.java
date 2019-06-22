@@ -95,7 +95,7 @@ public class HttpConfiguration implements Dumpable
      */
     public interface Customizer
     {
-        public void customize(Connector connector, HttpConfiguration channelConfig, Request request);
+        void customize(Connector connector, HttpConfiguration channelConfig, Request request);
     }
 
     public interface ConnectionFactory

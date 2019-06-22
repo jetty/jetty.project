@@ -43,14 +43,14 @@ import org.eclipse.jetty.util.log.Logger;
 public class HpackEncoder
 {
     public static final Logger LOG = Log.getLogger(HpackEncoder.class);
-    private final static HttpField[] __status = new HttpField[599];
-    final static EnumSet<HttpHeader> __DO_NOT_HUFFMAN =
+    private static final HttpField[] __status = new HttpField[599];
+    static final EnumSet<HttpHeader> __DO_NOT_HUFFMAN =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
             HttpHeader.CONTENT_MD5,
             HttpHeader.PROXY_AUTHENTICATE,
             HttpHeader.PROXY_AUTHORIZATION);
-    final static EnumSet<HttpHeader> __DO_NOT_INDEX =
+    static final EnumSet<HttpHeader> __DO_NOT_INDEX =
         EnumSet.of(
             // HttpHeader.C_PATH,  // TODO more data needed
             // HttpHeader.DATE,    // TODO more data needed
@@ -70,7 +70,7 @@ public class HpackEncoder
             HttpHeader.LAST_MODIFIED,
             HttpHeader.SET_COOKIE,
             HttpHeader.SET_COOKIE2);
-    final static EnumSet<HttpHeader> __NEVER_INDEX =
+    static final EnumSet<HttpHeader> __NEVER_INDEX =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
             HttpHeader.SET_COOKIE,
@@ -231,8 +231,8 @@ public class HpackEncoder
         if (field.getValue() == null)
             field = new HttpField(field.getHeader(), field.getName(), "");
 
-        int field_size = field.getName().length() + field.getValue().length();
-        _headerListSize += field_size + 32;
+        int fieldSize = field.getName().length() + field.getValue().length();
+        _headerListSize += fieldSize + 32;
 
         final int p = _debug ? buffer.position() : -1;
 
@@ -323,18 +323,18 @@ public class HpackEncoder
                 {
                     // Non indexed field
                     indexed = false;
-                    boolean never_index = __NEVER_INDEX.contains(header);
+                    boolean neverIndex = __NEVER_INDEX.contains(header);
                     boolean huffman = !__DO_NOT_HUFFMAN.contains(header);
-                    encodeName(buffer, never_index ? (byte)0x10 : (byte)0x00, 4, header.asString(), name);
+                    encodeName(buffer, neverIndex ? (byte)0x10 : (byte)0x00, 4, header.asString(), name);
                     encodeValue(buffer, huffman, field.getValue());
 
                     if (_debug)
                         encoding = "Lit" +
                             ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(4, _context.index(name))))) +
                             (huffman ? "HuffV" : "LitV") +
-                            (never_index ? "!!Idx" : "!Idx");
+                            (neverIndex ? "!!Idx" : "!Idx");
                 }
-                else if (field_size >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && field.getValue().length() > 2)
+                else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && field.getValue().length() > 2)
                 {
                     // Non indexed if field too large or a content length for 3 digits or more
                     indexed = false;

@@ -44,7 +44,7 @@ public class AppLifeCycle extends Graph
 
     private static final String ALL_NODES = "*";
 
-    public static interface Binding
+    public interface Binding
     {
         /**
          * Get a list of targets that this implementation should bind to.

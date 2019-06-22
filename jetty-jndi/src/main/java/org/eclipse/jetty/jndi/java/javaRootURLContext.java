@@ -32,6 +32,9 @@ import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+// This is the required name for JNDI
+// @checkstyle-disable-check : TypeNameCheck
+
 /**
  * javaRootURLContext
  * <p>
@@ -63,7 +66,7 @@ public class javaRootURLContext implements Context
             Reference ref = new Reference("javax.naming.Context",
                 parserAddr,
                 ContextFactory.class.getName(),
-                (String)null);
+                null);
 
             // bind special object factory at comp
             __nameRoot.bind("comp", ref);

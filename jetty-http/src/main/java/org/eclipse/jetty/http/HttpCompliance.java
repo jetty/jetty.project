@@ -166,7 +166,7 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
         return sections;
     }
 
-    private final static Map<HttpComplianceSection, HttpCompliance> __required = new HashMap<>();
+    private static final Map<HttpComplianceSection, HttpCompliance> __required = new HashMap<>();
 
     static
     {
@@ -194,7 +194,7 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
 
     private final EnumSet<HttpComplianceSection> _sections;
 
-    private HttpCompliance(EnumSet<HttpComplianceSection> sections)
+    HttpCompliance(EnumSet<HttpComplianceSection> sections)
     {
         _sections = sections;
     }

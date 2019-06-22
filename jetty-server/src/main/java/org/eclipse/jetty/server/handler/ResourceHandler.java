@@ -74,7 +74,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
             {
             }
         });
-        _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Arrays.asList(new String[]{".svgz"})));
+        _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Arrays.asList(".svgz")));
     }
 
     @Override
@@ -85,10 +85,10 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
         for (int i = 0; i < _welcomes.length; i++)
         {
-            String welcome_in_context = URIUtil.addPaths(pathInContext, _welcomes[i]);
-            Resource welcome = getResource(welcome_in_context);
+            String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
+            Resource welcome = getResource(welcomeInContext);
             if (welcome != null && welcome.exists())
-                return welcome_in_context;
+                return welcomeInContext;
         }
         // not found
         return null;

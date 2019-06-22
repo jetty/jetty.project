@@ -34,7 +34,7 @@ public interface PayloadProcessor
      * @param payload the payload to process
      * @throws BadPayloadException the exception when the payload fails to validate properly
      */
-    public void process(ByteBuffer payload);
+    void process(ByteBuffer payload);
 
-    public void reset(Frame frame);
+    void reset(Frame frame);
 }

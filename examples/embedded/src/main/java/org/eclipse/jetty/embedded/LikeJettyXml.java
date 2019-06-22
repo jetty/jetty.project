@@ -71,10 +71,10 @@ public class LikeJettyXml
         File baseDir = new File(basePath);
 
         // Configure jetty.home and jetty.base system properties
-        String jetty_home = homeDir.getAbsolutePath();
-        String jetty_base = baseDir.getAbsolutePath();
-        System.setProperty("jetty.home", jetty_home);
-        System.setProperty("jetty.base", jetty_base);
+        String jettyHome = homeDir.getAbsolutePath();
+        String jettyBase = baseDir.getAbsolutePath();
+        System.setProperty("jetty.home", jettyHome);
+        System.setProperty("jetty.base", jettyBase);
 
         // === jetty.xml ===
         // Setup Threadpool
@@ -88,14 +88,14 @@ public class LikeJettyXml
         server.addBean(new ScheduledExecutorScheduler(null, false));
 
         // HTTP Configuration
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(8443);
-        http_config.setOutputBufferSize(32768);
-        http_config.setRequestHeaderSize(8192);
-        http_config.setResponseHeaderSize(8192);
-        http_config.setSendServerVersion(true);
-        http_config.setSendDateHeader(false);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecureScheme("https");
+        httpConfig.setSecurePort(8443);
+        httpConfig.setOutputBufferSize(32768);
+        httpConfig.setRequestHeaderSize(8192);
+        httpConfig.setResponseHeaderSize(8192);
+        httpConfig.setSendServerVersion(true);
+        httpConfig.setSendDateHeader(false);
         // httpConfig.addCustomizer(new ForwardedRequestCustomizer());
 
         // Handler Structure
@@ -116,7 +116,7 @@ public class LikeJettyXml
 
         // === jetty-http.xml ===
         ServerConnector http = new ServerConnector(server,
-            new HttpConnectionFactory(http_config));
+            new HttpConnectionFactory(httpConfig));
         http.setPort(8080);
         http.setIdleTimeout(30000);
         server.addConnector(http);
@@ -124,10 +124,10 @@ public class LikeJettyXml
         // === jetty-https.xml ===
         // SSL Context Factory
         SslContextFactory sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(jetty_home + "/../../../jetty-server/src/test/config/etc/keystore");
+        sslContextFactory.setKeyStorePath(jettyHome + "/../../../jetty-server/src/test/config/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        sslContextFactory.setTrustStorePath(jetty_home + "/../../../jetty-server/src/test/config/etc/keystore");
+        sslContextFactory.setTrustStorePath(jettyHome + "/../../../jetty-server/src/test/config/etc/keystore");
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA",
             "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
@@ -137,13 +137,13 @@ public class LikeJettyXml
             "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
 
         // SSL HTTP Configuration
-        HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
         // SSL Connector
         ServerConnector sslConnector = new ServerConnector(server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-            new HttpConnectionFactory(https_config));
+            new HttpConnectionFactory(httpsConfig));
         sslConnector.setPort(8443);
         server.addConnector(sslConnector);
 
@@ -157,14 +157,14 @@ public class LikeJettyXml
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
             ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
 
-        WebAppProvider webapp_provider = new WebAppProvider();
-        webapp_provider.setMonitoredDirName(jetty_base + "/webapps");
-        webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
-        webapp_provider.setScanInterval(1);
-        webapp_provider.setExtractWars(true);
-        webapp_provider.setConfigurationManager(new PropertiesConfigurationManager());
+        WebAppProvider webAppProvider = new WebAppProvider();
+        webAppProvider.setMonitoredDirName(jettyBase + "/webapps");
+        webAppProvider.setDefaultsDescriptor(jettyHome + "/etc/webdefault.xml");
+        webAppProvider.setScanInterval(1);
+        webAppProvider.setExtractWars(true);
+        webAppProvider.setConfigurationManager(new PropertiesConfigurationManager());
 
-        deployer.addAppProvider(webapp_provider);
+        deployer.addAppProvider(webAppProvider);
         server.addBean(deployer);
 
         // === setup jetty plus ==
@@ -192,7 +192,7 @@ public class LikeJettyXml
         rewrite.addRule(new ValidUrlRule());
 
         // === jetty-requestlog.xml ===
-        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(jetty_home + "/logs/yyyy_mm_dd.request.log");
+        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(jettyHome + "/logs/yyyy_mm_dd.request.log");
         CustomRequestLog requestLog = new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT + " \"%C\"");
         logWriter.setFilenameDateFormat("yyyy_MM_dd");
         logWriter.setRetainDays(90);
@@ -211,7 +211,7 @@ public class LikeJettyXml
         // === test-realm.xml ===
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jetty_base + "/etc/realm.properties");
+        login.setConfig(jettyBase + "/etc/realm.properties");
         login.setHotReload(false);
         server.addBean(login);
 

@@ -198,8 +198,6 @@ public class BufferedResponseHandler extends HandlerWrapper
             _aggregate = null;
         }
 
-        ;
-
         @Override
         public void write(ByteBuffer content, boolean last, Callback callback)
         {

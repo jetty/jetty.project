@@ -334,6 +334,8 @@ public class HttpClient extends ContainerLifeCycle
         return decoderFactories;
     }
 
+    // @checkstyle-disable-check : MethodNameCheck
+
     /**
      * Performs a GET request to the specified URI.
      *

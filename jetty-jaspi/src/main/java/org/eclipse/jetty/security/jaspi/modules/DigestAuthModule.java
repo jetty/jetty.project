@@ -111,6 +111,7 @@ public class DigestAuthModule extends BaseAuthModule
                             break;
                         case ',':
                             name = null;
+                            break;
                         case ' ':
                             break;
 
@@ -159,13 +160,10 @@ public class DigestAuthModule extends BaseAuthModule
             String domain = request.getContextPath();
             if (domain == null)
                 domain = "/";
-            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + realmName
-                + "\", domain=\""
-                + domain
-                + "\", nonce=\""
-                + newNonce(timestamp)
-                + "\", algorithm=MD5, qop=\"auth\""
-                + (useStale ? (" stale=" + stale) : ""));
+            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + realmName +
+                                                                           "\", domain=\"" + domain +
+                                                                           "\", nonce=\"" + newNonce(timestamp) +
+                                                                           "\", algorithm=MD5, qop=\"auth\"" + (useStale ? (" stale=" + stale) : ""));
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;
         }

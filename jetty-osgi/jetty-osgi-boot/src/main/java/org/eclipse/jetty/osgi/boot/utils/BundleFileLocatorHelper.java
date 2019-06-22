@@ -37,12 +37,12 @@ public interface BundleFileLocatorHelper
     /**
      * The name of the custom implementation for this interface in a fragment.
      */
-    public static final String CLASS_NAME = "org.eclipse.jetty.osgi.boot.utils.FileLocatorHelperImpl";
+    String CLASS_NAME = "org.eclipse.jetty.osgi.boot.utils.FileLocatorHelperImpl";
 
     /**
      * The default instance supports felix and equinox
      */
-    public static BundleFileLocatorHelper DEFAULT = new DefaultFileLocatorHelper();
+    BundleFileLocatorHelper DEFAULT = new DefaultFileLocatorHelper();
 
     /**
      * Works with equinox, felix, nuxeo and probably more. Not exactly in the
@@ -55,7 +55,7 @@ public interface BundleFileLocatorHelper
      * @return Its installation location as a file.
      * @throws Exception if unable to get the install location
      */
-    public File getBundleInstallLocation(Bundle bundle) throws Exception;
+    File getBundleInstallLocation(Bundle bundle) throws Exception;
 
     /**
      * Locate a file inside a bundle.
@@ -65,7 +65,7 @@ public interface BundleFileLocatorHelper
      * @return file the file object
      * @throws Exception if unable to get the file
      */
-    public File getFileInBundle(Bundle bundle, String path) throws Exception;
+    File getFileInBundle(Bundle bundle, String path) throws Exception;
 
     /**
      * If the bundle is a jar, returns the jar. If the bundle is a folder, look
@@ -81,7 +81,7 @@ public interface BundleFileLocatorHelper
      * embedded inside it.
      * @throws Exception if unable to locate the jars
      */
-    public File[] locateJarsInsideBundle(Bundle bundle) throws Exception;
+    File[] locateJarsInsideBundle(Bundle bundle) throws Exception;
 
     /**
      * Helper method equivalent to Bundle#getEntry(String entryPath) except that
@@ -91,7 +91,7 @@ public interface BundleFileLocatorHelper
      * @param entryPath the entry path
      * @return null or all the entries found for that path.
      */
-    public Enumeration<URL> findEntries(Bundle bundle, String entryPath);
+    Enumeration<URL> findEntries(Bundle bundle, String entryPath);
 
     /**
      * Only useful for equinox: on felix we get the <code>file://</code> or <code>jar://</code> url
@@ -104,7 +104,7 @@ public interface BundleFileLocatorHelper
      * @return a URL to the bundle entry that uses a common protocol
      * @throws Exception if unable to get the local url
      */
-    public URL getLocalURL(URL url) throws Exception;
+    URL getLocalURL(URL url) throws Exception;
 
     /**
      * Only useful for equinox: on felix we get the <code>file://</code> url already. Other
@@ -119,5 +119,5 @@ public interface BundleFileLocatorHelper
      * protocol
      * @throws Exception if unable to get the file url
      */
-    public URL getFileURL(URL url) throws Exception;
+    URL getFileURL(URL url) throws Exception;
 }

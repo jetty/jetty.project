@@ -336,7 +336,7 @@ public class MultiPartBenchmark
                         continue;
                     }
 
-                    String split[] = line.split("\\|");
+                    String[] split = line.split("\\|");
                     switch (split[0])
                     {
                         case "Request-Header":

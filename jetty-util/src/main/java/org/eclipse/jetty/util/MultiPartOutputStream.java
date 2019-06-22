@@ -46,7 +46,7 @@ public class MultiPartOutputStream extends FilterOutputStream
         super(out);
 
         boundary = "jetty" + System.identityHashCode(this) +
-            Long.toString(System.currentTimeMillis(), 36);
+                       Long.toString(System.currentTimeMillis(), 36);
         boundaryBytes = boundary.getBytes(StandardCharsets.ISO_8859_1);
     }
 
@@ -89,7 +89,10 @@ public class MultiPartOutputStream extends FilterOutputStream
         return boundary;
     }
 
-    public OutputStream getOut() {return out;}
+    public OutputStream getOut()
+    {
+        return out;
+    }
 
     /**
      * Start creation of the next Content.

@@ -1,4 +1,5 @@
 <code_scheme name="Jetty" version="173">
+  <option name="AUTODETECT_INDENTS" value="false" />
   <option name="LINE_SEPARATOR" value="&#xA;" />
   <option name="RIGHT_MARGIN" value="128" />
   <AndroidXmlCodeStyleSettings>
@@ -58,6 +59,7 @@
     <option name="WHILE_ON_NEW_LINE" value="true" />
     <option name="CATCH_ON_NEW_LINE" value="true" />
     <option name="FINALLY_ON_NEW_LINE" value="true" />
+    <option name="ALIGN_MULTILINE_PARAMETERS" value="true" />
     <option name="ALIGN_MULTILINE_ARRAY_INITIALIZER_EXPRESSION" value="true" />
     <option name="SPACE_AFTER_TYPE_CAST" value="false" />
     <option name="RESOURCE_LIST_WRAP" value="2" />

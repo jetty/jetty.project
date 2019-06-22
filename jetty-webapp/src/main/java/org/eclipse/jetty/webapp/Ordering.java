@@ -27,5 +27,5 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public interface Ordering
 {
-    public List<Resource> order(List<Resource> fragments);
+    List<Resource> order(List<Resource> fragments);
 }

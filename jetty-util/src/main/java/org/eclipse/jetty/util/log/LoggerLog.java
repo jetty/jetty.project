@@ -43,18 +43,18 @@ public class LoggerLog extends AbstractLogger
         {
             _logger = logger;
             Class<?> lc = logger.getClass();
-            _debugMT = lc.getMethod("debug", new Class[]{String.class, Throwable.class});
-            _debugMAA = lc.getMethod("debug", new Class[]{String.class, Object[].class});
-            _infoMT = lc.getMethod("info", new Class[]{String.class, Throwable.class});
-            _infoMAA = lc.getMethod("info", new Class[]{String.class, Object[].class});
-            _warnMT = lc.getMethod("warn", new Class[]{String.class, Throwable.class});
-            _warnMAA = lc.getMethod("warn", new Class[]{String.class, Object[].class});
-            Method _isDebugEnabled = lc.getMethod("isDebugEnabled");
-            _setDebugEnabledE = lc.getMethod("setDebugEnabled", new Class[]{Boolean.TYPE});
-            _getLoggerN = lc.getMethod("getLogger", new Class[]{String.class});
+            _debugMT = lc.getMethod("debug", String.class, Throwable.class);
+            _debugMAA = lc.getMethod("debug", String.class, Object[].class);
+            _infoMT = lc.getMethod("info", String.class, Throwable.class);
+            _infoMAA = lc.getMethod("info", String.class, Object[].class);
+            _warnMT = lc.getMethod("warn", String.class, Throwable.class);
+            _warnMAA = lc.getMethod("warn", String.class, Object[].class);
+            Method isDebugEnabled = lc.getMethod("isDebugEnabled");
+            _setDebugEnabledE = lc.getMethod("setDebugEnabled", Boolean.TYPE);
+            _getLoggerN = lc.getMethod("getLogger", String.class);
             _getName = lc.getMethod("getName");
 
-            _debug = (Boolean)_isDebugEnabled.invoke(_logger);
+            _debug = (Boolean)isDebugEnabled.invoke(_logger);
         }
         catch (Exception x)
         {
@@ -206,7 +206,7 @@ public class LoggerLog extends AbstractLogger
 
         try
         {
-            _debugMAA.invoke(_logger, new Object[]{new Long(value)});
+            _debugMAA.invoke(_logger, new Long(value));
         }
         catch (Exception e)
         {

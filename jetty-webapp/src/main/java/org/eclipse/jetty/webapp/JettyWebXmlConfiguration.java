@@ -65,27 +65,27 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
         LOG.debug("Configuring web-jetty.xml");
 
-        Resource web_inf = context.getWebInf();
+        Resource webInf = context.getWebInf();
         // handle any WEB-INF descriptors
-        if (web_inf != null && web_inf.isDirectory())
+        if (webInf != null && webInf.isDirectory())
         {
             // do jetty.xml file
-            Resource jetty = web_inf.addPath("jetty8-web.xml");
+            Resource jetty = webInf.addPath("jetty8-web.xml");
             if (!jetty.exists())
-                jetty = web_inf.addPath(JETTY_WEB_XML);
+                jetty = webInf.addPath(JETTY_WEB_XML);
             if (!jetty.exists())
-                jetty = web_inf.addPath("web-jetty.xml");
+                jetty = webInf.addPath("web-jetty.xml");
 
             if (jetty.exists())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Configure: " + jetty);
 
-                Object xml_attr = context.getAttribute(XML_CONFIGURATION);
+                Object xmlAttr = context.getAttribute(XML_CONFIGURATION);
                 context.removeAttribute(XML_CONFIGURATION);
-                final XmlConfiguration jetty_config = xml_attr instanceof XmlConfiguration ? (XmlConfiguration)xml_attr : new XmlConfiguration(jetty.getURI().toURL());
+                final XmlConfiguration jetty_config = xmlAttr instanceof XmlConfiguration ? (XmlConfiguration)xmlAttr : new XmlConfiguration(jetty.getURI().toURL());
 
-                setupXmlConfiguration(context, jetty_config, web_inf);
+                setupXmlConfiguration(context, jetty_config, webInf);
 
                 try
                 {
@@ -108,15 +108,15 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      * Configures some well-known properties before the XmlConfiguration reads
      * the configuration.
      *
-     * @param jetty_config The configuration object.
-     * @param web_inf the WEB-INF location
+     * @param jettyConfig The configuration object.
+     * @param webInf the WEB-INF location
      */
-    private void setupXmlConfiguration(WebAppContext context, XmlConfiguration jetty_config, Resource web_inf) throws IOException
+    private void setupXmlConfiguration(WebAppContext context, XmlConfiguration jettyConfig, Resource webInf) throws IOException
     {
-        jetty_config.setJettyStandardIdsAndProperties(context.getServer(), null);
-        Map<String, String> props = jetty_config.getProperties();
-        props.put(PROPERTY_THIS_WEB_INF_URL, web_inf.getURI().toString());
-        props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(web_inf.getURI().toString()));
-        props.put(PROPERTY_WEB_INF, web_inf.toString());
+        jettyConfig.setJettyStandardIdsAndProperties(context.getServer(), null);
+        Map<String, String> props = jettyConfig.getProperties();
+        props.put(PROPERTY_THIS_WEB_INF_URL, webInf.getURI().toString());
+        props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(webInf.getURI().toString()));
+        props.put(PROPERTY_WEB_INF, webInf.toString());
     }
 }

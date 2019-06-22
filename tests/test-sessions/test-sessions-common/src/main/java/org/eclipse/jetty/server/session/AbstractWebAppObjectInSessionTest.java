@@ -60,14 +60,13 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
         webInfDir.mkdir();
         // Write web.xml
         File webXml = new File(webInfDir, "web.xml");
-        String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<web-app xmlns=\"http://java.sun.com/xml/ns/j2ee\"\n" +
-                "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-                "         xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\"\n" +
-                "         version=\"2.4\">\n" +
-                "\n" +
-                "</web-app>";
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                         "<web-app xmlns=\"http://java.sun.com/xml/ns/j2ee\"\n" +
+                         "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                         "         xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\"\n" +
+                         "         version=\"2.4\">\n" +
+                         "\n" +
+                         "</web-app>";
         FileWriter w = new FileWriter(webXml);
         w.write(xml);
         w.close();

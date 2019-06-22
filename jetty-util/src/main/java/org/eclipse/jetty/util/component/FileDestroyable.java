@@ -50,7 +50,7 @@ public class FileDestroyable implements Destroyable
 
     public void addFile(String file) throws IOException
     {
-        try (Resource r = Resource.newResource(file);)
+        try (Resource r = Resource.newResource(file))
         {
             _files.add(r.getFile());
         }
@@ -68,7 +68,7 @@ public class FileDestroyable implements Destroyable
 
     public void removeFile(String file) throws IOException
     {
-        try (Resource r = Resource.newResource(file);)
+        try (Resource r = Resource.newResource(file))
         {
             _files.remove(r.getFile());
         }

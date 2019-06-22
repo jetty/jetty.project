@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 @ExtendWith(WorkDirExtension.class)
 public class ModulesTest
 {
-    private final static String TEST_SOURCE = "<test>";
+    private static final String TEST_SOURCE = "<test>";
 
     public WorkDir testdir;
 

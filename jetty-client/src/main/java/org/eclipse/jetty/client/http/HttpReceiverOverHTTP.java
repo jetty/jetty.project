@@ -320,11 +320,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
             return true;
 
-        if (HttpMethod.CONNECT.is(exchange.getRequest().getMethod()) &&
-            status == HttpStatus.OK_200)
-            return true;
-
-        return false;
+        return HttpMethod.CONNECT.is(exchange.getRequest().getMethod()) &&
+            status == HttpStatus.OK_200;
     }
 
     @Override

@@ -121,13 +121,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
     public MappedResource<E> getMatch(String path)
     {
-        PathSpecGroup last_group = null;
+        PathSpecGroup lastGroup = null;
 
         // Search all the mappings
         for (MappedResource<E> mr : _mappings)
         {
             PathSpecGroup group = mr.getPathSpec().getGroup();
-            if (group != last_group)
+            if (group != lastGroup)
             {
                 // New group in list, so let's look for an optimization
                 switch (group)
@@ -184,7 +184,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
             if (mr.getPathSpec().matches(path))
                 return mr;
 
-            last_group = group;
+            lastGroup = group;
         }
 
         return null;

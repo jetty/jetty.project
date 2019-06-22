@@ -39,7 +39,7 @@ public class EventMethod
         {
             return new Object[0];
         }
-        Object ret[] = new Object[args.length - 1];
+        Object[] ret = new Object[args.length - 1];
         System.arraycopy(args, 1, ret, 0, ret.length);
         return ret;
     }
@@ -88,14 +88,13 @@ public class EventMethod
         }
         if (args.length > paramTypes.length)
         {
-            Object trimArgs[] = dropFirstArg(args);
+            Object[] trimArgs = dropFirstArg(args);
             call(obj, trimArgs);
             return;
         }
         if (args.length < paramTypes.length)
         {
-            throw new IllegalArgumentException("Call arguments length [" + args.length + "] must always be greater than or equal to captured args length ["
-                + paramTypes.length + "]");
+            throw new IllegalArgumentException("Call arguments length [" + args.length + "] must always be greater than or equal to captured args length [" + paramTypes.length + "]");
         }
 
         try

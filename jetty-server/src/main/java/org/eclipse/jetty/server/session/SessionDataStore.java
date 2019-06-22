@@ -39,7 +39,7 @@ public interface SessionDataStore extends SessionDataMap
      * @param maxInactiveMs the max inactive time in milliseconds
      * @return a new SessionData object
      */
-    public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs);
+    SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs);
 
     /**
      * Called periodically, this method should search the data store
@@ -51,14 +51,14 @@ public interface SessionDataStore extends SessionDataMap
      * SessionDataStore
      * @return set of session ids
      */
-    public Set<String> getExpired(Set<String> candidates);
+    Set<String> getExpired(Set<String> candidates);
 
     /**
      * True if this type of datastore will passivate session objects
      *
      * @return true if this store can passivate sessions, false otherwise
      */
-    public boolean isPassivating();
+    boolean isPassivating();
 
     /**
      * Test if data exists for a given session id.
@@ -67,5 +67,5 @@ public interface SessionDataStore extends SessionDataMap
      * @return true if valid, non-expired session exists
      * @throws Exception if problem checking existence with persistence layer
      */
-    public boolean exists(String id) throws Exception;
+    boolean exists(String id) throws Exception;
 }

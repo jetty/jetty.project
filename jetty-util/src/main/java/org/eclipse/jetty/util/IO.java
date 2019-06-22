@@ -47,11 +47,11 @@ public class IO
 {
     private static final Logger LOG = Log.getLogger(IO.class);
 
-    public final static String
-        CRLF = "\015\012";
+    public static final String
+        CRLF = "\r\n";
 
-    public final static byte[]
-        CRLF_BYTES = {(byte)'\015', (byte)'\012'};
+    public static final byte[]
+        CRLF_BYTES = {(byte)'\r', (byte)'\n'};
 
     public static final int bufferSize = 64 * 1024;
 
@@ -101,9 +101,9 @@ public class IO
                     if (write != null)
                         write.close();
                 }
-                catch (IOException e2)
+                catch (IOException ex2)
                 {
-                    LOG.ignore(e2);
+                    LOG.ignore(ex2);
                 }
             }
         }
@@ -148,7 +148,7 @@ public class IO
                             long byteCount)
         throws IOException
     {
-        byte buffer[] = new byte[bufferSize];
+        byte[] buffer = new byte[bufferSize];
         int len = bufferSize;
 
         if (byteCount >= 0)
@@ -190,7 +190,7 @@ public class IO
                             long byteCount)
         throws IOException
     {
-        char buffer[] = new char[bufferSize];
+        char[] buffer = new char[bufferSize];
         int len = bufferSize;
 
         if (byteCount >= 0)

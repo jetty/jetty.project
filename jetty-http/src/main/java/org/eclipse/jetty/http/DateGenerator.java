@@ -50,7 +50,7 @@ public class DateGenerator
         }
     };
 
-    public final static String __01Jan1970 = DateGenerator.formatDate(0);
+    public static final String __01Jan1970 = DateGenerator.formatDate(0);
 
     /**
      * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
@@ -101,8 +101,8 @@ public class DateGenerator
         buf.setLength(0);
         gc.setTimeInMillis(date);
 
-        int day_of_week = gc.get(Calendar.DAY_OF_WEEK);
-        int day_of_month = gc.get(Calendar.DAY_OF_MONTH);
+        int dayOfWeek = gc.get(Calendar.DAY_OF_WEEK);
+        int dayOfMonth = gc.get(Calendar.DAY_OF_MONTH);
         int month = gc.get(Calendar.MONTH);
         int year = gc.get(Calendar.YEAR);
         int century = year / 100;
@@ -112,10 +112,10 @@ public class DateGenerator
         int minutes = gc.get(Calendar.MINUTE);
         int seconds = gc.get(Calendar.SECOND);
 
-        buf.append(DAYS[day_of_week]);
+        buf.append(DAYS[dayOfWeek]);
         buf.append(',');
         buf.append(' ');
-        StringUtil.append2digits(buf, day_of_month);
+        StringUtil.append2digits(buf, dayOfMonth);
 
         buf.append(' ');
         buf.append(MONTHS[month]);
@@ -143,8 +143,8 @@ public class DateGenerator
     {
         gc.setTimeInMillis(date);
 
-        int day_of_week = gc.get(Calendar.DAY_OF_WEEK);
-        int day_of_month = gc.get(Calendar.DAY_OF_MONTH);
+        int dayOfWeek = gc.get(Calendar.DAY_OF_WEEK);
+        int dayOfMonth = gc.get(Calendar.DAY_OF_MONTH);
         int month = gc.get(Calendar.MONTH);
         int year = gc.get(Calendar.YEAR);
         year = year % 10000;
@@ -155,10 +155,10 @@ public class DateGenerator
         int minutes = epoch % 60;
         int hours = epoch / 60;
 
-        buf.append(DAYS[day_of_week]);
+        buf.append(DAYS[dayOfWeek]);
         buf.append(',');
         buf.append(' ');
-        StringUtil.append2digits(buf, day_of_month);
+        StringUtil.append2digits(buf, dayOfMonth);
 
         buf.append('-');
         buf.append(MONTHS[month]);

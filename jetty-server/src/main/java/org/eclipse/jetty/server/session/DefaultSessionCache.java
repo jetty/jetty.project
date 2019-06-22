@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.statistic.CounterStatistic;
 @ManagedObject
 public class DefaultSessionCache extends AbstractSessionCache
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     /**
      * The cache of sessions in a hashmap

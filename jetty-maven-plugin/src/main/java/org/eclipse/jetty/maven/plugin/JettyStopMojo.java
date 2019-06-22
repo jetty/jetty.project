@@ -74,7 +74,7 @@ public class JettyStopMojo extends AbstractMojo
         //also stops depends whether or not it was started with ShutdownMonitor.exitVm=true
         String command = "forcestop";
 
-        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort);)
+        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort))
         {
             OutputStream out = s.getOutputStream();
             out.write((stopKey + "\r\n" + command + "\r\n").getBytes());

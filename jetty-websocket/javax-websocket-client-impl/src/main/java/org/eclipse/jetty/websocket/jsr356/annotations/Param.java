@@ -29,7 +29,7 @@ public class Param
     /**
      * The various roles of the known parameters.
      */
-    public static enum Role
+    public enum Role
     {
         SESSION,
         ENDPOINT_CONFIG,

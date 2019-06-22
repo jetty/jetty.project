@@ -63,11 +63,11 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         super.init(filterConfig);
-        String header_config = filterConfig.getInitParameter("headerConfig");
+        String headerConfig = filterConfig.getInitParameter("headerConfig");
 
-        if (header_config != null)
+        if (headerConfig != null)
         {
-            String[] configs = StringUtil.csvSplit(header_config);
+            String[] configs = StringUtil.csvSplit(headerConfig);
             for (String config : configs)
             {
                 _configuredHeaders.add(parseHeaderConfiguration(config));
@@ -81,34 +81,34 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        HttpServletRequest http_request = (HttpServletRequest)request;
-        HttpServletResponse http_response = (HttpServletResponse)response;
+        HttpServletRequest httpRequest = (HttpServletRequest)request;
+        HttpServletResponse httpResponse = (HttpServletResponse)response;
 
-        if (super.shouldFilter(http_request, http_response))
+        if (super.shouldFilter(httpRequest, httpResponse))
         {
             for (ConfiguredHeader header : _configuredHeaders)
             {
                 if (header.isDate())
                 {
-                    long header_value = System.currentTimeMillis() + header.getMsOffset();
+                    long headerValue = System.currentTimeMillis() + header.getMsOffset();
                     if (header.isAdd())
                     {
-                        http_response.addDateHeader(header.getName(), header_value);
+                        httpResponse.addDateHeader(header.getName(), headerValue);
                     }
                     else
                     {
-                        http_response.setDateHeader(header.getName(), header_value);
+                        httpResponse.setDateHeader(header.getName(), headerValue);
                     }
                 }
                 else // constant header value
                 {
                     if (header.isAdd())
                     {
-                        http_response.addHeader(header.getName(), header.getValue());
+                        httpResponse.addHeader(header.getName(), header.getValue());
                     }
                     else
                     {
-                        http_response.setHeader(header.getName(), header.getValue());
+                        httpResponse.setHeader(header.getName(), header.getValue());
                     }
                 }
             }
@@ -133,14 +133,14 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
 
     private ConfiguredHeader parseHeaderConfiguration(String config)
     {
-        String[] config_tokens = config.trim().split(" ", 2);
-        String method = config_tokens[0].trim();
-        String header = config_tokens[1];
-        String[] header_tokens = header.trim().split(":", 2);
-        String header_name = header_tokens[0].trim();
-        String header_value = header_tokens[1].trim();
-        ConfiguredHeader configured_header = new ConfiguredHeader(header_name, header_value, method.startsWith("add"), method.endsWith("Date"));
-        return configured_header;
+        String[] configTokens = config.trim().split(" ", 2);
+        String method = configTokens[0].trim();
+        String header = configTokens[1];
+        String[] headerTokens = header.trim().split(":", 2);
+        String headerName = headerTokens[0].trim();
+        String headerValue = headerTokens[1].trim();
+        ConfiguredHeader configuredHeader = new ConfiguredHeader(headerName, headerValue, method.startsWith("add"), method.endsWith("Date"));
+        return configuredHeader;
     }
 
     private static class ConfiguredHeader

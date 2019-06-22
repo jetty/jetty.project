@@ -648,11 +648,11 @@ public class MultiPartInputStreamParser
                         throw new IllegalStateException("Request exceeds maxRequestSize (" + _config.getMaxRequestSize() + ")");
 
                     //get content-disposition and content-type
-                    int c = line.indexOf(':', 0);
+                    int c = line.indexOf(':');
                     if (c > 0)
                     {
                         String key = line.substring(0, c).trim().toLowerCase(Locale.ENGLISH);
-                        String value = line.substring(c + 1, line.length()).trim();
+                        String value = line.substring(c + 1).trim();
                         headers.put(key, value);
                         if (key.equalsIgnoreCase("content-disposition"))
                             contentDisposition = value;
@@ -664,7 +664,7 @@ public class MultiPartInputStreamParser
                 }
 
                 // Extract content-disposition
-                boolean form_data = false;
+                boolean formData = false;
                 if (contentDisposition == null)
                 {
                     throw new IOException("Missing content-disposition");
@@ -678,7 +678,7 @@ public class MultiPartInputStreamParser
                     String t = tok.nextToken().trim();
                     String tl = t.toLowerCase(Locale.ENGLISH);
                     if (tl.startsWith("form-data"))
-                        form_data = true;
+                        formData = true;
                     else if (tl.startsWith("name="))
                         name = value(t);
                     else if (tl.startsWith("filename="))
@@ -686,7 +686,7 @@ public class MultiPartInputStreamParser
                 }
 
                 // Check disposition
-                if (!form_data)
+                if (!formData)
                 {
                     continue;
                 }

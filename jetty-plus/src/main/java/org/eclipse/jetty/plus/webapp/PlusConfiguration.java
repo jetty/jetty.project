@@ -29,6 +29,7 @@ import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -96,19 +97,13 @@ public class PlusConfiguration extends AbstractConfiguration
     protected void lockCompEnv(WebAppContext wac)
         throws Exception
     {
-        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(wac.getClassLoader());
-        try
+        try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(wac.getClassLoader()))
         {
             Random random = new Random();
             _key = random.nextInt();
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
             compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, _key);
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(old_loader);
         }
     }
 
@@ -117,18 +112,11 @@ public class PlusConfiguration extends AbstractConfiguration
     {
         if (_key != null)
         {
-            ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(wac.getClassLoader());
-
-            try
+            try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(wac.getClassLoader()))
             {
                 Context context = new InitialContext();
                 Context compCtx = (Context)context.lookup("java:comp");
                 compCtx.addToEnvironment("org.eclipse.jetty.jndi.unlock", _key);
-            }
-            finally
-            {
-                Thread.currentThread().setContextClassLoader(old_loader);
             }
         }
     }

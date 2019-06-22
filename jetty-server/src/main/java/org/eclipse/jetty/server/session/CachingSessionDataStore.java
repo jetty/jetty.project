@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class CachingSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     /**
      * The actual store for the session data
      */

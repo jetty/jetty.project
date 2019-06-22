@@ -37,7 +37,7 @@ public abstract class AbstractLeakPreventer extends AbstractLifeCycle
 {
     protected static final Logger LOG = Log.getLogger(AbstractLeakPreventer.class);
 
-    abstract public void prevent(ClassLoader loader);
+    public abstract void prevent(ClassLoader loader);
 
     @Override
     protected void doStart() throws Exception

@@ -33,12 +33,12 @@ public interface MessageAppender
      * @param isLast flag indicating if this is the last part of the message or not.
      * @throws IOException if unable to append the frame payload
      */
-    abstract void appendFrame(ByteBuffer framePayload, boolean isLast) throws IOException;
+    void appendFrame(ByteBuffer framePayload, boolean isLast) throws IOException;
 
     /**
      * Notification that message is to be considered complete.
      * <p>
      * Any cleanup or final actions should be taken here.
      */
-    abstract void messageComplete();
+    void messageComplete();
 }

@@ -51,9 +51,9 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class AsyncRestServlet extends AbstractRestServlet
 {
-    final static String RESULTS_ATTR = "org.eclipse.jetty.demo.client";
-    final static String DURATION_ATTR = "org.eclipse.jetty.demo.duration";
-    final static String START_ATTR = "org.eclispe.jetty.demo.start";
+    static final String RESULTS_ATTR = "org.eclipse.jetty.demo.client";
+    static final String DURATION_ATTR = "org.eclipse.jetty.demo.duration";
+    static final String START_ATTR = "org.eclispe.jetty.demo.start";
 
     HttpClient _client;
 

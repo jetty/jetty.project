@@ -37,12 +37,11 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
 {
     private static final Logger LOG = Log.getLogger(BundleClassLoaderHelper.class);
 
-    private static enum OSGiContainerType
+    private enum OSGiContainerType
     {
         EquinoxOld, EquinoxLuna, FelixOld, Felix403, Concierge
     }
 
-    ;
     private static OSGiContainerType osgiContainer;
     private static Class<?> Equinox_BundleHost_Class;
     private static Class<?> Equinox_EquinoxBundle_Class;
@@ -100,7 +99,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             Felix_BundleImpl_Class = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl");
             try
             {
-                Felix_BundleImpl_Adapt_Method = Felix_BundleImpl_Class.getDeclaredMethod("adapt", new Class[]{Class.class});
+                Felix_BundleImpl_Adapt_Method = Felix_BundleImpl_Class.getDeclaredMethod("adapt", Class.class);
                 osgiContainer = OSGiContainerType.Felix403;
                 return;
             }
@@ -212,14 +211,14 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                 if (Equinox_BundleHost_getBundleLoader_method == null)
                 {
                     Equinox_BundleHost_getBundleLoader_method =
-                        Equinox_BundleHost_Class.getDeclaredMethod("getBundleLoader", new Class[]{});
+                        Equinox_BundleHost_Class.getDeclaredMethod("getBundleLoader");
                     Equinox_BundleHost_getBundleLoader_method.setAccessible(true);
                 }
-                Object bundleLoader = Equinox_BundleHost_getBundleLoader_method.invoke(bundle, new Object[]{});
+                Object bundleLoader = Equinox_BundleHost_getBundleLoader_method.invoke(bundle);
                 if (Equinox_BundleLoader_createClassLoader_method == null && bundleLoader != null)
                 {
                     Equinox_BundleLoader_createClassLoader_method =
-                        bundleLoader.getClass().getClassLoader().loadClass("org.eclipse.osgi.internal.loader.BundleLoader").getDeclaredMethod("createClassLoader", new Class[]{});
+                        bundleLoader.getClass().getClassLoader().loadClass("org.eclipse.osgi.internal.loader.BundleLoader").getDeclaredMethod("createClassLoader");
                     Equinox_BundleLoader_createClassLoader_method.setAccessible(true);
                 }
                 return (ClassLoader)Equinox_BundleLoader_createClassLoader_method.invoke(bundleLoader, new Object[]{});
@@ -241,9 +240,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             try
             {
                 if (Equinox_EquinoxBundle_getModuleClassLoader_Method == null)
-                    Equinox_EquinoxBundle_getModuleClassLoader_Method = Equinox_EquinoxBundle_Class.getDeclaredMethod("getModuleClassLoader", new Class[]{
-                        Boolean.TYPE
-                    });
+                    Equinox_EquinoxBundle_getModuleClassLoader_Method = Equinox_EquinoxBundle_Class.getDeclaredMethod("getModuleClassLoader", Boolean.TYPE);
 
                 Equinox_EquinoxBundle_getModuleClassLoader_Method.setAccessible(true);
                 return (ClassLoader)Equinox_EquinoxBundle_getModuleClassLoader_Method.invoke(bundle, new Object[]{
@@ -283,7 +280,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                     Felix_BundleWiring_getClassLoader_Method.setAccessible(true);
                 }
 
-                Object wiring = Felix_BundleImpl_Adapt_Method.invoke(bundle, new Object[]{Felix_BundleWiring_Class});
+                Object wiring = Felix_BundleImpl_Adapt_Method.invoke(bundle, Felix_BundleWiring_Class);
                 return (ClassLoader)Felix_BundleWiring_getClassLoader_Method.invoke(wiring);
             }
             catch (Exception e)
@@ -311,7 +308,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                     Object[] moduleArray = (Object[])Felix_BundleImpl_m_Modules_Field.get(bundle);
                     currentModuleImpl = moduleArray[moduleArray.length - 1];
                 }
-                catch (Throwable t2)
+                catch (Throwable ex)
                 {
                     try
                     {
@@ -412,13 +409,13 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                 if (Concierge_BundleWiring_Class == null)
                 {
                     Concierge_BundleWiring_Class = bundle.getClass().getClassLoader().loadClass("org.osgi.framework.wiring.BundleWiring");
-                    Concierge_BundleImpl_Adapt_Method = Concierge_BundleImpl_Class.getMethod("adapt", new Class[]{Class.class});
+                    Concierge_BundleImpl_Adapt_Method = Concierge_BundleImpl_Class.getMethod("adapt", Class.class);
                     Concierge_BundleImpl_Adapt_Method.setAccessible(true);
                     Concierge_BundleWiring_getClassLoader_Method = Concierge_BundleWiring_Class.getMethod("getClassLoader");
                     Concierge_BundleWiring_getClassLoader_Method.setAccessible(true);
                 }
 
-                Object wiring = Concierge_BundleImpl_Adapt_Method.invoke(bundle, new Object[]{Concierge_BundleWiring_Class});
+                Object wiring = Concierge_BundleImpl_Adapt_Method.invoke(bundle, Concierge_BundleWiring_Class);
                 ClassLoader cl = (ClassLoader)Concierge_BundleWiring_getClassLoader_Method.invoke(wiring);
                 return cl;
             }

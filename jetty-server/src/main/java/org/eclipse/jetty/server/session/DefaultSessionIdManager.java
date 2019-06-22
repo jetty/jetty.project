@@ -50,9 +50,9 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class DefaultSessionIdManager extends ContainerLifeCycle implements SessionIdManager
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
-    public final static String __NEW_SESSION_ID = "org.eclipse.jetty.server.newSessionId";
+    public static final String __NEW_SESSION_ID = "org.eclipse.jetty.server.newSessionId";
 
     protected static final AtomicLong COUNTER = new AtomicLong();
 
@@ -202,18 +202,18 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
             return newSessionId(created);
 
         // A requested session ID can only be used if it is in use already.
-        String requested_id = request.getRequestedSessionId();
-        if (requested_id != null)
+        String requestedId = request.getRequestedSessionId();
+        if (requestedId != null)
         {
-            String cluster_id = getId(requested_id);
-            if (isIdInUse(cluster_id))
-                return cluster_id;
+            String clusterId = getId(requestedId);
+            if (isIdInUse(clusterId))
+                return clusterId;
         }
 
         // Else reuse any new session ID already defined for this request.
-        String new_id = (String)request.getAttribute(__NEW_SESSION_ID);
-        if (new_id != null && isIdInUse(new_id))
-            return new_id;
+        String newId = (String)request.getAttribute(__NEW_SESSION_ID);
+        if (newId != null && isIdInUse(newId))
+            return newId;
 
         // pick a new unique ID!
         String id = newSessionId(request.hashCode());
@@ -270,7 +270,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
                 if (!StringUtil.isBlank(_workerName))
                     id = _workerName + id;
 
-                id = id + Long.toString(COUNTER.getAndIncrement());
+                id = id + COUNTER.getAndIncrement();
             }
         }
         return id;

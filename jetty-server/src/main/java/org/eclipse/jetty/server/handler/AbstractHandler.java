@@ -148,7 +148,7 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
      * method.  All other dispatches are passed to the abstract {@link #doNonErrorHandle(String, Request, HttpServletRequest, HttpServletResponse)}
      * method, which should be implemented with specific handler behavior
      */
-    public static abstract class ErrorDispatchHandler extends AbstractHandler
+    public abstract static class ErrorDispatchHandler extends AbstractHandler
     {
         @Override
         public final void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

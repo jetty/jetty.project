@@ -83,7 +83,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
     public void handleClass(Class<?> clazz)
     {
-        Resource resource = (Resource)clazz.getAnnotation(Resource.class);
+        Resource resource = clazz.getAnnotation(Resource.class);
         if (resource != null)
         {
             String name = resource.name();
@@ -107,7 +107,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
     public void handleField(Class<?> clazz, Field field)
     {
-        Resource resource = (Resource)field.getAnnotation(Resource.class);
+        Resource resource = field.getAnnotation(Resource.class);
         if (resource != null)
         {
             //JavaEE Spec 5.2.3: Field cannot be static
@@ -225,7 +225,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
     public void handleMethod(Class<?> clazz, Method method)
     {
 
-        Resource resource = (Resource)method.getAnnotation(Resource.class);
+        Resource resource = method.getAnnotation(Resource.class);
         if (resource != null)
         {
             /*
@@ -376,7 +376,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      */
     public boolean supportsResourceInjection(Class<?> c)
     {
-        if (javax.servlet.Servlet.class.isAssignableFrom(c) ||
+        return javax.servlet.Servlet.class.isAssignableFrom(c) ||
             javax.servlet.Filter.class.isAssignableFrom(c) ||
             javax.servlet.ServletContextListener.class.isAssignableFrom(c) ||
             javax.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
@@ -386,10 +386,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
             javax.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
             javax.servlet.AsyncListener.class.isAssignableFrom(c) ||
-            javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
-            return true;
-
-        return false;
+            javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c);
     }
 
     /**

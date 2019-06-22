@@ -43,7 +43,7 @@ public enum HttpHeaderValue
     UPGRADE("Upgrade"),
     UNKNOWN("::UNKNOWN::");
 
-    public final static Trie<HttpHeaderValue> CACHE = new ArrayTrie<HttpHeaderValue>();
+    public static final Trie<HttpHeaderValue> CACHE = new ArrayTrie<HttpHeaderValue>();
 
     static
     {

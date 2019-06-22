@@ -95,9 +95,9 @@ public class HttpClientTransportOverUnixSockets extends HttpClientTransportOverH
                 if (channel != null)
                     channel.close();
             }
-            catch (IOException xx)
+            catch (IOException ex)
             {
-                LOG.ignore(xx);
+                LOG.ignore(ex);
             }
             finally
             {

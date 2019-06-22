@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractHttpTest
 {
-    private final static Set<String> __noBodyCodes = new HashSet<>(Arrays.asList(new String[]{
+    private static final Set<String> __noBodyCodes = new HashSet<>(Arrays.asList(new String[]{
         "100", "101", "102", "204", "304"
     }));
 

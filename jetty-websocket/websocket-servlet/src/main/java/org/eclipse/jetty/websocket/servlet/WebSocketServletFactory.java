@@ -36,7 +36,7 @@ public interface WebSocketServletFactory
 {
     class Loader
     {
-        final static String DEFAULT_IMPL = "org.eclipse.jetty.websocket.server.WebSocketServerFactory";
+        static final String DEFAULT_IMPL = "org.eclipse.jetty.websocket.server.WebSocketServerFactory";
 
         public static WebSocketServletFactory load(ServletContext ctx, WebSocketPolicy policy)
         {
@@ -44,9 +44,7 @@ public interface WebSocketServletFactory
             {
                 Class<? extends WebSocketServletFactory> wsClazz =
                     (Class<? extends WebSocketServletFactory>)Class.forName(DEFAULT_IMPL, true, Thread.currentThread().getContextClassLoader());
-                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(new Class<?>[]{
-                    ServletContext.class, WebSocketPolicy.class
-                });
+                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(ServletContext.class, WebSocketPolicy.class);
                 return ctor.newInstance(ctx, policy);
             }
             catch (ClassNotFoundException e)

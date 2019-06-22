@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
@@ -227,7 +228,7 @@ public class ResourceService
         boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges == null;
 
         HttpContent content = null;
-        boolean release_content = true;
+        boolean releaseContent = true;
         try
         {
             // Find the content
@@ -290,7 +291,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
 
             // Send the data
-            release_content = sendData(request, response, included, content, reqRanges);
+            releaseContent = sendData(request, response, included, content, reqRanges);
         }
         catch (IllegalArgumentException e)
         {
@@ -300,7 +301,7 @@ public class ResourceService
         }
         finally
         {
-            if (release_content)
+            if (releaseContent)
             {
                 if (content != null)
                     content.release();
@@ -627,7 +628,7 @@ public class ResourceService
             return;
         }
 
-        data = dir.getBytes("utf-8");
+        data = dir.getBytes(StandardCharsets.UTF_8);
         response.setContentType("text/html;charset=utf-8");
         response.setContentLength(data.length);
         response.getOutputStream().write(data);
@@ -650,9 +651,7 @@ public class ResourceService
             out = response.getOutputStream();
 
             // has something already written to the response?
-            written = out instanceof HttpOutput
-                ? ((HttpOutput)out).isWritten()
-                : true;
+            written = !(out instanceof HttpOutput) || ((HttpOutput)out).isWritten();
         }
         catch (IllegalStateException e)
         {

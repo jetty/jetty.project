@@ -47,7 +47,7 @@ public class GCThreadLeakPreventer extends AbstractLeakPreventer
         try
         {
             Class<?> clazz = Class.forName("sun.misc.GC");
-            Method requestLatency = clazz.getMethod("requestLatency", new Class[]{long.class});
+            Method requestLatency = clazz.getMethod("requestLatency", long.class);
             requestLatency.invoke(null, Long.valueOf(Long.MAX_VALUE - 1));
         }
         catch (ClassNotFoundException e)

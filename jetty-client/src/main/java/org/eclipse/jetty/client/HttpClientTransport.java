@@ -36,8 +36,8 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
  */
 public interface HttpClientTransport extends ClientConnectionFactory
 {
-    public static final String HTTP_DESTINATION_CONTEXT_KEY = "http.destination";
-    public static final String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "http.connection.promise";
+    String HTTP_DESTINATION_CONTEXT_KEY = "http.destination";
+    String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "http.connection.promise";
 
     /**
      * Sets the {@link HttpClient} instance on this transport.
@@ -48,7 +48,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
      *
      * @param client the {@link HttpClient} that uses this transport.
      */
-    public void setHttpClient(HttpClient client);
+    void setHttpClient(HttpClient client);
 
     /**
      * Creates a new, transport-specific, {@link HttpDestination} object.
@@ -59,7 +59,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * @param origin the destination origin
      * @return a new, transport-specific, {@link HttpDestination} object
      */
-    public HttpDestination newHttpDestination(Origin origin);
+    HttpDestination newHttpDestination(Origin origin);
 
     /**
      * Establishes a physical connection to the given {@code address}.
@@ -67,15 +67,15 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * @param address the address to connect to
      * @param context the context information to establish the connection
      */
-    public void connect(InetSocketAddress address, Map<String, Object> context);
+    void connect(InetSocketAddress address, Map<String, Object> context);
 
     /**
      * @return the factory for ConnectionPool instances
      */
-    public ConnectionPool.Factory getConnectionPoolFactory();
+    ConnectionPool.Factory getConnectionPoolFactory();
 
     /**
      * @param factory the factory for ConnectionPool instances
      */
-    public void setConnectionPoolFactory(ConnectionPool.Factory factory);
+    void setConnectionPoolFactory(ConnectionPool.Factory factory);
 }

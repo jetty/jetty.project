@@ -115,7 +115,7 @@ public abstract class AbstractLoginModule implements LoginModule
                 Iterator<String> itor = this.user.getRoleNames().iterator();
                 while (itor.hasNext())
                 {
-                    this.roles.add(new JAASRole((String)itor.next()));
+                    this.roles.add(new JAASRole(itor.next()));
                 }
             }
         }

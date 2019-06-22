@@ -19,6 +19,7 @@
 package com.acme;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -190,7 +191,7 @@ public class ChatServlet extends HttpServlet
         buf.append("\"chat\":\"");
         buf.append(returnMessage);
         buf.append("\"}");
-        byte[] bytes = buf.toString().getBytes("utf-8");
+        byte[] bytes = buf.toString().getBytes(StandardCharsets.UTF_8);
         response.setContentLength(bytes.length);
         response.getOutputStream().write(bytes);
     }

@@ -48,7 +48,7 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
             Method[] methods = clazz.getDeclaredMethods();
             for (int i = 0; i < methods.length; i++)
             {
-                Method m = (Method)methods[i];
+                Method m = methods[i];
                 if (m.isAnnotationPresent(PostConstruct.class))
                 {
                     if (m.getParameterCount() != 0)
@@ -92,7 +92,7 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
      */
     public boolean supportsPostConstruct(Class c)
     {
-        if (javax.servlet.Servlet.class.isAssignableFrom(c) ||
+        return javax.servlet.Servlet.class.isAssignableFrom(c) ||
             javax.servlet.Filter.class.isAssignableFrom(c) ||
             javax.servlet.ServletContextListener.class.isAssignableFrom(c) ||
             javax.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
@@ -102,9 +102,6 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
             javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
             javax.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
             javax.servlet.AsyncListener.class.isAssignableFrom(c) ||
-            javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
-            return true;
-
-        return false;
+            javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c);
     }
 }

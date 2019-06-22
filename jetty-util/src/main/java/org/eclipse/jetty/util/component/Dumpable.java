@@ -80,7 +80,10 @@ public interface Dumpable
      *
      * @return the representation of self
      */
-    default String dumpSelf() { return toString(); }
+    default String dumpSelf()
+    {
+        return toString();
+    }
 
     /**
      * Dump just an Object (but not it's contained items) to an Appendable.
@@ -120,9 +123,9 @@ public interface Dumpable
             else
                 out.append(s).append("\n");
         }
-        catch (Throwable th)
+        catch (Throwable ex)
         {
-            out.append("=> ").append(th.toString()).append("\n");
+            out.append("=> ").append(ex.toString()).append("\n");
         }
     }
 

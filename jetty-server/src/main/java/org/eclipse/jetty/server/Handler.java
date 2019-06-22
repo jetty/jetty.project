@@ -66,16 +66,16 @@ public interface Handler extends LifeCycle, Destroyable
      * @throws IOException if unable to handle the request or response processing
      * @throws ServletException if unable to handle the request or response due to underlying servlet issue
      */
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException;
 
-    public void setServer(Server server);
+    void setServer(Server server);
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
-    public Server getServer();
+    Server getServer();
 
     @ManagedOperation(value = "destroy associated resources", impact = "ACTION")
     @Override
-    public void destroy();
+    void destroy();
 }
 

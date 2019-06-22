@@ -49,31 +49,31 @@ public class JuliLog implements org.apache.juli.logging.Log
     @Override
     public boolean isErrorEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _stdErrLog == null || _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
     }
 
     @Override
     public boolean isFatalEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _stdErrLog == null || _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
     }
 
     @Override
     public boolean isInfoEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_INFO;
+        return _stdErrLog == null || _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_INFO;
     }
 
     @Override
     public boolean isTraceEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_DEBUG;
+        return _stdErrLog == null || _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_DEBUG;
     }
 
     @Override
     public boolean isWarnEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _stdErrLog == null || _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
     }
 
     @Override

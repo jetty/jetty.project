@@ -50,12 +50,12 @@ public interface ConnectionFactory
     /**
      * @return A string representing the primary protocol name.
      */
-    public String getProtocol();
+    String getProtocol();
 
     /**
      * @return A list of alternative protocol names/versions including the primary protocol.
      */
-    public List<String> getProtocols();
+    List<String> getProtocols();
 
     /**
      * <p>Creates a new {@link Connection} with the given parameters</p>
@@ -64,9 +64,9 @@ public interface ConnectionFactory
      * @param endPoint the {@link EndPoint} associated with the connection
      * @return a new {@link Connection}
      */
-    public Connection newConnection(Connector connector, EndPoint endPoint);
+    Connection newConnection(Connector connector, EndPoint endPoint);
 
-    public interface Upgrading extends ConnectionFactory
+    interface Upgrading extends ConnectionFactory
     {
 
         /**
@@ -83,6 +83,6 @@ public interface ConnectionFactory
          * indicate that the upgrade should proceed.
          * @throws BadMessageException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
          */
-        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields responseFields) throws BadMessageException;
+        Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields responseFields) throws BadMessageException;
     }
 }

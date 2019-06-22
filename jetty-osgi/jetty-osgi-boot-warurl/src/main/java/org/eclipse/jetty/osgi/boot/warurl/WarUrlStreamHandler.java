@@ -63,7 +63,7 @@ public class WarUrlStreamHandler extends AbstractURLStreamHandlerService
         }
 
         // if (actual.toString().startsWith("file:/") && ! actual.to)
-        URLConnection ori = (URLConnection)actual.openConnection();
+        URLConnection ori = actual.openConnection();
         ori.setDefaultUseCaches(Resource.getDefaultUseCaches());
         JarURLConnection jarOri = null;
         try
@@ -83,7 +83,7 @@ public class WarUrlStreamHandler extends AbstractURLStreamHandlerService
                 jarOri.getJarFile().close();
                 jarOri = null;
             }
-            catch (Throwable t)
+            catch (Throwable ignored)
             {
             }
             return new WarURLConnection(actual, mf);
@@ -95,7 +95,7 @@ public class WarUrlStreamHandler extends AbstractURLStreamHandlerService
                 {
                     jarOri.getJarFile().close();
                 }
-                catch (Throwable t)
+                catch (Throwable ignored)
                 {
                 }
         }

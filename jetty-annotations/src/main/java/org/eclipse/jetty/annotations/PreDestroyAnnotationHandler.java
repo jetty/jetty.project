@@ -48,7 +48,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
             Method[] methods = clazz.getDeclaredMethods();
             for (int i = 0; i < methods.length; i++)
             {
-                Method m = (Method)methods[i];
+                Method m = methods[i];
                 if (m.isAnnotationPresent(PreDestroy.class))
                 {
                     if (m.getParameterCount() != 0)
@@ -94,7 +94,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
      */
     public boolean supportsPreDestroy(Class c)
     {
-        if (javax.servlet.Servlet.class.isAssignableFrom(c) ||
+        return javax.servlet.Servlet.class.isAssignableFrom(c) ||
             javax.servlet.Filter.class.isAssignableFrom(c) ||
             javax.servlet.ServletContextListener.class.isAssignableFrom(c) ||
             javax.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
@@ -104,9 +104,6 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
             javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
             javax.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
             javax.servlet.AsyncListener.class.isAssignableFrom(c) ||
-            javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
-            return true;
-
-        return false;
+            javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c);
     }
 }

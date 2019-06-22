@@ -139,20 +139,18 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             {
                 webApp.stop();
             }
-            catch (Exception x)
+            catch (Exception ignored)
             {
             }
-            ;
 
             try
             {
                 if (tpool != null)
                     tpool.stop();
             }
-            catch (Exception x)
+            catch (Exception ignored)
             {
             }
-            ;
         }
 
         if (deleteOnExit)

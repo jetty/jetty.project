@@ -101,8 +101,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         {
             files.forEach(file ->
             {
-                if (file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar")
-                    || file.isDirectory())
+                if (file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar") || file.isDirectory())
                 {
                     try
                     {

@@ -59,7 +59,7 @@ import static org.hamcrest.Matchers.not;
 
 public class DebugHandlerTest
 {
-    public final static HostnameVerifier __hostnameverifier = new HostnameVerifier()
+    public static final HostnameVerifier __hostnameverifier = new HostnameVerifier()
     {
         @Override
         public boolean verify(String hostname, SSLSession session)

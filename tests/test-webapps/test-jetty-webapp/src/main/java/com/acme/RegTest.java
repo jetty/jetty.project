@@ -21,6 +21,7 @@ package com.acme;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -60,7 +61,7 @@ public class RegTest extends HttpServlet
         }
         catch (IllegalStateException e)
         {
-            pout = new PrintWriter(new OutputStreamWriter(response.getOutputStream(), "UTF-8"));
+            pout = new PrintWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8));
         }
 
         try
@@ -73,7 +74,7 @@ public class RegTest extends HttpServlet
             pout.write("<td>" + notag(request.getMethod()) + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getContentLength:&nbsp;</th>");
-            pout.write("<td>" + Integer.toString(request.getContentLength()) + "</td>");
+            pout.write("<td>" + request.getContentLength() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getContentType:&nbsp;</th>");
             pout.write("<td>" + notag(request.getContentType()) + "</td>");
@@ -110,7 +111,7 @@ public class RegTest extends HttpServlet
             pout.write("<td>" + notag(request.getServerName()) + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getServerPort:&nbsp;</th>");
-            pout.write("<td>" + Integer.toString(request.getServerPort()) + "</td>");
+            pout.write("<td>" + request.getServerPort() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getLocalName:&nbsp;</th>");
             pout.write("<td>" + request.getLocalName() + "</td>");
@@ -119,7 +120,7 @@ public class RegTest extends HttpServlet
             pout.write("<td>" + request.getLocalAddr() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getLocalPort:&nbsp;</th>");
-            pout.write("<td>" + Integer.toString(request.getLocalPort()) + "</td>");
+            pout.write("<td>" + request.getLocalPort() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getRemoteUser:&nbsp;</th>");
             pout.write("<td>" + request.getRemoteUser() + "</td>");

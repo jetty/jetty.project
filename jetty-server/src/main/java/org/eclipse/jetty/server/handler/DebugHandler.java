@@ -85,10 +85,10 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
             ex = ioe.toString();
             throw ioe;
         }
-        catch (ServletException se)
+        catch (ServletException cause)
         {
-            ex = se.toString() + ":" + se.getCause();
-            throw se;
+            ex = cause.toString() + ":" + cause.getCause();
+            throw cause;
         }
         catch (RuntimeException rte)
         {
@@ -136,7 +136,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         for (Connector connector : getServer().getConnectors())
         {
             if (connector instanceof AbstractConnector)
-                ((AbstractConnector)connector).addBean(this, false);
+                connector.addBean(this, false);
         }
 
         super.doStart();
@@ -153,7 +153,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         for (Connector connector : getServer().getConnectors())
         {
             if (connector instanceof AbstractConnector)
-                ((AbstractConnector)connector).removeBean(this);
+                connector.removeBean(this);
         }
     }
 

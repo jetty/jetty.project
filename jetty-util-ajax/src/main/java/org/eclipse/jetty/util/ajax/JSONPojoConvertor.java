@@ -44,7 +44,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class JSONPojoConvertor implements JSON.Convertor
 {
     private static final Logger LOG = Log.getLogger(JSONPojoConvertor.class);
-    public static final Object[] GETTER_ARG = new Object[]{}, NULL_ARG = new Object[]{null};
+    public static final Object[] GETTER_ARG = new Object[]{};
+    public static final Object[] NULL_ARG = new Object[]{null};
     private static final Map<Class<?>, NumberType> __numberTypes = new HashMap<Class<?>, NumberType>();
 
     public static NumberType getNumberType(Class<?> clazz)
@@ -63,7 +64,7 @@ public class JSONPojoConvertor implements JSON.Convertor
      */
     public JSONPojoConvertor(Class<?> pojoClass)
     {
-        this(pojoClass, (Set<String>)null, true);
+        this(pojoClass, null, true);
     }
 
     /**
@@ -103,7 +104,7 @@ public class JSONPojoConvertor implements JSON.Convertor
      */
     public JSONPojoConvertor(Class<?> pojoClass, boolean fromJSON)
     {
-        this(pojoClass, (Set<String>)null, fromJSON);
+        this(pojoClass, null, fromJSON);
     }
 
     protected void init()
@@ -306,17 +307,17 @@ public class JSONPojoConvertor implements JSON.Convertor
             if (_type.isEnum())
             {
                 if (value instanceof Enum)
-                    _setter.invoke(obj, new Object[]{value});
+                    _setter.invoke(obj, value);
                 else
-                    _setter.invoke(obj, new Object[]{Enum.valueOf((Class<? extends Enum>)_type, value.toString())});
+                    _setter.invoke(obj, Enum.valueOf((Class<? extends Enum>)_type, value.toString()));
             }
             else if (_numberType != null && value instanceof Number)
             {
-                _setter.invoke(obj, new Object[]{_numberType.getActualValue((Number)value)});
+                _setter.invoke(obj, _numberType.getActualValue((Number)value));
             }
             else if (Character.TYPE.equals(_type) || Character.class.equals(_type))
             {
-                _setter.invoke(obj, new Object[]{String.valueOf(value).charAt(0)});
+                _setter.invoke(obj, String.valueOf(value).charAt(0));
             }
             else if (_componentType != null && value.getClass().isArray())
             {
@@ -332,10 +333,10 @@ public class JSONPojoConvertor implements JSON.Convertor
                     {
                         // unusual array with multiple types
                         LOG.ignore(e);
-                        _setter.invoke(obj, new Object[]{value});
+                        _setter.invoke(obj, value);
                         return;
                     }
-                    _setter.invoke(obj, new Object[]{array});
+                    _setter.invoke(obj, array);
                 }
                 else
                 {
@@ -352,20 +353,20 @@ public class JSONPojoConvertor implements JSON.Convertor
                     {
                         // unusual array with multiple types
                         LOG.ignore(e);
-                        _setter.invoke(obj, new Object[]{value});
+                        _setter.invoke(obj, value);
                         return;
                     }
-                    _setter.invoke(obj, new Object[]{array});
+                    _setter.invoke(obj, array);
                 }
             }
             else
-                _setter.invoke(obj, new Object[]{value});
+                _setter.invoke(obj, value);
         }
     }
 
     public interface NumberType
     {
-        public Object getActualValue(Number number);
+        Object getActualValue(Number number);
     }
 
     public static final NumberType SHORT = new NumberType()

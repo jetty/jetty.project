@@ -58,15 +58,15 @@ public class MsieSslRule extends Rule
     {
         if (request.isSecure())
         {
-            String user_agent = request.getHeader(HttpHeader.USER_AGENT.asString());
+            String userAgent = request.getHeader(HttpHeader.USER_AGENT.asString());
 
-            if (user_agent != null)
+            if (userAgent != null)
             {
-                int msie = user_agent.indexOf("MSIE");
-                if (msie > 0 && user_agent.length() - msie > 5)
+                int msie = userAgent.indexOf("MSIE");
+                if (msie > 0 && userAgent.length() - msie > 5)
                 {
                     // Get Internet Explorer Version
-                    int ieVersion = user_agent.charAt(msie + 5);
+                    int ieVersion = userAgent.charAt(msie + 5);
 
                     if (ieVersion <= IEv5)
                     {
@@ -76,11 +76,11 @@ public class MsieSslRule extends Rule
 
                     if (ieVersion == IEv6)
                     {
-                        int windows = user_agent.indexOf("Windows", msie + 5);
+                        int windows = userAgent.indexOf("Windows", msie + 5);
                         if (windows > 0)
                         {
-                            int end = user_agent.indexOf(')', windows + 8);
-                            if (end < 0 || __IE6_BadOS.get(user_agent, windows + 8, end - windows - 8) != null)
+                            int end = userAgent.indexOf(')', windows + 8);
+                            if (end < 0 || __IE6_BadOS.get(userAgent, windows + 8, end - windows - 8) != null)
                             {
                                 response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
                                 return target;

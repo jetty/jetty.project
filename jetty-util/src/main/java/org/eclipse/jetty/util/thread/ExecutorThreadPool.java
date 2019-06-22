@@ -361,10 +361,10 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
                     public void dump(Appendable out, String indent) throws IOException
                     {
                         StringBuilder b = new StringBuilder();
-                        b.append(String.valueOf(thread.getId()))
+                        b.append(thread.getId())
                             .append(" ")
                             .append(thread.getName())
-                            .append(" p=").append(String.valueOf(thread.getPriority()))
+                            .append(" p=").append(thread.getPriority())
                             .append(" ")
                             .append(known)
                             .append(thread.getState().toString());

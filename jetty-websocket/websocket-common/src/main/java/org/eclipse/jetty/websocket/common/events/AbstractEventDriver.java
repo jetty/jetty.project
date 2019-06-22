@@ -43,7 +43,7 @@ import org.eclipse.jetty.websocket.common.message.MessageAppender;
 public abstract class AbstractEventDriver extends AbstractLifeCycle implements IncomingFrames, EventDriver
 {
     private static final Logger LOG = Log.getLogger(AbstractEventDriver.class);
-    protected final Logger TARGET_LOG;
+    protected final Logger targetLog;
     protected WebSocketPolicy policy;
     protected final Object websocket;
     protected WebSocketSession session;
@@ -53,7 +53,7 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
     {
         this.policy = policy;
         this.websocket = websocket;
-        this.TARGET_LOG = Log.getLogger(websocket.getClass());
+        this.targetLog = Log.getLogger(websocket.getClass());
     }
 
     protected void appendMessage(ByteBuffer buffer, boolean fin) throws IOException

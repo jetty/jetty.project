@@ -132,13 +132,13 @@ public class TopologicalSort<T>
             if (dependencies != null)
             {
                 // Sort the dependencies 
-                SortedSet<T> ordered_deps = new TreeSet<>(comparator);
-                ordered_deps.addAll(dependencies);
+                SortedSet<T> orderedDeps = new TreeSet<>(comparator);
+                orderedDeps.addAll(dependencies);
 
                 // recursively visit each dependency
                 try
                 {
-                    for (T d : ordered_deps)
+                    for (T d : orderedDeps)
                     {
                         visit(d, visited, sorted, comparator);
                     }

@@ -54,7 +54,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     protected AbstractConnectionFactory(String protocol)
     {
         _protocol = protocol;
-        _protocols = Collections.unmodifiableList(Arrays.asList(new String[]{protocol}));
+        _protocols = Collections.unmodifiableList(Arrays.asList(protocol));
     }
 
     protected AbstractConnectionFactory(String... protocols)

@@ -69,16 +69,10 @@ public abstract class PathSpec implements Comparable<PathSpec>
         PathSpec other = (PathSpec)obj;
         if (pathSpec == null)
         {
-            if (other.pathSpec != null)
-            {
-                return false;
-            }
+            return other.pathSpec == null;
         }
-        else if (!pathSpec.equals(other.pathSpec))
-        {
-            return false;
-        }
-        return true;
+        else
+            return pathSpec.equals(other.pathSpec);
     }
 
     public PathSpecGroup getGroup()

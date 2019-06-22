@@ -144,10 +144,10 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                         {
                             l.stop();
                         }
-                        catch (Throwable t2)
+                        catch (Throwable cause2)
                         {
-                            if (t2 != t)
-                                t.addSuppressed(t2);
+                            if (cause2 != t)
+                                t.addSuppressed(cause2);
                         }
                     }
                 }
@@ -198,9 +198,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 {
                     stop(l);
                 }
-                catch (Throwable th)
+                catch (Throwable cause)
                 {
-                    mex.add(th);
+                    mex.add(cause);
                 }
             }
         }
@@ -225,9 +225,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 {
                     d.destroy();
                 }
-                catch (Throwable th)
+                catch (Throwable cause)
                 {
-                    LOG.warn(th);
+                    LOG.warn(cause);
                 }
             }
         }
@@ -334,14 +334,14 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         if (o == null || contains(o))
             return false;
 
-        Bean new_bean = new Bean(o);
+        Bean newBean = new Bean(o);
 
         // if the bean is a Listener
         if (o instanceof Container.Listener)
             addEventListener((Container.Listener)o);
 
         // Add the bean
-        _beans.add(new_bean);
+        _beans.add(newBean);
 
         // Tell existing listeners about the new bean
         for (Container.Listener l : _listeners)
@@ -354,11 +354,11 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             switch (managed)
             {
                 case UNMANAGED:
-                    unmanage(new_bean);
+                    unmanage(newBean);
                     break;
 
                 case MANAGED:
-                    manage(new_bean);
+                    manage(newBean);
 
                     if (isStarting() && _doStarted)
                     {
@@ -375,26 +375,26 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                         if (isStarting())
                         {
                             if (l.isRunning())
-                                unmanage(new_bean);
+                                unmanage(newBean);
                             else if (_doStarted)
                             {
-                                manage(new_bean);
+                                manage(newBean);
                                 start(l);
                             }
                             else
-                                new_bean._managed = Managed.AUTO;
+                                newBean._managed = Managed.AUTO;
                         }
                         else if (isStarted())
-                            unmanage(new_bean);
+                            unmanage(newBean);
                         else
-                            new_bean._managed = Managed.AUTO;
+                            newBean._managed = Managed.AUTO;
                     }
                     else
-                        new_bean._managed = Managed.POJO;
+                        newBean._managed = Managed.POJO;
                     break;
 
                 case POJO:
-                    new_bean._managed = Managed.POJO;
+                    newBean._managed = Managed.POJO;
             }
         }
         catch (RuntimeException | Error e)
@@ -407,7 +407,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} added {}", this, new_bean);
+            LOG.debug("{} added {}", this, newBean);
 
         return true;
     }

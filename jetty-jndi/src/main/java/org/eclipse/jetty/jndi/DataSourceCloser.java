@@ -79,9 +79,9 @@ public class DataSourceCloser implements Destroyable
 
         try
         {
-            Method close = _datasource.getClass().getMethod("close", new Class[]{});
+            Method close = _datasource.getClass().getMethod("close");
             LOG.info("Close datasource {}", _datasource);
-            close.invoke(_datasource, new Object[]{});
+            close.invoke(_datasource);
         }
         catch (Exception e)
         {

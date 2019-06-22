@@ -41,11 +41,7 @@ public class CharacterDecoder extends AbstractDecoder implements Decoder.Text<Ch
         {
             return false;
         }
-        if (s.length() == 1)
-        {
-            return true;
-        }
+        return s.length() == 1;
         // can only parse 1 character
-        return false;
     }
 }

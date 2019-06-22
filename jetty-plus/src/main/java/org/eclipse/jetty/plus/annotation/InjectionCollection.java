@@ -47,7 +47,7 @@ public class InjectionCollection
         if (LOG.isDebugEnabled())
             LOG.debug("Adding injection for class=" + (injection.getTargetClass() + " on a " + (injection.getTarget().getName())));
 
-        List<Injection> injections = (List<Injection>)_injectionMap.get(injection.getTargetClass().getCanonicalName());
+        List<Injection> injections = _injectionMap.get(injection.getTargetClass().getCanonicalName());
         if (injections == null)
         {
             injections = new ArrayList<Injection>();

@@ -108,7 +108,7 @@ public interface PushBuilder
      * @throws NullPointerException if the argument is {@code null}
      * @throws IllegalArgumentException if the argument is the empty String
      */
-    public abstract PushBuilder method(String method);
+    PushBuilder method(String method);
 
     /**
      * Set the query string to be used for the push.
@@ -122,7 +122,7 @@ public interface PushBuilder
      * @param queryString the query string to be used for the push.
      * @return this builder.
      */
-    public abstract PushBuilder queryString(String queryString);
+    PushBuilder queryString(String queryString);
 
     /**
      * Set the SessionID to be used for the push.
@@ -135,7 +135,7 @@ public interface PushBuilder
      * @param sessionId the SessionID to be used for the push.
      * @return this builder.
      */
-    public abstract PushBuilder sessionId(String sessionId);
+    PushBuilder sessionId(String sessionId);
 
     /**
      * Set if the request is to be conditional.
@@ -147,7 +147,7 @@ public interface PushBuilder
      * @param conditional true if the push request is conditional
      * @return this builder.
      */
-    public abstract PushBuilder conditional(boolean conditional);
+    PushBuilder conditional(boolean conditional);
 
     /**
      * <p>Set a header to be used for the push.  If the builder has an
@@ -157,7 +157,7 @@ public interface PushBuilder
      * @param value The header value to set
      * @return this builder.
      */
-    public abstract PushBuilder setHeader(String name, String value);
+    PushBuilder setHeader(String name, String value);
 
     /**
      * <p>Add a header to be used for the push.</p>
@@ -166,7 +166,7 @@ public interface PushBuilder
      * @param value The header value to add
      * @return this builder.
      */
-    public abstract PushBuilder addHeader(String name, String value);
+    PushBuilder addHeader(String name, String value);
 
     /**
      * <p>Remove the named header.  If the header does not exist, take
@@ -175,7 +175,7 @@ public interface PushBuilder
      * @param name The name of the header to remove
      * @return this builder.
      */
-    public abstract PushBuilder removeHeader(String name);
+    PushBuilder removeHeader(String name);
 
     /**
      * Set the URI path to be used for the push.  The path may start
@@ -191,7 +191,7 @@ public interface PushBuilder
      * query string.
      * @return this builder.
      */
-    public abstract PushBuilder path(String path);
+    PushBuilder path(String path);
 
     /**
      * Set the etag to be used for conditional pushes.
@@ -202,7 +202,7 @@ public interface PushBuilder
      * @param etag the etag to be used for the push.
      * @return this builder.
      */
-    public abstract PushBuilder etag(String etag);
+    PushBuilder etag(String etag);
 
     /**
      * Set the last modified date to be used for conditional pushes.
@@ -213,7 +213,7 @@ public interface PushBuilder
      * @param lastModified the last modified date to be used for the push.
      * @return this builder.
      */
-    public abstract PushBuilder lastModified(String lastModified);
+    PushBuilder lastModified(String lastModified);
 
     /**
      * Push a resource given the current state of the builder,
@@ -240,23 +240,23 @@ public interface PushBuilder
      * last call to {@code push()} that did not throw an
      * IllegalStateException.
      */
-    public abstract void push();
+    void push();
 
-    public abstract String getMethod();
+    String getMethod();
 
-    public abstract String getQueryString();
+    String getQueryString();
 
-    public abstract String getSessionId();
+    String getSessionId();
 
-    public abstract boolean isConditional();
+    boolean isConditional();
 
-    public abstract Set<String> getHeaderNames();
+    Set<String> getHeaderNames();
 
-    public abstract String getHeader(String name);
+    String getHeader(String name);
 
-    public abstract String getPath();
+    String getPath();
 
-    public abstract String getEtag();
+    String getEtag();
 
-    public abstract String getLastModified();
+    String getLastModified();
 }

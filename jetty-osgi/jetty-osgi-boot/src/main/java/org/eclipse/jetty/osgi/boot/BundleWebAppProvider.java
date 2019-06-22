@@ -73,8 +73,8 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             try
             {
                 String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME))
-                    || (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
+                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) ||
+                    (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
                 {
                     if (bundleAdded(bundle))
                         return bundle;
@@ -259,7 +259,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             // the location will often reflect the version.
             // maybe this is relevant when the file is a war)
             String location = bundle.getLocation();
-            String toks[] = StringUtil.replace(location, '\\', '/').split("/");
+            String[] toks = StringUtil.replace(location, '\\', '/').split("/");
             contextPath = toks[toks.length - 1];
             // remove .jar, .war etc:
             int lastDot = contextPath.lastIndexOf('.');

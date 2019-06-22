@@ -45,7 +45,7 @@ public interface Authentication
      *
      * @see #matches(String, URI, String)
      */
-    public static final String ANY_REALM = "<<ANY_REALM>>";
+    String ANY_REALM = "<<ANY_REALM>>";
 
     /**
      * Matches {@link Authentication}s based on the given parameters
@@ -78,7 +78,7 @@ public interface Authentication
     /**
      * Structure holding information about the {@code WWW-Authenticate} (or {@code Proxy-Authenticate}) header.
      */
-    public static class HeaderInfo
+    class HeaderInfo
     {
         private final HttpHeader header;
         private final String type;
@@ -143,7 +143,7 @@ public interface Authentication
     /**
      * {@link Result} holds the information needed to authenticate a {@link Request} via {@link org.eclipse.jetty.client.api.Authentication.Result#apply(org.eclipse.jetty.client.api.Request)}.
      */
-    public static interface Result
+    interface Result
     {
         /**
          * @return the URI of the request that has been used to generate this {@link Result}

@@ -87,12 +87,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static final String TEMPDIR = "javax.servlet.context.tempdir";
     public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
-    public final static String WEB_DEFAULTS_XML = "org/eclipse/jetty/webapp/webdefault.xml";
-    public final static String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
-    public final static String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
-    public final static String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
+    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/webapp/webdefault.xml";
+    public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
+    public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
+    public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
 
-    private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
+    private static final String[] DEFAULT_PROTECTED_TARGETS = {"/web-inf", "/meta-inf"};
 
     public static final String[] DEFAULT_CONFIGURATION_CLASSES =
         {
@@ -108,7 +108,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // system classloader.
     // TODO This centrally managed list of features that are exposed/hidden needs to be replaced
     // with a more automatic distributed mechanism
-    public final static String[] __dftSystemClasses =
+    public static final String[] __dftSystemClasses =
         {
             "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
             "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
@@ -134,7 +134,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // TODO This centrally managed list of features that are exposed/hidden needs to be replaced
     // with a more automatic distributed mechanism
     // TODO should be white list rather than black list
-    public final static String[] __dftServerClasses =
+    public static final String[] __dftServerClasses =
         {
             "-org.eclipse.jetty.server.session.SessionData", //don't hide SessionData for de/serialization purposes
             "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
@@ -278,7 +278,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(parent, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
         _scontext = new Context();
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
-        setProtectedTargets(__dftProtectedTargets);
+        setProtectedTargets(DEFAULT_PROTECTED_TARGETS);
     }
 
     /**
@@ -808,26 +808,26 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    public boolean isServerResource(String name, URL url)
+    public boolean isServerResource(String name, URL parentUrl)
     {
         if (_serverClasses == null)
             loadServerClasses();
 
-        boolean result = _serverClasses.match(name, url);
+        boolean result = _serverClasses.match(name, parentUrl);
         if (LOG.isDebugEnabled())
-            LOG.debug("isServerResource=={} {} {}", result, name, url);
+            LOG.debug("isServerResource=={} {} {}", result, name, parentUrl);
         return result;
     }
 
     @Override
-    public boolean isSystemResource(String name, URL url)
+    public boolean isSystemResource(String name, URL webappUrl)
     {
         if (_systemClasses == null)
             loadSystemClasses();
 
-        boolean result = _systemClasses.match(name, url);
+        boolean result = _systemClasses.match(name, webappUrl);
         if (LOG.isDebugEnabled())
-            LOG.debug("isSystemResource=={} {} {}", result, name, url);
+            LOG.debug("isSystemResource=={} {} {}", result, name, webappUrl);
         return result;
     }
 
@@ -896,11 +896,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return null;
 
         // Iw there a WEB-INF directory?
-        Resource web_inf = super.getBaseResource().addPath("WEB-INF/");
-        if (!web_inf.exists() || !web_inf.isDirectory())
+        Resource webInf = super.getBaseResource().addPath("WEB-INF/");
+        if (!webInf.exists() || !webInf.isDirectory())
             return null;
 
-        return web_inf;
+        return webInf;
     }
 
     /**
@@ -995,18 +995,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        List<String> system_classes = null;
+        List<String> systemClasses = null;
         if (_systemClasses != null)
         {
-            system_classes = new ArrayList<>(_systemClasses);
-            Collections.sort(system_classes);
+            systemClasses = new ArrayList<>(_systemClasses);
+            Collections.sort(systemClasses);
         }
 
-        List<String> server_classes = null;
+        List<String> serverClasses = null;
         if (_serverClasses != null)
         {
-            server_classes = new ArrayList<>(_serverClasses);
-            Collections.sort(server_classes);
+            serverClasses = new ArrayList<>(_serverClasses);
+            Collections.sort(serverClasses);
         }
 
         String name = getDisplayName();
@@ -1035,11 +1035,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         dumpObjects(out, indent,
             new ClassLoaderDump(getClassLoader()),
-            new DumpableCollection("Systemclasses " + name, system_classes),
-            new DumpableCollection("Serverclasses " + name, server_classes),
+            new DumpableCollection("Systemclasses " + name, systemClasses),
+            new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
-            new DumpableCollection("Context attributes " + name, ((Context)getServletContext()).getAttributeEntrySet()),
+            new DumpableCollection("Context attributes " + name, getServletContext().getAttributeEntrySet()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
     }
@@ -1155,11 +1155,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void removeEventListener(EventListener listener)
     {
         super.removeEventListener(listener);
-        if ((listener instanceof HttpSessionActivationListener)
-            || (listener instanceof HttpSessionAttributeListener)
-            || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener)
-            || (listener instanceof HttpSessionIdListener))
+        if ((listener instanceof HttpSessionActivationListener) ||
+                (listener instanceof HttpSessionAttributeListener) ||
+                (listener instanceof HttpSessionBindingListener) ||
+                (listener instanceof HttpSessionListener) ||
+                (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler != null)
                 _sessionHandler.removeEventListener(listener);
@@ -1611,15 +1611,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return;
         }
 
-        String[] server_classes;
+        String[] serverClasses;
         if (o instanceof String[])
-            server_classes = (String[])o;
+            serverClasses = (String[])o;
         else
-            server_classes = __dftServerClasses;
-        int l = server_classes.length;
-        server_classes = Arrays.copyOf(server_classes, l + pattern.length);
-        System.arraycopy(pattern, 0, server_classes, l, pattern.length);
-        server.setAttribute(SERVER_SRV_CLASSES, server_classes);
+            serverClasses = __dftServerClasses;
+        int l = serverClasses.length;
+        serverClasses = Arrays.copyOf(serverClasses, l + pattern.length);
+        System.arraycopy(pattern, 0, serverClasses, l, pattern.length);
+        server.setAttribute(SERVER_SRV_CLASSES, serverClasses);
     }
 
     public static void addSystemClasses(Server server, String... pattern)
@@ -1636,14 +1636,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return;
         }
 
-        String[] system_classes;
+        String[] systemClasses;
         if (o instanceof String[])
-            system_classes = (String[])o;
+            systemClasses = (String[])o;
         else
-            system_classes = __dftSystemClasses;
-        int l = system_classes.length;
-        system_classes = Arrays.copyOf(system_classes, l + pattern.length);
-        System.arraycopy(pattern, 0, system_classes, l, pattern.length);
-        server.setAttribute(SERVER_SYS_CLASSES, system_classes);
+            systemClasses = __dftSystemClasses;
+        int l = systemClasses.length;
+        systemClasses = Arrays.copyOf(systemClasses, l + pattern.length);
+        System.arraycopy(pattern, 0, systemClasses, l, pattern.length);
+        server.setAttribute(SERVER_SYS_CLASSES, systemClasses);
     }
 }

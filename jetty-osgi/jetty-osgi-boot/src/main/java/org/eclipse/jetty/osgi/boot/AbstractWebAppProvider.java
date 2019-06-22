@@ -214,8 +214,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             String overrideBundleInstallLocation = (String)_properties.get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
             File bundleInstallLocation =
                 (overrideBundleInstallLocation == null
-                    ? BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle)
-                    : new File(overrideBundleInstallLocation));
+                     ? BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle)
+                     : new File(overrideBundleInstallLocation));
 
             if (LOG.isDebugEnabled())
             {
@@ -268,9 +268,9 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
             if (url == null)
             {
-                throw new IllegalArgumentException("Unable to locate " + _webAppPath
-                    + " in "
-                    + (bundleInstallLocation != null ? bundleInstallLocation.getAbsolutePath() : "unlocated bundle '" + _bundle.getSymbolicName() + "'"));
+                throw new IllegalArgumentException(String.format("Unable to locate %s in %s",
+                    _webAppPath,
+                    (bundleInstallLocation != null ? bundleInstallLocation.getAbsolutePath() : "missing bundle '" + _bundle.getSymbolicName() + "'")));
             }
 
             //Sets the location of the war file
@@ -370,11 +370,9 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 Bundle[] bs = packageAdmin.getBundles(symbName, null);
                 if (bs == null || bs.length == 0)
                 {
-                    throw new IllegalArgumentException("Unable to locate the bundle '" + symbName
-                        + "' specified by "
-                        + OSGiWebappConstants.REQUIRE_TLD_BUNDLE
-                        + " in manifest of "
-                        + (_bundle == null ? "unknown" : _bundle.getSymbolicName()));
+                    throw new IllegalArgumentException("Unable to locate the bundle '" + symbName +
+                                                           "' specified by " + OSGiWebappConstants.REQUIRE_TLD_BUNDLE + " in manifest of " +
+                                                           (_bundle == null ? "unknown" : _bundle.getSymbolicName()));
                 }
 
                 File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bs[0]);
@@ -553,7 +551,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        _configurationClasses = configurations == null ? null : (String[])configurations.clone();
+        _configurationClasses = configurations == null ? null : configurations.clone();
     }
 
     public String[] getConfigurationClasses()

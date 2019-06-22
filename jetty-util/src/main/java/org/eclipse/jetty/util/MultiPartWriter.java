@@ -28,8 +28,8 @@ import java.io.Writer;
 public class MultiPartWriter extends FilterWriter
 {
 
-    private final static String __CRLF = "\015\012";
-    private final static String __DASHDASH = "--";
+    private static final String CRLF = IO.CRLF;
+    private static final String DASHDASH = "--";
 
     public static final String MULTIPART_MIXED = MultiPartOutputStream.MULTIPART_MIXED;
     public static final String MULTIPART_X_MIXED_REPLACE = MultiPartOutputStream.MULTIPART_X_MIXED_REPLACE;
@@ -60,11 +60,11 @@ public class MultiPartWriter extends FilterWriter
         try
         {
             if (inPart)
-                out.write(__CRLF);
-            out.write(__DASHDASH);
+                out.write(CRLF);
+            out.write(DASHDASH);
             out.write(boundary);
-            out.write(__DASHDASH);
-            out.write(__CRLF);
+            out.write(DASHDASH);
+            out.write(CRLF);
             inPart = false;
         }
         finally
@@ -88,14 +88,14 @@ public class MultiPartWriter extends FilterWriter
         throws IOException
     {
         if (inPart)
-            out.write(__CRLF);
-        out.write(__DASHDASH);
+            out.write(CRLF);
+        out.write(DASHDASH);
         out.write(boundary);
-        out.write(__CRLF);
+        out.write(CRLF);
         out.write("Content-Type: ");
         out.write(contentType);
-        out.write(__CRLF);
-        out.write(__CRLF);
+        out.write(CRLF);
+        out.write(CRLF);
         inPart = true;
     }
 
@@ -108,7 +108,7 @@ public class MultiPartWriter extends FilterWriter
         throws IOException
     {
         if (inPart)
-            out.write(__CRLF);
+            out.write(CRLF);
         inPart = false;
     }
 
@@ -123,19 +123,19 @@ public class MultiPartWriter extends FilterWriter
         throws IOException
     {
         if (inPart)
-            out.write(__CRLF);
-        out.write(__DASHDASH);
+            out.write(CRLF);
+        out.write(DASHDASH);
         out.write(boundary);
-        out.write(__CRLF);
+        out.write(CRLF);
         out.write("Content-Type: ");
         out.write(contentType);
-        out.write(__CRLF);
+        out.write(CRLF);
         for (int i = 0; headers != null && i < headers.length; i++)
         {
             out.write(headers[i]);
-            out.write(__CRLF);
+            out.write(CRLF);
         }
-        out.write(__CRLF);
+        out.write(CRLF);
         inPart = true;
     }
 }

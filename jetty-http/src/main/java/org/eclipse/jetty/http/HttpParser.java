@@ -86,9 +86,9 @@ public class HttpParser
 {
     public static final Logger LOG = Log.getLogger(HttpParser.class);
     @Deprecated
-    public final static String __STRICT = "org.eclipse.jetty.http.HttpParser.STRICT";
-    public final static int INITIAL_URI_LENGTH = 256;
-    private final static int MAX_CHUNK_LENGTH = Integer.MAX_VALUE / 16 - 16;
+    public static final String __STRICT = "org.eclipse.jetty.http.HttpParser.STRICT";
+    public static final int INITIAL_URI_LENGTH = 256;
+    private static final int MAX_CHUNK_LENGTH = Integer.MAX_VALUE / 16 - 16;
 
     /**
      * Cache of common {@link HttpField}s including: <UL>
@@ -102,7 +102,7 @@ public class HttpParser
      * determine the header name even if the name:value combination is not cached
      * </ul>
      */
-    public final static Trie<HttpField> CACHE = new ArrayTrie<>(2048);
+    public static final Trie<HttpField> CACHE = new ArrayTrie<>(2048);
 
     // States
     public enum FieldState
@@ -140,10 +140,10 @@ public class HttpParser
         CLOSED  // The associated stream/endpoint is at EOF
     }
 
-    private final static EnumSet<State> __idleStates = EnumSet.of(State.START, State.END, State.CLOSE, State.CLOSED);
-    private final static EnumSet<State> __completeStates = EnumSet.of(State.END, State.CLOSE, State.CLOSED);
+    private static final EnumSet<State> __idleStates = EnumSet.of(State.START, State.END, State.CLOSE, State.CLOSED);
+    private static final EnumSet<State> __completeStates = EnumSet.of(State.END, State.CLOSE, State.CLOSED);
 
-    private final boolean DEBUG = LOG.isDebugEnabled(); // Cache debug to help branch prediction
+    private final boolean debug = LOG.isDebugEnabled(); // Cache debug to help branch prediction
     private final HttpHandler _handler;
     private final RequestHandler _requestHandler;
     private final ResponseHandler _responseHandler;
@@ -561,18 +561,18 @@ public class HttpParser
 
     private boolean handleHeaderContentMessage()
     {
-        boolean handle_header = _handler.headerComplete();
+        boolean handleHeader = _handler.headerComplete();
         _headerComplete = true;
-        boolean handle_content = _handler.contentComplete();
-        boolean handle_message = _handler.messageComplete();
-        return handle_header || handle_content || handle_message;
+        boolean handleContent = _handler.contentComplete();
+        boolean handleMessage = _handler.messageComplete();
+        return handleHeader || handleContent || handleMessage;
     }
 
     private boolean handleContentMessage()
     {
-        boolean handle_content = _handler.contentComplete();
-        boolean handle_message = _handler.messageComplete();
-        return handle_content || handle_message;
+        boolean handleContent = _handler.contentComplete();
+        boolean handleMessage = _handler.messageComplete();
+        return handleContent || handleMessage;
     }
 
     /* Parse a request or response line
@@ -875,8 +875,8 @@ public class HttpParser
                             // Should we try to cache header fields?
                             if (_fieldCache == null && _version.getVersion() >= HttpVersion.HTTP_1_1.getVersion() && _handler.getHeaderCacheSize() > 0)
                             {
-                                int header_cache = _handler.getHeaderCacheSize();
-                                _fieldCache = new ArrayTernaryTrie<>(header_cache);
+                                int headerCache = _handler.getHeaderCacheSize();
+                                _fieldCache = new ArrayTernaryTrie<>(headerCache);
                             }
 
                             setState(State.HEADER);
@@ -951,7 +951,7 @@ public class HttpParser
             // Handle known headers
             if (_header != null)
             {
-                boolean add_to_connection_trie = false;
+                boolean addToConnectionTrie = false;
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
@@ -1007,7 +1007,7 @@ public class HttpParser
                             _field = new HostPortHttpField(_header,
                                 _compliances.contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE) ? _header.asString() : _headerString,
                                 _valueString);
-                            add_to_connection_trie = _fieldCache != null;
+                            addToConnectionTrie = _fieldCache != null;
                         }
                         break;
 
@@ -1025,14 +1025,14 @@ public class HttpParser
                     case COOKIE:
                     case CACHE_CONTROL:
                     case USER_AGENT:
-                        add_to_connection_trie = _fieldCache != null && _field == null;
+                        addToConnectionTrie = _fieldCache != null && _field == null;
                         break;
 
                     default:
                         break;
                 }
 
-                if (add_to_connection_trie && !_fieldCache.isFull() && _header != null && _valueString != null)
+                if (addToConnectionTrie && !_fieldCache.isFull() && _header != null && _valueString != null)
                 {
                     if (_field == null)
                         _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
@@ -1089,8 +1089,8 @@ public class HttpParser
                 boolean header = _state == State.HEADER;
                 LOG.warn("{} is too large {}>{}", header ? "Header" : "Trailer", _headerBytes, _maxHeaderBytes);
                 throw new BadMessageException(header ?
-                    HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431 :
-                    HttpStatus.PAYLOAD_TOO_LARGE_413);
+                                                  HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431 :
+                                                  HttpStatus.PAYLOAD_TOO_LARGE_413);
             }
 
             switch (_fieldState)
@@ -1147,18 +1147,18 @@ public class HttpParser
 
                             // is it a response that cannot have a body?
                             if (_responseHandler != null && // response
-                                (_responseStatus == 304 || // not-modified response
-                                    _responseStatus == 204 || // no-content response
-                                    _responseStatus < 200)) // 1xx response
+                                    (_responseStatus == 304 || // not-modified response
+                                         _responseStatus == 204 || // no-content response
+                                         _responseStatus < 200)) // 1xx response
                                 _endOfContent = EndOfContent.NO_CONTENT; // ignore any other headers set
 
                                 // else if we don't know framing
                             else if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
                             {
-                                if (_responseStatus == 0  // request
-                                    || _responseStatus == 304 // not-modified response
-                                    || _responseStatus == 204 // no-content response
-                                    || _responseStatus < 200) // 1xx response
+                                if (_responseStatus == 0 || // request
+                                        _responseStatus == 304 || // not-modified response
+                                        _responseStatus == 204 || // no-content response
+                                        _responseStatus < 200) // 1xx response
                                     _endOfContent = EndOfContent.NO_CONTENT;
                                 else
                                     _endOfContent = EndOfContent.EOF_CONTENT;
@@ -1210,14 +1210,14 @@ public class HttpParser
                             if (buffer.hasRemaining())
                             {
                                 // Try a look ahead for the known header name and value.
-                                HttpField cached_field = _fieldCache == null ? null : _fieldCache.getBest(buffer, -1, buffer.remaining());
-                                if (cached_field == null)
-                                    cached_field = CACHE.getBest(buffer, -1, buffer.remaining());
+                                HttpField cachedField = _fieldCache == null ? null : _fieldCache.getBest(buffer, -1, buffer.remaining());
+                                if (cachedField == null)
+                                    cachedField = CACHE.getBest(buffer, -1, buffer.remaining());
 
-                                if (cached_field != null)
+                                if (cachedField != null)
                                 {
-                                    String n = cached_field.getName();
-                                    String v = cached_field.getValue();
+                                    String n = cachedField.getName();
+                                    String v = cachedField.getValue();
 
                                     if (!_compliances.contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE))
                                     {
@@ -1227,7 +1227,7 @@ public class HttpParser
                                         {
                                             handleViolation(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE, en);
                                             n = en;
-                                            cached_field = new HttpField(cached_field.getHeader(), n, v);
+                                            cachedField = new HttpField(cachedField.getHeader(), n, v);
                                         }
                                     }
 
@@ -1238,11 +1238,11 @@ public class HttpParser
                                         {
                                             handleViolation(HttpComplianceSection.CASE_INSENSITIVE_FIELD_VALUE_CACHE, ev + "!=" + v);
                                             v = ev;
-                                            cached_field = new HttpField(cached_field.getHeader(), n, v);
+                                            cachedField = new HttpField(cachedField.getHeader(), n, v);
                                         }
                                     }
 
-                                    _header = cached_field.getHeader();
+                                    _header = cachedField.getHeader();
                                     _headerString = n;
 
                                     if (v == null)
@@ -1260,7 +1260,7 @@ public class HttpParser
                                     byte peek = buffer.get(pos);
                                     if (peek == HttpTokens.CARRIAGE_RETURN || peek == HttpTokens.LINE_FEED)
                                     {
-                                        _field = cached_field;
+                                        _field = cachedField;
                                         _valueString = v;
                                         setState(FieldState.IN_VALUE);
 
@@ -1446,7 +1446,7 @@ public class HttpParser
      */
     public boolean parseNext(ByteBuffer buffer)
     {
-        if (DEBUG)
+        if (debug)
             LOG.debug("parseNext s={} {}", _state, BufferUtil.toDetailString(buffer));
         try
         {
@@ -1553,7 +1553,7 @@ public class HttpParser
                         break;
 
                     default:
-                        if (DEBUG)
+                        if (debug)
                             LOG.debug("{} EOF in {}", this, _state);
                         setState(State.CLOSED);
                         _handler.badMessage(new BadMessageException(HttpStatus.BAD_REQUEST_400));
@@ -1576,7 +1576,7 @@ public class HttpParser
 
     protected void badMessage(BadMessageException x)
     {
-        if (DEBUG)
+        if (debug)
             LOG.debug("Parse exception: " + this + " for " + _handler, x);
         setState(State.CLOSE);
         if (_headerComplete)
@@ -1790,7 +1790,7 @@ public class HttpParser
      */
     public void atEOF()
     {
-        if (DEBUG)
+        if (debug)
             LOG.debug("atEOF {}", this);
         _eof = true;
     }
@@ -1800,14 +1800,14 @@ public class HttpParser
      */
     public void close()
     {
-        if (DEBUG)
+        if (debug)
             LOG.debug("close {}", this);
         setState(State.CLOSE);
     }
 
     public void reset()
     {
-        if (DEBUG)
+        if (debug)
             LOG.debug("reset {}", this);
 
         // reset state
@@ -1828,14 +1828,14 @@ public class HttpParser
 
     protected void setState(State state)
     {
-        if (DEBUG)
+        if (debug)
             LOG.debug("{} --> {}", _state, state);
         _state = state;
     }
 
     protected void setState(FieldState state)
     {
-        if (DEBUG)
+        if (debug)
             LOG.debug("{}:{} --> {}", _state, _field != null ? _field : _headerString != null ? _headerString : _string, state);
         _fieldState = state;
     }
@@ -1864,40 +1864,40 @@ public class HttpParser
      */
     public interface HttpHandler
     {
-        public boolean content(ByteBuffer item);
+        boolean content(ByteBuffer item);
 
-        public boolean headerComplete();
+        boolean headerComplete();
 
-        public boolean contentComplete();
+        boolean contentComplete();
 
-        public boolean messageComplete();
+        boolean messageComplete();
 
         /**
          * This is the method called by parser when a HTTP Header name and value is found
          *
          * @param field The field parsed
          */
-        public void parsedHeader(HttpField field);
+        void parsedHeader(HttpField field);
 
         /**
          * This is the method called by parser when a HTTP Trailer name and value is found
          *
          * @param field The field parsed
          */
-        public default void parsedTrailer(HttpField field) {}
+        default void parsedTrailer(HttpField field) {}
 
         /**
          * Called to signal that an EOF was received unexpectedly
          * during the parsing of a HTTP message
          */
-        public void earlyEOF();
+        void earlyEOF();
 
         /**
          * Called to signal that a bad HTTP message has been received.
          *
          * @param failure the failure with the bad message information
          */
-        public default void badMessage(BadMessageException failure)
+        default void badMessage(BadMessageException failure)
         {
             badMessage(failure.getCode(), failure.getReason());
         }
@@ -1906,14 +1906,14 @@ public class HttpParser
          * @deprecated use {@link #badMessage(BadMessageException)} instead
          */
         @Deprecated
-        public default void badMessage(int status, String reason)
+        default void badMessage(int status, String reason)
         {
         }
 
         /**
          * @return the size in bytes of the per parser header cache
          */
-        public int getHeaderCacheSize();
+        int getHeaderCacheSize();
     }
 
     public interface RequestHandler extends HttpHandler
@@ -1926,7 +1926,7 @@ public class HttpParser
          * @param version the http version in use
          * @return true if handling parsing should return.
          */
-        public boolean startRequest(String method, String uri, HttpVersion version);
+        boolean startRequest(String method, String uri, HttpVersion version);
     }
 
     public interface ResponseHandler extends HttpHandler
@@ -1939,15 +1939,15 @@ public class HttpParser
          * @param reason the response reason phrase
          * @return true if handling parsing should return
          */
-        public boolean startResponse(HttpVersion version, int status, String reason);
+        boolean startResponse(HttpVersion version, int status, String reason);
     }
 
     public interface ComplianceHandler extends HttpHandler
     {
         @Deprecated
-        public default void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason) {}
+        default void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason) {}
 
-        public default void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String details)
+        default void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String details)
         {
             onComplianceViolation(compliance, HttpCompliance.requiredCompliance(violation), details);
         }
