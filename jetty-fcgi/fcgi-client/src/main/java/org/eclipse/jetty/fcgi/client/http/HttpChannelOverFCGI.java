@@ -113,7 +113,7 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     protected boolean responseHeaders()
     {
-       idle.notIdle();
+        idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         return exchange != null && receiver.responseHeaders(exchange);
     }

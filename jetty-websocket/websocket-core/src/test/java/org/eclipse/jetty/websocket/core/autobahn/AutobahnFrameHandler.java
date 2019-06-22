@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
@@ -27,9 +30,6 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
 
@@ -69,7 +69,7 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {
-        LOG.debug("onBinary {} {} {}", payload == null?-1:payload.remaining(), fin, getCoreSession());
+        LOG.debug("onBinary {} {} {}", payload == null ? -1 : payload.remaining(), fin, getCoreSession());
         if (fin)
         {
             Frame echo = new Frame(OpCode.BINARY);

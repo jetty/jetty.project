@@ -79,13 +79,14 @@ public class ResourceCollectionTest
     public void testStringArrayWithNull_ThrowsIAE()
     {
         assertThrows(IllegalArgumentException.class,
-                ()-> new ResourceCollection(new String[]{null}));
+            () -> new ResourceCollection(new String[]{null}));
     }
 
     @Test
     public void testNullCsv_ThrowsIAE()
     {
-        assertThrows(IllegalArgumentException.class, ()->{
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             String csv = null;
             new ResourceCollection(csv); // throws IAE
         });
@@ -94,7 +95,8 @@ public class ResourceCollectionTest
     @Test
     public void testEmptyCsv_ThrowsIAE()
     {
-        assertThrows(IllegalArgumentException.class, ()->{
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             String csv = "";
             new ResourceCollection(csv); // throws IAE
         });
@@ -103,7 +105,8 @@ public class ResourceCollectionTest
     @Test
     public void testBlankCsv_ThrowsIAE()
     {
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             String csv = ",,,,";
             new ResourceCollection(csv); // throws IAE
         });
@@ -146,7 +149,7 @@ public class ResourceCollectionTest
         ResourceCollection coll = new ResourceCollection(resource);
 
         // Reset collection to invalid state
-        assertThrows(IllegalStateException.class, ()-> coll.setResources(new Resource[]{null, null, null}));
+        assertThrows(IllegalStateException.class, () -> coll.setResources(new Resource[]{null, null, null}));
 
         // Ensure not modified.
         assertThat(coll.getResources().length, is(1));
@@ -154,7 +157,7 @@ public class ResourceCollectionTest
 
     private void assertThrowIllegalStateException(ResourceCollection coll)
     {
-        assertThrows(IllegalStateException.class, ()->coll.addPath("foo"));
+        assertThrows(IllegalStateException.class, () -> coll.addPath("foo"));
         assertThrows(IllegalStateException.class, coll::exists);
         assertThrows(IllegalStateException.class, coll::getFile);
         assertThrows(IllegalStateException.class, coll::getInputStream);
@@ -165,7 +168,7 @@ public class ResourceCollectionTest
         assertThrows(IllegalStateException.class, coll::lastModified);
         assertThrows(IllegalStateException.class, coll::list);
         assertThrows(IllegalStateException.class, coll::close);
-        assertThrows(IllegalStateException.class, ()->
+        assertThrows(IllegalStateException.class, () ->
         {
             Path destPath = workdir.getPathFile("bar");
             coll.copyTo(destPath.toFile());
@@ -176,38 +179,36 @@ public class ResourceCollectionTest
     public void testMutlipleSources1() throws Exception
     {
         ResourceCollection rc1 = new ResourceCollection(new String[]{
-                "src/test/resources/org/eclipse/jetty/util/resource/one/",
-                "src/test/resources/org/eclipse/jetty/util/resource/two/",
-                "src/test/resources/org/eclipse/jetty/util/resource/three/"
+            "src/test/resources/org/eclipse/jetty/util/resource/one/",
+            "src/test/resources/org/eclipse/jetty/util/resource/two/",
+            "src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
         assertEquals(getContent(rc1, "1.txt"), "1 - one");
         assertEquals(getContent(rc1, "2.txt"), "2 - two");
         assertEquals(getContent(rc1, "3.txt"), "3 - three");
 
-
         ResourceCollection rc2 = new ResourceCollection(
-                "src/test/resources/org/eclipse/jetty/util/resource/one/," +
+            "src/test/resources/org/eclipse/jetty/util/resource/one/," +
                 "src/test/resources/org/eclipse/jetty/util/resource/two/," +
                 "src/test/resources/org/eclipse/jetty/util/resource/three/"
         );
         assertEquals(getContent(rc2, "1.txt"), "1 - one");
         assertEquals(getContent(rc2, "2.txt"), "2 - two");
         assertEquals(getContent(rc2, "3.txt"), "3 - three");
-
     }
 
     @Test
     public void testMergedDir() throws Exception
     {
         ResourceCollection rc = new ResourceCollection(new String[]{
-                "src/test/resources/org/eclipse/jetty/util/resource/one/",
-                "src/test/resources/org/eclipse/jetty/util/resource/two/",
-                "src/test/resources/org/eclipse/jetty/util/resource/three/"
+            "src/test/resources/org/eclipse/jetty/util/resource/one/",
+            "src/test/resources/org/eclipse/jetty/util/resource/two/",
+            "src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
 
         Resource r = rc.addPath("dir");
         assertTrue(r instanceof ResourceCollection);
-        rc=(ResourceCollection)r;
+        rc = (ResourceCollection)r;
         assertEquals(getContent(rc, "1.txt"), "1 - one");
         assertEquals(getContent(rc, "2.txt"), "2 - two");
         assertEquals(getContent(rc, "3.txt"), "3 - three");
@@ -217,9 +218,9 @@ public class ResourceCollectionTest
     public void testCopyTo() throws Exception
     {
         ResourceCollection rc = new ResourceCollection(new String[]{
-                "src/test/resources/org/eclipse/jetty/util/resource/one/",
-                "src/test/resources/org/eclipse/jetty/util/resource/two/",
-                "src/test/resources/org/eclipse/jetty/util/resource/three/"
+            "src/test/resources/org/eclipse/jetty/util/resource/one/",
+            "src/test/resources/org/eclipse/jetty/util/resource/two/",
+            "src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
 
         File dest = MavenTestingUtils.getTargetTestingDir("copyto");
@@ -254,5 +255,4 @@ public class ResourceCollectionTest
         }
         return buffer.toString();
     }
-
 }

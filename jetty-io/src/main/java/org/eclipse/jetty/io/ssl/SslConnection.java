@@ -74,7 +74,6 @@ import org.eclipse.jetty.util.thread.Invocable;
  * MOST IMPORTANTLY, the encrypted callbacks from the active methods (#onFillable() and WriteFlusher#completeWrite()) do no filling or flushing
  * themselves.  Instead they simple make the callbacks to the decrypted callbacks, so that the passive encrypted fill/flush will
  * be called again and make another best effort attempt to progress the connection.
- *
  */
 public class SslConnection extends AbstractConnection implements Connection.UpgradeTo
 {
@@ -242,8 +241,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
     /**
      * @param renegotiationLimit The number of renegotions allowed for this connection.
-     *                           When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
-     *                           Default -1.
+     * When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
+     * Default -1.
      */
     public void setRenegotiationLimit(int renegotiationLimit)
     {
@@ -342,13 +341,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
         Connection connection = _decryptedEndPoint.getConnection();
         return String.format("%s@%x{%s,eio=%d/%d,di=%d,fill=%s,flush=%s}~>%s=>%s",
-                getClass().getSimpleName(),
-                hashCode(),
-                _sslEngine.getHandshakeStatus(),
-                ei, eo, di,
-                _fillState, _flushState,
-                _decryptedEndPoint.toEndPointString(),
-                connection instanceof AbstractConnection ? ((AbstractConnection)connection).toConnectionString() : connection);
+            getClass().getSimpleName(),
+            hashCode(),
+            _sslEngine.getHandshakeStatus(),
+            ei, eo, di,
+            _fillState, _flushState,
+            _decryptedEndPoint.toEndPointString(),
+            connection instanceof AbstractConnection ? ((AbstractConnection)connection).toConnectionString() : connection);
     }
 
     private void releaseEncryptedOutputBuffer()
@@ -583,11 +582,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             }
                             if (LOG.isDebugEnabled())
                                 LOG.debug("unwrap net_filled={} {} encryptedBuffer={} unwrapBuffer={} appBuffer={}",
-                                        net_filled,
-                                        StringUtil.replace(unwrapResult.toString(), '\n', ' '),
-                                        BufferUtil.toSummaryString(_encryptedInput),
-                                        BufferUtil.toDetailString(app_in),
-                                        BufferUtil.toDetailString(buffer));
+                                    net_filled,
+                                    StringUtil.replace(unwrapResult.toString(), '\n', ' '),
+                                    BufferUtil.toSummaryString(_encryptedInput),
+                                    BufferUtil.toDetailString(app_in),
+                                    BufferUtil.toDetailString(buffer));
 
                             SSLEngineResult.Status unwrap = unwrapResult.getStatus();
 
@@ -765,8 +764,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("handshake succeeded {} {} {}/{}", SslConnection.this,
-                            _sslEngine.getUseClientMode() ? "client" : "resumed server",
-                            _sslEngine.getSession().getProtocol(), _sslEngine.getSession().getCipherSuite());
+                        _sslEngine.getUseClientMode() ? "client" : "resumed server",
+                        _sslEngine.getSession().getProtocol(), _sslEngine.getSession().getCipherSuite());
                 notifyHandshakeSucceeded(_sslEngine);
             }
             else if (_handshake.get() == Handshake.SUCCEEDED)
@@ -832,7 +831,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         LOG.debug(">flush {}", SslConnection.this);
                         int i = 0;
                         for (ByteBuffer b : appOuts)
+                        {
                             LOG.debug("flush b[{}]={}", i++, BufferUtil.toDetailString(b));
+                        }
                     }
 
                     // finish of any previous flushes
@@ -895,10 +896,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             }
                             if (LOG.isDebugEnabled())
                                 LOG.debug("wrap {} {} ioDone={}/{}",
-                                        StringUtil.replace(wrapResult.toString(), '\n', ' '),
-                                        BufferUtil.toSummaryString(_encryptedOutput),
-                                        _sslEngine.isInboundDone(),
-                                        _sslEngine.isOutboundDone());
+                                    StringUtil.replace(wrapResult.toString(), '\n', ' '),
+                                    BufferUtil.toSummaryString(_encryptedOutput),
+                                    _sslEngine.isInboundDone(),
+                                    _sslEngine.isOutboundDone());
 
                             // Was all the data consumed?
                             isEmpty = BufferUtil.isEmpty(appOuts);
@@ -1115,7 +1116,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         // and continue as if we are closed. The assumption here is that
                         // the encrypted buffer will contain the entire close handshake
                         // and that a call to flush(EMPTY_BUFFER) is not needed.
-                        endp.write(Callback.from(() -> {}, t -> endp.close()), _encryptedOutput);
+                        endp.write(Callback.from(() ->
+                        {}, t -> endp.close()), _encryptedOutput);
                     }
                 }
 

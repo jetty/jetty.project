@@ -48,5 +48,4 @@ public class AnnotatedBinaryArraySocket
     {
         events.add("onConnect(%s)", sess);
     }
-
 }

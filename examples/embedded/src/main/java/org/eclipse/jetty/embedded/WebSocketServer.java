@@ -42,7 +42,7 @@ public class WebSocketServer
     public static class EchoSocket
     {
         @OnWebSocketMessage
-        public void onMessage( Session session, String message )
+        public void onMessage(Session session, String message)
         {
             session.getRemote().sendString(message, WriteCallback.NOOP);
         }
@@ -57,16 +57,16 @@ public class WebSocketServer
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping("/", (req,res)->new EchoSocket());
+            factory.addMapping("/", (req, res) -> new EchoSocket());
         }
     }
 
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
 
         ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 

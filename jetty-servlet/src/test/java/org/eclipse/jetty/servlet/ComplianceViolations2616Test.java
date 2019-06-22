@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -65,10 +64,10 @@ public class ComplianceViolations2616Test
         {
             if (request instanceof HttpServletRequest)
             {
-                List<String> violations = (List<String>) request.getAttribute("org.eclipse.jetty.http.compliance.violations");
+                List<String> violations = (List<String>)request.getAttribute("org.eclipse.jetty.http.compliance.violations");
                 if (violations != null)
                 {
-                    HttpServletResponse httpResponse = (HttpServletResponse) response;
+                    HttpServletResponse httpResponse = (HttpServletResponse)response;
                     int i = 0;
                     for (String violation : violations)
                     {
@@ -148,7 +147,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));   
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
@@ -165,7 +164,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));        
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
@@ -185,6 +184,5 @@ public class ComplianceViolations2616Test
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
         assertThat("Response headers", response, containsString("X-Http-Violation-0: Line Folding not supported"));
         assertThat("Response body", response, containsString("[Name] = [Some Value]"));
-        
     }
 }

@@ -41,7 +41,7 @@ public class TestNamingEntryUtil
     public class MyNamingEntry extends NamingEntry
     {
         public MyNamingEntry(Object scope, String name, Object value)
-        throws NamingException
+            throws NamingException
         {
             super(scope, name);
             save(value);
@@ -53,15 +53,15 @@ public class TestNamingEntryUtil
         @Override
         public String toString()
         {
-            return this.getClass().getName()+"@"+Long.toHexString(super.hashCode());
+            return this.getClass().getName() + "@" + Long.toHexString(super.hashCode());
         }
     }
 
     @Test
-    public void testGetNameForScope () throws Exception
+    public void testGetNameForScope() throws Exception
     {
         ScopeA scope = new ScopeA();
-        Name name  = NamingEntryUtil.getNameForScope(scope);
+        Name name = NamingEntryUtil.getNameForScope(scope);
         assertNotNull(name);
         assertEquals(scope.toString(), name.toString());
     }
@@ -100,7 +100,7 @@ public class TestNamingEntryUtil
     {
         Name name = NamingEntryUtil.makeNamingEntryName(null, "fee/fi/fo/fum");
         assertNotNull(name);
-        assertEquals(NamingEntry.__contextName+"/fee/fi/fo/fum", name.toString());
+        assertEquals(NamingEntry.__contextName + "/fee/fi/fo/fum", name.toString());
     }
 
     @Test

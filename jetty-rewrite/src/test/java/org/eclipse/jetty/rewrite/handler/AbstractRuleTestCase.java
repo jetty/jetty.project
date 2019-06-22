@@ -20,7 +20,6 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -62,15 +61,14 @@ public abstract class AbstractRuleTestCase
             }
         });
         _server.setConnectors(new Connector[]{_connector});
-        
 
         _server.setHandler(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                _request=baseRequest;
-                _response=_request.getResponse();
+                _request = baseRequest;
+                _response = _request.getResponse();
                 try
                 {
                     _latch.await();
@@ -84,26 +82,30 @@ public abstract class AbstractRuleTestCase
 
         _server.start();
 
-        _latch=new CountDownLatch(1);
+        _latch = new CountDownLatch(1);
         _connector.executeRequest("GET / HTTP/1.0\nCookie: set=already\n\n");
-        
-        while (_response==null)
+
+        while (_response == null)
+        {
             Thread.sleep(1);
+        }
     }
 
     protected void reset()
     {
-        if (_latch!=null)
+        if (_latch != null)
             _latch.countDown();
         _request = null;
         _response = null;
-        _latch=new CountDownLatch(1);
+        _latch = new CountDownLatch(1);
         _connector.executeRequest("GET / HTTP/1.0\nCookie: set=already\n\n");
-        
-        while (_response==null)
+
+        while (_response == null)
+        {
             Thread.yield();
+        }
     }
-    
+
     protected void stop() throws Exception
     {
         _latch.countDown();
@@ -112,5 +114,4 @@ public abstract class AbstractRuleTestCase
         _request = null;
         _response = null;
     }
-
 }

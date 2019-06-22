@@ -48,13 +48,14 @@ import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadPool, Dumpable, TryExecutor
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
-    private static Runnable NOOP = () -> {};
+    private static Runnable NOOP = () ->
+    {};
 
     /**
      * Encodes thread counts:
      * <dl>
-     *   <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if stopping</dd>
-     *   <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size</dd>
+     * <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if stopping</dd>
+     * <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size</dd>
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);

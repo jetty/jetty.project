@@ -56,7 +56,7 @@ public class LoggerLog extends AbstractLogger
 
             _debug = (Boolean)_isDebugEnabled.invoke(_logger);
         }
-        catch(Exception x)
+        catch (Exception x)
         {
             throw new IllegalStateException(x);
         }
@@ -160,7 +160,6 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
-    
     @Override
     public void debug(String msg, Object... args)
     {
@@ -214,7 +213,7 @@ public class LoggerLog extends AbstractLogger
             e.printStackTrace();
         }
     }
-    
+
     @Override
     public void ignore(Throwable ignored)
     {
@@ -232,7 +231,7 @@ public class LoggerLog extends AbstractLogger
     {
         try
         {
-            Object logger=_getLoggerN.invoke(_logger, fullname);
+            Object logger = _getLoggerN.invoke(_logger, fullname);
             return new LoggerLog(logger);
         }
         catch (Exception e)

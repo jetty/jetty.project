@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
+import java.lang.invoke.MethodHandle;
+import javax.websocket.Decoder;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.MessageSink;
-
-import javax.websocket.Decoder;
-import java.lang.invoke.MethodHandle;
 
 public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMessageSink
 {

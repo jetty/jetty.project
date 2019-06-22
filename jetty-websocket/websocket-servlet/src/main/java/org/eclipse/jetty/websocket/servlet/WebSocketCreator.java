@@ -30,7 +30,7 @@ public interface WebSocketCreator
     /**
      * Create a websocket from the incoming request.
      *
-     * @param req  the request details
+     * @param req the request details
      * @param resp the response details
      * @return a websocket object to use, or null if no websocket should be created from this request.
      */

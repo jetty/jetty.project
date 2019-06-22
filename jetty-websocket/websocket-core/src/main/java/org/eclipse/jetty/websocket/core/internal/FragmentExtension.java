@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.Queue;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -27,10 +31,6 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Queue;
 
 /**
  * Fragment Extension
@@ -59,7 +59,7 @@ public class FragmentExtension extends AbstractExtension
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         ByteBuffer payload = frame.getPayload();
-        int length = payload != null?payload.remaining():0;
+        int length = payload != null ? payload.remaining() : 0;
         if (OpCode.isControlFrame(frame.getOpCode()) || maxLength <= 0 || length <= maxLength)
         {
             nextOutgoingFrame(frame, callback, batch);
@@ -128,7 +128,7 @@ public class FragmentExtension extends AbstractExtension
             finished = length == remaining;
 
             boolean continuation = (frame.getOpCode() == OpCode.CONTINUATION) || !first;
-            Frame fragment = new Frame(continuation?OpCode.CONTINUATION:frame.getOpCode());
+            Frame fragment = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
             boolean fin = frame.isFin() && finished;
             fragment.setFin(fin);
 

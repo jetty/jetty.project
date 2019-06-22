@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
@@ -91,7 +90,7 @@ public class EndpointViaConfigTest
         public void contextInitialized(ServletContextEvent sce)
         {
             javax.websocket.server.ServerContainer container = (javax.websocket.server.ServerContainer)sce.getServletContext()
-                .getAttribute(javax.websocket.server.ServerContainer.class.getName());
+                                                                                                           .getAttribute(javax.websocket.server.ServerContainer.class.getName());
             if (container == null)
                 throw new IllegalStateException("No Websocket ServerContainer in " + sce.getServletContext());
 

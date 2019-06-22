@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -174,7 +173,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
      * or may be called directly
      *
      * @param exception The exception
-     * @param uri       The URI of the error page.
+     * @param uri The URI of the error page.
      */
     public void addErrorPage(Class<? extends Throwable> exception, String uri)
     {
@@ -187,7 +186,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
      * or may be called directly
      *
      * @param exceptionClassName The exception
-     * @param uri                The URI of the error page.
+     * @param uri The URI of the error page.
      */
     public void addErrorPage(String exceptionClassName, String uri)
     {
@@ -200,7 +199,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
      * or may be called directly.
      *
      * @param code The HTTP status code to match
-     * @param uri  The URI of the error page.
+     * @param uri The URI of the error page.
      */
     public void addErrorPage(int code, String uri)
     {
@@ -212,8 +211,8 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
      * This method is not available from web.xml and must be called directly.
      *
      * @param from The lowest matching status code
-     * @param to   The highest matching status code
-     * @param uri  The URI of the error page.
+     * @param to The highest matching status code
+     * @param uri The URI of the error page.
      */
     public void addErrorPage(int from, int to, String uri)
     {
@@ -234,7 +233,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         private String _uri;
 
         ErrorCodeRange(int from, int to, String uri)
-                throws IllegalArgumentException
+            throws IllegalArgumentException
         {
             if (from > to)
                 throw new IllegalArgumentException("from>to");

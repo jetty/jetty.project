@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.invoke;
 
-import org.eclipse.jetty.websocket.common.util.ReflectUtils;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -27,6 +25,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 public class InvokerUtils
 {
@@ -104,9 +104,10 @@ public class InvokerUtils
      * Might need to drop calling args and/or reorder the calling args to fit
      * the actual method being called.
      * </p>
-     * @param targetClass     the target class for invocations of the resulting MethodHandle (also known as parameter 0)
-     * @param method          the method to invoke
-     * @param callingArgs     the calling arguments
+     *
+     * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
+     * @param method the method to invoke
+     * @param callingArgs the calling arguments
      * @return the MethodHandle for this set of CallingArgs
      */
     public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, Arg... callingArgs)
@@ -123,10 +124,10 @@ public class InvokerUtils
      * <li>{@link MethodHandle#invoke(Object...)} - to call the specific method</li>
      * </ol>
      *
-     * @param targetClass     the target class for invocations of the resulting MethodHandle (also known as parameter 0)
-     * @param method          the method to invoke
+     * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
+     * @param method the method to invoke
      * @param paramIdentifier the mechanism to identify parameters in method
-     * @param callingArgs     the calling arguments
+     * @param callingArgs the calling arguments
      * @return the MethodHandle for this set of CallingArgs
      * @throws RuntimeException when unable to fit Calling Args to Parameter Types
      */
@@ -144,10 +145,10 @@ public class InvokerUtils
      * <li>{@link MethodHandle#invoke(Object...)} - to call the specific method</li>
      * </ol>
      *
-     * @param targetClass     the target class for invocations of the resulting MethodHandle (also known as parameter 0)
-     * @param method          the method to invoke
+     * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
+     * @param method the method to invoke
      * @param paramIdentifier the mechanism to identify parameters in method
-     * @param callingArgs     the calling arguments
+     * @param callingArgs the calling arguments
      * @return the MethodHandle for this set of CallingArgs, or null if not possible to create MethodHandle with CallingArgs to provided method
      */
     public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, Arg... callingArgs)

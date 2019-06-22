@@ -83,11 +83,12 @@ public class WebSocketServletExamplesTest
         _server.stop();
     }
 
-    private static SecurityHandler getSecurityHandler(String username, String password, String realm) {
+    private static SecurityHandler getSecurityHandler(String username, String password, String realm)
+    {
 
         HashLoginService loginService = new HashLoginService();
         UserStore userStore = new UserStore();
-        userStore.addUser(username, Credential.getCredential(password), new String[] {"websocket"});
+        userStore.addUser(username, Credential.getCredential(password), new String[]{"websocket"});
         loginService.setUserStore(userStore);
         loginService.setName(realm);
 
@@ -114,7 +115,7 @@ public class WebSocketServletExamplesTest
         WebSocketClient client = new WebSocketClient();
         client.start();
 
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/echo");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
         try (Session session = connect.get(5, TimeUnit.SECONDS))
@@ -135,7 +136,7 @@ public class WebSocketServletExamplesTest
         WebSocketClient client = new WebSocketClient();
         client.start();
 
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/advancedEcho");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/advancedEcho");
         EventSocket socket = new EventSocket();
 
         UpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -160,7 +161,7 @@ public class WebSocketServletExamplesTest
         client.start();
         AuthenticationStore authenticationStore = client.getHttpClient().getAuthenticationStore();
 
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/authed");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/authed");
 
         BasicAuthentication basicAuthentication = new BasicAuthentication(uri, "testRealm", "user", "password");
         authenticationStore.addAuthentication(basicAuthentication);

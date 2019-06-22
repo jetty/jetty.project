@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import javax.websocket.ClientEndpointConfig;
 
 import org.eclipse.jetty.util.Callback;
@@ -53,7 +52,7 @@ public class OnCloseTest
         public static Case add(List<Case[]> data, Class<?> closeClass)
         {
             Case tcase = new Case(closeClass);
-            data.add(new Case[] { tcase });
+            data.add(new Case[]{tcase});
             return tcase;
         }
 

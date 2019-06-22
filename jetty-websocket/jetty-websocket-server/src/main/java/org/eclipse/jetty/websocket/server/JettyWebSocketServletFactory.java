@@ -153,7 +153,6 @@ public class JettyWebSocketServletFactory implements WebSocketPolicy
         factory.setOutputBufferSize(bufferSize);
     }
 
-
     /**
      * add a WebSocket mapping to a provided {@link JettyWebSocketCreator}.
      * <p>
@@ -163,7 +162,7 @@ public class JettyWebSocketServletFactory implements WebSocketPolicy
      * </p>
      *
      * @param pathSpec the pathspec to respond on
-     * @param creator  the WebSocketCreator to use
+     * @param creator the WebSocketCreator to use
      * @since 10.0
      */
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)

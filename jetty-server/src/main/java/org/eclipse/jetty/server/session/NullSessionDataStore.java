@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import java.util.Set;
@@ -32,13 +31,12 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class NullSessionDataStore extends AbstractSessionDataStore
 {
-    
+
     @Override
     public SessionData doLoad(String id) throws Exception
     {
         return null;
     }
-
 
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
@@ -46,14 +44,11 @@ public class NullSessionDataStore extends AbstractSessionDataStore
         return new SessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
 
-
     @Override
     public boolean delete(String id) throws Exception
     {
-       return true;
+        return true;
     }
-
-
 
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
@@ -61,29 +56,22 @@ public class NullSessionDataStore extends AbstractSessionDataStore
         //noop
     }
 
- 
-
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
-       return candidates; //whatever is suggested we accept
+        return candidates; //whatever is suggested we accept
     }
 
-
-
-    @ManagedAttribute(value="does this store serialize sessions", readonly=true)
+    @ManagedAttribute(value = "does this store serialize sessions", readonly = true)
     @Override
     public boolean isPassivating()
     {
         return false;
     }
 
-
-
     @Override
     public boolean exists(String id)
     {
         return false;
     }
-
 }

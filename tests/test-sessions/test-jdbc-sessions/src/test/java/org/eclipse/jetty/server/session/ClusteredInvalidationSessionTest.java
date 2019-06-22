@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-
 import org.junit.jupiter.api.AfterEach;
 
 /**
@@ -27,20 +26,18 @@ import org.junit.jupiter.api.AfterEach;
 public class ClusteredInvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
 
-    
     @AfterEach
-    public void tearDown() throws Exception 
+    public void tearDown() throws Exception
     {
         JdbcTestHelper.shutdown(null);
     }
 
-
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-       return JdbcTestHelper.newSessionDataStoreFactory();
+        return JdbcTestHelper.newSessionDataStoreFactory();
     }
 }

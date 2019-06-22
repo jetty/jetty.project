@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
+import java.io.InputStream;
+import java.lang.invoke.MethodHandle;
+
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.MessageSink;
-
-import java.io.InputStream;
-import java.lang.invoke.MethodHandle;
 
 public class InputStreamMessageSink extends DispatchedMessageSink<InputStream>
 {

@@ -48,7 +48,7 @@ public class Licensing
             return;
         }
 
-        licenseMap.put(module.getName(),module.getLicense());
+        licenseMap.put(module.getName(), module.getLicense());
     }
 
     public boolean hasLicenses()
@@ -59,7 +59,7 @@ public class Licensing
     public boolean acknowledgeLicenses() throws IOException
     {
         StartLog.debug("Requesting License Acknowledgement");
-        
+
         if (!hasLicenses())
         {
             return true;
@@ -73,10 +73,10 @@ public class Licensing
 
         for (String key : licenseMap.keySet())
         {
-            System.err.printf("%n Module: %s%n",key);
+            System.err.printf("%n Module: %s%n", key);
             for (String line : licenseMap.get(key))
             {
-                System.err.printf("  + %s%n",line);
+                System.err.printf("  + %s%n", line);
             }
         }
 
@@ -85,7 +85,7 @@ public class Licensing
         String propBasedAckValue = System.getProperty(PROP_ACK_LICENSES);
         if (propBasedAckValue != null)
         {
-            StartLog.log("TESTING MODE","Programmatic ACK - %s=%s",PROP_ACK_LICENSES,propBasedAckValue);
+            StartLog.log("TESTING MODE", "Programmatic ACK - %s=%s", PROP_ACK_LICENSES, propBasedAckValue);
             licenseAck = Boolean.parseBoolean(propBasedAckValue);
         }
         else

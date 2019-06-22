@@ -103,8 +103,8 @@ public abstract class CyclicTimeout implements Destroyable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Installed timeout in {} ms, waking up in {} ms",
-                            units.toMillis(delay),
-                            TimeUnit.NANOSECONDS.toMillis(wakeup._at - now));
+                        units.toMillis(delay),
+                        TimeUnit.NANOSECONDS.toMillis(wakeup._at - now));
                 break;
             }
         }
@@ -179,10 +179,10 @@ public abstract class CyclicTimeout implements Destroyable
         public String toString()
         {
             return String.format("%s@%x:%dms,%s",
-                    getClass().getSimpleName(),
-                    hashCode(),
-                    TimeUnit.NANOSECONDS.toMillis(_at - System.nanoTime()),
-                    _wakeup);
+                getClass().getSimpleName(),
+                hashCode(),
+                TimeUnit.NANOSECONDS.toMillis(_at - System.nanoTime()),
+                _wakeup);
         }
     }
 
@@ -286,10 +286,10 @@ public abstract class CyclicTimeout implements Destroyable
         public String toString()
         {
             return String.format("%s@%x:%dms->%s",
-                    getClass().getSimpleName(),
-                    hashCode(),
-                    _at == MAX_VALUE ? _at : TimeUnit.NANOSECONDS.toMillis(_at - System.nanoTime()),
-                    _next);
+                getClass().getSimpleName(),
+                hashCode(),
+                _at == MAX_VALUE ? _at : TimeUnit.NANOSECONDS.toMillis(_at - System.nanoTime()),
+                _next);
         }
     }
 }

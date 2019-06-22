@@ -20,7 +20,7 @@ package org.eclipse.jetty.osgi.boot;
 
 /**
  * OSGiServerConstants
- * 
+ *
  * Name of the properties that configure a jetty Server OSGi service.
  */
 public class OSGiServerConstants
@@ -62,7 +62,7 @@ public class OSGiServerConstants
      * PID of the jetty servers's ManagedFactory
      */
     public static final String MANAGED_JETTY_SERVER_FACTORY_PID = "org.eclipse.jetty.osgi.boot.managedserverfactory";
-    
+
     /**
      * The associated value of that configuration parameter is the name under which this
      * instance of the jetty server is tracked.
@@ -75,12 +75,12 @@ public class OSGiServerConstants
      * Usually the first one to be created.
      */
     public static final String MANAGED_JETTY_SERVER_DEFAULT_NAME = "defaultJettyServer";
-    
+
     /**
      * List of URLs to the jetty.xml files that configure th server.
      */
     public static final String MANAGED_JETTY_XML_CONFIG_URLS = "jetty.etc.config.urls";
-    
+
     /**
      * List of URLs to the folders where the legacy J2EE shared libraries are stored aka lib/ext, lib/jsp etc.
      */

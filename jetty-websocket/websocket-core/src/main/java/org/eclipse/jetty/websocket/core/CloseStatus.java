@@ -74,7 +74,7 @@ public class CloseStatus
     /**
      * Creates a reason for closing a web socket connection with the given status code and reason phrase.
      *
-     * @param statusCode   the close code
+     * @param statusCode the close code
      * @param reasonPhrase the reason phrase
      */
     public CloseStatus(int statusCode, String reasonPhrase)
@@ -167,7 +167,7 @@ public class CloseStatus
     {
         if (frame instanceof CloseStatus.Supplier)
             return ((CloseStatus.Supplier)frame).getCloseStatus();
-        if (frame.getOpCode()==OpCode.CLOSE)
+        if (frame.getOpCode() == OpCode.CLOSE)
             return new CloseStatus(frame);
         return null;
     }
@@ -262,16 +262,16 @@ public class CloseStatus
 
         // Specifically called out as not-transmittable?
         if ((statusCode == NO_CODE) ||
-            (statusCode == NO_CLOSE) ||
-            (statusCode == FAILED_TLS_HANDSHAKE))
+                (statusCode == NO_CLOSE) ||
+                (statusCode == FAILED_TLS_HANDSHAKE))
         {
             return false;
         }
 
         // Reserved / not yet allocated
         if ((statusCode == 1004) || // Reserved in RFC6455 (might be defined in the future)
-            ((statusCode >= 1016) && (statusCode <= 2999)) || // Reserved in RFC6455 (for future revisions, and extensions)
-            (statusCode >= 5000)) // RFC6455 Not allowed to be used for any purpose
+                ((statusCode >= 1016) && (statusCode <= 2999)) || // Reserved in RFC6455 (for future revisions, and extensions)
+                (statusCode >= 5000)) // RFC6455 Not allowed to be used for any purpose
         {
             return false;
         }

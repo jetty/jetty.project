@@ -16,18 +16,15 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 /**
  * NullSessionDataStoreFactory
- *
- *
  */
 public class NullSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
@@ -35,5 +32,4 @@ public class NullSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     {
         return new NullSessionDataStore();
     }
-
 }

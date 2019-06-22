@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.tests.quotes;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -31,6 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+
 public class QuotesUtil
 {
     public static List<String> loadLines(String filename) throws IOException
@@ -38,7 +38,8 @@ public class QuotesUtil
         // read file
         File qfile = MavenTestingUtils.getTestResourceFile(filename);
         List<String> lines = new ArrayList<>();
-        try (FileReader reader = new FileReader(qfile); BufferedReader buf = new BufferedReader(reader))
+        try (FileReader reader = new FileReader(qfile);
+             BufferedReader buf = new BufferedReader(reader))
         {
             String line;
             while ((line = buf.readLine()) != null)

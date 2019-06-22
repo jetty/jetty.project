@@ -26,7 +26,7 @@ import javax.servlet.ServletContextListener;
  *
  * Cleans a static cache of Methods held by java.beans.Introspector
  * class when a context is undeployed.
- * 
+ *
  * @see java.beans.Introspector
  */
 public class IntrospectorCleaner implements ServletContextListener
@@ -35,7 +35,7 @@ public class IntrospectorCleaner implements ServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        
+
     }
 
     @Override
@@ -43,5 +43,4 @@ public class IntrospectorCleaner implements ServletContextListener
     {
         java.beans.Introspector.flushCaches();
     }
-
 }

@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
@@ -75,7 +74,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
     public void testInvokeMessage() throws Exception
     {
         assertThrows(InvalidSignatureException.class, () ->
-            assertOnMessageInvocation(new MessageSocket(), containsString("onMessage()"))
+                                                          assertOnMessageInvocation(new MessageSocket(), containsString("onMessage()"))
         );
     }
 
@@ -110,11 +109,11 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
     public void testInvokeMessageSession() throws Exception
     {
         assertThrows(InvalidSignatureException.class, () ->
-            assertOnMessageInvocation(new MessageSessionSocket(),
-                allOf(
-                    containsString("onMessage(JavaxWebSocketSession@"),
-                    containsString(MessageSessionSocket.class.getName())
-                ))
+                                                          assertOnMessageInvocation(new MessageSessionSocket(),
+                                                              allOf(
+                                                                  containsString("onMessage(JavaxWebSocketSession@"),
+                                                                  containsString(MessageSessionSocket.class.getName())
+                                                              ))
         );
     }
 

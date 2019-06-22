@@ -55,8 +55,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
  */
 public class Log
 {
-    public final static String EXCEPTION= "EXCEPTION ";
-    public final static String IGNORED= "IGNORED EXCEPTION ";
+    public final static String EXCEPTION = "EXCEPTION ";
+    public final static String IGNORED = "IGNORED EXCEPTION ";
 
     /**
      * Logging Configuration Properties
@@ -76,7 +76,6 @@ public class Log
      */
     private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
 
-
     static
     {
         /* Instantiate a default configuration properties (empty)
@@ -93,10 +92,10 @@ public class Log
                  * configuration of the Log class in situations where access to the System.properties are
                  * either too late or just impossible.
                  */
-                loadProperties("jetty-logging.properties",__props);
+                loadProperties("jetty-logging.properties", __props);
 
                 /*
-                 * Next see if an OS specific jetty-logging.properties object exists in the classpath. 
+                 * Next see if an OS specific jetty-logging.properties object exists in the classpath.
                  * This really for setting up test specific logging behavior based on OS.
                  */
                 String osName = System.getProperty("os.name");
@@ -104,7 +103,7 @@ public class Log
                 if (osName != null && osName.length() > 0)
                 {
                     osName = StringUtil.replace(osName.toLowerCase(Locale.ENGLISH), ' ', '-');
-                    loadProperties("jetty-logging-" + osName + ".properties",__props);
+                    loadProperties("jetty-logging-" + osName + ".properties", __props);
                 }
 
                 /* Now load the System.properties as-is into the __props, these values will override
@@ -119,19 +118,19 @@ public class Log
                     // protect against application code insertion of non-String values (returned as null)
                     if (val != null)
                     {
-                        __props.setProperty(key,val);
+                        __props.setProperty(key, val);
                     }
                 }
 
                 /* Now use the configuration properties to configure the Log statics
                  */
-                __logClass = __props.getProperty("org.eclipse.jetty.util.log.class","org.eclipse.jetty.util.log.Slf4jLog");
-                __ignored = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.IGNORED","false"));
+                __logClass = __props.getProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.Slf4jLog");
+                __ignored = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.IGNORED", "false"));
                 return null;
             }
         });
     }
-    
+
     static void loadProperties(String resourceName, Properties props)
     {
         URL testProps = Loader.getResource(resourceName);
@@ -146,7 +145,7 @@ public class Log
                     Object value = p.get(key);
                     if (value != null)
                     {
-                        props.put(key,value);
+                        props.put(key, value);
                     }
                 }
             }
@@ -159,10 +158,10 @@ public class Log
     }
 
     private static Logger LOG;
-    private static boolean __initialized=false;
+    private static boolean __initialized = false;
 
     public static void initialized()
-    {   
+    {
         synchronized (Log.class)
         {
             if (__initialized)
@@ -173,25 +172,25 @@ public class Log
 
             try
             {
-                Class<?> log_class = __logClass==null?null:Loader.loadClass(Log.class,__logClass);
-                if (LOG == null || (log_class!=null && !LOG.getClass().equals(log_class)))
+                Class<?> log_class = __logClass == null ? null : Loader.loadClass(Log.class, __logClass);
+                if (LOG == null || (log_class != null && !LOG.getClass().equals(log_class)))
                 {
                     LOG = (Logger)log_class.getDeclaredConstructor().newInstance();
-                    if(announce)
+                    if (announce)
                     {
                         LOG.debug("Logging to {} via {}", LOG, log_class.getName());
                     }
                 }
             }
-            catch(Throwable e)
+            catch (Throwable e)
             {
                 // Unable to load specified Logger implementation, default to standard logging.
                 initStandardLogging(e);
             }
 
-            if (announce && LOG!=null)
+            if (announce && LOG != null)
             {
-                LOG.info(String.format("Logging initialized @%dms to %s",Uptime.getUptime(),LOG.getClass().getName()));
+                LOG.info(String.format("Logging initialized @%dms to %s", Uptime.getUptime(), LOG.getClass().getName()));
             }
         }
     }
@@ -199,7 +198,7 @@ public class Log
     private static void initStandardLogging(Throwable e)
     {
         Class<?> log_class;
-        if(e != null && __ignored)
+        if (e != null && __ignored)
         {
             e.printStackTrace(System.err);
         }
@@ -210,13 +209,13 @@ public class Log
             LOG = new StdErrLog();
 
             boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
-            if(announce)
+            if (announce)
             {
                 LOG.debug("Logging to {} via {}", LOG, log_class.getName());
             }
         }
     }
-    
+
     public static Logger getLog()
     {
         initialized();
@@ -228,21 +227,22 @@ public class Log
      * <p>
      * Note that if any classes have statically obtained their logger instance prior to this call, their Logger will not
      * be affected by this call.
-     * 
-     * @param log
-     *            the root logger implementation to set
+     *
+     * @param log the root logger implementation to set
      */
     public static void setLog(Logger log)
     {
         Log.LOG = log;
-        __logClass=null;
+        __logClass = null;
     }
 
     /**
      * Get the root logger.
+     *
      * @return the root logger
      */
-    public static Logger getRootLogger() {
+    public static Logger getRootLogger()
+    {
         initialized();
         return LOG;
     }
@@ -265,18 +265,19 @@ public class Log
      * If there is not parent Log, then this call is equivalent to<pre>
      *   Log.setLog(Log.getLogger(name));
      * </pre>
+     *
      * @param name Logger name
      */
     public static void setLogToParent(String name)
     {
         ClassLoader loader = Log.class.getClassLoader();
-        if (loader!=null && loader.getParent()!=null)
+        if (loader != null && loader.getParent() != null)
         {
             try
             {
                 Class<?> uberlog = loader.getParent().loadClass("org.eclipse.jetty.util.log.Log");
                 Method getLogger = uberlog.getMethod("getLogger", new Class[]{String.class});
-                Object logger = getLogger.invoke(null,name);
+                Object logger = getLogger.invoke(null, name);
                 setLog(new LoggerLog(logger));
             }
             catch (Exception e)
@@ -293,8 +294,7 @@ public class Log
     /**
      * Obtain a named Logger based on the fully qualified class name.
      *
-     * @param clazz
-     *            the class to base the Logger name off of
+     * @param clazz the class to base the Logger name off of
      * @return the Logger with the given name
      */
     public static Logger getLogger(Class<?> clazz)
@@ -304,6 +304,7 @@ public class Log
 
     /**
      * Obtain a named Logger or the default Logger if null is passed.
+     *
      * @param name the Logger name
      * @return the Logger with the given name
      */
@@ -311,11 +312,11 @@ public class Log
     {
         initialized();
 
-        if(name==null)
+        if (name == null)
             return LOG;
 
         Logger logger = __loggers.get(name);
-        if(logger==null)
+        if (logger == null)
             logger = LOG.getLogger(name);
 
         return logger;
@@ -325,7 +326,7 @@ public class Log
     {
         return __loggers;
     }
-    
+
     /**
      * Get a map of all configured {@link Logger} instances.
      *

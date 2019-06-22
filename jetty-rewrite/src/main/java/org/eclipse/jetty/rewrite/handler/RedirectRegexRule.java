@@ -108,5 +108,4 @@ public class RedirectRegexRule extends RegexRule
         str.append(']');
         return str.toString();
     }
-
 }

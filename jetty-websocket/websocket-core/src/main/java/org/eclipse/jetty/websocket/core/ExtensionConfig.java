@@ -340,7 +340,9 @@ public class ExtensionConfig
         {
             Iterator<String> iter = iterator();
             while (iter.hasNext())
+            {
                 iter.next();
+            }
 
             return new ArrayList<>(params.keySet());
         }

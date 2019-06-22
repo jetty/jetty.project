@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-import org.junit.jupiter.api.Test;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
+
+import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -92,7 +92,7 @@ public class JavaxWebSocketFrameHandler_BadSignaturesTest extends AbstractJavaxW
          * Invalid Open Method Declaration (parameter of type int)
          *
          * @param session the session for the open
-         * @param count   the open count
+         * @param count the open count
          */
         @OnOpen
         public void onOpen(Session session, int count)

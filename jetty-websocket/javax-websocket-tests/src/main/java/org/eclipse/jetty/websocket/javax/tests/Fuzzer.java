@@ -50,17 +50,15 @@ public interface Fuzzer extends AutoCloseable
      * from the remote.
      *
      * @param frames the expected frames
-     * @throws InterruptedException
      */
     void expect(List<Frame> frames) throws InterruptedException;
 
     /**
      * Assert that the following frames contains the expected whole message.
      *
-     * @param framesQueue     the captured frames
-     * @param expectedDataOp  the expected message data type ({@link OpCode#BINARY} or {@link OpCode#TEXT})
+     * @param framesQueue the captured frames
+     * @param expectedDataOp the expected message data type ({@link OpCode#BINARY} or {@link OpCode#TEXT})
      * @param expectedMessage the expected message
-     * @throws InterruptedException
      */
     void expectMessage(BlockingQueue<Frame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException;
 
@@ -111,7 +109,7 @@ public interface Fuzzer extends AutoCloseable
      * of generated frames, and send segments of {@code segmentSize}
      * to remote as individual buffers.
      *
-     * @param frames      the list of frames to send
+     * @param frames the list of frames to send
      * @param segmentSize the size of each segment to send
      */
     void sendSegmented(List<Frame> frames, int segmentSize) throws IOException;
@@ -166,7 +164,7 @@ public interface Fuzzer extends AutoCloseable
                 }
 
                 assertThat(prefix + ".opcode", OpCode.name(actual.getOpCode()), is(OpCode.name(expected.getOpCode())));
-                prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin()?"":"!") + "fin)";
+                prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
                 if (expected.getOpCode() == OpCode.CLOSE)
                 {
                     CloseStatus expectedClose = new CloseStatus(expected.getPayload());

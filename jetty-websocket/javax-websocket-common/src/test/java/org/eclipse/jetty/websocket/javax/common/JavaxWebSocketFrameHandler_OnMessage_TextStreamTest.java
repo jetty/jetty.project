@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 

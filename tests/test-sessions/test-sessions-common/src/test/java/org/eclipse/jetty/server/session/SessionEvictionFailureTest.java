@@ -16,9 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
-
 
 import java.io.IOException;
 import java.util.Set;
@@ -42,40 +40,34 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * SessionEvictionFailureTest
- *
- *
  */
 public class SessionEvictionFailureTest
 {
 
     /**
      * MockSessionDataStore
-     *
-     *
      */
     public static class MockSessionDataStore extends AbstractSessionDataStore
     {
         public boolean[] _nextStoreResult;
         public int i = 0;
-        
-        public MockSessionDataStore (boolean[] results)
+
+        public MockSessionDataStore(boolean[] results)
         {
             _nextStoreResult = results;
         }
-        
+
         @Override
         public boolean isPassivating()
         {
             return false;
         }
 
-
         @Override
         public boolean exists(String id) throws Exception
         {
             return true;
         }
-
 
         @Override
         public SessionData doLoad(String id) throws Exception
@@ -88,7 +80,6 @@ public class SessionEvictionFailureTest
         {
             return false;
         }
-
 
         @Override
         public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
@@ -105,23 +96,20 @@ public class SessionEvictionFailureTest
             return candidates;
         }
     }
-    
-    
+
     /**
      * MockSessionDataStoreFactory
-     *
-     *
      */
     public static class MockSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     {
         public boolean[] _nextStoreResults;
-        
+
         public void setNextStoreResults(boolean[] storeResults)
         {
             _nextStoreResults = storeResults;
         }
 
-        /** 
+        /**
          * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
          */
         @Override
@@ -129,9 +117,7 @@ public class SessionEvictionFailureTest
         {
             return new MockSessionDataStore(_nextStoreResults);
         }
-        
     }
-    
 
     public static class TestServlet extends HttpServlet
     {
@@ -147,50 +133,47 @@ public class SessionEvictionFailureTest
             else if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
-               assertNotNull(session);
-               Integer count = (Integer)session.getAttribute("aaa");
-               assertNotNull(count);
+                assertNotNull(session);
+                Integer count = (Integer)session.getAttribute("aaa");
+                assertNotNull(count);
                 session.setAttribute("aaa", (count.intValue() + 1));
             }
         }
     }
 
-
-    public static void pause (int sec) throws InterruptedException
+    public static void pause(int sec) throws InterruptedException
     {
         Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(sec));
     }
 
-
-    
     @Test
-    public void testEvictFailure () throws Exception
+    public void testEvictFailure() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
         int inactivePeriod = 0;
         int scavengePeriod = 20;
         int evictionPeriod = 5; //evict after  inactivity
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(evictionPeriod);
         SessionDataStoreFactory storeFactory = new MockSessionDataStoreFactory();
 
-        TestServer server = new TestServer (0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         context.getSessionHandler().getSessionCache().setSaveOnInactiveEviction(true);
         //test values: allow first save, fail evict save, allow save, fail evict save, allow save, allow save on shutdown
-        MockSessionDataStore ds = new MockSessionDataStore(new boolean[] {true, false, true, false, true, true});
+        MockSessionDataStore ds = new MockSessionDataStore(new boolean[]{true, false, true, false, true, true});
         context.getSessionHandler().getSessionCache().setSessionDataStore(ds);
-        
+
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         context.addServlet(holder, servletMapping);
-    
+
         try
         {
             server.start();
-            int port1 = server.getPort();          
+            int port1 = server.getPort();
             HttpClient client = new HttpClient();
             client.start();
             try
@@ -199,27 +182,27 @@ public class SessionEvictionFailureTest
 
                 // Create the session
                 ContentResponse response = client.GET(url + "?action=init");
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
-              
+
                 //Wait for the eviction period to expire - save on evict should fail but session
                 //should remain in the cache
-                pause(evictionPeriod+(int)(evictionPeriod*0.5));
-                
+                pause(evictionPeriod + (int)(evictionPeriod * 0.5));
+
                 // Make another request to see if the session is still in the cache and can be used,
                 //allow it to be saved this time
                 Request request = client.newRequest(url + "?action=test");
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 assertNull(response.getHeaders().get("Set-Cookie")); //check that the cookie wasn't reset
 
                 //Wait for the eviction period to expire again
-                pause(evictionPeriod+(int)(evictionPeriod*0.5));
+                pause(evictionPeriod + (int)(evictionPeriod * 0.5));
 
                 request = client.newRequest(url + "?action=test");
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {
@@ -231,6 +214,4 @@ public class SessionEvictionFailureTest
             server.stop();
         }
     }
-
-    
 }

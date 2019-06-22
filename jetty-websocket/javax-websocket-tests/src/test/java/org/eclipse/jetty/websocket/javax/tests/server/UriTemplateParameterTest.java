@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.server.PathParam;
+import javax.websocket.server.ServerEndpoint;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -28,14 +36,6 @@ import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.server.PathParam;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class UriTemplateParameterTest
 {

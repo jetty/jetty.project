@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
 import java.util.function.Consumer;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -63,14 +62,14 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     {
         Object mappingObject = servletContext.getAttribute(mappingKey);
 
-        if (mappingObject!=null)
+        if (mappingObject != null)
         {
             if (WebSocketMapping.class.isInstance(mappingObject))
                 return (WebSocketMapping)mappingObject;
             else
                 throw new IllegalStateException(
-                        String.format("ContextHandler attribute %s is not of type WebSocketMapping: {%s}",
-                                mappingKey, mappingObject.toString()));
+                    String.format("ContextHandler attribute %s is not of type WebSocketMapping: {%s}",
+                        mappingKey, mappingObject.toString()));
         }
 
         return null;
@@ -147,7 +146,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     @Override
     public void lifeCycleStopping(LifeCycle context)
     {
-        ContextHandler contextHandler = (ContextHandler) context;
+        ContextHandler contextHandler = (ContextHandler)context;
         WebSocketMapping mapping = contextHandler.getBean(WebSocketMapping.class);
         if (mapping == this)
         {
@@ -177,8 +176,8 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
      * </p>
      *
      * @param pathSpec the pathspec to respond on
-     * @param creator  the websocket creator to activate on the provided mapping.
-     * @param factory  the factory to use to create a FrameHandler for the websocket
+     * @param creator the websocket creator to activate on the provided mapping.
+     * @param factory the factory to use to create a FrameHandler for the websocket
      * @param customizer the customizer to use to customize the WebSocket session.
      */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer) throws WebSocketException
@@ -189,7 +188,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     public WebSocketCreator getMapping(PathSpec pathSpec)
     {
         Negotiator cn = mappings.get(pathSpec);
-        return cn == null?null:cn.getWebSocketCreator();
+        return cn == null ? null : cn.getWebSocketCreator();
     }
 
     public boolean removeMapping(PathSpec pathSpec)
@@ -256,7 +255,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
             return creator;
         }
 
-
         @Override
         public FrameHandler negotiate(Negotiation negotiation) throws IOException
         {
@@ -302,7 +300,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s,%s,%s}",getClass().getSimpleName(), hashCode(), creator, factory, getCustomizer());
+            return String.format("%s@%x{%s,%s,%s}", getClass().getSimpleName(), hashCode(), creator, factory, getCustomizer());
         }
     }
 }

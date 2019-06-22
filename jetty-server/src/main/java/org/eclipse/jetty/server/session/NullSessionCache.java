@@ -23,9 +23,9 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * NullSessionCache
  *
- * Does not actually cache any Session objects. Useful for testing. 
- * Also useful if you do not want to share Session objects with the same id between 
- * simultaneous requests: note that this means that context forwarding can't share 
+ * Does not actually cache any Session objects. Useful for testing.
+ * Also useful if you do not want to share Session objects with the same id between
+ * simultaneous requests: note that this means that context forwarding can't share
  * the same id either.
  */
 public class NullSessionCache extends AbstractSessionCache
@@ -40,7 +40,7 @@ public class NullSessionCache extends AbstractSessionCache
         super.setEvictionPolicy(EVICT_ON_SESSION_EXIT);
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionCache#shutdown()
      */
     @Override
@@ -48,7 +48,7 @@ public class NullSessionCache extends AbstractSessionCache
     {
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(org.eclipse.jetty.server.session.SessionData)
      */
     @Override
@@ -57,7 +57,7 @@ public class NullSessionCache extends AbstractSessionCache
         return new Session(getSessionHandler(), data);
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
      */
     @Override
@@ -66,7 +66,7 @@ public class NullSessionCache extends AbstractSessionCache
         return new Session(getSessionHandler(), request, data);
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionCache#doGet(java.lang.String)
      */
     @Override
@@ -76,7 +76,7 @@ public class NullSessionCache extends AbstractSessionCache
         return null;
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionCache#doPutIfAbsent(java.lang.String, org.eclipse.jetty.server.session.Session)
      */
     @Override
@@ -86,7 +86,7 @@ public class NullSessionCache extends AbstractSessionCache
         return null;
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionCache#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
      */
     @Override
@@ -96,7 +96,7 @@ public class NullSessionCache extends AbstractSessionCache
         return true;
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionCache#doDelete(java.lang.String)
      */
     @Override
@@ -105,12 +105,12 @@ public class NullSessionCache extends AbstractSessionCache
         return null;
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionCache#setEvictionPolicy(int)
      */
     @Override
     public void setEvictionPolicy(int evictionTimeout)
     {
-        LOG.warn("Ignoring eviction setting:"+evictionTimeout);
+        LOG.warn("Ignoring eviction setting:" + evictionTimeout);
     }
 }

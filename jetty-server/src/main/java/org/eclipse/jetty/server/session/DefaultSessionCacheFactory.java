@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 /**
@@ -31,7 +30,6 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
     boolean _saveOnCreate;
     boolean _removeUnloadableSessions;
 
-    
     /**
      * @return the saveOnCreate
      */
@@ -39,8 +37,6 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
     {
         return _saveOnCreate;
     }
-
-
 
     /**
      * @param saveOnCreate the saveOnCreate to set
@@ -50,11 +46,6 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
         _saveOnCreate = saveOnCreate;
     }
 
-
-
-    
-    
-    
     /**
      * @return the removeUnloadableSessions
      */
@@ -62,9 +53,6 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
     {
         return _removeUnloadableSessions;
     }
-
-
-
 
     /**
      * @param removeUnloadableSessions the removeUnloadableSessions to set
@@ -74,9 +62,6 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
         _removeUnloadableSessions = removeUnloadableSessions;
     }
 
-
-
-
     /**
      * @return the evictionPolicy
      */
@@ -84,9 +69,6 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
     {
         return _evictionPolicy;
     }
-
-
-
 
     /**
      * @param evictionPolicy the evictionPolicy to set
@@ -96,9 +78,6 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
         _evictionPolicy = evictionPolicy;
     }
 
-
-
-
     /**
      * @return the saveOnInactiveEvict
      */
@@ -106,9 +85,6 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
     {
         return _saveOnInactiveEvict;
     }
-
-
-
 
     /**
      * @param saveOnInactiveEvict the saveOnInactiveEvict to set
@@ -118,14 +94,11 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
         _saveOnInactiveEvict = saveOnInactiveEvict;
     }
 
-
-    
-
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionCache(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
-    public SessionCache getSessionCache (SessionHandler handler)
+    public SessionCache getSessionCache(SessionHandler handler)
     {
         DefaultSessionCache cache = new DefaultSessionCache(handler);
         cache.setEvictionPolicy(getEvictionPolicy());
@@ -134,6 +107,4 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
         cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
         return cache;
     }
-
-    
 }

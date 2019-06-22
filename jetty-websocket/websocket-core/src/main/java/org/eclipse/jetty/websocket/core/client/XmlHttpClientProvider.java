@@ -35,11 +35,11 @@ class XmlHttpClientProvider implements HttpClientProvider
         {
             return null;
         }
-        
+
         try
         {
             XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(resource));
-            return (HttpClient) configuration.configure();
+            return (HttpClient)configuration.configure();
         }
         catch (Throwable t)
         {

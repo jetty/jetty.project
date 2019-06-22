@@ -86,39 +86,38 @@ public class ServerConnector extends AbstractNetworkConnector
 
     /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     *
      * @param server The {@link Server} this connector will accept connection for.
      */
     public ServerConnector(
         @Name("server") Server server)
     {
-        this(server,null,null,null,-1,-1,new HttpConnectionFactory());
+        this(server, null, null, null, -1, -1, new HttpConnectionFactory());
     }
 
     /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     *
      * @param server The {@link Server} this connector will accept connection for.
-     * @param acceptors
-     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
-     *          the selector threads are used to accept connections.
-     * @param selectors
-     *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param acceptors the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
+     * the selector threads are used to accept connections.
+     * @param selectors the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      */
     public ServerConnector(
         @Name("server") Server server,
         @Name("acceptors") int acceptors,
         @Name("selectors") int selectors)
     {
-        this(server,null,null,null,acceptors,selectors,new HttpConnectionFactory());
+        this(server, null, null, null, acceptors, selectors, new HttpConnectionFactory());
     }
 
     /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     *
      * @param server The {@link Server} this connector will accept connection for.
-     * @param acceptors
-     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
-     *          the selector threads are used to accept connections.
-     * @param selectors
-     *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param acceptors the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
+     * the selector threads are used to accept connections.
+     * @param selectors the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public ServerConnector(
@@ -127,11 +126,12 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("selectors") int selectors,
         @Name("factories") ConnectionFactory... factories)
     {
-        this(server,null,null,null,acceptors,selectors,factories);
+        this(server, null, null, null, acceptors, selectors, factories);
     }
 
     /**
      * <p>Construct a Server Connector with the passed Connection factories.</p>
+     *
      * @param server The {@link Server} this connector will accept connection for.
      * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
@@ -139,11 +139,12 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("server") Server server,
         @Name("factories") ConnectionFactory... factories)
     {
-        this(server,null,null,null,-1,-1,factories);
+        this(server, null, null, null, -1, -1, factories);
     }
 
     /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the primary protocol</p>.
+     *
      * @param server The {@link Server} this connector will accept connection for.
      * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the
      * list of HTTP Connection Factory.
@@ -152,19 +153,18 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("server") Server server,
         @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
     {
-        this(server,null,null,null,-1,-1,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
+        this(server, null, null, null, -1, -1, AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
     }
 
     /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the primary protocol</p>.
+     *
      * @param server The {@link Server} this connector will accept connection for.
      * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the
      * list of HTTP Connection Factory.
-     * @param acceptors
-     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
-     *          the selector threads are used to accept connections.
-     * @param selectors
-     *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param acceptors the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
+     * the selector threads are used to accept connections.
+     * @param selectors the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      */
     public ServerConnector(
         @Name("server") Server server,
@@ -172,7 +172,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("selectors") int selectors,
         @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
     {
-        this(server,null,null,null,acceptors,selectors,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
+        this(server, null, null, null, acceptors, selectors, AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
     }
 
     /**
@@ -190,22 +190,15 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
-     * @param server
-     *          The server this connector will be accept connection for.
-     * @param executor
-     *          An executor used to run tasks for handling requests, acceptors and selectors.
-     *          If null then use the servers executor
-     * @param scheduler
-     *          A scheduler used to schedule timeouts. If null then use the servers scheduler
-     * @param bufferPool
-     *          A ByteBuffer pool used to allocate buffers.  If null then create a private pool with default configuration.
-     * @param acceptors
-     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
-     *          the selector threads are used to accept connections.
-     * @param selectors
-     *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
-     * @param factories
-     *          Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     * @param server The server this connector will be accept connection for.
+     * @param executor An executor used to run tasks for handling requests, acceptors and selectors.
+     * If null then use the servers executor
+     * @param scheduler A scheduler used to schedule timeouts. If null then use the servers scheduler
+     * @param bufferPool A ByteBuffer pool used to allocate buffers.  If null then create a private pool with default configuration.
+     * @param acceptors the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then
+     * the selector threads are used to accept connections.
+     * @param selectors the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public ServerConnector(
         @Name("server") Server server,
@@ -216,8 +209,8 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("selectors") int selectors,
         @Name("factories") ConnectionFactory... factories)
     {
-        super(server,executor,scheduler,bufferPool,acceptors,factories);
-        _manager = newSelectorManager(getExecutor(), getScheduler(),selectors);
+        super(server, executor, scheduler, bufferPool, acceptors, factories);
+        _manager = newSelectorManager(getExecutor(), getScheduler(), selectors);
         addBean(_manager, true);
         setAcceptorPriorityDelta(-2);
     }
@@ -230,31 +223,35 @@ public class ServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStart() throws Exception
     {
-        for (EventListener l: getBeans(EventListener.class))
+        for (EventListener l : getBeans(EventListener.class))
+        {
             _manager.addEventListener(l);
-        
+        }
+
         super.doStart();
 
-        if (getAcceptors()==0)
+        if (getAcceptors() == 0)
         {
             _acceptChannel.configureBlocking(false);
             _acceptor.set(_manager.acceptor(_acceptChannel));
         }
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
         super.doStop();
-        for (EventListener l: getBeans(EventListener.class))
+        for (EventListener l : getBeans(EventListener.class))
+        {
             _manager.removeEventListener(l);
+        }
     }
 
     @Override
     public boolean isOpen()
     {
         ServerSocketChannel channel = _acceptChannel;
-        return channel!=null && channel.isOpen();
+        return channel != null && channel.isOpen();
     }
 
     /**
@@ -274,8 +271,9 @@ public class ServerConnector extends AbstractNetworkConnector
      * <p>Use it with xinetd/inetd, to launch an instance of Jetty on demand. The port
      * used to access pages on the Jetty instance is the same as the port used to
      * launch Jetty.</p>
-     * @see ServerConnector#openAcceptChannel()
+     *
      * @param inheritChannel whether this connector uses a channel inherited from the JVM.
+     * @see ServerConnector#openAcceptChannel()
      */
     public void setInheritChannel(boolean inheritChannel)
     {
@@ -286,6 +284,7 @@ public class ServerConnector extends AbstractNetworkConnector
      * Open the connector using the passed ServerSocketChannel.
      * This open method can be called before starting the connector to pass it a ServerSocketChannel
      * that will be used instead of one returned from {@link #openAcceptChannel()}
+     *
      * @param acceptChannel the channel to use
      * @throws IOException if the server channel is not bound
      */
@@ -293,13 +292,13 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        updateBean(_acceptChannel,acceptChannel);
+        updateBean(_acceptChannel, acceptChannel);
         _acceptChannel = acceptChannel;
         _localPort = _acceptChannel.socket().getLocalPort();
         if (_localPort <= 0)
             throw new IOException("Server channel not bound");
     }
-    
+
     @Override
     public void open() throws IOException
     {
@@ -316,6 +315,7 @@ public class ServerConnector extends AbstractNetworkConnector
 
     /**
      * Called by {@link #open()} to obtain the accepting channel.
+     *
      * @return ServerSocketChannel used to accept connections.
      * @throws IOException if unable to obtain or configure the server channel
      */
@@ -354,7 +354,7 @@ public class ServerConnector extends AbstractNetworkConnector
     public void close()
     {
         super.close();
-        
+
         ServerSocketChannel serverChannel = _acceptChannel;
         _acceptChannel = null;
         if (serverChannel != null)
@@ -468,36 +468,35 @@ public class ServerConnector extends AbstractNetworkConnector
         _reuseAddress = reuseAddress;
     }
 
-   
     @Override
     public void setAccepting(boolean accepting)
     {
         super.setAccepting(accepting);
-        if (getAcceptors()>0)
+        if (getAcceptors() > 0)
             return;
-        
+
         try
         {
             if (accepting)
             {
-                if (_acceptor.get()==null)
+                if (_acceptor.get() == null)
                 {
                     Closeable acceptor = _manager.acceptor(_acceptChannel);
-                    if (!_acceptor.compareAndSet(null,acceptor))
+                    if (!_acceptor.compareAndSet(null, acceptor))
                         acceptor.close();
                 }
             }
             else
             {
                 Closeable acceptor = _acceptor.get();
-                if (acceptor!=null && _acceptor.compareAndSet(acceptor,null))
+                if (acceptor != null && _acceptor.compareAndSet(acceptor, null))
                     acceptor.close();
             }
         }
         catch (IOException e)
         {
             throw new RuntimeException(e);
-        } 
+        }
     }
 
     protected class ServerConnectorManager extends SelectorManager
@@ -542,7 +541,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Override
         public String toString()
         {
-            return String.format("SelectorManager@%s",ServerConnector.this);
+            return String.format("SelectorManager@%s", ServerConnector.this);
         }
     }
 }

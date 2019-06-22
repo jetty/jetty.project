@@ -46,7 +46,8 @@ public class HttpFieldsMatchersTest
         fields.put("b", "bar");
         fields.put("c", "fizz");
 
-        AssertionError x = Assertions.assertThrows(AssertionError.class, ()-> {
+        AssertionError x = Assertions.assertThrows(AssertionError.class, () ->
+        {
             MatcherAssert.assertThat(fields, Matchers.not(HttpFieldsMatchers.containsHeader("a")));
         });
 
@@ -61,7 +62,8 @@ public class HttpFieldsMatchersTest
         fields.put("b", "bar");
         fields.put("c", "fizz");
 
-        AssertionError x = Assertions.assertThrows(AssertionError.class, ()->{
+        AssertionError x = Assertions.assertThrows(AssertionError.class, () ->
+        {
             MatcherAssert.assertThat(fields, HttpFieldsMatchers.containsHeader("z"));
         });
 
@@ -76,7 +78,8 @@ public class HttpFieldsMatchersTest
         fields.put("b", "bar");
         fields.put("c", "fizz");
 
-        AssertionError x = Assertions.assertThrows(AssertionError.class, ()-> {
+        AssertionError x = Assertions.assertThrows(AssertionError.class, () ->
+        {
             MatcherAssert.assertThat(fields, HttpFieldsMatchers.containsHeaderValue("z", "floom"));
         });
 
@@ -91,7 +94,8 @@ public class HttpFieldsMatchersTest
         fields.put("b", "bar");
         fields.put("c", "fizz");
 
-        AssertionError x = Assertions.assertThrows(AssertionError.class, ()-> {
+        AssertionError x = Assertions.assertThrows(AssertionError.class, () ->
+        {
             MatcherAssert.assertThat(fields, HttpFieldsMatchers.containsHeaderValue("a", "floom"));
         });
 

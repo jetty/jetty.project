@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
@@ -100,7 +99,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
     }
 
     @SuppressWarnings(
-        { "rawtypes", "unchecked" })
+        {"rawtypes", "unchecked"})
     @Override
     public void sendObject(Object data, SendHandler handler)
     {

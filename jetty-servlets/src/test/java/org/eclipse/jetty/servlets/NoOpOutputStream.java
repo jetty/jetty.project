@@ -31,25 +31,25 @@ public class NoOpOutputStream extends OutputStream
     {
         /* noop */
     }
-    
+
     @Override
     public void flush() throws IOException
     {
         /* noop */
     }
-    
+
     @Override
     public void write(byte[] b) throws IOException
     {
         /* noop */
     }
-    
+
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
         /* noop */
     }
-    
+
     @Override
     public void write(int b) throws IOException
     {

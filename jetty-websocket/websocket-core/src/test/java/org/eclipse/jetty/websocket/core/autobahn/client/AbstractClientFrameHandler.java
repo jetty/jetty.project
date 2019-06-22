@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.core.autobahn.client;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-
-import java.nio.ByteBuffer;
 
 public abstract class AbstractClientFrameHandler extends AbstractTestFrameHandler
 {

@@ -65,7 +65,9 @@ public class XmlConfigurationTest
 {
     public WorkDir workDir;
 
-    protected String[] _configure=new String [] {"org/eclipse/jetty/xml/configureWithAttr.xml","org/eclipse/jetty/xml/configureWithElements.xml"};
+    protected String[] _configure = new String[]{
+        "org/eclipse/jetty/xml/configureWithAttr.xml", "org/eclipse/jetty/xml/configureWithElements.xml"
+    };
 
     private static final String STRING_ARRAY_XML = "<Array type=\"String\"><Item type=\"String\">String1</Item><Item type=\"String\">String2</Item></Array>";
     private static final String INT_ARRAY_XML = "<Array type=\"int\"><Item type=\"int\">1</Item><Item type=\"int\">2</Item></Array>";
@@ -84,9 +86,9 @@ public class XmlConfigurationTest
     {
         for (String configure : _configure)
         {
-            Map<String,String> properties = new HashMap<>();
+            Map<String, String> properties = new HashMap<>();
             properties.put("whatever", "xxx");
-            TestConfiguration.VALUE=77;
+            TestConfiguration.VALUE = 77;
             URL url = XmlConfigurationTest.class.getClassLoader().getResource(configure);
             XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url));
             TestConfiguration tc = new TestConfiguration("tc");
@@ -116,11 +118,10 @@ public class XmlConfigurationTest
             assertEquals("-1String", tc.get("ObjectsString"), "ObjectsString");
             assertEquals("-1\n  String", tc.get("ObjectsWhiteString"), "ObjectsWhiteString");
 
-            assertEquals(System.getProperty("user.dir")+"/stuff", tc.get("SystemProperty"), "SystemProperty");
+            assertEquals(System.getProperty("user.dir") + "/stuff", tc.get("SystemProperty"), "SystemProperty");
             assertEquals(System.getenv("HOME"), tc.get("Env"), "Env");
 
             assertEquals("xxx", tc.get("Property"), "Property");
-
 
             assertEquals("Yes", tc.get("Called"), "Called");
 
@@ -136,8 +137,8 @@ public class XmlConfigurationTest
             assertEquals(3, tc.ia[2], "ia[2]");
             assertEquals(0, tc.ia[3], "ia[3]");
 
-            TestConfiguration tc2=tc.nested;
-            assertTrue(tc2!=null);
+            TestConfiguration tc2 = tc.nested;
+            assertTrue(tc2 != null);
             assertEquals(true, tc2.get("Arg"), "Called(bool)");
 
             assertEquals(null, tc.get("Arg"), "nested config");
@@ -150,7 +151,7 @@ public class XmlConfigurationTest
             assertEquals(tc.testField1, 77, "static to field");
             assertEquals(tc.testField2, 2, "field to field");
             assertEquals(TestConfiguration.VALUE, 42, "literal to static");
-            
+
             assertEquals(((Map<String, String>)configuration.getIdMap().get("map")).get("key0"), "value0");
             assertEquals(((Map<String, String>)configuration.getIdMap().get("map")).get("key1"), "value1");
         }
@@ -161,10 +162,10 @@ public class XmlConfigurationTest
     {
         for (String configure : _configure)
         {
-            TestConfiguration.VALUE=71;
-            Map<String,String> properties = new HashMap<>();
+            TestConfiguration.VALUE = 71;
+            Map<String, String> properties = new HashMap<>();
             properties.put("whatever", "xxx");
-            
+
             URL url = XmlConfigurationTest.class.getClassLoader().getResource(configure);
             final AtomicInteger count = new AtomicInteger(0);
             XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url))
@@ -183,11 +184,11 @@ public class XmlConfigurationTest
             configuration.getProperties().putAll(properties);
             TestConfiguration tc = (TestConfiguration)configuration.configure();
 
-            assertEquals(3,count.get());
+            assertEquals(3, count.get());
 
-            assertEquals("NEW DEFAULT",tc.getTestString());
-            assertEquals("nested",tc.getNested().getTestString());
-            assertEquals("NEW DEFAULT",tc.getNested().getNested().getTestString());
+            assertEquals("NEW DEFAULT", tc.getTestString());
+            assertEquals("nested", tc.getNested().getTestString());
+            assertEquals("NEW DEFAULT", tc.getNested().getNested().getTestString());
 
             assertEquals("SetValue", tc.testObject, "Set String");
             assertEquals(2, tc.testInt, "Set Type");
@@ -212,9 +213,8 @@ public class XmlConfigurationTest
             assertEquals("-1String", tc.get("ObjectsString"), "ObjectsString");
             assertEquals("-1\n  String", tc.get("ObjectsWhiteString"), "ObjectsWhiteString");
 
-            assertEquals(System.getProperty("user.dir")+"/stuff", tc.get("SystemProperty"), "SystemProperty");
+            assertEquals(System.getProperty("user.dir") + "/stuff", tc.get("SystemProperty"), "SystemProperty");
             assertEquals("xxx", tc.get("Property"), "Property");
-
 
             assertEquals("Yes", tc.get("Called"), "Called");
 
@@ -230,8 +230,8 @@ public class XmlConfigurationTest
             assertEquals(3, tc.ia[2], "ia[2]");
             assertEquals(0, tc.ia[3], "ia[3]");
 
-            TestConfiguration tc2=tc.nested;
-            assertTrue(tc2!=null);
+            TestConfiguration tc2 = tc.nested;
+            assertTrue(tc2 != null);
             assertEquals(true, tc2.get("Arg"), "Called(bool)");
 
             assertEquals(null, tc.get("Arg"), "nested config");
@@ -250,7 +250,7 @@ public class XmlConfigurationTest
     public XmlConfiguration asXmlConfiguration(String rawXml) throws IOException, SAXException
     {
         Path testFile = workDir.getEmptyPathDir().resolve("raw.xml");
-        try(BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
+        try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
         {
             writer.write(rawXml);
         }
@@ -263,15 +263,15 @@ public class XmlConfigurationTest
         XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\"><Get name=\"class\"/></Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         configuration.configure(tc);
-        assertEquals(TestConfiguration.class,tc.testObject);
-        
+        assertEquals(TestConfiguration.class, tc.testObject);
+
         configuration =
             asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\"><Get class=\"java.lang.String\" name=\"class\"><Get id=\"simple\" name=\"simpleName\"/></Get></Set></Configure>");
         configuration.configure(tc);
-        assertEquals(String.class,tc.testObject);
-        assertEquals("String",configuration.getIdMap().get("simple"));
+        assertEquals(String.class, tc.testObject);
+        assertEquals("String", configuration.getIdMap().get("simple"));
     }
-    
+
     @Test
     public void testStringConfiguration() throws Exception
     {
@@ -291,7 +291,7 @@ public class XmlConfigurationTest
         tc.setTestString("default");
         configuration.configure(tc);
         assertEquals("This is a property value", tc.getTestString());
-        assertEquals(configuration.getIdMap().get("test"),"This is a property value");
+        assertEquals(configuration.getIdMap().get("test"), "This is a property value");
     }
 
     @Test
@@ -303,7 +303,7 @@ public class XmlConfigurationTest
         tc.setTestString("default");
         configuration.configure(tc);
         assertEquals("default", tc.getTestString());
-        assertEquals(configuration.getIdMap().get("test"),null);
+        assertEquals(configuration.getIdMap().get("test"), null);
     }
 
     @Test
@@ -315,7 +315,7 @@ public class XmlConfigurationTest
         tc.setTestString("default");
         configuration.configure(tc);
         assertEquals("Value", tc.getTestString());
-        assertEquals(configuration.getIdMap().get("test"),"Value");
+        assertEquals(configuration.getIdMap().get("test"), "Value");
     }
 
     @Test
@@ -327,9 +327,8 @@ public class XmlConfigurationTest
         tc.setTestString("default");
         configuration.configure(tc);
         assertEquals("default", tc.getTestString());
-        assertEquals(configuration.getIdMap().get("test"),null);
+        assertEquals(configuration.getIdMap().get("test"), null);
     }
-
 
     @Test
     public void testMeaningfullSetException() throws Exception
@@ -337,7 +336,8 @@ public class XmlConfigurationTest
         XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"PropertyTest\"><Property name=\"null\"/></Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
 
-        NoSuchMethodException e = assertThrows(NoSuchMethodException.class, () -> {
+        NoSuchMethodException e = assertThrows(NoSuchMethodException.class, () ->
+        {
             configuration.configure(tc);
         });
 
@@ -348,12 +348,12 @@ public class XmlConfigurationTest
     public void testListConstructorArg() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-                + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">"
-                + STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
+                                                                   + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">"
+                                                                   + STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        assertThat("tc.getList() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
-        assertThat("tc.getList() returns not null",tc.getList(),not(nullValue()));
+        assertThat("tc.getList() returns not null", tc.getList(), not(nullValue()));
         assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
 
@@ -361,14 +361,14 @@ public class XmlConfigurationTest
     public void testTwoArgumentListConstructorArg() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-                + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\">"
-                + "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>"
-                + "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>"
-                + "</New></Set></Configure>");
+                                                                   + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\">"
+                                                                   + "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>"
+                                                                   + "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>"
+                                                                   + "</New></Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        assertThat("tc.getList() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
-        assertThat("tc.getList() returns not null",tc.getList(),not(nullValue()));
+        assertThat("tc.getList() returns not null", tc.getList(), not(nullValue()));
         assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
 
@@ -376,10 +376,11 @@ public class XmlConfigurationTest
     public void testListNotContainingArray() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-                + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">Some String</Arg></New></Configure>");
+                                                                   + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">Some String</Arg></New></Configure>");
         TestConfiguration tc = new TestConfiguration();
 
-        assertThrows(IllegalArgumentException.class, ()-> {
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             xmlConfiguration.configure(tc);
         });
     }
@@ -388,12 +389,12 @@ public class XmlConfigurationTest
     public void testSetConstructorArg() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-                + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">"
-                + STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
+                                                                   + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">"
+                                                                   + STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThat("tc.getList() returns null as it's not configured yet",tc.getSet(),is(nullValue()));
+        assertThat("tc.getList() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
-        assertThat("tc.getList() returns not null",tc.getSet(),not(nullValue()));
+        assertThat("tc.getList() returns not null", tc.getSet(), not(nullValue()));
         assertThat("tc.getList() has two entries as specified in the xml", tc.getSet().size(), is(2));
     }
 
@@ -401,9 +402,10 @@ public class XmlConfigurationTest
     public void testSetNotContainingArray() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-                + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">Some String</Arg></New></Configure>");
+                                                                   + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">Some String</Arg></New></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThrows(IllegalArgumentException.class, ()->{
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             xmlConfiguration.configure(tc);
         });
     }
@@ -412,9 +414,9 @@ public class XmlConfigurationTest
     public void testListSetterWithStringArray() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
-                + STRING_ARRAY_XML + "</Set></Configure>");
+                                                                   + STRING_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        assertThat("tc.getList() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
         assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
@@ -423,9 +425,9 @@ public class XmlConfigurationTest
     public void testListSetterWithPrimitiveArray() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
-                + INT_ARRAY_XML + "</Set></Configure>");
+                                                                   + INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        assertThat("tc.getList() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
         assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
@@ -434,10 +436,11 @@ public class XmlConfigurationTest
     public void testNotSupportedLinkedListSetter() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"LinkedList\">"
-                + INT_ARRAY_XML + "</Set></Configure>");
+                                                                   + INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getList(), is(nullValue()));
-        assertThrows(NoSuchMethodException.class, ()->{
+        assertThrows(NoSuchMethodException.class, () ->
+        {
             xmlConfiguration.configure(tc);
         });
     }
@@ -446,7 +449,7 @@ public class XmlConfigurationTest
     public void testArrayListSetter() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"ArrayList\">"
-                + INT_ARRAY_XML + "</Set></Configure>");
+                                                                   + INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -457,7 +460,7 @@ public class XmlConfigurationTest
     public void testSetSetter() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
-                + STRING_ARRAY_XML + "</Set></Configure>");
+                                                                   + STRING_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -468,7 +471,7 @@ public class XmlConfigurationTest
     public void testSetSetterWithPrimitiveArray() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
-                + INT_ARRAY_XML + "</Set></Configure>");
+                                                                   + INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -479,20 +482,20 @@ public class XmlConfigurationTest
     public void testMap() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
-                "    <Set name=\"map\">" +
-                "        <Map>" +
-                "            <Entry>" +
-                "                <Item>key1</Item>" +
-                "                <Item>value1</Item>" +
-                "            </Entry>" +
-                "            <Entry>" +
-                "                <Item>key2</Item>" +
-                "                <Item>value2</Item>" +
-                "            </Entry>" +
-                "        </Map>" +
-                "    </Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+                                                                   "    <Set name=\"map\">" +
+                                                                   "        <Map>" +
+                                                                   "            <Entry>" +
+                                                                   "                <Item>key1</Item>" +
+                                                                   "                <Item>value1</Item>" +
+                                                                   "            </Entry>" +
+                                                                   "            <Entry>" +
+                                                                   "                <Item>key2</Item>" +
+                                                                   "                <Item>value2</Item>" +
+                                                                   "            </Entry>" +
+                                                                   "        </Map>" +
+                                                                   "    </Set>" +
+                                                                   "</Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertNull(tc.map, "tc.map is null as it's not configured yet");
         xmlConfiguration.configure(tc);
@@ -503,11 +506,11 @@ public class XmlConfigurationTest
     public void testConstructorNamedInjection() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg>arg1</Arg>  " +
-                "  <Arg>arg2</Arg>  " +
-                "  <Arg>arg3</Arg>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg>arg1</Arg>  " +
+                                                                   "  <Arg>arg2</Arg>  " +
+                                                                   "  <Arg>arg3</Arg>  " +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -520,11 +523,11 @@ public class XmlConfigurationTest
     public void testConstructorNamedInjectionOrdered() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg name=\"first\">arg1</Arg>  " +
-                "  <Arg name=\"second\">arg2</Arg>  " +
-                "  <Arg name=\"third\">arg3</Arg>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "  <Arg name=\"second\">arg2</Arg>  " +
+                                                                   "  <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -537,11 +540,11 @@ public class XmlConfigurationTest
     public void testConstructorNamedInjectionUnOrdered() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg name=\"first\">arg1</Arg>  " +
-                "  <Arg name=\"third\">arg3</Arg>  " +
-                "  <Arg name=\"second\">arg2</Arg>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "  <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "  <Arg name=\"second\">arg2</Arg>  " +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -554,11 +557,11 @@ public class XmlConfigurationTest
     public void testConstructorNamedInjectionOrderedMixed() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg name=\"first\">arg1</Arg>  " +
-                "  <Arg>arg2</Arg>  " +
-                "  <Arg name=\"third\">arg3</Arg>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "  <Arg>arg2</Arg>  " +
+                                                                   "  <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -571,11 +574,11 @@ public class XmlConfigurationTest
     public void testConstructorNamedInjectionUnorderedMixed() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg name=\"third\">arg3</Arg>  " +
-                "  <Arg>arg2</Arg>  " +
-                "  <Arg name=\"first\">arg1</Arg>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "  <Arg>arg2</Arg>  " +
+                                                                   "  <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -588,18 +591,18 @@ public class XmlConfigurationTest
     public void testNestedConstructorNamedInjection() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg>arg1</Arg>  " +
-                "  <Arg>arg2</Arg>  " +
-                "  <Arg>arg3</Arg>  " +
-                "  <Set name=\"nested\">  " +
-                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "      <Arg>arg1</Arg>  " +
-                "      <Arg>arg2</Arg>  " +
-                "      <Arg>arg3</Arg>  " +
-                "    </New>" +
-                "  </Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg>arg1</Arg>  " +
+                                                                   "  <Arg>arg2</Arg>  " +
+                                                                   "  <Arg>arg3</Arg>  " +
+                                                                   "  <Set name=\"nested\">  " +
+                                                                   "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "      <Arg>arg1</Arg>  " +
+                                                                   "      <Arg>arg2</Arg>  " +
+                                                                   "      <Arg>arg3</Arg>  " +
+                                                                   "    </New>" +
+                                                                   "  </Set>" +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -609,25 +612,24 @@ public class XmlConfigurationTest
         assertEquals("arg1", atc.getNested().getFirst(), "nested first parameter not wired correctly");
         assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
         assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
-
     }
 
     @Test
     public void testNestedConstructorNamedInjectionOrdered() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg name=\"first\">arg1</Arg>  " +
-                "  <Arg name=\"second\">arg2</Arg>  " +
-                "  <Arg name=\"third\">arg3</Arg>  " +
-                "  <Set name=\"nested\">  " +
-                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "      <Arg name=\"first\">arg1</Arg>  " +
-                "      <Arg name=\"second\">arg2</Arg>  " +
-                "      <Arg name=\"third\">arg3</Arg>  " +
-                "    </New>" +
-                "  </Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "  <Arg name=\"second\">arg2</Arg>  " +
+                                                                   "  <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "  <Set name=\"nested\">  " +
+                                                                   "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "      <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "      <Arg name=\"second\">arg2</Arg>  " +
+                                                                   "      <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "    </New>" +
+                                                                   "  </Set>" +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -643,18 +645,18 @@ public class XmlConfigurationTest
     public void testNestedConstructorNamedInjectionUnOrdered() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg name=\"first\">arg1</Arg>  " +
-                "  <Arg name=\"third\">arg3</Arg>  " +
-                "  <Arg name=\"second\">arg2</Arg>  " +
-                "  <Set name=\"nested\">  " +
-                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "      <Arg name=\"first\">arg1</Arg>  " +
-                "      <Arg name=\"third\">arg3</Arg>  " +
-                "      <Arg name=\"second\">arg2</Arg>  " +
-                "    </New>" +
-                "  </Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "  <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "  <Arg name=\"second\">arg2</Arg>  " +
+                                                                   "  <Set name=\"nested\">  " +
+                                                                   "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "      <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "      <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "      <Arg name=\"second\">arg2</Arg>  " +
+                                                                   "    </New>" +
+                                                                   "  </Set>" +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -670,18 +672,18 @@ public class XmlConfigurationTest
     public void testNestedConstructorNamedInjectionOrderedMixed() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg name=\"first\">arg1</Arg>  " +
-                "  <Arg>arg2</Arg>  " +
-                "  <Arg name=\"third\">arg3</Arg>  " +
-                "  <Set name=\"nested\">  " +
-                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "      <Arg name=\"first\">arg1</Arg>  " +
-                "      <Arg>arg2</Arg>  " +
-                "      <Arg name=\"third\">arg3</Arg>  " +
-                "    </New>" +
-                "  </Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "  <Arg>arg2</Arg>  " +
+                                                                   "  <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "  <Set name=\"nested\">  " +
+                                                                   "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "      <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "      <Arg>arg2</Arg>  " +
+                                                                   "      <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "    </New>" +
+                                                                   "  </Set>" +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -692,23 +694,23 @@ public class XmlConfigurationTest
         assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
         assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
     }
-    
+
     @Test
     public void testArgumentsGetIgnoredMissingDTD() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg>arg1</Arg>  " +
-                "  <Arg>arg2</Arg>  " +
-                "  <Arg>arg3</Arg>  " +
-                "  <Set name=\"nested\">  " +
-                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">\n" + 
-                "      <Arg>arg1</Arg>\n" + 
-                "      <Arg>arg2</Arg>\n" + 
-                "      <Arg>arg3</Arg>\n" + 
-                "    </New>" +
-                "  </Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg>arg1</Arg>  " +
+                                                                   "  <Arg>arg2</Arg>  " +
+                                                                   "  <Arg>arg3</Arg>  " +
+                                                                   "  <Set name=\"nested\">  " +
+                                                                   "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">\n" +
+                                                                   "      <Arg>arg1</Arg>\n" +
+                                                                   "      <Arg>arg2</Arg>\n" +
+                                                                   "      <Arg>arg3</Arg>\n" +
+                                                                   "    </New>" +
+                                                                   "  </Set>" +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -724,18 +726,18 @@ public class XmlConfigurationTest
     public void testSetGetIgnoredMissingDTD() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\">arg1</Set>  " +
-                "  <Set name=\"second\">arg2</Set>  " +
-                "  <Set name=\"third\">arg3</Set>  " +
-                "  <Set name=\"nested\">  " +
-                "    <New class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">\n" + 
-                "      <Set name=\"first\">arg1</Set>  " +
-                "      <Set name=\"second\">arg2</Set>  " +
-                "      <Set name=\"third\">arg3</Set>  " +
-                "    </New>" +
-                "  </Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                                                                   "  <Set name=\"first\">arg1</Set>  " +
+                                                                   "  <Set name=\"second\">arg2</Set>  " +
+                                                                   "  <Set name=\"third\">arg3</Set>  " +
+                                                                   "  <Set name=\"nested\">  " +
+                                                                   "    <New class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">\n" +
+                                                                   "      <Set name=\"first\">arg1</Set>  " +
+                                                                   "      <Set name=\"second\">arg2</Set>  " +
+                                                                   "      <Set name=\"third\">arg3</Set>  " +
+                                                                   "    </New>" +
+                                                                   "  </Set>" +
+                                                                   "</Configure>");
 
         DefaultTestConfiguration atc = (DefaultTestConfiguration)xmlConfiguration.configure();
 
@@ -751,18 +753,18 @@ public class XmlConfigurationTest
     public void testNestedConstructorNamedInjectionUnorderedMixed() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "  <Arg name=\"third\">arg3</Arg>  " +
-                "  <Arg>arg2</Arg>  " +
-                "  <Arg name=\"first\">arg1</Arg>  " +
-                "  <Set name=\"nested\">  " +
-                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
-                "      <Arg name=\"third\">arg3</Arg>  " +
-                "      <Arg>arg2</Arg>  " +
-                "      <Arg name=\"first\">arg1</Arg>  " +
-                "    </New>" +
-                "  </Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "  <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "  <Arg>arg2</Arg>  " +
+                                                                   "  <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "  <Set name=\"nested\">  " +
+                                                                   "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                                                                   "      <Arg name=\"third\">arg3</Arg>  " +
+                                                                   "      <Arg>arg2</Arg>  " +
+                                                                   "      <Arg name=\"first\">arg1</Arg>  " +
+                                                                   "    </New>" +
+                                                                   "  </Set>" +
+                                                                   "</Configure>");
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
@@ -809,81 +811,83 @@ public class XmlConfigurationTest
         {
             _float = f;
         }
-        
     }
-    
+
     @Test
     public void testSetBooleanTrue() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
-                "  <Set name=\"boolean\">true</Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                                                                   "  <Set name=\"boolean\">true</Set>" +
+                                                                   "</Configure>");
 
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
         assertTrue(bh.getBoolean());
     }
-    
+
     @Test
     public void testSetBooleanFalse() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
-                "  <Set name=\"boolean\">false</Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                                                                   "  <Set name=\"boolean\">false</Set>" +
+                                                                   "</Configure>");
 
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
         assertFalse(bh.getBoolean());
     }
-    
+
     @Test
     @Disabled
     public void testSetBadBoolean() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
-                "  <Set name=\"boolean\">tru</Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                                                                   "  <Set name=\"boolean\">tru</Set>" +
+                                                                   "</Configure>");
 
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
         assertTrue(bh.getBoolean(), "boolean['tru']");
     }
-    
+
     @Test
     public void testSetBadInteger() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
-                "  <Set name=\"integer\">bad</Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                                                                   "  <Set name=\"integer\">bad</Set>" +
+                                                                   "</Configure>");
 
-        assertThrows(InvocationTargetException.class, ()->{
+        assertThrows(InvocationTargetException.class, () ->
+        {
             xmlConfiguration.configure();
         });
     }
-    
+
     @Test
     public void testSetBadExtraInteger() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
-                "  <Set name=\"integer\">100 bas</Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                                                                   "  <Set name=\"integer\">100 bas</Set>" +
+                                                                   "</Configure>");
 
-        assertThrows(InvocationTargetException.class, ()->{
+        assertThrows(InvocationTargetException.class, () ->
+        {
             xmlConfiguration.configure();
         });
     }
-    
+
     @Test
     public void testSetBadFloatInteger() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
-                "  <Set name=\"integer\">1.5</Set>" +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                                                                   "  <Set name=\"integer\">1.5</Set>" +
+                                                                   "</Configure>");
 
-        assertThrows(InvocationTargetException.class, ()->{
+        assertThrows(InvocationTargetException.class, () ->
+        {
             xmlConfiguration.configure();
         });
     }
@@ -894,9 +898,9 @@ public class XmlConfigurationTest
         // No properties
         String defolt = "baz";
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\"><Property name=\"wibble\" deprecated=\"foo,bar\" default=\"" + defolt + "\"/></Set>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                                                                   "  <Set name=\"first\"><Property name=\"wibble\" deprecated=\"foo,bar\" default=\"" + defolt + "\"/></Set>  " +
+                                                                   "</Configure>");
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(defolt, config.getFirst());
     }
@@ -907,9 +911,9 @@ public class XmlConfigurationTest
         String name = "foo";
         String value = "foo";
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\"><Property name=\"" + name + "\" deprecated=\"other,bar\" default=\"baz\"/></Set>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                                                                   "  <Set name=\"first\"><Property name=\"" + name + "\" deprecated=\"other,bar\" default=\"baz\"/></Set>  " +
+                                                                   "</Configure>");
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
@@ -921,9 +925,9 @@ public class XmlConfigurationTest
         String name = "bar";
         String value = "bar";
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\"><Property name=\"foo\" deprecated=\"" + name + "\" default=\"baz\"/></Set>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                                                                   "  <Set name=\"first\"><Property name=\"foo\" deprecated=\"" + name + "\" default=\"baz\"/></Set>  " +
+                                                                   "</Configure>");
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
@@ -935,9 +939,9 @@ public class XmlConfigurationTest
         String name = "bar";
         String value = "bar";
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\"><Property name=\"foo\" deprecated=\"other," + name + "\" default=\"baz\"/></Set>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                                                                   "  <Set name=\"first\"><Property name=\"foo\" deprecated=\"other," + name + "\" default=\"baz\"/></Set>  " +
+                                                                   "</Configure>");
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
@@ -949,16 +953,16 @@ public class XmlConfigurationTest
         String name = "bar";
         String value = "bar";
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\">" +
-                "  <Property>  " +
-                "    <Name>foo</Name>" +
-                "    <Deprecated>foo</Deprecated>" +
-                "    <Deprecated>"+name+"</Deprecated>" +
-                "    <Default>baz</Default>" +
-                "  </Property>  " +
-                "  </Set>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                                                                   "  <Set name=\"first\">" +
+                                                                   "  <Property>  " +
+                                                                   "    <Name>foo</Name>" +
+                                                                   "    <Deprecated>foo</Deprecated>" +
+                                                                   "    <Deprecated>" + name + "</Deprecated>" +
+                                                                   "    <Default>baz</Default>" +
+                                                                   "  </Property>  " +
+                                                                   "  </Set>  " +
+                                                                   "</Configure>");
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
@@ -972,14 +976,14 @@ public class XmlConfigurationTest
         String defaultValue = "_<Property name=\"bar\"/>_<Property name=\"bar\"/>_";
         String expectedValue = "_" + value + "_" + value + "_";
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\">" +
-                "    <Property>" +
-                "      <Name>not_found</Name>" +
-                "      <Default>" + defaultValue + "</Default>" +
-                "    </Property>" +
-                "  </Set>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                                                                   "  <Set name=\"first\">" +
+                                                                   "    <Property>" +
+                                                                   "      <Name>not_found</Name>" +
+                                                                   "      <Default>" + defaultValue + "</Default>" +
+                                                                   "    </Property>" +
+                                                                   "  </Set>  " +
+                                                                   "</Configure>");
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(expectedValue, config.getFirst());
@@ -990,13 +994,13 @@ public class XmlConfigurationTest
     {
         String value = "bar";
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\">" +
-                "    <Property name=\"not_found\">" +
-                "      <Default><Property name=\"also_not_found\" default=\"" + value + "\"/></Default>" +
-                "    </Property>" +
-                "  </Set>  " +
-                "</Configure>");
+                                                                   "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                                                                   "  <Set name=\"first\">" +
+                                                                   "    <Property name=\"not_found\">" +
+                                                                   "      <Default><Property name=\"also_not_found\" default=\"" + value + "\"/></Default>" +
+                                                                   "    </Property>" +
+                                                                   "  </Set>  " +
+                                                                   "</Configure>");
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
     }
@@ -1004,20 +1008,20 @@ public class XmlConfigurationTest
     @Test
     public void testJettyStandardIdsAndProperties_JettyHome_JettyBase() throws Exception
     {
-        String propNames[] = new String[] {
-                "jetty.base",
-                "jetty.home"
+        String propNames[] = new String[]{
+            "jetty.base",
+            "jetty.home"
         };
 
-        for(String propName: propNames)
+        for (String propName : propNames)
         {
             XmlConfiguration configuration =
-                    asXmlConfiguration("" +
-                            "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
-                            "  <Set name=\"TestString\">" +
-                            "    <Property name=\"" + propName + "\"/>" +
-                            "  </Set>" +
-                            "</Configure>");
+                asXmlConfiguration("" +
+                                       "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+                                       "  <Set name=\"TestString\">" +
+                                       "    <Property name=\"" + propName + "\"/>" +
+                                       "  </Set>" +
+                                       "</Configure>");
 
             configuration.setJettyStandardIdsAndProperties(null, null);
 
@@ -1032,20 +1036,20 @@ public class XmlConfigurationTest
     @Test
     public void testJettyStandardIdsAndProperties_JettyHomeUri_JettyBaseUri() throws Exception
     {
-        String propNames[] = new String[] {
-                "jetty.base.uri",
-                "jetty.home.uri"
+        String propNames[] = new String[]{
+            "jetty.base.uri",
+            "jetty.home.uri"
         };
 
-        for(String propName: propNames)
+        for (String propName : propNames)
         {
             XmlConfiguration configuration =
-                    asXmlConfiguration("" +
-                            "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
-                            "  <Set name=\"TestString\">" +
-                            "    <Property name=\"" + propName + "\"/>" +
-                            "  </Set>" +
-                            "</Configure>");
+                asXmlConfiguration("" +
+                                       "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+                                       "  <Set name=\"TestString\">" +
+                                       "    <Property name=\"" + propName + "\"/>" +
+                                       "  </Set>" +
+                                       "</Configure>");
 
             configuration.setJettyStandardIdsAndProperties(null, null);
 
@@ -1060,14 +1064,14 @@ public class XmlConfigurationTest
     @Test
     public void testJettyStandardIdsAndProperties_JettyWebappsUri() throws Exception
     {
-    	Path war = MavenTestingUtils.getTargetPath("no.war");
-    	XmlConfiguration configuration =
-                asXmlConfiguration("" +
-                        "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
-                        "  <Set name=\"TestString\">" +
-                        "    <Property name=\"" + "jetty.webapps.uri" + "\"/>" +
-                        "  </Set>" +
-                        "</Configure>");
+        Path war = MavenTestingUtils.getTargetPath("no.war");
+        XmlConfiguration configuration =
+            asXmlConfiguration("" +
+                                   "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+                                   "  <Set name=\"TestString\">" +
+                                   "    <Property name=\"" + "jetty.webapps.uri" + "\"/>" +
+                                   "  </Set>" +
+                                   "</Configure>");
 
         configuration.setJettyStandardIdsAndProperties(null, Resource.newResource(war));
 
@@ -1082,13 +1086,13 @@ public class XmlConfigurationTest
     {
         Class<?> testClass = AnnotatedTestConfiguration.class;
         XmlConfiguration xmlConfiguration = asXmlConfiguration("" +
-            "<Configure class=\"" + testClass.getName() + "\">" +
-            "  <Set name=\"deprecated\">foo</Set>" +
-            "  <Set name=\"obsolete\">" +
-            "    <Call name=\"setDeprecated\"><Arg><Get name=\"deprecated\" /></Arg></Call>" +
-            "  </Set>" +
-            "  <Get name=\"obsolete\" />" +
-            "</Configure>");
+                                                                   "<Configure class=\"" + testClass.getName() + "\">" +
+                                                                   "  <Set name=\"deprecated\">foo</Set>" +
+                                                                   "  <Set name=\"obsolete\">" +
+                                                                   "    <Call name=\"setDeprecated\"><Arg><Get name=\"deprecated\" /></Arg></Call>" +
+                                                                   "  </Set>" +
+                                                                   "  <Get name=\"obsolete\" />" +
+                                                                   "</Configure>");
 
         ByteArrayOutputStream logBytes = null;
         Logger logger = Log.getLogger(XmlConfiguration.class);
@@ -1105,9 +1109,9 @@ public class XmlConfigurationTest
         {
             String[] lines = logBytes.toString("UTF-8").split(System.lineSeparator());
             List<String> warnings = Arrays.stream(lines)
-                .filter(line -> line.contains(":WARN:"))
-                .filter(line -> line.contains(testClass.getSimpleName()))
-                .collect(Collectors.toList());
+                                        .filter(line -> line.contains(":WARN:"))
+                                        .filter(line -> line.contains(testClass.getSimpleName()))
+                                        .collect(Collectors.toList());
             // 1. Deprecated constructor
             // 2. Deprecated <Set> method
             // 3. Deprecated <Get> method

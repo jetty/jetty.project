@@ -130,7 +130,7 @@ public class SettingsBodyParser extends BodyParser
                     {
                         settingValue = buffer.getInt();
                         if (LOG.isDebugEnabled())
-                            LOG.debug(String.format("setting %d=%d",settingId, settingValue));
+                            LOG.debug(String.format("setting %d=%d", settingId, settingValue));
                         if (!onSetting(buffer, settings, settingId, settingValue))
                             return false;
                         state = State.SETTING_ID;
@@ -157,7 +157,7 @@ public class SettingsBodyParser extends BodyParser
                     if (cursor == 0)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug(String.format("setting %d=%d",settingId, settingValue));
+                            LOG.debug(String.format("setting %d=%d", settingId, settingValue));
                         if (!onSetting(buffer, settings, settingId, settingValue))
                             return false;
                         state = State.SETTING_ID;

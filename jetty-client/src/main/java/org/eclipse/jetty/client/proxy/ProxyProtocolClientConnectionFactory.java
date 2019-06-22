@@ -93,7 +93,7 @@ public class ProxyProtocolClientConnectionFactory implements ClientConnectionFac
             int serverPort = serverSocketAddress.getPort();
 
             boolean ipv6 = serverAddress instanceof Inet6Address;
-            String line = String.format("PROXY %s %s %s %d %d\r\n", ipv6 ? "TCP6" : "TCP4" , proxiedIP, serverIP, proxiedPort, serverPort);
+            String line = String.format("PROXY %s %s %s %d %d\r\n", ipv6 ? "TCP6" : "TCP4", proxiedIP, serverIP, proxiedPort, serverPort);
             if (LOG.isDebugEnabled())
                 LOG.debug("Writing PROXY line: {}", line.trim());
             ByteBuffer buffer = ByteBuffer.wrap(line.getBytes(StandardCharsets.US_ASCII));

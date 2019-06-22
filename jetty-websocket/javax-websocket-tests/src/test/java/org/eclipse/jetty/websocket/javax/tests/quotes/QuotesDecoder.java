@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.javax.tests.quotes;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class QuotesDecoder implements Decoder.TextStream<Quotes>
 {

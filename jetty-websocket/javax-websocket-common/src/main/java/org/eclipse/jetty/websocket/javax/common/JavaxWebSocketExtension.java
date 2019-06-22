@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-
-import javax.websocket.Extension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.websocket.Extension;
+
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 public class JavaxWebSocketExtension implements Extension
 {
@@ -103,13 +103,13 @@ public class JavaxWebSocketExtension implements Extension
 
         JavaxWebSocketExtension that = (JavaxWebSocketExtension)o;
 
-        return name != null?name.equals(that.name):that.name == null;
+        return name != null ? name.equals(that.name) : that.name == null;
     }
 
     @Override
     public int hashCode()
     {
-        return name != null?name.hashCode():0;
+        return name != null ? name.hashCode() : 0;
     }
 
     @Override

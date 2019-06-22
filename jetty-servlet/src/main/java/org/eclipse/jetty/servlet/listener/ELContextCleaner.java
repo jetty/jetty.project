@@ -41,7 +41,6 @@ public class ELContextCleaner implements ServletContextListener
 {
     private static final Logger LOG = Log.getLogger(ELContextCleaner.class);
 
-
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
@@ -77,26 +76,24 @@ public class ELContextCleaner implements ServletContextListener
         {
             LOG.debug("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
         }
-
     }
 
-
-    protected Field getField (Class<?> beanELResolver)
-    throws SecurityException, NoSuchFieldException
+    protected Field getField(Class<?> beanELResolver)
+        throws SecurityException, NoSuchFieldException
     {
         if (beanELResolver == null)
-            return  null;
+            return null;
 
         return beanELResolver.getDeclaredField("properties");
     }
 
-    protected void purgeEntries (Field properties)
-    throws IllegalArgumentException, IllegalAccessException
+    protected void purgeEntries(Field properties)
+        throws IllegalArgumentException, IllegalAccessException
     {
         if (properties == null)
             return;
 
-        Map map = (Map) properties.get(null);
+        Map map = (Map)properties.get(null);
         if (map == null)
             return;
 
@@ -105,7 +102,7 @@ public class ELContextCleaner implements ServletContextListener
         {
             Class<?> clazz = itor.next();
             if (LOG.isDebugEnabled())
-                LOG.debug("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
+                LOG.debug("Clazz: " + clazz + " loaded by " + clazz.getClassLoader());
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))
             {
                 itor.remove();
@@ -115,7 +112,7 @@ public class ELContextCleaner implements ServletContextListener
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
+                    LOG.debug("not removed: " + "contextclassloader=" + Thread.currentThread().getContextClassLoader() + "clazz's classloader=" + clazz.getClassLoader());
             }
         }
     }

@@ -74,7 +74,7 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
 
         //  + MUST pick subprotocol
         List<String> subprotocols = negotiation.getOfferedSubprotocols();
-        String subprotocol = (subprotocols == null || subprotocols.isEmpty())?null:subprotocols.get(0);
+        String subprotocol = (subprotocols == null || subprotocols.isEmpty()) ? null : subprotocols.get(0);
         negotiation.setSubprotocol(subprotocol);
 
         //  + MUST return the FrameHandler or null or exception?
@@ -87,7 +87,7 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
         configurable.setIdleTimeout(Duration.ofMillis(10000));
         configurable.setMaxTextMessageSize(Integer.MAX_VALUE);
         configurable.setMaxBinaryMessageSize(Integer.MAX_VALUE);
-        configurable.setMaxFrameSize(65536*2);
+        configurable.setMaxFrameSize(65536 * 2);
     }
 
     @Override
@@ -107,5 +107,4 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
     {
         return bufferPool;
     }
-
 }

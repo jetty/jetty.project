@@ -129,9 +129,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public String toString()
     {
         return String.format("%s[send=%s,recv=%s]",
-                super.toString(),
-                sender,
-                receiver);
+            super.toString(),
+            sender,
+            receiver);
     }
 
     private class ReleaseCallback implements Callback

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,15 +25,15 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyProtocolTest
 {
@@ -77,10 +75,10 @@ public class ProxyProtocolTest
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             String request1 = "" +
-                    "PROXY TCP4 " + remoteAddr + " 127.0.0.0 " + remotePort + " 8080\r\n" +
-                    "GET /1 HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+                                  "PROXY TCP4 " + remoteAddr + " 127.0.0.0 " + remotePort + " 8080\r\n" +
+                                  "GET /1 HTTP/1.1\r\n" +
+                                  "Host: localhost\r\n" +
+                                  "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(request1.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -97,10 +95,10 @@ public class ProxyProtocolTest
 
             // Send a second request to verify that the proxied IP is retained.
             String request2 = "" +
-                    "GET /2 HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+                                  "GET /2 HTTP/1.1\r\n" +
+                                  "Host: localhost\r\n" +
+                                  "Connection: close\r\n" +
+                                  "\r\n";
             output.write(request2.getBytes(StandardCharsets.UTF_8));
             output.flush();
 

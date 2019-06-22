@@ -113,13 +113,13 @@ public abstract class IncludeExcludeBasedFilter implements Filter
     protected String guessMimeType(HttpServletRequest http_request, HttpServletResponse http_response)
     {
         String content_type = http_response.getContentType();
-        LOG.debug("Content Type is: {}",content_type);
+        LOG.debug("Content Type is: {}", content_type);
 
         String mime_type = "";
         if (content_type != null)
         {
             mime_type = MimeTypes.getContentTypeWithoutCharset(content_type);
-            LOG.debug("Mime Type is: {}",mime_type);
+            LOG.debug("Mime Type is: {}", mime_type);
         }
         else
         {
@@ -131,7 +131,7 @@ public abstract class IncludeExcludeBasedFilter implements Filter
                 mime_type = "";
             }
 
-            LOG.debug("Guessed mime type is {}",mime_type);
+            LOG.debug("Guessed mime type is {}", mime_type);
         }
 
         return mime_type;
@@ -140,14 +140,14 @@ public abstract class IncludeExcludeBasedFilter implements Filter
     protected boolean shouldFilter(HttpServletRequest http_request, HttpServletResponse http_response)
     {
         String http_method = http_request.getMethod();
-        LOG.debug("HTTP method is: {}",http_method);
+        LOG.debug("HTTP method is: {}", http_method);
         if (!_httpMethods.test(http_method))
         {
             LOG.debug("should not apply filter because HTTP method does not match");
             return false;
         }
 
-        String mime_type = guessMimeType(http_request,http_response);
+        String mime_type = guessMimeType(http_request, http_response);
 
         if (!_mimeTypes.test(mime_type))
         {
@@ -156,8 +156,8 @@ public abstract class IncludeExcludeBasedFilter implements Filter
         }
 
         ServletContext context = http_request.getServletContext();
-        String path = context == null?http_request.getRequestURI():URIUtil.addPaths(http_request.getServletPath(),http_request.getPathInfo());
-        LOG.debug("Path is: {}",path);
+        String path = context == null ? http_request.getRequestURI() : URIUtil.addPaths(http_request.getServletPath(), http_request.getPathInfo());
+        LOG.debug("Path is: {}", path);
         if (!_paths.test(path))
         {
             LOG.debug("should not apply filter because path does not match");

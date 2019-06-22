@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.endpoints.annotated;
 
+import java.io.InputStream;
+
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-import java.io.InputStream;
 
 /**
  * Invalid Socket: Annotate 2 methods with interest in Binary Messages.
@@ -33,8 +33,8 @@ public class BadDuplicateBinarySocket
      * First method
      *
      * @param payload the payload
-     * @param offset  the offset
-     * @param len     the len
+     * @param offset the offset
+     * @param len the len
      */
     @OnWebSocketMessage
     public void binMe(byte[] payload, int offset, int len)

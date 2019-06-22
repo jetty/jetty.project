@@ -76,7 +76,7 @@ public class ServletContextHandlerTest
     private LocalConnector _connector;
 
     private static final AtomicInteger __testServlets = new AtomicInteger();
-    
+
     public static class MySCI implements ServletContainerInitializer
     {
         @Override
@@ -86,7 +86,7 @@ public class ServletContextHandlerTest
             if (ctx.getAttribute("MySCI.startup") != null)
                 throw new IllegalStateException("MySCI already called");
             ctx.setAttribute("MySCI.startup", Boolean.TRUE);
-            ctx.addListener(new MyContextListener()); 
+            ctx.addListener(new MyContextListener());
         }
     }
 
@@ -95,7 +95,7 @@ public class ServletContextHandlerTest
         MySCI _sci = new MySCI();
         ContextHandler.Context _ctx;
 
-        MySCIStarter (ContextHandler.Context ctx)
+        MySCIStarter(ContextHandler.Context ctx)
         {
             _ctx = ctx;
         }
@@ -116,8 +116,7 @@ public class ServletContextHandlerTest
             }
         }
     }
-    
-    
+
     public static class MyContextListener implements ServletContextListener
     {
 
@@ -134,30 +133,29 @@ public class ServletContextHandlerTest
             assertNull(sce.getServletContext().getAttribute("MyContextListener.contextDestroyed"));
             sce.getServletContext().setAttribute("MyContextListener.contextDestroyed", Boolean.TRUE);
         }
-        
     }
-    
+
     public static class MySessionHandler extends SessionHandler
     {
-        public void checkSessionListeners (int size)
+        public void checkSessionListeners(int size)
         {
             assertNotNull(_sessionListeners);
             assertEquals(size, _sessionListeners.size());
         }
-        
+
         public void checkSessionAttributeListeners(int size)
         {
             assertNotNull(_sessionAttributeListeners);
             assertEquals(size, _sessionAttributeListeners.size());
         }
-        
+
         public void checkSessionIdListeners(int size)
         {
             assertNotNull(_sessionIdListeners);
             assertEquals(size, _sessionIdListeners.size());
         }
     }
-    
+
     public static class MyTestSessionListener implements HttpSessionAttributeListener, HttpSessionListener
     {
 
@@ -183,11 +181,10 @@ public class ServletContextHandlerTest
 
         @Override
         public void attributeReplaced(HttpSessionBindingEvent event)
-        {            
+        {
         }
-        
     }
-    
+
     @BeforeEach
     public void createServer()
     {
@@ -204,33 +201,32 @@ public class ServletContextHandlerTest
         _server.stop();
         _server.join();
     }
-    
+
     @Test
     public void testAddSessionListener() throws Exception
     {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
 
-        MySessionHandler sessions = new MySessionHandler(); 
+        MySessionHandler sessions = new MySessionHandler();
         root.setSessionHandler(sessions);
         assertNotNull(sessions);
-        
+
         root.addEventListener(new MyTestSessionListener());
         sessions.checkSessionAttributeListeners(1);
         sessions.checkSessionIdListeners(0);
         sessions.checkSessionListeners(1);
     }
 
-    
     @Test
     public void testListenerFromSCI() throws Exception
     {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts,"/");
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
         root.addBean(new MySCIStarter(root.getServletContext()), true);
         _server.start();
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.startup"));
@@ -243,7 +239,7 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
 
         SessionHandler session = root.getSessionHandler();
         ServletHandler servlet = root.getServletHandler();
@@ -256,57 +252,56 @@ public class ServletContextHandlerTest
         assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, security));
         assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, servlet));
     }
-    
+
     @Test
     public void testInitOrder() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
-        ServletHolder holder0 = context.addServlet(TestServlet.class,"/test0");
-        ServletHolder holder1 = context.addServlet(TestServlet.class,"/test1");
-        ServletHolder holder2 = context.addServlet(TestServlet.class,"/test2");
-        
+        ServletHolder holder0 = context.addServlet(TestServlet.class, "/test0");
+        ServletHolder holder1 = context.addServlet(TestServlet.class, "/test1");
+        ServletHolder holder2 = context.addServlet(TestServlet.class, "/test2");
+
         holder1.setInitOrder(1);
         holder2.setInitOrder(2);
-        
+
         context.setContextPath("/");
         _server.setHandler(context);
         _server.start();
-        
-        assertEquals(2,__testServlets.get());
-        
-        String response =_connector.getResponse("GET /test1 HTTP/1.0\r\n\r\n");
-        assertThat(response,Matchers.containsString("200 OK"));
-        
-        assertEquals(2,__testServlets.get());
-        
-        response =_connector.getResponse("GET /test2 HTTP/1.0\r\n\r\n");
-        assertThat(response,containsString("200 OK"));
-        
-        assertEquals(2,__testServlets.get());
-        
-        assertThat(holder0.getServletInstance(),nullValue());
-        response =_connector.getResponse("GET /test0 HTTP/1.0\r\n\r\n");
-        assertThat(response,containsString("200 OK"));
-        assertEquals(3,__testServlets.get());
-        assertThat(holder0.getServletInstance(),notNullValue(Servlet.class));
+
+        assertEquals(2, __testServlets.get());
+
+        String response = _connector.getResponse("GET /test1 HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+
+        assertEquals(2, __testServlets.get());
+
+        response = _connector.getResponse("GET /test2 HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("200 OK"));
+
+        assertEquals(2, __testServlets.get());
+
+        assertThat(holder0.getServletInstance(), nullValue());
+        response = _connector.getResponse("GET /test0 HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("200 OK"));
+        assertEquals(3, __testServlets.get());
+        assertThat(holder0.getServletInstance(), notNullValue(Servlet.class));
 
         _server.stop();
-        assertEquals(0,__testServlets.get());
-        
+        assertEquals(0, __testServlets.get());
+
         holder0.setInitOrder(0);
         _server.start();
-        assertEquals(3,__testServlets.get());
-        assertThat(holder0.getServletInstance(),notNullValue(Servlet.class));
+        assertEquals(3, __testServlets.get());
+        assertThat(holder0.getServletInstance(), notNullValue(Servlet.class));
         _server.stop();
-        assertEquals(0,__testServlets.get());
-        
+        assertEquals(0, __testServlets.get());
     }
 
     @Test
     public void testAddServletAfterStart() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
-        context.addServlet(TestServlet.class,"/test");
+        context.addServlet(TestServlet.class, "/test");
         context.setContextPath("/");
         _server.setHandler(context);
         _server.start();
@@ -330,17 +325,17 @@ public class ServletContextHandlerTest
         response = _connector.getResponse(request.toString());
         assertThat("Response", response, containsString("Hello World"));
     }
-    
+
     @Test
     public void testHandlerBeforeServletHandler() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        
+
         HandlerWrapper extra = new HandlerWrapper();
-        
+
         context.getSessionHandler().insertHandler(extra);
-        
-        context.addServlet(TestServlet.class,"/test");
+
+        context.addServlet(TestServlet.class, "/test");
         context.setContextPath("/");
         _server.setHandler(context);
         _server.start();
@@ -354,38 +349,38 @@ public class ServletContextHandlerTest
         int result;
         assertThat("Response", response, containsString("Test"));
 
-        assertEquals(extra,context.getSessionHandler().getHandler());
+        assertEquals(extra, context.getSessionHandler().getHandler());
     }
-    
+
     @Test
     public void testGzipHandlerOption() throws Exception
     {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS|ServletContextHandler.GZIP);
-        GzipHandler gzip = context.getGzipHandler();        
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.GZIP);
+        GzipHandler gzip = context.getGzipHandler();
         _server.start();
-        assertEquals(context.getSessionHandler(),context.getHandler());
-        assertEquals(gzip,context.getSessionHandler().getHandler());
-        assertEquals(context.getServletHandler(),gzip.getHandler());
+        assertEquals(context.getSessionHandler(), context.getHandler());
+        assertEquals(gzip, context.getSessionHandler().getHandler());
+        assertEquals(context.getServletHandler(), gzip.getHandler());
     }
-    
+
     @Test
     public void testGzipHandlerSet() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
         context.setSessionHandler(new SessionHandler());
         context.setGzipHandler(new GzipHandler());
-        GzipHandler gzip = context.getGzipHandler();        
+        GzipHandler gzip = context.getGzipHandler();
         _server.start();
-        assertEquals(context.getSessionHandler(),context.getHandler());
-        assertEquals(gzip,context.getSessionHandler().getHandler());
-        assertEquals(context.getServletHandler(),gzip.getHandler());
+        assertEquals(context.getSessionHandler(), context.getHandler());
+        assertEquals(gzip, context.getSessionHandler().getHandler());
+        assertEquals(context.getServletHandler(), gzip.getHandler());
     }
 
     @Test
     public void testReplaceServletHandlerWithServlet() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
-        context.addServlet(TestServlet.class,"/test");
+        context.addServlet(TestServlet.class, "/test");
         context.setContextPath("/");
         _server.setHandler(context);
         _server.start();
@@ -401,7 +396,7 @@ public class ServletContextHandlerTest
 
         context.stop();
         ServletHandler srvHnd = new ServletHandler();
-        srvHnd.addServletWithMapping(HelloServlet.class,"/hello");
+        srvHnd.addServletWithMapping(HelloServlet.class, "/hello");
         context.setServletHandler(srvHnd);
         context.start();
 
@@ -418,7 +413,7 @@ public class ServletContextHandlerTest
     public void testReplaceServletHandlerWithoutServlet() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
-        context.addServlet(TestServlet.class,"/test");
+        context.addServlet(TestServlet.class, "/test");
         context.setContextPath("/");
         _server.setHandler(context);
         _server.start();
@@ -437,7 +432,7 @@ public class ServletContextHandlerTest
         context.setServletHandler(srvHnd);
         context.start();
 
-        context.addServlet(HelloServlet.class,"/hello");
+        context.addServlet(HelloServlet.class, "/hello");
 
         request = new StringBuffer();
         request.append("GET /hello HTTP/1.0\n");
@@ -447,17 +442,18 @@ public class ServletContextHandlerTest
         response = _connector.getResponse(request.toString());
         assertThat("Response", response, containsString("Hello World"));
     }
-    
+
     @Test
-    public void testReplaceHandler () throws Exception
+    public void testReplaceHandler() throws Exception
     {
         ServletContextHandler servletContextHandler = new ServletContextHandler();
-        ServletHolder sh =  new ServletHolder(new TestServlet());
+        ServletHolder sh = new ServletHolder(new TestServlet());
         servletContextHandler.addServlet(sh, "/foo");
         final AtomicBoolean contextInit = new AtomicBoolean(false);
         final AtomicBoolean contextDestroy = new AtomicBoolean(false);
-        
-        servletContextHandler.addEventListener(new ServletContextListener() {
+
+        servletContextHandler.addEventListener(new ServletContextListener()
+        {
 
             @Override
             public void contextInitialized(ServletContextEvent sce)
@@ -468,17 +464,16 @@ public class ServletContextHandlerTest
 
             @Override
             public void contextDestroyed(ServletContextEvent sce)
-            {  
+            {
                 if (sce.getServletContext() != null)
                     contextDestroy.set(true);
             }
-            
         });
         ServletHandler shandler = servletContextHandler.getServletHandler();
 
         ResourceHandler rh = new ResourceHandler();
 
-        servletContextHandler.insertHandler(rh);    
+        servletContextHandler.insertHandler(rh);
         assertEquals(shandler, servletContextHandler.getServletHandler());
         assertEquals(rh, servletContextHandler.getHandler());
         assertEquals(rh.getHandler(), shandler);
@@ -488,7 +483,6 @@ public class ServletContextHandlerTest
         _server.stop();
         assertTrue(contextDestroy.get());
     }
-    
 
     @Test
     public void testFallThrough() throws Exception
@@ -496,12 +490,12 @@ public class ServletContextHandlerTest
         HandlerList list = new HandlerList();
         _server.setHandler(list);
 
-        ServletContextHandler root = new ServletContextHandler(list,"/",ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler(list, "/", ServletContextHandler.SESSIONS);
 
         ServletHandler servlet = root.getServletHandler();
         servlet.setEnsureDefaultServlet(false);
         servlet.addServletWithMapping(HelloServlet.class, "/hello/*");
-        
+
         list.addHandler(new AbstractHandler()
         {
             @Override
@@ -513,17 +507,17 @@ public class ServletContextHandlerTest
 
         _server.start();
 
-        String response= _connector.getResponse("GET /hello HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponse("GET /hello HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("200 OK"));
-        
-        response= _connector.getResponse("GET /other HTTP/1.0\r\n\r\n");
+
+        response = _connector.getResponse("GET /other HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("404 Fell Through"));
-        
     }
-    
+
     /**
      * Test behavior of new {@link org.eclipse.jetty.util.Decorator}, with
      * new DecoratedObjectFactory class
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -532,18 +526,18 @@ public class ServletContextHandlerTest
         ServletContextHandler context = new ServletContextHandler();
         context.getObjectFactory().addDecorator(new DummyUtilDecorator());
         _server.setHandler(context);
-        
+
         context.addServlet(DecoratedObjectFactoryServlet.class, "/objfactory/*");
         _server.start();
 
-        String response= _connector.getResponse("GET /objfactory/ HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponse("GET /objfactory/ HTTP/1.0\r\n\r\n");
         assertThat("Response status code", response, containsString("200 OK"));
-        
+
         String expected = String.format("Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
         assertThat("Has context attribute", response, containsString(expected));
-        
+
         assertThat("Decorators size", response, containsString("Decorators.size = [2]"));
-        
+
         expected = String.format("decorator[] = %s", DummyUtilDecorator.class.getName());
         assertThat("Specific Legacy Decorator", response, containsString(expected));
     }
@@ -561,7 +555,7 @@ public class ServletContextHandlerTest
             writer.write("Hello World");
         }
     }
-    
+
     public static class DummyUtilDecorator implements org.eclipse.jetty.util.Decorator
     {
         @Override
@@ -575,7 +569,7 @@ public class ServletContextHandlerTest
         {
         }
     }
-    
+
     public static class DecoratedObjectFactoryServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
@@ -586,19 +580,19 @@ public class ServletContextHandlerTest
             resp.setContentType("text/plain");
             resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter out = resp.getWriter();
-            
+
             Object obj = req.getServletContext().getAttribute(DecoratedObjectFactory.ATTR);
-            out.printf("Attribute[%s] = %s%n",DecoratedObjectFactory.ATTR,obj.getClass().getName());
-            
+            out.printf("Attribute[%s] = %s%n", DecoratedObjectFactory.ATTR, obj.getClass().getName());
+
             if (obj instanceof DecoratedObjectFactory)
             {
                 out.printf("Object is a DecoratedObjectFactory%n");
                 DecoratedObjectFactory objFactory = (DecoratedObjectFactory)obj;
                 List<Decorator> decorators = objFactory.getDecorators();
-                out.printf("Decorators.size = [%d]%n",decorators.size());
+                out.printf("Decorators.size = [%d]%n", decorators.size());
                 for (Decorator decorator : decorators)
                 {
-                    out.printf(" decorator[] = %s%n",decorator.getClass().getName());
+                    out.printf(" decorator[] = %s%n", decorator.getClass().getName());
                 }
             }
             else

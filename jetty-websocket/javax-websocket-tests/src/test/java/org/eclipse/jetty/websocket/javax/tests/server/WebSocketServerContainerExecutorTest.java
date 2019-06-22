@@ -26,7 +26,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executor;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -144,7 +143,7 @@ public class WebSocketServerContainerExecutorTest
     private Executor getJavaxServerContainerExecutor(ServletContextHandler servletContextHandler)
     {
         JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(
-                servletContextHandler.getServletContext());
+            servletContextHandler.getServletContext());
         return serverContainer.getExecutor();
     }
 
@@ -168,7 +167,7 @@ public class WebSocketServerContainerExecutorTest
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
         JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(EchoSocket.class));
+                                                                                container.addEndpoint(EchoSocket.class));
 
         try
         {
@@ -198,7 +197,7 @@ public class WebSocketServerContainerExecutorTest
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
         JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(EchoSocket.class));
+                                                                                container.addEndpoint(EchoSocket.class));
         try
         {
             server.start();

@@ -46,8 +46,8 @@ public class MessageWriter extends Writer
     private static final Logger LOG = Log.getLogger(MessageWriter.class);
 
     private final CharsetEncoder utf8Encoder = UTF_8.newEncoder()
-        .onUnmappableCharacter(CodingErrorAction.REPORT)
-        .onMalformedInput(CodingErrorAction.REPORT);
+                                                   .onUnmappableCharacter(CodingErrorAction.REPORT)
+                                                   .onMalformedInput(CodingErrorAction.REPORT);
 
     private final FrameHandler.CoreSession coreSession;
     private final SharedBlockingCallback blocker;
@@ -85,7 +85,7 @@ public class MessageWriter extends Writer
     {
         try
         {
-            send(new char[] { (char)c }, 0, 1);
+            send(new char[]{(char)c}, 0, 1);
         }
         catch (Throwable x)
         {

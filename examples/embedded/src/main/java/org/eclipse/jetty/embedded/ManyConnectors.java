@@ -36,8 +36,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class ManyConnectors
 {
-    public static void main( String[] args ) throws Exception
-    {        
+    public static void main(String[] args) throws Exception
+    {
         // Since this example shows off SSL configuration, we need a keystore
         // with the appropriate key. These lookup of jetty.home is purely a hack
         // to get access to a keystore that we use in many unit tests and should
@@ -76,7 +76,7 @@ public class ManyConnectors
         // the output buffer size, etc. We also set the port (8080) and
         // configure an idle timeout.
         ServerConnector http = new ServerConnector(server,
-                new HttpConnectionFactory(http_config));
+            new HttpConnectionFactory(http_config));
         http.setPort(8080);
         http.setIdleTimeout(30000);
 
@@ -86,7 +86,7 @@ public class ManyConnectors
         // to know about. Much more configuration is available the ssl context,
         // including things like choosing the particular certificate out of a
         // keystore to be used.
-        
+
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
@@ -116,8 +116,8 @@ public class ManyConnectors
         // we just made along with the previously created ssl context factory.
         // Next we set the port and a longer idle timeout.
         ServerConnector https = new ServerConnector(server,
-            new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(https_config));
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(https_config));
         https.setPort(8443);
         https.setIdleTimeout(500000);
 
@@ -128,7 +128,7 @@ public class ManyConnectors
         // has something to pass requests off to.
 
         // Set the connectors
-        server.setConnectors(new Connector[] { http, https });
+        server.setConnectors(new Connector[]{http, https});
 
         // Set a handler
         server.setHandler(new HelloHandler());

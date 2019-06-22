@@ -45,7 +45,7 @@ public class SimpleEchoSocket
 
     public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException
     {
-        return this.closeLatch.await(duration,unit);
+        return this.closeLatch.await(duration, unit);
     }
 
     @OnWebSocketClose
@@ -62,7 +62,7 @@ public class SimpleEchoSocket
         try
         {
             session.getRemote().sendString("Foo");
-            session.close(StatusCode.NORMAL,"I'm done");
+            session.close(StatusCode.NORMAL, "I'm done");
         }
         catch (Throwable t)
         {

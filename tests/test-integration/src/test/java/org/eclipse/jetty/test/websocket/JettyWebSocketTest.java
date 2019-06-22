@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.test.websocket;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +29,8 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketTest
 {
@@ -72,7 +72,7 @@ public class JettyWebSocketTest
 
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             request.setSubProtocols("chat");
-            client.connect(socket,uri,request);
+            client.connect(socket, uri, request);
             // wait for closed socket connection.
             assertTrue(socket.awaitClose(5, TimeUnit.SECONDS));
         }

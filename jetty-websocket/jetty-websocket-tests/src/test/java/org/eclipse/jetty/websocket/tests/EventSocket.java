@@ -68,7 +68,6 @@ public class EventSocket
         messageQueue.offer(message);
     }
 
-
     @OnWebSocketMessage
     public void onMessage(byte buf[], int offset, int len)
     {

@@ -16,9 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.io;
-
 
 /**
  * Subclass of {@link java.lang.RuntimeException} used to signal that there
@@ -43,6 +41,6 @@ public class RuntimeIOException extends RuntimeException
 
     public RuntimeIOException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 }

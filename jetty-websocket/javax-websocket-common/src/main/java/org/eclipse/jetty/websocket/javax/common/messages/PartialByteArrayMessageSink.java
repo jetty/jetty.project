@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
-import java.util.Objects;
 
 public class PartialByteArrayMessageSink extends AbstractMessageSink
 {

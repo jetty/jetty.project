@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -115,7 +114,6 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         }
         return user;
     }
-    
 
     @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException

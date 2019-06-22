@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.common.decoders;
 
+import java.io.IOException;
+import java.io.Reader;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
-import java.io.IOException;
-import java.io.Reader;
 
 public class ReaderDecoder implements Decoder.TextStream<Reader>
 {

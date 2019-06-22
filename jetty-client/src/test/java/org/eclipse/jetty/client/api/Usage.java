@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,9 +41,12 @@ import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.FuturePromise;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled
 public class Usage
@@ -76,15 +75,15 @@ public class Usage
 
         // Address must be provided, it's the only thing non defaultable
         Request request = client.newRequest("localhost", 8080)
-                .scheme("https")
-                .method(HttpMethod.GET)
-                .path("/uri")
-                .version(HttpVersion.HTTP_1_1)
-                .param("a", "b")
-                .header("X-Header", "Y-value")
-                .agent("Jetty HTTP Client")
-                .idleTimeout(5000, TimeUnit.MILLISECONDS)
-                .timeout(20, TimeUnit.SECONDS);
+                              .scheme("https")
+                              .method(HttpMethod.GET)
+                              .path("/uri")
+                              .version(HttpVersion.HTTP_1_1)
+                              .param("a", "b")
+                              .header("X-Header", "Y-value")
+                              .agent("Jetty HTTP Client")
+                              .idleTimeout(5000, TimeUnit.MILLISECONDS)
+                              .timeout(20, TimeUnit.SECONDS);
 
         ContentResponse response = request.send();
         assertEquals(200, response.getStatus());
@@ -100,19 +99,19 @@ public class Usage
         final CountDownLatch latch = new CountDownLatch(1);
 
         client.newRequest("localhost", 8080)
-                // Send asynchronously
-                .send(new Response.CompleteListener()
-        {
-            @Override
-            public void onComplete(Result result)
+            // Send asynchronously
+            .send(new Response.CompleteListener()
             {
-                if (result.isSucceeded())
+                @Override
+                public void onComplete(Result result)
                 {
-                    responseRef.set(result.getResponse());
-                    latch.countDown();
+                    if (result.isSucceeded())
+                    {
+                        responseRef.set(result.getResponse());
+                        latch.countDown();
+                    }
                 }
-            }
-        });
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         Response response = responseRef.get();
@@ -137,14 +136,14 @@ public class Usage
         client.start();
 
         Response response = client.newRequest("localhost", 8080)
-                // Add a request listener
-                .listener(new Request.Listener.Adapter()
-                {
-                    @Override
-                    public void onSuccess(Request request)
-                    {
-                    }
-                }).send();
+                                // Add a request listener
+                                .listener(new Request.Listener.Adapter()
+                                {
+                                    @Override
+                                    public void onSuccess(Request request)
+                                    {
+                                    }
+                                }).send();
         assertEquals(200, response.getStatus());
     }
 
@@ -226,10 +225,10 @@ public class Usage
         client.setFollowRedirects(false);
 
         ContentResponse response = client.newRequest("localhost", 8080)
-                // Follow redirects for this request only
-                .followRedirects(true)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       // Follow redirects for this request only
+                                       .followRedirects(true)
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -277,9 +276,9 @@ public class Usage
         InputStream input = new ByteArrayInputStream("content".getBytes(StandardCharsets.UTF_8));
 
         ContentResponse response = client.newRequest("localhost", 8080)
-                // Provide the content as InputStream
-                .content(new InputStreamContentProvider(input))
-                .send();
+                                       // Provide the content as InputStream
+                                       .content(new InputStreamContentProvider(input))
+                                       .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -294,15 +293,15 @@ public class Usage
         try (OutputStream output = content.getOutputStream())
         {
             client.newRequest("localhost", 8080)
-                    .content(content)
-                    .send(new Response.CompleteListener()
+                .content(content)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
                     {
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                            assertEquals(200, result.getResponse().getStatus());
-                        }
-                    });
+                        assertEquals(200, result.getResponse().getStatus());
+                    }
+                });
 
             output.write(new byte[1024]);
             output.write(new byte[512]);
@@ -323,16 +322,16 @@ public class Usage
         final AtomicBoolean sendContent = new AtomicBoolean(true);
         DeferredContentProvider async = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0, 1, 2}));
         client.newRequest("localhost", 8080)
-                .content(async)
-                .send(new Response.Listener.Adapter()
+            .content(async)
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onBegin(Response response)
                 {
-                    @Override
-                    public void onBegin(Response response)
-                    {
-                        if (response.getStatus() == 404)
-                            sendContent.set(false);
-                    }
-                });
+                    if (response.getStatus() == 404)
+                        sendContent.set(false);
+                }
+            });
 
         Thread.sleep(100);
 

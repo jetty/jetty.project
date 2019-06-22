@@ -58,10 +58,10 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
 
         protectAndExpose(
             "org.eclipse.jetty.websocket.api.",
-                "org.eclipse.jetty.websocket.server.");
+            "org.eclipse.jetty.websocket.server.");
 
         hide("org.eclipse.jetty.server.internal.",
-                "org.eclipse.jetty.server.config.");
+            "org.eclipse.jetty.server.config.");
     }
 
     @Override

@@ -61,5 +61,4 @@ public class FrameEcho implements FrameHandler
         coreSession = null;
         callback.succeeded();
     }
-
 }

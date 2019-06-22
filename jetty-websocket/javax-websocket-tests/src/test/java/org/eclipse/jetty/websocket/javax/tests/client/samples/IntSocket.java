@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client.samples;
 
-import org.eclipse.jetty.websocket.javax.tests.coders.BadDualDecoder;
-
+import java.io.IOException;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.EncodeException;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
-import java.io.IOException;
+
+import org.eclipse.jetty.websocket.javax.tests.coders.BadDualDecoder;
 
 @ClientEndpoint(decoders = BadDualDecoder.class)
 public class IntSocket

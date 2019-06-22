@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,9 +31,12 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * AbstractClusteredOrphanedSessionTest
- * 
+ *
  * Mimic node1 creating a session then crashing. Check that node2 will
  * eventually scavenge the orphaned session, even if the session was
  * never used on node2.
@@ -62,7 +61,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
         {
             ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(0);
         }
-        
+
         TestServer server1 = new TestServer(0, inactivePeriod, -1, cacheFactory1, storeFactory1);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         try
@@ -70,7 +69,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
             server1.start();
             int port1 = server1.getPort();
             int scavengePeriod = 2;
-            
+
             DefaultSessionCacheFactory cacheFactory2 = new DefaultSessionCacheFactory();
             SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
             if (storeFactory2 instanceof AbstractSessionDataStoreFactory)
@@ -78,7 +77,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
                 ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(0);
             }
             TestServer server2 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
-            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);         
+            server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
             try
             {
                 server2.start();
@@ -89,7 +88,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
                 {
                     // Connect to server1 to create a session and get its session cookie
                     ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
-                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
@@ -104,7 +103,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
                     Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1) + "?action=check");
                     request.header("Cookie", sessionCookie);
                     ContentResponse response2 = request.send();
-                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
                 }
                 finally
                 {

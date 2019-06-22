@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.tests;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;

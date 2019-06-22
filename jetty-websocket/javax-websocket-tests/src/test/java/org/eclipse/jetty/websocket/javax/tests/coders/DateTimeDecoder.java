@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.tests.coders;
 
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 
 /**
  * Decode Date and Time

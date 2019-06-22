@@ -576,7 +576,6 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} {}", getEndPoint(), proxyEndPoint.toString());
-
                 }
                 catch (Exception e)
                 {
@@ -621,13 +620,14 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         }
 
         @Override
-        public String toString() {
+        public String toString()
+        {
             return String.format("%s@%x[remote=%s,local=%s,endpoint=%s]",
-                    getClass().getSimpleName(),
-                    hashCode(),
-                    _remote,
-                    _local,
-                    _endp);
+                getClass().getSimpleName(),
+                hashCode(),
+                _remote,
+                _local,
+                _endp);
         }
 
         @Override

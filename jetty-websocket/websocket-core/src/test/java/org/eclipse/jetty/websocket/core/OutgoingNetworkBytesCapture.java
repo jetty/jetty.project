@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.internal.Generator;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.core.internal.Generator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

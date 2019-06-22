@@ -24,7 +24,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -151,7 +150,7 @@ public class PushSessionCacheFilter implements Filter
         if (builder != null && !target._associated.isEmpty())
         {
             boolean conditional = request.getHeader(HttpHeader.IF_NONE_MATCH.asString()) != null ||
-                                  request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString()) != null;
+                                      request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString()) != null;
             // Breadth-first push of associated resources.
             Queue<Target> queue = new ArrayDeque<>();
             queue.offer(target);
@@ -168,8 +167,8 @@ public class PushSessionCacheFilter implements Filter
                         LOG.debug("PUSH {} <- {}", path, uri);
 
                     builder.path(path)
-                    .setHeader(HttpHeader.IF_NONE_MATCH.asString(),conditional?child._etag:null)
-                    .setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),conditional?child._lastModified:null);
+                        .setHeader(HttpHeader.IF_NONE_MATCH.asString(), conditional ? child._etag : null)
+                        .setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(), conditional ? child._lastModified : null);
                 }
             }
         }

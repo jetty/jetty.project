@@ -36,12 +36,12 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * <ul>
  * <li>Protocol identification</li>
  * <li>Configuration of new Connections:
- *     <ul>
- *     <li>Setting inputbuffer size</li>
- *     <li>Calling {@link Connection#addListener(Connection.Listener)} for all
- *     Connection.Listener instances found as beans on the {@link Connector}
- *     and this {@link ConnectionFactory}</li>
- *     </ul>
+ * <ul>
+ * <li>Setting inputbuffer size</li>
+ * <li>Calling {@link Connection#addListener(Connection.Listener)} for all
+ * Connection.Listener instances found as beans on the {@link Connector}
+ * and this {@link ConnectionFactory}</li>
+ * </ul>
  * </ul>
  */
 @ManagedObject
@@ -53,14 +53,14 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
 
     protected AbstractConnectionFactory(String protocol)
     {
-        _protocol=protocol;
-        _protocols=Collections.unmodifiableList(Arrays.asList(new String[]{protocol}));
+        _protocol = protocol;
+        _protocols = Collections.unmodifiableList(Arrays.asList(new String[]{protocol}));
     }
 
     protected AbstractConnectionFactory(String... protocols)
     {
-        _protocol=protocols[0];
-        _protocols=Collections.unmodifiableList(Arrays.asList(protocols));
+        _protocol = protocols[0];
+        _protocols = Collections.unmodifiableList(Arrays.asList(protocols));
     }
 
     @Override
@@ -84,7 +84,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
 
     public void setInputBufferSize(int size)
     {
-        _inputbufferSize=size;
+        _inputbufferSize = size;
     }
 
     protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)
@@ -96,11 +96,15 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
         {
             ContainerLifeCycle aggregate = (ContainerLifeCycle)connector;
             for (Connection.Listener listener : aggregate.getBeans(Connection.Listener.class))
+            {
                 connection.addListener(listener);
+            }
         }
         // Add Connection.Listeners from this factory
         for (Connection.Listener listener : getBeans(Connection.Listener.class))
+        {
             connection.addListener(listener);
+        }
 
         return connection;
     }
@@ -108,14 +112,14 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     @Override
     public String toString()
     {
-        return String.format("%s@%x%s",this.getClass().getSimpleName(),hashCode(),getProtocols());
+        return String.format("%s@%x%s", this.getClass().getSimpleName(), hashCode(), getProtocols());
     }
 
     public static ConnectionFactory[] getFactories(SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
-        factories=ArrayUtil.removeNulls(factories);
+        factories = ArrayUtil.removeNulls(factories);
 
-        if (sslContextFactory==null)
+        if (sslContextFactory == null)
             return factories;
 
         for (ConnectionFactory factory : factories)
@@ -123,11 +127,10 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
             if (factory instanceof HttpConfiguration.ConnectionFactory)
             {
                 HttpConfiguration config = ((HttpConfiguration.ConnectionFactory)factory).getHttpConfiguration();
-                if (config.getCustomizer(SecureRequestCustomizer.class)==null)
+                if (config.getCustomizer(SecureRequestCustomizer.class) == null)
                     config.addCustomizer(new SecureRequestCustomizer());
             }
         }
-        return ArrayUtil.prependToArray(new SslConnectionFactory(sslContextFactory,factories[0].getProtocol()),factories,ConnectionFactory.class);
-
+        return ArrayUtil.prependToArray(new SslConnectionFactory(sslContextFactory, factories[0].getProtocol()), factories, ConnectionFactory.class);
     }
 }

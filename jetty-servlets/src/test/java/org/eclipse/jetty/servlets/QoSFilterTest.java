@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -74,7 +73,9 @@ public class QoSFilterTest
 
         _connectors = new LocalConnector[NUM_CONNECTIONS];
         for (int i = 0; i < _connectors.length; ++i)
+        {
             _connectors[i] = _tester.createLocalConnector();
+        }
 
         _tester.start();
     }

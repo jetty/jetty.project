@@ -28,7 +28,7 @@ import org.osgi.framework.ServiceReference;
  */
 public interface ServiceProvider
 {
-    public boolean serviceAdded (ServiceReference ref, ContextHandler handler) throws Exception;
-    
-    public boolean serviceRemoved (ServiceReference ref, ContextHandler handler) throws Exception;
+    public boolean serviceAdded(ServiceReference ref, ContextHandler handler) throws Exception;
+
+    public boolean serviceRemoved(ServiceReference ref, ContextHandler handler) throws Exception;
 }

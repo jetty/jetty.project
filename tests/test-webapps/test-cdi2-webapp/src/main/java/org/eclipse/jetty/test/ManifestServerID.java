@@ -28,9 +28,9 @@ public class ManifestServerID
         return () ->
         {
             String implVersion = this.getClass().getPackage().getImplementationVersion();
-            if(implVersion == null)
+            if (implVersion == null)
                 implVersion = this.getClass().getPackage().getName();
-            if(implVersion == null)
+            if (implVersion == null)
                 implVersion = "unknown";
             return "CDI-Demo-" + implVersion;
         };

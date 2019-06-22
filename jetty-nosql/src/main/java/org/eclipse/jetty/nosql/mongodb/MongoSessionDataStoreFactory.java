@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.nosql.mongodb;
 
 import java.net.UnknownHostException;
@@ -30,8 +29,6 @@ import org.eclipse.jetty.util.StringUtil;
 
 /**
  * MongoSessionDataStoreFactory
- *
- *
  */
 public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
@@ -98,7 +95,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
-     * @param  connectionString the connection string to set. This has priority over dbHost and port
+     * @param connectionString the connection string to set. This has priority over dbHost and port
      */
     public void setConnectionString(String connectionString)
     {
@@ -121,9 +118,8 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         _collectionName = collectionName;
     }
 
-
     /**
-     * @throws Exception  {@link UnknownHostException} if any issue while resolving MongoDB Host
+     * @throws Exception {@link UnknownHostException} if any issue while resolving MongoDB Host
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
@@ -145,7 +141,4 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         store.setDBCollection(mongo.getDB(getDbName()).getCollection(getCollectionName()));
         return store;
     }
-
-
-
 }

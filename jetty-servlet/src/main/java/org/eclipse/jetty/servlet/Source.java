@@ -16,10 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.servlet;
-
-
 
 /**
  * Source
@@ -28,25 +25,28 @@ package org.eclipse.jetty.servlet;
  */
 public class Source
 {
-    public static final Source EMBEDDED = new Source (Origin.EMBEDDED, null);
-    public static final Source JAVAX_API = new Source (Origin.JAVAX_API, null);
+    public static final Source EMBEDDED = new Source(Origin.EMBEDDED, null);
+    public static final Source JAVAX_API = new Source(Origin.JAVAX_API, null);
 
-    public enum Origin { EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION };
+    public enum Origin
+    {
+        EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION
+    }
+
+    ;
     public Origin _origin;
     public String _resource;
-
-
 
     /**
      * @param o the Origin of the artifact (servlet, filter, mapping etc)
      * @param resource the location where the artifact was declared
      */
-    public Source (Origin o, String resource)
+    public Source(Origin o, String resource)
     {
         if (o == null)
-            throw new IllegalArgumentException ("Origin is null");
-       _origin = o;
-       _resource = resource;
+            throw new IllegalArgumentException("Origin is null");
+        _origin = o;
+        _resource = resource;
     }
 
     /**
@@ -57,7 +57,6 @@ public class Source
         return _origin;
     }
 
-    
     /**
      * @return the resource
      */
@@ -66,13 +65,13 @@ public class Source
         return _resource;
     }
 
-    /** 
+    /**
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString()
     {
-        
-        return _origin +":"+ _resource;
+
+        return _origin + ":" + _resource;
     }
 }

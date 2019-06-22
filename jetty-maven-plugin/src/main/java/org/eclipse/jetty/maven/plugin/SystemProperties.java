@@ -27,7 +27,7 @@ import java.util.Map;
  * SystemProperties
  *
  * Map of name to SystemProperty.
- * 
+ *
  * When a SystemProperty instance is added, if it has not
  * been already set (eg via the command line java system property)
  * then it will be set.
@@ -36,24 +36,23 @@ public class SystemProperties
 {
     private final Map<String, SystemProperty> properties;
     private boolean force;
-    
+
     public SystemProperties()
     {
         properties = new HashMap<>();
     }
-    
-    public void setForce (boolean force)
+
+    public void setForce(boolean force)
     {
         this.force = force;
     }
-    
-    public boolean getForce ()
+
+    public boolean getForce()
     {
         return this.force;
     }
-    
-    
-    public void setSystemProperty (SystemProperty prop)
+
+    public void setSystemProperty(SystemProperty prop)
     {
         properties.put(prop.getName(), prop);
         if (!force)
@@ -61,18 +60,18 @@ public class SystemProperties
         else
             prop.setAnyway();
     }
-    
+
     public SystemProperty getSystemProperty(String name)
     {
         return properties.get(name);
     }
-    
+
     public boolean containsSystemProperty(String name)
     {
-       return properties.containsKey(name); 
+        return properties.containsKey(name);
     }
-    
-    public List<SystemProperty> getSystemProperties ()
+
+    public List<SystemProperty> getSystemProperties()
     {
         return new ArrayList<>(properties.values());
     }

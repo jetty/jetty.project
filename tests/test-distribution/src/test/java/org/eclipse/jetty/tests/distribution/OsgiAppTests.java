@@ -37,9 +37,9 @@ public class OsgiAppTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-            .build();
+                                              .jettyVersion(jettyVersion)
+                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+                                              .build();
 
         String[] args1 = {
             "--create-startd",

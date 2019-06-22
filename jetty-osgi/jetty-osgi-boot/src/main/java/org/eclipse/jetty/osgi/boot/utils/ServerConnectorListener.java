@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.osgi.boot.utils;
 
 import java.io.FileWriter;
@@ -30,7 +29,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 /**
  * ServerConnectorListener
  *
- * This is for test support, where we need jetty to run on a random port, and we need 
+ * This is for test support, where we need jetty to run on a random port, and we need
  * a client to be able to find out which port was picked.
  */
 public class ServerConnectorListener extends AbstractLifeCycleListener
@@ -39,9 +38,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     private Path _filePath;
     private String _sysPropertyName;
 
-    
-
-    /** 
+    /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener#lifeCycleStarted(org.eclipse.jetty.util.component.LifeCycle)
      */
     @Override
@@ -57,13 +54,13 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
             }
             catch (Exception e)
             {
-                throw new RuntimeException (e);
+                throw new RuntimeException(e);
             }
         }
-        
+
         if (getSysPropertyName() != null)
         {
-            System.setProperty(_sysPropertyName,String.valueOf(((ServerConnector)event).getLocalPort()));
+            System.setProperty(_sysPropertyName, String.valueOf(((ServerConnector)event).getLocalPort()));
         }
         super.lifeCycleStarted(event);
     }
@@ -99,6 +96,4 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     {
         _sysPropertyName = sysPropertyName;
     }
-
-    
 }

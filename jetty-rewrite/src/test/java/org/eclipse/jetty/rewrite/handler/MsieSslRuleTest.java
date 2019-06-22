@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MsieSslRuleTest extends AbstractRuleTestCase
 {
@@ -48,7 +48,6 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
 
         assertEquals(_request.getRequestURI(), result);
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
-
 
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)");
         result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);

@@ -258,7 +258,7 @@ public class HttpSenderOverHTTPTest
 
         String requestString = endPoint.takeOutputString();
         assertTrue(requestString.startsWith("GET "));
-        assertThat(requestString,Matchers.endsWith("\r\n\r\n" + content1 + content2));
+        assertThat(requestString, Matchers.endsWith("\r\n\r\n" + content1 + content2));
         assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
         assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }

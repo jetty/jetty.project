@@ -102,7 +102,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
      * Notification method for when a Ping frame is received.
      * The default implementation sends a Pong frame using the passed callback for completion
      *
-     * @param frame    The received frame
+     * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
     protected void onPingFrame(Frame frame, Callback callback)
@@ -135,7 +135,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
      * Notification method for when a Pong frame is received.
      * The default implementation just succeeds the callback
      *
-     * @param frame    The received frame
+     * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
     protected void onPongFrame(Frame frame, Callback callback)
@@ -151,7 +151,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
      * may either leave the contents in the Utf8StringBuilder to accumulate with following Continuation
      * frames, or it may be consumed.
      *
-     * @param frame    The received frame
+     * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      * @see #onText(Utf8StringBuilder, Callback, boolean)
      */
@@ -164,7 +164,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
 
         if (frame.hasPayload())
             utf8.append(frame
-                .getPayload()); // TODO: this should trigger a bad UTF8 exception if sequence is bad which we wrap in a ProtocolException (but not on unfinished sequences)
+                            .getPayload()); // TODO: this should trigger a bad UTF8 exception if sequence is bad which we wrap in a ProtocolException (but not on unfinished sequences)
 
         if (frame.isFin())
             utf8.checkState(); // TODO: this should not be necessary, checkState() shouldn't be necessary to use (the utf8.toString() should trigger on bad utf8 in final octets)
@@ -182,9 +182,9 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
      * or leave it to accumulate over multiple calls.
      * The default implementation just succeeds the callback.
      *
-     * @param utf8     The received text
+     * @param utf8 The received text
      * @param callback The callback to indicate completion of frame handling.
-     * @param fin      True if the current message is completed by this call.
+     * @param fin True if the current message is completed by this call.
      */
     protected void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
@@ -199,7 +199,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
      * may either leave the contents in the ByteBuffer to accumulate with following Continuation
      * frames, or it may be consumed.
      *
-     * @param frame    The received frame
+     * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      * @see #onBinary(ByteBuffer, Callback, boolean)
      */
@@ -234,9 +234,9 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
      * or leave it to accumulate over multiple calls.
      * The default implementation just succeeds the callback.
      *
-     * @param payload  The received data
+     * @param payload The received data
      * @param callback The callback to indicate completion of frame handling.
-     * @param fin      True if the current message is completed by this call.
+     * @param fin True if the current message is completed by this call.
      */
     protected void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {
@@ -249,7 +249,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
      * or {@link #onBinary(ByteBuffer, Callback, boolean)} as appropriate, accumulating
      * payload as necessary.
      *
-     * @param frame    The received frame
+     * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
     protected void onContinuationFrame(Frame frame, Callback callback)
@@ -275,11 +275,11 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
             case OpCode.BINARY:
                 if (frame.hasPayload())
                 {
-                    int factor = frame.isFin()?1:3;
+                    int factor = frame.isFin() ? 1 : 3;
                     BufferUtil.compact(byteBuffer);
                     if (BufferUtil.space(byteBuffer) < frame.getPayloadLength())
                         byteBuffer = BufferUtil
-                            .ensureCapacity(byteBuffer, byteBuffer.capacity() + Math.max(byteBuffer.capacity(), frame.getPayloadLength() * factor));
+                                         .ensureCapacity(byteBuffer, byteBuffer.capacity() + Math.max(byteBuffer.capacity(), frame.getPayloadLength() * factor));
                     BufferUtil.append(byteBuffer, frame.getPayload());
                 }
 
@@ -288,7 +288,6 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
 
             default:
                 callback.failed(new IllegalStateException());
-
         }
     }
 
@@ -296,7 +295,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
      * Notification method for when a Close frame is received.
      * The default implementation responds with a close frame when necessary.
      *
-     * @param frame    The received frame
+     * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
     protected void onCloseFrame(Frame frame, Callback callback)
@@ -304,7 +303,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
         int respond;
         String reason = null;
 
-        int code = frame.hasPayload()?new CloseStatus(frame.getPayload()).getCode():-1;
+        int code = frame.hasPayload() ? new CloseStatus(frame.getPayload()).getCode() : -1;
 
         switch (code)
         {

@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
@@ -90,7 +89,7 @@ public class SniSslConnectionFactoryTest
         SecureRequestCustomizer src = new SecureRequestCustomizer();
         src.setSniHostCheck(true);
         _https_config.addCustomizer(src);
-        _https_config.addCustomizer((connector,httpConfig,request)->
+        _https_config.addCustomizer((connector, httpConfig, request) ->
         {
             EndPoint endp = request.getHttpChannel().getEndPoint();
             if (endp instanceof SslConnection.DecryptedEndPoint)
@@ -102,9 +101,11 @@ public class SniSslConnectionFactoryTest
                     SSLEngine sslEngine = sslConnection.getSSLEngine();
                     SSLSession session = sslEngine.getSession();
                     for (Certificate c : session.getLocalCertificates())
-                        request.getResponse().getHttpFields().add("X-Cert",((X509Certificate)c).getSubjectDN().toString());
+                    {
+                        request.getResponse().getHttpFields().add("X-Cert", ((X509Certificate)c).getSubjectDN().toString());
+                    }
                 }
-                catch(Throwable th)
+                catch (Throwable th)
                 {
                     th.printStackTrace();
                 }
@@ -237,9 +238,9 @@ public class SniSslConnectionFactoryTest
 
             // The first request binds the socket to an alias.
             String request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
-                    "Host: m.san.com\r\n" +
-                    "\r\n";
+                                 "GET /ctx/path HTTP/1.1\r\n" +
+                                 "Host: m.san.com\r\n" +
+                                 "\r\n";
             OutputStream output = sslSocket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -250,9 +251,9 @@ public class SniSslConnectionFactoryTest
 
             // Same socket, send a request for a different domain but same alias.
             request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
-                    "Host: www.san.com\r\n" +
-                    "\r\n";
+                          "GET /ctx/path HTTP/1.1\r\n" +
+                          "Host: www.san.com\r\n" +
+                          "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -261,15 +262,15 @@ public class SniSslConnectionFactoryTest
 
             // Same socket, send a request for a different domain but different alias.
             request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
-                    "Host: www.example.com\r\n" +
-                    "\r\n";
+                          "GET /ctx/path HTTP/1.1\r\n" +
+                          "Host: www.example.com\r\n" +
+                          "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = response(input);
             String body = IO.toString(input);
-            assertThat(response,startsWith("HTTP/1.1 400 "));
+            assertThat(response, startsWith("HTTP/1.1 400 "));
             assertThat(body, containsString("Host does not match SNI"));
         }
         finally
@@ -295,9 +296,9 @@ public class SniSslConnectionFactoryTest
             sslSocket.startHandshake();
 
             String request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
-                    "Host: www.domain.com\r\n" +
-                    "\r\n";
+                                 "GET /ctx/path HTTP/1.1\r\n" +
+                                 "Host: www.domain.com\r\n" +
+                                 "\r\n";
             OutputStream output = sslSocket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -308,9 +309,9 @@ public class SniSslConnectionFactoryTest
 
             // Now, on the same socket, send a request for a different valid domain.
             request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
-                    "Host: assets.domain.com\r\n" +
-                    "\r\n";
+                          "GET /ctx/path HTTP/1.1\r\n" +
+                          "Host: assets.domain.com\r\n" +
+                          "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -319,9 +320,9 @@ public class SniSslConnectionFactoryTest
 
             // Now make a request for an invalid domain for this connection.
             request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
-                    "Host: www.example.com\r\n" +
-                    "\r\n";
+                          "GET /ctx/path HTTP/1.1\r\n" +
+                          "Host: www.example.com\r\n" +
+                          "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 

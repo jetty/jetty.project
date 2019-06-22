@@ -23,14 +23,11 @@ import java.util.List;
 
 /**
  * AnnotationIntrospector
- *
- *
  */
 public class AnnotationIntrospector
-{    
+{
     protected List<IntrospectableAnnotationHandler> _handlers = new ArrayList<IntrospectableAnnotationHandler>();
-    
-    
+
     /**
      * IntrospectableAnnotationHandler
      *
@@ -40,9 +37,7 @@ public class AnnotationIntrospector
     {
         public void handle(Class<?> clazz);
     }
-    
-    
-    
+
     /**
      * AbstractIntrospectableAnnotationHandler
      *
@@ -52,45 +47,44 @@ public class AnnotationIntrospector
     public static abstract class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
     {
         private boolean _introspectAncestors;
-        
+
         public abstract void doHandle(Class<?> clazz);
-        
-        
+
         public AbstractIntrospectableAnnotationHandler(boolean introspectAncestors)
         {
             _introspectAncestors = introspectAncestors;
         }
-        
+
         @Override
         public void handle(Class<?> clazz)
         {
             Class<?> c = clazz;
-            
+
             //process the whole inheritance hierarchy for the class
-            while (c!=null && (!c.equals(Object.class)))
+            while (c != null && (!c.equals(Object.class)))
             {
                 doHandle(c);
                 if (!_introspectAncestors)
                     break;
-                
+
                 c = c.getSuperclass();
-            }   
+            }
         }
     }
-    
-    public void registerHandler (IntrospectableAnnotationHandler handler)
+
+    public void registerHandler(IntrospectableAnnotationHandler handler)
     {
         _handlers.add(handler);
     }
-    
-    public void introspect (Class<?> clazz)
+
+    public void introspect(Class<?> clazz)
     {
         if (_handlers == null)
             return;
         if (clazz == null)
             return;
-        
-        for (IntrospectableAnnotationHandler handler:_handlers)
+
+        for (IntrospectableAnnotationHandler handler : _handlers)
         {
             try
             {
@@ -105,6 +99,5 @@ public class AnnotationIntrospector
                 throw new RuntimeException(e);
             }
         }
-     
     }
 }

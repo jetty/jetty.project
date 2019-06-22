@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
 import javax.websocket.Extension;
 import javax.websocket.WebSocketContainer;
 

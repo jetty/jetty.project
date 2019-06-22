@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -37,24 +32,20 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * ModifyMaxInactiveIntervalTest
- *
- *
- *
  */
 public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
 {
     public static int __scavenge = 1;
 
-    
-    
     /**
      * Test that setting an integer overflow valued max inactive interval
      * results in an immortal session (value -1).
-     * 
-     * @throws Exception
      */
     @Test
     public void testHugeMaxInactiveInterval() throws Exception
@@ -64,13 +55,13 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
-        
-        TestServer server = new TestServer(0, inactivePeriod,  __scavenge, cacheFactory, storeFactory);
+
+        TestServer server = new TestServer(0, inactivePeriod, __scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
         server.start();
-        int port=server.getPort();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();
@@ -80,7 +71,7 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 // Perform a request to create a session
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 String id = TestServer.extractSessionId(sessionCookie);
@@ -88,7 +79,6 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 //check that the maxInactive is -1
                 Session s = ctxA.getSessionHandler().getSession(id);
                 assertEquals(-1, s.getMaxInactiveInterval());
-
             }
             finally
             {
@@ -99,26 +89,26 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         {
             server.stop();
         }
-        
     }
+
     @Test
     public void testReduceMaxInactiveInterval() throws Exception
     {
         int oldMaxInactive = 30;
         int newMaxInactive = 1;
         int scavengeSec = __scavenge;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
-        
-        TestServer server = new TestServer(0, oldMaxInactive,  scavengeSec, cacheFactory, storeFactory);
+
+        TestServer server = new TestServer(0, oldMaxInactive, scavengeSec, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
         server.start();
-        int port=server.getPort();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();
@@ -128,23 +118,22 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 // Perform a request to create a session
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //do another request to reduce the maxinactive interval
-                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive);
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val=" + newMaxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
                 // Wait for the session to expire
-                Thread.sleep(TimeUnit.SECONDS.toMillis(newMaxInactive+scavengeSec));
-                
+                Thread.sleep(TimeUnit.SECONDS.toMillis(newMaxInactive + scavengeSec));
+
                 //do another request using the cookie to ensure the session is NOT there
-                request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+newMaxInactive);
+                request = client.newRequest("http://localhost:" + port + "/mod/test?action=test&val=" + newMaxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
             }
             finally
             {
@@ -156,26 +145,25 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
             server.stop();
         }
     }
-    
-    
+
     @Test
     public void testIncreaseMaxInactiveInterval() throws Exception
-    {        
+    {
         int oldMaxInactive = 1;
         int newMaxInactive = 10;
         int scavengeSec = __scavenge;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
-        
-        TestServer server = new TestServer(0, oldMaxInactive,  scavengeSec, cacheFactory, storeFactory);
+
+        TestServer server = new TestServer(0, oldMaxInactive, scavengeSec, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
         server.start();
-        int port=server.getPort();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();
@@ -185,23 +173,22 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 // Perform a request to create a session
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //do another request to increase the maxinactive interval
-                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive);
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val=" + newMaxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
                 // wait until the old inactive interval should have expired
-                Thread.sleep(TimeUnit.SECONDS.toMillis(scavengeSec+oldMaxInactive));
-                
+                Thread.sleep(TimeUnit.SECONDS.toMillis(scavengeSec + oldMaxInactive));
+
                 //do another request using the cookie to ensure the session is still there
-                request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+newMaxInactive);
+                request = client.newRequest("http://localhost:" + port + "/mod/test?action=test&val=" + newMaxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {
@@ -213,8 +200,7 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
             server.stop();
         }
     }
-    
-    
+
     @Test
     public void testSetMaxInactiveIntervalWithImmortalSessionAndEviction() throws Exception
     {
@@ -223,18 +209,18 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         int evict = 2;
         int sleep = evict;
         int scavenge = __scavenge;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(evict);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
-        
-        TestServer server = new TestServer(0, oldMaxInactive,  scavenge, cacheFactory, storeFactory);
+
+        TestServer server = new TestServer(0, oldMaxInactive, scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
         server.start();
-        int port=server.getPort();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();
@@ -244,20 +230,19 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 // Perform a request to create a session
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //do another request to reduce the maxinactive interval
-                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive+"&wait="+sleep);
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val=" + newMaxInactive + "&wait=" + sleep);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
                 //do another request using the cookie to ensure the session is still there
-                request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+newMaxInactive);
+                request = client.newRequest("http://localhost:" + port + "/mod/test?action=test&val=" + newMaxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {
@@ -269,8 +254,7 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
             server.stop();
         }
     }
-    
-    
+
     @Test
     public void testSetMaxInactiveIntervalWithNonImmortalSessionAndEviction() throws Exception
     {
@@ -279,18 +263,18 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         int evict = 4;
         int sleep = evict;
         int scavenge = __scavenge;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(evict);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
-        
-        TestServer server = new TestServer(0, oldMaxInactive,  scavenge, cacheFactory, storeFactory);
+
+        TestServer server = new TestServer(0, oldMaxInactive, scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
         server.start();
-        int port=server.getPort();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();
@@ -300,20 +284,19 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 // Perform a request to create a session
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //do another request to reduce the maxinactive interval
-                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive+"&wait="+sleep);
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val=" + newMaxInactive + "&wait=" + sleep);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
                 //do another request using the cookie to ensure the session is still there
-                request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+newMaxInactive);
+                request = client.newRequest("http://localhost:" + port + "/mod/test?action=test&val=" + newMaxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {
@@ -325,25 +308,25 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
             server.stop();
         }
     }
-    
+
     @Test
     public void testChangeMaxInactiveIntervalForImmortalSessionNoEviction() throws Exception
     {
         int oldMaxInactive = -1;
         int newMaxInactive = 120;
         int scavenge = __scavenge;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
-        
-        TestServer server = new TestServer(0, oldMaxInactive,  scavenge, cacheFactory, storeFactory);
+
+        TestServer server = new TestServer(0, oldMaxInactive, scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
         server.start();
-        int port=server.getPort();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();
@@ -353,20 +336,19 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 // Perform a request to create a session
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //do another request to change the maxinactive interval
-                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive+"&wait="+2);
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val=" + newMaxInactive + "&wait=" + 2);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
                 //do another request using the cookie to ensure the session is still there
-                request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+newMaxInactive);
+                request = client.newRequest("http://localhost:" + port + "/mod/test?action=test&val=" + newMaxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {
@@ -378,25 +360,25 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
             server.stop();
         }
     }
-    
+
     @Test
     public void testNoExpireSessionInUse() throws Exception
     {
         int maxInactive = 3;
         int scavenge = __scavenge;
         int sleep = maxInactive + scavenge;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
-        
+
         TestServer server = new TestServer(0, maxInactive, scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
         server.start();
-        int port=server.getPort();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();
@@ -406,17 +388,16 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 // Perform a request to create a session
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //do another request that will sleep long enough for the session expiry time to have passed
                 //before trying to access the session and ensure it is still there
-                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=sleep&val="+sleep);
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=sleep&val=" + sleep);
                 response = request.send();
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());             
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {
@@ -434,19 +415,19 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
     {
         int oldMaxInactive = 4;
         int newMaxInactive = 20;
-        int sleep = oldMaxInactive+__scavenge;
+        int sleep = oldMaxInactive + __scavenge;
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, oldMaxInactive,  __scavenge, cacheFactory, storeFactory);
+        TestServer server = new TestServer(0, oldMaxInactive, __scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
         server.start();
-        int port=server.getPort();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();
@@ -455,26 +436,24 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
             {
                 // Perform a request to create a session                
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
-                
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //do another request to change the maxinactive interval
-                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive);
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val=" + newMaxInactive);
                 response = request.send();
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                               
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
                 //wait for longer than the old inactive interval
                 Thread.sleep(TimeUnit.SECONDS.toMillis(sleep));
-                
+
                 //do another request using the cookie to ensure the session is still there
-                request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+newMaxInactive);
+                request = client.newRequest("http://localhost:" + port + "/mod/test?action=test&val=" + newMaxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {
@@ -496,12 +475,12 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, maxInactive,  __scavenge, cacheFactory, storeFactory);
+        TestServer server = new TestServer(0, maxInactive, __scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
         server.start();
-        int port=server.getPort();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();
@@ -511,16 +490,14 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 // Perform a request to create a session
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //Test that the maxInactiveInterval matches the expected value
-                Request request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+maxInactive);
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=test&val=" + maxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-
-
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {
@@ -532,7 +509,6 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
             server.stop();
         }
     }
-    
 
     public static class TestModServlet extends HttpServlet
     {
@@ -540,55 +516,69 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             String action = request.getParameter("action");
-            
+
             if ("create".equals(action))
             {
                 HttpSession session = request.getSession(true);
                 assertNotNull(session);
                 return;
             }
-            
+
             if ("change".equals(action))
             {
                 //change the expiry time for the session, maybe sleeping before the change
                 String tmp = request.getParameter("val");
                 int interval = -1;
-                interval = (tmp==null?-1:Integer.parseInt(tmp));
+                interval = (tmp == null ? -1 : Integer.parseInt(tmp));
 
                 tmp = request.getParameter("wait");
-                int wait = (tmp==null?0:Integer.parseInt(tmp));
-                if (wait >0)
+                int wait = (tmp == null ? 0 : Integer.parseInt(tmp));
+                if (wait > 0)
                 {
-                    try { Thread.sleep(TimeUnit.SECONDS.toMillis(wait));}catch (Exception e) {throw new ServletException(e);}
+                    try
+                    {
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(wait));
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ServletException(e);
+                    }
                 }
                 HttpSession session = request.getSession(false);
                 if (session == null)
                     throw new ServletException("Session is null for action=change");
 
                 if (interval > 0)
-                    session.setMaxInactiveInterval(interval);  
+                    session.setMaxInactiveInterval(interval);
 
                 session = request.getSession(false);
                 if (session == null)
-                    throw new ServletException ("Null session after maxInactiveInterval change");
+                    throw new ServletException("Null session after maxInactiveInterval change");
                 return;
             }
 
             if ("sleep".equals(action))
             {
                 //sleep before trying to access the session
-              
+
                 HttpSession session = request.getSession(false);
                 if (session == null)
                     throw new ServletException("Session is null for action=sleep");
 
                 String tmp = request.getParameter("val");
                 int interval = 0;
-                interval = (tmp==null?0:Integer.parseInt(tmp));
+                interval = (tmp == null ? 0 : Integer.parseInt(tmp));
 
-                if (interval > 0) 
+                if (interval > 0)
                 {
-                    try{Thread.sleep(TimeUnit.SECONDS.toMillis(interval));}catch (Exception e) {throw new ServletException(e);}
+                    try
+                    {
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(interval));
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ServletException(e);
+                    }
                 }
 
                 session = request.getSession(false);
@@ -597,33 +587,31 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
 
                 return;
             }
-            
+
             if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
                 if (session == null)
                 {
-                    response.sendError(500,"Session does not exist");
+                    response.sendError(500, "Session does not exist");
                     return;
                 }
                 String tmp = request.getParameter("val");
                 int interval = 0;
-                interval = (tmp==null?0:Integer.parseInt(tmp));
-                
+                interval = (tmp == null ? 0 : Integer.parseInt(tmp));
+
                 assertEquals(interval, session.getMaxInactiveInterval());
                 return;
             }
         }
     }
 
-
-    /** 
-     * 
+    /**
+     *
      */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-       return new TestSessionDataStoreFactory();
+        return new TestSessionDataStoreFactory();
     }
-    
 }

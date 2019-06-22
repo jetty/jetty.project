@@ -22,16 +22,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 import com.sun.net.httpserver.Authenticator;
 import com.sun.net.httpserver.Authenticator.Result;
@@ -39,6 +32,11 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpPrincipal;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Jetty handler that bridges requests to {@link HttpHandler}.
@@ -68,11 +66,11 @@ public class HttpSpiContextHandler extends ContextHandler
         HttpExchange jettyHttpExchange;
         if (baseRequest.isSecure())
         {
-            jettyHttpExchange = new JettyHttpsExchange(_httpContext,req,resp);
+            jettyHttpExchange = new JettyHttpsExchange(_httpContext, req, resp);
         }
         else
         {
-            jettyHttpExchange = new JettyHttpExchange(_httpContext,req,resp);
+            jettyHttpExchange = new JettyHttpExchange(_httpContext, req, resp);
         }
 
         // TODO: add filters processing
@@ -82,7 +80,7 @@ public class HttpSpiContextHandler extends ContextHandler
             Authenticator auth = _httpContext.getAuthenticator();
             if (auth != null)
             {
-                handleAuthentication(resp,jettyHttpExchange,auth);
+                handleAuthentication(resp, jettyHttpExchange, auth);
             }
             else
             {
@@ -105,8 +103,8 @@ public class HttpSpiContextHandler extends ContextHandler
                 ex.printStackTrace(writer);
                 writer.println("</pre>");
             }
-            
-            baseRequest.getHttpChannel().getHttpConfiguration().writePoweredBy(writer,"<p>","</p>");
+
+            baseRequest.getHttpChannel().getHttpConfiguration().writePoweredBy(writer, "<p>", "</p>");
 
             writer.close();
         }
@@ -114,7 +112,6 @@ public class HttpSpiContextHandler extends ContextHandler
         {
             baseRequest.setHandled(true);
         }
-
     }
 
     private void handleAuthentication(HttpServletResponse resp, HttpExchange httpExchange, Authenticator auth) throws IOException
@@ -123,20 +120,24 @@ public class HttpSpiContextHandler extends ContextHandler
         if (result instanceof Authenticator.Failure)
         {
             int rc = ((Authenticator.Failure)result).getResponseCode();
-            for (Map.Entry<String,List<String>> header : httpExchange.getResponseHeaders().entrySet())
+            for (Map.Entry<String, List<String>> header : httpExchange.getResponseHeaders().entrySet())
             {
                 for (String value : header.getValue())
-                    resp.addHeader(header.getKey(),value);
+                {
+                    resp.addHeader(header.getKey(), value);
+                }
             }
             resp.sendError(rc);
         }
         else if (result instanceof Authenticator.Retry)
         {
             int rc = ((Authenticator.Retry)result).getResponseCode();
-            for (Map.Entry<String,List<String>> header : httpExchange.getResponseHeaders().entrySet())
+            for (Map.Entry<String, List<String>> header : httpExchange.getResponseHeaders().entrySet())
             {
                 for (String value : header.getValue())
-                    resp.addHeader(header.getKey(),value);
+                {
+                    resp.addHeader(header.getKey(), value);
+                }
             }
             resp.setStatus(rc);
             resp.flushBuffer();
@@ -158,5 +159,4 @@ public class HttpSpiContextHandler extends ContextHandler
     {
         this._httpHandler = handler;
     }
-
 }

@@ -95,7 +95,7 @@ public class ServerConfigTest
         return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
     }
 
-    @WebSocket(idleTimeout=idleTimeout, maxTextMessageSize=maxMessageSize, maxBinaryMessageSize=maxMessageSize, inputBufferSize=inputBufferSize, batchMode=BatchMode.ON)
+    @WebSocket(idleTimeout = idleTimeout, maxTextMessageSize = maxMessageSize, maxBinaryMessageSize = maxMessageSize, inputBufferSize = inputBufferSize, batchMode = BatchMode.ON)
     public static class AnnotatedConfigEndpoint extends EventSocket
     {
     }
@@ -123,7 +123,7 @@ public class ServerConfigTest
             factory.setMaxTextMessageSize(maxMessageSize);
             factory.setMaxBinaryMessageSize(maxMessageSize);
             factory.setInputBufferSize(inputBufferSize);
-            factory.addMapping("/",(req, resp)->standardEndpoint);
+            factory.addMapping("/", (req, resp) -> standardEndpoint);
         }
     }
 
@@ -132,7 +132,7 @@ public class ServerConfigTest
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping("/",(req, resp)->annotatedEndpoint);
+            factory.addMapping("/", (req, resp) -> annotatedEndpoint);
         }
     }
 
@@ -141,7 +141,7 @@ public class ServerConfigTest
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping("/",(req, resp)->sessionConfigEndpoint);
+            factory.addMapping("/", (req, resp) -> sessionConfigEndpoint);
         }
     }
 
@@ -186,12 +186,13 @@ public class ServerConfigTest
         contextHandler.addServlet(new ServletHolder(new WebSocketSessionConfigServlet()), "/sessionConfig");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) -> {
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+        {
             container.setIdleTimeout(Duration.ofMillis(idleTimeout));
             container.setMaxTextMessageSize(maxMessageSize);
             container.setMaxBinaryMessageSize(maxMessageSize);
             container.setInputBufferSize(inputBufferSize);
-            container.addMapping("/containerConfig", (req, resp)->standardEndpoint);
+            container.addMapping("/containerConfig", (req, resp) -> standardEndpoint);
         });
 
         server.start();
@@ -206,7 +207,6 @@ public class ServerConfigTest
         client.stop();
         server.stop();
     }
-
 
     @ParameterizedTest
     @MethodSource("data")

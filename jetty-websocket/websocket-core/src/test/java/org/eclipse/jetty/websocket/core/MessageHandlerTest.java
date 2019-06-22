@@ -46,7 +46,7 @@ public class MessageHandlerTest
     // Testing with 4 byte UTF8 character "\uD842\uDF9F"
     static String fourByteUtf8String = "\uD842\uDF9F";
     static byte[] fourByteUtf8Bytes = fourByteUtf8String.getBytes(StandardCharsets.UTF_8);
-    static byte[] nonUtf8Bytes = { 0x7F, (byte)0xFF, (byte)0xFF };
+    static byte[] nonUtf8Bytes = {0x7F, (byte)0xFF, (byte)0xFF};
 
     boolean demanding;
     int demand;
@@ -414,7 +414,6 @@ public class MessageHandlerTest
         assertThat(callback.isDone(), is(true));
         FutureCallback finalCallback1 = callback;
         assertDoesNotThrow(() -> finalCallback1.get());
-
     }
 
     @Test

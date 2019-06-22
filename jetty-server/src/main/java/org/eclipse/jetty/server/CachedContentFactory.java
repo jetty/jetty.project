@@ -71,11 +71,11 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     /**
      * Constructor.
      *
-     * @param parent               the parent resource cache
-     * @param factory              the resource factory
-     * @param mimeTypes            Mimetype to use for meta data
-     * @param useFileMappedBuffer  true to file memory mapped buffers
-     * @param etags                true to support etags
+     * @param parent the parent resource cache
+     * @param factory the resource factory
+     * @param mimeTypes Mimetype to use for meta data
+     * @param useFileMappedBuffer true to file memory mapped buffers
+     * @param etags true to support etags
      * @param precompressedFormats array of precompression formats to support
      */
     public CachedContentFactory(CachedContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes, boolean useFileMappedBuffer, boolean etags, CompressedContentFormat[] precompressedFormats)
@@ -163,7 +163,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
      *
      * @param pathInContext The key into the cache
      * @param maxBufferSize The maximum buffer size allocated for this request.  For cached content, a larger buffer may have
-     *                      previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
+     * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
      * @return The entry matching {@code pathInContext}, or a new entry
      * if no matching entry was found. If the content exists but is not cacheable,
      * then a {@link ResourceHttpContent} instance is returned. If
@@ -284,7 +284,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
                         && compressedResource.length() < resource.length())
                     compressedContents.put(format,
-                            new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
+                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
             }
             if (!compressedContents.isEmpty())
                 return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents);
@@ -407,7 +407,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             boolean exists = resource.exists();
             _lastModifiedValue = exists ? resource.lastModified() : -1L;
             _lastModified = _lastModifiedValue == -1 ? null
-                    : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
+                                : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
 
             _contentLengthValue = exists ? (int)resource.length() : 0;
             _contentLength = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, Long.toString(_contentLengthValue));

@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LogTest
 {
     private static Logger originalLogger;
-    private static Map<String,Logger> originalLoggers;
+    private static Map<String, Logger> originalLoggers;
 
     @BeforeAll
     public static void rememberOriginalLogger()
@@ -53,14 +53,14 @@ public class LogTest
         Log.getMutableLoggers().clear();
         Log.getMutableLoggers().putAll(originalLoggers);
     }
-    
+
     @Test
     public void testDefaultLogging()
     {
         Logger log = Log.getLogger(LogTest.class);
         log.info("Test default logging");
     }
-    
+
     @Test
     public void testNamedLogNamed_StdErrLog()
     {
@@ -121,13 +121,13 @@ public class LogTest
             Arguments.of("org.eclipse.jetty.foo.Bar$Internal", "oejf.Bar$Internal")
         );
     }
-    
+
     @ParameterizedTest
     @MethodSource("packageCases")
     public void testCondensePackageViaLogger(String input, String expected)
     {
         StdErrLog log = new StdErrLog();
-        StdErrLog logger = (StdErrLog) log.newLogger(input);
+        StdErrLog logger = (StdErrLog)log.newLogger(input);
         assertThat("log[" + input + "] condenses to name", logger._abbrevname, is(expected));
     }
 

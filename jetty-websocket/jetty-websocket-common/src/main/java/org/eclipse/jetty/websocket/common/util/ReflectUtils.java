@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
@@ -31,6 +29,8 @@ import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 
 public class ReflectUtils
 {
@@ -248,7 +248,7 @@ public class ReflectUtils
     /**
      * Given a Base (concrete) Class, find the interface specified, and return its concrete Generic class declaration.
      *
-     * @param baseClass  the base (concrete) class to look in
+     * @param baseClass the base (concrete) class to look in
      * @param ifaceClass the interface of interest
      * @return the (concrete) generic class that the interface exposes
      */

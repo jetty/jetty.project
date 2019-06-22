@@ -203,13 +203,11 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         this._hotReload = enable;
     }
 
-
     @Override
     public String toString()
     {
         return String.format("%s@%x[users.count=%d,identityService=%s]", getClass().getSimpleName(), hashCode(), getKnownUserIdentities().size(), getIdentityService());
     }
-
 
     protected void loadUsers() throws IOException
     {
@@ -332,7 +330,9 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         if (_listeners != null)
         {
             for (UserListener _listener : _listeners)
+            {
                 _listener.update(username, credential, roleArray);
+            }
         }
     }
 
@@ -346,7 +346,9 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         if (_listeners != null)
         {
             for (UserListener _listener : _listeners)
+            {
                 _listener.remove(username);
+            }
         }
     }
 

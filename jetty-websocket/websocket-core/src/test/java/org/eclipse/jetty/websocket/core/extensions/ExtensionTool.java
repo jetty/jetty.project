@@ -96,7 +96,8 @@ public class ExtensionTool
                     Frame frame = parser.parse(buffer);
                     if (frame == null)
                         break;
-                    ext.onFrame(frame, Callback.from(()->{}, Assertions::fail));
+                    ext.onFrame(frame, Callback.from(() ->
+                    {}, Assertions::fail));
                 }
             }
         }

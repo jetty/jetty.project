@@ -82,17 +82,18 @@ public class XmlConfiguration
 {
     private static final Logger LOG = Log.getLogger(XmlConfiguration.class);
     private static final Class<?>[] __primitives =
-    {
-        Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
-    };
+        {
+            Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
+        };
     private static final Class<?>[] __boxedPrimitives =
-    {
-        Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class
-    };
+        {
+            Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class,
+            Void.class
+        };
     private static final Class<?>[] __supportedCollections =
-    {
-        ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
-    };
+        {
+            ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
+        };
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
 
@@ -107,28 +108,28 @@ public class XmlConfiguration
         URL config93 = klass.getResource("configure_9_3.dtd");
         URL config100 = klass.getResource("configure_10_0.dtd");
 
-        parser.redirectEntity("configure.dtd",config93);
-        parser.redirectEntity("configure_1_0.dtd",config60);
-        parser.redirectEntity("configure_1_1.dtd",config60);
-        parser.redirectEntity("configure_1_2.dtd",config60);
-        parser.redirectEntity("configure_1_3.dtd",config60);
-        parser.redirectEntity("configure_6_0.dtd",config60);
-        parser.redirectEntity("configure_7_6.dtd",config76);
-        parser.redirectEntity("configure_9_0.dtd",config90);
-        parser.redirectEntity("configure_9_3.dtd",config93);
-        parser.redirectEntity("configure_10_0.dtd",config100);
+        parser.redirectEntity("configure.dtd", config93);
+        parser.redirectEntity("configure_1_0.dtd", config60);
+        parser.redirectEntity("configure_1_1.dtd", config60);
+        parser.redirectEntity("configure_1_2.dtd", config60);
+        parser.redirectEntity("configure_1_3.dtd", config60);
+        parser.redirectEntity("configure_6_0.dtd", config60);
+        parser.redirectEntity("configure_7_6.dtd", config76);
+        parser.redirectEntity("configure_9_0.dtd", config90);
+        parser.redirectEntity("configure_9_3.dtd", config93);
+        parser.redirectEntity("configure_10_0.dtd", config100);
 
-        parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config93);
-        parser.redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd",config93);
-        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config93);
-        parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config93);
-        parser.redirectEntity("https://www.eclipse.org/jetty/configure.dtd",config93);
-        parser.redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd",config93);
-        parser.redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd",config93);
-        parser.redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd",config100);
+        parser.redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
+        parser.redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd", config93);
+        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
+        parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
+        parser.redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
+        parser.redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", config93);
+        parser.redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd", config93);
+        parser.redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd", config100);
 
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config100);
-        parser.redirectEntity("-//Jetty//Configure//EN",config100);
+        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config100);
+        parser.redirectEntity("-//Jetty//Configure//EN", config100);
 
         return parser;
     }
@@ -202,7 +203,7 @@ public class XmlConfiguration
         synchronized (__parser)
         {
             _location = resource;
-            try(InputStream inputStream = resource.getInputStream())
+            try (InputStream inputStream = resource.getInputStream())
             {
                 setConfig(__parser.parse(inputStream));
             }
@@ -494,10 +495,10 @@ public class XmlConfiguration
          * <p>This method makes a best effort to find a matching set method.
          * The type of the value is used to find a suitable set method by:</p>
          * <ol>
-         *     <li>Trying for a trivial type match</li>
-         *     <li>Looking for a native type match</li>
-         *     <li>Trying all correctly named methods for an auto conversion</li>
-         *     <li>Attempting to construct a suitable value from original value</li>
+         * <li>Trying for a trivial type match</li>
+         * <li>Looking for a native type match</li>
+         * <li>Trying all correctly named methods for an auto conversion</li>
+         * <li>Attempting to construct a suitable value from original value</li>
          * </ol>
          *
          * @param obj the enclosing object
@@ -510,7 +511,7 @@ public class XmlConfiguration
             String property = node.getAttribute("property");
             String propertyValue = null;
             // Look for a property value
-            if (property!=null)
+            if (property != null)
             {
                 Map<String, String> properties = _configuration.getProperties();
                 propertyValue = properties.get(property);
@@ -667,7 +668,7 @@ public class XmlConfiguration
             }
             finally
             {
-                if (id!=null && setValue!=null)
+                if (id != null && setValue != null)
                     _configuration.getIdMap().put(id, setValue);
             }
 

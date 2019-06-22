@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.javax.server;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
+import java.util.List;
+import java.util.ServiceLoader;
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
 import javax.websocket.server.ServerEndpointConfig.Configurator;
-import java.util.List;
-import java.util.ServiceLoader;
+
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * The "Container Default Configurator" per the JSR-356 spec.

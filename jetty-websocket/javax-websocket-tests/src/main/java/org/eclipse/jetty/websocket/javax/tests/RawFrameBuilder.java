@@ -69,7 +69,7 @@ public class RawFrameBuilder
         {
             throw new IllegalArgumentException("Length cannot be negative");
         }
-        byte b = (masked?(byte)0x80:0x00);
+        byte b = (masked ? (byte)0x80 : 0x00);
 
         // write the uncompressed length
         if (length > 0xFF_FF)

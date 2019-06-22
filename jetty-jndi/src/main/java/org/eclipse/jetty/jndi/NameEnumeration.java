@@ -19,20 +19,19 @@
 package org.eclipse.jetty.jndi;
 
 import java.util.Iterator;
-
 import javax.naming.Binding;
 import javax.naming.NameClassPair;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
-/** 
+/**
  * NameEnumeration
  */
 public class NameEnumeration implements NamingEnumeration<NameClassPair>
 {
     Iterator<Binding> _delegate;
 
-    public NameEnumeration (Iterator<Binding> e)
+    public NameEnumeration(Iterator<Binding> e)
     {
         _delegate = e;
     }
@@ -44,7 +43,7 @@ public class NameEnumeration implements NamingEnumeration<NameClassPair>
     }
 
     @Override
-    public boolean hasMore ()
+    public boolean hasMore()
         throws NamingException
     {
         return _delegate.hasNext();
@@ -55,7 +54,7 @@ public class NameEnumeration implements NamingEnumeration<NameClassPair>
         throws NamingException
     {
         Binding b = _delegate.next();
-        return new NameClassPair(b.getName(),b.getClassName(),true);
+        return new NameClassPair(b.getName(), b.getClassName(), true);
     }
 
     @Override
@@ -68,6 +67,6 @@ public class NameEnumeration implements NamingEnumeration<NameClassPair>
     public NameClassPair nextElement()
     {
         Binding b = _delegate.next();
-        return new NameClassPair(b.getName(),b.getClassName(),true);
+        return new NameClassPair(b.getName(), b.getClassName(), true);
     }
 }

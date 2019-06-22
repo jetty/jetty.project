@@ -91,7 +91,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         if (!StringUtil.isEmpty(query))
             uri += "?" + query;
         // TODO https?
-        onRequest(new MetaData.Request(method, HttpScheme.HTTP.asString(), hostPort, uri, HttpVersion.fromString(version), fields,Long.MIN_VALUE));
+        onRequest(new MetaData.Request(method, HttpScheme.HTTP.asString(), hostPort, uri, HttpVersion.fromString(version), fields, Long.MIN_VALUE));
     }
 
     private HttpField convertHeader(HttpField field)

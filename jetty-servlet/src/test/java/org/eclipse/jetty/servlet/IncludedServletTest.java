@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,7 +25,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -42,6 +37,10 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 public class IncludedServletTest
 {
@@ -117,13 +116,13 @@ public class IncludedServletTest
 
         try
         {
-            connection = (HttpURLConnection) uri.toURL().openConnection();
+            connection = (HttpURLConnection)uri.toURL().openConnection();
             connection.connect();
             if (HttpURLConnection.HTTP_OK != connection.getResponseCode())
             {
                 String body = getPotentialBody(connection);
                 String err = String.format("GET request failed (%d %s) %s%n%s", connection.getResponseCode(), connection.getResponseMessage(),
-                        uri.toASCIIString(), body);
+                    uri.toASCIIString(), body);
                 throw new IOException(err);
             }
             in = connection.getInputStream();

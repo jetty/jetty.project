@@ -53,7 +53,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -98,24 +97,26 @@ import org.eclipse.jetty.util.security.Password;
 @ManagedObject
 public abstract class SslContextFactory extends AbstractLifeCycle implements Dumpable
 {
-    public final static TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{new X509TrustManager()
-    {
-        @Override
-        public java.security.cert.X509Certificate[] getAcceptedIssuers()
+    public final static TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{
+        new X509TrustManager()
         {
-            return new java.security.cert.X509Certificate[]{};
-        }
+            @Override
+            public java.security.cert.X509Certificate[] getAcceptedIssuers()
+            {
+                return new java.security.cert.X509Certificate[]{};
+            }
 
-        @Override
-        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
-        {
-        }
+            @Override
+            public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
+            {
+            }
 
-        @Override
-        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
-        {
+            @Override
+            public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
+            {
+            }
         }
-    }};
+    };
 
     private static final Logger LOG = Log.getLogger(SslContextFactory.class);
     private static final Logger LOG_CONFIG = LOG.getLogger("SslContextFactoryConfig");
@@ -124,28 +125,36 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     public static final String DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM = TrustManagerFactory.getDefaultAlgorithm();
 
-    /** String name of key password property. */
+    /**
+     * String name of key password property.
+     */
     public static final String KEYPASSWORD_PROPERTY = "org.eclipse.jetty.ssl.keypassword";
 
-    /** String name of keystore password property. */
+    /**
+     * String name of keystore password property.
+     */
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
-    /** Default Excluded Protocols List */
+    /**
+     * Default Excluded Protocols List
+     */
     private static final String[] DEFAULT_EXCLUDED_PROTOCOLS = {"SSL", "SSLv2", "SSLv2Hello", "SSLv3"};
 
-    /** Default Excluded Cipher Suite List */
+    /**
+     * Default Excluded Cipher Suite List
+     */
     private static final String[] DEFAULT_EXCLUDED_CIPHER_SUITES = {
-            // Exclude weak / insecure ciphers
-            "^.*_(MD5|SHA|SHA1)$",
-            // Exclude ciphers that don't support forward secrecy
-            "^TLS_RSA_.*$",
-            // The following exclusions are present to cleanup known bad cipher
-            // suites that may be accidentally included via include patterns.
-            // The default enabled cipher list in Java will not include these
-            // (but they are available in the supported list).
-            "^SSL_.*$",
-            "^.*_NULL_.*$",
-            "^.*_anon_.*$"
+        // Exclude weak / insecure ciphers
+        "^.*_(MD5|SHA|SHA1)$",
+        // Exclude ciphers that don't support forward secrecy
+        "^TLS_RSA_.*$",
+        // The following exclusions are present to cleanup known bad cipher
+        // suites that may be accidentally included via include patterns.
+        // The default enabled cipher list in Java will not include these
+        // (but they are available in the supported list).
+        "^SSL_.*$",
+        "^.*_NULL_.*$",
+        "^.*_anon_.*$"
     };
 
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
@@ -342,9 +351,13 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                             LOG.info("x509={} for {}", x509, this);
 
                             for (String h : x509.getHosts())
+                            {
                                 _certHosts.put(h, x509);
+                            }
                             for (String w : x509.getWilds())
+                            {
                                 _certWilds.put(w, x509);
+                            }
                         }
                     }
                 }
@@ -382,13 +395,13 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             LOG.debug("Selected Ciphers   {} of {}", Arrays.asList(_selectedCipherSuites), Arrays.asList(supported.getCipherSuites()));
         }
     }
-    
+
     @Override
     public String dump()
     {
         return Dumpable.dump(this);
     }
-    
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -425,21 +438,21 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
         // protocols
         selections.add(new SslSelectionDump("Protocol",
-                sslEngine.getSupportedProtocols(),
-                sslEngine.getEnabledProtocols(),
-                getExcludeProtocols(),
-                getIncludeProtocols()));
+            sslEngine.getSupportedProtocols(),
+            sslEngine.getEnabledProtocols(),
+            getExcludeProtocols(),
+            getIncludeProtocols()));
 
         // ciphers
         selections.add(new SslSelectionDump("Cipher Suite",
-                sslEngine.getSupportedCipherSuites(),
-                sslEngine.getEnabledCipherSuites(),
-                getExcludeCipherSuites(),
-                getIncludeCipherSuites()));
+            sslEngine.getSupportedCipherSuites(),
+            sslEngine.getEnabledCipherSuites(),
+            getExcludeCipherSuites(),
+            getIncludeCipherSuites()));
 
         return selections;
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
@@ -506,7 +519,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * @param protocols The array of protocol names to exclude from
-     *                  {@link SSLEngine#setEnabledProtocols(String[])}
+     * {@link SSLEngine#setEnabledProtocols(String[])}
      */
     public void setExcludeProtocols(String... protocols)
     {
@@ -534,7 +547,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * @param protocols The array of protocol names to include in
-     *                  {@link SSLEngine#setEnabledProtocols(String[])}
+     * {@link SSLEngine#setEnabledProtocols(String[])}
      */
     public void setIncludeProtocols(String... protocols)
     {
@@ -556,7 +569,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      * You can either use the exact cipher suite name or a a regular expression.
      *
      * @param cipherSuites The array of cipher suite names to exclude from
-     *                     {@link SSLEngine#setEnabledCipherSuites(String[])}
+     * {@link SSLEngine#setEnabledCipherSuites(String[])}
      */
     public void setExcludeCipherSuites(String... cipherSuites)
     {
@@ -586,7 +599,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      * You can either use the exact cipher suite name or a a regular expression.
      *
      * @param cipherSuites The array of cipher suite names to include in
-     *                     {@link SSLEngine#setEnabledCipherSuites(String[])}
+     * {@link SSLEngine#setEnabledCipherSuites(String[])}
      */
     public void setIncludeCipherSuites(String... cipherSuites)
     {
@@ -777,36 +790,36 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * @param password The password for the key store.  If null is passed and
-     *                 a keystore is set, then
-     *                 the {@link #getPassword(String)} is used to
-     *                 obtain a password either from the {@value #PASSWORD_PROPERTY}
-     *                 system property.
+     * a keystore is set, then
+     * the {@link #getPassword(String)} is used to
+     * obtain a password either from the {@value #PASSWORD_PROPERTY}
+     * system property.
      */
     public void setKeyStorePassword(String password)
     {
-        _keyStorePassword = password==null?getPassword(PASSWORD_PROPERTY):newPassword(password);
+        _keyStorePassword = password == null ? getPassword(PASSWORD_PROPERTY) : newPassword(password);
     }
 
     /**
      * @param password The password (if any) for the specific key within the key store.
-     *                 If null is passed and the {@value #KEYPASSWORD_PROPERTY} system property is set,
-     *                 then the {@link #getPassword(String)} is used to
-     *                 obtain a password from the {@value #KEYPASSWORD_PROPERTY} system property.
+     * If null is passed and the {@value #KEYPASSWORD_PROPERTY} system property is set,
+     * then the {@link #getPassword(String)} is used to
+     * obtain a password from the {@value #KEYPASSWORD_PROPERTY} system property.
      */
     public void setKeyManagerPassword(String password)
     {
-        _keyManagerPassword = password==null?getPassword(KEYPASSWORD_PROPERTY):newPassword(password);
+        _keyManagerPassword = password == null ? getPassword(KEYPASSWORD_PROPERTY) : newPassword(password);
     }
 
     /**
      * @param password The password for the truststore. If null is passed then
-     *                 the {@link #getPassword(String)} is used to
-     *                 obtain a password from the {@value #PASSWORD_PROPERTY}
-     *                 system property.
+     * the {@link #getPassword(String)} is used to
+     * obtain a password from the {@value #PASSWORD_PROPERTY}
+     * system property.
      */
     public void setTrustStorePassword(String password)
     {
-        _trustStorePassword = password==null?getPassword(PASSWORD_PROPERTY):newPassword(password);
+        _trustStorePassword = password == null ? getPassword(PASSWORD_PROPERTY) : newPassword(password);
     }
 
     /**
@@ -868,7 +881,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * @param protocol The SSL protocol (default "TLS") passed to
-     *                 {@link SSLContext#getInstance(String, String)}
+     * {@link SSLContext#getInstance(String, String)}
      */
     public void setProtocol(String protocol)
     {
@@ -888,8 +901,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * @param algorithm The algorithm name, which if set is passed to
-     *                  {@link SecureRandom#getInstance(String)} to obtain the {@link SecureRandom} instance passed to
-     *                  {@link SSLContext#init(javax.net.ssl.KeyManager[], javax.net.ssl.TrustManager[], SecureRandom)}
+     * {@link SecureRandom#getInstance(String)} to obtain the {@link SecureRandom} instance passed to
+     * {@link SSLContext#init(javax.net.ssl.KeyManager[], javax.net.ssl.TrustManager[], SecureRandom)}
      */
     public void setSecureRandomAlgorithm(String algorithm)
     {
@@ -943,7 +956,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * @param algorithm The algorithm name (default "SunX509") used by the {@link TrustManagerFactory}
-     *                  Use the string "TrustAll" to install a trust manager that trusts all.
+     * Use the string "TrustAll" to install a trust manager that trusts all.
      */
     public void setTrustManagerFactoryAlgorithm(String algorithm)
     {
@@ -969,7 +982,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * @return The number of renegotiations allowed for this connection.  When the limit
-     * is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied. 
+     * is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
      */
     @ManagedAttribute("The max number of renegotiations allowed")
     public int getRenegotiationLimit()
@@ -978,7 +991,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @param renegotiationLimit The number of renegotions allowed for this connection.  
+     * @param renegotiationLimit The number of renegotions allowed for this connection.
      * When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
      * Default 5.
      */
@@ -986,7 +999,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     {
         _renegotiationLimit = renegotiationLimit;
     }
-    
+
     /**
      * @return Path to file that contains Certificate Revocation List
      */
@@ -1016,7 +1029,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * @param maxCertPathLength maximum number of intermediate certificates in
-     *                          the certification path (-1 for unlimited)
+     * the certification path (-1 for unlimited)
      */
     public void setMaxCertPathLength(int maxCertPathLength)
     {
@@ -1058,6 +1071,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      * When set to "HTTPS" hostname verification will be enabled.
      * Deployments can be vulnerable to a man-in-the-middle attack if a EndpointIndentificationAlgorithm
      * is not set.
+     *
      * @param endpointIdentificationAlgorithm Set the endpointIdentificationAlgorithm
      * @see #setHostnameVerifier(HostnameVerifier)
      */
@@ -1148,7 +1162,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                 }
 
                 // Is SNI needed to select a certificate?
-                if (!_certWilds.isEmpty() || _certHosts.size()>1 || (_certHosts.size()==1 && _aliasX509.size()>1))
+                if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
                 {
                     for (int idx = 0; idx < managers.length; idx++)
                     {
@@ -1201,9 +1215,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
         // Make sure revocation checking is enabled
         pbParams.setRevocationEnabled(true);
-        
-        if (_pkixCertPathChecker!=null)
-        pbParams.addCertPathChecker(_pkixCertPathChecker);
+
+        if (_pkixCertPathChecker != null)
+            pbParams.addCertPathChecker(_pkixCertPathChecker);
 
         if (crls != null && !crls.isEmpty())
         {
@@ -1227,16 +1241,16 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                 Security.setProperty("ocsp.responderURL", _ocspResponderURL);
             }
         }
-        
+
         return pbParams;
     }
-    
+
     /**
      * Select protocols to be used by the connector
      * based on configured inclusion and exclusion lists
      * as well as enabled and supported protocols.
      *
-     * @param enabledProtocols   Array of enabled protocols
+     * @param enabledProtocols Array of enabled protocols
      * @param supportedProtocols Array of supported protocols
      */
     public void selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
@@ -1272,7 +1286,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      * based on configured inclusion and exclusion lists
      * as well as enabled and supported cipher suite lists.
      *
-     * @param enabledCipherSuites   Array of enabled cipher suites
+     * @param enabledCipherSuites Array of enabled cipher suites
      * @param supportedCipherSuites Array of supported cipher suites
      */
     protected void selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
@@ -1315,7 +1329,6 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                     added = true;
                     selected_ciphers.add(supportedCipherSuite);
                 }
-
             }
             if (!added)
                 LOG.info("No Cipher matching '{}' is supported", cipherSuite);
@@ -1517,7 +1530,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      * when this factory is started.</p>
      *
      * @param sslSessionCacheSize SSL session cache size to set. A value  of -1 (default) uses
-     *                            the JVM default, 0 means unlimited and positive number is a max size.
+     * the JVM default, 0 means unlimited and positive number is a max size.
      */
     public void setSslSessionCacheSize(int sslSessionCacheSize)
     {
@@ -1541,7 +1554,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      * when this factory is started.</p>
      *
      * @param sslSessionTimeout SSL session timeout to set in seconds. A value of -1 (default) uses
-     *                          the JVM default, 0 means unlimited and positive number is a timeout in seconds.
+     * the JVM default, 0 means unlimited and positive number is a timeout in seconds.
      */
     public void setSslSessionTimeout(int sslSessionTimeout)
     {
@@ -1582,7 +1595,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     protected Password getPassword(String realm)
     {
         String password = System.getProperty(realm);
-        return password==null?null:newPassword(password);
+        return password == null ? null : newPassword(password);
     }
 
     /**
@@ -1603,9 +1616,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         SSLContext context = getSslContext();
         SSLServerSocketFactory factory = context.getServerSocketFactory();
         SSLServerSocket socket =
-                (SSLServerSocket)(host == null ?
-                        factory.createServerSocket(port, backlog) :
-                        factory.createServerSocket(port, backlog, InetAddress.getByName(host)));
+            (SSLServerSocket)(host == null ?
+                                  factory.createServerSocket(port, backlog) :
+                                  factory.createServerSocket(port, backlog, InetAddress.getByName(host)));
         socket.setSSLParameters(customize(socket.getSSLParameters()));
 
         return socket;
@@ -1796,8 +1809,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
         SSLContext context = getSslContext();
         SSLEngine sslEngine = isSessionCachingEnabled() ?
-                context.createSSLEngine(host, port) :
-                context.createSSLEngine();
+                                  context.createSSLEngine(host, port) :
+                                  context.createSSLEngine();
         customize(sslEngine);
 
         return sslEngine;
@@ -1993,11 +2006,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     public String toString()
     {
         return String.format("%s@%x[provider=%s,keyStore=%s,trustStore=%s]",
-                getClass().getSimpleName(),
-                hashCode(),
-                _sslProvider,
-                _keyStoreResource,
-                _trustStoreResource);
+            getClass().getSimpleName(),
+            hashCode(),
+            _sslProvider,
+            _keyStoreResource,
+            _trustStoreResource);
     }
 
     class Factory

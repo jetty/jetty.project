@@ -81,7 +81,7 @@ public final class WSURI
      * Converting {@code http} and {@code https} URIs to their WebSocket equivalent
      *
      * @param inputUrl the input URI
-     * @param query    the optional query string
+     * @param query the optional query string
      * @return the WebSocket scheme URI for the input URI.
      * @throws URISyntaxException if unable to convert the input URI
      */

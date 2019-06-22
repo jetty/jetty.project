@@ -340,7 +340,6 @@ public class Parser
             buffer.limit(limit);
             state = State.START;
             return frame;
-
         }
         else
         {
@@ -377,7 +376,7 @@ public class Parser
     public String toString()
     {
         return String
-            .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null?"-":TypeUtil.toHexString(mask), payloadLength);
+                   .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null ? "-" : TypeUtil.toHexString(mask), payloadLength);
     }
 
     public class ParsedFrame extends Frame implements Closeable, CloseStatus.Supplier
@@ -424,7 +423,7 @@ public class Parser
         @Override
         public String toString()
         {
-            if (closeStatus==null)
+            if (closeStatus == null)
                 return super.toString();
             return super.toString() + ":" + closeStatus;
         }

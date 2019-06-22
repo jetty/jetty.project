@@ -58,7 +58,7 @@ public class WebSocketSessionState
     {
         synchronized (this)
         {
-            switch(_sessionState)
+            switch (_sessionState)
             {
                 case CONNECTED:
                     _sessionState = State.OPEN;
@@ -75,7 +75,6 @@ public class WebSocketSessionState
         }
     }
 
-
     public State getState()
     {
         synchronized (this)
@@ -86,19 +85,19 @@ public class WebSocketSessionState
 
     public boolean isClosed()
     {
-        return getState()==State.CLOSED;
+        return getState() == State.CLOSED;
     }
 
     public boolean isInputOpen()
     {
         State state = getState();
-        return (state==State.OPEN || state==State.OSHUT);
+        return (state == State.OPEN || state == State.OSHUT);
     }
 
     public boolean isOutputOpen()
     {
         State state = getState();
-        return (state==State.CONNECTED || state==State.OPEN || state==State.ISHUT);
+        return (state == State.CONNECTED || state == State.OPEN || state == State.ISHUT);
     }
 
     public CloseStatus getCloseStatus()
@@ -219,15 +218,14 @@ public class WebSocketSessionState
         return false;
     }
 
-
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,i=%s,o=%s,c=%s}",getClass().getSimpleName(),hashCode(),
-                _sessionState,
-                OpCode.name(_incomingContinuation),
-                OpCode.name(_outgoingContinuation),
-                _closeStatus);
+        return String.format("%s@%x{%s,i=%s,o=%s,c=%s}", getClass().getSimpleName(), hashCode(),
+            _sessionState,
+            OpCode.name(_incomingContinuation),
+            OpCode.name(_outgoingContinuation),
+            _closeStatus);
     }
 
     private static byte checkDataSequence(byte opcode, boolean fin, byte lastOpCode) throws ProtocolException
@@ -236,11 +234,11 @@ public class WebSocketSessionState
         {
             case OpCode.TEXT:
             case OpCode.BINARY:
-            if (lastOpCode != OpCode.UNDEFINED)
-                throw new ProtocolException("DataFrame before fin==true");
-            if (!fin)
-                return opcode;
-            return OpCode.UNDEFINED;
+                if (lastOpCode != OpCode.UNDEFINED)
+                    throw new ProtocolException("DataFrame before fin==true");
+                if (!fin)
+                    return opcode;
+                return OpCode.UNDEFINED;
 
             case OpCode.CONTINUATION:
                 if (lastOpCode == OpCode.UNDEFINED)

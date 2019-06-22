@@ -90,7 +90,6 @@ public class ExtensionStackTest
         Extension actualIncomingExtension = assertIsExtension("Incoming", stack.getNextIncoming(), IdentityExtension.class);
         Extension actualOutgoingExtension = assertIsExtension("Outgoing", stack.getNextOutgoing(), IdentityExtension.class);
         assertEquals(actualIncomingExtension, actualOutgoingExtension);
-
     }
 
     @Test
@@ -116,7 +115,6 @@ public class ExtensionStackTest
 
         assertThat("Incoming[identity].id", actualIncomingExtension.getParam("id"), is("A"));
         assertThat("Outgoing[identity].id", actualOutgoingExtension.getParam("id"), is("B"));
-
     }
 
     @Test

@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -71,9 +70,9 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
-                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+                             "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                             "Host: " + hostPort + "\r\n" +
+                             "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -91,9 +90,9 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 output = sslSocket.getOutputStream();
 
                 request =
-                        "GET /echo HTTP/1.1\r\n" +
-                                "Host: " + hostPort + "\r\n" +
-                                "\r\n";
+                    "GET /echo HTTP/1.1\r\n" +
+                        "Host: " + hostPort + "\r\n" +
+                        "\r\n";
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -109,9 +108,9 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
-                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+                             "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                             "Host: " + hostPort + "\r\n" +
+                             "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -131,11 +130,11 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 for (int i = 0; i < 10; ++i)
                 {
                     request = "" +
-                            "POST /echo?param=" + i + " HTTP/1.1\r\n" +
-                            "Host: " + hostPort + "\r\n" +
-                            "Content-Length: 5\r\n" +
-                            "\r\n" +
-                            "HELLO";
+                                  "POST /echo?param=" + i + " HTTP/1.1\r\n" +
+                                  "Host: " + hostPort + "\r\n" +
+                                  "Content-Length: 5\r\n" +
+                                  "\r\n" +
+                                  "HELLO";
                     output.write(request.getBytes(StandardCharsets.UTF_8));
                     output.flush();
 
@@ -176,7 +175,9 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 InputStream input = httpRequest.getInputStream();
                 int read;
                 while ((read = input.read()) >= 0)
+                {
                     baos.write(read);
+                }
                 baos.close();
                 byte[] bytes = baos.toByteArray();
 

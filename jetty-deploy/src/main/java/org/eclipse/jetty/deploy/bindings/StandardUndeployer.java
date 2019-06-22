@@ -31,7 +31,7 @@ public class StandardUndeployer implements AppLifeCycle.Binding
     public String[] getBindingTargets()
     {
         return new String[]
-        { "undeploying" };
+                   {"undeploying"};
     }
 
     @Override

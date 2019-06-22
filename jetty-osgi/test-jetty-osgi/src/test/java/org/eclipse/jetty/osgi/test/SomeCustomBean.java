@@ -20,10 +20,10 @@ package org.eclipse.jetty.osgi.test;
 
 /**
  * Just a simple bean
- * 
- * @author laeubi
  *
+ * @author laeubi
  */
-public class SomeCustomBean {
+public class SomeCustomBean
+{
 
 }

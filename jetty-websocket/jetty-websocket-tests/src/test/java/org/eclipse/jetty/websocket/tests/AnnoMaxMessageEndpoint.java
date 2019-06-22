@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @SuppressWarnings("unused")
-@WebSocket(maxTextMessageSize = 100*1024)
+@WebSocket(maxTextMessageSize = 100 * 1024)
 public class AnnoMaxMessageEndpoint
 {
     @OnWebSocketMessage

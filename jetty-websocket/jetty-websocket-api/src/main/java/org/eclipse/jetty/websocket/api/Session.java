@@ -60,7 +60,7 @@ public interface Session extends WebSocketPolicy, Closeable
      * This will enqueue a graceful close to the remote endpoint.
      *
      * @param statusCode the status code
-     * @param reason     the (optional) reason. (can be null for no reason)
+     * @param reason the (optional) reason. (can be null for no reason)
      * @see StatusCode
      * @see #close()
      * @see #close(CloseStatus)
@@ -169,6 +169,7 @@ public interface Session extends WebSocketPolicy, Closeable
      * If suspend is called outside the scope of the message handler then the call may take effect
      * after 1 more frame is delivered.
      * </p>
+     *
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */
     SuspendToken suspend();

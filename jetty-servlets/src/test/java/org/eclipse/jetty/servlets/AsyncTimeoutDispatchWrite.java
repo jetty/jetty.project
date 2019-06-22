@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -38,7 +37,7 @@ public class AsyncTimeoutDispatchWrite extends TestDirContentServlet implements 
             super(true);
         }
     }
-    
+
     public static class Passed extends AsyncTimeoutDispatchWrite
     {
         public Passed()
@@ -69,11 +68,11 @@ public class AsyncTimeoutDispatchWrite extends TestDirContentServlet implements 
             else
             {
                 // Pass Request & Response
-                ctx = request.startAsync(request,response);
+                ctx = request.startAsync(request, response);
             }
             ctx.addListener(this);
             ctx.setTimeout(200);
-            request.setAttribute(AsyncContext.class.getName(),ctx);
+            request.setAttribute(AsyncContext.class.getName(), ctx);
         }
         else
         {
@@ -89,7 +88,7 @@ public class AsyncTimeoutDispatchWrite extends TestDirContentServlet implements 
                 response.setContentType("text/plain");
             else if (fileName.endsWith("mp3"))
                 response.setContentType("audio/mpeg");
-            response.setHeader("ETag","W/etag-" + fileName);
+            response.setHeader("ETag", "W/etag-" + fileName);
 
             out.write(dataBytes);
             // no need to call AsyncContext.complete() from here

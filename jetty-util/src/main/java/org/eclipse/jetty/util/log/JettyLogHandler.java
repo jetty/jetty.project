@@ -39,7 +39,7 @@ public class JettyLogHandler extends java.util.logging.Handler
         URL url = cl.getResource("logging.properties");
         if (url != null)
         {
-            System.err.printf("Initializing java.util.logging from %s%n",url);
+            System.err.printf("Initializing java.util.logging from %s%n", url);
             try (InputStream in = url.openStream())
             {
                 LogManager.getLogManager().readConfiguration(in);
@@ -48,28 +48,28 @@ public class JettyLogHandler extends java.util.logging.Handler
             {
                 e.printStackTrace(System.err);
             }
-        } 
-        else 
+        }
+        else
         {
             System.err.printf("WARNING: java.util.logging failed to initialize: logging.properties not found%n");
         }
 
-        System.setProperty("org.apache.commons.logging.Log","org.apache.commons.logging.impl.Jdk14Logger");
+        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.Jdk14Logger");
     }
 
     public JettyLogHandler()
     {
-        if (Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.DEBUG","false")))
+        if (Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.DEBUG", "false")))
         {
             setLevel(Level.FINEST);
         }
 
-        if (Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.IGNORED","false")))
+        if (Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.IGNORED", "false")))
         {
             setLevel(Level.ALL);
         }
-        
-        System.err.printf("%s Initialized at level [%s]%n",this.getClass().getName(),getLevel().getName());
+
+        System.err.printf("%s Initialized at level [%s]%n", this.getClass().getName(), getLevel().getName());
     }
 
     private synchronized String formatMessage(LogRecord record)
@@ -86,7 +86,7 @@ public class JettyLogHandler extends java.util.logging.Handler
 
             if (Pattern.compile("\\{\\d+\\}").matcher(msg).find())
             {
-                return MessageFormat.format(msg,params);
+                return MessageFormat.format(msg, params);
             }
 
             return msg;
@@ -134,7 +134,7 @@ public class JettyLogHandler extends java.util.logging.Handler
             // log at warn
             if (cause != null)
             {
-                JLOG.warn(msg,cause);
+                JLOG.warn(msg, cause);
             }
             else
             {
@@ -148,7 +148,7 @@ public class JettyLogHandler extends java.util.logging.Handler
             // log at info
             if (cause != null)
             {
-                JLOG.info(msg,cause);
+                JLOG.info(msg, cause);
             }
             else
             {
@@ -162,7 +162,7 @@ public class JettyLogHandler extends java.util.logging.Handler
             // log at debug
             if (cause != null)
             {
-                JLOG.debug(msg,cause);
+                JLOG.debug(msg, cause);
             }
             else
             {

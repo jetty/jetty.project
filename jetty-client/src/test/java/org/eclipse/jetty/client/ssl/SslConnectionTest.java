@@ -20,7 +20,6 @@ package org.eclipse.jetty.client.ssl;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 
@@ -82,6 +81,6 @@ public class SslConnectionTest
         // We want SSLHandshakeException to be thrown instead, because it is
         // handled better (it is an IOException) by the Connection code that
         // reads from the EndPoint.
-        assertThrows(SSLHandshakeException.class, ()->sslEndPoint.fill(BufferUtil.EMPTY_BUFFER));
+        assertThrows(SSLHandshakeException.class, () -> sslEndPoint.fill(BufferUtil.EMPTY_BUFFER));
     }
 }

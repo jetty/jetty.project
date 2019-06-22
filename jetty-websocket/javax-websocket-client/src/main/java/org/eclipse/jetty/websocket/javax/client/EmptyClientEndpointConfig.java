@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
-import javax.websocket.Extension;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.Decoder;
+import javax.websocket.Encoder;
+import javax.websocket.Extension;
 
 public class EmptyClientEndpointConfig implements ClientEndpointConfig
 {

@@ -125,7 +125,8 @@ public class RestartContextTest
         // Setup Context
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        WebSocketServerContainerInitializer.configure(context, (servletContext, serverContainer) -> {
+        WebSocketServerContainerInitializer.configure(context, (servletContext, serverContainer) ->
+        {
             // Add endpoint via configurator
             serverContainer.addEndpoint(EchoEndpoint.class);
         });
@@ -158,7 +159,7 @@ public class RestartContextTest
     {
         ClientEndpoint endpoint = new ClientEndpoint();
         Future<Session> fut = client.connect(endpoint, WSURI.toWebsocket(endpointUri));
-        try(Session session = fut.get())
+        try (Session session = fut.get())
         {
             session.getRemote().sendString("Test Echo");
             String msg = endpoint.messages.poll(5, TimeUnit.SECONDS);
@@ -171,7 +172,7 @@ public class RestartContextTest
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
-            ServerContainer container = (ServerContainer) sce.getServletContext().getAttribute(javax.websocket.server.ServerContainer.class.getName());
+            ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(javax.websocket.server.ServerContainer.class.getName());
             try
             {
                 container.addEndpoint(EchoEndpoint.class);

@@ -45,19 +45,18 @@ public class CertificateUtils
             {
                 keystore = KeyStore.getInstance(storeType);
             }
-            
+
             if (!store.exists())
                 throw new IllegalStateException("no valid keystore");
-            
+
             try (InputStream inStream = store.getInputStream())
             {
                 keystore.load(inStream, storePassword == null ? null : storePassword.toCharArray());
             }
         }
-        
+
         return keystore;
     }
-
 
     public static Collection<? extends CRL> loadCRL(String crlPath) throws Exception
     {
@@ -82,5 +81,4 @@ public class CertificateUtils
 
         return crlList;
     }
-    
 }

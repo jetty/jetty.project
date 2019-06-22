@@ -34,9 +34,8 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
     @Override
     public boolean test(String s)
     {
-        return specs.getMatch(s)!=null;
+        return specs.getMatch(s) != null;
     }
-
 
     @Override
     public int size()
@@ -64,7 +63,7 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
     @Override
     public boolean add(String s)
     {
-        return specs.put(PathMappings.asPathSpec(s),Boolean.TRUE);
+        return specs.put(PathMappings.asPathSpec(s), Boolean.TRUE);
     }
 
     @Override
@@ -78,7 +77,6 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
     {
         specs.reset();
     }
-
 
     @Override
     public Iterator<String> iterator()

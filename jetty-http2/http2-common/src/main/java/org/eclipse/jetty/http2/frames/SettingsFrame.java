@@ -30,7 +30,7 @@ public class SettingsFrame extends Frame
     public static final int INITIAL_WINDOW_SIZE = 4;
     public static final int MAX_FRAME_SIZE = 5;
     public static final int MAX_HEADER_LIST_SIZE = 6;
-    
+
     private final Map<Integer, Integer> settings;
     private final boolean reply;
 

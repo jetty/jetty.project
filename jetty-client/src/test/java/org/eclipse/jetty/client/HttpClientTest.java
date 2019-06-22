@@ -250,7 +250,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 ServletOutputStream output = response.getOutputStream();
                 String[] paramValues1 = request.getParameterValues(paramName1);
                 for (String paramValue : paramValues1)
+                {
                     output.write(paramValue.getBytes(StandardCharsets.UTF_8));
+                }
                 String paramValue2 = request.getParameter(paramName2);
                 output.write(paramValue2.getBytes(StandardCharsets.UTF_8));
                 baseRequest.setHandled(true);
@@ -295,9 +297,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort())
-                .param(paramName, paramValue)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .param(paramName, paramValue)
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -329,9 +331,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/path?" + paramName + "=" + encodedParamValue);
         ContentResponse response = client.newRequest(uri)
-                .method(HttpMethod.PUT)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .method(HttpMethod.PUT)
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -363,10 +365,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/?b=1")
-                .param(paramName, paramValue)
-                .content(new BytesContentProvider(content))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .param(paramName, paramValue)
+                                       .content(new BytesContentProvider(content))
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -389,16 +391,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final byte[] content = {0, 1, 2, 3};
         ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort())
-                .onRequestContent((request, buffer) ->
-                {
-                    byte[] bytes = new byte[buffer.remaining()];
-                    buffer.get(bytes);
-                    if (!Arrays.equals(content, bytes))
-                        request.abort(new Exception());
-                })
-                .content(new BytesContentProvider(content))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .onRequestContent((request, buffer) ->
+                                       {
+                                           byte[] bytes = new byte[buffer.remaining()];
+                                           buffer.get(bytes);
+                                           if (!Arrays.equals(content, bytes))
+                                               request.abort(new Exception());
+                                       })
+                                       .content(new BytesContentProvider(content))
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -420,16 +422,18 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final AtomicInteger progress = new AtomicInteger();
         ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort())
-                .onRequestContent((request, buffer) ->
-                {
-                    byte[] bytes = new byte[buffer.remaining()];
-                    assertEquals(1, bytes.length);
-                    buffer.get(bytes);
-                    assertEquals(bytes[0], progress.getAndIncrement());
-                })
-                .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .onRequestContent((request, buffer) ->
+                                       {
+                                           byte[] bytes = new byte[buffer.remaining()];
+                                           assertEquals(1, bytes.length);
+                                           buffer.get(bytes);
+                                           assertEquals(bytes[0], progress.getAndIncrement());
+                                       })
+                                       .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{
+                                           2
+                                       }, new byte[]{3}, new byte[]{4}))
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -447,40 +451,40 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(2);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onRequestBegin(request ->
+            .scheme(scenario.getScheme())
+            .onRequestBegin(request ->
+            {
+                try
                 {
-                    try
-                    {
-                        latch.await();
-                    }
-                    catch (InterruptedException x)
-                    {
-                        x.printStackTrace();
-                    }
-                })
-                .send(new Response.Listener.Adapter()
+                    latch.await();
+                }
+                catch (InterruptedException x)
                 {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        assertEquals(200, response.getStatus());
-                        successLatch.countDown();
-                    }
-                });
+                    x.printStackTrace();
+                }
+            })
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onSuccess(Response response)
+                {
+                    assertEquals(200, response.getStatus());
+                    successLatch.countDown();
+                }
+            });
 
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onRequestQueued(request -> latch.countDown())
-                .send(new Response.Listener.Adapter()
+            .scheme(scenario.getScheme())
+            .onRequestQueued(request -> latch.countDown())
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onSuccess(Response response)
                 {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        assertEquals(200, response.getStatus());
-                        successLatch.countDown();
-                    }
-                });
+                    assertEquals(200, response.getStatus());
+                    successLatch.countDown();
+                }
+            });
 
         assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
@@ -507,20 +511,20 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             final CountDownLatch latch = new CountDownLatch(2);
             client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
-            .path("/one")
-            .onResponseFailure((response, failure) -> latch.countDown())
-            .send(null);
+                .scheme(scenario.getScheme())
+                .path("/one")
+                .onResponseFailure((response, failure) -> latch.countDown())
+                .send(null);
 
             client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
-            .path("/two")
-            .onResponseSuccess(response ->
-            {
-                assertEquals(200, response.getStatus());
-                latch.countDown();
-            })
-            .send(null);
+                .scheme(scenario.getScheme())
+                .path("/two")
+                .onResponseSuccess(response ->
+                {
+                    assertEquals(200, response.getStatus());
+                    latch.countDown();
+                })
+                .send(null);
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
@@ -530,7 +534,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
     {
-        start(scenario,new AbstractHandler.ErrorDispatchHandler()
+        start(scenario, new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
             protected void doNonErrorHandle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -542,7 +546,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 byte[] buffer = new byte[1024];
                 InputStream in = request.getInputStream();
-                while(true)
+                while (true)
                 {
                     int read = in.read(buffer);
                     if (read < 0)
@@ -559,7 +563,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             byte[] kb = new byte[1024];
             for (int i = 0; i < 10 * 1024; ++i)
+            {
                 output.write(kb);
+            }
         }
 
         final CountDownLatch latch = new CountDownLatch(3);
@@ -570,10 +576,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .file(file)
             .onRequestSuccess(request ->
-                              {
-                                  requestTime.set(System.nanoTime());
-                                  latch.countDown();
-                              })
+            {
+                requestTime.set(System.nanoTime());
+                latch.countDown();
+            })
             .send(new Response.Listener.Adapter()
             {
                 @Override
@@ -603,7 +609,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Files.delete(file);
     }
 
-
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void test_ExchangeIsComplete_WhenRequestFailsMidway_WithResponse(Scenario scenario) throws Exception
@@ -620,49 +625,49 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                // The second ByteBuffer set to null will throw an exception
-                .content(new ContentProvider()
+            .scheme(scenario.getScheme())
+            // The second ByteBuffer set to null will throw an exception
+            .content(new ContentProvider()
+            {
+                @Override
+                public long getLength()
                 {
-                    @Override
-                    public long getLength()
-                    {
-                        return -1;
-                    }
+                    return -1;
+                }
 
-                    @Override
-                    public Iterator<ByteBuffer> iterator()
+                @Override
+                public Iterator<ByteBuffer> iterator()
+                {
+                    return new Iterator<>()
                     {
-                        return new Iterator<>()
+                        @Override
+                        public boolean hasNext()
                         {
-                            @Override
-                            public boolean hasNext()
-                            {
-                                return true;
-                            }
+                            return true;
+                        }
 
-                            @Override
-                            public ByteBuffer next()
-                            {
-                                throw new NoSuchElementException("explicitly_thrown_by_test");
-                            }
+                        @Override
+                        public ByteBuffer next()
+                        {
+                            throw new NoSuchElementException("explicitly_thrown_by_test");
+                        }
 
-                            @Override
-                            public void remove()
-                            {
-                                throw new UnsupportedOperationException();
-                            }
-                        };
-                    }
-                })
-                .send(new Response.Listener.Adapter()
+                        @Override
+                        public void remove()
+                        {
+                            throw new UnsupportedOperationException();
+                        }
+                    };
+                }
+            })
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        latch.countDown();
-                    }
-                });
+                    latch.countDown();
+                }
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -677,21 +682,21 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final String host = "localhost";
         final int port = connector.getLocalPort();
         client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .onRequestBegin(request ->
+            .scheme(scenario.getScheme())
+            .onRequestBegin(request ->
+            {
+                HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), host, port);
+                DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+                connectionPool.getActiveConnections().iterator().next().close();
+            })
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), host, port);
-                    DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-                    connectionPool.getActiveConnections().iterator().next().close();
-                })
-                .send(new Response.Listener.Adapter()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        latch.countDown();
-                    }
-                });
+                    latch.countDown();
+                }
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -722,17 +727,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final String host = "localhost";
         final int port = connector.getLocalPort();
         assertThrows(TimeoutException.class, () ->
-                client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send());
+                                                 client.newRequest(host, port)
+                                                     .scheme(scenario.getScheme())
+                                                     .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                                                     .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+                                                     .send());
 
         // Make another request without specifying the idle timeout, should not fail
         ContentResponse response = client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -746,9 +751,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("[::1]", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -770,10 +775,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onResponseHeader((response1, field) -> !field.getName().equals(headerName))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .onResponseHeader((response1, field) -> !field.getName().equals(headerName))
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -791,22 +796,22 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         for (int i = 0; i < count; ++i)
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .send(new Response.Listener.Adapter()
+                .scheme(scenario.getScheme())
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public boolean onHeader(Response response, HttpField field)
                     {
-                        @Override
-                        public boolean onHeader(Response response, HttpField field)
-                        {
-                            return false;
-                        }
+                        return false;
+                    }
 
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                            if (result.isSucceeded())
-                                latch.countDown();
-                        }
-                    });
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isSucceeded())
+                            latch.countDown();
+                    }
+                });
         }
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -830,10 +835,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         // HEAD requests receive a Content-Length header, but do not
         // receive the content so they must handle this case properly
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.HEAD)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .method(HttpMethod.HEAD)
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -841,9 +846,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         // Perform a normal GET request to be sure the content is now read
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                       .scheme(scenario.getScheme())
+                       .timeout(5, TimeUnit.SECONDS)
+                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -857,7 +862,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String host = "idontexist";
         int port = 80;
 
-        assertThrows(IOException.class, ()->{
+        assertThrows(IOException.class, () ->
+        {
             Socket socket = new Socket();
             socket.connect(new InetSocketAddress(host, port), 1000);
         }, "Host must not be resolvable");
@@ -866,13 +872,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
-                .send(result ->
-                {
-                    assertTrue(result.isFailed());
-                    Throwable failure = result.getFailure();
-                    assertTrue(failure instanceof UnknownHostException);
-                    latch.countDown();
-                });
+            .send(result ->
+            {
+                assertTrue(result.isFailed());
+                Throwable failure = result.getFailure();
+                assertTrue(failure instanceof UnknownHostException);
+                latch.countDown();
+            });
         assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
@@ -911,9 +917,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         // If no exceptions the test passes.
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.CONNECTION, "close")
-                .send();
+            .scheme(scenario.getScheme())
+            .header(HttpHeader.CONNECTION, "close")
+            .send();
     }
 
     @ParameterizedTest
@@ -934,19 +940,19 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .agent(userAgent)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .agent(userAgent)
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertEquals(200, response.getStatus());
 
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.USER_AGENT, null)
-                .header(HttpHeader.USER_AGENT, userAgent)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                       .scheme(scenario.getScheme())
+                       .header(HttpHeader.USER_AGENT, null)
+                       .header(HttpHeader.USER_AGENT, userAgent)
+                       .timeout(5, TimeUnit.SECONDS)
+                       .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -971,28 +977,28 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         // User agent not specified, use default.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/ua")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .path("/ua")
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertEquals(200, response.getStatus());
 
         // User agent explicitly removed.
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .agent(null)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                       .scheme(scenario.getScheme())
+                       .agent(null)
+                       .timeout(5, TimeUnit.SECONDS)
+                       .send();
 
         assertEquals(200, response.getStatus());
 
         // User agent explicitly removed.
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.USER_AGENT, null)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                       .scheme(scenario.getScheme())
+                       .header(HttpHeader.USER_AGENT, null)
+                       .timeout(5, TimeUnit.SECONDS)
+                       .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -1051,16 +1057,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         };
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onRequestQueued(listener)
-                .onRequestBegin(listener)
-                .onRequestHeaders(listener)
-                .onRequestCommit(listener)
-                .onRequestContent(listener)
-                .onRequestSuccess(listener)
-                .onRequestFailure(listener)
-                .listener(listener)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .onRequestQueued(listener)
+                                       .onRequestBegin(listener)
+                                       .onRequestHeaders(listener)
+                                       .onRequestCommit(listener)
+                                       .onRequestContent(listener)
+                                       .onRequestSuccess(listener)
+                                       .onRequestFailure(listener)
+                                       .listener(listener)
+                                       .send();
 
         assertEquals(200, response.getStatus());
         int expectedEventsTriggeredByOnRequestXXXListeners = 5;
@@ -1134,15 +1140,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         };
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onResponseBegin(listener)
-                .onResponseHeader(listener)
-                .onResponseHeaders(listener)
-                .onResponseContent(listener)
-                .onResponseContentAsync(listener)
-                .onResponseSuccess(listener)
-                .onResponseFailure(listener)
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .onResponseBegin(listener)
+            .onResponseHeader(listener)
+            .onResponseHeaders(listener)
+            .onResponseContent(listener)
+            .onResponseContentAsync(listener)
+            .onResponseSuccess(listener)
+            .onResponseFailure(listener)
+            .send(listener);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         int expectedEventsTriggeredByOnResponseXXXListeners = 3;
@@ -1184,16 +1190,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         };
 
-
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
 
         Response response = ex.exchange(null);
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(content, listener.getContent());
-
     }
 
     @ParameterizedTest
@@ -1212,9 +1216,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("http://127.0.0.1:" + connector.getLocalPort() + "/path")
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.HOST, host)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .header(HttpHeader.HOST, host)
+                                       .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -1237,11 +1241,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .version(HttpVersion.HTTP_1_0)
-                .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .version(HttpVersion.HTTP_1_0)
+                                       .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertEquals(200, response.getStatus());
         assertTrue(response.getHeaders().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()));
@@ -1269,10 +1273,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             long timeout = 5000;
             Request request = client.newRequest(destination.getHost(), destination.getPort())
-                    .scheme(destination.getScheme())
-                    .version(HttpVersion.HTTP_1_0)
-                    .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
-                    .timeout(timeout, TimeUnit.MILLISECONDS);
+                                  .scheme(destination.getScheme())
+                                  .version(HttpVersion.HTTP_1_0)
+                                  .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
+                                  .timeout(timeout, TimeUnit.MILLISECONDS);
 
             FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
@@ -1294,11 +1298,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .version(HttpVersion.HTTP_1_0)
-                .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .version(HttpVersion.HTTP_1_0)
+                                       .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertEquals(200, response.getStatus());
         assertTrue(response.getHeaders().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()));
@@ -1322,12 +1326,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        completeLatch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .send(result ->
+            {
+                if (result.isFailed())
+                    completeLatch.countDown();
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -1344,7 +1348,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assumptions.assumeTrue(HttpScheme.HTTP.is(scenario.getScheme()));
 
         ExecutionException e = assertThrows(ExecutionException.class, () ->
-                testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 1024));
+                                                                          testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 1024));
 
         assertThat(e.getCause(), instanceOf(BadMessageException.class));
         assertThat(e.getCause().getMessage(), containsString("Unknown content"));
@@ -1355,7 +1359,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testBigContentDelimitedByEOFWithSlowRequestHTTP10(Scenario scenario) throws Exception
     {
         ExecutionException e = assertThrows(ExecutionException.class, () ->
-                testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 128 * 1024));
+                                                                          testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 128 * 1024));
 
         assertThat(e.getCause(), instanceOf(BadMessageException.class));
         assertThat(e.getCause().getMessage(), containsString("Unknown content"));
@@ -1401,9 +1405,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0}));
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .version(version)
-                .content(content);
+                              .scheme(scenario.getScheme())
+                              .version(version)
+                              .content(content);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
         // Wait some time to simulate a slow request.
@@ -1466,24 +1470,24 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch contentLatch = new CountDownLatch(1);
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send(new Response.Listener.Adapter()
+            .scheme(scenario.getScheme())
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onContent(Response response, ByteBuffer content, Callback callback)
                 {
-                    @Override
-                    public void onContent(Response response, ByteBuffer content, Callback callback)
-                    {
-                        // Do not notify the callback yet.
-                        callbackRef.set(callback);
-                        contentLatch.countDown();
-                    }
+                    // Do not notify the callback yet.
+                    callbackRef.set(callback);
+                    contentLatch.countDown();
+                }
 
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isSucceeded())
-                            completeLatch.countDown();
-                    }
-                });
+                @Override
+                public void onComplete(Result result)
+                {
+                    if (result.isSucceeded())
+                        completeLatch.countDown();
+                }
+            });
 
         assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
 
@@ -1533,17 +1537,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(2);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onRequestBegin(request ->
-                {
-                    assertTrue(open.get());
+            .scheme(scenario.getScheme())
+            .onRequestBegin(request ->
+            {
+                assertTrue(open.get());
+                latch.countDown();
+            })
+            .send(result ->
+            {
+                if (result.isSucceeded())
                     latch.countDown();
-                })
-                .send(result ->
-                {
-                    if (result.isSucceeded())
-                        latch.countDown();
-                });
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -1560,8 +1564,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             int port = server.getLocalPort();
 
             Request request = client.newRequest(host, port)
-                    .method(HttpMethod.CONNECT)
-                    .version(HttpVersion.HTTP_1_0);
+                                  .method(HttpMethod.CONNECT)
+                                  .version(HttpVersion.HTTP_1_0);
             FuturePromise<Connection> promise = new FuturePromise<>();
             client.getDestination("http", host, port).newConnection(promise);
             Connection connection = promise.get(5, TimeUnit.SECONDS);
@@ -1575,8 +1579,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 // HTTP/1.0 response, the client must not close the connection.
                 String httpResponse = "" +
-                        "HTTP/1.0 200 OK\r\n" +
-                        "\r\n";
+                                          "HTTP/1.0 200 OK\r\n" +
+                                          "\r\n";
                 OutputStream output = socket.getOutputStream();
                 output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
                 output.flush();
@@ -1597,9 +1601,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 consume(input, false);
 
                 httpResponse = "" +
-                        "HTTP/1.1 200 OK\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "\r\n";
+                                   "HTTP/1.1 200 OK\r\n" +
+                                   "Content-Length: 0\r\n" +
+                                   "\r\n";
                 output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -1626,13 +1630,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         URI uri = URI.create(scenario.getScheme() + "://[::1]:" + connector.getLocalPort() + "/path");
         ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.PUT)
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+                                       .method(HttpMethod.PUT)
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1),Matchers.startsWith("[::1]:"));
+        assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
     }
 
     @ParameterizedTest
@@ -1642,46 +1646,46 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         startClient(scenario);
 
         assertCopyRequest(client.newRequest("http://example.com/some/url")
-                .method(HttpMethod.HEAD)
-                .version(HttpVersion.HTTP_2)
-                .content(new StringContentProvider("some string"))
-                .timeout(321, TimeUnit.SECONDS)
-                .idleTimeout(2221, TimeUnit.SECONDS)
-                .followRedirects(true)
-                .header(HttpHeader.CONTENT_TYPE, "application/json")
-                .header("X-Some-Custom-Header", "some-value"));
+                              .method(HttpMethod.HEAD)
+                              .version(HttpVersion.HTTP_2)
+                              .content(new StringContentProvider("some string"))
+                              .timeout(321, TimeUnit.SECONDS)
+                              .idleTimeout(2221, TimeUnit.SECONDS)
+                              .followRedirects(true)
+                              .header(HttpHeader.CONTENT_TYPE, "application/json")
+                              .header("X-Some-Custom-Header", "some-value"));
 
         assertCopyRequest(client.newRequest("https://example.com")
-                .method(HttpMethod.POST)
-                .version(HttpVersion.HTTP_1_0)
-                .content(new StringContentProvider("some other string"))
-                .timeout(123231, TimeUnit.SECONDS)
-                .idleTimeout(232342, TimeUnit.SECONDS)
-                .followRedirects(false)
-                .header(HttpHeader.ACCEPT, "application/json")
-                .header("X-Some-Other-Custom-Header", "some-other-value"));
+                              .method(HttpMethod.POST)
+                              .version(HttpVersion.HTTP_1_0)
+                              .content(new StringContentProvider("some other string"))
+                              .timeout(123231, TimeUnit.SECONDS)
+                              .idleTimeout(232342, TimeUnit.SECONDS)
+                              .followRedirects(false)
+                              .header(HttpHeader.ACCEPT, "application/json")
+                              .header("X-Some-Other-Custom-Header", "some-other-value"));
 
         assertCopyRequest(client.newRequest("https://example.com")
-                .header(HttpHeader.ACCEPT, "application/json")
-                .header(HttpHeader.ACCEPT, "application/xml")
-                .header("x-same-name", "value1")
-                .header("x-same-name", "value2"));
+                              .header(HttpHeader.ACCEPT, "application/json")
+                              .header(HttpHeader.ACCEPT, "application/xml")
+                              .header("x-same-name", "value1")
+                              .header("x-same-name", "value2"));
 
         assertCopyRequest(client.newRequest("https://example.com")
-                .header(HttpHeader.ACCEPT, "application/json")
-                .header(HttpHeader.CONTENT_TYPE, "application/json"));
+                              .header(HttpHeader.ACCEPT, "application/json")
+                              .header(HttpHeader.CONTENT_TYPE, "application/json"));
 
         assertCopyRequest(client.newRequest("https://example.com")
-                .header("Accept", "application/json")
-                .header("Content-Type", "application/json"));
+                              .header("Accept", "application/json")
+                              .header("Content-Type", "application/json"));
 
         assertCopyRequest(client.newRequest("https://example.com")
-                .header("X-Custom-Header-1", "value1")
-                .header("X-Custom-Header-2", "value2"));
+                              .header("X-Custom-Header-1", "value1")
+                              .header("X-Custom-Header-2", "value2"));
 
         assertCopyRequest(client.newRequest("https://example.com")
-                .header("X-Custom-Header-1", "value")
-                .header("X-Custom-Header-2", "value"));
+                              .header("X-Custom-Header-1", "value")
+                              .header("X-Custom-Header-2", "value"));
     }
 
     @ParameterizedTest
@@ -1699,10 +1703,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .version(HttpVersion.HTTP_1_0)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                                       .scheme(scenario.getScheme())
+                                       .version(HttpVersion.HTTP_1_0)
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -1724,8 +1728,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             });
 
             Request request = client.newRequest("localhost", server.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .timeout(5, TimeUnit.SECONDS);
+                                  .scheme(scenario.getScheme())
+                                  .timeout(5, TimeUnit.SECONDS);
             FutureResponseListener listener = new FutureResponseListener(request);
             request.send(listener);
 
@@ -1738,9 +1742,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 // Send a bad response.
                 String httpResponse = "" +
-                        "HTTP/1.1 204 No Content\r\n" +
-                        "\r\n" +
-                        "No Content";
+                                          "HTTP/1.1 204 No Content\r\n" +
+                                          "\r\n" +
+                                          "No Content";
                 OutputStream output = socket.getOutputStream();
                 output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
                 output.flush();
@@ -1754,17 +1758,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 // Send another request to verify we have handled the wrong response correctly.
                 request = client.newRequest("localhost", server.getLocalPort())
-                        .scheme(scenario.getScheme())
-                        .timeout(5, TimeUnit.SECONDS);
+                              .scheme(scenario.getScheme())
+                              .timeout(5, TimeUnit.SECONDS);
                 listener = new FutureResponseListener(request);
                 request.send(listener);
 
                 consume(input, false);
 
                 httpResponse = "" +
-                        "HTTP/1.1 200 OK\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "\r\n";
+                                   "HTTP/1.1 200 OK\r\n" +
+                                   "Content-Length: 0\r\n" +
+                                   "\r\n";
                 output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -1776,7 +1780,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     private void assertCopyRequest(Request original)
     {
-        Request copy = client.copyRequest((HttpRequest) original, original.getURI());
+        Request copy = client.copyRequest((HttpRequest)original, original.getURI());
         assertEquals(original.getURI(), copy.getURI());
         assertEquals(original.getMethod(), copy.getMethod());
         assertEquals(original.getVersion(), copy.getVersion());
@@ -1842,11 +1846,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         public void perform()
         {
             client.newRequest(host, port)
-                    .scheme(scheme)
-                    .method("POST")
-                    .param("attempt", String.valueOf(retries))
-                    .content(new StringContentProvider("0123456789ABCDEF"))
-                    .send(this);
+                .scheme(scheme)
+                .method("POST")
+                .param("attempt", String.valueOf(retries))
+                .content(new StringContentProvider("0123456789ABCDEF"))
+                .send(this);
         }
     }
 }

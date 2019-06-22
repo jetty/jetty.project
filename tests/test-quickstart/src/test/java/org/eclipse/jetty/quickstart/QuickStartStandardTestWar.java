@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.quickstart;
 
-public class QuickStartStandardTestWar 
+public class QuickStartStandardTestWar
 {
 
     public static void main(String... args) throws Exception
-    {   
+    {
         // Log.getRootLogger().setDebugEnabled(true);
-       System.setProperty("jetty.home", "target");
-       Quickstart.main("target/test-standard-preconfigured", "src/test/resources/test.xml");
+        System.setProperty("jetty.home", "target");
+        Quickstart.main("target/test-standard-preconfigured", "src/test/resources/test.xml");
     }
 }

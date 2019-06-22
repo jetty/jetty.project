@@ -38,7 +38,7 @@ public class LockerTest
         Locker lock = new Locker();
         assertFalse(lock.isLocked());
 
-        try(Locker.Lock l = lock.lock())
+        try (Locker.Lock l = lock.lock())
         {
             assertTrue(lock.isLocked());
         }
@@ -56,12 +56,12 @@ public class LockerTest
         Locker lock = new Locker();
         assertFalse(lock.isLocked());
 
-        try(Locker.Lock l = lock.lock())
+        try (Locker.Lock l = lock.lock())
         {
             assertTrue(lock.isLocked());
             throw new Exception();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             assertFalse(lock.isLocked());
         }
@@ -86,7 +86,7 @@ public class LockerTest
             @Override
             public void run()
             {
-                try(Locker.Lock l = lock.lock())
+                try (Locker.Lock l = lock.lock())
                 {
                     held0.countDown();
                     hold0.await();
@@ -102,7 +102,6 @@ public class LockerTest
 
         assertTrue(lock.isLocked());
 
-
         final CountDownLatch held1 = new CountDownLatch(1);
         final CountDownLatch hold1 = new CountDownLatch(1);
         Thread thread1 = new Thread()
@@ -110,7 +109,7 @@ public class LockerTest
             @Override
             public void run()
             {
-                try(Locker.Lock l = lock.lock())
+                try (Locker.Lock l = lock.lock())
                 {
                     held1.countDown();
                     hold1.await();

@@ -88,6 +88,7 @@ public class FrameFlusher extends IteratingCallback
 
     /**
      * Enqueue a Frame to be written to the endpoint.
+     *
      * @param frame The frame to queue
      * @param callback The callback to call once the frame is sent
      * @param batch True if batch mode is to be used
@@ -138,7 +139,7 @@ public class FrameFlusher extends IteratingCallback
                     entry when it expires. When the timeout expires we will go over entries in the queue and
                     entries list to see if any of them have expired, it will then reset the timeout for the frame
                     with the soonest expiry time. */
-                    if ((idleTimeout > 0) && (queue.size()==1) && entries.isEmpty())
+                    if ((idleTimeout > 0) && (queue.size() == 1) && entries.isEmpty())
                         timeoutScheduler.schedule(this::timeoutExpired, idleTimeout, TimeUnit.MILLISECONDS);
                 }
             }
@@ -201,7 +202,7 @@ public class FrameFlusher extends IteratingCallback
             previousEntries.addAll(entries);
             entries.clear();
 
-            if (flushed && batchBuffer!=null)
+            if (flushed && batchBuffer != null)
                 BufferUtil.clear(batchBuffer);
 
             while (!queue.isEmpty() && entries.size() <= maxGather)
@@ -216,12 +217,12 @@ public class FrameFlusher extends IteratingCallback
 
                 messagesOut.increment();
 
-                int batchSpace = batchBuffer == null?bufferSize:BufferUtil.space(batchBuffer);
+                int batchSpace = batchBuffer == null ? bufferSize : BufferUtil.space(batchBuffer);
 
                 boolean batch = entry.batch
-                    && !entry.frame.isControlFrame()
-                    && entry.frame.getPayloadLength() < bufferSize / 4
-                    && (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
+                                    && !entry.frame.isControlFrame()
+                                    && entry.frame.getPayloadLength() < bufferSize / 4
+                                    && (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
 
                 if (batch)
                 {
@@ -357,7 +358,7 @@ public class FrameFlusher extends IteratingCallback
             }
 
             // if a timeout is set schedule a new timeout if we haven't failed and still have entries
-            if (!failed && idleTimeout>0 && !(entries.isEmpty() && queue.isEmpty()))
+            if (!failed && idleTimeout > 0 && !(entries.isEmpty() && queue.isEmpty()))
             {
                 long nextTimeout = earliestEntry + idleTimeout - currentTime;
                 timeoutScheduler.schedule(this::timeoutExpired, nextTimeout, TimeUnit.MILLISECONDS);

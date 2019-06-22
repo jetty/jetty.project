@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ShutdownThread;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
+
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 
 /**
  * Client {@link ContainerProvider} implementation.

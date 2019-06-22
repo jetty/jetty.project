@@ -26,7 +26,7 @@ public class Foo implements java.io.Serializable
 
     public void setI(int i)
     {
-      myI = i;
+        myI = i;
     }
 
     public int getI()

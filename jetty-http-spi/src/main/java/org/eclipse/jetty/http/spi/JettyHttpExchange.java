@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -39,9 +38,8 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     public JettyHttpExchange(HttpContext jaxWsContext, HttpServletRequest req, HttpServletResponse resp)
     {
         super();
-        _delegate = new JettyHttpExchangeDelegate(jaxWsContext,req,resp);
+        _delegate = new JettyHttpExchangeDelegate(jaxWsContext, req, resp);
     }
-
 
     @Override
     public int hashCode()
@@ -49,13 +47,11 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
         return _delegate.hashCode();
     }
 
-
     @Override
     public Headers getRequestHeaders()
     {
         return _delegate.getRequestHeaders();
     }
-
 
     @Override
     public Headers getResponseHeaders()
@@ -63,13 +59,11 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
         return _delegate.getResponseHeaders();
     }
 
-
     @Override
     public URI getRequestURI()
     {
         return _delegate.getRequestURI();
     }
-
 
     @Override
     public String getRequestMethod()
@@ -77,13 +71,11 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
         return _delegate.getRequestMethod();
     }
 
-
     @Override
     public HttpContext getHttpContext()
     {
         return _delegate.getHttpContext();
     }
-
 
     @Override
     public void close()
@@ -91,13 +83,11 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
         _delegate.close();
     }
 
-
     @Override
     public boolean equals(Object obj)
     {
         return _delegate.equals(obj);
     }
-
 
     @Override
     public InputStream getRequestBody()
@@ -105,20 +95,17 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
         return _delegate.getRequestBody();
     }
 
-
     @Override
     public OutputStream getResponseBody()
     {
         return _delegate.getResponseBody();
     }
 
-
     @Override
     public void sendResponseHeaders(int rCode, long responseLength) throws IOException
     {
-        _delegate.sendResponseHeaders(rCode,responseLength);
+        _delegate.sendResponseHeaders(rCode, responseLength);
     }
-
 
     @Override
     public InetSocketAddress getRemoteAddress()
@@ -126,13 +113,11 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
         return _delegate.getRemoteAddress();
     }
 
-
     @Override
     public int getResponseCode()
     {
         return _delegate.getResponseCode();
     }
-
 
     @Override
     public InetSocketAddress getLocalAddress()
@@ -140,13 +125,11 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
         return _delegate.getLocalAddress();
     }
 
-
     @Override
     public String getProtocol()
     {
         return _delegate.getProtocol();
     }
-
 
     @Override
     public Object getAttribute(String name)
@@ -154,20 +137,17 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
         return _delegate.getAttribute(name);
     }
 
-
     @Override
     public void setAttribute(String name, Object value)
     {
-        _delegate.setAttribute(name,value);
+        _delegate.setAttribute(name, value);
     }
-
 
     @Override
     public void setStreams(InputStream i, OutputStream o)
     {
-        _delegate.setStreams(i,o);
+        _delegate.setStreams(i, o);
     }
-
 
     @Override
     public HttpPrincipal getPrincipal()
@@ -175,18 +155,15 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
         return _delegate.getPrincipal();
     }
 
-
     @Override
     public void setPrincipal(HttpPrincipal principal)
     {
         _delegate.setPrincipal(principal);
     }
 
-
     @Override
     public String toString()
     {
         return _delegate.toString();
     }
-
 }

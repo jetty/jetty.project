@@ -16,10 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.jsp;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.net.URL;
@@ -34,10 +31,12 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * TestJettyTldPreScanned
- *
- *
  */
 public class TestJettyTldPreScanned
 {
@@ -47,21 +46,21 @@ public class TestJettyTldPreScanned
      */
     @Test
     public void testIt()
-    throws Exception
+        throws Exception
     {
         File jar = MavenTestingUtils.getTestResourceFile("taglib.jar");
         File tld = MavenTestingUtils.getTestResourceFile("META-INF/foo-taglib.tld");
-        
+
         List<URL> list = new ArrayList<>();
-        list.add(new URL("jar:"+jar.toURI().toURL().toString()+"!/META-INF/bar-taglib.tld"));
+        list.add(new URL("jar:" + jar.toURI().toURL().toString() + "!/META-INF/bar-taglib.tld"));
         list.add(tld.toURI().toURL());
-        
-        JettyTldPreScanned preScanned = new JettyTldPreScanned(new ServletContextHandler().getServletContext(),false,false,false,list);
+
+        JettyTldPreScanned preScanned = new JettyTldPreScanned(new ServletContextHandler().getServletContext(), false, false, false, list);
         preScanned.scanJars();
         Map<TldResourcePath, TaglibXml> map = preScanned.getTldResourcePathTaglibXmlMap();
         assertNotNull(map);
         assertEquals(2, map.size());
-        for (TldResourcePath p: map.keySet())
+        for (TldResourcePath p : map.keySet())
         {
             URL u = p.getUrl();
             TaglibXml tlx = map.get(p);
@@ -70,5 +69,4 @@ public class TestJettyTldPreScanned
                 fail("unknown tag");
         }
     }
-
 }

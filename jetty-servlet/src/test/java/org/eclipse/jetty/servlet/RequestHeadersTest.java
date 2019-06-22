@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -40,6 +36,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class RequestHeadersTest
 {
     @SuppressWarnings("serial")
@@ -50,7 +49,7 @@ public class RequestHeadersTest
         {
             resp.setContentType("text/plain");
             PrintWriter out = resp.getWriter();
-            out.printf("X-Camel-Type = %s",req.getHeader("X-Camel-Type"));
+            out.printf("X-Camel-Type = %s", req.getHeader("X-Camel-Type"));
         }
     }
 
@@ -71,7 +70,7 @@ public class RequestHeadersTest
         server.setHandler(context);
 
         // Serve capture servlet
-        context.addServlet(new ServletHolder(new RequestHeaderServlet()),"/*");
+        context.addServlet(new ServletHolder(new RequestHeaderServlet()), "/*");
 
         // Start Server
         server.start();
@@ -82,7 +81,7 @@ public class RequestHeadersTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("http://%s:%d/",host,port));
+        serverUri = new URI(String.format("http://%s:%d/", host, port));
     }
 
     @AfterAll
@@ -106,8 +105,8 @@ public class RequestHeadersTest
         {
             http = (HttpURLConnection)serverUri.toURL().openConnection();
             // Set header in all lowercase
-            http.setRequestProperty("x-camel-type","bactrian");
-            
+            http.setRequestProperty("x-camel-type", "bactrian");
+
             try (InputStream in = http.getInputStream())
             {
                 String resp = IO.toString(in, StandardCharsets.UTF_8);

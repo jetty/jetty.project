@@ -87,10 +87,10 @@ public class HttpClientFailureTest
         client.start();
 
         assertThrows(ExecutionException.class, () ->
-                client.newRequest("localhost", connector.getLocalPort())
-                .onRequestHeaders(request -> connectionRef.get().getEndPoint().close())
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
+                                                   client.newRequest("localhost", connector.getLocalPort())
+                                                       .onRequestHeaders(request -> connectionRef.get().getEndPoint().close())
+                                                       .timeout(5, TimeUnit.SECONDS)
+                                                       .send());
 
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
@@ -120,18 +120,18 @@ public class HttpClientFailureTest
         final CountDownLatch completeLatch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider();
         client.newRequest("localhost", connector.getLocalPort())
-                .onRequestCommit(request ->
-                {
-                    connectionRef.get().getEndPoint().close();
-                    commitLatch.countDown();
-                })
-                .content(content)
-                .idleTimeout(2, TimeUnit.SECONDS)
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        completeLatch.countDown();
-                });
+            .onRequestCommit(request ->
+            {
+                connectionRef.get().getEndPoint().close();
+                commitLatch.countDown();
+            })
+            .content(content)
+            .idleTimeout(2, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                if (result.isFailed())
+                    completeLatch.countDown();
+            });
 
         assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
         final CountDownLatch contentLatch = new CountDownLatch(1);
