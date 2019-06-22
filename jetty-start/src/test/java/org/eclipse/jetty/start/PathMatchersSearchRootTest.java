@@ -41,7 +41,7 @@ public class PathMatchersSearchRootTest
         {
             // absolute first
             arguments.add(Arguments.of("/opt/app/*.jar", "/opt/app"));
-            arguments.add(Arguments.of("/lib/jvmjre/lib/*.jar", "/lib/jvm"));
+            arguments.add(Arguments.of("/lib/jvm/**/jre/lib/*.jar", "/lib/jvm"));
             arguments.add(Arguments.of("glob:/var/lib/*.xml", "/var/lib"));
             arguments.add(Arguments.of("glob:/var/lib/*.{xml,java}", "/var/lib"));
             arguments.add(Arguments.of("glob:/opt/corporate/lib-{dev,prod}/*.ini", "/opt/corporate"));
