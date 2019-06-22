@@ -20,7 +20,7 @@
 package org.eclipse.jetty.continuation;
 
 
-/* ------------------------------------------------------------ */
+
 /** ContinuationThrowable
  * <p>
  * A ContinuationThrowable is throw by {@link Continuation#undispatch()}

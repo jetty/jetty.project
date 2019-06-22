@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.FutureCallback;
 
-/* ------------------------------------------------------------ */
+
 /* A Lifecycle that can be gracefully shutdown.
  */
 public interface Graceful

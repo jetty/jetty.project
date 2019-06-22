@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 
-/* ------------------------------------------------------------ */
+
 /** Byte Array ISO 8859 writer. 
  * This class combines the features of a OutputStreamWriter for
  * ISO8859 encoding with that of a ByteArrayOutputStream.  It avoids
@@ -42,7 +42,7 @@ public class ByteArrayISO8859Writer extends Writer
     private OutputStreamWriter _writer=null;
     private boolean _fixed=false;
 
-    /* ------------------------------------------------------------ */
+
     /** Constructor. 
      */
     public ByteArrayISO8859Writer()
@@ -50,7 +50,7 @@ public class ByteArrayISO8859Writer extends Writer
         _buf=new byte[2048];
     } 
     
-    /* ------------------------------------------------------------ */
+
     /** Constructor. 
      * @param capacity Buffer capacity
      */
@@ -59,57 +59,57 @@ public class ByteArrayISO8859Writer extends Writer
         _buf=new byte[capacity];
     }
     
-    /* ------------------------------------------------------------ */
+
     public ByteArrayISO8859Writer(byte[] buf)
     {
         _buf=buf;
         _fixed=true;
     }
 
-    /* ------------------------------------------------------------ */
+
     public Object getLock()
     {
         return lock;
     }
     
-    /* ------------------------------------------------------------ */
+
     public int size()
     {
         return _size;
     }
     
-    /* ------------------------------------------------------------ */
+
     public int capacity()
     {
         return _buf.length;
     }
 
-    /* ------------------------------------------------------------ */
+
     public int spareCapacity()
     {
         return _buf.length-_size;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setLength(int l)
     {
         _size=l;
     }
 
-    /* ------------------------------------------------------------ */
+
     public byte[] getBuf()
     {
         return _buf;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void writeTo(OutputStream out)
         throws IOException
     {
         out.write(_buf,0,_size);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void write(char c)
         throws IOException
     {
@@ -123,7 +123,7 @@ public class ByteArrayISO8859Writer extends Writer
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write(char[] ca)
         throws IOException
@@ -142,7 +142,7 @@ public class ByteArrayISO8859Writer extends Writer
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write(char[] ca,int offset, int length)
         throws IOException
@@ -161,7 +161,7 @@ public class ByteArrayISO8859Writer extends Writer
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write(String s)
         throws IOException
@@ -187,7 +187,7 @@ public class ByteArrayISO8859Writer extends Writer
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write(String s,int offset, int length)
         throws IOException
@@ -206,7 +206,7 @@ public class ByteArrayISO8859Writer extends Writer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     private void writeEncoded(char[] ca,int offset, int length)
         throws IOException
     {
@@ -224,29 +224,29 @@ public class ByteArrayISO8859Writer extends Writer
         _size+=_bout.getCount();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void flush()
     {}
 
-    /* ------------------------------------------------------------ */
+
     public void resetWriter()
     {
         _size=0;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void close()
     {}
 
-    /* ------------------------------------------------------------ */
+
     public void destroy()
     {
         _buf=null;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void ensureSpareCapacity(int n)
         throws IOException
     {
@@ -258,7 +258,7 @@ public class ByteArrayISO8859Writer extends Writer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public byte[] getByteArray()
     {
         return Arrays.copyOf(_buf,_size);

@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 
-/* ------------------------------------------------------------ */
+
 /**
  */
 @ManagedObject("Jetty Logging")

@@ -102,7 +102,7 @@ public class Session implements SessionHandler.SessionIf
     protected final SessionInactivityTimer _sessionInactivityTimer;
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * SessionInactivityTimer
      * 
@@ -189,7 +189,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Create a new session
      * @param handler the SessionHandler that manages this session
@@ -208,7 +208,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Re-inflate an existing session from some eg persistent store.
      * 
@@ -223,7 +223,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Returns the current number of requests that are active in the Session.
      * 
@@ -239,13 +239,13 @@ public class Session implements SessionHandler.SessionIf
 
 
 
-    /* ------------------------------------------------------------- */
+
     public void setExtendedId(String extendedId)
     {
         _extendedId = extendedId;
     }
 
-    /* ------------------------------------------------------------- */
+
     protected void cookieSet()
     {
         try (Lock lock = _lock.lock())
@@ -253,7 +253,7 @@ public class Session implements SessionHandler.SessionIf
             _sessionData.setCookieSet(_sessionData.getAccessed());
         }
     }
-    /* ------------------------------------------------------------ */
+
     protected boolean access(long time)
     {
         try (Lock lock = _lock.lock())
@@ -282,7 +282,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void complete()
     {
         try (Lock lock = _lock.lock())
@@ -305,7 +305,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Check to see if session has expired as at the time given.
      * 
@@ -320,7 +320,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Check if the Session has been idle longer than a number of seconds.
      * 
@@ -337,7 +337,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Call binding and attribute listeners based on the new and old values of
      * the attribute.
@@ -364,7 +364,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Unbind value if value implements {@link HttpSessionBindingListener}
      * (calls
@@ -380,7 +380,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Bind value if value implements {@link HttpSessionBindingListener} (calls
      * {@link HttpSessionBindingListener#valueBound(HttpSessionBindingEvent)})
@@ -395,7 +395,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Call the activation listeners. This must be called holding the lock.
      */
@@ -414,7 +414,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Call the passivation listeners. This must be called holding the lock
      */
@@ -432,7 +432,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isValid()
     {
         try (Lock lock = _lock.lock())
@@ -441,14 +441,14 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isChanging()
     {
         checkLocked();
         return _state == State.CHANGING;
     }
 
-    /* ------------------------------------------------------------- */
+
     public long getCookieSetTime()
     {
         try (Lock lock = _lock.lock())
@@ -458,7 +458,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     @Override
     public long getCreationTime() throws IllegalStateException
     {
@@ -650,7 +650,7 @@ public class Session implements SessionHandler.SessionIf
         return _handler;
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Check that the session can be modified.
      * 
@@ -681,7 +681,7 @@ public class Session implements SessionHandler.SessionIf
             throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId() + " not resident");
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Chech that the session data can be read.
      * 
@@ -711,7 +711,7 @@ public class Session implements SessionHandler.SessionIf
             throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() + " not resident");
     }
 
-    /* ------------------------------------------------------------- */
+
     protected void checkLocked() throws IllegalStateException
     {
         if (!_lock.isLocked())
@@ -774,21 +774,21 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public int getAttributes()
     {
         return _sessionData.getKeys().size();
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public Set<String> getNames()
     {
         return Collections.unmodifiableSet(_sessionData.getKeys());
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * @deprecated As of Version 2.2, this method is replaced by
      *             {@link #getAttributeNames}
@@ -810,7 +810,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * @see javax.servlet.http.HttpSession#setAttribute(java.lang.String,
      *      java.lang.Object)
@@ -831,7 +831,7 @@ public class Session implements SessionHandler.SessionIf
         callSessionAttributeListeners(name, value, old);
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * @see javax.servlet.http.HttpSession#putValue(java.lang.String,
      *      java.lang.Object)
@@ -843,7 +843,7 @@ public class Session implements SessionHandler.SessionIf
         setAttribute(name, value);
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * @see javax.servlet.http.HttpSession#removeAttribute(java.lang.String)
      */
@@ -853,7 +853,7 @@ public class Session implements SessionHandler.SessionIf
         setAttribute(name, null);
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * @see javax.servlet.http.HttpSession#removeValue(java.lang.String)
      */
@@ -864,7 +864,7 @@ public class Session implements SessionHandler.SessionIf
         setAttribute(name, null);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Force a change to the id of a session.
      * 
@@ -945,7 +945,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Called by users to invalidate a session, or called by the access method
      * as a request enters the session if the session has expired, or called by
@@ -988,7 +988,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Grab the lock on the session
      * 
@@ -1000,7 +1000,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     /**
      * @return true if the session is not already invalid or being invalidated.
      */
@@ -1058,7 +1058,7 @@ public class Session implements SessionHandler.SessionIf
         return result;
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Call HttpSessionAttributeListeners as part of invalidating a Session.
      * 
@@ -1070,7 +1070,7 @@ public class Session implements SessionHandler.SessionIf
         finishInvalidate();
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * Call HttpSessionAttributeListeners as part of invalidating a Session.
      * 
@@ -1113,7 +1113,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------- */
+
     @Override
     public boolean isNew() throws IllegalStateException
     {
@@ -1125,7 +1125,7 @@ public class Session implements SessionHandler.SessionIf
     }
 
 
-    /* ------------------------------------------------------------- */
+
     public void setIdChanged(boolean changed)
     {
         try (Lock lock = _lock.lock())
@@ -1134,7 +1134,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------- */
+
     public boolean isIdChanged()
     {
         try (Lock lock = _lock.lock())
@@ -1143,7 +1143,7 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /* ------------------------------------------------------------- */
+
     @Override
     public Session getSession()
     {
@@ -1151,13 +1151,13 @@ public class Session implements SessionHandler.SessionIf
         return this;
     }
 
-    /* ------------------------------------------------------------- */
+
     protected SessionData getSessionData()
     {
         return _sessionData;
     }
 
-    /* ------------------------------------------------------------- */
+
     /**
      * @param resident
      */
@@ -1169,7 +1169,7 @@ public class Session implements SessionHandler.SessionIf
             _sessionInactivityTimer.destroy();
     }
 
-    /* ------------------------------------------------------------- */
+
     public boolean isResident()
     {
         return _resident;

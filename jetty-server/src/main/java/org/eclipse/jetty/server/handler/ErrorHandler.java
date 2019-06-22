@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /** Handler for Error pages
  * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or
  * {@link Server#setErrorHandler(ErrorHandler)}.
@@ -64,12 +64,12 @@ public class ErrorHandler extends AbstractHandler
     boolean _showMessageInTitle=true;
     String _cacheControl="must-revalidate,no-cache,no-store";
 
-    /* ------------------------------------------------------------ */
+
     public ErrorHandler()
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
@@ -224,7 +224,7 @@ public class ErrorHandler extends AbstractHandler
         return null;
     }
         
-    /* ------------------------------------------------------------ */
+
     /** Generate an acceptable error response for a mime type.
      * <p>This method is called for each mime type in the users agent's
      * <code>Accept</code> header, until {@link Request#isHandled()} is true and a 
@@ -258,14 +258,14 @@ public class ErrorHandler extends AbstractHandler
         }        
     }
     
-    /* ------------------------------------------------------------ */
+
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
     {
         writeErrorPage(request, writer, code, message, _showStacks);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void writeErrorPage(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
         throws IOException
     {
@@ -279,7 +279,7 @@ public class ErrorHandler extends AbstractHandler
         writer.write("\n</body>\n</html>\n");
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
         {
@@ -295,7 +295,7 @@ public class ErrorHandler extends AbstractHandler
         writer.write("</title>\n");
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void writeErrorPageBody(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
         throws IOException
     {
@@ -309,7 +309,7 @@ public class ErrorHandler extends AbstractHandler
             .writePoweredBy(writer,"<hr>","<hr/>\n");
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message,String uri)
     throws IOException
     {
@@ -322,7 +322,7 @@ public class ErrorHandler extends AbstractHandler
         writer.write("</pre></p>");
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
         throws IOException
     {
@@ -341,7 +341,7 @@ public class ErrorHandler extends AbstractHandler
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Bad Message Error body
      * <p>Generate a error response body to be sent for a bad message.
      * In this case there is something wrong with the request, so either
@@ -361,7 +361,7 @@ public class ErrorHandler extends AbstractHandler
         return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
     }    
     
-    /* ------------------------------------------------------------ */
+
     /** Get the cacheControl.
      * @return the cacheControl header to set on error responses.
      */
@@ -370,7 +370,7 @@ public class ErrorHandler extends AbstractHandler
         return _cacheControl;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the cacheControl.
      * @param cacheControl the cacheControl header to set on error responses.
      */
@@ -379,7 +379,7 @@ public class ErrorHandler extends AbstractHandler
         _cacheControl = cacheControl;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return True if stack traces are shown in the error pages
      */
@@ -388,7 +388,7 @@ public class ErrorHandler extends AbstractHandler
         return _showStacks;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param showStacks True if stack traces are shown in the error pages
      */
@@ -397,7 +397,7 @@ public class ErrorHandler extends AbstractHandler
         _showStacks = showStacks;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param showMessageInTitle if true, the error message appears in page title
      */
@@ -407,13 +407,13 @@ public class ErrorHandler extends AbstractHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public boolean getShowMessageInTitle()
     {
         return _showMessageInTitle;
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void write(Writer writer,String string)
         throws IOException
     {
@@ -423,13 +423,13 @@ public class ErrorHandler extends AbstractHandler
         writer.write(StringUtil.sanitizeXmlString(string));
     }
 
-    /* ------------------------------------------------------------ */
+
     public interface ErrorPageMapper
     {
         String getErrorPage(HttpServletRequest request);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static ErrorHandler getErrorHandler(Server server, ContextHandler context)
     {
         ErrorHandler error_handler=null;

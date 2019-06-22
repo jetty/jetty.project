@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-/* ------------------------------------------------------------ */
+
 /** Test Servlet RequestDispatcher.
  *
  *
@@ -40,17 +40,17 @@ import javax.servlet.http.HttpServletResponseWrapper;
 @SuppressWarnings("serial")
 public class DispatchServlet extends HttpServlet
 {
-    /* ------------------------------------------------------------ */
+
     String pageType;
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doPost(HttpServletRequest sreq, HttpServletResponse sres) throws ServletException, IOException
     {
         doGet(sreq, sres);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doGet(HttpServletRequest sreq, HttpServletResponse sres) throws ServletException, IOException
     {
@@ -262,14 +262,14 @@ public class DispatchServlet extends HttpServlet
 
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getServletInfo()
     {
         return "Include Servlet";
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public synchronized void destroy()
     {

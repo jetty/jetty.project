@@ -145,7 +145,7 @@ public interface Continuation
 {
     public final static String ATTRIBUTE = "org.eclipse.jetty.continuation";
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the continuation timeout.
      * 
@@ -156,7 +156,7 @@ public interface Continuation
      */
     void setTimeout(long timeoutMs);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Suspend the processing of the request and associated
      * {@link ServletResponse}.
@@ -192,7 +192,7 @@ public interface Continuation
     void suspend();
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Suspend the processing of the request and associated
      * {@link ServletResponse}.
@@ -234,7 +234,7 @@ public interface Continuation
      */
     void suspend(ServletResponse response);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Resume a suspended request.
      * 
@@ -264,7 +264,7 @@ public interface Continuation
      */
     void resume();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Complete a suspended request.
      * 
@@ -306,7 +306,7 @@ public interface Continuation
      */
     void complete();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true after {@link #suspend()} has been called and before the
      *         request has been redispatched due to being resumed, completed or
@@ -314,7 +314,7 @@ public interface Continuation
      */
     boolean isSuspended();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the request has been redispatched by a call to
      *         {@link #resume()}. Returns false after any subsequent call to
@@ -322,14 +322,14 @@ public interface Continuation
      */
     boolean isResumed();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true after a request has been redispatched as the result of a
      *         timeout. Returns false after any subsequent call to suspend.
      */
     boolean isExpired();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true while the request is within the initial dispatch to the
      *         filter chain and/or servlet. Will return false once the calling
@@ -338,7 +338,7 @@ public interface Continuation
      */
     boolean isInitial();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Is the suspended response wrapped.
      * <p>
@@ -354,14 +354,14 @@ public interface Continuation
     boolean isResponseWrapped();
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the suspended response.
      * @return the {@link ServletResponse} passed to {@link #suspend(ServletResponse)}.
      */
     ServletResponse getServletResponse();
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Add a ContinuationListener.
      * 
@@ -369,7 +369,7 @@ public interface Continuation
      */
     void addContinuationListener(ContinuationListener listener);
     
-    /* ------------------------------------------------------------ */
+
     /** Set a request attribute.
      * This method is a convenience method to call the {@link ServletRequest#setAttribute(String, Object)}
      * method on the associated request object.
@@ -379,7 +379,7 @@ public interface Continuation
      */
     public void setAttribute(String name, Object attribute);
     
-    /* ------------------------------------------------------------ */
+
     /** Get a request attribute.
      * This method is a convenience method to call the {@link ServletRequest#getAttribute(String)}
      * method on the associated request object.
@@ -389,7 +389,7 @@ public interface Continuation
      */
     public Object getAttribute(String name);
     
-    /* ------------------------------------------------------------ */
+
     /** Remove a request attribute.
      * This method is a convenience method to call the {@link ServletRequest#removeAttribute(String)}
      * method on the associated request object.
@@ -398,7 +398,7 @@ public interface Continuation
      */
     public void removeAttribute(String name);
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Undispatch the request.
      * <p>

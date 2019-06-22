@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/* ------------------------------------------------------------ */
+
 /**
  * Implements a quoted comma separated list of values
  * in accordance with RFC7230.

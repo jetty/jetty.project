@@ -36,14 +36,14 @@ public class FakeURLClassLoader extends URLClassLoader
 {
     private URL[] _jars;
     
-    /* ------------------------------------------------------------ */
+
     public FakeURLClassLoader(ClassLoader osgiClassLoader, URL[] jars)
     {
         super(new URL[] {},osgiClassLoader);
         _jars = jars;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the jars that contains tlds so that TldLocationsCache or
      *         TldScanner can find them.
@@ -55,7 +55,7 @@ public class FakeURLClassLoader extends URLClassLoader
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see java.lang.Object#toString()
      */

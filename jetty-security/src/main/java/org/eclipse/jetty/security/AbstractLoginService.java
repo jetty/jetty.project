@@ -44,7 +44,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     protected boolean _fullValidate = false;
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * RolePrincipal
      */
@@ -64,7 +64,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * UserPrincipal
      */
@@ -75,26 +75,26 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         private final Credential _credential;
   
 
-        /* -------------------------------------------------------- */
+
         public UserPrincipal(String name,Credential credential)
         {
             _name=name;
             _credential=credential;
         }
 
-        /* -------------------------------------------------------- */
+
         public boolean authenticate(Object credentials)
         {
             return _credential!=null && _credential.check(credentials);
         }
         
-        /* -------------------------------------------------------- */
+
         public boolean authenticate (Credential c)
         {
             return(_credential != null && c != null && _credential.equals(c));
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public String getName()
         {
@@ -103,7 +103,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         
         
         
-        /* -------------------------------------------------------- */
+
         @Override
         public String toString()
         {
@@ -111,10 +111,10 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     protected abstract String[] loadRoleInfo (UserPrincipal user);
     
-    /* ------------------------------------------------------------ */
+
     protected abstract UserPrincipal loadUserInfo (String username);
     
     protected AbstractLoginService()
@@ -122,7 +122,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         addBean(_identityService);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.security.LoginService#getName()
      */
@@ -132,7 +132,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
        return _name;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Set the identityService.
      * @param identityService the identityService to set
      */
@@ -145,7 +145,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         _identityService = identityService;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the name.
      * @param name the name to set
      */
@@ -156,7 +156,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         _name = name;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
@@ -164,7 +164,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.security.LoginService#login(java.lang.String, java.lang.Object, javax.servlet.ServletRequest)
      */
@@ -195,7 +195,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.security.LoginService#validate(org.eclipse.jetty.server.UserIdentity)
      */
@@ -219,7 +219,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.security.LoginService#getIdentityService()
      */
@@ -230,7 +230,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     }
 
    
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.security.LoginService#logout(org.eclipse.jetty.server.UserIdentity)
      */
@@ -241,13 +241,13 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
 
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isFullValidate()
     {
         return _fullValidate;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setFullValidate(boolean fullValidate)
     {
         _fullValidate = fullValidate;

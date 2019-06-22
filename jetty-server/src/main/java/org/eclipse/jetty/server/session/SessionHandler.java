@@ -67,7 +67,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 import static java.lang.Math.round;
 
-/* ------------------------------------------------------------ */
+
 /**
  * SessionHandler.
  */
@@ -77,7 +77,7 @@ public class SessionHandler extends ScopedHandler
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     public final static EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,SessionTrackingMode.URL);
-    /* ------------------------------------------------------------ */
+
     /**
      * Session cookie name.
      * Defaults to <code>JSESSIONID</code>, but can be set with the
@@ -87,7 +87,7 @@ public class SessionHandler extends ScopedHandler
     public final static String __DefaultSessionCookie = "JSESSIONID";
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Session id path parameter name.
      * Defaults to <code>jsessionid</code>, but can be set with the
@@ -100,7 +100,7 @@ public class SessionHandler extends ScopedHandler
     public final static String __CheckRemoteSessionEncoding = "org.eclipse.jetty.servlet.CheckingRemoteSessionIdEncoding";
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Session Domain.
      * If this property is set as a ServletContext InitParam, then it is
@@ -111,7 +111,7 @@ public class SessionHandler extends ScopedHandler
     public final static String __DefaultSessionDomain = null;
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Session Path.
      * If this property is set as a ServletContext InitParam, then it is
@@ -120,7 +120,7 @@ public class SessionHandler extends ScopedHandler
      */
     public final static String __SessionPathProperty = "org.eclipse.jetty.servlet.SessionPath";
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Session Max Age.
      * If this property is set as a ServletContext InitParam, then it is
@@ -263,7 +263,7 @@ public class SessionHandler extends ScopedHandler
 
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Constructor. 
      */
@@ -273,7 +273,7 @@ public class SessionHandler extends ScopedHandler
     }
 
   
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute("path of the session cookie, or null for default")
     public String getSessionPath()
     {
@@ -281,14 +281,14 @@ public class SessionHandler extends ScopedHandler
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute("if greater the zero, the time in seconds a session cookie will last for")
     public int getMaxCookieAge()
     {
         return _maxCookieAge;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Called by the {@link SessionHandler} when a session is first accessed by a request.
      *
@@ -322,7 +322,7 @@ public class SessionHandler extends ScopedHandler
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Adds an event listener for session-related events.
      *
@@ -343,7 +343,7 @@ public class SessionHandler extends ScopedHandler
         addBean(listener,false);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Removes all event listeners for session-related events.
      *
@@ -423,7 +423,7 @@ public class SessionHandler extends ScopedHandler
     }
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Called by the {@link SessionHandler} when a session is last accessed by a request.
      *
@@ -473,7 +473,7 @@ public class SessionHandler extends ScopedHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
@@ -578,7 +578,7 @@ public class SessionHandler extends ScopedHandler
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
@@ -595,7 +595,7 @@ public class SessionHandler extends ScopedHandler
         _loader=null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if session cookies should be HTTP-only (Microsoft extension)
      * @see org.eclipse.jetty.http.HttpCookie#isHttpOnly()
@@ -606,7 +606,7 @@ public class SessionHandler extends ScopedHandler
         return _httpOnly;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the <code>HttpSession</code> with the given session id
      *
@@ -623,7 +623,7 @@ public class SessionHandler extends ScopedHandler
         return session;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Gets the cross context session id manager
      * @return the session id manager
@@ -636,7 +636,7 @@ public class SessionHandler extends ScopedHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
 
     /**
      * @return the max period of inactivity, after which the session is invalidated, in seconds.
@@ -650,14 +650,14 @@ public class SessionHandler extends ScopedHandler
 
 
 
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute("time before a session cookie is re-set (in s)")
     public int getRefreshCookieAge()
     {
         return _refreshCookieAge;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return same as SessionCookieConfig.getSecure(). If true, session
      * cookies are ALWAYS marked as secure. If false, a session cookie is
@@ -669,7 +669,7 @@ public class SessionHandler extends ScopedHandler
         return _secureCookies;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if session cookie is to be marked as secure only on HTTPS requests
      */
@@ -679,7 +679,7 @@ public class SessionHandler extends ScopedHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * HTTPS request. Can be overridden by setting SessionCookieConfig.setSecure(true),
      * in which case the session cookie will be marked as secure on both HTTPS and HTTP.
@@ -690,14 +690,14 @@ public class SessionHandler extends ScopedHandler
         _secureRequestOnly = secureRequestOnly;
     }
 
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute("the set session cookie")
     public String getSessionCookie()
     {
         return _sessionCookie;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * A session cookie is marked as secure IFF any of the following conditions are true:
      * <ol>
@@ -773,7 +773,7 @@ public class SessionHandler extends ScopedHandler
     
     
     
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute("domain of the session cookie, or null for the default")
     public String getSessionDomain()
     {
@@ -782,14 +782,14 @@ public class SessionHandler extends ScopedHandler
 
  
 
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute("number of sessions created by this node")
     public int getSessionsCreated()
     {
         return (int) _sessionsCreatedStats.getCurrent();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the URL path parameter name for session id URL rewriting, by default "jsessionid".
      * @see #setSessionIdPathParameterName(String)
@@ -800,7 +800,7 @@ public class SessionHandler extends ScopedHandler
         return _sessionIdPathParameterName;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return a formatted version of {@link #getSessionIdPathParameterName()}, by default
      *         ";" + sessionIdParameterName + "=", for easier lookup in URL strings.
@@ -811,7 +811,7 @@ public class SessionHandler extends ScopedHandler
         return _sessionIdPathParameterNamePrefix;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return whether the session management is handled via cookies.
      */
@@ -820,7 +820,7 @@ public class SessionHandler extends ScopedHandler
         return _usingCookies;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param session the session to test for validity
      * @return whether the given session is valid, that is, it has not been invalidated.
@@ -831,7 +831,7 @@ public class SessionHandler extends ScopedHandler
         return s.isValid();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param session the session object
      * @return the unique id of the session within the cluster (without a node id extension)
@@ -843,7 +843,7 @@ public class SessionHandler extends ScopedHandler
         return s.getId();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param session the session object
      * @return the unique id of the session within the cluster, extended with an optional node id.
@@ -855,7 +855,7 @@ public class SessionHandler extends ScopedHandler
         return s.getExtendedId();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Creates a new <code>HttpSession</code>.
      *
@@ -889,7 +889,7 @@ public class SessionHandler extends ScopedHandler
         }      
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Removes an event listener for for session-related events.
      *
@@ -907,7 +907,7 @@ public class SessionHandler extends ScopedHandler
         removeBean(listener);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Reset statistics values
      */
@@ -918,7 +918,7 @@ public class SessionHandler extends ScopedHandler
         _sessionTimeStats.reset();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param httpOnly
      *            The httpOnly to set.
@@ -928,7 +928,7 @@ public class SessionHandler extends ScopedHandler
         _httpOnly=httpOnly;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param metaManager The metaManager used for cross context session management.
      */
@@ -938,7 +938,7 @@ public class SessionHandler extends ScopedHandler
         _sessionIdManager=metaManager;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the max period of inactivity, after which the session is invalidated, in seconds.
      *
@@ -957,7 +957,7 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setRefreshCookieAge(int ageInSeconds)
     {
         _refreshCookieAge=ageInSeconds;
@@ -965,14 +965,14 @@ public class SessionHandler extends ScopedHandler
     
 
 
-    /* ------------------------------------------------------------ */
+
     public void setSessionCookie(String cookieName)
     {
         _sessionCookie=cookieName;
     }
 
  
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the session id URL path parameter name.
      *
@@ -985,7 +985,7 @@ public class SessionHandler extends ScopedHandler
         _sessionIdPathParameterName =(param==null||"none".equals(param))?null:param;
         _sessionIdPathParameterNamePrefix =(param==null||"none".equals(param))?null:(";"+ _sessionIdPathParameterName +"=");
     }
-    /* ------------------------------------------------------------ */
+
     /**
      * @param usingCookies
      *            The usingCookies to set.
@@ -997,7 +997,7 @@ public class SessionHandler extends ScopedHandler
 
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get a known existing session
      * @param id The session ID stripped of any worker name.
@@ -1053,7 +1053,7 @@ public class SessionHandler extends ScopedHandler
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Prepare sessions for session manager shutdown
      * 
@@ -1065,7 +1065,7 @@ public class SessionHandler extends ScopedHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the session store
      */
@@ -1084,7 +1084,7 @@ public class SessionHandler extends ScopedHandler
         _sessionCache = cache;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the cluster node id (worker id) is returned as part of the session id by {@link HttpSession#getId()}. Default is false.
      */
@@ -1093,7 +1093,7 @@ public class SessionHandler extends ScopedHandler
         return _nodeIdInSessionId;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param nodeIdInSessionId true if the cluster node id (worker id) will be returned as part of the session id by {@link HttpSession#getId()}. Default is false.
      */
@@ -1103,7 +1103,7 @@ public class SessionHandler extends ScopedHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * Remove session from manager
      * @param id The session to remove
@@ -1148,7 +1148,7 @@ public class SessionHandler extends ScopedHandler
     
    
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return maximum amount of time session remained valid
      */
@@ -1158,19 +1158,19 @@ public class SessionHandler extends ScopedHandler
         return _sessionTimeStats.getMax();
     }
 
-    /* ------------------------------------------------------------ */
+
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
     {
         return __defaultSessionTrackingModes;
     }
 
-    /* ------------------------------------------------------------ */
+
     public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
     {
         return Collections.unmodifiableSet(_sessionTrackingModes);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
     {
         _sessionTrackingModes=new HashSet<>(sessionTrackingModes);
@@ -1178,7 +1178,7 @@ public class SessionHandler extends ScopedHandler
         _usingURLs=_sessionTrackingModes.contains(SessionTrackingMode.URL);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return whether the session management is handled via URLs.
      */
@@ -1187,18 +1187,18 @@ public class SessionHandler extends ScopedHandler
         return _usingURLs;
     }
 
-    /* ------------------------------------------------------------ */
+
     public SessionCookieConfig getSessionCookieConfig()
     {
         return _cookieConfig;
     }
 
-    /* ------------------------------------------------------------ */
+
     private SessionCookieConfig _cookieConfig =
         new CookieConfig();
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return total amount of time all sessions remained valid
      */
@@ -1208,7 +1208,7 @@ public class SessionHandler extends ScopedHandler
         return _sessionTimeStats.getTotal();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return mean amount of time session remained valid
      */
@@ -1218,7 +1218,7 @@ public class SessionHandler extends ScopedHandler
         return _sessionTimeStats.getMean();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return standard deviation of amount of time session remained valid
      */
@@ -1228,7 +1228,7 @@ public class SessionHandler extends ScopedHandler
         return _sessionTimeStats.getStdDev();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return True if absolute URLs are check for remoteness before being session encoded.
      */
@@ -1238,7 +1238,7 @@ public class SessionHandler extends ScopedHandler
         return _checkingRemoteSessionIdEncoding;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param remote True if absolute URLs are check for remoteness before being session encoded.
      */
@@ -1248,7 +1248,7 @@ public class SessionHandler extends ScopedHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Change the existing session id.
     * 
     * @param oldId the old session id
@@ -1288,7 +1288,7 @@ public class SessionHandler extends ScopedHandler
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Called by SessionIdManager to remove a session that has been invalidated,
      * either by this context or another context. Also called by
@@ -1341,7 +1341,7 @@ public class SessionHandler extends ScopedHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Called periodically by the HouseKeeper to handle the list of
      * sessions that have expired since the last call to scavenge.
@@ -1393,7 +1393,7 @@ public class SessionHandler extends ScopedHandler
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Each session has a timer that is configured to go off
      * when either the session has not been accessed for a 
@@ -1457,7 +1457,7 @@ public class SessionHandler extends ScopedHandler
     
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Check if id is in use by this context
      * 
@@ -1475,7 +1475,7 @@ public class SessionHandler extends ScopedHandler
     
     
     
-    /* ------------------------------------------------------------ */
+
     public Scheduler getScheduler()
     {
        return _scheduler;
@@ -1484,9 +1484,9 @@ public class SessionHandler extends ScopedHandler
 
 
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     /**
      * SessionIf
      * 
@@ -1503,9 +1503,9 @@ public class SessionHandler extends ScopedHandler
 
 
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     /**
      * CookieConfig
      * 
@@ -1633,7 +1633,7 @@ public class SessionHandler extends ScopedHandler
 
     
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
@@ -1701,7 +1701,7 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
@@ -1711,7 +1711,7 @@ public class SessionHandler extends ScopedHandler
         nextHandle(target,baseRequest,request,response);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Look for a requested session ID in cookies and URI parameters
      *

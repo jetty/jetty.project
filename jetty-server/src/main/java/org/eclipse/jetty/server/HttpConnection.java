@@ -301,7 +301,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Fill and parse data looking for content
      * @return true if an {@link RequestHandler} method was called and it returned true;
      */
@@ -318,7 +318,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return handled;
     }
 
-    /* ------------------------------------------------------------ */
+
     private int fillRequestBuffer()
     {
         if (_contentBufferReferences.get()>0)
@@ -360,7 +360,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return 0;
     }
 
-    /* ------------------------------------------------------------ */
+
     private boolean parseRequestBuffer()
     {
         if (LOG.isDebugEnabled())
@@ -378,7 +378,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return handle;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void onCompleted()
     {

@@ -139,9 +139,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         _maxCapacity = maxCapacity;
     }
 
-    /*----------------------------------------------------------------------------*/
+
     /* Collection methods */
-    /*----------------------------------------------------------------------------*/
+
 
     @Override
     public void clear()
@@ -181,9 +181,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         return listIterator();
     }
 
-    /*----------------------------------------------------------------------------*/
+
     /* Queue methods */
-    /*----------------------------------------------------------------------------*/
+
 
     @SuppressWarnings("unchecked")
     @Override
@@ -254,9 +254,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         return e;
     }
 
-    /*----------------------------------------------------------------------------*/
+
     /* BlockingQueue methods */
-    /*----------------------------------------------------------------------------*/
+
 
     @Override
     public boolean offer(E e)
@@ -536,9 +536,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         return elements;
     }
 
-    /*----------------------------------------------------------------------------*/
+
     /* List methods */
-    /*----------------------------------------------------------------------------*/
+
 
     @SuppressWarnings("unchecked")
     @Override
@@ -771,9 +771,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         }
     }
 
-    /*----------------------------------------------------------------------------*/
+
     /* Additional methods */
-    /*----------------------------------------------------------------------------*/
+
 
     /**
      * @return the current capacity of this queue
@@ -799,9 +799,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         return _maxCapacity;
     }
 
-    /*----------------------------------------------------------------------------*/
+
     /* Implementation methods */
-    /*----------------------------------------------------------------------------*/
+
 
     private boolean grow()
     {

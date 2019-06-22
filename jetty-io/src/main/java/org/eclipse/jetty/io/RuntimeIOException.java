@@ -19,7 +19,7 @@
 
 package org.eclipse.jetty.io;
 
-/* ------------------------------------------------------------ */
+
 /**
  * Subclass of {@link java.lang.RuntimeException} used to signal that there
  * was an {@link java.io.IOException} thrown by underlying {@link java.io.Writer}

@@ -39,14 +39,14 @@ public class OSGiUndeployer extends StandardUndeployer
     private ServerInstanceWrapper _server;
 
     
-    /* ------------------------------------------------------------ */
+
     public OSGiUndeployer (ServerInstanceWrapper server)
     {
         _server = server;
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void processBinding(Node node, App app) throws Exception
     {

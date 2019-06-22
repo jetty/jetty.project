@@ -29,7 +29,7 @@ import java.util.concurrent.CyclicBarrier;
 import org.junit.jupiter.api.Test;
 
 
-/* ------------------------------------------------------------ */
+
 public class CounterStatisticTest
 {
 

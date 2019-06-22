@@ -23,7 +23,7 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpHeader;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  */
 public class AuthorityHttpField extends HostPortHttpField

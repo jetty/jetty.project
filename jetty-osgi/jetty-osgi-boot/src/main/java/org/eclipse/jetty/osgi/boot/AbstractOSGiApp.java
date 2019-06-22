@@ -50,12 +50,12 @@ public abstract class AbstractOSGiApp extends App
     protected Dictionary<?,?> _properties;
     protected ServiceRegistration _registration;
 
-    /* ------------------------------------------------------------ */
+
     public AbstractOSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, String originId)
     {
         this (manager, provider, bundle, bundle.getHeaders(), originId);
     }
-    /* ------------------------------------------------------------ */
+
     public AbstractOSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary<?,?> properties, String originId)
     {
         super(manager, provider, originId);
@@ -63,13 +63,13 @@ public abstract class AbstractOSGiApp extends App
         _bundle = bundle;
     }
     
-    /* ------------------------------------------------------------ */
+
     public String getBundleSymbolicName()
     {
         return _bundle.getSymbolicName();
     }
     
-    /* ------------------------------------------------------------ */
+
     public String getBundleVersionAsString()
     {
        if (_bundle.getVersion() == null)
@@ -77,26 +77,26 @@ public abstract class AbstractOSGiApp extends App
        return _bundle.getVersion().toString();
     }
     
-    /* ------------------------------------------------------------ */
+
     public Bundle getBundle()
     {
         return _bundle;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setRegistration (ServiceRegistration registration)
     {
         _registration = registration;
     }
     
-    /* ------------------------------------------------------------ */
+
     public ServiceRegistration getRegistration ()
     {
         return _registration;
     }
     
     
-    /* ------------------------------------------------------------ */
+
     public void registerAsOSGiService() throws Exception
     {
         if (_registration == null)
@@ -113,7 +113,7 @@ public abstract class AbstractOSGiApp extends App
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void deregisterAsOSGiService() throws Exception
     {
         if (_registration == null)

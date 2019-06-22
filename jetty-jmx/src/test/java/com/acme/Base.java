@@ -26,7 +26,7 @@ public class Base extends AbstractLifeCycle
     int value;
     String[] messages;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the messages.
      */
@@ -35,7 +35,7 @@ public class Base extends AbstractLifeCycle
         return messages;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param messages
      *            The messages to set.
@@ -45,7 +45,7 @@ public class Base extends AbstractLifeCycle
         this.messages = messages;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the name.
      */
@@ -54,7 +54,7 @@ public class Base extends AbstractLifeCycle
         return name;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param name
      *            The name to set.
@@ -64,7 +64,7 @@ public class Base extends AbstractLifeCycle
         this.name = name;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the value.
      */
@@ -73,7 +73,7 @@ public class Base extends AbstractLifeCycle
         return value;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param value
      *            The value to set.
@@ -83,13 +83,13 @@ public class Base extends AbstractLifeCycle
         this.value = value;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void doSomething(int arg)
     {
         System.err.println("doSomething " + arg);
     }
 
-    /* ------------------------------------------------------------ */
+
     public String findSomething(int arg)
     {
         return ("found " + arg);

@@ -49,7 +49,7 @@ public class FormAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = Log.getLogger(FormAuthModule.class);
 
-    /* ------------------------------------------------------------ */
+
     public final static String __J_URI = "org.eclipse.jetty.util.URI";
 
     public final static String __J_AUTHENTICATED = "org.eclipse.jetty.server.Auth";
@@ -110,7 +110,7 @@ public class FormAuthModule extends BaseAuthModule
         if (_formLoginPath.indexOf('?') > 0) _formLoginPath = _formLoginPath.substring(0, _formLoginPath.indexOf('?'));
     }
 
-    /* ------------------------------------------------------------ */
+
     private void setErrorPage(String path)
     {
         if (path == null || path.trim().length() == 0)
@@ -247,7 +247,7 @@ public class FormAuthModule extends BaseAuthModule
 
     }
     
-    /* ------------------------------------------------------------ */
+
     public boolean isJSecurityCheck(String uri)
     {
         int jsc = uri.indexOf(__J_SECURITY_CHECK);

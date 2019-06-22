@@ -50,7 +50,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     private String _serverName;
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the serviceSubject
      */
@@ -59,7 +59,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         return _serviceSubject;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param serviceSubject the serviceSubject to set
      */
@@ -68,7 +68,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         _serviceSubject = serviceSubject;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the serverName
      */
@@ -77,7 +77,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         return _serverName;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param serverName the serverName to set
      */
@@ -86,7 +86,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         _serverName = serverName;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
     {
@@ -127,7 +127,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         return authenticator;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Find a service Subject.
      * If {@link #setServiceSubject(Subject)} has not been used to 
      * set a subject, then the {@link Server#getBeans(Class)} method is
@@ -145,7 +145,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Find a servername.
      * If {@link #setServerName(String)} has not been called, then
      * use the name of the a principal in the service subject.
@@ -169,7 +169,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         return "server";
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Find a servername.
      * If {@link #setServerName(String)} has not been called, then
      * use the name of the a principal in the service subject.

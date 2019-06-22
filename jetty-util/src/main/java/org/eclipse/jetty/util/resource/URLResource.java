@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /** URL resource class.
  */
 public class URLResource extends Resource
@@ -44,7 +44,7 @@ public class URLResource extends Resource
     protected InputStream _in=null;
     transient boolean _useCaches = Resource.__defaultUseCaches;
     
-    /* ------------------------------------------------------------ */
+
     protected URLResource(URL url, URLConnection connection)
     {
         _url = url;
@@ -52,14 +52,14 @@ public class URLResource extends Resource
         _connection=connection;
     }
     
-    /* ------------------------------------------------------------ */
+
     protected URLResource (URL url, URLConnection connection, boolean useCaches)
     {
         this (url, connection);
         _useCaches = useCaches;
     }
 
-    /* ------------------------------------------------------------ */
+
     protected synchronized boolean checkConnection()
     {
         if (_connection==null)
@@ -76,7 +76,7 @@ public class URLResource extends Resource
         return _connection!=null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Release any resources held by the resource.
      */
     @Override
@@ -92,7 +92,7 @@ public class URLResource extends Resource
             _connection=null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns true if the represented resource exists.
      */
@@ -114,7 +114,7 @@ public class URLResource extends Resource
         return _in!=null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns true if the represented resource is a container/directory.
      * If the resource is not a file, resources ending with "/" are
@@ -127,7 +127,7 @@ public class URLResource extends Resource
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the last modified time
      */
@@ -140,7 +140,7 @@ public class URLResource extends Resource
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Return the length of the resource
      */
@@ -152,7 +152,7 @@ public class URLResource extends Resource
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns an URL representing the given resource
      */
@@ -162,7 +162,7 @@ public class URLResource extends Resource
         return _url;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns an File representing the given resource or NULL if this
      * is not possible.
@@ -174,7 +174,7 @@ public class URLResource extends Resource
         return null;    
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the name of the resource
      */
@@ -184,7 +184,7 @@ public class URLResource extends Resource
         return _url.toExternalForm();
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns an input stream to the resource. The underlying 
      * url connection will be nulled out to prevent re-use.
@@ -196,7 +196,7 @@ public class URLResource extends Resource
         return getInputStream (true); //backwards compatibility
     }
  
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns an input stream to the resource, optionally nulling
      * out the underlying url connection. If the connection is not
@@ -234,14 +234,14 @@ public class URLResource extends Resource
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Deletes the given resource
      */
@@ -252,7 +252,7 @@ public class URLResource extends Resource
         throw new SecurityException( "Delete not supported");
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Rename the given resource
      */
@@ -263,7 +263,7 @@ public class URLResource extends Resource
         throw new SecurityException( "RenameTo not supported");
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns a list of resource names contained in the given resource
      */
@@ -273,7 +273,7 @@ public class URLResource extends Resource
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the resource contained inside the current resource with the
      * given name
@@ -290,34 +290,34 @@ public class URLResource extends Resource
         return newResource(URIUtil.addEncodedPaths(_url.toExternalForm(),URIUtil.encodePath(path)), _useCaches);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
         return _urlString;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public int hashCode()
     {
         return _urlString.hashCode();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean equals( Object o)
     {
         return o instanceof URLResource && _urlString.equals(((URLResource)o)._urlString);
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean getUseCaches ()
     {
         return _useCaches;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isContainedIn (Resource containingResource) throws MalformedURLException
     {

@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  * ShutdownThread is a shutdown hook thread implemented as 
  * singleton that maintains a list of lifecycle instances
@@ -43,7 +43,7 @@ public class ShutdownThread extends Thread
     private boolean _hooked;
     private final List<LifeCycle> _lifeCycles = new CopyOnWriteArrayList<LifeCycle>();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Default constructor for the singleton
      * 
@@ -53,7 +53,7 @@ public class ShutdownThread extends Thread
     {
     }
     
-    /* ------------------------------------------------------------ */
+
     private synchronized void hook()
     {
         try
@@ -69,7 +69,7 @@ public class ShutdownThread extends Thread
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     private synchronized void unhook()
     {
         try
@@ -84,7 +84,7 @@ public class ShutdownThread extends Thread
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the instance of the singleton
      * 
@@ -95,7 +95,7 @@ public class ShutdownThread extends Thread
         return _thread;
     }
 
-    /* ------------------------------------------------------------ */
+
     public static synchronized void register(LifeCycle... lifeCycles)
     {
         _thread._lifeCycles.addAll(Arrays.asList(lifeCycles));
@@ -103,7 +103,7 @@ public class ShutdownThread extends Thread
             _thread.hook();
     }
 
-    /* ------------------------------------------------------------ */
+
     public static synchronized void register(int index, LifeCycle... lifeCycles)
     {
         _thread._lifeCycles.addAll(index,Arrays.asList(lifeCycles));
@@ -111,7 +111,7 @@ public class ShutdownThread extends Thread
             _thread.hook();
     }
     
-    /* ------------------------------------------------------------ */
+
     public static synchronized void deregister(LifeCycle lifeCycle)
     {
         _thread._lifeCycles.remove(lifeCycle);
@@ -119,13 +119,13 @@ public class ShutdownThread extends Thread
             _thread.unhook();
     }
 
-    /* ------------------------------------------------------------ */
+
     public static synchronized boolean isRegistered(LifeCycle lifeCycle)
     {
         return _thread._lifeCycles.contains(lifeCycle);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void run()
     {

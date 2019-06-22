@@ -30,7 +30,7 @@ import javax.servlet.ServletContextListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /** Enable Jetty style JMX MBeans from within a Context 
  */
 public class ManagedAttributeListener implements  ServletContextListener, ServletContextAttributeListener

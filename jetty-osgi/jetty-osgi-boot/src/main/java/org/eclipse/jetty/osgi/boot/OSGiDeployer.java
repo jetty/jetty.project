@@ -37,14 +37,14 @@ public class OSGiDeployer extends StandardDeployer
     
     private ServerInstanceWrapper _server;
 
-    /* ------------------------------------------------------------ */
+
     public OSGiDeployer (ServerInstanceWrapper server)
     {
         _server = server; 
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void processBinding(Node node, App app) throws Exception
     {
@@ -72,7 +72,7 @@ public class OSGiDeployer extends StandardDeployer
     }
     
     
-    /* ------------------------------------------------------------ */
+
     protected void doProcessBinding (Node node, App app) throws Exception
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();

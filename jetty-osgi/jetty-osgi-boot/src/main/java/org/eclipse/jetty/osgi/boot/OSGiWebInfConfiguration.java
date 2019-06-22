@@ -69,7 +69,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.osgi.fragmentAndRequiredResources";
     
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Check to see if there have been any bundle symbolic names added of bundles that should be
      * regarded as being on the container classpath, and scanned for fragments, tlds etc etc.
@@ -143,7 +143,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         super.postConfigure(context);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Consider the fragment bundles associated with the bundle of the webapp being deployed.
      * 
@@ -199,7 +199,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         return mergedResources;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Allow fragments to supply some resources that are added to the baseResource of the webapp.
      * 
@@ -269,7 +269,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /**
     * Resolves the bundle. Usually that would be a single URL per bundle. But we do some more work if there are jars
     * embedded in the bundle.

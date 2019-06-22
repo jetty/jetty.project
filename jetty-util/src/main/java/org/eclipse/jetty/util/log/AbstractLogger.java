@@ -20,7 +20,7 @@ package org.eclipse.jetty.util.log;
 
 import java.util.Properties;
 
-/* ------------------------------------------------------------ */
+
 /** Abstract Logger.
  * Manages the atomic registration of the logger by name.
  */

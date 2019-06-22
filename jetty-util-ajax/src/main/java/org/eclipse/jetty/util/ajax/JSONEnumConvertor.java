@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.ajax.JSON.Output;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /**
  * Convert an {@link Enum} to JSON.
  * If fromJSON is true in the constructor, the JSON generated will

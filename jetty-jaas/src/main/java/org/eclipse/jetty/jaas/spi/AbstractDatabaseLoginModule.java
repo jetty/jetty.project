@@ -79,7 +79,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
 
 
 
-    /* ------------------------------------------------ */
+
     /** Load info from database
      * @param userName user info to load
      * @exception Exception if unable to get the user info

@@ -33,25 +33,25 @@ public abstract class PatternRule extends Rule
 {
     protected String _pattern;
 
-    /* ------------------------------------------------------------ */
+
     protected PatternRule()
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     protected PatternRule(String pattern)
     {
         this();
         setPattern(pattern);
     }
     
-    /* ------------------------------------------------------------ */
+
     public String getPattern()
     {
         return _pattern;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the rule pattern.
      * 
@@ -62,7 +62,7 @@ public abstract class PatternRule extends Rule
         _pattern = pattern;
     }
 
-    /* ------------------------------------------------------------ */
+
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#matchAndApply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
@@ -76,7 +76,7 @@ public abstract class PatternRule extends Rule
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Apply the rule to the request
      * @param target field to attempt match
      * @param request request object

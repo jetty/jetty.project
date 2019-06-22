@@ -71,7 +71,7 @@ public class DefaultJettyAtJettyHomeHelper
     
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Called by the JettyBootStrapActivator. If the system property jetty.home
      * is defined and points to a folder, creates a corresponding jetty
@@ -198,7 +198,7 @@ public class DefaultJettyAtJettyHomeHelper
     
    
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Minimum setup for the location of the configuration files given a
      * jettyhome folder. Reads the system property jetty.etc.config.urls and
@@ -227,7 +227,7 @@ public class DefaultJettyAtJettyHomeHelper
         return configURLs;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Minimum setup for the location of the configuration files given a
      * configuration embedded inside a bundle. Reads the system property
@@ -285,7 +285,7 @@ public class DefaultJettyAtJettyHomeHelper
         return configURLs;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Get a resource representing a directory inside a bundle. If the dir is null,
      * return a resource representing the installation location of the bundle.

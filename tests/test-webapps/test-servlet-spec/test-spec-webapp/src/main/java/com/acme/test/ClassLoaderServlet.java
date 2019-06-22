@@ -76,7 +76,7 @@ public class ClassLoaderServlet extends HttpServlet
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public static URI getLocationOfClass(Class<?> clazz)
     {
         try

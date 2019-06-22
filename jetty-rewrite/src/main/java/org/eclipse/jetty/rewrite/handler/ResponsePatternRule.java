@@ -33,13 +33,13 @@ public class ResponsePatternRule extends PatternRule
     private String _code;
     private String _reason;
 
-    /* ------------------------------------------------------------ */
+
     public ResponsePatternRule()
     {
         this(null,null,"");
     }
 
-    /* ------------------------------------------------------------ */
+
     public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("reason") String reason)
     {
         super(pattern);
@@ -49,7 +49,7 @@ public class ResponsePatternRule extends PatternRule
         setReason(reason);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the response status code. 
      * @param code response code
@@ -59,7 +59,7 @@ public class ResponsePatternRule extends PatternRule
         _code = code;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the reason for the response status code. Reasons will only reflect
      * if the code value is greater or equal to 400.
@@ -71,7 +71,7 @@ public class ResponsePatternRule extends PatternRule
         _reason = reason;
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -93,7 +93,7 @@ public class ResponsePatternRule extends PatternRule
         return target;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the code and reason string.
      */

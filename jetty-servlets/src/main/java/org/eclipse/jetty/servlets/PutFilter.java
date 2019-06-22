@@ -77,7 +77,7 @@ public class PutFilter implements Filter
     private File _tmpdir;
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void init(FilterConfig config) throws ServletException
     {
@@ -111,14 +111,14 @@ public class PutFilter implements Filter
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     private boolean getInitBoolean(FilterConfig config,String name)
     {
         String value = config.getInitParameter(name);
         return value != null && value.length() > 0 && (value.startsWith("t") || value.startsWith("T") || value.startsWith("y") || value.startsWith("Y") || value.startsWith("1"));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException
     {
@@ -174,19 +174,19 @@ public class PutFilter implements Filter
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     private boolean isHidden(String pathInContext)
     {
         return _hidden.containsKey(pathInContext);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void destroy()
     {
     }
 
-    /* ------------------------------------------------------------------- */
+
     public void handlePut(HttpServletRequest request, HttpServletResponse response, String pathInContext, File file) throws ServletException, IOException
     {
         boolean exists = file.exists();
@@ -273,7 +273,7 @@ public class PutFilter implements Filter
         }
     }
 
-    /* ------------------------------------------------------------------- */
+
     public void handleDelete(HttpServletRequest request, HttpServletResponse response, String pathInContext, File file) throws ServletException, IOException
     {
         try
@@ -294,7 +294,7 @@ public class PutFilter implements Filter
         }
     }
 
-    /* ------------------------------------------------------------------- */
+
     public void handleMove(HttpServletRequest request, HttpServletResponse response, String pathInContext, File file)
         throws ServletException, IOException, URISyntaxException
     {
@@ -324,7 +324,7 @@ public class PutFilter implements Filter
         response.flushBuffer();
     }
 
-    /* ------------------------------------------------------------ */
+
     public void handleOptions(FilterChain chain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         chain.doFilter(request,new HttpServletResponseWrapper(response)
@@ -348,7 +348,7 @@ public class PutFilter implements Filter
 
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * Check modification date headers.
      */

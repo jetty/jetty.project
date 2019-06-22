@@ -25,7 +25,7 @@ import javax.security.auth.Subject;
 import org.eclipse.jetty.server.UserIdentity;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  * The default implementation of UserIdentity.
  *

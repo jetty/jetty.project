@@ -27,7 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.annotation.Name;
 
 
-/* ------------------------------------------------------------ */
+
 /** Rule to add a header based on a Regex match
  */
 public class HeaderRegexRule extends RegexRule
@@ -36,13 +36,13 @@ public class HeaderRegexRule extends RegexRule
     private String _value;
     private boolean _add=false;
 
-    /* ------------------------------------------------------------ */
+
     public HeaderRegexRule()
     {
         this(null,null,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     public HeaderRegexRule(@Name("regex") String regex, @Name("name") String name, @Name("value") String value)
     {
         super(regex);
@@ -52,7 +52,7 @@ public class HeaderRegexRule extends RegexRule
         setValue(value);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the header name.
      * 
@@ -63,7 +63,7 @@ public class HeaderRegexRule extends RegexRule
         _name = name;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the header value. The value can be either a <code>String</code> or <code>int</code> value.
      * 
@@ -74,7 +74,7 @@ public class HeaderRegexRule extends RegexRule
         _value = value;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the Add flag. 
      * @param add If true, the header is added to the response, otherwise the header it is set on the response.
@@ -84,7 +84,7 @@ public class HeaderRegexRule extends RegexRule
         _add = add;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher)
             throws IOException 
@@ -97,7 +97,7 @@ public class HeaderRegexRule extends RegexRule
         return target;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the header name.
      * @return the header name.
@@ -107,7 +107,7 @@ public class HeaderRegexRule extends RegexRule
         return _name;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the header value.
      * @return the header value.
@@ -117,7 +117,7 @@ public class HeaderRegexRule extends RegexRule
         return _value;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the add flag value.
      */
@@ -126,7 +126,7 @@ public class HeaderRegexRule extends RegexRule
         return _add;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the header contents.
      */

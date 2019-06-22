@@ -95,7 +95,7 @@ public interface Connector extends LifeCycle, Container, Graceful
     public Collection<EndPoint> getConnectedEndPoints();
 
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the connector name if set.
      * <p>A {@link ContextHandler} may be configured with

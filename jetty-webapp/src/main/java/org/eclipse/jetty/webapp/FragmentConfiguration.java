@@ -46,7 +46,7 @@ public class FragmentConfiguration extends AbstractConfiguration
         context.setAttribute(FRAGMENT_RESOURCES, null);
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Add in fragment descriptors that have already been discovered by MetaInfConfiguration
      * 
@@ -62,7 +62,7 @@ public class FragmentConfiguration extends AbstractConfiguration
         addWebFragments(context, metaData);
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Add in fragment descriptors that have already been discovered by MetaInfConfiguration
      * 

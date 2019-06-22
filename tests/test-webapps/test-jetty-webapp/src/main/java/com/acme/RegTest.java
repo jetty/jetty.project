@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.StringUtil;
 
 
 
-/* ------------------------------------------------------------ */
+
 /** Rego Servlet - tests being accessed from servlet 3.0 programmatic 
  * configuration.
  * 
@@ -40,21 +40,21 @@ import org.eclipse.jetty.util.StringUtil;
 public class RegTest extends HttpServlet
 {
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     { 
@@ -168,14 +168,14 @@ public class RegTest extends HttpServlet
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getServletInfo()
     {
         return "Rego Servlet";
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public synchronized void destroy()
     {

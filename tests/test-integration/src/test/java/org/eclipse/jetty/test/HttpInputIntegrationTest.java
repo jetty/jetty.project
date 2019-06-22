@@ -148,7 +148,7 @@ public class HttpInputIntegrationTest
     
     interface TestClient
     {        
-        /* ------------------------------------------------------------ */
+
         /**
          * @param uri The URI to test, typically /ctx/test?mode=THE_MODE
          * @param delayMs the delay in MS to use.

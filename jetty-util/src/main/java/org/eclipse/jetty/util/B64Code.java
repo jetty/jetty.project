@@ -408,7 +408,7 @@ public class B64Code
         return bout.toByteArray();
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Base 64 decode as described in RFC 2045.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
@@ -467,7 +467,7 @@ public class B64Code
         return;
     }
     
-    /* ------------------------------------------------------------ */
+
     public static byte[] decodeRFC4648URL(String encoded)
     {
         // FIXME: no Jetty mainline code uses this anymore
@@ -479,7 +479,7 @@ public class B64Code
         return bout.toByteArray();
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Base 64 decode as described in RFC 4648 URL.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.

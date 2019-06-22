@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 
-/* ------------------------------------------------------------ */
+
 /** HttpContent created from a {@link Resource}.
  * <p>The HttpContent is used to server static content that is not
  * cached. So fields and values are only generated as need be an not 
@@ -44,19 +44,19 @@ public class ResourceHttpContent implements HttpContent
     Map<CompressedContentFormat, HttpContent> _precompressedContents;
     String _etag;
 
-    /* ------------------------------------------------------------ */
+
     public ResourceHttpContent(final Resource resource, final String contentType)
     {
         this(resource,contentType,-1,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer)
     {
         this(resource,contentType,maxBuffer,null);
     }
     
-    /* ------------------------------------------------------------ */
+
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, Map<CompressedContentFormat, HttpContent> precompressedContents)
     {
         _resource=resource;
@@ -76,49 +76,49 @@ public class ResourceHttpContent implements HttpContent
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getContentTypeValue()
     {
         return _contentType;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public HttpField getContentType()
     {
         return _contentType==null?null:new HttpField(HttpHeader.CONTENT_TYPE,_contentType);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public HttpField getContentEncoding()
     {
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getContentEncodingValue()
     {
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getCharacterEncoding()
     {
         return _contentType==null?null:MimeTypes.getCharsetFromContentType(_contentType);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Type getMimeType()
     {
         return _contentType==null?null:MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(_contentType));
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public HttpField getLastModified()
     {
@@ -126,7 +126,7 @@ public class ResourceHttpContent implements HttpContent
         return lm>=0?new HttpField(HttpHeader.LAST_MODIFIED,DateGenerator.formatDate(lm)):null;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getLastModifiedValue()
     {
@@ -134,7 +134,7 @@ public class ResourceHttpContent implements HttpContent
         return lm>=0?DateGenerator.formatDate(lm):null;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public ByteBuffer getDirectBuffer()
     {
@@ -150,21 +150,21 @@ public class ResourceHttpContent implements HttpContent
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public HttpField getETag()
     {
         return new HttpField(HttpHeader.ETAG,getETagValue());
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getETagValue()
     {
         return _resource.getWeakETag();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public ByteBuffer getIndirectBuffer()
     {
@@ -180,7 +180,7 @@ public class ResourceHttpContent implements HttpContent
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public HttpField getContentLength()
     {
@@ -188,49 +188,49 @@ public class ResourceHttpContent implements HttpContent
         return l==-1?null:new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH,l);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public long getContentLengthValue()
     {
         return _resource.length();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public InputStream getInputStream() throws IOException
     {
         return _resource.getInputStream();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
         return _resource.getReadableByteChannel();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Resource getResource()
     {
         return _resource;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void release()
     {
         _resource.close();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
         return String.format("%s@%x{r=%s,ct=%s,c=%b}",this.getClass().getSimpleName(),hashCode(),_resource,_contentType,_precompressedContents!=null);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
     {

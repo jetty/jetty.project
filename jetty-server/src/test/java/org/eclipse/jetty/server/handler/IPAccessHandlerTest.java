@@ -80,7 +80,7 @@ public class IPAccessHandlerTest
         _server.start();
     }
 
-    /* ------------------------------------------------------------ */
+
     @AfterAll
     public static void tearDown()
         throws Exception
@@ -88,7 +88,7 @@ public class IPAccessHandlerTest
         _server.stop();
     }
 
-    /* ------------------------------------------------------------ */
+
     @ParameterizedTest
     @MethodSource("data")
     public void testHandler(String white, String black, String host, String uri, String code, boolean byPath)
@@ -121,7 +121,7 @@ public class IPAccessHandlerTest
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     protected Response readResponse(BufferedReader reader)
         throws IOException
     {
@@ -181,14 +181,14 @@ public class IPAccessHandlerTest
         return new Response(code, headers, body.toString().trim());
     }
 
-    /* ------------------------------------------------------------ */
+
    protected class Response
     {
         private final String code;
         private final Map<String, String> headers;
         private final String body;
 
-        /* ------------------------------------------------------------ */
+
         private Response(String code, Map<String, String> headers, String body)
         {
             this.code = code;
@@ -196,25 +196,25 @@ public class IPAccessHandlerTest
             this.body = body;
         }
 
-        /* ------------------------------------------------------------ */
+
         public String getCode()
         {
             return code;
         }
 
-        /* ------------------------------------------------------------ */
+
         public Map<String, String> getHeaders()
         {
             return headers;
         }
 
-        /* ------------------------------------------------------------ */
+
         public String getBody()
         {
             return body;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public String toString()
         {
@@ -228,7 +228,7 @@ public class IPAccessHandlerTest
         }
     }
 
-   /* ------------------------------------------------------------ */
+
     public static Stream<Arguments> data() {
         Object[][] data = new Object[][] {
             // Empty lists
@@ -384,7 +384,7 @@ public class IPAccessHandlerTest
             {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dispatch",  "403", false},
             {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dump/info", "200", false},
 
-            /*-----------------------------------------------------------------------------------------*/
+
             // Match by path starts with [117]
             // test cases affected by _whiteListByPath highlighted accordingly
 

@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
-/* ------------------------------------------------------------ */
+
 /**
  * Properties User Realm.
  * <p>
@@ -56,39 +56,39 @@ public class HashLoginService extends AbstractLoginService
     private boolean _userStoreAutoCreate = false;
 
 
-    /* ------------------------------------------------------------ */
+
     public HashLoginService()
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     public HashLoginService(String name)
     {
         setName(name);
     }
 
-    /* ------------------------------------------------------------ */
+
     public HashLoginService(String name, String config)
     {
         setName(name);
         setConfig(config);
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getConfig()
     {
         return _config;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Deprecated
     public Resource getConfigResource()
     {
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Load realm users from properties file.
      * <p>
@@ -137,7 +137,7 @@ public class HashLoginService extends AbstractLoginService
         _userStore = userStore;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected String[] loadRoleInfo(UserPrincipal user)
     {
@@ -158,7 +158,7 @@ public class HashLoginService extends AbstractLoginService
     }
 
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected UserPrincipal loadUserInfo(String userName)
     {
@@ -173,7 +173,7 @@ public class HashLoginService extends AbstractLoginService
     
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
@@ -213,7 +213,7 @@ public class HashLoginService extends AbstractLoginService
     {
         return _userStoreAutoCreate;
     }
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */

@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 
 
-/* ------------------------------------------------------------ */
+
 /** ScopedHandler.
  *
  * A ScopedHandler is a HandlerWrapper where the wrapped handlers
@@ -107,7 +107,7 @@ public abstract class ScopedHandler extends HandlerWrapper
     protected ScopedHandler _outerScope;
     protected ScopedHandler _nextScope;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
      */
@@ -133,8 +133,7 @@ public abstract class ScopedHandler extends HandlerWrapper
     }
 
     /** ------------------------------------------------------------ */
-    /*
-     */
+
     @Override
     public final void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -147,7 +146,7 @@ public abstract class ScopedHandler extends HandlerWrapper
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Scope the handler
      * <p>Derived implementations should call {@link #nextScope(String, Request, HttpServletRequest, HttpServletResponse)}
@@ -174,7 +173,7 @@ public abstract class ScopedHandler extends HandlerWrapper
         nextScope(target,baseRequest,request,response);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Scope the handler
      * @param target
@@ -205,7 +204,7 @@ public abstract class ScopedHandler extends HandlerWrapper
             doHandle(target,baseRequest,request, response);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Do the handler work within the scope.
      * <p>Derived implementations should call {@link #nextHandle(String, Request, HttpServletRequest, HttpServletResponse)}
@@ -229,7 +228,7 @@ public abstract class ScopedHandler extends HandlerWrapper
     public abstract void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException;
 
-    /* ------------------------------------------------------------ */
+
     /*
      * Do the handler work within the scope.
      * @param target

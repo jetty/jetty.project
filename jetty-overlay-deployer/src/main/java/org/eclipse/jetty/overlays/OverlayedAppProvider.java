@@ -291,7 +291,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     };
     
 
-    /* ------------------------------------------------------------ */
+
     public OverlayedAppProvider()
     {
         try
@@ -307,25 +307,25 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
 
 
 
-    /* ------------------------------------------------------------ */
+
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         _deploymentManager=deploymentManager;
     }
 
-    /* ------------------------------------------------------------ */
+
     public DeploymentManager getDeploymentManager()
     {
         return _deploymentManager;
     }
 
-    /* ------------------------------------------------------------ */
+
     public ConfigurationManager getConfigurationManager()
     {
         return _configurationManager;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Set the configurationManager.
      * @param configurationManager the configurationManager to set
      */
@@ -334,7 +334,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _configurationManager = configurationManager;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The name in {@link XmlConfiguration#getIdMap()} of the {@link Server} instance. Default "Server".
      */
@@ -343,7 +343,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return _serverID;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param serverID The name in {@link XmlConfiguration#getIdMap()} of the {@link Server} instance.
      */
@@ -558,7 +558,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     private XmlConfiguration newXmlConfiguration(URL url, Map<String, Object> idMap, Template template, Instance instance) throws SAXException, IOException
     {
         XmlConfiguration xmlc = new XmlConfiguration(url);
@@ -568,7 +568,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return xmlc;
     }
 
-    /* ------------------------------------------------------------ */
+
     private void populateParameters(Map<String,String> params,Template template, Instance instance)
     {
         try
@@ -598,7 +598,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     }
 
 
-    /* ------------------------------------------------------------ */
+
     private TemplateContext createTemplateContext(final String key, Webapp webapp, Template template, Node node, ClassLoader parent) throws Exception
     {
         __log.info("created {}",key);
@@ -672,7 +672,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return shared;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The node name (defaults to hostname)
      */
@@ -681,7 +681,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return _nodeName;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param nodeName Set the node name
      */
@@ -690,7 +690,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _nodeName = nodeName;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the scanDir.
      * @return the scanDir
      */
@@ -699,7 +699,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return _scanDir;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the scanDir.
      * @param scanDir the scanDir to set
      */
@@ -708,7 +708,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _scanDir = scanDir;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the temporary directory.
      * @param tmpDir the directory for temporary files.  If null, then getScanDir()+"/tmp" is used if it exists, else the system default is used.
      */
@@ -717,7 +717,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _tmpDir=tmpDir;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the temporary directory.
      * return the tmpDir.  If null, then getScanDir()+"/tmp" is used if it exists, else the system default is used.
      */
@@ -726,7 +726,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return _tmpDir;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The scan interval
      * @see org.eclipse.jetty.util.Scanner#getScanInterval()
@@ -736,7 +736,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return _scanner.getScanInterval();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param scanInterval The scan interval
      * @see org.eclipse.jetty.util.Scanner#setScanInterval(int)
@@ -746,7 +746,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _scanner.setScanInterval(scanInterval);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.util.Scanner#scan()
      */
@@ -755,7 +755,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _scanner.scan();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
@@ -787,7 +787,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
@@ -819,7 +819,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         super.doStop();
     }
     
-    /* ------------------------------------------------------------ */
+
     protected synchronized void updateLayers(Set<String> layerURIs)
     {
         _loading=System.currentTimeMillis();
@@ -948,7 +948,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     protected File tmpdir(String name,String suffix) throws IOException
     {
         File dir=_tmpDir;
@@ -968,7 +968,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return tmp;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Walks the defined webapps, templates, nodes and instances to 
      * determine what should be deployed, then adjust reality to match.
@@ -1094,13 +1094,13 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
 
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void removeInstance(String name)
     {
         _removedLayers.add(_instances.remove(name));
     }
 
-    /* ------------------------------------------------------------ */
+
     protected Instance loadInstance(String name, File origin)
         throws IOException
     {
@@ -1109,7 +1109,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return instance;
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void removeNode()
     {
         if (_node!=null)
@@ -1117,7 +1117,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _node=null;
     }
 
-    /* ------------------------------------------------------------ */
+
     protected Node loadNode(File origin)
         throws IOException
     {
@@ -1127,13 +1127,13 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return _node;
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void removeTemplate(String name)
     {
         _removedLayers.add(_templates.remove(name));
     }
 
-    /* ------------------------------------------------------------ */
+
     protected Template loadTemplate(String name, File origin)
         throws IOException
     {
@@ -1147,7 +1147,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _removedLayers.add(_webapps.remove(name));
     }
 
-    /* ------------------------------------------------------------ */
+
     protected Webapp loadWebapp(String name, File origin)
         throws IOException
     {
@@ -1156,7 +1156,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return webapp;
     }
 
-    /* ------------------------------------------------------------ */
+
     private static List<Resource> getLayers(Layer... layers)
     {
         List<Resource> resources = new ArrayList<Resource>();
@@ -1171,7 +1171,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return resources;
     }
     
-    /* ------------------------------------------------------------ */
+
     private static List<Resource> getLayeredResources(String path, Layer... layers)
     {
         List<Resource> resources = new ArrayList<Resource>();
@@ -1186,9 +1186,9 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return resources;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     class Layer 
     {
         private final String _name;
@@ -1315,9 +1315,9 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     class Node extends Overlay
     {
         public Node(String name, File origin) throws IOException
@@ -1327,9 +1327,9 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     }
     
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     class ClassifiedOverlay extends Overlay
     {
         private final String _templateName;
@@ -1361,9 +1361,9 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     class Template extends ClassifiedOverlay
     {
         private Webapp _webapp;
@@ -1384,9 +1384,9 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     class Instance extends ClassifiedOverlay
     {
         Template _template;
@@ -1429,9 +1429,9 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     static class OverlayedApp extends App
     {
         final Instance _instance;
@@ -1449,9 +1449,9 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     }
     
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     private final class ParameterExpander implements ServletContextListener
     {
         private final Map<String, String> _params;

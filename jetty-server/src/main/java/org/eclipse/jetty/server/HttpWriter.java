@@ -34,7 +34,7 @@ public abstract class HttpWriter extends Writer
     final ByteArrayOutputStream2 _bytes;
     final char[] _chars;
 
-    /* ------------------------------------------------------------ */
+
     public HttpWriter(HttpOutput out)
     {
         _out=out;
@@ -42,21 +42,21 @@ public abstract class HttpWriter extends Writer
         _bytes = new ByteArrayOutputStream2(MAX_OUTPUT_CHARS);   
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void close() throws IOException
     {
         _out.close();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void flush() throws IOException
     {
         _out.flush();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write (String s,int offset, int length) throws IOException
     {   
@@ -71,7 +71,7 @@ public abstract class HttpWriter extends Writer
         write(_chars, 0, length);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write (char[] s,int offset, int length) throws IOException
     {         

@@ -40,13 +40,13 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /** MIME Type enum and utilities
  *
  */
 public class MimeTypes
 {
-    /* ------------------------------------------------------------ */
+
     private static final Logger LOG = Log.getLogger(MimeTypes.class);
     private static final  Trie<ByteBuffer> TYPES= new ArrayTrie<ByteBuffer>(512);
     private static final  Map<String,String> __dftMimeMap = new HashMap<String,String>();
@@ -82,7 +82,7 @@ public class MimeTypes
         APPLICATION_JSON_UTF_8("application/json;charset=utf-8",APPLICATION_JSON);
 
 
-        /* ------------------------------------------------------------ */
+
         private final String _string;
         private final Type _base;
         private final ByteBuffer _buffer;
@@ -91,7 +91,7 @@ public class MimeTypes
         private final boolean _assumedCharset;
         private final HttpField _field;
 
-        /* ------------------------------------------------------------ */
+
         Type(String s)
         {
             _string=s;
@@ -103,7 +103,7 @@ public class MimeTypes
             _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
 
-        /* ------------------------------------------------------------ */
+
         Type(String s,Type base)
         {
             _string=s;
@@ -116,7 +116,7 @@ public class MimeTypes
             _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
 
-        /* ------------------------------------------------------------ */
+
         Type(String s,Charset cs)
         {
             _string=s;
@@ -128,63 +128,63 @@ public class MimeTypes
             _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
 
-        /* ------------------------------------------------------------ */
+
         public ByteBuffer asBuffer()
         {
             return _buffer.asReadOnlyBuffer();
         }
 
-        /* ------------------------------------------------------------ */
+
         public Charset getCharset()
         {
             return _charset;
         }
 
-        /* ------------------------------------------------------------ */
+
         public String getCharsetString()
         {
             return _charsetString;
         }
 
-        /* ------------------------------------------------------------ */
+
         public boolean is(String s)
         {
             return _string.equalsIgnoreCase(s);
         }
 
-        /* ------------------------------------------------------------ */
+
         public String asString()
         {
             return _string;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public String toString()
         {
             return _string;
         }
 
-        /* ------------------------------------------------------------ */
+
         public boolean isCharsetAssumed()
         {
             return _assumedCharset;
         }
 
-        /* ------------------------------------------------------------ */
+
         public HttpField getContentTypeField()
         {
             return _field;
         }
 
-        /* ------------------------------------------------------------ */
+
         public Type getBaseType()
         {
             return _base;
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public  static final Trie<MimeTypes.Type> CACHE= new ArrayTrie<>(512);
     static
     {
@@ -292,23 +292,23 @@ public class MimeTypes
     }
 
 
-    /* ------------------------------------------------------------ */
+
     private final Map<String,String> _mimeMap=new HashMap<String,String>();
 
-    /* ------------------------------------------------------------ */
+
     /** Constructor.
      */
     public MimeTypes()
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     public synchronized Map<String,String> getMimeMap()
     {
         return _mimeMap;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param mimeMap A Map of file extension to mime-type.
      */
@@ -322,7 +322,7 @@ public class MimeTypes
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the MIME type by filename extension.
      * Lookup only the static default mime map.
      * @param filename A file name
@@ -357,7 +357,7 @@ public class MimeTypes
         return type;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the MIME type by filename extension.
      * Lookup the content and static default mime maps.
      * @param filename A file name
@@ -397,7 +397,7 @@ public class MimeTypes
         return type;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set a mime mapping
      * @param extension the extension
      * @param type the mime type
@@ -407,13 +407,13 @@ public class MimeTypes
         _mimeMap.put(StringUtil.asciiToLowerCase(extension),normalizeMimeType(type));
     }
 
-    /* ------------------------------------------------------------ */
+
     public static Set<String> getKnownMimeTypes()
     {
         return new HashSet<>(__dftMimeMap.values());
     }
 
-    /* ------------------------------------------------------------ */
+
     private static String normalizeMimeType(String type)
     {
         MimeTypes.Type t =CACHE.get(type);
@@ -423,7 +423,7 @@ public class MimeTypes
         return StringUtil.asciiToLowerCase(type);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static String getCharsetFromContentType(String value)
     {
         if (value==null)

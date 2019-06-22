@@ -109,13 +109,13 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
         
     }
 
-    /* ------------------------------------------------------------ */
+
     public Resource getBaseResource()
     {
         return _baseResource;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
@@ -126,62 +126,62 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
         return _extraClasspath;
     }
 
-    /* ------------------------------------------------------------ */
+
     public MimeTypes getMimeTypes()
     {
         return _mimeTypes;
     }
 
     
-    /* ------------------------------------------------------------ */
+
     public PermissionCollection getPermissions()
     {
         return _permissions;
     }
 
-    /* ------------------------------------------------------------ */
+
     public ResourceCache getResourceCache()
     {
         return _resourceCache;
     }
 
-    /* ------------------------------------------------------------ */
+
     public Server getServer()
     {
         return _server;
     }
 
-    /* ------------------------------------------------------------ */
+
     WebAppClassLoader getWebappLoader()
     {
         return _webappLoader;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isParentLoaderPriority()
     {
         return _parentLoaderPriority;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isServerClass(String clazz)
     {
         return _serverClasses.match(clazz);
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isSystemClass(String clazz)
     {
         return _systemClasses.match(clazz);
     }
 
-    /* ------------------------------------------------------------ */
+
     public Resource newResource(String urlOrPath) throws IOException
     {
         return Resource.newResource(urlOrPath);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param extraClasspath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
@@ -192,7 +192,7 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
         _extraClasspath=extraClasspath;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param java2compliant The java2compliant to set.
      */         
@@ -201,7 +201,7 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
         _parentLoaderPriority = java2compliant;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param permissions The permissions to set.
      */
@@ -210,7 +210,7 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
         _permissions = permissions;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the server classes patterns.
      * <p>
@@ -230,7 +230,7 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
         _serverClasses = new ClasspathPattern(serverClasses);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the system classes patterns.
      * <p>
@@ -250,19 +250,19 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
         _systemClasses = new ClasspathPattern(systemClasses);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void addSystemClass(String classname)
     {
         _systemClasses.addPattern(classname);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void addServerClass(String classname)
     {
         _serverClasses.addPattern(classname);
     }
     
-    /* ------------------------------------------------------------ */
+
     public void destroy()
     {
         if (_baseResource!=null)
@@ -273,13 +273,13 @@ public class TemplateContext extends ContainerLifeCycle implements WebAppClassLo
             _idMap.clear();
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setIdMap(Map<String, Object> idMap)
     {
         _idMap=idMap;
     }
 
-    /* ------------------------------------------------------------ */
+
     public Map<String, Object> getIdMap()
     {
         return _idMap;

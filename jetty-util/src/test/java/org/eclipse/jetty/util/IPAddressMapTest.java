@@ -42,7 +42,7 @@ public class IPAddressMapTest
         assertNull(map.match("10.5.2.0"));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testOneRange()
     {
@@ -61,7 +61,7 @@ public class IPAddressMapTest
         assertNull(map.match("0.16.32.64"));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testOneMissing()
     {
@@ -74,7 +74,7 @@ public class IPAddressMapTest
         assertNotNull(map.match("10.5.2.255"));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testTwoMissing()
     {
@@ -90,7 +90,7 @@ public class IPAddressMapTest
         assertNotNull(map.match("10.5.255.1"));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testThreeMissing()
     {
@@ -109,7 +109,7 @@ public class IPAddressMapTest
         assertNotNull(map.match("10.255.1.1"));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testOneMixed()
     {
@@ -129,7 +129,7 @@ public class IPAddressMapTest
         assertNull(map.match("16.31.63.128"));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testManyMixed()
     {

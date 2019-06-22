@@ -378,7 +378,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         context.setBaseResource(_preUnpackBaseResource);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#cloneConfigure(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.WebAppContext)
      */
@@ -396,7 +396,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get a temporary directory in which to unpack the war etc etc.
      * The algorithm for determining this is to check these alternatives

@@ -141,14 +141,14 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
     
     
     
-    /* ------------------------------------------------------------ */
+
     public ServiceWebAppProvider (ServerInstanceWrapper wrapper)
     {
         super(wrapper);
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * A webapp that was deployed as an osgi service has been added,
      * and we want to deploy it.
@@ -235,7 +235,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
     
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param context the webapp
      */
@@ -259,7 +259,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
@@ -282,7 +282,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */

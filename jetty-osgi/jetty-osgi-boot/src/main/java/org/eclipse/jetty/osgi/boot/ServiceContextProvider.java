@@ -137,14 +137,14 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     
     
     
-    /* ------------------------------------------------------------ */
+
     public ServiceContextProvider(ServerInstanceWrapper wrapper)
     {
         super(wrapper);
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean serviceAdded (ServiceReference serviceRef, ContextHandler context)
     {
@@ -189,7 +189,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean serviceRemoved (ServiceReference serviceRef, ContextHandler context)
     {
@@ -213,7 +213,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStart() throws Exception
     {
@@ -235,7 +235,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
         super.doStart();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStop() throws Exception
     {

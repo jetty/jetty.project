@@ -49,7 +49,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Get multiple values.
      * Single valued entries are converted to singleton lists.
      * @param name The entry key. 
@@ -64,7 +64,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
         return vals;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Get a value from a multiple value.
      * If the value is not a multivalue, then index 0 retrieves the
      * value or null.
@@ -85,7 +85,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** Get value as String.
      * Single valued items are converted to a String with the toString()
      * Object method. Multi valued entries are converted to a comma separated
@@ -149,7 +149,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Put multi valued entry.
      * @param name The entry key. 
      * @param values The List of multiple values.
@@ -160,7 +160,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
         return super.put(name,values);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Put multi valued entry.
      * @param name The entry key. 
      * @param values The array of multiple values.
@@ -175,7 +175,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** Add value to multi valued entry.
      * If the entry is single valued, it is converted to the first
      * value of a multi valued entry.
@@ -192,7 +192,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
         super.put(name,lo);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Add values to multi valued entry.
      * If the entry is single valued, it is converted to the first
      * value of a multi valued entry.
@@ -209,7 +209,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
         put(name,lo);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Add values to multi valued entry.
      * If the entry is single valued, it is converted to the first
      * value of a multi valued entry.
@@ -259,7 +259,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
         return merged;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Remove value.
      * @param name The entry key. 
      * @param value The entry value. 
@@ -331,7 +331,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
         return sb.toString();
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @return Map of String arrays
      */

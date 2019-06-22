@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/*------------------------------------------------*/
+
 /**
  * InitialContextFactory.java
  *
@@ -64,7 +64,7 @@ public class InitialContextFactory implements javax.naming.spi.InitialContextFac
 
 
 
-    /*------------------------------------------------*/
+
     /**
      * Get Context that has access to default Namespace.
      * This method won't be called if a name URL beginning

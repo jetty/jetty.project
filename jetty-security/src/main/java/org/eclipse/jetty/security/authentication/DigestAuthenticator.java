@@ -319,13 +319,13 @@ public class DigestAuthenticator extends LoginAuthenticator
         String uri = "";
         String response = "";
 
-        /* ------------------------------------------------------------ */
+
         Digest(String m)
         {
             method = m;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public boolean check(Object credentials)
         {

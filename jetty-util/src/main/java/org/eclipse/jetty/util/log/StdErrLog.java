@@ -268,7 +268,7 @@ public class StdErrLog extends AbstractLogger
         _hideStacks = hideStacks;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Is the source of a log, logged
      *
@@ -279,7 +279,7 @@ public class StdErrLog extends AbstractLogger
         return _source;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set if a log source is logged.
      *

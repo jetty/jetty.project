@@ -28,7 +28,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
-/* ------------------------------------------------------------ */
+
 /** Welcome Filter
  * This filter can be used to server an index file for a directory
  * when no index file actually exists (thus the web.xml mechanism does
@@ -54,7 +54,7 @@ public  class WelcomeFilter implements Filter
             welcome="index.html";
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doFilter(ServletRequest request,
                          ServletResponse response,

@@ -73,7 +73,7 @@ public class ContinuationSupport
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get a Continuation.  The type of the Continuation returned may
      * vary depending on the container in which the application is
@@ -110,7 +110,7 @@ public class ContinuationSupport
         throw new IllegalStateException("!(Jetty || Servlet 3.0 || ContinuationFilter)");
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param request the servlet request
      * @param response the servlet response

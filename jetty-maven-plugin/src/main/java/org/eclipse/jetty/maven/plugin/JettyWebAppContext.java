@@ -134,7 +134,7 @@ public class JettyWebAppContext extends WebAppContext
    
 
   
-    /* ------------------------------------------------------------ */
+
     public JettyWebAppContext ()
     throws Exception
     {
@@ -143,80 +143,80 @@ public class JettyWebAppContext extends WebAppContext
         super.setCopyWebInf(false);
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setContainerIncludeJarPattern(String pattern)
     {
         _containerIncludeJarPattern = pattern;
     }
     
-    /* ------------------------------------------------------------ */
+
     public String getContainerIncludeJarPattern()
     {
         return _containerIncludeJarPattern;
     }
     
-    /* ------------------------------------------------------------ */
+
     public String getWebInfIncludeJarPattern()
     {
         return _webInfIncludeJarPattern;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setWebInfIncludeJarPattern(String pattern)
     {
         _webInfIncludeJarPattern = pattern;
     }
    
-    /* ------------------------------------------------------------ */
+
     public List<File> getClassPathFiles()
     {
         return this._classpathFiles;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setJettyEnvXml (String jettyEnvXml)
     {
         this._jettyEnvXml = jettyEnvXml;
     }
     
-    /* ------------------------------------------------------------ */
+
     public String getJettyEnvXml()
     {
         return this._jettyEnvXml;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setClasses(File dir)
     {
         _classes = dir;
     }
     
-    /* ------------------------------------------------------------ */
+
     public File getClasses()
     {
         return _classes;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setWebInfLib (List<File> jars)
     {
         _webInfJars.addAll(jars);
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setTestClasses (File dir)
     {
         _testClasses = dir;
     }
     
-    /* ------------------------------------------------------------ */
+
     public File getTestClasses ()
     {
         return _testClasses;
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Ordered list of wars to overlay on top of the current project. The list
      * may contain an overlay that represents the current project.
@@ -259,43 +259,43 @@ public class JettyWebAppContext extends WebAppContext
         _generateOrigin = generateOrigin;
     }
 
-    /* ------------------------------------------------------------ */
+
     public List<Overlay> getOverlays()
     {
         return _overlays;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setBaseAppFirst(boolean value)
     {
         _baseAppFirst = value;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean getBaseAppFirst()
     {
         return _baseAppFirst;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setQuickStartWebDescriptor (String quickStartWebXml) throws Exception
     {
         setQuickStartWebDescriptor(Resource.newResource(quickStartWebXml));
     }
     
-    /* ------------------------------------------------------------ */
+
     protected void setQuickStartWebDescriptor (Resource quickStartWebXml)
     {
         _quickStartWebXml = quickStartWebXml;
     }
     
-    /* ------------------------------------------------------------ */
+
     public Resource getQuickStartWebDescriptor ()
     {
         return _quickStartWebXml;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * This method is provided as a convenience for jetty maven plugin configuration 
      * @param resourceBases Array of resources strings to set as a {@link ResourceCollection}. Each resource string may be a comma separated list of resources
@@ -314,7 +314,7 @@ public class JettyWebAppContext extends WebAppContext
         setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
     }
     
-    /* ------------------------------------------------------------ */
+
     public List<File> getWebInfLib()
     {
         return _webInfJars;
@@ -325,13 +325,13 @@ public class JettyWebAppContext extends WebAppContext
         return _webInfClasses;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setGenerateQuickStart (boolean quickStart)
     {
         _isGenerateQuickStart = quickStart;
     }
     
-    /* ------------------------------------------------------------ */
+
     public boolean isGenerateQuickStart()
     {
         return _isGenerateQuickStart;
@@ -339,7 +339,7 @@ public class JettyWebAppContext extends WebAppContext
 
    
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void startWebapp() throws Exception
     {
@@ -361,7 +361,7 @@ public class JettyWebAppContext extends WebAppContext
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void stopWebapp() throws Exception
     {
@@ -372,7 +372,7 @@ public class JettyWebAppContext extends WebAppContext
         super.stopWebapp();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doStart () throws Exception
     {
@@ -443,7 +443,7 @@ public class JettyWebAppContext extends WebAppContext
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doStop () throws Exception
     { 
@@ -478,7 +478,7 @@ public class JettyWebAppContext extends WebAppContext
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public Resource getResource(String uriInContext) throws MalformedURLException
     {
@@ -554,7 +554,7 @@ public class JettyWebAppContext extends WebAppContext
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public Set<String> getResourcePaths(String path)
     {
@@ -591,7 +591,7 @@ public class JettyWebAppContext extends WebAppContext
         return paths;
     }
     
-    /* ------------------------------------------------------------ */
+
     public String addPattern (String s, String pattern)
     {
         if (s == null)
@@ -610,7 +610,7 @@ public class JettyWebAppContext extends WebAppContext
     }
     
     
-    /* ------------------------------------------------------------ */
+
     public void initCDI()
     {
         Class cdiInitializer = null;

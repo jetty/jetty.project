@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 
 
-/* ------------------------------------------------------------------------------- */
+
 public enum HttpVersion
 {
     HTTP_0_9("HTTP/0.9",9),
@@ -33,7 +33,7 @@ public enum HttpVersion
     HTTP_1_1("HTTP/1.1",11),
     HTTP_2("HTTP/2.0",20);
 
-    /* ------------------------------------------------------------ */
+
     public final static Trie<HttpVersion> CACHE= new ArrayTrie<HttpVersion>();
     static
     {
@@ -41,7 +41,7 @@ public enum HttpVersion
             CACHE.put(version.toString(),version);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * Optimised lookup to find a Http Version and whitespace in a byte array.
      * @param bytes Array containing ISO-8859-1 characters
@@ -83,7 +83,7 @@ public enum HttpVersion
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * Optimised lookup to find a HTTP Version and trailing white space in a byte array.
      * @param buffer buffer containing ISO-8859-1 characters
@@ -102,7 +102,7 @@ public enum HttpVersion
     private final ByteBuffer _buffer;
     private final int _version;
 
-    /* ------------------------------------------------------------ */
+
     HttpVersion(String s,int version)
     {
         _string=s;
@@ -111,37 +111,37 @@ public enum HttpVersion
         _version=version;
     }
 
-    /* ------------------------------------------------------------ */
+
     public byte[] toBytes()
     {
         return _bytes;
     }
 
-    /* ------------------------------------------------------------ */
+
     public ByteBuffer toBuffer()
     {
         return _buffer.asReadOnlyBuffer();
     }
 
-    /* ------------------------------------------------------------ */
+
     public int getVersion()
     {
         return _version;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean is(String s)
     {
         return _string.equalsIgnoreCase(s);    
     }
     
-    /* ------------------------------------------------------------ */
+
     public String asString()
     {
         return _string;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
@@ -158,7 +158,7 @@ public enum HttpVersion
         return CACHE.get(version);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static HttpVersion fromVersion(int version)
     {
         switch(version)

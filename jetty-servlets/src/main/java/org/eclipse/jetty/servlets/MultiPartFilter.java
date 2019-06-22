@@ -109,7 +109,7 @@ public class MultiPartFilter implements Filter
     private long _maxRequestSize = -1L;
     private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys", 1000);
 
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * @see javax.servlet.Filter#init(javax.servlet.FilterConfig)
      */
@@ -135,7 +135,7 @@ public class MultiPartFilter implements Filter
         _writeFilesWithFilenames = "true".equalsIgnoreCase(filterConfig.getInitParameter("writeFilesWithFilenames"));
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest,
      *      javax.servlet.ServletResponse, javax.servlet.FilterChain)
@@ -212,7 +212,7 @@ public class MultiPartFilter implements Filter
     }
     
     
-    /* ------------------------------------------------------------ */
+
     private void deleteFiles(ServletRequest request)
     {
         if (!_deleteFiles)
@@ -233,7 +233,7 @@ public class MultiPartFilter implements Filter
         request.removeAttribute(MULTIPART);
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * @see javax.servlet.Filter#destroy()
      */
@@ -242,21 +242,21 @@ public class MultiPartFilter implements Filter
     {
     }
 
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
+
+
     private static class Wrapper extends HttpServletRequestWrapper
     {
         Charset _encoding=StandardCharsets.UTF_8;
         MultiMap<Object> _params;
 
-        /* ------------------------------------------------------------------------------- */
+
         public Wrapper(HttpServletRequest request, MultiMap map)
         {
             super(request);
             this._params=map;
         }
 
-        /* ------------------------------------------------------------------------------- */
+
         /**
          * @see javax.servlet.ServletRequest#getContentLength()
          */
@@ -266,7 +266,7 @@ public class MultiPartFilter implements Filter
             return 0;
         }
 
-        /* ------------------------------------------------------------------------------- */
+
         /**
          * @see javax.servlet.ServletRequest#getParameter(java.lang.String)
          */
@@ -293,7 +293,7 @@ public class MultiPartFilter implements Filter
             return null;
         }
 
-        /* ------------------------------------------------------------------------------- */
+
         /**
          * @see javax.servlet.ServletRequest#getParameterMap()
          */
@@ -310,7 +310,7 @@ public class MultiPartFilter implements Filter
             return Collections.unmodifiableMap(cmap);
         }
 
-        /* ------------------------------------------------------------------------------- */
+
         /**
          * @see javax.servlet.ServletRequest#getParameterNames()
          */
@@ -320,7 +320,7 @@ public class MultiPartFilter implements Filter
             return Collections.enumeration(_params.keySet());
         }
 
-        /* ------------------------------------------------------------------------------- */
+
         /**
          * @see javax.servlet.ServletRequest#getParameterValues(java.lang.String)
          */
@@ -351,7 +351,7 @@ public class MultiPartFilter implements Filter
             return v;
         }
 
-        /* ------------------------------------------------------------------------------- */
+
         /**
          * @see javax.servlet.ServletRequest#setCharacterEncoding(java.lang.String)
          */
@@ -370,7 +370,7 @@ public class MultiPartFilter implements Filter
         }
         
         
-        /* ------------------------------------------------------------------------------- */
+
         private String getParameterBytesAsString (String name, byte[] bytes) 
         throws UnsupportedEncodingException
         {

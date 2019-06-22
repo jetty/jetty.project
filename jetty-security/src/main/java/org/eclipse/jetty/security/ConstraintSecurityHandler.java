@@ -70,13 +70,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     private boolean _denyUncoveredMethods = false;
 
 
-    /* ------------------------------------------------------------ */
+
     public static Constraint createConstraint()
     {
         return new Constraint();
     }
     
-    /* ------------------------------------------------------------ */
+
     public static Constraint createConstraint(Constraint constraint)
     {
         try
@@ -89,7 +89,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a security constraint
      * 
@@ -111,7 +111,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a Constraint
      * 
@@ -125,7 +125,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Create Constraint
      * 
@@ -169,7 +169,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     
     
 
-    /* ------------------------------------------------------------ */
+
     public static List<ConstraintMapping> getConstraintMappingsForPath(String pathSpec, List<ConstraintMapping> constraintMappings)
     {
         if (pathSpec == null || "".equals(pathSpec.trim()) || constraintMappings == null || constraintMappings.size() == 0)
@@ -187,7 +187,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** Take out of the constraint mappings those that match the 
      * given path.
      * 
@@ -214,7 +214,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     
     
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Generate Constraints and ContraintMappings for the given url pattern and ServletSecurityElement
      * 
@@ -279,7 +279,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the constraintMappings.
      */
@@ -289,14 +289,14 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return _constraintMappings;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Set<String> getRoles()
     {
         return _roles;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Process the constraints following the combining rules in Servlet 3.0 EA
      * spec section 13.7.1 Note that much of the logic is in the RoleInfo class.
@@ -323,7 +323,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         setConstraintMappings( Arrays.asList(constraintMappings), null);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Process the constraints following the combining rules in Servlet 3.0 EA
      * spec section 13.7.1 Note that much of the logic is in the RoleInfo class.
@@ -363,7 +363,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the known roles.
      * This may be overridden by a subsequent call to {@link #setConstraintMappings(ConstraintMapping[])} or
@@ -378,7 +378,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.security.ConstraintAware#addConstraintMapping(org.eclipse.jetty.security.ConstraintMapping)
      */
@@ -404,7 +404,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.security.ConstraintAware#addRole(java.lang.String)
      */
@@ -427,7 +427,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.security.SecurityHandler#doStart()
      */
@@ -450,7 +450,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
 
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStop() throws Exception
     {
@@ -459,7 +459,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Create and combine the constraint with the existing processed
      * constraints.
@@ -513,7 +513,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Constraints that name method omissions are dealt with differently.
      * We create an entry in the mappings with key "&lt;method&gt;.omission". This entry
      * is only ever combined with other omissions for the same method to produce a
@@ -542,7 +542,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Initialize or update the RoleInfo from the constraint
      * @param ri the role info
@@ -597,7 +597,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      }
 
    
-    /* ------------------------------------------------------------ */
+
     /** 
      * Find constraints that apply to the given path.
      * In order to do this, we consult 3 different types of information stored in the mappings for each path - each mapping
@@ -711,7 +711,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.security.SecurityHandler#checkWebResourcePermissions(java.lang.String, org.eclipse.jetty.server.Request, org.eclipse.jetty.server.Response, java.lang.Object, org.eclipse.jetty.server.UserIdentity)
      */
@@ -762,7 +762,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
@@ -771,7 +771,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 DumpableCollection.from("constraints",_constraintMap.entrySet()));
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.security.ConstraintAware#setDenyUncoveredHttpMethods(boolean)
      */
@@ -781,7 +781,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         _denyUncoveredMethods = deny;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isDenyUncoveredHttpMethods()
     {
@@ -789,7 +789,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Servlet spec 3.1 pg. 147.
      */
@@ -809,7 +809,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Servlet spec 3.1 pg. 147.
      * The container must check all the combined security constraint
@@ -862,7 +862,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return uncoveredPaths;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Check if any http method omissions exist in the list of method
      * to auth info mappings.
@@ -885,7 +885,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Given a string of the form <code>&lt;method&gt;.&lt;method&gt;.omission</code>
      * split out the individual method names.

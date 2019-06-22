@@ -77,7 +77,7 @@ public class OverlayedAppProviderTest
         final ConcurrentLinkedQueue<Set<String>> scanned = new ConcurrentLinkedQueue<Set<String>>();
         OverlayedAppProvider provider = new OverlayedAppProvider()
         {
-            /* ------------------------------------------------------------ */
+
             /**
              * @see org.eclipse.jetty.overlays.OverlayedAppProvider#updateLayers(java.util.Set)
              */
@@ -146,7 +146,7 @@ public class OverlayedAppProviderTest
         final ConcurrentLinkedQueue<Set<String>> scanned = new ConcurrentLinkedQueue<Set<String>>();
         OverlayedAppProvider provider = new OverlayedAppProvider()
         {
-            /* ------------------------------------------------------------ */
+
             /**
              * @see org.eclipse.jetty.overlays.OverlayedAppProvider#updateLayers(java.util.Set)
              */

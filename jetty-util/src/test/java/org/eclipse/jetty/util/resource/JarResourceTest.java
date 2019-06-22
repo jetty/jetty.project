@@ -86,7 +86,7 @@ public class JarResourceTest
         IO.delete(extract);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testJarFileGetAllResoures()
     throws Exception
@@ -115,7 +115,7 @@ public class JarResourceTest
         assertFalse(jarFileResource.isContainedIn(container));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testJarFileLastModified ()
     throws Exception
@@ -131,7 +131,7 @@ public class JarResourceTest
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testJarFileCopyToDirectoryTraversal () throws Exception
     {

@@ -831,7 +831,7 @@ public class JSON
                         }
                 }
             }
-            // handle /* */ comment
+            // handle  comment
             else if (comment_state > 1)
             {
                 switch (c)
@@ -908,7 +908,7 @@ public class JSON
                         comment_state = 2;
                 }
             }
-            // handle /* */ comment
+            // handle  comment
             else if (comment_state > 1)
             {
                 switch (c)

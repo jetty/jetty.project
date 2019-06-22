@@ -51,7 +51,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
     private OutputStream _out;
     private PrintStream _print;
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.jetty.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */

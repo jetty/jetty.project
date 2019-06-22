@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
-/* ------------------------------------------------------------ */
+
 /**
  * Resource Handler.
  *
@@ -63,13 +63,13 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     Resource _stylesheet;
     String[] _welcomes = { "index.html" };
 
-    /* ------------------------------------------------------------ */
+
     public ResourceHandler(ResourceService resourceService)
     {
         _resourceService=resourceService;
     }
 
-    /* ------------------------------------------------------------ */
+
     public ResourceHandler()
     {
         this(new ResourceService()
@@ -83,7 +83,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getWelcomeFile(String pathInContext)
     {
@@ -102,7 +102,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doStart() throws Exception
     {
@@ -117,7 +117,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the resourceBase.
      */
@@ -128,7 +128,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _baseResource;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the cacheControl header to set on all static content.
      */
@@ -137,7 +137,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _resourceService.getCacheControl().getValue();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return file extensions that signify that a file is gzip compressed. Eg ".svgz"
      */
@@ -146,13 +146,13 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _resourceService.getGzipEquivalentFileExtensions();
     }
 
-    /* ------------------------------------------------------------ */
+
     public MimeTypes getMimeTypes()
     {
         return _mimeTypes;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the minimum content length for async handling.
      *
@@ -165,7 +165,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get minimum memory mapped file content length.
      *
@@ -177,9 +177,8 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     */
+
+
     @Override
     public Resource getResource(String path)
     {
@@ -221,7 +220,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the base resource as a string.
      */
@@ -232,7 +231,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _baseResource.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the stylesheet as a Resource.
      */
@@ -252,13 +251,13 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public String[] getWelcomeFiles()
     {
         return _welcomes;
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
@@ -282,7 +281,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
             super.handle(target,baseRequest,request,response);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return If true, range requests and responses are supported
      */
@@ -299,7 +298,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _resourceService.isDirAllowed();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the directory option.
      *
@@ -310,7 +309,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _resourceService.isDirAllowed();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return True if ETag processing is done
      */
@@ -319,7 +318,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _resourceService.isEtags();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return If set to true, then static content will be served as gzip content encoded if a matching resource is found ending with ".gz"
      */
@@ -342,7 +341,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _resourceService.getPrecompressedFormats();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true, only the path info will be applied to the resourceBase
      */
@@ -351,7 +350,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _resourceService.isPathInfoOnly();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return If true, welcome files are redirected rather than forwarded to.
      */
@@ -360,7 +359,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         return _resourceService.isRedirectWelcome();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param acceptRanges If true, range requests and responses are supported
      */
@@ -369,7 +368,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setAcceptRanges(acceptRanges);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param base The resourceBase to server content from. If null the
      * context resource base is used.
@@ -379,7 +378,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _baseResource = base;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param cacheControl
      *            the cacheControl header to set on all static content.
@@ -389,7 +388,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL,cacheControl));
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param dirAllowed
      *            If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
@@ -399,7 +398,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setDirAllowed(dirAllowed);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the directory.
      *
@@ -411,7 +410,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setDirAllowed(directory);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param etags
      *            True if ETag processing is done
@@ -421,7 +420,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setEtags(etags);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param gzip
      *            If set to true, then static content will be served as gzip content encoded if a matching resource is found ending with ".gz"
@@ -432,7 +431,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         setPrecompressedFormats(gzip?new CompressedContentFormat[]{CompressedContentFormat.GZIP}:new CompressedContentFormat[0]);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param gzipEquivalentFileExtensions file extensions that signify that a file is gzip compressed. Eg ".svgz"
      */
@@ -451,13 +450,13 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setPrecompressedFormats(precompressedFormats);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setMimeTypes(MimeTypes mimeTypes)
     {
         _mimeTypes = mimeTypes;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the minimum content length for async handling.
      *
@@ -470,7 +469,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set minimum memory mapped file content length.
      *
@@ -482,7 +481,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param pathInfoOnly
      *            true, only the path info will be applied to the resourceBase
@@ -492,7 +491,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setPathInfoOnly(pathInfoOnly);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param redirectWelcome
      *            If true, welcome files are redirected rather than forwarded to.
@@ -504,7 +503,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setRedirectWelcome(redirectWelcome);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param resourceBase
      *            The base resource as a string.
@@ -523,7 +522,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param stylesheet
      *            The location of the stylesheet to be used as a String.
@@ -547,7 +546,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setWelcomeFiles(String[] welcomeFiles)
     {
         _welcomes = welcomeFiles;

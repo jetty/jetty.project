@@ -1123,7 +1123,7 @@ public class MultipartFilterTest
     {
         private static final long serialVersionUID = 201012011130L;
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
          */

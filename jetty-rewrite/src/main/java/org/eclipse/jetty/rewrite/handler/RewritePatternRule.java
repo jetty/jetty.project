@@ -36,13 +36,13 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     private String _replacement;
     private String _query;
 
-    /* ------------------------------------------------------------ */
+
     public RewritePatternRule()
     {
         this(null,null);
     }
     
-    /* ------------------------------------------------------------ */
+
     public RewritePatternRule(@Name("pattern") String pattern, @Name("replacement") String replacement)
     {
         super(pattern);
@@ -52,7 +52,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Whenever a match is found, it replaces with this value.
      *
@@ -73,7 +73,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -81,7 +81,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
         return target;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * This method will add _query to the requests's queryString and also combine it with existing queryStrings in
      * the request. However it won't take care for duplicate. E.g. if request.getQueryString contains a parameter
@@ -113,7 +113,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the replacement string.
      */

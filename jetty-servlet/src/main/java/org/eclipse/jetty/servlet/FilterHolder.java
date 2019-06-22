@@ -42,12 +42,12 @@ public class  FilterHolder extends Holder<Filter>
 {
     private static final Logger LOG = Log.getLogger(FilterHolder.class);
 
-    /* ------------------------------------------------------------ */
+
     private transient Filter _filter;
     private transient Config _config;
     private transient FilterRegistration.Dynamic _registration;
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor
      */
     public FilterHolder()
@@ -56,7 +56,7 @@ public class  FilterHolder extends Holder<Filter>
     }
 
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor
      * @param source the holder source
      */
@@ -65,7 +65,7 @@ public class  FilterHolder extends Holder<Filter>
         super(source);
     }
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor
      * @param filter the filter class
      */
@@ -75,7 +75,7 @@ public class  FilterHolder extends Holder<Filter>
         setHeldClass(filter);
     }
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor for existing filter.
      * @param filter the filter
      */
@@ -85,7 +85,7 @@ public class  FilterHolder extends Holder<Filter>
         setFilter(filter);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doStart()
         throws Exception
@@ -102,7 +102,7 @@ public class  FilterHolder extends Holder<Filter>
     }
     
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void initialize() throws Exception
     {
@@ -140,7 +140,7 @@ public class  FilterHolder extends Holder<Filter>
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doStop()
         throws Exception
@@ -164,7 +164,7 @@ public class  FilterHolder extends Holder<Filter>
         super.doStop();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void destroyInstance (Object o)
         throws Exception
@@ -176,7 +176,7 @@ public class  FilterHolder extends Holder<Filter>
         getServletHandler().destroyFilter(f);
     }
 
-    /* ------------------------------------------------------------ */
+
     public synchronized void setFilter(Filter filter)
     {
         _filter=filter;
@@ -186,13 +186,13 @@ public class  FilterHolder extends Holder<Filter>
             setName(filter.getClass().getName());
     }
 
-    /* ------------------------------------------------------------ */
+
     public Filter getFilter()
     {
         return _filter;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -205,14 +205,14 @@ public class  FilterHolder extends Holder<Filter>
                 new DumpableCollection("initParams", _initParams.entrySet()));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
         return String.format("%s@%x==%s,inst=%b,async=%b",_name,hashCode(),_className,_filter!=null,isAsyncSupported());
     }
 
-    /* ------------------------------------------------------------ */
+
     public FilterRegistration.Dynamic getRegistration()
     {
         if (_registration == null)
@@ -220,9 +220,9 @@ public class  FilterHolder extends Holder<Filter>
         return _registration;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     protected class Registration extends HolderRegistration implements FilterRegistration.Dynamic
     {
         @Override
@@ -285,12 +285,12 @@ public class  FilterHolder extends Holder<Filter>
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     class Config extends HolderConfig implements FilterConfig
     {
-        /* ------------------------------------------------------------ */
+
         @Override
         public String getFilterName()
         {

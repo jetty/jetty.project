@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.annotation.Name;
 
 
-/* ------------------------------------------------------------------------------- */
+
 /** Base Class for WebApplicationContext Configuration.
  * This class can be extended to customize or extend the configuration
  * of the WebApplicationContext. 
@@ -36,7 +36,7 @@ public interface Configuration
 {
     public final static String ATTR="org.eclipse.jetty.webapp.configuration";
     
-    /* ------------------------------------------------------------------------------- */
+
     /** Set up for configuration.
      * <p>
      * Typically this step discovers configuration resources
@@ -46,7 +46,7 @@ public interface Configuration
     public void preConfigure (WebAppContext context) throws Exception;
     
     
-    /* ------------------------------------------------------------------------------- */
+
     /** Configure WebApp.
      * <p>
      * Typically this step applies the discovered configuration resources to
@@ -57,14 +57,14 @@ public interface Configuration
     public void configure (WebAppContext context) throws Exception;
     
     
-    /* ------------------------------------------------------------------------------- */
+
     /** Clear down after configuration.
      * @param context The context to configure
      * @throws Exception if unable to post configure
      */
     public void postConfigure (WebAppContext context) throws Exception;
     
-    /* ------------------------------------------------------------------------------- */
+
     /** DeConfigure WebApp.
      * This method is called to undo all configuration done. This is
      * called to allow the context to work correctly over a stop/start cycle
@@ -73,7 +73,7 @@ public interface Configuration
      */
     public void deconfigure (WebAppContext context) throws Exception;
 
-    /* ------------------------------------------------------------------------------- */
+
     /** Destroy WebApp.
      * This method is called to destroy a webappcontext. It is typically called when a context 
      * is removed from a server handler hierarchy by the deployer.
@@ -83,7 +83,7 @@ public interface Configuration
     public void destroy (WebAppContext context) throws Exception;
     
 
-    /* ------------------------------------------------------------------------------- */
+
     /** Clone configuration instance.
      * <p>
      * Configure an instance of a WebAppContext, based on a template WebAppContext that 
@@ -97,7 +97,7 @@ public interface Configuration
     
     public class ClassList extends ArrayList<String>
     {        
-        /* ------------------------------------------------------------ */
+
         /** Get/Set/Create the server default Configuration ClassList.
          * <p>Get the class list from: a Server bean; or the attribute (which can
          * either be a ClassList instance or an String[] of class names); or a new instance
@@ -118,7 +118,7 @@ public interface Configuration
             return cl;
         }
 
-        /* ------------------------------------------------------------ */
+
         /** Get/Create the server default Configuration ClassList.
          * <p>Get the class list from: a Server bean; or the attribute (which can
          * either be a ClassList instance or an String[] of class names); or a new instance

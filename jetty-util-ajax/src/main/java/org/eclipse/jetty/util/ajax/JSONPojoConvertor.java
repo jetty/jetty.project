@@ -106,7 +106,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         this(pojoClass, (Set<String>)null, fromJSON);
     }
     
-    /* ------------------------------------------------------------ */
+
     protected void init()
     {
         Method[] methods = _pojoClass.getMethods();
@@ -145,37 +145,37 @@ public class JSONPojoConvertor implements JSON.Convertor
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     protected void addGetter(String name, Method method)
     {
         _getters.put(name, method);
     }
     
-    /* ------------------------------------------------------------ */
+
     protected void addSetter(String name, Method method)
     {
         _setters.put(name, new Setter(name, method));
     }
     
-    /* ------------------------------------------------------------ */
+
     protected Setter getSetter(String name)
     {
         return _setters.get(name);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected boolean includeField(String name, Method m)
     {
         return _excluded==null || !_excluded.contains(name);
     }
     
-    /* ------------------------------------------------------------ */
+
     protected int getExcludedCount()
     {
         return _excluded==null ? 0 : _excluded.size();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Object fromJSON(Map object)
     {        
@@ -194,7 +194,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         return obj;
     }
     
-    /* ------------------------------------------------------------ */
+
     public int setProps(Object obj, Map<?,?> props)
     {
         int count = 0;
@@ -221,7 +221,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         return count;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void toJSON(Object obj, Output out)
     {
@@ -243,13 +243,13 @@ public class JSONPojoConvertor implements JSON.Convertor
         }        
     }
     
-    /* ------------------------------------------------------------ */
+
     protected void log(Throwable t)
     {
         LOG.ignore(t);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static class Setter
     {
         protected String _propertyName;

@@ -28,7 +28,7 @@ public class HolderMBean extends ObjectMBean
         super(managedObject);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getObjectNameBasis()
     {

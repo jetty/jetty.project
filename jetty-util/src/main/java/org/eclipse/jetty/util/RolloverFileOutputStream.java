@@ -63,7 +63,7 @@ public class RolloverFileOutputStream extends OutputStream
     private boolean _append;
     private int _retainDays;
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param filename The filename must include the string "yyyy_mm_dd", 
      * which is replaced with the actual date when creating and rolling over the file.
@@ -75,7 +75,7 @@ public class RolloverFileOutputStream extends OutputStream
         this(filename,true,ROLLOVER_FILE_RETAIN_DAYS);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param filename The filename must include the string "yyyy_mm_dd", 
      * which is replaced with the actual date when creating and rolling over the file.
@@ -88,7 +88,7 @@ public class RolloverFileOutputStream extends OutputStream
         this(filename,append,ROLLOVER_FILE_RETAIN_DAYS);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param filename The filename must include the string "yyyy_mm_dd", 
      * which is replaced with the actual date when creating and rolling over the file.
@@ -104,7 +104,7 @@ public class RolloverFileOutputStream extends OutputStream
         this(filename,append,retainDays,TimeZone.getDefault());
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param filename The filename must include the string "yyyy_mm_dd", 
      * which is replaced with the actual date when creating and rolling over the file.
@@ -122,7 +122,7 @@ public class RolloverFileOutputStream extends OutputStream
          this(filename,append,retainDays,zone,null,null,ZonedDateTime.now(zone.toZoneId()));
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param filename The filename must include the string "yyyy_mm_dd", 
      * which is replaced with the actual date when creating and rolling over the file.
@@ -146,7 +146,7 @@ public class RolloverFileOutputStream extends OutputStream
     }
     
 
-    /* ------------------------------------------------------------ */
+
     RolloverFileOutputStream(String filename,
         boolean append,
         int retainDays,
@@ -193,7 +193,7 @@ public class RolloverFileOutputStream extends OutputStream
         scheduleNextRollover(now);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the "start of day" for the provided DateTime at the zone specified.
      *
@@ -205,7 +205,7 @@ public class RolloverFileOutputStream extends OutputStream
         return now.toLocalDate().atStartOfDay(now.getZone()).plus(1, ChronoUnit.DAYS);
     }
 
-    /* ------------------------------------------------------------ */
+
     private void scheduleNextRollover(ZonedDateTime now)
     {
         _rollTask = new RollTask();
@@ -220,13 +220,13 @@ public class RolloverFileOutputStream extends OutputStream
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getFilename()
     {
         return _filename;
     }
     
-    /* ------------------------------------------------------------ */
+
     public String getDatedFilename()
     {
         if (_file==null)
@@ -234,13 +234,13 @@ public class RolloverFileOutputStream extends OutputStream
         return _file.toString();
     }
     
-    /* ------------------------------------------------------------ */
+
     public int getRetainDays()
     {
         return _retainDays;
     }
 
-    /* ------------------------------------------------------------ */
+
     void setFile(ZonedDateTime now)
         throws IOException
     {
@@ -317,7 +317,7 @@ public class RolloverFileOutputStream extends OutputStream
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** This method is called whenever a log file is rolled over
      * @param oldFile  The original filename or null if this is the first creation
      * @param backupFile The backup filename or null if the filename is dated.
@@ -327,7 +327,7 @@ public class RolloverFileOutputStream extends OutputStream
     {
     }
     
-    /* ------------------------------------------------------------ */
+
     void removeOldFiles(ZonedDateTime now)
     {
         if (_retainDays>0)
@@ -360,7 +360,7 @@ public class RolloverFileOutputStream extends OutputStream
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write(int b) throws IOException
     {
@@ -370,7 +370,7 @@ public class RolloverFileOutputStream extends OutputStream
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write (byte[] buf)
             throws IOException
@@ -381,7 +381,7 @@ public class RolloverFileOutputStream extends OutputStream
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write (byte[] buf, int off, int len)
             throws IOException
@@ -392,7 +392,7 @@ public class RolloverFileOutputStream extends OutputStream
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void flush() throws IOException
     {
@@ -402,7 +402,7 @@ public class RolloverFileOutputStream extends OutputStream
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void close()
         throws IOException
@@ -429,7 +429,7 @@ public class RolloverFileOutputStream extends OutputStream
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     private class RollTask extends TimerTask
     {
         @Override

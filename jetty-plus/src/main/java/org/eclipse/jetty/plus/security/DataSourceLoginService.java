@@ -91,192 +91,192 @@ public class DataSourceLoginService extends AbstractLoginService
         
     }
 
-    /* ------------------------------------------------------------ */
+
     public DataSourceLoginService()
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     public DataSourceLoginService(String name)
     {
         setName(name);
     }
 
-    /* ------------------------------------------------------------ */
+
     public DataSourceLoginService(String name, IdentityService identityService)
     {
         setName(name);
         setIdentityService(identityService);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setJndiName (String jndi)
     {
         _jndiName = jndi;
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getJndiName ()
     {
         return _jndiName;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setServer (Server server)
     {
         _server=server;
     }
 
-    /* ------------------------------------------------------------ */
+
     public Server getServer()
     {
         return _server;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setCreateTables(boolean createTables)
     {
         _createTables = createTables;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean getCreateTables()
     {
         return _createTables;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setUserTableName (String name)
     {
         _userTableName=name;
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getUserTableName()
     {
         return _userTableName;
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getUserTableKey()
     {
         return _userTableKey;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setUserTableKey(String tableKey)
     {
         _userTableKey = tableKey;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getUserTableUserField()
     {
         return _userTableUserField;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setUserTableUserField(String tableUserField)
     {
         _userTableUserField = tableUserField;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getUserTablePasswordField()
     {
         return _userTablePasswordField;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setUserTablePasswordField(String tablePasswordField)
     {
         _userTablePasswordField = tablePasswordField;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getRoleTableName()
     {
         return _roleTableName;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setRoleTableName(String tableName)
     {
         _roleTableName = tableName;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getRoleTableKey()
     {
         return _roleTableKey;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setRoleTableKey(String tableKey)
     {
         _roleTableKey = tableKey;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getRoleTableRoleField()
     {
         return _roleTableRoleField;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setRoleTableRoleField(String tableRoleField)
     {
         _roleTableRoleField = tableRoleField;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getUserRoleTableName()
     {
         return _userRoleTableName;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setUserRoleTableName(String roleTableName)
     {
         _userRoleTableName = roleTableName;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getUserRoleTableUserKey()
     {
         return _userRoleTableUserKey;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setUserRoleTableUserKey(String roleTableUserKey)
     {
         _userRoleTableUserKey = roleTableUserKey;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getUserRoleTableRoleKey()
     {
         return _userRoleTableRoleKey;
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setUserRoleTableRoleKey(String roleTableRoleKey)
     {
         _userRoleTableRoleKey = roleTableRoleKey;
@@ -284,7 +284,7 @@ public class DataSourceLoginService extends AbstractLoginService
 
   
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public UserPrincipal loadUserInfo (String username)
     {
@@ -318,7 +318,7 @@ public class DataSourceLoginService extends AbstractLoginService
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String[] loadRoleInfo (UserPrincipal user)
     {
@@ -357,7 +357,7 @@ public class DataSourceLoginService extends AbstractLoginService
     
  
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Lookup the datasource for the jndiName and formulate the
      * necessary sql query strings based on the configured table
@@ -410,7 +410,7 @@ public class DataSourceLoginService extends AbstractLoginService
         prepareTables();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @throws NamingException
      * @throws SQLException
@@ -515,7 +515,7 @@ public class DataSourceLoginService extends AbstractLoginService
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return
      * @throws NamingException

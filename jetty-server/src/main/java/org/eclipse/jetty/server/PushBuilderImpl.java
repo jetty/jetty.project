@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  */
 public class PushBuilderImpl implements PushBuilder
@@ -64,14 +64,14 @@ public class PushBuilderImpl implements PushBuilder
             LOG.debug("PushBuilder({} {}?{} s={} c={})",_method,_request.getRequestURI(),_queryString,_sessionId,_conditional);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getMethod()
     {
         return _method;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder method(String method)
     {
@@ -79,14 +79,14 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getQueryString()
     {
         return _queryString;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder queryString(String queryString)
     {
@@ -94,14 +94,14 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getSessionId()
     {
         return _sessionId;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder sessionId(String sessionId)
     {
@@ -109,14 +109,14 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isConditional()
     {
         return _conditional;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder conditional(boolean conditional)
     {
@@ -124,21 +124,21 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Set<String> getHeaderNames()
     {
         return _fields.getFieldNamesCollection();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getHeader(String name)
     {
         return _fields.get(name);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder setHeader(String name,String value)
     {
@@ -146,7 +146,7 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder addHeader(String name,String value)
     {
@@ -154,7 +154,7 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder removeHeader(String name)
     {
@@ -162,14 +162,14 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getPath()
     {
         return _path;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder path(String path)
     {
@@ -177,14 +177,14 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getEtag()
     {
         return _etag;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder etag(String etag)
     {
@@ -192,14 +192,14 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getLastModified()
     {
         return _lastModified;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PushBuilder lastModified(String lastModified)
     {
@@ -207,7 +207,7 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void push()
     {

@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
-/* ------------------------------------------------------------------------------- */
+
 /**
  * Configure by parsing default web.xml and web.xml
  * 
@@ -36,7 +36,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(WebXmlConfiguration.class);
 
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * 
      */
@@ -75,7 +75,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Process web-default.xml, web.xml, override-web.xml
      * 
@@ -93,7 +93,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     protected Resource findWebXml(WebAppContext context) throws IOException, MalformedURLException
     {
         String descriptor = context.getDescriptor();
@@ -116,7 +116,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
     }
 
 
-    /* ------------------------------------------------------------------------------- */
+
     @Override
     public void deconfigure (WebAppContext context) throws Exception
     {      

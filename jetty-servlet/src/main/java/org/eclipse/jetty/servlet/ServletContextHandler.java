@@ -107,49 +107,49 @@ public class ServletContextHandler extends ContextHandler
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
 
-    /* ------------------------------------------------------------ */
+
     public ServletContextHandler()
     {
         this(null,null,null,null,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ServletContextHandler(int options)
     {
         this(null,null,options);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ServletContextHandler(HandlerContainer parent, String contextPath)
     {
         this(parent,contextPath,null,null,null,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ServletContextHandler(HandlerContainer parent, String contextPath, int options)
     {
         this(parent,contextPath,null,null,null,null,options);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ServletContextHandler(HandlerContainer parent, String contextPath, boolean sessions, boolean security)
     {
         this(parent,contextPath,(sessions?SESSIONS:0)|(security?SECURITY:0));
     }
 
-    /* ------------------------------------------------------------ */
+
     public ServletContextHandler(HandlerContainer parent, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
         this(parent,null,sessionHandler,securityHandler,servletHandler,errorHandler);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
         this(parent,contextPath,sessionHandler,securityHandler,servletHandler,errorHandler,0);
     }
     
-    /* ------------------------------------------------------------ */
+
     public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler,int options)
     {
         super(parent, contextPath);
@@ -169,7 +169,7 @@ public class ServletContextHandler extends ContextHandler
             setErrorHandler(errorHandler);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Add EventListener
      * Adds an EventListener to the list. @see org.eclipse.jetty.server.handler.ContextHandler#addEventListener().
      * Also adds any listeners that are session related to the SessionHandler.
@@ -206,7 +206,7 @@ public class ServletContextHandler extends ContextHandler
             wrapper.setHandler(handler);
     }
 
-    /* ------------------------------------------------------------ */
+
     private void relinkHandlers()
     {
         HandlerWrapper handler=this;
@@ -267,7 +267,7 @@ public class ServletContextHandler extends ContextHandler
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStart() throws Exception
     {
@@ -275,7 +275,7 @@ public class ServletContextHandler extends ContextHandler
         super.doStart();
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.server.handler.ContextHandler#doStop()
      */
@@ -287,7 +287,7 @@ public class ServletContextHandler extends ContextHandler
         getServletContext().removeAttribute(DecoratedObjectFactory.ATTR);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the defaultSecurityHandlerClass.
      * @return the defaultSecurityHandlerClass
      */
@@ -296,7 +296,7 @@ public class ServletContextHandler extends ContextHandler
         return _defaultSecurityHandlerClass;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the defaultSecurityHandlerClass.
      * @param defaultSecurityHandlerClass the defaultSecurityHandlerClass to set
      */
@@ -305,13 +305,13 @@ public class ServletContextHandler extends ContextHandler
         _defaultSecurityHandlerClass = defaultSecurityHandlerClass;
     }
 
-    /* ------------------------------------------------------------ */
+
     protected SessionHandler newSessionHandler()
     {
         return new SessionHandler();
     }
 
-    /* ------------------------------------------------------------ */
+
     protected SecurityHandler newSecurityHandler()
     {
         try
@@ -324,13 +324,13 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     protected ServletHandler newServletHandler()
     {
         return new ServletHandler();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Finish constructing handlers and link them together.
      *
@@ -366,14 +366,14 @@ public class ServletContextHandler extends ContextHandler
             _servletHandler.initialize();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void stopContext() throws Exception
     {
         super.stopContext();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the securityHandler.
      */
@@ -386,7 +386,7 @@ public class ServletContextHandler extends ContextHandler
         return _securityHandler;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the servletHandler.
      */
@@ -398,7 +398,7 @@ public class ServletContextHandler extends ContextHandler
         return _servletHandler;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the sessionHandler.
      */
@@ -410,7 +410,7 @@ public class ServletContextHandler extends ContextHandler
         return _sessionHandler;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the gzipHandler.
      */
@@ -422,7 +422,7 @@ public class ServletContextHandler extends ContextHandler
         return _gzipHandler;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Convenience method to add a servlet.
      * @param className the servlet class name
      * @param pathSpec the path spec to map servlet to
@@ -433,7 +433,7 @@ public class ServletContextHandler extends ContextHandler
         return getServletHandler().addServletWithMapping(className, pathSpec);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convenience method to add a servlet.
      * @param servlet the servlet class
      * @param pathSpec the path spec to map servlet to
@@ -444,7 +444,7 @@ public class ServletContextHandler extends ContextHandler
         return getServletHandler().addServletWithMapping(servlet, pathSpec);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convenience method to add a servlet.
      * @param servlet the servlet holder
      * @param pathSpec the path spec
@@ -454,7 +454,7 @@ public class ServletContextHandler extends ContextHandler
         getServletHandler().addServletWithMapping(servlet, pathSpec);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convenience method to add a filter
      * @param holder the filter holder
      * @param pathSpec the path spec
@@ -465,7 +465,7 @@ public class ServletContextHandler extends ContextHandler
         getServletHandler().addFilterWithMapping(holder,pathSpec,dispatches);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convenience method to add a filter
      * @param filterClass the filter class
      * @param pathSpec the path spec
@@ -477,7 +477,7 @@ public class ServletContextHandler extends ContextHandler
         return getServletHandler().addFilterWithMapping(filterClass,pathSpec,dispatches);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convenience method to add a filter
      * @param filterClass the filter class name 
      * @param pathSpec the path spec
@@ -591,7 +591,7 @@ public class ServletContextHandler extends ContextHandler
             replacement.setHandler(next);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param sessionHandler The sessionHandler to set.
      */
@@ -602,7 +602,7 @@ public class ServletContextHandler extends ContextHandler
         relinkHandlers();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param securityHandler The {@link SecurityHandler} to set on this context.
      */
@@ -613,7 +613,7 @@ public class ServletContextHandler extends ContextHandler
         relinkHandlers();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param gzipHandler The {@link GzipHandler} to set on this context.
      */
@@ -624,7 +624,7 @@ public class ServletContextHandler extends ContextHandler
         relinkHandlers();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param servletHandler The servletHandler to set.
      */
@@ -635,7 +635,7 @@ public class ServletContextHandler extends ContextHandler
         relinkHandlers();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Insert a HandlerWrapper before the first Session,Security or ServletHandler
      * but after any other HandlerWrappers.
@@ -678,7 +678,7 @@ public class ServletContextHandler extends ContextHandler
         relinkHandlers();
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * The DecoratedObjectFactory for use by IoC containers (weld / spring / etc)
      * 
@@ -689,7 +689,7 @@ public class ServletContextHandler extends ContextHandler
         return _objFactory;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The decorator list used to resource inject new Filters, Servlets and EventListeners
      * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
@@ -705,7 +705,7 @@ public class ServletContextHandler extends ContextHandler
         return Collections.unmodifiableList(ret);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param decorators The list of {@link Decorator}s
      * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
@@ -716,7 +716,7 @@ public class ServletContextHandler extends ContextHandler
         _objFactory.setDecorators(decorators);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param decorator The decorator to add
      * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
@@ -727,13 +727,13 @@ public class ServletContextHandler extends ContextHandler
         _objFactory.addDecorator(decorator);
     }
     
-    /* ------------------------------------------------------------ */
+
     void destroyServlet(Servlet servlet)
     {
         _objFactory.destroy(servlet);
     }
 
-    /* ------------------------------------------------------------ */
+
     void destroyFilter(Filter filter)
     {
         _objFactory.destroy(filter);
@@ -749,7 +749,7 @@ public class ServletContextHandler extends ContextHandler
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
     {
         private List<String> _urlPatterns = new ArrayList<String>();
@@ -960,7 +960,7 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public static class TagLib implements TaglibDescriptor
     {
         private String _uri;
@@ -1002,7 +1002,7 @@ public class ServletContextHandler extends ContextHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public static class JspConfig implements JspConfigDescriptor
     {
         private List<TaglibDescriptor> _taglibs = new ArrayList<TaglibDescriptor>();
@@ -1052,10 +1052,10 @@ public class ServletContextHandler extends ContextHandler
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public class Context extends ContextHandler.Context
     {
-        /* ------------------------------------------------------------ */
+
         /*
          * @see javax.servlet.ServletContext#getNamedDispatcher(java.lang.String)
          */
@@ -1083,7 +1083,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @since servlet-api-3.0
          */
@@ -1113,7 +1113,7 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing filter
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @since servlet-api-3.0
          */
@@ -1144,7 +1144,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @since servlet-api-3.0
          */
@@ -1175,7 +1175,7 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing filter
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @since servlet-api-3.0
          */
@@ -1206,7 +1206,7 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing completed registration for servlet name
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @since servlet-api-3.0
          */
@@ -1237,7 +1237,7 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing completed registration for servlet name
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @since servlet-api-3.0
          */
@@ -1267,7 +1267,7 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing completed registration for servlet name
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public boolean setInitParameter(String name, String value)
         {
@@ -1280,7 +1280,7 @@ public class ServletContextHandler extends ContextHandler
             return super.setInitParameter(name,value);
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public <T extends Filter> T createFilter(Class<T> c) throws ServletException
         {
@@ -1296,7 +1296,7 @@ public class ServletContextHandler extends ContextHandler
             }
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
         {
@@ -1489,7 +1489,7 @@ public class ServletContextHandler extends ContextHandler
 
 
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * Legacy Interface to decorate loaded classes.
      * <p>

@@ -52,7 +52,7 @@ public class URIUtil
     private URIUtil()
     {}
     
-    /* ------------------------------------------------------------ */
+
     /** Encode a URI path.
      * This is the same encoding offered by URLEncoder, except that
      * the '/' character is not encoded.
@@ -68,7 +68,7 @@ public class URIUtil
         return buf==null?path:buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Encode a URI path.
      * @param path The path the encode
      * @param buf StringBuilder to encode path into (or null)
@@ -79,7 +79,7 @@ public class URIUtil
         return encodePath(buf,path,0);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Encode a URI path.
      * @param path The path the encode
      * @param buf StringBuilder to encode path into (or null)
@@ -396,7 +396,7 @@ public class URIUtil
         return ret.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Encode a URI path.
      * @param path The path the encode
      * @param buf StringBuilder to encode path into (or null)
@@ -437,7 +437,7 @@ public class URIUtil
         return buf;
     }
     
-    /* ------------------------------------------------------------ */
+
     /* Decode a URI path and strip parameters
      */
     public static String decodePath(String path)
@@ -445,7 +445,7 @@ public class URIUtil
         return decodePath(path,0,path.length());
     }
 
-    /* ------------------------------------------------------------ */
+
     /* Decode a URI path and strip parameters of UTF-8 path
      */
     public static String decodePath(String path, int offset, int length)
@@ -527,7 +527,7 @@ public class URIUtil
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /* Decode a URI path and strip parameters of ISO-8859-1 path
      */
     private static String decodeISO88591Path(String path, int offset, int length)
@@ -599,7 +599,7 @@ public class URIUtil
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /** Add two encoded URI path segments.
      * Handles null and empty paths, path and query params 
      * (eg ?a=b or ;JSESSIONID=xxx) and avoids duplicate '/'
@@ -653,7 +653,7 @@ public class URIUtil
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Add two Decoded URI path segments.
      * Handles null and empty paths.  Path and query params (eg ?a=b or
      * ;JSESSIONID=xxx) are not handled
@@ -701,7 +701,7 @@ public class URIUtil
         return buf.toString();
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Return the parent Path.
      * Treat a URI like a directory path and return the parent directory.
      * @param p the path to return a parent reference to
@@ -717,7 +717,7 @@ public class URIUtil
         return null;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Convert a decoded path to a canonical form.
      * <p>
@@ -828,7 +828,7 @@ public class URIUtil
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Convert a path to a cananonical form.
      * <p>
@@ -947,7 +947,7 @@ public class URIUtil
 
     
     
-    /* ------------------------------------------------------------ */
+
     /** Convert a path to a compact form.
      * All instances of "//" and "///" etc. are factored out to single "/" 
      * @param path the path to compact 
@@ -1010,7 +1010,7 @@ public class URIUtil
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @param uri URI
      * @return True if the uri has a scheme
@@ -1034,7 +1034,7 @@ public class URIUtil
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a new URI from the arguments, handling IPv6 host encoding and default ports
      * @param scheme the URI scheme
@@ -1053,7 +1053,7 @@ public class URIUtil
         return builder.toString();
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a new URI StringBuilder from the arguments, handling IPv6 host encoding and default ports
      * @param scheme the URI scheme
@@ -1068,7 +1068,7 @@ public class URIUtil
         return builder;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports
      * @param url StringBuilder to append to
@@ -1100,7 +1100,7 @@ public class URIUtil
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports
      * @param url StringBuffer to append to

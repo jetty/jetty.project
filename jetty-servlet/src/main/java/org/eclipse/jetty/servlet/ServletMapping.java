@@ -34,7 +34,7 @@ public class ServletMapping
     
     
 
-    /* ------------------------------------------------------------ */
+
     public ServletMapping()
     {
         this (Source.EMBEDDED);
@@ -45,7 +45,7 @@ public class ServletMapping
         _source = source;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the pathSpecs.
      */
@@ -55,7 +55,7 @@ public class ServletMapping
         return _pathSpecs;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the servletName.
      */
@@ -65,7 +65,7 @@ public class ServletMapping
         return _servletName;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param pathSpecs The pathSpecs to set.
      */
@@ -75,7 +75,7 @@ public class ServletMapping
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** Test if the list of path specs contains a particular one.
      * @param pathSpec the path spec
      * @return true if path spec matches something in mappings
@@ -93,7 +93,7 @@ public class ServletMapping
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param pathSpec The pathSpec to set.
      */
@@ -102,7 +102,7 @@ public class ServletMapping
         _pathSpecs = new String[]{pathSpec};
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param servletName The servletName to set.
      */
@@ -112,7 +112,7 @@ public class ServletMapping
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute(value="default", readonly=true)
     public boolean isDefault()
     {
@@ -120,26 +120,26 @@ public class ServletMapping
     }
     
     
-    /* ------------------------------------------------------------ */
+
     public void setDefault(boolean fromDefault)
     {
         _default = fromDefault;
     }
     
-    /* ------------------------------------------------------------ */
+
     public Source getSource ()
     {
         return _source;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
         return (_pathSpecs==null?"[]":Arrays.asList(_pathSpecs).toString())+"=>"+_servletName; 
     }
 
-    /* ------------------------------------------------------------ */
+
     public void dump(Appendable out, String indent) throws IOException
     {
         out.append(String.valueOf(this)).append("\n");

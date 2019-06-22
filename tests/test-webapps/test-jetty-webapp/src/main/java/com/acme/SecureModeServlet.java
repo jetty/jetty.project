@@ -44,21 +44,21 @@ public class SecureModeServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(SecureModeServlet.class);
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {

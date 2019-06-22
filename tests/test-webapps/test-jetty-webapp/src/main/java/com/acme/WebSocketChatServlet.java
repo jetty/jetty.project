@@ -69,7 +69,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
         factory.setCreator(this);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a WebSocket that echo's back the message to all other members of the servlet.
      */

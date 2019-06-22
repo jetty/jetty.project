@@ -58,7 +58,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * OSGiApp
      *
@@ -216,20 +216,20 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
 
     }
     
-    /* ------------------------------------------------------------ */
+
     public AbstractContextProvider(ServerInstanceWrapper wrapper)
     {
         _serverWrapper = wrapper;
     }
     
     
-    /* ------------------------------------------------------------ */
+
     public ServerInstanceWrapper getServerInstanceWrapper()
     {
         return _serverWrapper;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.deploy.AppProvider#createContextHandler(org.eclipse.jetty.deploy.App)
      */
@@ -246,14 +246,14 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
         return h;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         _deploymentManager = deploymentManager;
     }
     
-    /* ------------------------------------------------------------ */
+
     public DeploymentManager getDeploymentManager()
     {
         return _deploymentManager;

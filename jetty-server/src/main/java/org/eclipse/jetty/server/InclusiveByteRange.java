@@ -27,7 +27,7 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /** Byte range inclusive of end points.
  * <PRE>
  * 
@@ -75,14 +75,14 @@ public class InclusiveByteRange
     }    
 
 
-    /* ------------------------------------------------------------ */
+
     private void coalesce(InclusiveByteRange r)
     {
         first = Math.min(first,r.first);
         last = Math.max(last,r.last);
     }
 
-    /* ------------------------------------------------------------ */
+
     private boolean overlaps(InclusiveByteRange range)
     {
         return  (range.first>=this.first && range.first<=this.last)
@@ -92,13 +92,13 @@ public class InclusiveByteRange
                 (range.first<this.first && range.last>this.last);
     }
 
-    /* ------------------------------------------------------------ */
+
     public long getSize()
     {
         return last-first+1;
     }
 
-    /* ------------------------------------------------------------ */
+
     public String toHeaderRangeString(long size)
     {
         StringBuilder sb = new StringBuilder(40);
@@ -111,14 +111,14 @@ public class InclusiveByteRange
         return sb.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public int hashCode()
     {
         return (int)(first ^ last);
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean equals( Object obj )
     {
@@ -132,7 +132,7 @@ public class InclusiveByteRange
             ((InclusiveByteRange)obj).last == this.last;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
@@ -144,7 +144,7 @@ public class InclusiveByteRange
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @param headers Enumeration of Range header fields.
      * @param size Size of the resource.
@@ -265,7 +265,7 @@ public class InclusiveByteRange
         return ranges;
     }
 
-    /* ------------------------------------------------------------ */
+
     public static String to416HeaderRangeString(long size)
     {
         StringBuilder sb = new StringBuilder(40);

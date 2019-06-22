@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/* ------------------------------------------------------------ */
+
 /** A Trie String lookup data structure using a tree
  * <p>This implementation is always case insensitive and is optimal for
  * a variable number of fixed strings with few special characters.

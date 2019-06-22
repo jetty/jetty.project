@@ -51,7 +51,7 @@ public class ResourceAliasTest
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testNullCharEndingFilename() throws Exception
     {

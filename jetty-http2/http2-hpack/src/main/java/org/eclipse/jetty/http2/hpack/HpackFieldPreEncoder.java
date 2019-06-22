@@ -27,12 +27,12 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.BufferUtil;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  */
 public class HpackFieldPreEncoder implements HttpFieldPreEncoder
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.http.HttpFieldPreEncoder#getHttpVersion()
      */
@@ -42,7 +42,7 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
         return HttpVersion.HTTP_2;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.http.HttpFieldPreEncoder#getEncodedField(org.eclipse.jetty.http.HttpHeader, java.lang.String, java.lang.String)
      */

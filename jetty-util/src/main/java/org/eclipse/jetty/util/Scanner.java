@@ -180,7 +180,7 @@ public class Scanner extends AbstractLifeCycle
         return Collections.unmodifiableList(_scanDirs);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param recursive True if scanning is recursive
      * @see  #setScanDepth(int)
@@ -190,7 +190,7 @@ public class Scanner extends AbstractLifeCycle
         _scanDepth=recursive?-1:0;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return True if scanning is fully recursive (scandepth==-1)
      * @see #getScanDepth()
@@ -200,7 +200,7 @@ public class Scanner extends AbstractLifeCycle
         return _scanDepth==-1;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Get the scanDepth.
      * @return the scanDepth
      */
@@ -209,7 +209,7 @@ public class Scanner extends AbstractLifeCycle
         return _scanDepth;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the scanDepth.
      * @param scanDepth the scanDepth to set
      */
@@ -237,7 +237,7 @@ public class Scanner extends AbstractLifeCycle
         return _filter;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Whether or not an initial scan will report all files as being
      * added.
@@ -249,13 +249,13 @@ public class Scanner extends AbstractLifeCycle
         _reportExisting = reportExisting;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean getReportExistingFilesOnStartup()
     {
         return _reportExisting;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Set if found directories should be reported.
      * @param dirs true to report directory changes as well
      */
@@ -264,13 +264,13 @@ public class Scanner extends AbstractLifeCycle
         _reportDirs=dirs;
     }
     
-    /* ------------------------------------------------------------ */
+
     public boolean getReportDirs()
     {
         return _reportDirs;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Add an added/removed/changed listener
      * @param listener the listener to add
@@ -282,7 +282,7 @@ public class Scanner extends AbstractLifeCycle
         _listeners.add(listener);   
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Remove a registered listener
      * @param listener the Listener to be removed

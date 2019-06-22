@@ -35,7 +35,7 @@ public class JAASUserPrincipal implements Principal
     private final Subject _subject;
     private final LoginContext _loginContext;
 
-    /* ------------------------------------------------ */
+
     public JAASUserPrincipal(String name, Subject subject, LoginContext loginContext)
     {
         this._name = name;
@@ -43,7 +43,7 @@ public class JAASUserPrincipal implements Principal
         this._loginContext = loginContext;
     }
 
-    /* ------------------------------------------------ */
+
     /** Get the name identifying the user
      */
     @Override
@@ -53,7 +53,7 @@ public class JAASUserPrincipal implements Principal
     }
 
 
-    /* ------------------------------------------------ */
+
     /** Provide access to the Subject
      * @return subject
      */

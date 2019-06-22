@@ -71,7 +71,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
 
 
 
-    /* ------------------------------------------------ */
+
     /** 
      * Init LoginModule.
      * <p>

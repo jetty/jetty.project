@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Log;
 
 import static java.lang.Integer.MIN_VALUE;
 
-/* ------------------------------------------------------------ */
+
 
 /**
  * Implements a quoted comma separated list of quality values
@@ -61,7 +61,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     private boolean _sorted = false;
     private final ToIntFunction<String> _secondaryOrdering;
 
-    /* ------------------------------------------------------------ */
+
 
     /**
      * Sorts values with equal quality according to the length of the value String.
@@ -71,7 +71,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         this((ToIntFunction)null);
     }
 
-    /* ------------------------------------------------------------ */
+
 
     /**
      * Sorts values with equal quality according to given order.
@@ -93,7 +93,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         });
     }
 
-    /* ------------------------------------------------------------ */
+
 
     /**
      * Orders values with equal quality with the given function.
@@ -105,7 +105,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         this._secondaryOrdering = secondaryOrdering == null ? s -> 0 : secondaryOrdering;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void parsedValue(StringBuffer buffer)
     {
@@ -115,7 +115,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         _quality.add(1.0D);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
     {

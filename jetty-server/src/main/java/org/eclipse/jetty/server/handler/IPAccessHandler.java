@@ -112,7 +112,7 @@ public class IPAccessHandler extends HandlerWrapper
     PathMap<IPAddressMap<Boolean>> _black = new PathMap<IPAddressMap<Boolean>>(true);
     boolean _whiteListByPath = false;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Creates new handler object
      */
@@ -121,7 +121,7 @@ public class IPAccessHandler extends HandlerWrapper
         super();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Creates new handler object and initializes white- and black-list
      *
@@ -138,7 +138,7 @@ public class IPAccessHandler extends HandlerWrapper
             setBlack(black);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Add a whitelist entry to an existing handler configuration
      *
@@ -149,7 +149,7 @@ public class IPAccessHandler extends HandlerWrapper
         add(entry, _white);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Add a blacklist entry to an existing handler configuration
      *
@@ -160,7 +160,7 @@ public class IPAccessHandler extends HandlerWrapper
         add(entry, _black);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Re-initialize the whitelist of existing handler object
      *
@@ -171,7 +171,7 @@ public class IPAccessHandler extends HandlerWrapper
         set(entries, _white);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Re-initialize the blacklist of existing handler object
      *
@@ -182,7 +182,7 @@ public class IPAccessHandler extends HandlerWrapper
         set(entries, _black);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Re-initialize the mode of path matching
      *
@@ -193,7 +193,7 @@ public class IPAccessHandler extends HandlerWrapper
         this._whiteListByPath = whiteListByPath;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Checks the incoming request against the whitelist and blacklist
      *
@@ -223,7 +223,7 @@ public class IPAccessHandler extends HandlerWrapper
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Helper method to parse the new entry and add it to
      * the specified address pattern map.
@@ -270,7 +270,7 @@ public class IPAccessHandler extends HandlerWrapper
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Helper method to process a list of new entries and replace
      * the content of the specified address pattern map
@@ -291,7 +291,7 @@ public class IPAccessHandler extends HandlerWrapper
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Check if specified request is allowed by current IPAccess rules.
      *
@@ -344,7 +344,7 @@ public class IPAccessHandler extends HandlerWrapper
         return true;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Dump the handler configuration
      */

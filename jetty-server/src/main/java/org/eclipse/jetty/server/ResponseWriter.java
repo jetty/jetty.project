@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /** Specialized PrintWriter for servlet Responses
  * <p>An instance of ResponseWriter is the {@link PrintWriter} subclass returned by {@link Response#getWriter()}.
  * It differs from the standard {@link PrintWriter} in that:<ul>

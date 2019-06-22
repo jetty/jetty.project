@@ -152,19 +152,19 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     private ServletHandler _servletHandler;
     private ServletHolder _defaultHolder;
 
-    /* ------------------------------------------------------------ */
+
     public DefaultServlet(ResourceService resourceService)
     {
         _resourceService=resourceService;
     }
 
-    /* ------------------------------------------------------------ */
+
     public DefaultServlet()
     {
         this(new ResourceService());
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void init()
     throws UnavailableException
@@ -368,7 +368,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             return ContextHandler.getCurrentContext().getContextHandler();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getInitParameter(String name)
     {
@@ -378,7 +378,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         return value;
     }
 
-    /* ------------------------------------------------------------ */
+
     private boolean getInitBoolean(String name, boolean dft)
     {
         String value=getInitParameter(name);
@@ -391,7 +391,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                 value.startsWith("1"));
     }
 
-    /* ------------------------------------------------------------ */
+
     private int getInitInt(String name, int dft)
     {
         String value=getInitParameter(name);
@@ -402,7 +402,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         return dft;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** get Resource to serve.
      * Map a path to a resource. The default implementation calls
      * HttpContext.getResource but derived servlets may provide
@@ -449,7 +449,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         return r;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
@@ -458,7 +458,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             response.sendError(404);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
@@ -466,7 +466,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         doGet(request,response);
     }
 
-    /* ------------------------------------------------------------ */
+
     /* (non-Javadoc)
      * @see javax.servlet.http.HttpServlet#doTrace(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
@@ -476,7 +476,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse resp)
     throws ServletException, IOException
@@ -484,7 +484,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         resp.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see javax.servlet.Servlet#destroy()
      */
@@ -496,7 +496,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         super.destroy();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getWelcomeFile(String pathInContext)
     {

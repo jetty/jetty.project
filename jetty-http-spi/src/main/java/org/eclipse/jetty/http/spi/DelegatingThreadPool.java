@@ -40,13 +40,13 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         addBean(_executor);
     }
 
-    /* ------------------------------------------------------------ */
+
     public Executor getExecutor()
     {
         return _executor;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setExecutor(Executor executor)
     {
         if (isRunning())
@@ -56,21 +56,21 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         _tryExecutor=TryExecutor.asTryExecutor(executor);
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void execute(Runnable job)
     {
         _executor.execute(job);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean tryExecute(Runnable task)
     {
         return _tryExecutor.tryExecute(task);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public int getIdleThreads()
     {
@@ -86,7 +86,7 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public int getThreads()
     {
@@ -102,7 +102,7 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isLowOnThreads()
     {
@@ -120,7 +120,7 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void join() throws InterruptedException
     {
@@ -133,7 +133,7 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
             throw new IllegalStateException();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStop() throws Exception
     {

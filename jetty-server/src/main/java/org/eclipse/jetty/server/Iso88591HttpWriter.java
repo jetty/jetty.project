@@ -24,13 +24,13 @@ import java.io.IOException;
  */
 public class Iso88591HttpWriter extends HttpWriter
 {
-    /* ------------------------------------------------------------ */
+
     public Iso88591HttpWriter(HttpOutput out)
     {
         super(out);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write (char[] s,int offset, int length) throws IOException
     {

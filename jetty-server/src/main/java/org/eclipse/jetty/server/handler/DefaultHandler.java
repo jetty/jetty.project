@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 
-/* ------------------------------------------------------------ */
+
 /** Default Handler.
  *
  * This handle will deal with unhandled requests in the server.
@@ -84,7 +84,7 @@ public class DefaultHandler extends AbstractHandler
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
@@ -207,7 +207,7 @@ public class DefaultHandler extends AbstractHandler
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns true if the handle can server the jetty favicon.ico
      */
@@ -216,7 +216,7 @@ public class DefaultHandler extends AbstractHandler
         return _serveIcon;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param serveIcon true if the handle can server the jetty favicon.ico
      */

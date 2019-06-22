@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /** File Resource.
  *
  * Handle resources of implied or explicit file type.
@@ -55,12 +55,12 @@ public class FileResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(FileResource.class);
 
-    /* ------------------------------------------------------------ */
+
     private final File _file;
     private final URI _uri;
     private final URI _alias;
     
-    /* -------------------------------------------------------- */
+
     public FileResource(URL url)
             throws IOException, URISyntaxException
     {
@@ -106,7 +106,7 @@ public class FileResource extends Resource
         _alias=checkFileAlias(_uri,_file);
     }
 
-    /* -------------------------------------------------------- */
+
     public FileResource(URI uri)
     {
         File file=new File(uri);
@@ -134,7 +134,7 @@ public class FileResource extends Resource
         }
     }
 
-    /* -------------------------------------------------------- */
+
     public FileResource(File file)
     {
         assertValidPath(file.toString());
@@ -155,7 +155,7 @@ public class FileResource extends Resource
         _alias=checkFileAlias(_uri,_file);
     }
 
-    /* -------------------------------------------------------- */
+
     public FileResource(File base, String childPath)
     {
         String encoded = URIUtil.encodePath(childPath);
@@ -190,7 +190,7 @@ public class FileResource extends Resource
         _alias=checkFileAlias(_uri,_file);
     }
 
-    /* -------------------------------------------------------- */
+
     private static URI normalizeURI(File file, URI uri) throws URISyntaxException {
         String u =uri.toASCIIString();
         if (file.isDirectory())
@@ -203,7 +203,7 @@ public class FileResource extends Resource
         return new URI(u);
     }
 
-    /* -------------------------------------------------------- */
+
     private static URI checkFileAlias(final URI uri, final File file)
     {
         try
@@ -245,7 +245,7 @@ public class FileResource extends Resource
         return null;
     }
     
-    /* -------------------------------------------------------- */
+
     @Override
     public Resource addPath(String path)
             throws IOException, MalformedURLException
@@ -271,14 +271,14 @@ public class FileResource extends Resource
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public URI getAlias()
     {
         return _alias;
     }
     
-    /* -------------------------------------------------------- */
+
     /**
      * Returns true if the resource exists.
      */
@@ -288,7 +288,7 @@ public class FileResource extends Resource
         return _file.exists();
     }
         
-    /* -------------------------------------------------------- */
+
     /**
      * Returns the last modified time
      */
@@ -298,7 +298,7 @@ public class FileResource extends Resource
         return _file.lastModified();
     }
 
-    /* -------------------------------------------------------- */
+
     /**
      * Returns true if the resource is a container/directory.
      */
@@ -308,7 +308,7 @@ public class FileResource extends Resource
         return _file.exists() && _file.isDirectory() || _uri.toASCIIString().endsWith("/");
     }
 
-    /* --------------------------------------------------------- */
+
     /**
      * Return the length of the resource
      */
@@ -319,7 +319,7 @@ public class FileResource extends Resource
     }
         
 
-    /* --------------------------------------------------------- */
+
     /**
      * Returns the name of the resource
      */
@@ -329,7 +329,7 @@ public class FileResource extends Resource
         return _file.getAbsolutePath();
     }
         
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns an File representing the given resource or NULL if this
      * is not possible.
@@ -340,7 +340,7 @@ public class FileResource extends Resource
         return _file;
     }
         
-    /* --------------------------------------------------------- */
+
     /**
      * Returns an input stream to the resource
      */
@@ -350,14 +350,14 @@ public class FileResource extends Resource
         return new FileInputStream(_file);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
         return FileChannel.open(_file.toPath(),StandardOpenOption.READ);
     }
         
-    /* --------------------------------------------------------- */
+
     /**
      * Deletes the given resource
      */
@@ -368,7 +368,7 @@ public class FileResource extends Resource
         return _file.delete();
     }
 
-    /* --------------------------------------------------------- */
+
     /**
      * Rename the given resource
      */
@@ -382,7 +382,7 @@ public class FileResource extends Resource
             return false;
     }
 
-    /* --------------------------------------------------------- */
+
     /**
      * Returns a list of resources contained in the given resource
      */
@@ -401,7 +401,7 @@ public class FileResource extends Resource
         return list;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param o the object to compare against this instance
      * @return <code>true</code> of the object <code>o</code> is a {@link FileResource} pointing to the same file as this resource. 
@@ -420,7 +420,7 @@ public class FileResource extends Resource
         return f._file==_file || (null != _file && _file.equals(f._file));
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the hashcode.
      */
@@ -430,7 +430,7 @@ public class FileResource extends Resource
         return null == _file ? super.hashCode() : _file.hashCode();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void copyTo(File destination)
             throws IOException

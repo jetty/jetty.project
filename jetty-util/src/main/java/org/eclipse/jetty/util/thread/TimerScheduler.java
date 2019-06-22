@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /** A scheduler based on the the JVM Timer class
  */
 public class TimerScheduler extends AbstractLifeCycle implements Scheduler, Runnable

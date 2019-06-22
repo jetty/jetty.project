@@ -65,11 +65,11 @@ public class LazyList
 {
     private static final String[] __EMPTY_STRING_ARRAY = new String[0];
     
-    /* ------------------------------------------------------------ */
+
     private LazyList()
     {}
     
-    /* ------------------------------------------------------------ */
+
     /** Add an item to a LazyList 
      * @param list The list to add to or null if none yet created.
      * @param item The item to add.
@@ -102,7 +102,7 @@ public class LazyList
         return l;    
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Add an item to a LazyList 
      * @param list The list to add to or null if none yet created.
      * @param index The index to add the item at.
@@ -135,7 +135,7 @@ public class LazyList
         return l;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Add the contents of a Collection to a LazyList
      * @param list The list to add to or null if none yet created.
      * @param collection The Collection whose contents should be added.
@@ -149,7 +149,7 @@ public class LazyList
         return list;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Add the contents of an array to a LazyList
      * @param list The list to add to or null if none yet created.
      * @param array The array whose contents should be added.
@@ -162,7 +162,7 @@ public class LazyList
         return list;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Ensure the capacity of the underlying list.
      * @param list the list to grow 
      * @param initialSize the size to grow to
@@ -186,7 +186,7 @@ public class LazyList
         return l;    
     }
 
-    /* ------------------------------------------------------------ */
+
     public static Object remove(Object list, Object o)
     {
         if (list==null)
@@ -206,7 +206,7 @@ public class LazyList
         return list;
     }
     
-    /* ------------------------------------------------------------ */
+
     public static Object remove(Object list, int i)
     {
         if (list==null)
@@ -228,7 +228,7 @@ public class LazyList
     
     
     
-    /* ------------------------------------------------------------ */
+
     /** Get the real List from a LazyList.
      * 
      * @param list A LazyList returned from LazyList.add(Object)
@@ -242,7 +242,7 @@ public class LazyList
     }
     
 
-    /* ------------------------------------------------------------ */
+
     /** Get the real List from a LazyList.
      * 
      * @param list A LazyList returned from LazyList.add(Object) or null
@@ -300,7 +300,7 @@ public class LazyList
     }
 
     
-    /* ------------------------------------------------------------ */
+
     public static String[] toStringArray(Object list)
     {
         if (list==null)
@@ -322,7 +322,7 @@ public class LazyList
         return new String[] {list.toString()};
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convert a lazylist to an array
      * @param list The list to convert
      * @param clazz The class of the array, which may be a primitive type
@@ -352,7 +352,7 @@ public class LazyList
         return a;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** The size of a lazy List 
      * @param list  A LazyList returned from LazyList.add(Object) or null
      * @return the size of the list.
@@ -366,7 +366,7 @@ public class LazyList
         return 1;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Get item from the list 
      * @param list  A LazyList returned from LazyList.add(Object) or null
      * @param i int index
@@ -388,7 +388,7 @@ public class LazyList
         throw new IndexOutOfBoundsException();
     }
     
-    /* ------------------------------------------------------------ */
+
     public static boolean contains(Object list,Object item)
     {
         if (list==null)
@@ -401,7 +401,7 @@ public class LazyList
     }
     
 
-    /* ------------------------------------------------------------ */
+
     public static Object clone(Object list)
     {
         if (list==null)
@@ -411,7 +411,7 @@ public class LazyList
         return list;
     }
     
-    /* ------------------------------------------------------------ */
+
     public static String toString(Object list)
     {
         if (list==null)
@@ -421,7 +421,7 @@ public class LazyList
         return "["+list+"]";
     }
 
-    /* ------------------------------------------------------------ */
+
     @SuppressWarnings("unchecked")
     public static<E> Iterator<E> iterator(Object list)
     {
@@ -438,7 +438,7 @@ public class LazyList
         return l.iterator();
     }
     
-    /* ------------------------------------------------------------ */
+
     @SuppressWarnings("unchecked")
     public static<E> ListIterator<E> listIterator(Object list)
     {

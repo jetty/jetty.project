@@ -39,12 +39,12 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class BasicAuthenticator extends LoginAuthenticator
 {
-    /* ------------------------------------------------------------ */
+
     public BasicAuthenticator()
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.security.Authenticator#getAuthMethod()
      */
@@ -56,7 +56,7 @@ public class BasicAuthenticator extends LoginAuthenticator
 
  
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.security.Authenticator#validateRequest(javax.servlet.ServletRequest, javax.servlet.ServletResponse, boolean)
      */

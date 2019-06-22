@@ -898,7 +898,7 @@ public class MultiPartInputStreamParser
     }
 
 
-    /* ------------------------------------------------------------ */
+
     private String value(String nameEqualsValue)
     {
         int idx = nameEqualsValue.indexOf('=');
@@ -907,7 +907,7 @@ public class MultiPartInputStreamParser
     }
 
 
-    /* ------------------------------------------------------------ */
+
     private String filenameValue(String nameEqualsValue)
     {
         int idx = nameEqualsValue.indexOf('=');

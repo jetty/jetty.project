@@ -30,7 +30,7 @@ import javax.servlet.ServletResponse;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /** 
  */
 

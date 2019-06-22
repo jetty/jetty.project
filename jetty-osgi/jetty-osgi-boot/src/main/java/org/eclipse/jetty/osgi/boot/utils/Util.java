@@ -85,7 +85,7 @@ public class Util
     
   
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Treating the string as a separated list of filenames,
      * convert and return the list of urls.
@@ -112,7 +112,7 @@ public class Util
     }
     
     
-    /* ------------------------------------------------------------ */
+
     public static void setProperty(Dictionary<String,Object> properties, String key, Object value)
     {
         if (value != null)
@@ -122,7 +122,7 @@ public class Util
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * recursively substitute the <code>${sysprop}</code> by their actual system property.
      * <code>${sysprop,defaultvalue}</code> will use <code>'defaultvalue'</code> as the value if no

@@ -46,7 +46,7 @@ public class JSONObjectConvertor implements JSON.Convertor
         _fromJSON=fromJSON;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param fromJSON true to convert from JSON
      * @param excluded An array of field names to exclude from the conversion

@@ -144,7 +144,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     {
         return getKeyStore(storePath, storeType, storeProvider, storePassword);
     }
-    /* ------------------------------------------------------------ */
+
     /**
      * Loads keystore using an input stream or a file path in the same
      * order of precedence.
@@ -164,7 +164,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return CertificateUtils.getKeyStore(Resource.newResource(storePath), storeType, storeProvider, storePassword);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Loads certificate revocation list (CRL) from a file.
      *
@@ -187,7 +187,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return true;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if SSL certificate has to be validated
      */
@@ -196,7 +196,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _validateCerts;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param validateCerts
      *            true if SSL certificates have to be validated
@@ -206,7 +206,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _validateCerts = validateCerts;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The file name or URL of the trust store location
      */
@@ -215,7 +215,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _trustStorePath;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param trustStorePath
      *            The file name or URL of the trust store location
@@ -225,7 +225,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _trustStorePath = trustStorePath;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The provider of the trust store
      */
@@ -234,7 +234,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _trustStoreProvider;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param trustStoreProvider
      *            The provider of the trust store
@@ -244,7 +244,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _trustStoreProvider = trustStoreProvider;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The type of the trust store (default "JKS")
      */
@@ -253,7 +253,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _trustStoreType;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param trustStoreType
      *            The type of the trust store (default "JKS")
@@ -263,7 +263,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _trustStoreType = trustStoreType;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param password
      *            The password for the trust store
@@ -273,7 +273,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _trustStorePassword = Password.getPassword(PASSWORD_PROPERTY,password,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the crlPath.
      * @return the crlPath
      */
@@ -282,7 +282,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _crlPath;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the crlPath.
      * @param crlPath the crlPath to set
      */
@@ -300,7 +300,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _maxCertPathLength;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param maxCertPathLength
      *            maximum number of intermediate certificates in
@@ -311,7 +311,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _maxCertPathLength = maxCertPathLength;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if CRL Distribution Points support is enabled
      */
@@ -320,7 +320,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _enableCRLDP;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Enables CRL Distribution Points Support
      * @param enableCRLDP true - turn on, false - turns off
      */
@@ -329,7 +329,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _enableCRLDP = enableCRLDP;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if On-Line Certificate Status Protocol support is enabled
      */
@@ -338,7 +338,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _enableOCSP;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Enables On-Line Certificate Status Protocol support
      * @param enableOCSP true - turn on, false - turn off
      */
@@ -347,7 +347,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _enableOCSP = enableOCSP;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Location of the OCSP Responder
      */
@@ -356,7 +356,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _ocspResponderURL;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the location of the OCSP Responder.
      * @param ocspResponderURL location of the OCSP Responder
      */

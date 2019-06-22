@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 
 
-/* ------------------------------------------------------------ */
+
 /** A handler wrapper that provides the framework to asynchronously
  * delay the handling of a request.  While it uses standard servlet 
  * API for asynchronous servlets, it adjusts the dispatch type of the 
@@ -41,7 +41,7 @@ public class AsyncDelayHandler extends HandlerWrapper
 {
     public final static String AHW_ATTR = "o.e.j.s.h.AsyncHandlerWrapper";
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -113,7 +113,7 @@ public class AsyncDelayHandler extends HandlerWrapper
         
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Called to indicate that a request has been presented for handling
      * @param request The request to handle
      * @param restart True if this request is being restarted after a delay
@@ -124,7 +124,7 @@ public class AsyncDelayHandler extends HandlerWrapper
         return true;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Called to indicate that a requests handling is being delayed/
      * The implementation should arrange for context.dispatch() to be
      * called when the request should be handled.  It may also set
@@ -138,7 +138,7 @@ public class AsyncDelayHandler extends HandlerWrapper
         context.dispatch();
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Called to indicated the handling of the request is ending.
      * This is only the end of the current dispatch of the request and
      * if the request is asynchronous, it may be handled again.

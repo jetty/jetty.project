@@ -36,7 +36,7 @@ public class CookieDump extends HttpServlet
 {
     int redirectCount=0;
 
-    /* ------------------------------------------------------------ */
+
     protected void handleForm(HttpServletRequest request,
                           HttpServletResponse response)
     {
@@ -53,7 +53,7 @@ public class CookieDump extends HttpServlet
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doPost(HttpServletRequest request,
                        HttpServletResponse response)
@@ -65,7 +65,7 @@ public class CookieDump extends HttpServlet
         response.sendRedirect(encodedUrl);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doGet(HttpServletRequest request,
                       HttpServletResponse response)
@@ -95,13 +95,13 @@ public class CookieDump extends HttpServlet
 
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getServletInfo() {
         return "Session Dump Servlet";
     }
 
-    /* ------------------------------------------------------------ */
+
     private String getURI(HttpServletRequest request)
     {
         String uri=(String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
@@ -110,7 +110,7 @@ public class CookieDump extends HttpServlet
         return uri;
     }
 
-    /* ------------------------------------------------------------ */
+
     protected String deScript(String string)
     {
         if (string==null)

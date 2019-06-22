@@ -49,8 +49,8 @@ public class DateCacheSimpleDateFormat
 
     private volatile Tick _tick;
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     public static class Tick
     {
         final long _seconds;
@@ -62,7 +62,7 @@ public class DateCacheSimpleDateFormat
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Constructor.
      * Make a DateCache that will use a default format. The default format
      * generates the same results as Date.toString().
@@ -72,7 +72,7 @@ public class DateCacheSimpleDateFormat
         this(DEFAULT_FORMAT);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Constructor.
      * Make a DateCache that will use the given format
      * @param format the format to use
@@ -82,19 +82,19 @@ public class DateCacheSimpleDateFormat
         this( format, null, TimeZone.getDefault());
     }
 
-    /* ------------------------------------------------------------ */
+
     public DateCacheSimpleDateFormat(String format,Locale l)
     {
         this(format,l,TimeZone.getDefault());
     }
 
-    /* ------------------------------------------------------------ */
+
     public DateCacheSimpleDateFormat(String format,Locale l,String tz)
     {
         this(format,l,TimeZone.getTimeZone(tz));
     }
 
-    /* ------------------------------------------------------------ */
+
     public DateCacheSimpleDateFormat(String format,Locale l,TimeZone tz)
     {
         _formatString=format;
@@ -151,14 +151,14 @@ public class DateCacheSimpleDateFormat
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public TimeZone getTimeZone()
     {
         return _tzFormat.getTimeZone();
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Format a date according to our stored formatter.
      * @param inDate the Date
      * @return Formatted date
@@ -182,7 +182,7 @@ public class DateCacheSimpleDateFormat
         return tick._string;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Format a date according to our stored formatter.
      * If it happens to be in the same second as the last formatNow
      * call, then the format is reused.
@@ -209,7 +209,7 @@ public class DateCacheSimpleDateFormat
         return tick._string;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Format a date according to our stored formatter.
      * The passed time is expected to be close to the current time, so it is
      * compared to the last value passed and if it is within the same second,
@@ -229,19 +229,19 @@ public class DateCacheSimpleDateFormat
         return formatTick(now)._string;
     }
 
-    /* ------------------------------------------------------------ */
+
     public String now()
     {
         return formatNow(System.currentTimeMillis());
     }
 
-    /* ------------------------------------------------------------ */
+
     public Tick tick()
     {
         return formatTick(System.currentTimeMillis());
     }
 
-    /* ------------------------------------------------------------ */
+
     protected Tick formatTick(long now)
     {
         long seconds = now / 1000;
@@ -259,7 +259,7 @@ public class DateCacheSimpleDateFormat
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getFormatString()
     {
         return _formatString;

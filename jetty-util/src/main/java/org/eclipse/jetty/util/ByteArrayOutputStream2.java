@@ -20,7 +20,7 @@ package org.eclipse.jetty.util;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 
-/* ------------------------------------------------------------ */
+
 /** ByteArrayOutputStream with public internals
 
  * 

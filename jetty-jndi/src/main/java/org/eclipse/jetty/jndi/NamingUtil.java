@@ -44,7 +44,7 @@ public class NamingUtil
     public final static Logger __log = Log.getLogger("jndi");
     private static final Logger LOG = Log.getLogger(NamingUtil.class);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Bind an object to a context ensuring all sub-contexts
      * are created if necessary

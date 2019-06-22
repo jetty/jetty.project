@@ -44,7 +44,7 @@ public class FilterMapping implements Dumpable
     public static final int ALL=31;
 
 
-    /* ------------------------------------------------------------ */
+
     /** Dispatch type from name
      * @param type the type name
      * @return the dispatcher type
@@ -64,7 +64,7 @@ public class FilterMapping implements Dumpable
         throw new IllegalArgumentException(type);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Dispatch type from name
      * @param type the dispatcher type
      * @return the type constant ({@link #REQUEST}, {@link #ASYNC}, {@link #FORWARD}, {@link #INCLUDE}, or {@link #ERROR})
@@ -87,7 +87,7 @@ public class FilterMapping implements Dumpable
         throw new IllegalArgumentException(type.toString());
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Dispatch type from name
      * @param type the dispatcher type
      * @return the type constant ({@link #REQUEST}, {@link #ASYNC}, {@link #FORWARD}, {@link #INCLUDE}, or {@link #ERROR})
@@ -110,19 +110,19 @@ public class FilterMapping implements Dumpable
         throw new IllegalArgumentException(Integer.toString(type));
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     private int _dispatches=DEFAULT;
     private String _filterName;
     private transient FilterHolder _holder;
     private String[] _pathSpecs;
     private String[] _servletNames;
 
-    /* ------------------------------------------------------------ */
+
     public FilterMapping()
     {}
 
-    /* ------------------------------------------------------------ */
+
     /** Check if this filter applies to a path.
      * @param path The path to check or null to just check type
      * @param type The type of request: __REQUEST,__FORWARD,__INCLUDE, __ASYNC or __ERROR.
@@ -140,7 +140,7 @@ public class FilterMapping implements Dumpable
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Check if this filter applies to a particular dispatch type.
      * @param type The type of request:
      *      {@link #REQUEST}, {@link #FORWARD}, {@link #INCLUDE} or {@link #ERROR}.
@@ -153,19 +153,19 @@ public class FilterMapping implements Dumpable
         return (_dispatches&type)!=0;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean appliesTo(DispatcherType t)
     {
         return appliesTo(dispatch(t));
     }
     
-    /* ------------------------------------------------------------ */
+
     public boolean isDefaultDispatches()
     {
         return _dispatches==0;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the filterName.
      */
@@ -175,7 +175,7 @@ public class FilterMapping implements Dumpable
         return _filterName;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the holder.
      */
@@ -184,7 +184,7 @@ public class FilterMapping implements Dumpable
         return _holder;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the pathSpec.
      */
@@ -194,7 +194,7 @@ public class FilterMapping implements Dumpable
         return _pathSpecs;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setDispatcherTypes(EnumSet<DispatcherType> dispatcherTypes)
     {
         _dispatches=DEFAULT;
@@ -213,7 +213,7 @@ public class FilterMapping implements Dumpable
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public EnumSet<DispatcherType> getDispatcherTypes()
     {
         EnumSet<DispatcherType> dispatcherTypes = EnumSet.noneOf(DispatcherType.class);
@@ -230,7 +230,7 @@ public class FilterMapping implements Dumpable
         return dispatcherTypes;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param dispatches The dispatches to set.
      * @see #DEFAULT
@@ -244,7 +244,7 @@ public class FilterMapping implements Dumpable
         _dispatches = dispatches;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param filterName The filterName to set.
      */
@@ -253,7 +253,7 @@ public class FilterMapping implements Dumpable
         _filterName = filterName;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param holder The holder to set.
      */
@@ -263,7 +263,7 @@ public class FilterMapping implements Dumpable
         setFilterName(holder.getName());
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param pathSpecs The Path specifications to which this filter should be mapped.
      */
@@ -272,7 +272,7 @@ public class FilterMapping implements Dumpable
         _pathSpecs = pathSpecs;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param pathSpec The pathSpec to set.
      */
@@ -281,7 +281,7 @@ public class FilterMapping implements Dumpable
         _pathSpecs = new String[]{pathSpec};
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the servletName.
      */
@@ -291,7 +291,7 @@ public class FilterMapping implements Dumpable
         return _servletNames;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param servletNames Maps the {@link #setFilterName(String) named filter} to multiple servlets
      * @see #setServletName
@@ -301,7 +301,7 @@ public class FilterMapping implements Dumpable
         _servletNames = servletNames;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param servletName Maps the {@link #setFilterName(String) named filter} to a single servlet
      * @see #setServletNames
@@ -311,7 +311,7 @@ public class FilterMapping implements Dumpable
         _servletNames = new String[]{servletName};
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
@@ -322,14 +322,14 @@ public class FilterMapping implements Dumpable
         _filterName;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         out.append(String.valueOf(this)).append("\n");
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String dump()
     {

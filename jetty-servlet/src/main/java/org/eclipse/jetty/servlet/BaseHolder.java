@@ -50,19 +50,19 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     protected boolean _extInstance;
     protected ServletHandler _servletHandler;
     
-    /* ---------------------------------------------------------------- */
+
     protected BaseHolder(Source source)
     {
         _source=source;
     }
 
-    /* ------------------------------------------------------------ */
+
     public Source getSource()
     {
         return _source;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Do any setup necessary after starting
      * @throws Exception if unable to initialize
@@ -74,7 +74,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
             throw new IllegalStateException("Not started: "+this);
     }
 
-    /* ------------------------------------------------------------ */
+
     @SuppressWarnings("unchecked")
     @Override
     public void doStart()
@@ -102,7 +102,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doStop()
         throws Exception
@@ -112,20 +112,20 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute(value="Class Name", readonly=true)
     public String getClassName()
     {
         return _className;
     }
 
-    /* ------------------------------------------------------------ */
+
     public Class<? extends T> getHeldClass()
     {
         return _class;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the servletHandler.
      */
@@ -135,7 +135,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     }
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param servletHandler The {@link ServletHandler} that will handle requests dispatched to this servlet.
      */
@@ -144,7 +144,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         _servletHandler = servletHandler;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param className The className to set.
      */
@@ -154,7 +154,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         _class=null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param held The class to hold
      */
@@ -168,7 +168,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     }
     
 
-    /* ------------------------------------------------------------ */
+
     protected void illegalStateIfContextStarted()
     {
         if (_servletHandler!=null)
@@ -179,7 +179,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return True if this holder was created for a specific instance.
      */
@@ -189,14 +189,14 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObject(out, this);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String dump()
     {

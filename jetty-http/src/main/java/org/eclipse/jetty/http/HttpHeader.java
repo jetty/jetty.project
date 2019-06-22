@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.Trie;
 
 public enum HttpHeader
 {
-    /* ------------------------------------------------------------ */
+
     /** General Fields.
      */
     CONNECTION("Connection"),
@@ -42,7 +42,7 @@ public enum HttpHeader
     WARNING("Warning"),
     NEGOTIATE("Negotiate"),
 
-    /* ------------------------------------------------------------ */
+
     /** Entity Fields.
      */
     ALLOW("Allow"),
@@ -56,7 +56,7 @@ public enum HttpHeader
     EXPIRES("Expires"),
     LAST_MODIFIED("Last-Modified"),
 
-    /* ------------------------------------------------------------ */
+
     /** Request Fields.
      */
     ACCEPT("Accept"),
@@ -87,7 +87,7 @@ public enum HttpHeader
     X_FORWARDED_SERVER("X-Forwarded-Server"),
     X_FORWARDED_HOST("X-Forwarded-Host"),
 
-    /* ------------------------------------------------------------ */
+
     /** Response Fields.
      */
     ACCEPT_RANGES("Accept-Ranges"),
@@ -101,7 +101,7 @@ public enum HttpHeader
     VARY("Vary"),
     WWW_AUTHENTICATE("WWW-Authenticate"),
 
-    /* ------------------------------------------------------------ */
+
     /** WebSocket Fields.
      */
     ORIGIN("Origin"),
@@ -111,7 +111,7 @@ public enum HttpHeader
     SEC_WEBSOCKET_SUBPROTOCOL("Sec-WebSocket-Protocol"),
     SEC_WEBSOCKET_ACCEPT("Sec-WebSocket-Accept"),
 
-    /* ------------------------------------------------------------ */
+
     /** Other Fields.
      */
     COOKIE("Cookie"),
@@ -125,7 +125,7 @@ public enum HttpHeader
 
     STRICT_TRANSPORT_SECURITY("Strict-Transport-Security"),
     
-    /* ------------------------------------------------------------ */
+
     /** HTTP2 Fields.
      */
     C_METHOD(":method"),
@@ -137,7 +137,7 @@ public enum HttpHeader
     UNKNOWN("::UNKNOWN::");
 
 
-    /* ------------------------------------------------------------ */
+
     public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(630);
     static
     {
@@ -152,7 +152,7 @@ public enum HttpHeader
     private final byte[] _bytesColonSpace;
     private final ByteBuffer _buffer;
 
-    /* ------------------------------------------------------------ */
+
     HttpHeader(String s)
     {
         _string=s;
@@ -161,37 +161,37 @@ public enum HttpHeader
         _buffer=ByteBuffer.wrap(_bytes);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ByteBuffer toBuffer()
     {
         return _buffer.asReadOnlyBuffer();
     }
 
-    /* ------------------------------------------------------------ */
+
     public byte[] getBytes()
     {
         return _bytes;
     }
 
-    /* ------------------------------------------------------------ */
+
     public byte[] getBytesColonSpace()
     {
         return _bytesColonSpace;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean is(String s)
     {
         return _string.equalsIgnoreCase(s);    
     }
 
-    /* ------------------------------------------------------------ */
+
     public String asString()
     {
         return _string;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {

@@ -33,21 +33,21 @@ import javax.servlet.http.HttpServletResponse;
 @SuppressWarnings("serial")
 public class HelloWorld extends HttpServlet
 {
-    /* ------------------------------------------------------------ */
+
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {

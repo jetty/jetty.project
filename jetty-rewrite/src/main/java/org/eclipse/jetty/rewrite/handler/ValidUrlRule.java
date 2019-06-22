@@ -50,7 +50,7 @@ public class ValidUrlRule extends Rule
         _terminating = true;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the response status code.
      * 
@@ -62,7 +62,7 @@ public class ValidUrlRule extends Rule
         _code = code;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the reason for the response status code. Reasons will only reflect if the code value is greater or equal to 400.
      * 

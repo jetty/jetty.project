@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 
-/* ------------------------------------------------------------ */
+
 /** Servlet handling JSP Property Group mappings
  * <p>
  * This servlet is mapped to by any URL pattern for a JSP property group.

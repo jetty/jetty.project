@@ -274,13 +274,13 @@ public class DigestAuthModule extends BaseAuthModule
         String uri = null;
         String response = null;
 
-        /* ------------------------------------------------------------ */
+
         Digest(String m)
         {
             method = m;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public boolean check(Object credentials)
         {

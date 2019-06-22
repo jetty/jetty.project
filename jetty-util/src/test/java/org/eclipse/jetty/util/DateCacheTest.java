@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
  */
 public class DateCacheTest
 {
-    /* ------------------------------------------------------------ */
+
     @Test
     @SuppressWarnings("ReferenceEquality")
     public void testDateCache() throws Exception

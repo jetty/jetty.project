@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-/* ------------------------------------------------------------ */
+
 /** 
  * <p>A Trie String lookup data structure using a fixed size array.</p>
  * <p>This implementation is always case insensitive and is optimal for
@@ -116,7 +116,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         this(128);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param capacity  The capacity of the trie, which at the worst case
      * is the total number of characters of all keys stored in the Trie.
@@ -134,7 +134,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         _key=new String[capacity];
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void clear()
     {
@@ -144,7 +144,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         Arrays.fill(_key,null);
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean put(String s, V v)
     {
@@ -199,7 +199,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         return true;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public V get(String s, int offset, int len)
     {
@@ -228,7 +228,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         return _value[t];
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public V get(ByteBuffer b,int offset,int len)
     {
@@ -257,14 +257,14 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         return (V)_value[t];
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public V getBest(byte[] b,int offset,int len)
     {
         return getBest(0,b,offset,len);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public V getBest(ByteBuffer b,int offset,int len)
     {
@@ -273,14 +273,14 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         return getBest(0,b,offset,len);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public V getBest(String s, int offset, int len)
     {
         return getBest(0,s,offset,len);
     }
     
-    /* ------------------------------------------------------------ */
+
     private V getBest(int t, String s, int offset, int len)
     {
         int pos=offset;
@@ -320,7 +320,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         return (V)_value[t];
     }
 
-    /* ------------------------------------------------------------ */
+
     private V getBest(int t,byte[] b,int offset,int len)
     {
         for(int i=0; i < len; i++)

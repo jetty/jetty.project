@@ -42,7 +42,7 @@ public class RequestLogHandler extends HandlerWrapper
 {
     private RequestLog _requestLog;
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
@@ -56,14 +56,14 @@ public class RequestLogHandler extends HandlerWrapper
             _handler.handle(target,baseRequest, request, response);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setRequestLog(RequestLog requestLog)
     {
         updateBean(_requestLog,requestLog);
         _requestLog=requestLog;
     }
 
-    /* ------------------------------------------------------------ */
+
     public RequestLog getRequestLog()
     {
         return _requestLog;

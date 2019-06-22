@@ -56,7 +56,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 {
     private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Check if we should be enabling annotation processing
      * 
@@ -80,7 +80,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return result;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Check if jndi is support is present.
      * 
@@ -119,7 +119,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * OSGiApp
      *
@@ -484,7 +484,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         }
     }
    
-    /* ------------------------------------------------------------ */
+
     public AbstractWebAppProvider (ServerInstanceWrapper wrapper)
     {
         _serverWrapper = wrapper;
@@ -492,7 +492,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the parentLoaderPriority.
      * 
@@ -503,7 +503,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return _parentLoaderPriority;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the parentLoaderPriority.
      * 
@@ -514,7 +514,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         _parentLoaderPriority = parentLoaderPriority;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the defaultsDescriptor.
      * 
@@ -525,7 +525,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return _defaultsDescriptor;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the defaultsDescriptor.
      * 
@@ -537,21 +537,21 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     }
     
     
-    /* ------------------------------------------------------------ */
+
     public boolean isExtract()
     {
         return _extractWars;
     }
     
     
-    /* ------------------------------------------------------------ */
+
     public void setExtract(boolean extract)
     {
         _extractWars = extract;
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param tldBundles Comma separated list of bundles that contain tld jars
      *            that should be setup on the jetty instances created here.
@@ -562,7 +562,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The list of bundles that contain tld jars that should be setup on
      *         the jetty instances created here.
@@ -572,7 +572,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return _tldBundles;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param configurations The configuration class names.
      */
@@ -581,7 +581,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         _configurationClasses = configurations == null ? null : (String[]) configurations.clone();
     }
 
-    /* ------------------------------------------------------------ */
+
     public String[] getConfigurationClasses()
     {
         if (_configurationClasses != null)
@@ -609,7 +609,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     }
     
 
-    /* ------------------------------------------------------------ */
+
     public void setServerInstanceWrapper(ServerInstanceWrapper wrapper)
     {
         _serverWrapper = wrapper;
@@ -620,13 +620,13 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return _serverWrapper;
     }
 
-    /* ------------------------------------------------------------ */
+
     public DeploymentManager getDeploymentManager()
     {
         return _deploymentManager;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.deploy.AppProvider#setDeploymentManager(org.eclipse.jetty.deploy.DeploymentManager)
      */
@@ -637,7 +637,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public ContextHandler createContextHandler(App app) throws Exception
     {
@@ -652,7 +652,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     }
 
     
-    /* ------------------------------------------------------------ */
+
     public static String getOriginId(Bundle contributor, String path)
     {
         return contributor.getSymbolicName() + "-" + contributor.getVersion().toString() + (path.startsWith("/") ? path : "/" + path);

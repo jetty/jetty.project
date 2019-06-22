@@ -30,7 +30,7 @@ import javax.servlet.ServletResponse;
 
 
 
-/* ------------------------------------------------------------ */
+
 /**
  * <p>ContinuationFilter must be applied to servlet paths that make use of
  * the asynchronous features provided by {@link Continuation} APIs, but that

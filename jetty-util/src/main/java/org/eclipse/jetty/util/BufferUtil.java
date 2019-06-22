@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 
-/* ------------------------------------------------------------------------------- */
+
 /**
  * Buffer utility methods.
  * <p>The standard JVM {@link ByteBuffer} can exist in two modes: In fill mode the valid
@@ -104,7 +104,7 @@ public class BufferUtil
 
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
-    /* ------------------------------------------------------------ */
+
     /** Allocate ByteBuffer in flush mode.
      * The position and limit will both be zero, indicating that the buffer is
      * empty and must be flipped before any data is put to it.
@@ -118,7 +118,7 @@ public class BufferUtil
         return buf;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Allocate ByteBuffer in flush mode.
      * The position and limit will both be zero, indicating that the buffer is
      * empty and in flush mode.
@@ -133,7 +133,7 @@ public class BufferUtil
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Clear the buffer to be empty in flush mode.
      * The position and limit are set to 0;
      * @param buffer The buffer to clear.
@@ -147,7 +147,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Clear the buffer to be empty in fill mode.
      * The position is set to 0 and the limit is set to the capacity.
      * @param buffer The buffer to clear.
@@ -161,7 +161,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Flip the buffer to fill mode.
      * The position is set to the first unused position in the buffer
      * (the old limit) and the limit is set to the capacity.
@@ -199,7 +199,7 @@ public class BufferUtil
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Flip the buffer to Flush mode.
      * The limit is set to the first unused byte(the old position) and
      * the position is set to the passed position.
@@ -216,7 +216,7 @@ public class BufferUtil
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Convert a ByteBuffer to a byte array.
      * @param buffer The buffer to convert in flush mode. The buffer is not altered.
      * @return An array of bytes duplicated from the buffer.
@@ -237,7 +237,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param buf the buffer to check
      * @return true if buf is equal to EMPTY_BUFFER
@@ -249,7 +249,7 @@ public class BufferUtil
         return isTheEmptyBuffer_;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Check for an empty or null buffer.
      * @param buf the buffer to check
      * @return true if the buffer is null or empty.
@@ -259,7 +259,7 @@ public class BufferUtil
         return buf == null || buf.remaining() == 0;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Check for an empty or null buffers.
      * @param buf the buffer to check
      * @return true if the buffer is null or empty.
@@ -274,7 +274,7 @@ public class BufferUtil
         return true;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the remaining bytes in 0 or more buffers.
      * @param buf the buffers to check
      * @return number of bytes remaining in all buffers.
@@ -289,7 +289,7 @@ public class BufferUtil
         return remaining;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Check for a non null and non empty buffer.
      * @param buf the buffer to check
      * @return true if the buffer is not null and not empty.
@@ -299,7 +299,7 @@ public class BufferUtil
         return buf != null && buf.remaining() > 0;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Check for a non null and full buffer.
      * @param buf the buffer to check
      * @return true if the buffer is not null and the limit equals the capacity.
@@ -309,7 +309,7 @@ public class BufferUtil
         return buf != null && buf.limit() == buf.capacity();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get remaining from null checked buffer
      * @param buffer The buffer to get the remaining from, in flush mode.
      * @return 0 if the buffer is null, else the bytes remaining in the buffer.
@@ -319,7 +319,7 @@ public class BufferUtil
         return buffer == null ? 0 : buffer.remaining();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the space from the limit to the capacity
      * @param buffer the buffer to get the space from
      * @return space
@@ -331,7 +331,7 @@ public class BufferUtil
         return buffer.capacity() - buffer.limit();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Compact the buffer
      * @param buffer the buffer to compact
      * @return true if the compact made a full buffer have space
@@ -345,7 +345,7 @@ public class BufferUtil
         return full && buffer.limit() < buffer.capacity();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Put data from one buffer into another, avoiding over/under flows
      * @param from Buffer to take bytes from in flush mode
@@ -385,7 +385,7 @@ public class BufferUtil
         return put;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Put data from one buffer into another, avoiding over/under flows
      * @param from Buffer to take bytes from in flush mode
@@ -398,7 +398,7 @@ public class BufferUtil
         return append(to,from);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Append bytes to a buffer.
      * @param to Buffer is flush mode
      * @param b bytes to append
@@ -419,7 +419,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Appends a byte to a buffer
      * @param to Buffer is flush mode
      * @param b byte to append
@@ -437,7 +437,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Appends a buffer to a buffer
      * @param to Buffer is flush mode
      * @param b buffer to append
@@ -456,7 +456,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Like append, but does not throw {@link BufferOverflowException}
      * @param to Buffer The buffer to fill to. The buffer will be flipped to fill mode and then flipped back to flush mode.
@@ -482,7 +482,7 @@ public class BufferUtil
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public static void readFrom(File file, ByteBuffer buffer) throws IOException
     {
         try(RandomAccessFile raf = new RandomAccessFile(file,"r"))
@@ -495,7 +495,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
         ByteBuffer tmp = allocate(8192);
@@ -511,7 +511,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())
@@ -531,7 +531,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convert the buffer to an ISO-8859-1 String
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
      * @return The buffer as a string.
@@ -541,7 +541,7 @@ public class BufferUtil
         return toString(buffer, StandardCharsets.ISO_8859_1);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convert the buffer to an UTF-8 String
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
      * @return The buffer as a string.
@@ -551,7 +551,7 @@ public class BufferUtil
         return toString(buffer, StandardCharsets.UTF_8);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convert the buffer to an ISO-8859-1 String
      * @param buffer  The buffer to convert in flush mode. The buffer is unchanged
      * @param charset The {@link Charset} to use to convert the bytes
@@ -571,7 +571,7 @@ public class BufferUtil
         return new String(array, buffer.arrayOffset() + buffer.position(), buffer.remaining(), charset);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convert a partial buffer to a String.
      * 
      * @param buffer the buffer to convert 
@@ -597,7 +597,7 @@ public class BufferUtil
         return new String(array, buffer.arrayOffset() + position, length, charset);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      *
@@ -610,7 +610,7 @@ public class BufferUtil
         return toInt(buffer,buffer.position(),buffer.remaining());
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an
      * IllegalArgumentException is thrown
@@ -660,7 +660,7 @@ public class BufferUtil
         throw new NumberFormatException(toString(buffer));
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      *
@@ -789,7 +789,7 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public static void putDecInt(ByteBuffer buffer, int n)
     {
         if (n < 0)
@@ -1018,7 +1018,7 @@ public class BufferUtil
 
 
     
-    /* ------------------------------------------------------------ */
+
     /** Convert Buffer to string ID independent of content
      */
     private static void idString(ByteBuffer buffer, StringBuilder out) 
@@ -1038,7 +1038,7 @@ public class BufferUtil
             out.append(Integer.toHexString(System.identityHashCode(buffer)));
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Convert Buffer to string ID independent of content
      * @param buffer the buffet to generate a string ID from
      * @return A string showing the buffer ID
@@ -1051,7 +1051,7 @@ public class BufferUtil
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** Convert Buffer to a detail debug string of pointers and content
      * @param buffer the buffer to generate a detail string from
      * @return A string showing the pointers and content of the buffer
@@ -1142,7 +1142,7 @@ public class BufferUtil
             buf.append("\\x").append(TypeUtil.toHexString(b));
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Convert buffer to a Hex Summary String.
      * @param buffer the buffer to generate a hex byte summary from
      * @return A string showing a summary of the content in hex
@@ -1166,7 +1166,7 @@ public class BufferUtil
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convert buffer to a Hex String.
      * @param buffer the buffer to generate a hex byte summary from
      * @return A hex string

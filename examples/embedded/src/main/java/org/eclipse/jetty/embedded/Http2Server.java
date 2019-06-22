@@ -58,7 +58,7 @@ import org.eclipse.jetty.servlets.PushCacheFilter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  */
 public class Http2Server

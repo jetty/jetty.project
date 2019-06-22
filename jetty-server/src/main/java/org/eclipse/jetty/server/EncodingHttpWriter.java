@@ -30,7 +30,7 @@ public class EncodingHttpWriter extends HttpWriter
 {
     final Writer _converter;
 
-    /* ------------------------------------------------------------ */
+
     public EncodingHttpWriter(HttpOutput out, String encoding)
     {
         super(out);
@@ -44,7 +44,7 @@ public class EncodingHttpWriter extends HttpWriter
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write (char[] s,int offset, int length) throws IOException
     {

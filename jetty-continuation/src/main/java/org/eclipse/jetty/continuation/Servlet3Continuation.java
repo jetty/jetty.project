@@ -31,7 +31,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  * This implementation of Continuation is used by {@link ContinuationSupport}
  * when it detects that the application has been deployed in a Servlet 3
@@ -56,20 +56,20 @@ public class Servlet3Continuation implements Continuation, AsyncListener
 
     private long _timeoutMs=-1;
 
-    /* ------------------------------------------------------------ */
+
     public Servlet3Continuation(ServletRequest request)
     {
         _request=request;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void addContinuationListener(final ContinuationListener listener)
     {
         _listeners.add(listener);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void complete()
     {
@@ -79,35 +79,35 @@ public class Servlet3Continuation implements Continuation, AsyncListener
         _context.complete();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public ServletResponse getServletResponse()
     {
         return _response;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isExpired()
     {
         return _expired;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isInitial()
     {
         return _initial&&_request.getDispatcherType()!=DispatcherType.ASYNC;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isResumed()
     {
         return _resumed;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isSuspended()
     {
@@ -124,13 +124,13 @@ public class Servlet3Continuation implements Continuation, AsyncListener
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void keepWrappers()
     {
         _responseWrapped=true;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void resume()
     {
@@ -141,7 +141,7 @@ public class Servlet3Continuation implements Continuation, AsyncListener
         _context.dispatch();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void setTimeout(long timeoutMs)
     {
@@ -150,7 +150,7 @@ public class Servlet3Continuation implements Continuation, AsyncListener
             _context.setTimeout(timeoutMs);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void suspend(ServletResponse response)
     {
@@ -163,7 +163,7 @@ public class Servlet3Continuation implements Continuation, AsyncListener
         _context.addListener(this);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void suspend()
     {
@@ -174,14 +174,14 @@ public class Servlet3Continuation implements Continuation, AsyncListener
         _context.addListener(this);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isResponseWrapped()
     {
         return _responseWrapped;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
      */
@@ -191,7 +191,7 @@ public class Servlet3Continuation implements Continuation, AsyncListener
         return _request.getAttribute(name);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
      */
@@ -201,7 +201,7 @@ public class Servlet3Continuation implements Continuation, AsyncListener
         _request.removeAttribute(name);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
      */
@@ -211,7 +211,7 @@ public class Servlet3Continuation implements Continuation, AsyncListener
         _request.setAttribute(name,attribute);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.continuation.Continuation#undispatch()
      */
@@ -229,7 +229,7 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     }
     
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void onComplete(AsyncEvent event) throws IOException
     {
@@ -237,19 +237,19 @@ public class Servlet3Continuation implements Continuation, AsyncListener
             listener.onComplete(this);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void onError(AsyncEvent event) throws IOException
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void onStartAsync(AsyncEvent event) throws IOException
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void onTimeout(AsyncEvent event) throws IOException
     {

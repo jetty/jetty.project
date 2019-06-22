@@ -32,7 +32,7 @@ public class ArrayUtil
     implements Cloneable, Serializable
 {
 
-    /* ------------------------------------------------------------ */
+
     public static<T> T[] removeFromArray(T[] array, Object item)
     {
         if (item==null || array==null)
@@ -54,7 +54,7 @@ public class ArrayUtil
         return array;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Add arrays
      * @param array1 An array to add to (or null)
      * @param array2 An array to add to (or null)
@@ -73,7 +73,7 @@ public class ArrayUtil
         return na;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Add element to an array
      * @param array The array to add to (or null)
      * @param item The item to add
@@ -100,7 +100,7 @@ public class ArrayUtil
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Add element to the start of an array
      * @param array The array to add to (or null)
      * @param item The item to add
@@ -130,7 +130,7 @@ public class ArrayUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param array Any array of object
      * @return A new <i>modifiable</i> list initialised with the elements from <code>array</code>.
@@ -143,7 +143,7 @@ public class ArrayUtil
         return new ArrayList<E>(Arrays.asList(array));
     }
 
-    /* ------------------------------------------------------------ */
+
     public static <T> T[] removeNulls(T[] array)
     {
         for (T t : array)

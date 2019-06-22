@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  * Internet address map to object
  * <p>
@@ -48,7 +48,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
 {
     private final HashMap<String,IPAddrPattern> _patterns = new HashMap<String,IPAddrPattern>();
 
-    /* --------------------------------------------------------------- */
+
     /** Construct empty IPAddressMap.
      */
     public IPAddressMap()
@@ -56,7 +56,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
         super(11);
     }
    
-    /* --------------------------------------------------------------- */
+
     /** Construct empty IPAddressMap.
      * 
      * @param capacity initial capacity
@@ -66,7 +66,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
         super (capacity);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Insert a new internet address into map
      * 
@@ -86,7 +86,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
         return super.put(spec, object);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Retrieve the object mapped to the specified internet address literal
      * 
@@ -98,7 +98,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
         return super.get(key);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Retrieve the first object that is associated with the specified 
      * internet address by taking into account the wildcard specifications.
@@ -112,7 +112,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
         return entry==null ? null : entry.getValue();
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Retrieve the first map entry that is associated with the specified 
      * internet address by taking into account the wildcard specifications.
@@ -135,7 +135,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
         return null;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Retrieve a lazy list of map entries associated with specified
      * internet address by taking into account the wildcard specifications.
@@ -159,7 +159,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
         return entries;        
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * IPAddrPattern
      * 
@@ -169,7 +169,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
     private static class IPAddrPattern
     {
         private final OctetPattern[] _octets = new OctetPattern[4];
-        /* ------------------------------------------------------------ */
+
         /**
          * Create new IPAddrPattern
          * 
@@ -204,7 +204,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
             }
         }
         
-        /* ------------------------------------------------------------ */
+
         /**
          * Match the specified internet address against the wildcard
          * 
@@ -241,7 +241,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
         }
     }
         
-    /* ------------------------------------------------------------ */
+
     /**
      * OctetPattern
      * 
@@ -252,7 +252,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
     {
         private final BitSet _mask = new BitSet(256);
         
-        /* ------------------------------------------------------------ */
+
         /**
          * Create new OctetPattern
          * 
@@ -321,7 +321,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
             }
         }
         
-        /* ------------------------------------------------------------ */
+
         /**
          * Match specified octet value against the wildcard
          * 
@@ -346,7 +346,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
             }
         }
         
-        /* ------------------------------------------------------------ */
+
         /**
          * Match specified octet value against the wildcard
          * 

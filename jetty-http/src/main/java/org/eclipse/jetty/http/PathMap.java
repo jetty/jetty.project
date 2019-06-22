@@ -78,10 +78,10 @@ import org.eclipse.jetty.util.URIUtil;
 @Deprecated
 public class PathMap<O> extends HashMap<String,O>
 {
-    /* ------------------------------------------------------------ */
+
     private static String __pathSpecSeparators = ":,";
 
-    /* ------------------------------------------------------------ */
+
     /** Set the path spec separator.
      * Multiple path specification may be included in a single string
      * if they are separated by the characters set in this string.
@@ -93,7 +93,7 @@ public class PathMap<O> extends HashMap<String,O>
         __pathSpecSeparators=s;
     }
 
-    /* --------------------------------------------------------------- */
+
     Trie<MappedEntry<O>> _prefixMap=new ArrayTernaryTrie<>(false);
     Trie<MappedEntry<O>> _suffixMap=new ArrayTernaryTrie<>(false);
     final Map<String,MappedEntry<O>> _exactMap=new HashMap<>();
@@ -103,32 +103,32 @@ public class PathMap<O> extends HashMap<String,O>
     MappedEntry<O> _default=null;
     boolean _nodefault=false;
 
-    /* --------------------------------------------------------------- */
+
     public PathMap()
     {
         this(11);
     }
 
-    /* --------------------------------------------------------------- */
+
     public PathMap(boolean noDefault)
     {
         this(11, noDefault);
     }
 
-    /* --------------------------------------------------------------- */
+
     public PathMap(int capacity)
     {
         this(capacity, false);
     }
 
-    /* --------------------------------------------------------------- */
+
     private PathMap(int capacity, boolean noDefault)
     {
         super(capacity);
         _nodefault=noDefault;
     }
 
-    /* --------------------------------------------------------------- */
+
     /** 
      * Construct from dictionary PathMap.
      * @param dictMap the map representing the dictionary to build this PathMap from
@@ -138,7 +138,7 @@ public class PathMap<O> extends HashMap<String,O>
         putAll(dictMap);
     }
 
-    /* --------------------------------------------------------------- */
+
     /** Add a single path match to the PathMap.
      * @param pathSpec The path specification, or comma separated list of
      * path specifications.
@@ -208,7 +208,7 @@ public class PathMap<O> extends HashMap<String,O>
         return old;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get object matched by the path.
      * @param path the path.
      * @return Best matched object or null.
@@ -222,7 +222,7 @@ public class PathMap<O> extends HashMap<String,O>
     }
 
 
-    /* --------------------------------------------------------------- */
+
     /** Get the entry mapped by the best specification.
      * @param path the path.
      * @return Map.Entry of the best matched  or null.
@@ -281,7 +281,7 @@ public class PathMap<O> extends HashMap<String,O>
         return _default;
     }
 
-    /* --------------------------------------------------------------- */
+
     /** Get all entries matched by the path.
      * Best match first.
      * @param path Path to match
@@ -348,7 +348,7 @@ public class PathMap<O> extends HashMap<String,O>
     }
 
 
-    /* --------------------------------------------------------------- */
+
     /** Return whether the path matches any entries in the PathMap,
      * excluding the default entry
      * @param path Path to match
@@ -360,7 +360,7 @@ public class PathMap<O> extends HashMap<String,O>
         return match!=null && !match.equals(_default);
     }
 
-    /* --------------------------------------------------------------- */
+
     @Override
     public O remove(Object pathSpec)
     {
@@ -384,7 +384,7 @@ public class PathMap<O> extends HashMap<String,O>
         return super.remove(pathSpec);
     }
 
-    /* --------------------------------------------------------------- */
+
     @Override
     public void clear()
     {
@@ -397,7 +397,7 @@ public class PathMap<O> extends HashMap<String,O>
         super.clear();
     }
 
-    /* --------------------------------------------------------------- */
+
     /**
      * @param pathSpec the path spec
      * @param path the path
@@ -408,7 +408,7 @@ public class PathMap<O> extends HashMap<String,O>
         return match(pathSpec, path, false);
     }
 
-    /* --------------------------------------------------------------- */
+
     /**
      * @param pathSpec the path spec
      * @param path the path
@@ -435,7 +435,7 @@ public class PathMap<O> extends HashMap<String,O>
         return false;
     }
 
-    /* --------------------------------------------------------------- */
+
     private static boolean isPathWildcardMatch(String pathSpec, String path)
     {
         // For a spec of "/foo/*" match "/foo" , "/foo/..." but not "/foobar"
@@ -449,7 +449,7 @@ public class PathMap<O> extends HashMap<String,O>
     }
 
 
-    /* --------------------------------------------------------------- */
+
     /** Return the portion of a path that matches a path spec.
      * @param pathSpec the path spec
      * @param path the path
@@ -479,7 +479,7 @@ public class PathMap<O> extends HashMap<String,O>
         return null;
     }
 
-    /* --------------------------------------------------------------- */
+
     /** Return the portion of a path that is after a path spec.
      * @param pathSpec the path spec
      * @param path the path
@@ -514,7 +514,7 @@ public class PathMap<O> extends HashMap<String,O>
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Relative path.
      * @param base The base the path is relative to.
      * @param pathSpec The spec of the path segment to ignore.
@@ -544,9 +544,9 @@ public class PathMap<O> extends HashMap<String,O>
         return path;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     public static class MappedEntry<O> implements Map.Entry<String,O>
     {
         private final String key;

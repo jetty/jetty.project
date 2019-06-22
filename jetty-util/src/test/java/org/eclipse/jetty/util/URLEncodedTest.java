@@ -200,7 +200,7 @@ public class URLEncodedTest
     }
 
 
-    /* -------------------------------------------------------------- */
+
     @Test
     @EnabledIfSystemProperty(named = "org.eclipse.jetty.util.UrlEncoding.charset", matches = "\\p{Alnum}")
     public void testCharsetViaSystemProperty()
@@ -215,7 +215,7 @@ public class URLEncodedTest
         }
     }
 
-    /* -------------------------------------------------------------- */
+
     @Test
     public void testUtf8()
             throws Exception

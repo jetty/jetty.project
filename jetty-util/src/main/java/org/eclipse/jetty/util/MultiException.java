@@ -37,7 +37,7 @@ public class MultiException extends Exception
     
     private List<Throwable> nested;
 
-    /* ------------------------------------------------------------ */
+
     public MultiException()
     {
         // Avoid filling in stack trace information.
@@ -65,7 +65,7 @@ public class MultiException extends Exception
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public void add(Throwable e)
     {
         if (e instanceof MultiException)
@@ -77,13 +77,13 @@ public class MultiException extends Exception
             nested.add(e);
     }
 
-    /* ------------------------------------------------------------ */
+
     public int size()
     {
         return (nested ==null)?0:nested.size();
     }
     
-    /* ------------------------------------------------------------ */
+
     public List<Throwable> getThrowables()
     {
         if(nested == null)
@@ -91,13 +91,13 @@ public class MultiException extends Exception
         return nested;
     }
     
-    /* ------------------------------------------------------------ */
+
     public Throwable getThrowable(int i)
     {
         return nested.get(i);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Throw a multiexception.
      * If this multi exception is empty then no action is taken. If it
      * contains a single exception that is thrown, otherwise the this
@@ -125,7 +125,7 @@ public class MultiException extends Exception
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Throw a Runtime exception.
      * If this multi exception is empty then no action is taken. If it
      * contains a single error or runtime exception that is thrown, otherwise the this
@@ -157,7 +157,7 @@ public class MultiException extends Exception
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Throw a multiexception.
      * If this multi exception is empty then no action is taken. If it
      * contains a any exceptions then this
@@ -177,7 +177,7 @@ public class MultiException extends Exception
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Throw an Exception, potentially with suppress.
      * If this multi exception is empty then no action is taken. If the first
      * exception added is an Error or Exception, then it is throw with 
@@ -206,7 +206,7 @@ public class MultiException extends Exception
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {

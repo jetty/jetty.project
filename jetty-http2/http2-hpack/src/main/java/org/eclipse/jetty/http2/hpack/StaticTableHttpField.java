@@ -22,7 +22,7 @@ package org.eclipse.jetty.http2.hpack;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 
-/* ------------------------------------------------------------ */
+
 public class StaticTableHttpField extends HttpField
 {
     private final Object _value;

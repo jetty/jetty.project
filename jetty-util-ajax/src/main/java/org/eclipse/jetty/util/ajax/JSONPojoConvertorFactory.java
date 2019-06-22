@@ -39,7 +39,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
         _fromJson=true;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param json The JSON instance to use
      * @param fromJSON If true, the class name of the objects is included
@@ -56,7 +56,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
         _fromJson=fromJSON;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void toJSON(Object obj, Output out)
     {

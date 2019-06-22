@@ -32,7 +32,7 @@ import javax.servlet.ServletRequestListener;
 @Deprecated
 public interface ContinuationListener extends EventListener
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * Called when a continuation life cycle is complete and after
      * any calls to {@link ServletRequestListener#requestDestroyed(javax.servlet.ServletRequestEvent)}
@@ -42,7 +42,7 @@ public interface ContinuationListener extends EventListener
      */
     public void onComplete(Continuation continuation);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Called when a suspended continuation has timed out.
      * The response may be written to and the methods

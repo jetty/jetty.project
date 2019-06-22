@@ -47,13 +47,13 @@ import org.eclipse.jetty.io.EndPoint;
  */
 public interface ConnectionFactory
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * @return A string representing the primary protocol name.
      */
     public String getProtocol();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return A list of alternative protocol names/versions including the primary protocol.
      */
@@ -70,7 +70,7 @@ public interface ConnectionFactory
     
     public interface Upgrading extends ConnectionFactory
     {
-        /* ------------------------------------------------------------ */
+
         /** Create a connection for an upgrade request.
          * <p>This is a variation of {@link #newConnection(Connector, EndPoint)} that can create (and/or customise)
          * a connection for an upgrade request.  Implementations may call {@link #newConnection(Connector, EndPoint)} or 
