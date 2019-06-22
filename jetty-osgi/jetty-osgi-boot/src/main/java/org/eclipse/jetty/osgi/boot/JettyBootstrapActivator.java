@@ -58,7 +58,7 @@ public class JettyBootstrapActivator implements BundleActivator
     
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Setup a new jetty Server, registers it as a service. Setup the Service
      * tracker for the jetty ContextHandlers that are in charge of deploying the
@@ -91,7 +91,7 @@ public class JettyBootstrapActivator implements BundleActivator
 
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Stop the activator.
      * 

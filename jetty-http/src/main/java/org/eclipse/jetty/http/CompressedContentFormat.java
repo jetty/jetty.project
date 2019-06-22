@@ -19,7 +19,7 @@
 package org.eclipse.jetty.http;
 
 
-/* ------------------------------------------------------------ */
+
 public class CompressedContentFormat
 {
     public static final CompressedContentFormat GZIP = new CompressedContentFormat("gzip", ".gz");

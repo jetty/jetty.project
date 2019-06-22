@@ -55,7 +55,7 @@ import java.util.Set;
  */
 public class LibExtClassLoaderHelper
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * IFilesInJettyHomeResourcesProcessor
      * 
@@ -71,7 +71,7 @@ public class LibExtClassLoaderHelper
     public static final Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors = new HashSet<>();
 
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param jettyHome the jetty home 
      * @param parentClassLoader the parent classloader
@@ -128,7 +128,7 @@ public class LibExtClassLoaderHelper
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param jarsContainerOrJars the jars via file references
      * @param otherJarsOrFolder more jars via url references
@@ -174,7 +174,7 @@ public class LibExtClassLoaderHelper
         return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * When we find files typically used for central logging configuration we do
      * what it takes in this method to do what the user expects. Without

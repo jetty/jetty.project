@@ -25,7 +25,7 @@ package org.eclipse.jetty.util.security;
 
 import java.nio.charset.StandardCharsets;
 
-/* ------------------------------------------------------------ */
+
 /**
  * Unix Crypt. Implements the one way cryptography used by Unix systems for
  * simple password protection.

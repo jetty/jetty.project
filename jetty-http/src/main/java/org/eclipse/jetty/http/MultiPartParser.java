@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 
 /**
  * A parser for MultiPart content type.
@@ -86,7 +86,7 @@ public class MultiPartParser
     
     private int _totalHeaderLineLength = -1;
     
-    /* ------------------------------------------------------------------------------- */
+
     public MultiPartParser(Handler handler, String boundary)
     {
         _handler = handler;
@@ -103,31 +103,31 @@ public class MultiPartParser
         _partialBoundary = 2; // No CRLF if no preamble
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     public Handler getHandler()
     {
         return _handler;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     public State getState()
     {
         return _state;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     public boolean isState(State state)
     {
         return _state == state;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     private static boolean hasNextByte(ByteBuffer buffer)
     {
         return BufferUtil.hasContent(buffer);
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     private HttpTokens.Token next(ByteBuffer buffer)
     {
         byte ch = buffer.get();
@@ -168,7 +168,7 @@ public class MultiPartParser
         return t;
     }    
     
-    /* ------------------------------------------------------------------------------- */
+
     private void setString(String s)
     {
         _string.reset();
@@ -176,7 +176,7 @@ public class MultiPartParser
         _length = s.length();
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /*
      * Mime Field strings are treated as UTF-8 as per https://tools.ietf.org/html/rfc7578#section-5.1
      */
@@ -191,7 +191,7 @@ public class MultiPartParser
         return s;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     
     /**
      * Parse until next Event.
@@ -264,7 +264,7 @@ public class MultiPartParser
         return handle;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     private void parsePreamble(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
@@ -303,7 +303,7 @@ public class MultiPartParser
         BufferUtil.clear(buffer);
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     private void parseDelimiter(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
@@ -350,7 +350,7 @@ public class MultiPartParser
         }
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /*
      * Parse the message headers and return true if the handler has signaled for a return
      */
@@ -565,7 +565,7 @@ public class MultiPartParser
         return false;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     private void handleField()
     {
         if (LOG.isDebugEnabled())
@@ -576,7 +576,7 @@ public class MultiPartParser
         _fieldName = _fieldValue = null;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     
     protected boolean parseOctetContent(ByteBuffer buffer)
     {
@@ -665,7 +665,7 @@ public class MultiPartParser
         return _handler.content(content, false);
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     private void setState(State state)
     {
         if (DEBUG)
@@ -673,7 +673,7 @@ public class MultiPartParser
         _state = state;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     private void setState(FieldState state)
     {
         if (DEBUG)
@@ -681,16 +681,16 @@ public class MultiPartParser
         _fieldState = state;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     @Override
     public String toString()
     {
         return String.format("%s{s=%s}", getClass().getSimpleName(), _state);
     }
     
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     /*
      * Event Handler interface These methods return true if the caller should process the events so far received (eg return from parseNext and call
      * HttpChannel.handle). If multiple callbacks are called in sequence (eg headerComplete then messageComplete) from the same point in the parsing then it is
@@ -728,7 +728,7 @@ public class MultiPartParser
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     @SuppressWarnings("serial")
     private static class IllegalCharacterException extends BadMessageException
     {

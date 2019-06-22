@@ -23,7 +23,7 @@ import java.util.EventListener;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
-/* ------------------------------------------------------------ */
+
 /**
  * The lifecycle interface for generic components.
  * <br>
@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject("Lifecycle Interface for startable components")
 public interface LifeCycle
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * Starts the component.
      * @throws Exception If the component fails to start
@@ -47,7 +47,7 @@ public interface LifeCycle
     public void start()
         throws Exception;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Stops the component.
      * The component may wait for current activities to complete
@@ -61,13 +61,13 @@ public interface LifeCycle
     public void stop()
         throws Exception;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the component is starting or has been started.
      */
     public boolean isRunning();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the component has been started.
      * @see #start()
@@ -75,21 +75,21 @@ public interface LifeCycle
      */
     public boolean isStarted();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the component is starting.
      * @see #isStarted()
      */
     public boolean isStarting();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the component is stopping.
      * @see #isStopped()
      */
     public boolean isStopping();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the component has been stopped.
      * @see #stop()
@@ -97,20 +97,20 @@ public interface LifeCycle
      */
     public boolean isStopped();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the component has failed to start or has failed to stop.
      */
     public boolean isFailed();
     
-    /* ------------------------------------------------------------ */
+
     public void addLifeCycleListener(LifeCycle.Listener listener);
 
-    /* ------------------------------------------------------------ */
+
     public void removeLifeCycleListener(LifeCycle.Listener listener);
     
 
-    /* ------------------------------------------------------------ */
+
     /** Listener.
      * A listener for Lifecycle events.
      */

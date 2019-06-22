@@ -49,7 +49,7 @@ public class ValidUrlRule extends Rule
         _terminating = true;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the response status code.
      * 
@@ -61,7 +61,7 @@ public class ValidUrlRule extends Rule
         _code = code;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the message for the {@link org.eclipse.jetty.server.Response#sendError(int, String)} method.
      *

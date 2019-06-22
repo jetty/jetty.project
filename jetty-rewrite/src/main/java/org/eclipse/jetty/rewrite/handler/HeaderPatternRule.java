@@ -35,13 +35,13 @@ public class HeaderPatternRule extends PatternRule
     private String _value;
     private boolean _add;
 
-    /* ------------------------------------------------------------ */
+
     public HeaderPatternRule()
     {
         this(null,null,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     public HeaderPatternRule(@Name("pattern") String pattern, @Name("name") String name, @Name("value") String value)
     {
         super(pattern);
@@ -52,7 +52,7 @@ public class HeaderPatternRule extends PatternRule
         setValue(value);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the header name.
      * 
@@ -63,7 +63,7 @@ public class HeaderPatternRule extends PatternRule
         _name = name;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the header value. The value can be either a <code>String</code> or <code>int</code> value.
      * 
@@ -74,7 +74,7 @@ public class HeaderPatternRule extends PatternRule
         _value = value;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the Add flag. 
      * @param add If true, the header is added to the response, otherwise the header it is set on the response.
@@ -84,7 +84,7 @@ public class HeaderPatternRule extends PatternRule
         _add = add;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Invokes this method when a match found. If the header had already been set, 
      * the new value overwrites the previous one. Otherwise, it adds the new 
@@ -105,7 +105,7 @@ public class HeaderPatternRule extends PatternRule
     
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the header name.
      * @return the header name.
@@ -115,7 +115,7 @@ public class HeaderPatternRule extends PatternRule
         return _name;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the header value.
      * @return the header value.
@@ -125,7 +125,7 @@ public class HeaderPatternRule extends PatternRule
         return _value;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the add flag value.
      * @return true if add flag set
@@ -135,7 +135,7 @@ public class HeaderPatternRule extends PatternRule
         return _add;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the header contents.
      */

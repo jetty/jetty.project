@@ -509,7 +509,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         return _acceptorPriorityDelta;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the acceptor thread priority delta.
      * <p>This allows the acceptor thread to run at a different priority.
      * Typically this would be used to lower the priority to give preference
@@ -709,7 +709,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         return _name;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set a connector name.   A context may be configured with
      * virtual hosts in the form "@contextname" and will only serve

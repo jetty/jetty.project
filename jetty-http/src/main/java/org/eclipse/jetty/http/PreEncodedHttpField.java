@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /** Pre encoded HttpField.
  * <p>A HttpField that will be cached and used many times can be created as 
  * a {@link PreEncodedHttpField}, which will use the {@link HttpFieldPreEncoder}

@@ -20,7 +20,7 @@ package org.eclipse.jetty.util;
 
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
-/* ------------------------------------------------------------ */
+
 /** Iterating Nested Callback.
  * <p>This specialized callback is used when breaking up an
  * asynchronous task into smaller asynchronous tasks.  A typical pattern

@@ -756,7 +756,7 @@ public class MultiPartFormInputStream
         return _deleteOnExit;
     }
     
-    /* ------------------------------------------------------------ */
+
     private static String value(String nameEqualsValue)
     {
         int idx = nameEqualsValue.indexOf('=');
@@ -764,7 +764,7 @@ public class MultiPartFormInputStream
         return QuotedStringTokenizer.unquoteOnly(value);
     }
     
-    /* ------------------------------------------------------------ */
+
     private static String filenameValue(String nameEqualsValue)
     {
         int idx = nameEqualsValue.indexOf('=');

@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /** Cookie parser
  * <p>Optimized stateful cookie parser.  Cookies fields are added with the
  * {@link #addCookieField(String)} method and parsed on the next subsequent

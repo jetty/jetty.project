@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /** HTTP2 Clear Text Connection factory.
  * <p>This extension of HTTP2ServerConnection Factory sets the
  * protocol name to "h2c" as used by the clear text upgrade mechanism

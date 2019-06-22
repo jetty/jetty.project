@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 
-/* ------------------------------------------------------------ */
+
 /**
  *<p> Rewrite handler is responsible for managing the rules. Its capabilities
  * is not only limited for URL rewrites such as RewritePatternRule or RewriteRegexRule.
@@ -174,14 +174,14 @@ public class RewriteHandler extends HandlerWrapper
     private RuleContainer _rules;
     private EnumSet<DispatcherType> _dispatchTypes = EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC);
 
-    /* ------------------------------------------------------------ */
+
     public RewriteHandler()
     {
         _rules = new RuleContainer();
         addBean(_rules);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the list of rules.
      * @return an array of {@link Rule}.
@@ -191,7 +191,7 @@ public class RewriteHandler extends HandlerWrapper
         return _rules.getRules();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Assigns the rules to process.
      * @param rules an array of {@link Rule}.
@@ -201,7 +201,7 @@ public class RewriteHandler extends HandlerWrapper
         _rules.setRules(rules);
     }
 
-    /*------------------------------------------------------------ */
+
     /**
      * Assigns the rules to process.
      * @param rules a {@link RuleContainer} containing other rules to process
@@ -212,13 +212,13 @@ public class RewriteHandler extends HandlerWrapper
         _rules = rules;
     }
 
-    /*------------------------------------------------------------ */
+
     public RuleContainer getRuleContainer()
     {
         return _rules;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Add a Rule
      * @param rule The rule to add to the end of the rules array
@@ -228,7 +228,7 @@ public class RewriteHandler extends HandlerWrapper
         _rules.addRule(rule);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the rewriteRequestURI If true, this handler will rewrite the value
      * returned by {@link HttpServletRequest#getRequestURI()}.
@@ -238,7 +238,7 @@ public class RewriteHandler extends HandlerWrapper
         return _rules.isRewriteRequestURI();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param rewriteRequestURI true if this handler will rewrite the value
      * returned by {@link HttpServletRequest#getRequestURI()}.
@@ -248,7 +248,7 @@ public class RewriteHandler extends HandlerWrapper
         _rules.setRewriteRequestURI(rewriteRequestURI);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if this handler will rewrite the value
      * returned by {@link HttpServletRequest#getPathInfo()}.
@@ -258,7 +258,7 @@ public class RewriteHandler extends HandlerWrapper
         return _rules.isRewritePathInfo();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param rewritePathInfo true if this handler will rewrite the value
      * returned by {@link HttpServletRequest#getPathInfo()}.
@@ -268,7 +268,7 @@ public class RewriteHandler extends HandlerWrapper
         _rules.setRewritePathInfo(rewritePathInfo);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the originalPathAttribte. If non null, this string will be used
      * as the attribute name to store the original request path.
@@ -278,7 +278,7 @@ public class RewriteHandler extends HandlerWrapper
         return _rules.getOriginalPathAttribute();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param originalPathAttribute If non null, this string will be used
      * as the attribute name to store the original request path.
@@ -288,25 +288,25 @@ public class RewriteHandler extends HandlerWrapper
         _rules.setOriginalPathAttribute(originalPathAttribute);
     }
 
-    /* ------------------------------------------------------------ */
+
     public EnumSet<DispatcherType> getDispatcherTypes()
     {
         return _dispatchTypes;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setDispatcherTypes(EnumSet<DispatcherType> types)
     {
         _dispatchTypes=EnumSet.copyOf(types);
     }
     
-    /* ------------------------------------------------------------ */
+
     public void setDispatcherTypes(DispatcherType... types)
     {
         _dispatchTypes=EnumSet.copyOf(Arrays.asList(types));
     }
 
-    /* ------------------------------------------------------------ */
+
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */

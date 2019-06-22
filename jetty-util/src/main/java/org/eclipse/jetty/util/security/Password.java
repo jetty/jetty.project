@@ -25,7 +25,7 @@ import java.util.Locale;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /**
  * Password utility class.
  *
@@ -63,7 +63,7 @@ public class Password extends Credential
 
     private String _pw;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Constructor.
      *
@@ -78,20 +78,20 @@ public class Password extends Credential
             _pw = deobfuscate(_pw);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
         return _pw;
     }
 
-    /* ------------------------------------------------------------ */
+
     public String toStarString()
     {
         return "*****************************************************".substring(0, _pw.length());
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean check(Object credentials)
     {
@@ -113,7 +113,7 @@ public class Password extends Credential
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean equals(Object o)
     {
@@ -132,14 +132,14 @@ public class Password extends Credential
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public int hashCode()
     {
         return null == _pw ? super.hashCode() : _pw.hashCode();
     }
 
-    /* ------------------------------------------------------------ */
+
     public static String obfuscate(String s)
     {
         StringBuilder buf = new StringBuilder();
@@ -177,7 +177,7 @@ public class Password extends Credential
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     public static String deobfuscate(String s)
     {
         if (s.startsWith(__OBFUSCATE)) s = s.substring(4);
@@ -208,7 +208,7 @@ public class Password extends Credential
         return new String(b, 0, l,StandardCharsets.UTF_8);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get a password. A password is obtained by trying
      * <UL>

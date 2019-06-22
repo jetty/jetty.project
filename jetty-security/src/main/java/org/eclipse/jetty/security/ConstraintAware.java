@@ -26,7 +26,7 @@ public interface ConstraintAware
     List<ConstraintMapping> getConstraintMappings();
     Set<String> getRoles();
     
-    /* ------------------------------------------------------------ */
+
     /** Set Constraint Mappings and roles.
      * Can only be called during initialization.
      * @param constraintMappings the mappings
@@ -34,7 +34,7 @@ public interface ConstraintAware
      */
     void setConstraintMappings(List<ConstraintMapping> constraintMappings, Set<String> roles);
     
-    /* ------------------------------------------------------------ */
+
     /** Add a Constraint Mapping.
      * May be called for running webapplication as an annotated servlet is instantiated.
      * @param mapping the mapping
@@ -42,7 +42,7 @@ public interface ConstraintAware
     void addConstraintMapping(ConstraintMapping mapping);
     
     
-    /* ------------------------------------------------------------ */
+
     /** Add a Role definition.
      * May be called on running webapplication as an annotated servlet is instantiated.
      * @param role the role

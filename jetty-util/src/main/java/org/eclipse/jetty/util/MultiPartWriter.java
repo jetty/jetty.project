@@ -31,20 +31,20 @@ import java.io.Writer;
 */
 public class MultiPartWriter extends FilterWriter
 {
-    /* ------------------------------------------------------------ */
+
     private final static String __CRLF="\015\012";
     private final static String __DASHDASH="--";
     
     public static final String MULTIPART_MIXED=MultiPartOutputStream.MULTIPART_MIXED;
     public static final String MULTIPART_X_MIXED_REPLACE=MultiPartOutputStream.MULTIPART_X_MIXED_REPLACE;
     
-    /* ------------------------------------------------------------ */
+
     private String boundary;
 
-    /* ------------------------------------------------------------ */
+
     private boolean inPart=false;    
     
-    /* ------------------------------------------------------------ */
+
     public MultiPartWriter(Writer out)
          throws IOException
     {
@@ -55,7 +55,7 @@ public class MultiPartWriter extends FilterWriter
         inPart=false;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** End the current part.
      * @exception IOException IOException
      */
@@ -79,13 +79,13 @@ public class MultiPartWriter extends FilterWriter
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     public String getBoundary()
     {
         return boundary;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Start creation of the next Content.
      * @param contentType the content type
      * @throws IOException if unable to write the part
@@ -105,7 +105,7 @@ public class MultiPartWriter extends FilterWriter
         inPart=true;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** end creation of the next Content.
      * @throws IOException if unable to write the part
      */
@@ -117,7 +117,7 @@ public class MultiPartWriter extends FilterWriter
         inPart=false;
     }
         
-    /* ------------------------------------------------------------ */
+
     /** Start creation of the next Content.
      * @param contentType the content type of the part
      * @param headers the part headers

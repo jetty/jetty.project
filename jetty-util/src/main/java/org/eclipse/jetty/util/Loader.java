@@ -23,7 +23,7 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-/* ------------------------------------------------------------ */
+
 /** ClassLoader Helper.
  * This helper class allows classes to be loaded either from the
  * Thread's ContextClassLoader, the classloader of the derived class
@@ -41,14 +41,14 @@ import java.util.ResourceBundle;
  */
 public class Loader
 {
-    /* ------------------------------------------------------------ */
+
     public static URL getResource(String name)
     {
         ClassLoader loader=Thread.currentThread().getContextClassLoader();
         return loader==null?ClassLoader.getSystemResource(name):loader.getResource(name); 
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Load a class.
      * <p>Load a class either from the thread context classloader or if none, the system
      * loader</p>
@@ -65,7 +65,7 @@ public class Loader
         return (loader==null ) ? Class.forName(name) : loader.loadClass(name);
     } 
 
-    /* ------------------------------------------------------------ */
+
     /** Load a class.
      * Load a class from the same classloader as the passed  <code>loadClass</code>, or if none
      * then use {@link #loadClass(String)}
@@ -84,7 +84,7 @@ public class Loader
         return loadClass(name);
     }
     
-    /* ------------------------------------------------------------ */
+
     public static ResourceBundle getResourceBundle(String name,boolean checkParents,Locale locale)
         throws MissingResourceException
     {

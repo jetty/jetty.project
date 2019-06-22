@@ -70,7 +70,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Servlet Holder")
 public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable<ServletHolder>
 {
-    /* ---------------------------------------------------------------- */
+
     private static final Logger LOG = Log.getLogger(ServletHolder.class);
     private int _initOrder = -1;
     private boolean _initOnStartup=false;
@@ -92,7 +92,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public static final  String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.servlet.jspPackagePrefix";
     public enum JspContainer {APACHE, OTHER}
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor .
      */
     public ServletHolder()
@@ -100,7 +100,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         this(Source.EMBEDDED);
     }
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor .
      * @param creator the holder source
      */
@@ -109,7 +109,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         super(creator);
     }
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor for existing servlet.
      * @param servlet the servlet
      */
@@ -119,7 +119,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         setServlet(servlet);
     }
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor for servlet class.
      * @param name the name of the servlet
      * @param servlet the servlet class
@@ -131,7 +131,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         setHeldClass(servlet);
     }
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor for servlet class.
      * @param name the servlet name
      * @param servlet the servlet
@@ -143,7 +143,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         setServlet(servlet);
     }
 
-    /* ---------------------------------------------------------------- */
+
     /** Constructor for servlet class.
      * @param servlet the servlet class
      */
@@ -153,7 +153,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         setHeldClass(servlet);
     }
 
-    /* ---------------------------------------------------------------- */
+
     /**
      * @return The unavailable exception or null if not unavailable
      */
@@ -162,7 +162,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return _unavailableEx;
     }
 
-    /* ------------------------------------------------------------ */
+
     public synchronized void setServlet(Servlet servlet)
     {
         if (servlet==null || servlet instanceof SingleThreadModel)
@@ -175,14 +175,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             setName(servlet.getClass().getName()+"-"+super.hashCode());
     }
 
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute(value="initialization order", readonly=true)
     public int getInitOrder()
     {
         return _initOrder;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the initialize order.
      * <p>
@@ -197,7 +197,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _initOrder = order;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Comparator by init order.
      */
@@ -231,21 +231,21 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return c;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean equals(Object o)
     {
         return o instanceof ServletHolder && compareTo((ServletHolder)o)==0;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public int hashCode()
     {
         return _name==null?System.identityHashCode(this):_name.hashCode();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Link a user role.
      * Translate the role name used by a servlet, to the link name
      * used by the container.
@@ -259,7 +259,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _roleMap.put(name,link);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** get a user role link.
      * @param name The name of the role
      * @return The name as translated by the link. If no link exists,
@@ -273,7 +273,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return (link==null)?name:link;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the forcedPath.
      */
@@ -283,7 +283,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return _forcedPath;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param forcedPath The forcedPath to set.
      */
@@ -304,7 +304,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doStart()
         throws Exception
@@ -411,7 +411,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void initialize ()
     throws Exception
@@ -438,7 +438,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doStop()
         throws Exception
@@ -471,7 +471,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _initialized = false;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void destroyInstance (Object o)
     throws Exception
@@ -483,7 +483,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         servlet.destroy();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the servlet.
      * @return The servlet
      * @throws ServletException if unable to init the servlet on first use
@@ -525,7 +525,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the servlet instance (no initialization done).
      * @return The servlet or null
      */
@@ -540,7 +540,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Check to ensure class of servlet is acceptable.
      * @throws UnavailableException if Servlet class is not of type {@link javax.servlet.Servlet}
@@ -554,7 +554,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the holder is started and is not unavailable
      */
@@ -574,7 +574,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return isStarted() && _unavailable==0;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Check if there is a javax.servlet.annotation.ServletSecurity
      * annotation on the servlet class. If there is, then we force
@@ -591,7 +591,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             setInitOrder(Integer.MAX_VALUE);
     }
 
-    /* ------------------------------------------------------------ */
+
     private void makeUnavailable(UnavailableException e)
     {
         if (_unavailableEx==e && _unavailable!=0)
@@ -612,7 +612,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    /* ------------------------------------------------------------ */
+
 
     private void makeUnavailable(final Throwable e)
     {
@@ -635,7 +635,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     private synchronized void initServlet()
         throws ServletException
     {
@@ -698,7 +698,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @throws Exception if unable to init the JSP Servlet
      */
@@ -732,7 +732,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (!scratch.exists()) scratch.mkdir();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Register a ServletRequestListener that will ensure tmp multipart
      * files are deleted when the request goes out of scope.
@@ -756,14 +756,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public ContextHandler getContextHandler()
     {
         return ContextHandler.getContextHandler(_config.getServletContext());
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.server.UserIdentity.Scope#getContextPath()
      */
@@ -773,7 +773,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return _config.getServletContext().getContextPath();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.server.UserIdentity.Scope#getRoleRefMap()
      */
@@ -783,20 +783,20 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return _roleMap;
     }
 
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute(value="role to run servlet as", readonly=true)
     public String getRunAsRole()
     {
         return _runAsRole;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setRunAsRole(String role)
     {
         _runAsRole = role;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Prepare to service a request.
      *
@@ -815,7 +815,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Service a request with this servlet.
      *
@@ -880,7 +880,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
+
     protected boolean isJspServlet ()
     {
         Servlet servlet = getServletInstance();
@@ -896,7 +896,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
+
     protected boolean isJspServlet (String classname)
     {
         if (classname == null)
@@ -904,13 +904,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return ("org.apache.jasper.servlet.JspServlet".equals(classname));
     }
 
-    /* ------------------------------------------------------------ */
+
     private void adaptForcedPathToJspContainer (ServletRequest request)
     {
         //no-op for apache jsp
     }
 
-    /* ------------------------------------------------------------ */
+
     private void detectJspContainer ()
     {
         if (_jspContainer == null)
@@ -930,7 +930,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param jsp the jsp-file
      * @return the simple classname of the jsp
@@ -968,7 +968,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getPackageOfJspClass (String jsp)
     {
         if (jsp == null)
@@ -1008,7 +1008,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the package for all jsps
      */
@@ -1026,7 +1026,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param jsp the jsp-file from web.xml
      * @return the fully qualified classname
@@ -1047,7 +1047,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return fullName.toString();
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Concatenate an element on to fully qualified classname.
      * 
@@ -1064,12 +1064,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     protected class Config extends HolderConfig implements ServletConfig
     {
-        /* -------------------------------------------------------- */
+
         @Override
         public String getServletName()
         {
@@ -1078,9 +1078,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     }
 
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
+
+
+
     public class Registration extends HolderRegistration implements ServletRegistration.Dynamic
     {
         protected MultipartConfigElement _multipartConfig;
@@ -1186,9 +1186,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return _registration;
     }
 
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
+
+
+
     private class SingleThreadedWrapper implements Servlet
     {
         Stack<Servlet> _stack=new Stack<Servlet>();
@@ -1280,7 +1280,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the newly created Servlet instance
      * @throws ServletException if unable to create a new instance
@@ -1314,7 +1314,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -1327,7 +1327,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 new DumpableCollection("initParams", _initParams.entrySet()));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {

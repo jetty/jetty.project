@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /**  Dynamic Servlet Invoker.
  * This servlet invokes anonymous servlets that have not been defined
  * in the web.xml or by other means. The first element of the pathInfo
@@ -78,7 +78,7 @@ public class Invoker extends HttpServlet
     private boolean _nonContextServlets;
     private boolean _verbose;
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void init()
     {
@@ -112,7 +112,7 @@ public class Invoker extends HttpServlet
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
@@ -244,14 +244,14 @@ public class Invoker extends HttpServlet
 
     }
 
-    /* ------------------------------------------------------------ */
+
     class InvokedRequest extends HttpServletRequestWrapper
     {
         String _servletPath;
         String _pathInfo;
         boolean _included;
 
-        /* ------------------------------------------------------------ */
+
         InvokedRequest(HttpServletRequest request,
                 boolean included,
                 String name,
@@ -266,7 +266,7 @@ public class Invoker extends HttpServlet
                 _pathInfo=null;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public String getServletPath()
         {
@@ -275,7 +275,7 @@ public class Invoker extends HttpServlet
             return _servletPath;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public String getPathInfo()
         {
@@ -284,7 +284,7 @@ public class Invoker extends HttpServlet
             return _pathInfo;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public Object getAttribute(String name)
         {

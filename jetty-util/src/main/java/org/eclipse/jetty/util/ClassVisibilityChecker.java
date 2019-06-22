@@ -28,7 +28,7 @@ package org.eclipse.jetty.util;
  */
 public interface ClassVisibilityChecker
 {
-    /* ------------------------------------------------------------ */
+
     /** Is the class a System Class.
      * A System class is a class that is visible to a webapplication,
      * but that cannot be overridden by the contents of WEB-INF/lib or
@@ -38,7 +38,7 @@ public interface ClassVisibilityChecker
      */
     boolean isSystemClass(Class<?> clazz);
 
-    /* ------------------------------------------------------------ */
+
     /** Is the class a Server Class.
      * A Server class is a class that is part of the implementation of 
      * the server and is NIT visible to a webapplication. The web

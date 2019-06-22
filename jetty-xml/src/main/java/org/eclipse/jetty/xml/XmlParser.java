@@ -46,7 +46,7 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-/*--------------------------------------------------------------*/
+
 /**
  * XML Parser wrapper. This class wraps any standard JAXP1.1 parser with convieniant error and
  * entity handlers and a mini dom-like document tree.
@@ -66,7 +66,7 @@ public class XmlParser
     private Object _xpaths;
     private String _dtd;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Construct
      */
@@ -79,13 +79,13 @@ public class XmlParser
         setValidating(validating);
     }
 
-    /* ------------------------------------------------------------ */
+
     public XmlParser(boolean validating)
     {
         setValidating(validating);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setValidating(boolean validating)
     {
         try
@@ -127,20 +127,20 @@ public class XmlParser
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isValidating()
     {
         return _parser.isValidating();
     }
     
-    /* ------------------------------------------------------------ */
+
     public synchronized void redirectEntity(String name, URL entity)
     {
         if (entity != null)
             _redirectMap.put(name, entity);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      *
      * @return Returns the xpath.
@@ -150,7 +150,7 @@ public class XmlParser
         return _xpath;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set an XPath A very simple subset of xpath is supported to select a partial tree. Currently
      * only path like "/node1/nodeA | /node1/nodeB" are supported.
@@ -165,13 +165,13 @@ public class XmlParser
             _xpaths = LazyList.add(_xpaths, tok.nextToken());
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getDTD()
     {
         return _dtd;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Add a ContentHandler. Add an additional _content handler that is triggered on a tag name. SAX
      * events are passed to the ContentHandler provided from a matching start element to the
@@ -187,7 +187,7 @@ public class XmlParser
         _observerMap.put(trigger, observer);
     }
 
-    /* ------------------------------------------------------------ */
+
     public synchronized Node parse(InputSource source) throws IOException, SAXException
     {
         _dtd=null;
@@ -206,7 +206,7 @@ public class XmlParser
         return doc;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Parse String URL.
      * @param url the url to the xml to parse
@@ -221,7 +221,7 @@ public class XmlParser
         return parse(new InputSource(url));
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Parse File.
      * @param file the file to the xml to parse 
@@ -236,7 +236,7 @@ public class XmlParser
         return parse(new InputSource(Resource.toURL(file).toString()));
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Parse InputStream.
      * @param in the input stream of the xml to parse
@@ -261,7 +261,7 @@ public class XmlParser
     }
 
 
-    /* ------------------------------------------------------------ */
+
     protected InputSource resolveEntity(String pid, String sid)
     {
         if (LOG.isDebugEnabled())
@@ -305,8 +305,8 @@ public class XmlParser
         return null;
     }
     
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     private class NoopHandler extends DefaultHandler
     {
         Handler _next;
@@ -317,14 +317,14 @@ public class XmlParser
             this._next = next;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attrs) throws SAXException
         {
             _depth++;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException
         {
@@ -335,8 +335,8 @@ public class XmlParser
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     private class Handler extends DefaultHandler
     {
         Node _top = new Node(null, null, null);
@@ -349,7 +349,7 @@ public class XmlParser
             _noop = new NoopHandler(this);
         }
 
-        /* ------------------------------------------------------------ */
+
         void clear()
         {
             _top = null;
@@ -357,7 +357,7 @@ public class XmlParser
             _context = null;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attrs) throws SAXException
         {
@@ -409,7 +409,7 @@ public class XmlParser
                     ((ContentHandler) _observers.get(i)).startElement(uri, localName, qName, attrs);
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException
         {
@@ -420,7 +420,7 @@ public class XmlParser
             _observers.pop();
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void ignorableWhitespace(char buf[], int offset, int len) throws SAXException
         {
@@ -429,7 +429,7 @@ public class XmlParser
                     ((ContentHandler) _observers.get(i)).ignorableWhitespace(buf, offset, len);
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void characters(char buf[], int offset, int len) throws SAXException
         {
@@ -439,7 +439,7 @@ public class XmlParser
                     ((ContentHandler) _observers.get(i)).characters(buf, offset, len);
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void warning(SAXParseException ex)
         {
@@ -447,7 +447,7 @@ public class XmlParser
             LOG.warn("WARNING@" + getLocationString(ex) + " : " + ex.toString());
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void error(SAXParseException ex) throws SAXException
         {
@@ -458,7 +458,7 @@ public class XmlParser
             LOG.warn("ERROR@" + getLocationString(ex) + " : " + ex.toString());
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void fatalError(SAXParseException ex) throws SAXException
         {
@@ -468,13 +468,13 @@ public class XmlParser
             throw ex;
         }
 
-        /* ------------------------------------------------------------ */
+
         private String getLocationString(SAXParseException ex)
         {
             return ex.getSystemId() + " line:" + ex.getLineNumber() + " col:" + ex.getColumnNumber();
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public InputSource resolveEntity(String pid, String sid)
         {
@@ -482,8 +482,8 @@ public class XmlParser
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     /**
      * XML Attribute.
      */
@@ -509,8 +509,8 @@ public class XmlParser
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     /**
      * XML Node. Represents an XML element with optional attributes and ordered content.
      */
@@ -523,7 +523,7 @@ public class XmlParser
         private boolean _lastString = false;
         private String _path;
 
-        /* ------------------------------------------------------------ */
+
         Node(Node parent, String tag, Attributes attrs)
         {
             _parent = parent;
@@ -542,19 +542,19 @@ public class XmlParser
             }
         }
 
-        /* ------------------------------------------------------------ */
+
         public Node getParent()
         {
             return _parent;
         }
 
-        /* ------------------------------------------------------------ */
+
         public String getTag()
         {
             return _tag;
         }
 
-        /* ------------------------------------------------------------ */
+
         public String getPath()
         {
             if (_path == null)
@@ -567,7 +567,7 @@ public class XmlParser
             return _path;
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Get an array of element attributes.
          * @return the attributes
@@ -577,7 +577,7 @@ public class XmlParser
             return _attrs;
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Get an element attribute.
          * 
@@ -589,7 +589,7 @@ public class XmlParser
             return getAttribute(name, null);
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Get an element attribute.
          * 
@@ -607,7 +607,7 @@ public class XmlParser
             return dft;
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Get the number of children nodes.
          */
@@ -619,7 +619,7 @@ public class XmlParser
             return 0;
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Get the ith child node or content.
          *
@@ -633,7 +633,7 @@ public class XmlParser
             return null;
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Get the first child node with the tag.
          *
@@ -658,7 +658,7 @@ public class XmlParser
             return null;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void add(int i, Object o)
         {
@@ -682,7 +682,7 @@ public class XmlParser
             }
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public void clear()
         {
@@ -691,7 +691,7 @@ public class XmlParser
             _list = null;
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Get a tag as a string.
          *
@@ -711,14 +711,14 @@ public class XmlParser
             return s;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public synchronized String toString()
         {
             return toString(true);
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Convert to a string.
          *
@@ -732,7 +732,7 @@ public class XmlParser
             return buf.toString();
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Convert to a string.
          *
@@ -748,7 +748,7 @@ public class XmlParser
             return s;
         }
 
-        /* ------------------------------------------------------------ */
+
         private synchronized void toString(StringBuilder buf, boolean tag)
         {
             if (tag)
@@ -794,7 +794,7 @@ public class XmlParser
                 buf.append("/>");
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * Iterator over named child nodes.
          *
@@ -808,7 +808,7 @@ public class XmlParser
                 int c = 0;
                 Node _node;
 
-                /* -------------------------------------------------- */
+
                 @Override
                 public boolean hasNext()
                 {
@@ -831,7 +831,7 @@ public class XmlParser
                     return false;
                 }
 
-                /* -------------------------------------------------- */
+
                 @Override
                 public Node next()
                 {
@@ -848,7 +848,7 @@ public class XmlParser
                     }
                 }
 
-                /* -------------------------------------------------- */
+
                 @Override
                 public void remove()
                 {

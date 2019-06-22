@@ -108,14 +108,14 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
 
     }
   
-    /* ------------------------------------------------------------ */
+
     public BundleContextProvider(ServerInstanceWrapper wrapper)
     {
         super(wrapper);
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStart() throws Exception
     {
@@ -130,7 +130,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStop() throws Exception
     {
@@ -153,7 +153,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
 
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean bundleAdded (Bundle bundle) throws Exception
     {
@@ -198,7 +198,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Bundle has been removed. If it was a context we deployed, undeploy it.
      * 

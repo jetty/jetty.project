@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.net.URL;
 
 
-/* ------------------------------------------------------------ */
+
 /** Bad Resource.
  *
  * A Resource that is returned for a bade URL.  Acts as a resource
@@ -35,10 +35,10 @@ import java.net.URL;
  */
 class BadResource extends URLResource
 {
-    /* ------------------------------------------------------------ */
+
     private String _message=null;
         
-    /* -------------------------------------------------------- */
+
     BadResource(URL url,  String message)
     {
         super(url,null);
@@ -46,28 +46,28 @@ class BadResource extends URLResource
     }
     
 
-    /* -------------------------------------------------------- */
+
     @Override
     public boolean exists()
     {
         return false;
     }
         
-    /* -------------------------------------------------------- */
+
     @Override
     public long lastModified()
     {
         return -1;
     }
 
-    /* -------------------------------------------------------- */
+
     @Override
     public boolean isDirectory()
     {
         return false;
     }
 
-    /* --------------------------------------------------------- */
+
     @Override
     public long length()
     {
@@ -75,21 +75,21 @@ class BadResource extends URLResource
     }
         
         
-    /* ------------------------------------------------------------ */
+
     @Override
     public File getFile()
     {
         return null;
     }
         
-    /* --------------------------------------------------------- */
+
     @Override
     public InputStream getInputStream() throws IOException
     {
         throw new FileNotFoundException(_message);
     }
         
-    /* --------------------------------------------------------- */
+
     @Override
     public boolean delete()
         throws SecurityException
@@ -97,7 +97,7 @@ class BadResource extends URLResource
         throw new SecurityException(_message);
     }
 
-    /* --------------------------------------------------------- */
+
     @Override
     public boolean renameTo( Resource dest)
         throws SecurityException
@@ -105,14 +105,14 @@ class BadResource extends URLResource
         throw new SecurityException(_message);
     }
 
-    /* --------------------------------------------------------- */
+
     @Override
     public String[] list()
     {
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void copyTo(File destination)
         throws IOException
@@ -120,7 +120,7 @@ class BadResource extends URLResource
         throw new SecurityException(_message);
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {

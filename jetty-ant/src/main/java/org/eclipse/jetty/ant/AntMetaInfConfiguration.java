@@ -57,7 +57,7 @@ public class AntMetaInfConfiguration extends MetaInfConfiguration
 
 
 
-    /* ------------------------------------------------------------------------------- */
+
     @Override
     protected  List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
     {

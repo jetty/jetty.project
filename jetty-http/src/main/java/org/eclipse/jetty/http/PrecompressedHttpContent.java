@@ -27,7 +27,7 @@ import java.util.Map;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 
-/* ------------------------------------------------------------ */
+
 public class PrecompressedHttpContent implements HttpContent
 {
     private final HttpContent _content;

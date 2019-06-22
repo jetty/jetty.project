@@ -58,10 +58,10 @@ public class SessionDump extends HttpServlet
     }
 
     int redirectCount=0;
-    /* ------------------------------------------------------------ */
+
     String pageType;
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void init(ServletConfig config)
          throws ServletException
@@ -69,7 +69,7 @@ public class SessionDump extends HttpServlet
         super.init(config);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void handleForm(HttpServletRequest request,
                           HttpServletResponse response)
     {
@@ -99,7 +99,7 @@ public class SessionDump extends HttpServlet
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doPost(HttpServletRequest request,
                        HttpServletResponse response)
@@ -111,7 +111,7 @@ public class SessionDump extends HttpServlet
         response.sendRedirect(encodedUrl);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doGet(HttpServletRequest request,
                       HttpServletResponse response)
@@ -190,13 +190,13 @@ public class SessionDump extends HttpServlet
 
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getServletInfo() {
         return "Session Dump Servlet";
     }
 
-    /* ------------------------------------------------------------ */
+
     private String getURI(HttpServletRequest request)
     {
         String uri=(String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);

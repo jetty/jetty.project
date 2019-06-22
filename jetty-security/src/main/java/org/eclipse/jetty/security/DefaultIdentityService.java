@@ -25,7 +25,7 @@ import javax.security.auth.Subject;
 import org.eclipse.jetty.server.UserIdentity;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  * Default Identity Service implementation.
  * This service handles only role reference maps passed in an
@@ -38,12 +38,12 @@ import org.eclipse.jetty.server.UserIdentity;
  */
 public class DefaultIdentityService implements IdentityService
 {
-    /* ------------------------------------------------------------ */
+
     public DefaultIdentityService()
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * If there are roles refs present in the scope, then wrap the UserIdentity
      * with one that uses the role references in the {@link UserIdentity#isUserInRole(String, org.eclipse.jetty.server.UserIdentity.Scope)}
@@ -54,40 +54,40 @@ public class DefaultIdentityService implements IdentityService
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void disassociate(Object previous)
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Object setRunAs(UserIdentity user, RunAsToken token)
     {
         return token;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void unsetRunAs(Object lastToken)
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public RunAsToken newRunAsToken(String runAsName)
     {
         return new RoleRunAsToken(runAsName);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public UserIdentity getSystemUserIdentity()
     {
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public UserIdentity newUserIdentity(final Subject subject, final Principal userPrincipal, final String[] roles)
     {

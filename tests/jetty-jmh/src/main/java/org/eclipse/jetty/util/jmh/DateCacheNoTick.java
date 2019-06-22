@@ -51,7 +51,7 @@ public class DateCacheNoTick
     private final Locale _locale;
     private final ZoneId _zoneId;
 
-    /* ------------------------------------------------------------ */
+
     /** Constructor.
      * Make a DateCache that will use a default format. The default format
      * generates the same results as Date.toString().
@@ -61,7 +61,7 @@ public class DateCacheNoTick
         this(DEFAULT_FORMAT);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Constructor.
      * Make a DateCache that will use the given format
      * @param format the format to use
@@ -71,19 +71,19 @@ public class DateCacheNoTick
         this(format,null,TimeZone.getDefault());
     }
 
-    /* ------------------------------------------------------------ */
+
     public DateCacheNoTick( String format, Locale l)
     {
         this(format,l,TimeZone.getDefault());
     }
 
-    /* ------------------------------------------------------------ */
+
     public DateCacheNoTick( String format, Locale l, String tz)
     {
         this(format,l,TimeZone.getTimeZone(tz));
     }
 
-    /* ------------------------------------------------------------ */
+
     public DateCacheNoTick( String format, Locale l, TimeZone tz)
     {
         _formatString=format;
@@ -139,14 +139,14 @@ public class DateCacheNoTick
     }
     
 
-    /* ------------------------------------------------------------ */
+
     public TimeZone getTimeZone()
     {
         return TimeZone.getTimeZone(_zoneId);
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Format a date according to our stored formatter.
      * @param inDate the Date
      * @return Formatted date
@@ -156,7 +156,7 @@ public class DateCacheNoTick
         return ZonedDateTime.ofInstant(inDate.toInstant(),_zoneId).format( _tzFormat );
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Format a date according to our stored formatter.
      * If it happens to be in the same second as the last formatNow
      * call, then the format is reused.
@@ -168,7 +168,7 @@ public class DateCacheNoTick
         return ZonedDateTime.ofInstant(Instant.ofEpochMilli(inDate),_zoneId).format( _tzFormat );
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Format a date according to our stored formatter.
      * The passed time is expected to be close to the current time, so it is 
      * compared to the last value passed and if it is within the same second,
@@ -181,13 +181,13 @@ public class DateCacheNoTick
         return format(now);
     }
     
-    /* ------------------------------------------------------------ */
+
     public String now()
     {
         return formatNow(System.currentTimeMillis());
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getFormatString()
     {
         return _formatString;

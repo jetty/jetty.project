@@ -89,7 +89,7 @@ public class NamingContext implements Context, Dumpable
     private Collection<Listener> _listeners;
     private Object _lock;
 
-    /*------------------------------------------------*/
+
     /**
      * Naming Context Listener.
      */
@@ -111,7 +111,7 @@ public class NamingContext implements Context, Dumpable
         void unbind(NamingContext ctx, Binding binding);
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Constructor
      *
@@ -165,7 +165,7 @@ public class NamingContext implements Context, Dumpable
         return Boolean.parseBoolean(System.getProperty(DEEP_BINDING,"false"));
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Getter for _name
      *
@@ -176,7 +176,7 @@ public class NamingContext implements Context, Dumpable
         return _name;
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Getter for _parent
      *
@@ -187,7 +187,7 @@ public class NamingContext implements Context, Dumpable
         return _parent;
     }
 
-    /*------------------------------------------------*/
+
     public void setNameParser (NameParser parser)
     {
         _parser = parser;
@@ -256,7 +256,7 @@ public class NamingContext implements Context, Dumpable
     }
 
 
-    /*------------------------------------------------*/
+
     /**
      * Bind a name to an object
      *
@@ -339,7 +339,7 @@ public class NamingContext implements Context, Dumpable
 
 
 
-    /*------------------------------------------------*/
+
     /**
      * Bind a name (as a String) to an object
      *
@@ -355,7 +355,7 @@ public class NamingContext implements Context, Dumpable
     }
 
 
-    /*------------------------------------------------*/
+
     /**
      * Create a context as a child of this one
      *
@@ -396,7 +396,7 @@ public class NamingContext implements Context, Dumpable
         return getContext(cname).createSubcontext (cname.getSuffix(1));
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Create a Context as a child of this one
      *
@@ -411,7 +411,7 @@ public class NamingContext implements Context, Dumpable
         return createSubcontext(_parser.parse(name));
     }
 
-    /*------------------------------------------------*/
+
     /**
      *
      *
@@ -425,7 +425,7 @@ public class NamingContext implements Context, Dumpable
         removeBinding(_parser.parse(name));
     }
 
-    /*------------------------------------------------*/
+
     /**
      *
      *
@@ -439,7 +439,7 @@ public class NamingContext implements Context, Dumpable
          removeBinding(name);
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Lookup a binding by name
      *
@@ -511,7 +511,7 @@ public class NamingContext implements Context, Dumpable
         return getContext(cname).lookup (cname.getSuffix(1));
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Lookup binding of an object by name
      *
@@ -526,7 +526,7 @@ public class NamingContext implements Context, Dumpable
         return lookup (_parser.parse(name));
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Lookup link bound to name
      *
@@ -560,7 +560,7 @@ public class NamingContext implements Context, Dumpable
         return getContext(cname).lookup (cname.getSuffix(1));
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Lookup link bound to name
      *
@@ -575,7 +575,7 @@ public class NamingContext implements Context, Dumpable
         return lookupLink (_parser.parse(name));
     }
 
-    /*------------------------------------------------*/
+
     /**
      * List all names bound at Context named by Name
      *
@@ -605,7 +605,7 @@ public class NamingContext implements Context, Dumpable
         return getContext(cname).list (cname.getSuffix(1));
     }
 
-    /*------------------------------------------------*/
+
     /**
      * List all names bound at Context named by Name
      *
@@ -620,7 +620,7 @@ public class NamingContext implements Context, Dumpable
         return list(_parser.parse(name));
     }
 
-    /*------------------------------------------------*/
+
     /**
      * List all Bindings present at Context named by Name
      *
@@ -649,7 +649,7 @@ public class NamingContext implements Context, Dumpable
 
 
 
-    /*------------------------------------------------*/
+
     /**
      * List all Bindings at Name
      *
@@ -665,7 +665,7 @@ public class NamingContext implements Context, Dumpable
     }
 
 
-    /*------------------------------------------------*/
+
     /**
      * Overwrite or create a binding
      *
@@ -710,7 +710,7 @@ public class NamingContext implements Context, Dumpable
     }
 
 
-    /*------------------------------------------------*/
+
     /**
      * Overwrite or create a binding from Name to Object
      *
@@ -726,7 +726,7 @@ public class NamingContext implements Context, Dumpable
         rebind (_parser.parse(name), obj);
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Not supported.
      *
@@ -740,7 +740,7 @@ public class NamingContext implements Context, Dumpable
         unbind(_parser.parse(name));
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Not supported.
      *
@@ -777,7 +777,7 @@ public class NamingContext implements Context, Dumpable
         }
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Not supported
      *
@@ -794,7 +794,7 @@ public class NamingContext implements Context, Dumpable
     }
 
 
-    /*------------------------------------------------*/
+
     /**
      * Not supported
      *
@@ -812,7 +812,7 @@ public class NamingContext implements Context, Dumpable
 
 
 
-    /*------------------------------------------------*/
+
     /** Join two names together. These are treated as
      * CompoundNames.
      *
@@ -838,7 +838,7 @@ public class NamingContext implements Context, Dumpable
 
 
 
-    /*------------------------------------------------*/
+
     /** Join two names together. These are treated as
      * CompoundNames.
      *
@@ -863,7 +863,7 @@ public class NamingContext implements Context, Dumpable
     }
 
 
-    /*------------------------------------------------*/
+
     /**
      * Do nothing
      *
@@ -876,7 +876,7 @@ public class NamingContext implements Context, Dumpable
     }
 
 
-    /*------------------------------------------------*/
+
     /**
      * Return a NameParser for this Context.
      *
@@ -889,7 +889,7 @@ public class NamingContext implements Context, Dumpable
         return _parser;
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Return a NameParser for this Context.
      *
@@ -902,7 +902,7 @@ public class NamingContext implements Context, Dumpable
         return _parser;
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Get the full name of this Context node
      * by visiting it's ancestors back to root.
@@ -930,7 +930,7 @@ public class NamingContext implements Context, Dumpable
         return name.toString();
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Add an environment setting to this Context
      *
@@ -963,7 +963,7 @@ public class NamingContext implements Context, Dumpable
         }
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Remove a property from this Context's environment.
      *
@@ -982,7 +982,7 @@ public class NamingContext implements Context, Dumpable
     }
 
 
-    /*------------------------------------------------*/
+
     /**
      * Get the environment of this Context.
      *
@@ -994,7 +994,7 @@ public class NamingContext implements Context, Dumpable
         return _env;
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Add a name to object binding to this Context.
      *
@@ -1035,7 +1035,7 @@ public class NamingContext implements Context, Dumpable
         }
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Get a name to object binding from this Context
      *
@@ -1047,7 +1047,7 @@ public class NamingContext implements Context, Dumpable
         return _bindings.get(name.toString());
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Get a name to object binding from this Context
      *
@@ -1059,7 +1059,7 @@ public class NamingContext implements Context, Dumpable
         return _bindings.get(name);
     }
 
-    /*------------------------------------------------*/
+
     public void removeBinding (Name name)
     {
         String key = name.toString();
@@ -1074,7 +1074,7 @@ public class NamingContext implements Context, Dumpable
         }
     }
 
-    /*------------------------------------------------*/
+
     /**
      * Remove leading or trailing empty components from
      * name. Eg "/comp/env/" -&gt; "comp/env"
@@ -1101,21 +1101,21 @@ public class NamingContext implements Context, Dumpable
         return canonicalName;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isLocked()
     {
         //TODO lock whole hierarchy?
         return _lock != null;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String dump()
     {
         return Dumpable.dump(this);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {

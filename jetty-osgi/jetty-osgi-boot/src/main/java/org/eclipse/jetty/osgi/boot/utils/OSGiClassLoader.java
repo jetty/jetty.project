@@ -45,7 +45,7 @@ public class OSGiClassLoader extends URLClassLoader
     private ClassLoader _osgiBundleClassLoader;
     private ClassLoader _parent;
     
-    /* ------------------------------------------------------------ */
+
     public OSGiClassLoader(ClassLoader parent, Bundle bundle)
     {
         super(new URL[]{}, parent);
@@ -56,7 +56,7 @@ public class OSGiClassLoader extends URLClassLoader
     
   
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Get a resource from the classloader
      * 
@@ -95,14 +95,14 @@ public class OSGiClassLoader extends URLClassLoader
         return url;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException
     {
         return loadClass(name, false);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
@@ -137,7 +137,7 @@ public class OSGiClassLoader extends URLClassLoader
         return c;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public Enumeration<URL> getResources(String name) throws IOException
     {
@@ -147,7 +147,7 @@ public class OSGiClassLoader extends URLClassLoader
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException
     {
@@ -158,7 +158,7 @@ public class OSGiClassLoader extends URLClassLoader
     
     
 
-   /* ------------------------------------------------------------ */
+
     /**
      * @param e
      * @param e2

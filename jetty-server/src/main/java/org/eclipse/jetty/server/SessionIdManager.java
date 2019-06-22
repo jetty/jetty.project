@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface SessionIdManager extends LifeCycle
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * @param id The plain session ID (ie no workername extension)
      * @return True if the session ID is in use by at least one context.
@@ -41,7 +41,7 @@ public interface SessionIdManager extends LifeCycle
     public boolean isIdInUse(String id);
 
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Expire all sessions on all contexts that share the same id.
      * 
@@ -50,7 +50,7 @@ public interface SessionIdManager extends LifeCycle
     public void expireAll(String id);
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Invalidate all sessions on all contexts that share the same id.
      * 
@@ -59,7 +59,7 @@ public interface SessionIdManager extends LifeCycle
     public void invalidateAll (String id);
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a new Session ID.
      * 
@@ -70,14 +70,14 @@ public interface SessionIdManager extends LifeCycle
     public String newSessionId(HttpServletRequest request,long created);
     
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @return the unique name of this server instance
      */
     public String getWorkerName();
     
     
-    /* ------------------------------------------------------------ */
+
     /** Get just the session id from an id that includes the worker name
      * as a suffix.
      * 
@@ -89,7 +89,7 @@ public interface SessionIdManager extends LifeCycle
     
     
     
-    /* ------------------------------------------------------------ */
+
     /** Get an extended id for a session. An extended id contains
      * the workername as a suffix.
      * 
@@ -100,7 +100,7 @@ public interface SessionIdManager extends LifeCycle
     public String getExtendedId(String id,HttpServletRequest request);
     
     
-    /* ------------------------------------------------------------ */
+
     /** Change the existing session id.
     * 
     * @param oldId the old plain session id
@@ -110,7 +110,7 @@ public interface SessionIdManager extends LifeCycle
     */
     public String renewSessionId(String oldId, String oldExtendedId, HttpServletRequest request);    
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the set of all session handlers for this node
      * @return the set of session handlers

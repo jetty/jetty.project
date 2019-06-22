@@ -38,7 +38,7 @@ import java.lang.reflect.Method;
  */
 public class GCThreadLeakPreventer extends AbstractLeakPreventer
 {
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
      */

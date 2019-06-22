@@ -27,7 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 
-/* ------------------------------------------------------------ */
+
 /** HandlerList.
  * This extension of {@link HandlerCollection} will call
  * each contained handler in turn until either an exception is thrown, the response
@@ -44,7 +44,7 @@ public class HandlerList extends HandlerCollection
         super(handlers);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)
      */

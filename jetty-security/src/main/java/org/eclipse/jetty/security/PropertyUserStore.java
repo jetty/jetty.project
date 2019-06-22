@@ -210,7 +210,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         return String.format("%s@%x[users.count=%d,identityService=%s]", getClass().getSimpleName(), hashCode(), getKnownUserIdentities().size(), getIdentityService());
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void loadUsers() throws IOException
     {
         if (_configPath == null)

@@ -34,7 +34,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
  */
 public class DOMLeakPreventer extends AbstractLeakPreventer
 {
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
      */

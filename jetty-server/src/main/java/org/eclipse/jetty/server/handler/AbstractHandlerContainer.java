@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 /** Abstract Handler Container.
  * This is the base class for handlers that may contain other handlers.
  *
@@ -44,12 +44,12 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
 {
     private static final Logger LOG = Log.getLogger(AbstractHandlerContainer.class);
     
-    /* ------------------------------------------------------------ */
+
     public AbstractHandlerContainer()
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Handler[] getChildHandlers()
     {
@@ -58,7 +58,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         return list.toArray(new Handler[list.size()]);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Handler[] getChildHandlersByClass(Class<?> byclass)
     {
@@ -67,7 +67,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         return list.toArray(new Handler[list.size()]);
     }
 
-    /* ------------------------------------------------------------ */
+
     @SuppressWarnings("unchecked")
     @Override
     public <T extends Handler> T getChildHandlerByClass(Class<T> byclass)
@@ -79,12 +79,12 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         return (T)list.get(0);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void expandHandler(Handler handler, List<Handler> list, Class<?> byClass)
     {
         if (handler==null)
@@ -103,7 +103,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public static <T extends HandlerContainer> T findContainerOf(HandlerContainer root,Class<T>type, Handler handler)
     {
         if (root==null || handler==null)
@@ -128,7 +128,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void setServer(Server server)
     {
@@ -146,7 +146,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     }
     
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * Shutdown nested Gracefule handlers
      * 

@@ -98,13 +98,13 @@ public class ServerInstanceWrapper
     
     
     
-    /* ------------------------------------------------------------ */
+
     public static void addContainerTldBundleDiscoverer (TldBundleDiscoverer tldBundleDiscoverer)
     {
         __containerTldBundleDiscoverers.add(tldBundleDiscoverer);
     }
     
-    /* ------------------------------------------------------------ */
+
     public static Collection<TldBundleDiscoverer> getContainerTldBundleDiscoverers()
     {
         return __containerTldBundleDiscoverers;
@@ -113,7 +113,7 @@ public class ServerInstanceWrapper
  
 
     
-    /* ------------------------------------------------------------ */
+
     public static Server configure(Server server, List<URL> jettyConfigurations, Dictionary<String, Object> props) throws Exception
     {
        
@@ -180,20 +180,20 @@ public class ServerInstanceWrapper
     
     
     
-    /* ------------------------------------------------------------ */
+
     public ServerInstanceWrapper(String managedServerName)
     {
         _managedServerName = managedServerName;
     }
 
-    /* ------------------------------------------------------------ */ 
+
     public String getManagedServerName()
     {
         return _managedServerName;
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * The classloader that should be the parent classloader for each webapp
      * deployed on this server.
@@ -206,7 +206,7 @@ public class ServerInstanceWrapper
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The deployment manager registered on this server.
      */
@@ -216,7 +216,7 @@ public class ServerInstanceWrapper
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The app provider registered on this server.
      */
@@ -225,7 +225,7 @@ public class ServerInstanceWrapper
         return _server;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The collection of context handlers
      */
@@ -234,7 +234,7 @@ public class ServerInstanceWrapper
         return _ctxtCollection;
     }
     
-    /* ------------------------------------------------------------ */
+
     public void start(Server server, Dictionary<String,Object> props) throws Exception
     {
         _server = server;
@@ -306,7 +306,7 @@ public class ServerInstanceWrapper
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public void stop()
     {
         try
@@ -325,7 +325,7 @@ public class ServerInstanceWrapper
     
    
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Must be called after the server is configured. 
      * 

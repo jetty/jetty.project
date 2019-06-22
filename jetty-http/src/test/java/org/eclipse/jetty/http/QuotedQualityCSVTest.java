@@ -226,7 +226,7 @@ public class QuotedQualityCSVTest
         
     }
 
-    /* ------------------------------------------------------------ */
+
 
     private static final String[] preferBrotli = {"br","gzip"};
     private static final String[] preferGzip = {"gzip","br"};

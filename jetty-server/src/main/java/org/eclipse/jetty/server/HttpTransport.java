@@ -24,7 +24,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.Callback;
 
 
-/* ------------------------------------------------------------ */
+
 /** Abstraction of the outbound HTTP transport.
  */
 public interface HttpTransport
@@ -71,7 +71,7 @@ public interface HttpTransport
      */
     void abort(Throwable failure);
 
-    /* ------------------------------------------------------------ */
+
     /** Is the underlying transport optimized for DirectBuffer usage
      * @return True if direct buffers can be used optimally.
      */

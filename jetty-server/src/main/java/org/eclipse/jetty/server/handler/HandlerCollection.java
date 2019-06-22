@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
-/* ------------------------------------------------------------ */
+
 /** 
  * A collection of handlers.
  * <p>
@@ -50,19 +50,19 @@ public class HandlerCollection extends AbstractHandlerContainer
     private final boolean _mutableWhenRunning;
     protected final AtomicReference<Handlers> _handlers = new AtomicReference<>();
 
-    /* ------------------------------------------------------------ */
+
     public HandlerCollection()
     {
         this(false);
     }
 
-    /* ------------------------------------------------------------ */
+
     public HandlerCollection(Handler... handlers)
     {
         this(false,handlers);
     }
     
-    /* ------------------------------------------------------------ */
+
     public HandlerCollection(boolean mutableWhenRunning, Handler... handlers)
     {
         _mutableWhenRunning=mutableWhenRunning;
@@ -70,7 +70,7 @@ public class HandlerCollection extends AbstractHandlerContainer
             setHandlers(handlers);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the array of handlers.
      */
@@ -82,7 +82,7 @@ public class HandlerCollection extends AbstractHandlerContainer
         return handlers==null ? null : handlers._handlers;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param handlers the array of handlers to set.
      */
@@ -98,7 +98,7 @@ public class HandlerCollection extends AbstractHandlerContainer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     protected Handlers newHandlers(Handler[] handlers)
     {
         if (handlers==null || handlers.length==0)
@@ -106,7 +106,7 @@ public class HandlerCollection extends AbstractHandlerContainer
         return new Handlers(handlers);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected boolean updateHandlers(Handlers old, Handlers handlers)
     {
         if (handlers!=null)
@@ -133,7 +133,7 @@ public class HandlerCollection extends AbstractHandlerContainer
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
@@ -172,7 +172,7 @@ public class HandlerCollection extends AbstractHandlerContainer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Adds a handler.
      * This implementation adds the passed handler to the end of the existing collection of handlers.
@@ -189,7 +189,7 @@ public class HandlerCollection extends AbstractHandlerContainer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Prepends a handler.
      * This implementation adds the passed handler to the start of the existing collection of handlers.
@@ -205,7 +205,7 @@ public class HandlerCollection extends AbstractHandlerContainer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public void removeHandler(Handler handler)
     {
         while(true)
@@ -219,7 +219,7 @@ public class HandlerCollection extends AbstractHandlerContainer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
@@ -229,7 +229,7 @@ public class HandlerCollection extends AbstractHandlerContainer
                 expandHandler(h, list, byClass);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void destroy()
     {
@@ -242,9 +242,9 @@ public class HandlerCollection extends AbstractHandlerContainer
         super.destroy();
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     protected static class Handlers
     {
         private final Handler[] _handlers;

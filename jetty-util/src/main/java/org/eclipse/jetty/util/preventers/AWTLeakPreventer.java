@@ -33,7 +33,7 @@ import java.awt.Toolkit;
 public class AWTLeakPreventer extends AbstractLeakPreventer
 {
    
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
      */

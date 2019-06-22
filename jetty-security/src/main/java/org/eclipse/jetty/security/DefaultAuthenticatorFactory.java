@@ -29,7 +29,7 @@ import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
 
-/* ------------------------------------------------------------ */
+
 /**
  * The Default Authenticator Factory.
  * Uses the {@link AuthConfiguration#getAuthMethod()} to select an {@link Authenticator} from: <ul>
@@ -76,7 +76,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         return authenticator;
     }
    
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the loginService
      */
@@ -85,7 +85,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         return _loginService;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param loginService the loginService to set
      */

@@ -30,7 +30,7 @@ import java.util.Map;
 public class HostMap<TYPE> extends HashMap<String, TYPE>
 {
 
-    /* --------------------------------------------------------------- */
+
     /** Construct empty HostMap.
      */
     public HostMap()
@@ -38,7 +38,7 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
         super(11);
     }
    
-    /* --------------------------------------------------------------- */
+
     /** Construct empty HostMap.
      * 
      * @param capacity initial capacity
@@ -48,7 +48,7 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
         super (capacity);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @see java.util.HashMap#put(java.lang.Object, java.lang.Object)
      */
@@ -59,7 +59,7 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
         return super.put(host, object);
     }
         
-    /* ------------------------------------------------------------ */
+
     /**
      * @see java.util.HashMap#get(java.lang.Object)
      */
@@ -69,7 +69,7 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
         return super.get(key);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Retrieve a lazy list of map entries associated with specified
      * hostname by taking into account the domain suffix matches.

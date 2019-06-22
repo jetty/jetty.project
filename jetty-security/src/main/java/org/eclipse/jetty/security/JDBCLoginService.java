@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
 
-/* ------------------------------------------------------------ */
+
 /**
  * HashMapped User Realm with JDBC as data source. 
  * The {@link #login(String, Object, ServletRequest)} method checks the inherited Map for the user. If the user is not
@@ -89,20 +89,20 @@ public class JDBCLoginService extends AbstractLoginService
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public JDBCLoginService()
         throws IOException
     {
     }
     
-    /* ------------------------------------------------------------ */
+
     public JDBCLoginService(String name)
         throws IOException
     {
         setName(name);
     }
     
-    /* ------------------------------------------------------------ */
+
     public JDBCLoginService(String name, String config)
         throws IOException
     {
@@ -110,7 +110,7 @@ public class JDBCLoginService extends AbstractLoginService
         setConfig(config);
     }
     
-    /* ------------------------------------------------------------ */
+
     public JDBCLoginService(String name, IdentityService identityService, String config)
         throws IOException
     {
@@ -120,7 +120,7 @@ public class JDBCLoginService extends AbstractLoginService
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStart() throws Exception
     {
@@ -175,13 +175,13 @@ public class JDBCLoginService extends AbstractLoginService
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public String getConfig()
     {
         return _config;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Load JDBC connection configuration from properties file.
      * 
@@ -194,7 +194,7 @@ public class JDBCLoginService extends AbstractLoginService
         _config=config;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * (re)Connect to database with parameters setup by loadConfig()
      */
@@ -218,7 +218,7 @@ public class JDBCLoginService extends AbstractLoginService
  
     
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public UserPrincipal loadUserInfo (String username)
     {
@@ -255,7 +255,7 @@ public class JDBCLoginService extends AbstractLoginService
     }
 
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String[] loadRoleInfo (UserPrincipal user)
     {
@@ -293,7 +293,7 @@ public class JDBCLoginService extends AbstractLoginService
     }
     
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
@@ -304,7 +304,7 @@ public class JDBCLoginService extends AbstractLoginService
         super.doStop();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Close an existing connection
      */

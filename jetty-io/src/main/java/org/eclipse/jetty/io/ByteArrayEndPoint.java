@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-/* ------------------------------------------------------------ */
+
 /** ByteArrayEndPoint.
  *
  */
@@ -85,7 +85,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private ByteBuffer _out;
     private boolean _growOutput;
 
-    /* ------------------------------------------------------------ */
+
     /**
      *
      */
@@ -94,7 +94,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         this(null,0,null,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param input the input bytes
      * @param outputSize the output size
@@ -104,7 +104,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         this(null,0,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param input the input string (converted to bytes using default encoding charset)
      * @param outputSize the output size
@@ -114,25 +114,25 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         this(null,0,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
 
-    /* ------------------------------------------------------------ */
+
     public ByteArrayEndPoint(Scheduler scheduler, long idleTimeoutMs)
     {
         this(scheduler,idleTimeoutMs,null,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, byte[] input, int outputSize)
     {
         this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
 
-    /* ------------------------------------------------------------ */
+
     public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, String input, int outputSize)
     {
         this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
 
-    /* ------------------------------------------------------------ */
+
     public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, ByteBuffer input, ByteBuffer output)
     {
         super(timer);
@@ -143,7 +143,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         onOpen();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doShutdownOutput()
     {
@@ -154,7 +154,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         }  
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doClose()
     {
@@ -165,34 +165,34 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public InetSocketAddress getLocalAddress()
     {
         return NOIPPORT;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public InetSocketAddress getRemoteAddress()
     {
         return NOIPPORT;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void onIncompleteFlush()
     {
         // Don't need to do anything here as takeOutput does the signalling.
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void execute(Runnable task)
     {
         new Thread(task,"BAEPoint-"+Integer.toHexString(hashCode())).start();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void needsFillInterest() throws IOException
     {
@@ -207,7 +207,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      */
     public void addInputEOF()
@@ -215,7 +215,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         addInput((ByteBuffer)null);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param in The in to set.
      */
@@ -242,7 +242,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             _runFillable.run();
     }
 
-    /* ------------------------------------------------------------ */
+
     public void addInputAndExecute(ByteBuffer in)
     {
         boolean fillable=false;
@@ -266,19 +266,19 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             execute(_runFillable);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void addInput(String s)
     {
         addInput(BufferUtil.toBuffer(s,StandardCharsets.UTF_8));
     }
 
-    /* ------------------------------------------------------------ */
+
     public void addInput(String s,Charset charset)
     {
         addInput(BufferUtil.toBuffer(s,charset));
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the out.
      */
@@ -290,7 +290,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the out.
      */
@@ -299,7 +299,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return getOutputString(StandardCharsets.UTF_8);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param charset the charset to encode the output as
      * @return Returns the out.
@@ -309,7 +309,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return BufferUtil.toString(_out,charset);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the out.
      */
@@ -326,7 +326,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return b;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Wait for some output
      * @param time Time to wait
      * @param unit Units for time to wait
@@ -351,7 +351,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return b;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the out.
      */
@@ -360,7 +360,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return takeOutputString(StandardCharsets.UTF_8);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param charset the charset to encode the output as
      * @return Returns the out.
@@ -371,7 +371,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return BufferUtil.toString(buffer,charset);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param out The out to set.
      */
@@ -384,7 +384,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         getWriteFlusher().completeWrite();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return <code>true</code> if there are bytes remaining to be read from the encoded input
      */
@@ -393,7 +393,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return getOutput().position()>0;
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
      */
@@ -439,7 +439,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return filled;
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
@@ -490,7 +490,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return flushed;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      *
      */
@@ -506,7 +506,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super.reset();
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.io.EndPoint#getConnection()
      */
@@ -516,7 +516,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the growOutput
      */
@@ -525,7 +525,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return _growOutput;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param growOutput the growOutput to set
      */
@@ -534,7 +534,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         _growOutput=growOutput;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
@@ -550,7 +550,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return String.format("%s[q=%d,q[0]=%s,o=%s]",super.toString(),q,b,o);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Compares a ByteBuffer Object to EOF by Reference
      * @param buffer the input ByteBuffer to be compared to EOF

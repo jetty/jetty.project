@@ -96,27 +96,27 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface EndPoint extends Closeable
 {    
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The local Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
      * if this <code>EndPoint</code> does not represent a network connection.
      */
     InetSocketAddress getLocalAddress();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The remote Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
      * if this <code>EndPoint</code> does not represent a network connection.
      */
     InetSocketAddress getRemoteAddress();
 
-    /* ------------------------------------------------------------ */
+
     boolean isOpen();
 
-    /* ------------------------------------------------------------ */
+
     long getCreatedTimeStamp();
 
-    /* ------------------------------------------------------------ */
+
     /** Shutdown the output.
      * <p>This call indicates that no more data will be sent on this endpoint that
      * that the remote end should read an EOF once all previously sent data has been
@@ -128,7 +128,7 @@ public interface EndPoint extends Closeable
      */
     void shutdownOutput();
 
-    /* ------------------------------------------------------------ */
+
     /** Test if output is shutdown.
      * The output is shutdown by a call to {@link #shutdownOutput()}
      * or {@link #close()}.
@@ -136,7 +136,7 @@ public interface EndPoint extends Closeable
      */
     boolean isOutputShutdown();
 
-    /* ------------------------------------------------------------ */
+
     /** Test if the input is shutdown.
      * The input is shutdown if an EOF has been read while doing
      * a {@link #fill(ByteBuffer)}.   Once the input is shutdown, all calls to
@@ -186,13 +186,13 @@ public interface EndPoint extends Closeable
      */
     boolean flush(ByteBuffer... buffer) throws IOException;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The underlying transport object (socket, channel, etc.)
      */
     Object getTransport();
 
-    /* ------------------------------------------------------------ */
+
     /** Get the max idle time in ms.
      * <p>The max idle time is the time the endpoint can be idle before
      * extraordinary handling takes place.
@@ -200,7 +200,7 @@ public interface EndPoint extends Closeable
      */
     long getIdleTimeout();
 
-    /* ------------------------------------------------------------ */
+
     /** Set the idle timeout.
      * @param idleTimeout the idle timeout in MS. Timeout &lt;= 0 implies an infinite timeout
      */

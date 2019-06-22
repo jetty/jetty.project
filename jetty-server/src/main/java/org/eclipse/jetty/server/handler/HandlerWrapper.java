@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 
-/* ------------------------------------------------------------ */
+
 /** A <code>HandlerWrapper</code> acts as a {@link Handler} but delegates the {@link Handler#handle handle} method and
  * {@link LifeCycle life cycle} events to a delegate. This is primarily used to implement the <i>Decorator</i> pattern.
  *
@@ -43,7 +43,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
 {
     protected Handler _handler;
 
-    /* ------------------------------------------------------------ */
+
     /**
      *
      */
@@ -51,7 +51,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the handlers.
      */
@@ -61,7 +61,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
         return _handler;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the handlers.
      */
@@ -73,7 +73,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
         return new Handler[] {_handler};
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param handler Set the {@link Handler} which should be wrapped.
      */
@@ -95,7 +95,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
         updateBean(old,_handler,true);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * Replace the current handler with another HandlerWrapper
      * linked to the current handler.  
@@ -123,7 +123,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
         tail.setHandler(next);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -132,14 +132,14 @@ public class HandlerWrapper extends AbstractHandlerContainer
             handler.handle(target,baseRequest, request, response);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
         expandHandler(_handler,list,byClass);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void destroy()
     {

@@ -287,7 +287,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     protected  List<URI> getAllContainerJars(final WebAppContext context) throws URISyntaxException
     {
         List<URI> uris = new ArrayList<>();
@@ -309,7 +309,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return uris;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     protected void scanJars (WebAppContext context) throws Exception
     {
         boolean useContainerCache = DEFAULT_USE_CONTAINER_METAINF_CACHE;
@@ -341,7 +341,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         scanJars(context, context.getMetaData().getWebInfJars(), false, scanTypes);
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * For backwards compatibility. This method will always scan for all types of data.
      * 
@@ -356,7 +356,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         scanJars(context, jars, useCaches, __allScanTypes);
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     @Override
     public void configure(WebAppContext context) throws Exception
     {
@@ -375,7 +375,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Look into the jars to discover info in META-INF. If useCaches == true, then we will
      * cache the info discovered indexed by the jar in which it was discovered: this speeds
@@ -430,7 +430,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Scan for META-INF/resources dir in the given jar.
      * 
@@ -503,7 +503,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         dirs.add(resourcesDir);
     }
     
-    /* ------------------------------------------------------------------------------- */ 
+
     /**
      * Scan for META-INF/web-fragment.xml file in the given jar.
      * 
@@ -570,7 +570,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled()) LOG.debug(webFrag+" added to context");
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Discover META-INF/*.tld files in the given jar
      * 
@@ -634,7 +634,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled()) LOG.debug("tlds added to context");
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
@@ -645,7 +645,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.setAttribute(METAINF_TLDS, null);
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Find all .tld files in all subdirs of the given dir.
      * 
@@ -678,7 +678,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return tlds;  
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Find all .tld files in the given jar.
      * 
@@ -710,7 +710,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return tlds;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     protected List<Resource> findClassDirs (WebAppContext context)
     throws Exception
     {
@@ -729,7 +729,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return classDirs;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Look for jars that should be treated as if they are in WEB-INF/lib
      * 
@@ -750,7 +750,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return jarResources;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Look for jars in <code>WEB-INF/lib</code>
      *  
@@ -797,7 +797,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     }
     
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Get jars from WebAppContext.getExtraClasspath as resources
      * 
@@ -828,7 +828,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return jarResources;
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Get <code>WEB-INF/classes</code> dir
      * 

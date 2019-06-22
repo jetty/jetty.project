@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.resource.Resource;
 
 public class CertificateUtils
 {
-    /* ------------------------------------------------------------ */
+
     public static KeyStore getKeyStore(Resource store, String storeType, String storeProvider, String storePassword) throws Exception
     {
         KeyStore keystore = null;
@@ -58,7 +58,7 @@ public class CertificateUtils
         return keystore;
     }
 
-    /* ------------------------------------------------------------ */
+
     public static Collection<? extends CRL> loadCRL(String crlPath) throws Exception
     {
         Collection<? extends CRL> crlList = null;

@@ -32,13 +32,13 @@ public class ResponsePatternRule extends PatternRule
     private int _code;
     private String _message;
 
-    /* ------------------------------------------------------------ */
+
     public ResponsePatternRule()
     {
         this(null,null,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("message") String message)
     {
         super(pattern);
@@ -48,7 +48,7 @@ public class ResponsePatternRule extends PatternRule
         setMessage(message);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the response status code. 
      * @param code response code
@@ -58,7 +58,7 @@ public class ResponsePatternRule extends PatternRule
         _code = code==null ? 0 : Integer.parseInt(code);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the message for the {@link org.eclipse.jetty.server.Response#sendError(int, String)} method.
      * Reasons will only reflect
@@ -71,7 +71,7 @@ public class ResponsePatternRule extends PatternRule
         _message = message;
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -90,7 +90,7 @@ public class ResponsePatternRule extends PatternRule
         return target;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the code and reason string.
      */

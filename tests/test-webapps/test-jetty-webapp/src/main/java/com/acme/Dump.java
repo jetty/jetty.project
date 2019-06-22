@@ -67,7 +67,7 @@ public class Dump extends HttpServlet
     boolean fixed;
     Timer _timer;
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void init(ServletConfig config) throws ServletException
     {
@@ -83,14 +83,14 @@ public class Dump extends HttpServlet
         _timer=new Timer(true);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
@@ -109,7 +109,7 @@ public class Dump extends HttpServlet
         doGet(request, response);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
@@ -767,7 +767,7 @@ public class Dump extends HttpServlet
 
             pout.write("</tr></table>\n");
 
-            /* ------------------------------------------------------------ */
+
             pout.write("<h2>Request Wrappers</h2>\n");
             ServletRequest rw=request;
             int w=0;
@@ -782,7 +782,7 @@ public class Dump extends HttpServlet
                     rw=null;
             }
 
-            /* ------------------------------------------------------------ */
+
             pout.write("<h2>Response Wrappers</h2>\n");
             ServletResponse rsw=response;
             w=0;
@@ -882,21 +882,21 @@ public class Dump extends HttpServlet
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getServletInfo()
     {
         return "Dump Servlet";
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public synchronized void destroy()
     {
         _timer.cancel();
     }
 
-    /* ------------------------------------------------------------ */
+
     private String getURI(HttpServletRequest request)
     {
         String uri= (String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
@@ -905,7 +905,7 @@ public class Dump extends HttpServlet
         return uri;
     }
 
-    /* ------------------------------------------------------------ */
+
     private static String toString(Object o)
     {
         if (o == null)

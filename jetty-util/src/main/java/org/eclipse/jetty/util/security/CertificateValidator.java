@@ -276,7 +276,7 @@ public class CertificateValidator
         return _maxCertPathLength;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param maxCertPathLength
      *            maximum number of intermediate certificates in
@@ -287,7 +287,7 @@ public class CertificateValidator
         _maxCertPathLength = maxCertPathLength;
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @return true if CRL Distribution Points support is enabled
      */
@@ -296,7 +296,7 @@ public class CertificateValidator
         return _enableCRLDP;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Enables CRL Distribution Points Support
      * @param enableCRLDP true - turn on, false - turns off
      */
@@ -305,7 +305,7 @@ public class CertificateValidator
         _enableCRLDP = enableCRLDP;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @return true if On-Line Certificate Status Protocol support is enabled
      */
@@ -314,7 +314,7 @@ public class CertificateValidator
         return _enableOCSP;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Enables On-Line Certificate Status Protocol support
      * @param enableOCSP true - turn on, false - turn off
      */
@@ -323,7 +323,7 @@ public class CertificateValidator
         _enableOCSP = enableOCSP;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @return Location of the OCSP Responder
      */
@@ -332,7 +332,7 @@ public class CertificateValidator
         return _ocspResponderURL;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the location of the OCSP Responder.
      * @param ocspResponderURL location of the OCSP Responder
      */

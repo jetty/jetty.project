@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /** TestFilter.
  *
  * This filter checks for a none local request, and if the init parameter
@@ -51,7 +51,7 @@ public class TestFilter implements Filter
     private ServletContext _context;
     private final Set<String> _allowed = new HashSet<String>();
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see javax.servlet.Filter#init(javax.servlet.FilterConfig)
      */
@@ -67,7 +67,7 @@ public class TestFilter implements Filter
         LOG.debug("TestFilter#remote="+_remote);
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
@@ -114,7 +114,7 @@ public class TestFilter implements Filter
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see javax.servlet.Filter#destroy()
      */

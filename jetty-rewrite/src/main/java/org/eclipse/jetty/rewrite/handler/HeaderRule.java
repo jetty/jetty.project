@@ -32,13 +32,13 @@ public abstract class HeaderRule extends Rule
     private String _header;
     private String _headerValue;
 
-    /* ------------------------------------------------------------ */
+
     public String getHeader()
     {
         return _header;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param header
      *                the header name to check for
@@ -48,13 +48,13 @@ public abstract class HeaderRule extends Rule
         _header = header;
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getHeaderValue()
     {
         return _headerValue;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param headerValue
      *                the header value to match against. If null, then the
@@ -65,7 +65,7 @@ public abstract class HeaderRule extends Rule
         _headerValue = headerValue;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String matchAndApply(String target, HttpServletRequest request,
             HttpServletResponse response) throws IOException
@@ -79,7 +79,7 @@ public abstract class HeaderRule extends Rule
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Apply the rule to the request
      * 
@@ -98,7 +98,7 @@ public abstract class HeaderRule extends Rule
      */
     protected abstract String apply(String target, String value, HttpServletRequest request, HttpServletResponse response) throws IOException;
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {

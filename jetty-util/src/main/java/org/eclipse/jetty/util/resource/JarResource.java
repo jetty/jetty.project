@@ -38,25 +38,25 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
+
 public class JarResource extends URLResource
 {
     private static final Logger LOG = Log.getLogger(JarResource.class);
     protected JarURLConnection _jarConnection;
     
-    /* -------------------------------------------------------- */
+
     protected JarResource(URL url)
     {
         super(url,null);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected JarResource(URL url, boolean useCaches)
     {
         super(url, null, useCaches);
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public synchronized void close()
     {
@@ -64,7 +64,7 @@ public class JarResource extends URLResource
         super.close();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected synchronized boolean checkConnection()
     {
@@ -83,7 +83,7 @@ public class JarResource extends URLResource
         return _jarConnection!=null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @throws IOException Sub-classes of <code>JarResource</code> may throw an IOException (or subclass) 
      */
@@ -92,7 +92,7 @@ public class JarResource extends URLResource
         _jarConnection=(JarURLConnection)_connection;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns true if the represented resource exists.
      */
@@ -105,7 +105,7 @@ public class JarResource extends URLResource
             return super.exists();
     }    
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public File getFile()
         throws IOException
@@ -113,7 +113,7 @@ public class JarResource extends URLResource
         return null;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public InputStream getInputStream()
         throws java.io.IOException
@@ -134,7 +134,7 @@ public class JarResource extends URLResource
  
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void copyTo(File directory)
         throws IOException

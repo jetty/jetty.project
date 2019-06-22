@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 public class JarFileResource extends JarResource
 {
     private static final Logger LOG = Log.getLogger(JarFileResource.class);
@@ -47,13 +47,13 @@ public class JarFileResource extends JarResource
     private String _path;
     private boolean _exists;
     
-    /* ------------------------------------------------------------ */
+
     protected JarFileResource(URL url, boolean useCaches)
     {
         super(url, useCaches);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public synchronized void close()
     {
@@ -83,7 +83,7 @@ public class JarFileResource extends JarResource
         super.close();
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected synchronized boolean checkConnection()
     {
@@ -105,7 +105,7 @@ public class JarFileResource extends JarResource
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected synchronized void newConnection()
         throws IOException
@@ -127,7 +127,7 @@ public class JarFileResource extends JarResource
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns true if the represented resource exists.
      */
@@ -229,7 +229,7 @@ public class JarFileResource extends JarResource
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns true if the represented resource is a container/directory.
      * If the resource is not a file, resources ending with "/" are
@@ -241,7 +241,7 @@ public class JarFileResource extends JarResource
         return _urlString.endsWith("/") || exists() && _directory;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the last modified time
      */
@@ -257,7 +257,7 @@ public class JarFileResource extends JarResource
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public synchronized String[] list()
     {
@@ -292,7 +292,7 @@ public class JarFileResource extends JarResource
     }
     
     
-    /* ------------------------------------------------------------ */
+
     private List<String> listEntries ()
     {
         checkConnection();
@@ -356,7 +356,7 @@ public class JarFileResource extends JarResource
     
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Return the length of the resource
      */

@@ -31,7 +31,7 @@ package org.eclipse.jetty.util.preventers;
  */
 public class LDAPLeakPreventer extends AbstractLeakPreventer
 {
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
      */

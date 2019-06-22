@@ -34,7 +34,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /**
  * A handler that shuts the server down on a valid request. Used to do "soft" restarts from Java.
  * If _exitJvm is set to true a hard System.exit() call is being made.

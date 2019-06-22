@@ -45,7 +45,7 @@ public class RuleContainer extends Rule implements Dumpable
     protected boolean _rewriteRequestURI=true;
     protected boolean _rewritePathInfo=true;
      
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the list of rules.
      * @return an array of {@link Rule}.
@@ -55,7 +55,7 @@ public class RuleContainer extends Rule implements Dumpable
         return _rules;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Assigns the rules to process.
      * @param rules an array of {@link Rule}. 
@@ -65,7 +65,7 @@ public class RuleContainer extends Rule implements Dumpable
         _rules = rules;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Add a Rule
      * @param rule The rule to add to the end of the rules array
@@ -76,7 +76,7 @@ public class RuleContainer extends Rule implements Dumpable
     }
    
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the rewriteRequestURI If true, this handler will rewrite the value
      * returned by {@link HttpServletRequest#getRequestURI()}.
@@ -86,7 +86,7 @@ public class RuleContainer extends Rule implements Dumpable
         return _rewriteRequestURI;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param rewriteRequestURI true if this handler will rewrite the value
      * returned by {@link HttpServletRequest#getRequestURI()}.
@@ -96,7 +96,7 @@ public class RuleContainer extends Rule implements Dumpable
         _rewriteRequestURI=rewriteRequestURI;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if this handler will rewrite the value
      * returned by {@link HttpServletRequest#getPathInfo()}.
@@ -106,7 +106,7 @@ public class RuleContainer extends Rule implements Dumpable
         return _rewritePathInfo;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param rewritePathInfo true if this handler will rewrite the value
      * returned by {@link HttpServletRequest#getPathInfo()}.
@@ -116,7 +116,7 @@ public class RuleContainer extends Rule implements Dumpable
         _rewritePathInfo=rewritePathInfo;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the originalPathAttribte. If non null, this string will be used
      * as the attribute name to store the original request path.
@@ -126,7 +126,7 @@ public class RuleContainer extends Rule implements Dumpable
         return _originalPathAttribute;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param originalPathAttribte If non null, this string will be used
      * as the attribute name to store the original request path.

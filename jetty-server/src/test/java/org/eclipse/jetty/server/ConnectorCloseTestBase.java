@@ -52,7 +52,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
     private static int __length = __content.length();
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testCloseBetweenRequests() throws Exception
     {
@@ -70,7 +70,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             ResponseReader reader = new ResponseReader(client) {
                 private int _index = 0;
 
-                /* ------------------------------------------------------------ */
+
                 @Override
                 protected int doRead() throws IOException, InterruptedException
                 {
@@ -126,13 +126,13 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     private int iterations(int cnt)
     {
         return cnt > 0 ? iterations(--cnt) + cnt : 0;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testCloseBetweenChunks() throws Exception
     {
@@ -191,7 +191,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public class ResponseReader implements Runnable
     {
         private boolean _done = false;
@@ -200,7 +200,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         protected StringBuffer _response;
         protected BufferedReader _reader;
 
-        /* ------------------------------------------------------------ */
+
         public ResponseReader(Socket client) throws IOException
         {
             _buffer = new char[256];
@@ -208,7 +208,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             _reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
         }
 
-        /* ------------------------------------------------------------ */
+
         public void setDone()
         {
             _done = true;
@@ -219,7 +219,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             return _response;
         }
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @see java.lang.Runnable#run()
          */
@@ -246,7 +246,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             }
         }
 
-        /* ------------------------------------------------------------ */
+
         protected int doRead() throws IOException, InterruptedException
         {
             if (!_reader.ready())

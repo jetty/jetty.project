@@ -32,13 +32,13 @@ public class Utf8HttpWriter extends HttpWriter
 {
     int _surrogate=0;
 
-    /* ------------------------------------------------------------ */
+
     public Utf8HttpWriter(HttpOutput out)
     {
         super(out);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write (char[] s,int offset, int length) throws IOException
     {

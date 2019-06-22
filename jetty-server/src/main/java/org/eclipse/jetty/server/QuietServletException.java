@@ -23,7 +23,7 @@ import javax.servlet.ServletException;
 import org.eclipse.jetty.io.QuietException;
 
 
-/* ------------------------------------------------------------ */
+
 /** A ServletException that is logged less verbosely than
  * a normal ServletException.
  * <p>

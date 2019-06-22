@@ -31,7 +31,7 @@ public interface IdentityService
 {
     final static String[] NO_ROLES = new String[]{};
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Associate a user identity with the current thread.
      * This is called with as a thread enters the
@@ -42,7 +42,7 @@ public interface IdentityService
      */
     Object associate(UserIdentity user);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Disassociate the user identity from the current thread
      * and restore previous identity.
@@ -50,7 +50,7 @@ public interface IdentityService
      */
     void disassociate(Object previous);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Associate a runas Token with the current user and thread.
      * @param user The UserIdentity
@@ -59,7 +59,7 @@ public interface IdentityService
      */
     Object setRunAs(UserIdentity user, RunAsToken token);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Disassociate the current runAsToken from the thread
      * and reassociate the previous token.
@@ -67,7 +67,7 @@ public interface IdentityService
      */
     void unsetRunAs(Object token);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a new UserIdentity for use with this identity service.
      * The UserIdentity should be immutable and able to be cached.
@@ -79,7 +79,7 @@ public interface IdentityService
      */
     UserIdentity newUserIdentity(Subject subject, Principal userPrincipal, String[] roles);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a new RunAsToken from a runAsName (normally a role).
      * @param runAsName Normally a role name
@@ -87,6 +87,6 @@ public interface IdentityService
      */
     RunAsToken newRunAsToken(String runAsName);
 
-    /* ------------------------------------------------------------ */
+
     UserIdentity getSystemUserIdentity();
 }

@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 
-/* ------------------------------------------------------------ */
+
 /**
  * A <code>HandlerContainer</code> that allows a hot swap of a wrapped handler.
  *
@@ -38,7 +38,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
 {
     private volatile Handler _handler;
 
-    /* ------------------------------------------------------------ */
+
     /**
      *
      */
@@ -46,7 +46,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the handlers.
      */
@@ -55,7 +55,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
         return _handler;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the handlers.
      */
@@ -68,7 +68,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
         return new Handler[] { handler };
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param handler
      *            Set the {@link Handler} which should be wrapped.
@@ -90,7 +90,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
@@ -100,7 +100,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
@@ -110,7 +110,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
         super.doStop();
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
@@ -124,7 +124,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
@@ -133,7 +133,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
             expandHandler(handler,list,byClass);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void destroy()
     {

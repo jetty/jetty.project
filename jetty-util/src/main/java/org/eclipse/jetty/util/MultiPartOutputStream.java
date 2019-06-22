@@ -31,21 +31,21 @@ import java.nio.charset.StandardCharsets;
 */
 public class MultiPartOutputStream extends FilterOutputStream
 {
-    /* ------------------------------------------------------------ */
+
     private static final byte[] __CRLF={'\r','\n'};
     private static final byte[] __DASHDASH={'-','-'};
     
     public static final String MULTIPART_MIXED="multipart/mixed";
     public static final String MULTIPART_X_MIXED_REPLACE="multipart/x-mixed-replace";
     
-    /* ------------------------------------------------------------ */
+
     private final String boundary;
     private final byte[] boundaryBytes;
 
-    /* ------------------------------------------------------------ */
+
     private boolean inPart=false;    
     
-    /* ------------------------------------------------------------ */
+
     public MultiPartOutputStream(OutputStream out)
     throws IOException
     {
@@ -65,7 +65,7 @@ public class MultiPartOutputStream extends FilterOutputStream
         boundaryBytes=boundary.getBytes(StandardCharsets.ISO_8859_1);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** End the current part.
      * @exception IOException IOException
      */
@@ -89,7 +89,7 @@ public class MultiPartOutputStream extends FilterOutputStream
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     public String getBoundary()
     {
         return boundary;
@@ -97,7 +97,7 @@ public class MultiPartOutputStream extends FilterOutputStream
 
     public OutputStream getOut() {return out;}
     
-    /* ------------------------------------------------------------ */
+
     /** Start creation of the next Content.
      * @param contentType the content type of the part
      * @throws IOException if unable to write the part
@@ -117,7 +117,7 @@ public class MultiPartOutputStream extends FilterOutputStream
         out.write(__CRLF);
     }
         
-    /* ------------------------------------------------------------ */
+
     /** Start creation of the next Content.
      * @param contentType the content type of the part
      * @param headers the part headers
@@ -143,7 +143,7 @@ public class MultiPartOutputStream extends FilterOutputStream
         out.write(__CRLF);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {

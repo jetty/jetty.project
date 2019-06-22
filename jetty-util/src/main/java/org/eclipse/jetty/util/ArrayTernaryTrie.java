@@ -94,7 +94,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
      */
     private char _rows;
 
-    /* ------------------------------------------------------------ */
+
     /** Create a case insensitive Trie of default capacity.
      */
     public ArrayTernaryTrie()
@@ -102,7 +102,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         this(128);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Create a Trie of default capacity
      * @param insensitive true if the Trie is insensitive to the case of the key.
      */
@@ -111,7 +111,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         this(insensitive,128);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Create a case insensitive Trie
      * @param capacity  The capacity of the Trie, which is in the worst case
      * is the total number of characters of all keys stored in the Trie.
@@ -125,7 +125,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         this(true,capacity);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Create a Trie
      * @param insensitive true if the Trie is insensitive to the case of the key.
      * @param capacity The capacity of the Trie, which is in the worst case
@@ -143,7 +143,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         _key=new String[capacity];
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Copy Trie and change capacity by a factor
      * @param trie the trie to copy from
      * @param factor the factor to grow the capacity by
@@ -158,7 +158,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         _key=Arrays.copyOf(trie._key, capacity);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void clear()
     {
@@ -168,7 +168,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         Arrays.fill(_key,null);
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean put(String s, V v)
     {
@@ -237,7 +237,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     }
     
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public V get(String s,int offset, int len)
     {
@@ -307,21 +307,21 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return (V)_value[t];
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public V getBest(String s)
     {
         return getBest(0,s,0,s.length());
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public V getBest(String s, int offset, int length)
     {
         return getBest(0,s,offset,length);
     }
 
-    /* ------------------------------------------------------------ */
+
     private V getBest(int t,String s,int offset,int len)
     {
         int node=t;
@@ -365,7 +365,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     }
 
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public V getBest(ByteBuffer b, int offset, int len)
     {
@@ -374,7 +374,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return getBest(0,b,offset,len);
     }
 
-    /* ------------------------------------------------------------ */
+
     private V getBest(int t,byte[] b, int offset, int len)
     {
         int node=t;
@@ -417,7 +417,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return (V)_value[node];
     }
 
-    /* ------------------------------------------------------------ */
+
     private V getBest(int t,ByteBuffer b, int offset, int len)
     {
         int node=t;

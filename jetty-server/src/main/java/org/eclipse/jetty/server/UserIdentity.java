@@ -33,19 +33,19 @@ import org.eclipse.jetty.server.handler.ContextHandler;
  */
 public interface UserIdentity
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The user subject
      */
     Subject getSubject();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The user principal
      */
     Principal getUserPrincipal();
 
-    /* ------------------------------------------------------------ */
+
     /** Check if the user is in a role.
      * This call is used to satisfy authorization calls from
      * container code which will be using translated role names.
@@ -56,7 +56,7 @@ public interface UserIdentity
     boolean isUserInRole(String role, Scope scope);
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * A UserIdentity Scope.
      * A scope is the environment in which a User Identity is to
@@ -65,25 +65,25 @@ public interface UserIdentity
      */
     interface Scope
     {
-        /* ------------------------------------------------------------ */
+
         /**
          * @return The context handler that the identity is being considered within
          */
         ContextHandler getContextHandler();
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @return The context path that the identity is being considered within
          */
         String getContextPath();
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @return The name of the identity context. Typically this is the servlet name.
          */
         String getName();
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @return A map of role reference names that converts from names used by application code
          * to names used by the context deployment.
@@ -91,12 +91,12 @@ public interface UserIdentity
         Map<String,String> getRoleRefMap();
     }
 
-    /* ------------------------------------------------------------ */
+
     public interface UnauthenticatedUserIdentity extends UserIdentity
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     public static final UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
     {
         @Override

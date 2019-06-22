@@ -41,7 +41,7 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
     private String dbJNDIName;
     private DataSource dataSource;
 
-    /* ------------------------------------------------ */
+
     /** 
      * Init LoginModule.
      * <p>

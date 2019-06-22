@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 public interface Authentication
 {
-    /* ------------------------------------------------------------ */
+
     public static class Failed extends QuietServletException
     {
        public Failed(String message)
@@ -42,7 +42,7 @@ public interface Authentication
        }
     }
     
-    /* ------------------------------------------------------------ */
+
     /** A successful Authentication with User information.
      */
     public interface User extends LogoutAuthentication
@@ -52,7 +52,7 @@ public interface Authentication
         boolean isUserInRole(UserIdentity.Scope scope,String role);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** A wrapped authentication with methods provide the
      * wrapped request/response for use by the application
      */
@@ -70,7 +70,7 @@ public interface Authentication
     public interface LoginAuthentication extends Authentication
     {
         
-        /* ------------------------------------------------------------ */
+
         /** Login with the LOGIN authenticator
          * @param username the username
          * @param password the password
@@ -88,7 +88,7 @@ public interface Authentication
      */
     public interface LogoutAuthentication extends Authentication
     {
-        /* ------------------------------------------------------------ */
+
         /**
          * Remove any user information that may be present in the request
          * such that a call to getUserPrincipal/getRemoteUser will return null.
@@ -100,13 +100,13 @@ public interface Authentication
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** A deferred authentication with methods to progress 
      * the authentication process.
      */
     public interface Deferred extends LoginAuthentication, LogoutAuthentication
     {
-        /* ------------------------------------------------------------ */
+
         /** Authenticate if possible without sending a challenge.
          * This is used to check credentials that have been sent for 
          * non-mandatory authentication.
@@ -115,7 +115,7 @@ public interface Authentication
          */
         Authentication authenticate(ServletRequest request);
 
-        /* ------------------------------------------------------------ */
+
         /** Authenticate and possibly send a challenge.
          * This is used to initiate authentication for previously 
          * non-mandatory authentication.
@@ -128,7 +128,7 @@ public interface Authentication
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /** Authentication Response sent state.
      * Responses are sent by authenticators either to issue an
      * authentication challenge or on successful authentication in
@@ -138,14 +138,14 @@ public interface Authentication
     { 
     }
     
-    /* ------------------------------------------------------------ */
+
     /** An Authentication Challenge has been sent.
      */
     public interface Challenge extends ResponseSent
     { 
     }
 
-    /* ------------------------------------------------------------ */
+
     /** An Authentication Failure has been sent.
      */
     public interface Failure extends ResponseSent
@@ -156,7 +156,7 @@ public interface Authentication
     {
     }
     
-    /* ------------------------------------------------------------ */
+
     /** After a logout, the authentication reverts to a state
      * where it is possible to programmatically log in again.
      */
@@ -164,7 +164,7 @@ public interface Authentication
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Unauthenticated state.
      * <p> 
      * This convenience instance is for non mandatory authentication where credentials
@@ -173,7 +173,7 @@ public interface Authentication
     public final static Authentication UNAUTHENTICATED = new Authentication(){@Override
     public String toString(){return "UNAUTHENTICATED";}};
 
-    /* ------------------------------------------------------------ */
+
     /** Authentication not checked
      * <p>
      * This convenience instance us for non mandatory authentication when no 
@@ -182,7 +182,7 @@ public interface Authentication
     public final static Authentication NOT_CHECKED = new Authentication(){@Override
     public String toString(){return "NOT CHECKED";}};
 
-    /* ------------------------------------------------------------ */
+
     /** Authentication challenge sent.
      * <p>
      * This convenience instance is for when an authentication challenge has been sent.
@@ -190,7 +190,7 @@ public interface Authentication
     public final static Authentication SEND_CONTINUE = new Authentication.Challenge(){@Override
     public String toString(){return "CHALLENGE";}};
 
-    /* ------------------------------------------------------------ */
+
     /** Authentication failure sent.
      * <p>
      * This convenience instance is for when an authentication failure has been sent.

@@ -71,7 +71,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     private static final Set<String> __knownByClassName = new HashSet<>();
 
 
-    /* ------------------------------------------------------------ */
+
     public static synchronized List<Configuration> getKnown()
     {
         if (__known.isEmpty())
@@ -112,7 +112,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     
     
 
-    /* ------------------------------------------------------------ */
+
     public static synchronized void setKnown (String ... classes)
     {
         if (!__known.isEmpty())
@@ -149,14 +149,14 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         LOG.debug("Known Configurations {}",__knownByClassName);
     }
 
-    /* ------------------------------------------------------------ */
+
     static synchronized void cleanKnown()
     {
         __known.clear();
         __unavailable.clear();
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Get/Set/Create the server default Configuration ClassList.
      * <p>Get the class list from: a Server bean; or the attribute (which can
      * either be a ClassList instance or an String[] of class names); or a new instance
@@ -178,7 +178,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         return configurations;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get/Create the server default Configuration ClassList.
      * <p>Get the class list from: a Server bean; or the attribute (which can
      * either be a ClassList instance or an String[] of class names); or a new instance
@@ -221,9 +221,9 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     }
     
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
  
     protected List<Configuration> _configurations = new ArrayList<>();
     

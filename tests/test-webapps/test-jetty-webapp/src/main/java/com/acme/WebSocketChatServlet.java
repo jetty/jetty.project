@@ -68,7 +68,7 @@ public class WebSocketChatServlet extends JettyWebSocketServlet implements Jetty
         factory.addMapping("/", this);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a WebSocket that echo's back the message to all other members of the servlet.
      */

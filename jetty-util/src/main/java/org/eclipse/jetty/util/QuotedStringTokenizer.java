@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
-/* ------------------------------------------------------------ */
+
 /** StringTokenizer with Quoting support.
  *
  * This class is a copy of the java.util.StringTokenizer API and
@@ -50,7 +50,7 @@ public class QuotedStringTokenizer
     private boolean _double=true;
     private boolean _single=true;
 
-    /* ------------------------------------------------------------ */
+
     public QuotedStringTokenizer(String str,
                                  String delim,
                                  boolean returnDelimiters,
@@ -70,7 +70,7 @@ public class QuotedStringTokenizer
         _token=new StringBuffer(_string.length()>1024?512:_string.length()/2);
     }
 
-    /* ------------------------------------------------------------ */
+
     public QuotedStringTokenizer(String str,
                                  String delim,
                                  boolean returnDelimiters)
@@ -78,20 +78,20 @@ public class QuotedStringTokenizer
         this(str,delim,returnDelimiters,false);
     }
 
-    /* ------------------------------------------------------------ */
+
     public QuotedStringTokenizer(String str,
                                  String delim)
     {
         this(str,delim,false,false);
     }
 
-    /* ------------------------------------------------------------ */
+
     public QuotedStringTokenizer(String str)
     {
         this(str,null,false,false);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean hasMoreTokens()
     {
@@ -219,7 +219,7 @@ public class QuotedStringTokenizer
         return _hasToken;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String nextToken()
         throws NoSuchElementException
@@ -232,7 +232,7 @@ public class QuotedStringTokenizer
         return t;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String nextToken(String delim)
         throws NoSuchElementException
@@ -244,14 +244,14 @@ public class QuotedStringTokenizer
         return nextToken();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean hasMoreElements()
     {
         return hasMoreTokens();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Object nextElement()
         throws NoSuchElementException
@@ -259,7 +259,7 @@ public class QuotedStringTokenizer
         return nextToken();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Not implemented.
      */
     @Override
@@ -269,7 +269,7 @@ public class QuotedStringTokenizer
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Quote a string.
      * The string is quoted only if quoting is required due to
      * embedded delimiters, quote characters or the
@@ -339,7 +339,7 @@ public class QuotedStringTokenizer
 
 
 
-    /* ------------------------------------------------------------ */
+
     /** Quote a string.
      * The string is quoted only if quoting is required due to
      * embedded delimiters, quote characters or the
@@ -371,7 +371,7 @@ public class QuotedStringTokenizer
         escapes['\r'] = 'r';
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Quote a string into an Appendable.
      * Only quotes and backslash are escaped.
      * @param buffer The Appendable
@@ -400,7 +400,7 @@ public class QuotedStringTokenizer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Quote a string into an Appendable.
      * The characters ", \, \n, \r, \t, \f and \b are escaped
      * @param buffer The Appendable
@@ -449,14 +449,14 @@ public class QuotedStringTokenizer
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public static String unquoteOnly(String s)
     {
         return unquoteOnly(s, false);
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Unquote a string, NOT converting unicode sequences
      * @param s The string to unquote.
      * @param lenient if true, will leave in backslashes that aren't valid escapes
@@ -502,13 +502,13 @@ public class QuotedStringTokenizer
         return b.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     public static String unquote(String s)
     {
         return unquote(s,false);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Unquote a string.
      * @param s The string to unquote.
      * @param lenient true if unquoting should be lenient to escaped content, leaving some alone, false if string unescaping
@@ -592,7 +592,7 @@ public class QuotedStringTokenizer
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Check that char c (which is preceded by a backslash) is a valid
      * escape sequence.
      * @param c
@@ -605,13 +605,13 @@ public class QuotedStringTokenizer
                  (c == '/') || (c == '"') || (c == 'u'));
     }
 
-    /* ------------------------------------------------------------ */
+
     public static boolean isQuoted(String s)
     {
         return s!=null && s.length()>0 && s.charAt(0)=='"' && s.charAt(s.length()-1)=='"';
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return handle double quotes if true
      */
@@ -620,7 +620,7 @@ public class QuotedStringTokenizer
         return _double;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param d handle double quotes if true
      */
@@ -629,7 +629,7 @@ public class QuotedStringTokenizer
         _double=d;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return handle single quotes if true
      */
@@ -638,7 +638,7 @@ public class QuotedStringTokenizer
         return _single;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param single handle single quotes if true
      */

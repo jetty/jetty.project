@@ -32,13 +32,13 @@ public class AbstractHandlerMBean extends ObjectMBean
 {
     private static final Logger LOG = Log.getLogger(AbstractHandlerMBean.class);
 
-    /* ------------------------------------------------------------ */
+
     public AbstractHandlerMBean(Object managedObject)
     {
         super(managedObject);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getObjectContextBasis()
     {
@@ -74,7 +74,7 @@ public class AbstractHandlerMBean extends ObjectMBean
         return super.getObjectContextBasis();
     }
 
-    /* ------------------------------------------------------------ */
+
     protected String getContextName(ContextHandler context)
     {
         String name = null;

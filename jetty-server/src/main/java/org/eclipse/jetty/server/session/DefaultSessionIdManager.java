@@ -69,7 +69,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     protected boolean _ownHouseKeeper;
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param server the server associated with the id manager
      */
@@ -78,7 +78,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         _server = server;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param server the server associated with the id manager
      * @param random a random number generator to use for ids
@@ -89,7 +89,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         _random=random;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param server the server associated with this id manager
      */
@@ -99,7 +99,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the server associated with this id manager
      */
@@ -110,7 +110,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param houseKeeper the housekeeper
      */
@@ -133,7 +133,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the workname. If set, the workername is dot appended to the session
      * ID and can be used to assist session affinity in a load balancer.
@@ -149,7 +149,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Set the workername. If set, the workername is dot appended to the session
      * ID and can be used to assist session affinity in a load balancer.
@@ -173,7 +173,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the random number generator
      */
@@ -182,7 +182,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         return _random;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param random a random number generator for generating ids
      */
@@ -192,7 +192,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         _weakRandom=false;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the reseed probability
      */
@@ -201,7 +201,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         return _reseed;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the reseed probability.
      * @param reseed  If non zero then when a random long modulo the reseed value == 1, the {@link SecureRandom} will be reseeded.
      */
@@ -210,7 +210,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         _reseed = reseed;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Create a new session id if necessary.
      * 
@@ -246,7 +246,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param seedTerm the seed for RNG
      * @return a new unique session id
@@ -304,7 +304,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
 
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.server.SessionIdManager#isIdInUse(java.lang.String)
      */
@@ -344,7 +344,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
 
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
@@ -377,7 +377,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         _houseKeeper.start();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
@@ -392,7 +392,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         _random = null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set up a random number generator for the sessionids.
      *
@@ -418,7 +418,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /** Get the session ID with any worker ID.
      *
      * @param clusterId the cluster id
@@ -442,7 +442,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /** Get the session ID without any worker ID.
      *
      * @param extendedId the session id with the worker extension
@@ -457,7 +457,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
     
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Remove an id from use by telling all contexts to remove a session with this id.
      * 
@@ -475,7 +475,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void invalidateAll (String id)
     {        
@@ -488,7 +488,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /** Generate a new id for a session and update across
      * all SessionManagers.
      * 
@@ -513,7 +513,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     
     
     
-    /* ------------------------------------------------------------ */
+
     /** Get SessionManager for every context.
      * 
      * @return all session managers

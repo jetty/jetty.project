@@ -37,13 +37,13 @@ public class CookiePatternRule extends PatternRule
     private String _name;
     private String _value;
 
-    /* ------------------------------------------------------------ */
+
     public CookiePatternRule()
     {
         this(null,null,null);
     }
     
-    /* ------------------------------------------------------------ */
+
     public CookiePatternRule(@Name("pattern") String pattern, @Name("name") String name, @Name("value") String value)
     {
         super(pattern);
@@ -53,7 +53,7 @@ public class CookiePatternRule extends PatternRule
         setValue(value);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Assigns the cookie name.
      * 
@@ -64,7 +64,7 @@ public class CookiePatternRule extends PatternRule
         _name = name;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Assigns the cookie value.
      * 
@@ -76,7 +76,7 @@ public class CookiePatternRule extends PatternRule
         _value = value;
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -100,7 +100,7 @@ public class CookiePatternRule extends PatternRule
         return target;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the cookie contents.
      */

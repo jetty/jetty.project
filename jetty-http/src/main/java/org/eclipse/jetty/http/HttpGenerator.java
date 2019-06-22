@@ -96,7 +96,7 @@ public class HttpGenerator
         __assumedContentMethods.put(HttpMethod.PUT.asString(),Boolean.TRUE);
     }
   
-    /* ------------------------------------------------------------------------------- */
+
     public static void setJettyVersion(String serverVersion)
     {
         SEND[SEND_SERVER] = StringUtil.getBytes("Server: " + serverVersion + "\015\012");
@@ -105,23 +105,23 @@ public class HttpGenerator
                 serverVersion + "\015\012");
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     // data
     private boolean _needCRLF = false;
 
-    /* ------------------------------------------------------------------------------- */
+
     public HttpGenerator()
     {
         this(false,false);
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     public HttpGenerator(boolean sendServerVersion,boolean sendXPoweredBy)
     {
         _send=(sendServerVersion?SEND_SERVER:0) | (sendXPoweredBy?SEND_XPOWEREDBY:0);
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     public void reset()
     {
         _state = State.START;
@@ -133,55 +133,55 @@ public class HttpGenerator
         _trailers = null;
     }
 
-    /* ------------------------------------------------------------ */
+
     public State getState()
     {
         return _state;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isState(State state)
     {
         return _state == state;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isIdle()
     {
         return _state == State.START;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isEnd()
     {
         return _state == State.END;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isCommitted()
     {
         return _state.ordinal() >= State.COMMITTED.ordinal();
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isChunking()
     {
         return _endOfContent==EndOfContent.CHUNKED_CONTENT;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isNoContent()
     {
         return _noContentResponse;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setPersistent(boolean persistent)
     {
         _persistent=persistent;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if known to be persistent
      */
@@ -190,19 +190,19 @@ public class HttpGenerator
         return Boolean.TRUE.equals(_persistent);
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isWritten()
     {
         return _contentPrepared>0;
     }
 
-    /* ------------------------------------------------------------ */
+
     public long getContentPrepared()
     {
         return _contentPrepared;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void abort()
     {
         _persistent=false;
@@ -210,7 +210,7 @@ public class HttpGenerator
         _endOfContent=null;
     }
 
-    /* ------------------------------------------------------------ */
+
     public Result generateRequest(MetaData.Request info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
     {
         switch(_state)
@@ -371,7 +371,7 @@ public class HttpGenerator
 
     }
     
-    /* ------------------------------------------------------------ */
+
     public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
     {
         switch(_state)
@@ -485,7 +485,7 @@ public class HttpGenerator
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     private void prepareChunk(ByteBuffer chunk, int remaining)
     {
         // if we need CRLF add this to header
@@ -506,7 +506,7 @@ public class HttpGenerator
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     private void generateTrailers(ByteBuffer buffer, HttpFields trailer)
     {
         // if we need CRLF add this to header
@@ -526,7 +526,7 @@ public class HttpGenerator
         BufferUtil.putCRLF(buffer);
     }
 
-    /* ------------------------------------------------------------ */
+
     private void generateRequestLine(MetaData.Request request,ByteBuffer header)
     {
         header.put(StringUtil.getBytes(request.getMethod()));
@@ -537,7 +537,7 @@ public class HttpGenerator
         header.put(HttpTokens.CRLF);
     }
 
-    /* ------------------------------------------------------------ */
+
     private void generateResponseLine(MetaData.Response response, ByteBuffer header)
     {
         // Look for prepared response line
@@ -574,7 +574,7 @@ public class HttpGenerator
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     private byte[] getReasonBytes(String reason)
     {
         if (reason.length()>1024)
@@ -587,7 +587,7 @@ public class HttpGenerator
         return _bytes;
     }
 
-    /* ------------------------------------------------------------ */
+
     private void generateHeaders(MetaData info,ByteBuffer header,ByteBuffer content,boolean last)
     {
         final MetaData.Request request=(info instanceof MetaData.Request)?(MetaData.Request)info:null;
@@ -794,7 +794,7 @@ public class HttpGenerator
         header.put(HttpTokens.CRLF);        
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     private static void putContentLength(ByteBuffer header,long contentLength)
     {
         if (contentLength==0)
@@ -807,7 +807,7 @@ public class HttpGenerator
         }
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     public static byte[] getReasonBuffer(int code)
     {
         PreparedResponse status = code<__preprepared.length?__preprepared[code]:null;
@@ -816,7 +816,7 @@ public class HttpGenerator
         return null;
     }
 
-    /* ------------------------------------------------------------------------------- */
+
     @Override
     public String toString()
     {
@@ -826,9 +826,9 @@ public class HttpGenerator
                 _state);
     }
 
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
+
+
+
     // common _content
     private static final byte[] ZERO_CHUNK =    { (byte) '0', (byte) '\015', (byte) '\012'};
     private static final byte[] LAST_CHUNK =    { (byte) '0', (byte) '\015', (byte) '\012', (byte) '\015', (byte) '\012'};
@@ -843,9 +843,9 @@ public class HttpGenerator
         StringUtil.getBytes("Server: Jetty(10.x.x)\015\012X-Powered-By: Jetty(10.x.x)\015\012")
     };
 
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
+
+
+
     // Build cache of response lines for status
     private static class PreparedResponse
     {

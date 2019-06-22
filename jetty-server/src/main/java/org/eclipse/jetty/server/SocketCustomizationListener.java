@@ -28,7 +28,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 
 
-/* ------------------------------------------------------------ */
+
 /** 
  * A Connection Lister for customization of SocketConnections.
  * <p>
@@ -77,7 +77,7 @@ public class SocketCustomizationListener implements Listener
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** This method may be extended to configure a socket on open 
      * events.
      * @param socket The Socket to configure

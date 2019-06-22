@@ -33,18 +33,18 @@ public abstract class RegexRule extends Rule
 {
     protected Pattern _regex; 
     
-    /* ------------------------------------------------------------ */
+
     protected RegexRule()
     {
     }
     
-    /* ------------------------------------------------------------ */
+
     protected RegexRule(String pattern)
     {
         setRegex(pattern);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the regular expression string used to match with string URI.
      * 
@@ -55,7 +55,7 @@ public abstract class RegexRule extends Rule
         _regex=regex==null?null:Pattern.compile(regex);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return get the regular expression
      */
@@ -65,7 +65,7 @@ public abstract class RegexRule extends Rule
     }
     
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -76,7 +76,7 @@ public abstract class RegexRule extends Rule
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * Apply this rule to the request/response pair.
      * Called by {@link #matchAndApply(String, HttpServletRequest, HttpServletResponse)} if the regex matches.
@@ -90,7 +90,7 @@ public abstract class RegexRule extends Rule
     protected abstract String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException;
     
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the regular expression string.
      */

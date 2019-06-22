@@ -49,7 +49,7 @@ public class DeferredAuthentication implements Authentication.Deferred
     protected final LoginAuthenticator _authenticator;
     private Object _previousAssociation;
 
-    /* ------------------------------------------------------------ */
+
     public DeferredAuthentication(LoginAuthenticator authenticator)
     {
         if (authenticator == null)
@@ -57,7 +57,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         this._authenticator = authenticator;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(ServletRequest)
      */
@@ -86,7 +86,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
@@ -110,7 +110,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         return this;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#login(String, Object, ServletRequest)
      */
@@ -151,13 +151,13 @@ public class DeferredAuthentication implements Authentication.Deferred
         return Authentication.UNAUTHENTICATED;
     }
 
-    /* ------------------------------------------------------------ */
+
     public Object getPreviousAssociation()
     {
         return _previousAssociation;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param response the response
      * @return true if this response is from a deferred call to {@link #authenticate(ServletRequest)}
@@ -167,9 +167,9 @@ public class DeferredAuthentication implements Authentication.Deferred
         return response==__deferredResponse;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     final static HttpServletResponse __deferredResponse = new HttpServletResponse()
     {
         @Override
@@ -380,9 +380,9 @@ public class DeferredAuthentication implements Authentication.Deferred
 
     };
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     private static ServletOutputStream __nullOut = new ServletOutputStream()
     {
         @Override

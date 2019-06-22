@@ -36,7 +36,7 @@ public class VirtualHostRuleContainer extends RuleContainer
 {
     private String[] _virtualHosts;
 
-    /* ------------------------------------------------------------ */
+
     /** Set the virtual hosts that the rules within this container will apply to
      * @param virtualHosts Array of virtual hosts that the rules within this container are applied to. 
      * A null hostname or null/empty array means any hostname is acceptable.
@@ -55,7 +55,7 @@ public class VirtualHostRuleContainer extends RuleContainer
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the virtual hosts that the rules within this container will apply to
      * @return Array of virtual hosts that the rules within this container are applied to. 
      * A null hostname or null/empty array means any hostname is acceptable.
@@ -65,7 +65,7 @@ public class VirtualHostRuleContainer extends RuleContainer
         return _virtualHosts;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param virtualHost add a virtual host to the existing list of virtual hosts
      * A null hostname means any hostname is acceptable 
@@ -101,7 +101,7 @@ public class VirtualHostRuleContainer extends RuleContainer
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     private String normalizeHostname( String host )
     {
         if ( host == null )

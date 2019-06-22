@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  * Abstract resource class.
  * <p>
@@ -62,7 +62,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     public static boolean __defaultUseCaches = true;
     volatile Object _associate;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Change the default setting for url connection caches.
      * Subsequent URLConnections will use this default.
@@ -73,13 +73,13 @@ public abstract class Resource implements ResourceFactory, Closeable
         __defaultUseCaches=useCaches;
     }
 
-    /* ------------------------------------------------------------ */
+
     public static boolean getDefaultUseCaches ()
     {
         return __defaultUseCaches;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Construct a resource from a uri.
      * @param uri A URI.
      * @return A Resource object.
@@ -91,7 +91,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return newResource(uri.toURL());
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Construct a resource from a url.
      * @param url A URL.
      * @return A Resource object.
@@ -101,7 +101,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return newResource(url, __defaultUseCaches);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Construct a resource from a url.
      * @param url the url for which to make the resource
@@ -141,7 +141,7 @@ public abstract class Resource implements ResourceFactory, Closeable
 
 
 
-    /* ------------------------------------------------------------ */
+
     /** Construct a resource from a string.
      * @param resource A URL or filename.
      * @throws MalformedURLException Problem accessing URI
@@ -152,7 +152,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return newResource(resource, __defaultUseCaches);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Construct a resource from a string.
      * @param resource A URL or filename.
      * @param useCaches controls URLConnection caching
@@ -197,13 +197,13 @@ public abstract class Resource implements ResourceFactory, Closeable
         return newResource(url, useCaches);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static Resource newResource(File file)
     {
         return new PathResource(file.toPath());
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Construct a Resource from provided path
      *
@@ -216,7 +216,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return new PathResource(path);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Construct a system resource from a string.
      * The resource is tried as classloader resource before being
      * treated as a normal resource.
@@ -270,7 +270,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return newResource(url);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Find a classpath resource.
      * @param resource the relative name of the resource
      * @return Resource or null
@@ -280,7 +280,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return newClassPathResource(resource,true,false);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Find a classpath resource.
      * The {@link java.lang.Class#getResource(String)} method is used to lookup the resource. If it is not
      * found, then the {@link Loader#getResource(String)} method is used.
@@ -303,29 +303,29 @@ public abstract class Resource implements ResourceFactory, Closeable
         return newResource(url,useCaches);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static boolean isContainedIn (Resource r, Resource containingResource) throws MalformedURLException
     {
         return r.isContainedIn(containingResource);
     }
 
-    /* ------------------------------------------------------------ */
+
     public abstract boolean isContainedIn (Resource r) throws MalformedURLException;
 
-    /* ------------------------------------------------------------ */
+
     /** Release any temporary resources held by the resource.
      */
     @Override
     public abstract void close();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the represented resource exists.
      */
     public abstract boolean exists();
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if the represented resource is a container/directory.
      * if the resource is not a file, resources ending with "/" are
@@ -333,7 +333,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract boolean isDirectory();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Time resource was last modified.
      *
@@ -342,7 +342,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     public abstract long lastModified();
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Length of the resource.
      *
@@ -350,7 +350,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract long length();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * URI representing the resource.
      *
@@ -358,7 +358,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract URI getURI();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * File representing the given resource.
      *
@@ -370,7 +370,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         throws IOException;
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * The name of the resource.
      *
@@ -379,7 +379,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     public abstract String getName();
 
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Input stream to the resource
      *
@@ -389,7 +389,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     public abstract InputStream getInputStream()
         throws IOException;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Readable ByteChannel for the resource.
      *
@@ -399,7 +399,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     public abstract ReadableByteChannel getReadableByteChannel()
         throws IOException;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Deletes the given resource
      * @return true if resource was found and successfully deleted, false if resource didn't exist or was unable to
@@ -409,7 +409,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     public abstract boolean delete()
         throws SecurityException;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Rename the given resource
      * @param dest the destination name for the resource
@@ -419,7 +419,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     public abstract boolean renameTo(Resource dest)
         throws SecurityException;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * list of resource names contained in the given resource.
      * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
@@ -428,7 +428,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract String[] list();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the resource contained inside the current resource with the
      * given name.
@@ -440,7 +440,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     public abstract Resource addPath(String path)
         throws IOException,MalformedURLException;
 
-    /* ------------------------------------------------------------ */
+
     /** Get a resource from within this resource.
      * <p>
      * This method is essentially an alias for {@link #addPath(String)}, but without checked exceptions.
@@ -460,7 +460,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     // FIXME: this appears to not be used
     @SuppressWarnings("javadoc")
     public Object getAssociate()
@@ -468,7 +468,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return _associate;
     }
 
-    /* ------------------------------------------------------------ */
+
     // FIXME: this appear to not be used
     @SuppressWarnings("javadoc")
     public void setAssociate(Object o)
@@ -476,7 +476,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         _associate=o;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return true if this Resource is an alias to another real Resource
      */
@@ -485,7 +485,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return getAlias()!=null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The canonical Alias of this resource or null if none.
      */
@@ -494,7 +494,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Get the resource list as a HTML directory listing.
      * @param base The base URL
      * @param parent True if the parent directory should be included
@@ -834,7 +834,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return StringUtil.sanitizeXmlString(raw);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @param out the output stream to write to
      * @param start First byte to write
@@ -854,7 +854,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         }
     }    
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Copy the Resource to the new destination file.
      * <p>
@@ -875,7 +875,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Generate a weak ETag reference for this Resource.
      *
@@ -916,7 +916,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         return result;
     }
     
-    /* ------------------------------------------------------------ */
+
     public Collection<Resource> getAllResources()
     {
         try
@@ -944,7 +944,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Generate a properly encoded URL from a {@link File} instance.
      * @param file Target file. 
      * @return URL of the target file.

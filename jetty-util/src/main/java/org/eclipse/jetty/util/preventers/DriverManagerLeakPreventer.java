@@ -31,7 +31,7 @@ import java.sql.DriverManager;
  */
 public class DriverManagerLeakPreventer extends AbstractLeakPreventer
 {
-    /* ------------------------------------------------------------ */
+
     @Override
     public void prevent(ClassLoader loader)
     {

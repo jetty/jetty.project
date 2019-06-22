@@ -24,7 +24,7 @@ import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.TopologicalSort;
 
-/* ------------------------------------------------------------------------------- */
+
 /** A pluggable Configuration for {@link WebAppContext}s.
  * <p>
  * A {@link WebAppContext} is configured by the application of one or more {@link Configuration}

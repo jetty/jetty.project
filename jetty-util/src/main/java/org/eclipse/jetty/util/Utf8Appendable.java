@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+
 /**
  * Utf8 Appendable abstract base class
  *

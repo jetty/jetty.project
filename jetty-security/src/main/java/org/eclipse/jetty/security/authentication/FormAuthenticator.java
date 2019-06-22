@@ -90,7 +90,7 @@ public class FormAuthenticator extends LoginAuthenticator
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     public FormAuthenticator(String login,String error,boolean dispatch)
     {
         this();
@@ -101,7 +101,7 @@ public class FormAuthenticator extends LoginAuthenticator
         _dispatch=dispatch;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * If true, uris that cause a redirect to a login page will always
      * be remembered. If false, only the first uri that leads to a login
@@ -115,13 +115,13 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public boolean getAlwaysSaveUri ()
     {
         return _alwaysSaveUri;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#setConfiguration(org.eclipse.jetty.security.Authenticator.AuthConfiguration)
      */
@@ -139,14 +139,14 @@ public class FormAuthenticator extends LoginAuthenticator
         _dispatch = dispatch==null?_dispatch:Boolean.parseBoolean(dispatch);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getAuthMethod()
     {
         return Constraint.__FORM_AUTH;
     }
 
-    /* ------------------------------------------------------------ */
+
     private void setLoginPage(String path)
     {
         if (!path.startsWith("/"))
@@ -160,7 +160,7 @@ public class FormAuthenticator extends LoginAuthenticator
             _formLoginPath = _formLoginPath.substring(0, _formLoginPath.indexOf('?'));
     }
 
-    /* ------------------------------------------------------------ */
+
     private void setErrorPage(String path)
     {
         if (path == null || path.trim().length() == 0)
@@ -184,7 +184,7 @@ public class FormAuthenticator extends LoginAuthenticator
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public UserIdentity login(String username, Object password, ServletRequest request)
     {
@@ -216,7 +216,7 @@ public class FormAuthenticator extends LoginAuthenticator
         session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void prepareRequest(ServletRequest request)
     {
@@ -254,7 +254,7 @@ public class FormAuthenticator extends LoginAuthenticator
         base_request.setMethod(method);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
@@ -435,7 +435,7 @@ public class FormAuthenticator extends LoginAuthenticator
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isJSecurityCheck(String uri)
     {
         int jsc = uri.indexOf(__J_SECURITY_CHECK);
@@ -449,21 +449,21 @@ public class FormAuthenticator extends LoginAuthenticator
         return c==';'||c=='#'||c=='/'||c=='?';
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isLoginOrErrorPage(String pathInContext)
     {
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     protected static class FormRequest extends HttpServletRequestWrapper
     {
         public FormRequest(HttpServletRequest request)
@@ -502,8 +502,8 @@ public class FormAuthenticator extends LoginAuthenticator
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     protected static class FormResponse extends HttpServletResponseWrapper
     {
         public FormResponse(HttpServletResponse response)
@@ -552,7 +552,7 @@ public class FormAuthenticator extends LoginAuthenticator
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * This Authentication represents a just completed Form authentication.
      * Subsequent requests from the same user are authenticated by the presents

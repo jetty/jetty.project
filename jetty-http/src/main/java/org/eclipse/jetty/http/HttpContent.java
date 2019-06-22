@@ -27,7 +27,7 @@ import java.util.Map;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 
-/* ------------------------------------------------------------ */
+
 /** HttpContent interface.
  * <p>This information represents all the information about a 
  * static resource that is needed to evaluate conditional headers

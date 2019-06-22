@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
-/* ------------------------------------------------------------ */
+
 /** Jetty HTTP Servlet Server.
  * This class is the main class for the Jetty HTTP Servlet server.
  * It aggregates Connectors (HTTP request receivers) and request Handlers.
@@ -88,13 +88,13 @@ public class Server extends HandlerWrapper implements Attributes
     private volatile DateField _dateField;
 
 
-    /* ------------------------------------------------------------ */
+
     public Server()
     {
         this((ThreadPool)null);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convenience constructor
      * Creates server and a {@link ServerConnector} at the passed port.
      * @param port The port of a network HTTP connector (or 0 for a randomly allocated port).
@@ -109,7 +109,7 @@ public class Server extends HandlerWrapper implements Attributes
         addBean(_attributes);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Convenience constructor
      * <p>
@@ -125,7 +125,7 @@ public class Server extends HandlerWrapper implements Attributes
         setConnectors(new Connector[]{connector});
     }
 
-    /* ------------------------------------------------------------ */
+
     public Server(@Name("threadpool") ThreadPool pool)
     {
         _threadPool=pool!=null?pool:new QueuedThreadPool();
@@ -133,26 +133,26 @@ public class Server extends HandlerWrapper implements Attributes
         setServer(this);
     }
 
-    /* ------------------------------------------------------------ */
+
     public RequestLog getRequestLog()
     {
         return _requestLog;
     }
 
-    /* ------------------------------------------------------------ */
+
     public ErrorHandler getErrorHandler()
     {
         return _errorHandler;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setRequestLog(RequestLog requestLog)
     {
         updateBean(_requestLog,requestLog);
         _requestLog = requestLog;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setErrorHandler(ErrorHandler errorHandler)
     {
         if (errorHandler instanceof ErrorHandler.ErrorPageMapper)
@@ -163,20 +163,20 @@ public class Server extends HandlerWrapper implements Attributes
             errorHandler.setServer(this);
     }
 
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute("version of this server")
     public static String getVersion()
     {
         return Jetty.VERSION;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean getStopAtShutdown()
     {
         return _stopAtShutdown;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Set a graceful stop time.
      * The {@link StatisticsHandler} must be configured so that open connections can
@@ -189,7 +189,7 @@ public class Server extends HandlerWrapper implements Attributes
         super.setStopTimeout(stopTimeout);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set stop server at shutdown behaviour.
      * @param stop If true, this server instance will be explicitly stopped when the
      * JVM is shutdown. Otherwise the JVM is stopped with the server running.
@@ -215,7 +215,7 @@ public class Server extends HandlerWrapper implements Attributes
         _stopAtShutdown=stop;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the connectors.
      */
@@ -226,7 +226,7 @@ public class Server extends HandlerWrapper implements Attributes
         return connectors.toArray(new Connector[connectors.size()]);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void addConnector(Connector connector)
     {
         if (connector.getServer() != this)
@@ -236,7 +236,7 @@ public class Server extends HandlerWrapper implements Attributes
             addBean(connector);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Convenience method which calls {@link #getConnectors()} and {@link #setConnectors(Connector[])} to
      * remove a connector.
@@ -248,7 +248,7 @@ public class Server extends HandlerWrapper implements Attributes
             removeBean(connector);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Set the connectors for this server.
      * Each connector has this server set as it's ThreadPool and its Handler.
      * @param connectors The connectors to set.
@@ -272,7 +272,7 @@ public class Server extends HandlerWrapper implements Attributes
             _connectors.addAll(Arrays.asList(connectors));
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the threadPool.
      */
@@ -316,7 +316,7 @@ public class Server extends HandlerWrapper implements Attributes
         _dumpBeforeStop = dumpBeforeStop;
     }
 
-    /* ------------------------------------------------------------ */
+
     public HttpField getDateField()
     {
         long now=System.currentTimeMillis();
@@ -339,7 +339,7 @@ public class Server extends HandlerWrapper implements Attributes
         return df._dateField;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStart() throws Exception
     {
@@ -447,7 +447,7 @@ public class Server extends HandlerWrapper implements Attributes
             super.start(l);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStop() throws Exception
     {
@@ -507,7 +507,7 @@ public class Server extends HandlerWrapper implements Attributes
         mex.ifExceptionThrow();
     }
 
-    /* ------------------------------------------------------------ */
+
     /* Handle a request from a connection.
      * Called to handle a request on the connection when either the header has been received,
      * or after the entire request has been received (for short requests of known length), or
@@ -537,14 +537,14 @@ public class Server extends HandlerWrapper implements Attributes
             LOG.debug("handled={} async={} committed={} on {}", request.isHandled(),request.isAsyncStarted(),response.isCommitted(),channel);
     }
 
-    /* ------------------------------------------------------------ */
+
     /* Handle Options request to server
      */
     protected void handleOptions(Request request,Response response) throws IOException
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /* Handle a request from a connection.
      * Called to handle a request on the connection when either the header has been received,
      * or after the entire request has been received (for short requests of known length), or
@@ -581,13 +581,13 @@ public class Server extends HandlerWrapper implements Attributes
             LOG.debug("handledAsync={} async={} committed={} on {}", channel.getRequest().isHandled(),request.isAsyncStarted(),response.isCommitted(),channel);
     }
 
-    /* ------------------------------------------------------------ */
+
     public void join() throws InterruptedException
     {
         getThreadPool().join();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Returns the sessionIdManager.
      */
@@ -596,7 +596,7 @@ public class Server extends HandlerWrapper implements Attributes
         return _sessionIdManager;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param sessionIdManager The sessionIdManager to set.
      */
@@ -606,7 +606,7 @@ public class Server extends HandlerWrapper implements Attributes
         _sessionIdManager=sessionIdManager;
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.util.AttributesMap#clearAttributes()
      */
@@ -616,7 +616,7 @@ public class Server extends HandlerWrapper implements Attributes
         _attributes.clearAttributes();
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.util.AttributesMap#getAttribute(java.lang.String)
      */
@@ -626,7 +626,7 @@ public class Server extends HandlerWrapper implements Attributes
         return _attributes.getAttribute(name);
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.util.AttributesMap#getAttributeNames()
      */
@@ -636,7 +636,7 @@ public class Server extends HandlerWrapper implements Attributes
         return _attributes.getAttributeNames();
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.util.AttributesMap#removeAttribute(java.lang.String)
      */
@@ -646,7 +646,7 @@ public class Server extends HandlerWrapper implements Attributes
         _attributes.removeAttribute(name);
     }
 
-    /* ------------------------------------------------------------ */
+
     /*
      * @see org.eclipse.util.AttributesMap#setAttribute(java.lang.String, java.lang.Object)
      */
@@ -656,7 +656,7 @@ public class Server extends HandlerWrapper implements Attributes
         _attributes.setAttribute(name, attribute);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The URI of the first {@link NetworkConnector} and first {@link ContextHandler}, or null
      */
@@ -702,28 +702,28 @@ public class Server extends HandlerWrapper implements Attributes
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
         return String.format("%s[%s]", super.toString(), getVersion());
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
         dumpObjects(out,indent,new ClassLoaderDump(this.getClass().getClassLoader()));
     }
 
-    /* ------------------------------------------------------------ */
+
     public static void main(String...args) throws Exception
     {
         System.err.println(getVersion());
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     private static class DateField
     {
         final long _seconds;

@@ -33,7 +33,7 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpPrincipal;
 import com.sun.net.httpserver.HttpsExchange;
 
-/* ------------------------------------------------------------ */
+
 /**
  */
 public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
@@ -172,7 +172,7 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
         return _delegate.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @see com.sun.net.httpserver.HttpsExchange#getSSLSession()
      */

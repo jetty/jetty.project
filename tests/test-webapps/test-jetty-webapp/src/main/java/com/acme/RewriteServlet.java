@@ -33,14 +33,14 @@ import javax.servlet.http.HttpServletResponse;
 @SuppressWarnings("serial")
 public class RewriteServlet extends HttpServlet
 {
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
     {
         doGet(req, res);
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
     {
@@ -68,7 +68,7 @@ public class RewriteServlet extends HttpServlet
         out.println("</table></body></html>");
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getServletInfo()
     {

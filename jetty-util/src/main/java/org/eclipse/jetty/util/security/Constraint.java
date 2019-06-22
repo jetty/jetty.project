@@ -28,7 +28,7 @@ import java.util.Arrays;
  */
 public class Constraint implements Cloneable, Serializable
 {
-    /* ------------------------------------------------------------ */
+
     public final static String __BASIC_AUTH = "BASIC";
 
     public final static String __FORM_AUTH = "FORM";
@@ -57,17 +57,17 @@ public class Constraint implements Cloneable, Serializable
                 || method.equals(__NEGOTIATE_AUTH));
     }
 
-    /* ------------------------------------------------------------ */
+
     public final static int DC_UNSET = -1, DC_NONE = 0, DC_INTEGRAL = 1, DC_CONFIDENTIAL = 2, DC_FORBIDDEN = 3;
 
-    /* ------------------------------------------------------------ */
+
     public final static String NONE = "NONE";
 
     public final static String ANY_ROLE = "*";
     
     public final static String ANY_AUTH = "**"; //Servlet Spec 3.1 pg 140
 
-    /* ------------------------------------------------------------ */
+
     private String _name;
 
     private String[] _roles;
@@ -80,7 +80,7 @@ public class Constraint implements Cloneable, Serializable
 
     private boolean _authenticate = false;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Constructor.
      */
@@ -88,7 +88,7 @@ public class Constraint implements Cloneable, Serializable
     {
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Convenience Constructor.
      * 
@@ -101,14 +101,14 @@ public class Constraint implements Cloneable, Serializable
         setRoles(new String[] { role });
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Object clone() throws CloneNotSupportedException
     {
         return super.clone();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param name the name
      */
@@ -117,13 +117,13 @@ public class Constraint implements Cloneable, Serializable
         _name = name;
     }
 
-    /* ------------------------------------------------------------ */
+
     public String getName()
     {
         return _name;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setRoles(String[] roles)
     {
         _roles = roles;
@@ -139,7 +139,7 @@ public class Constraint implements Cloneable, Serializable
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return True if any user role is permitted.
      */
@@ -149,7 +149,7 @@ public class Constraint implements Cloneable, Serializable
     }
     
     
-    /* ------------------------------------------------------------ */
+
     /** Servlet Spec 3.1, pg 140
      * @return True if any authenticated user is permitted (ie a role "**" was specified in the constraint).
      */
@@ -158,7 +158,7 @@ public class Constraint implements Cloneable, Serializable
         return _anyAuth;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return List of roles for this constraint.
      */
@@ -167,7 +167,7 @@ public class Constraint implements Cloneable, Serializable
         return _roles;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param role the role
      * @return True if the constraint contains the role.
@@ -180,7 +180,7 @@ public class Constraint implements Cloneable, Serializable
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param authenticate True if users must be authenticated
      */
@@ -189,7 +189,7 @@ public class Constraint implements Cloneable, Serializable
         _authenticate = authenticate;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return True if the constraint requires request authentication
      */
@@ -198,7 +198,7 @@ public class Constraint implements Cloneable, Serializable
         return _authenticate;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return True if authentication required but no roles set
      */
@@ -207,7 +207,7 @@ public class Constraint implements Cloneable, Serializable
         return _authenticate && !_anyRole && (_roles == null || _roles.length == 0);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param c Data constrain indicator: 0=DC+NONE, 1=DC_INTEGRAL &amp;
      *                2=DC_CONFIDENTIAL
@@ -218,7 +218,7 @@ public class Constraint implements Cloneable, Serializable
         _dataConstraint = c;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Data constrain indicator: 0=DC+NONE, 1=DC_INTEGRAL &amp;
      *         2=DC_CONFIDENTIAL
@@ -228,7 +228,7 @@ public class Constraint implements Cloneable, Serializable
         return _dataConstraint;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return True if a data constraint has been set.
      */
@@ -237,7 +237,7 @@ public class Constraint implements Cloneable, Serializable
         return _dataConstraint >= DC_NONE;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {

@@ -43,7 +43,7 @@ public class ResourceContentFactory implements ContentFactory
     private final MimeTypes _mimeTypes;
     private final CompressedContentFormat[] _precompressedFormats;
     
-    /* ------------------------------------------------------------ */
+
     public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, CompressedContentFormat[] precompressedFormats)
     {
         _factory=factory;
@@ -51,7 +51,7 @@ public class ResourceContentFactory implements ContentFactory
         _precompressedFormats=precompressedFormats;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public HttpContent getContent(String pathInContext,int maxBufferSize)
         throws IOException
@@ -70,7 +70,7 @@ public class ResourceContentFactory implements ContentFactory
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     private HttpContent load(String pathInContext, Resource resource, int maxBufferSize)
         throws IOException
     {   
@@ -102,7 +102,7 @@ public class ResourceContentFactory implements ContentFactory
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {

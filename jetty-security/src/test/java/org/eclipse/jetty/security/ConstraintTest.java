@@ -1756,7 +1756,7 @@ public class ConstraintTest
     }
     private class RoleRefHandler extends HandlerWrapper
     {
-        /* ------------------------------------------------------------ */
+
         /**
          * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
          */

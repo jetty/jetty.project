@@ -53,7 +53,7 @@ public class FragmentConfiguration extends AbstractConfiguration
         context.setAttribute(FRAGMENT_RESOURCES, null);
     }
     
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Add in fragment descriptors that have already been discovered by MetaInfConfiguration
      * 

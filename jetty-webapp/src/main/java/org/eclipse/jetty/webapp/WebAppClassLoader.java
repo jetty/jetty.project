@@ -84,12 +84,12 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
     
     
-    /* ------------------------------------------------------------ */
+
     /** The Context in which the classloader operates.
      */
     public interface Context extends ClassVisibilityChecker
     {
-        /* ------------------------------------------------------------ */
+
         /** Convert a URL or path to a Resource.
          * The default implementation
          * is a wrapper for {@link Resource#newResource(String)}.
@@ -99,14 +99,14 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         Resource newResource(String urlOrPath) throws IOException;
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @return Returns the permissions.
          */
         PermissionCollection getPermissions();
         
 
-        /* ------------------------------------------------------------ */
+
         /**
          * @return True if the classloader should delegate first to the parent 
          * classloader (standard java behaviour) or false if the classloader 
@@ -115,7 +115,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
         
-        /* ------------------------------------------------------------ */
+
         String getExtraClasspath();
 
         boolean isServerResource(String name, URL parent_url);
@@ -124,7 +124,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Run an action with access to ServerClasses
      * <p>Run the passed {@link PrivilegedExceptionAction} with the classloader
      * configured so as to allow server classes to be visible</p>
@@ -151,7 +151,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Constructor.
      * @param context the context for this classloader
@@ -163,7 +163,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         this(null,context);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Constructor.
      * 
@@ -199,7 +199,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             addClassPath(context.getExtraClasspath());
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the name of the classloader
      */
@@ -208,7 +208,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         return _name;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param name the name of the classloader
      */
@@ -218,13 +218,13 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
     
 
-    /* ------------------------------------------------------------ */
+
     public Context getContext()
     {
         return _context;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param resource Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
@@ -245,7 +245,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param classPath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
@@ -308,7 +308,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param file Checks if this file type can be added to the classpath.
      */
@@ -318,7 +318,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         return dot!=-1 && _extensions.contains(file.substring(dot));
     }
     
-    /* ------------------------------------------------------------ */
+
     /** Add elements to the class path for the context from the jar and zip files found
      *  in the specified resource.
      * @param lib the resource that contains the jar and/or zip files.
@@ -355,7 +355,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public PermissionCollection getPermissions(CodeSource cs)
     {
@@ -364,7 +364,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         return pc;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public Enumeration<URL> getResources(String name) throws IOException
     {
@@ -406,7 +406,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         return Collections.enumeration(resources);
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Get a resource from the classloader
      * 
@@ -473,7 +473,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
@@ -581,13 +581,13 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public void addTransformer(ClassFileTransformer transformer)
     {
         _transformers.add(transformer);
     }
     
-    /* ------------------------------------------------------------ */
+
     public boolean removeTransformer(ClassFileTransformer transformer)
     {
         return _transformers.remove(transformer);
@@ -626,7 +626,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected Class<?> findClass(final String name) throws ClassNotFoundException
     {
@@ -642,7 +642,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         return foundClass(name,url);
     }
     
-    /* ------------------------------------------------------------ */
+
     protected Class<?> foundClass(final String name, URL url) throws ClassNotFoundException
     {
         if (_transformers.isEmpty())
@@ -691,14 +691,14 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public void close() throws IOException
     {
         super.close();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {

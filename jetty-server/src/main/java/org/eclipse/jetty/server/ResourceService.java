@@ -193,7 +193,7 @@ public class ResourceService
         _gzipEquivalentFileExtensions = gzipEquivalentFileExtensions;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
     {
@@ -439,7 +439,7 @@ public class ResourceService
             sendDirectory(request,response,content.getResource(),pathInContext);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected boolean isGzippedContent(String path)
     {
         if (path == null || _gzipEquivalentFileExtensions==null)
@@ -451,13 +451,13 @@ public class ResourceService
         return false;
     }
 
-    /* ------------------------------------------------------------ */
+
     private boolean hasDefinedRange(Enumeration<String> reqRanges)
     {
         return (reqRanges!=null && reqRanges.hasMoreElements());
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -471,7 +471,7 @@ public class ResourceService
         response.flushBuffer();
     }
     
-    /* ------------------------------------------------------------ */
+
     /* Check modification date headers.
      */
     protected boolean passConditionalHeaders(HttpServletRequest request,HttpServletResponse response, HttpContent content)
@@ -608,7 +608,7 @@ public class ResourceService
         return true;
     }
 
-    /* ------------------------------------------------------------------- */
+
     protected void sendDirectory(HttpServletRequest request,
             HttpServletResponse response,
             Resource resource,
@@ -637,7 +637,7 @@ public class ResourceService
         response.getOutputStream().write(data);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected boolean sendData(HttpServletRequest request,
             HttpServletResponse response,
             boolean include,
@@ -845,7 +845,7 @@ public class ResourceService
         return true;
     }
 
-    /* ------------------------------------------------------------ */
+
     protected void putHeaders(HttpServletResponse response,HttpContent content, long contentLength)
     {
         if (response instanceof Response)
@@ -870,12 +870,12 @@ public class ResourceService
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     public interface WelcomeFactory
     {
-      /* ------------------------------------------------------------ */
+
       /**
        * Finds a matching welcome file for the supplied {@link Resource}.
        * @param pathInContext the path of the request

@@ -34,13 +34,13 @@ import org.eclipse.jetty.server.Request;
 public class ForwardedSchemeHeaderRule extends HeaderRule {
     private String _scheme="https";
 
-    /* ------------------------------------------------------------ */
+
     public String getScheme() 
     {
         return _scheme;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param scheme the scheme to set on the request. Defaults to "https"
      */
@@ -49,7 +49,7 @@ public class ForwardedSchemeHeaderRule extends HeaderRule {
         _scheme = scheme;
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response) 
     {

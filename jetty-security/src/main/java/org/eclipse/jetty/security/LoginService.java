@@ -23,7 +23,7 @@ import javax.servlet.ServletRequest;
 import org.eclipse.jetty.server.UserIdentity;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  * Login Service Interface.
  * <p>
@@ -34,13 +34,13 @@ import org.eclipse.jetty.server.UserIdentity;
 public interface LoginService
 {
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @return Get the name of the login service (aka Realm name)
      */
     String getName();
     
-    /* ------------------------------------------------------------ */
+
     /** Login a user.
      * @param username The user name
      * @param credentials The users credentials
@@ -49,7 +49,7 @@ public interface LoginService
      */
     UserIdentity login(String username,Object credentials, ServletRequest request);
     
-    /* ------------------------------------------------------------ */
+
     /** Validate a user identity.
      * Validate that a UserIdentity previously created by a call 
      * to {@link #login(String, Object, ServletRequest)} is still valid.
@@ -58,13 +58,13 @@ public interface LoginService
      */
     boolean validate(UserIdentity user);
     
-    /* ------------------------------------------------------------ */
+
     /** Get the IdentityService associated with this Login Service.
      * @return the IdentityService associated with this Login Service.
      */
     IdentityService getIdentityService();
     
-    /* ------------------------------------------------------------ */
+
     /** Set the IdentityService associated with this Login Service.
      * @param service the IdentityService associated with this Login Service.
      */

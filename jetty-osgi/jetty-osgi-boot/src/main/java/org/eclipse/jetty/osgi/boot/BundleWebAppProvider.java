@@ -109,13 +109,13 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         
     }
 
-    /* ------------------------------------------------------------ */
+
     public BundleWebAppProvider (ServerInstanceWrapper wrapper)
     {
         super(wrapper);
     }
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
@@ -131,7 +131,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
@@ -161,7 +161,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
 
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * A bundle has been added that could be a webapp 
      * @param bundle the bundle
@@ -245,7 +245,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     }
 
     
-    /* ------------------------------------------------------------ */
+
     /** 
      * Bundle has been removed. If it was a webapp we deployed, undeploy it.
      * 
@@ -268,7 +268,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
 
     
     
-    /* ------------------------------------------------------------ */
+
     private static String getContextPath(Bundle bundle)
     {
         Dictionary<?, ?> headers = bundle.getHeaders();

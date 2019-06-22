@@ -80,7 +80,7 @@ public class javaRootURLContext implements Context
 
 
 
-    /*------------------------------------------------*/
+
     /**
      * Creates a new <code>javaRootURLContext</code> instance.
      *

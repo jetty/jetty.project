@@ -19,7 +19,7 @@
 package org.eclipse.jetty.util;
 
 
-/* ------------------------------------------------------------ */
+
 /** UTF-8 StringBuilder.
  *
  * This class wraps a standard {@link java.lang.StringBuilder} and provides methods to append

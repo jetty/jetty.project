@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
-/* ------------------------------------------------------------ */
+
 /** Moved ContextHandler.
  * This context can be used to replace a context that has changed
  * location.  Requests are redirected (either to a fixed URL or to a
@@ -134,7 +134,7 @@ public class MovedContextHandler extends ContextHandler
 
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the expires header value or null if no expires header
      */
@@ -143,7 +143,7 @@ public class MovedContextHandler extends ContextHandler
         return _expires;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param expires the expires header value or null if no expires header
      */

@@ -40,13 +40,13 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     private String _query;
     private boolean _queryGroup;
 
-    /* ------------------------------------------------------------ */
+
     public RewriteRegexRule()
     {
         this(null,null);
     }
     
-    /* ------------------------------------------------------------ */
+
     public RewriteRegexRule(@Name("regex") String regex, @Name("replacement") String replacement)
     {
         super(regex);
@@ -55,7 +55,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
         setReplacement(replacement);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Whenever a match is found, it replaces with this value.
      * 
@@ -79,7 +79,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.handler.rules.RegexRule#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, java.util.regex.Matcher)
      */
@@ -110,7 +110,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
         return target;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
@@ -129,7 +129,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the replacement string.
      */

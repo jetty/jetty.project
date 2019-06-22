@@ -20,7 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.util.Enumeration;
 
-/* ------------------------------------------------------------ */
+
 /** Attributes.
  * Interface commonly used for storing attributes.
  * 

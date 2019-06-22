@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* --------------------------------------------------------------------- */
+
 /**
  * Holder
  * 
@@ -57,7 +57,7 @@ public abstract class Holder<T> extends BaseHolder<T>
     protected boolean _initialized = false;
 
 
-    /* ---------------------------------------------------------------- */
+
     protected Holder(Source source)
     {
         super(source);
@@ -75,14 +75,14 @@ public abstract class Holder<T> extends BaseHolder<T>
 
   
 
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute(value="Display Name", readonly=true)
     public String getDisplayName()
     {
         return _displayName;
     }
 
-    /* ---------------------------------------------------------------- */
+
     public String getInitParameter(String param)
     {
         if (_initParams==null)
@@ -90,7 +90,7 @@ public abstract class Holder<T> extends BaseHolder<T>
         return (String)_initParams.get(param);
     }
 
-    /* ------------------------------------------------------------ */
+
     public Enumeration<String> getInitParameterNames()
     {
         if (_initParams==null)
@@ -98,14 +98,14 @@ public abstract class Holder<T> extends BaseHolder<T>
         return Collections.enumeration(_initParams.keySet());
     }
 
-    /* ---------------------------------------------------------------- */
+
     @ManagedAttribute(value="Initial Parameters", readonly=true)
     public Map<String,String> getInitParameters()
     {
         return _initParams;
     }
 
-    /* ------------------------------------------------------------ */
+
     @ManagedAttribute(value="Name", readonly=true)
     public String getName()
     {
@@ -113,12 +113,12 @@ public abstract class Holder<T> extends BaseHolder<T>
     }
 
   
-    /* ------------------------------------------------------------ */
+
     public void destroyInstance(Object instance)
     throws Exception
     {
     }
-    /* ------------------------------------------------------------ */
+
     /**
      * @param className The className to set.
      */
@@ -130,7 +130,7 @@ public abstract class Holder<T> extends BaseHolder<T>
             _name=className+"-"+Integer.toHexString(this.hashCode());
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param held The class to hold
      */
@@ -145,26 +145,26 @@ public abstract class Holder<T> extends BaseHolder<T>
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setDisplayName(String name)
     {
         _displayName=name;
     }
 
-    /* ------------------------------------------------------------ */
+
     public void setInitParameter(String param,String value)
     {
         _initParams.put(param,value);
     }
 
-    /* ---------------------------------------------------------------- */
+
     public void setInitParameters(Map<String,String> map)
     {
         _initParams.clear();
         _initParams.putAll(map);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * The name is a primary key for the held object.
      * Ensure that the name is set BEFORE adding a Holder
@@ -177,60 +177,60 @@ public abstract class Holder<T> extends BaseHolder<T>
     }
 
 
-    /* ------------------------------------------------------------ */
+
     public void setAsyncSupported(boolean suspendable)
     {
         _asyncSupported=suspendable;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean isAsyncSupported()
     {
         return _asyncSupported;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String dump()
     {
         return super.dump();
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
         return String.format("%s@%x==%s",_name,hashCode(),_className);
     }
     
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     protected class HolderConfig
     {
 
-        /* -------------------------------------------------------- */
+
         public ServletContext getServletContext()
         {
             return _servletHandler.getServletContext();
         }
 
-        /* -------------------------------------------------------- */
+
         public String getInitParameter(String param)
         {
             return Holder.this.getInitParameter(param);
         }
 
-        /* -------------------------------------------------------- */
+
         public Enumeration<String> getInitParameterNames()
         {
             return Holder.this.getInitParameterNames();
         }
     }
 
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
+
+
+
     protected class HolderRegistration implements Registration.Dynamic
     {
         @Override

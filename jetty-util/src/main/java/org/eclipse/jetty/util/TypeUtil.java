@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
 import static java.lang.invoke.MethodType.methodType;
 
 
-/* ------------------------------------------------------------ */
+
 /**
  * TYPE Utilities.
  * Provides various static utility methods for manipulating types and their
@@ -64,7 +64,7 @@ public class TypeUtil
     public static final int CR = '\015';
     public static final int LF = '\012';
 
-    /* ------------------------------------------------------------ */
+
     private static final HashMap<String, Class<?>> name2Class=new HashMap<>();
     static
     {
@@ -112,7 +112,7 @@ public class TypeUtil
         name2Class.put("java.lang.String",java.lang.String.class);
     }
 
-    /* ------------------------------------------------------------ */
+
     private static final HashMap<Class<?>, String> class2Name=new HashMap<>();
     static
     {
@@ -139,7 +139,7 @@ public class TypeUtil
         class2Name.put(java.lang.String.class,"java.lang.String");
     }
 
-    /* ------------------------------------------------------------ */
+
     private static final HashMap<Class<?>, Method> class2Value=new HashMap<>();
     static
     {
@@ -206,7 +206,7 @@ public class TypeUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Array to List.
      * <p>
      * Works like {@link Arrays#asList(Object...)}, but handles null arrays.
@@ -221,7 +221,7 @@ public class TypeUtil
         return Arrays.asList(a);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Class from a canonical name for a type.
      * @param name A class or type name.
      * @return A class , which may be a primitive TYPE field..
@@ -231,7 +231,7 @@ public class TypeUtil
         return name2Class.get(name);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Canonical name for a type.
      * @param type A class , which may be a primitive TYPE field.
      * @return Canonical name.
@@ -281,7 +281,7 @@ public class TypeUtil
         return StringUtil.replace(className, '.', '/').concat(".class");
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convert String value to instance.
      * @param type The class of the instance, which may be a primitive TYPE field.
      * @param value The value as a string.
@@ -318,7 +318,7 @@ public class TypeUtil
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Convert String value to instance.
      * @param type classname or type (eg int)
      * @param value The value as a string.
@@ -329,7 +329,7 @@ public class TypeUtil
         return valueOf(fromName(type),value);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Parse an int from a substring.
      * Negative numbers are not handled.
      * @param s String
@@ -359,7 +359,7 @@ public class TypeUtil
         return value;
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Parse an int from a byte array of ascii characters.
      * Negative numbers are not handled.
      * @param b byte array
@@ -395,7 +395,7 @@ public class TypeUtil
         return value;
     }
 
-    /* ------------------------------------------------------------ */
+
     public static byte[] parseBytes(String s, int base)
     {
         byte[] bytes=new byte[s.length()/2];
@@ -404,7 +404,7 @@ public class TypeUtil
         return bytes;
     }
 
-    /* ------------------------------------------------------------ */
+
     public static String toString(byte[] bytes, int base)
     {
         StringBuilder buf = new StringBuilder();
@@ -423,7 +423,7 @@ public class TypeUtil
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @param c An ASCII encoded character 0-9 a-f A-F
      * @return The byte value of the character 0-16.
@@ -436,7 +436,7 @@ public class TypeUtil
         return b;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param c An ASCII encoded character 0-9 a-f A-F
      * @return The byte value of the character 0-16.
@@ -449,7 +449,7 @@ public class TypeUtil
         return d;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @param c An ASCII encoded character 0-9 a-f A-F
      * @return The byte value of the character 0-16.
@@ -462,7 +462,7 @@ public class TypeUtil
         return d;
     }
 
-    /* ------------------------------------------------------------ */
+
     public static void toHex(byte b,Appendable buf)
     {
         try
@@ -478,7 +478,7 @@ public class TypeUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public static void toHex(int value,Appendable buf) throws IOException
     {
         int d=0xf&((0xF0000000&value)>>28);
@@ -502,26 +502,26 @@ public class TypeUtil
     }
     
     
-    /* ------------------------------------------------------------ */
+
     public static void toHex(long value,Appendable buf) throws IOException
     {
         toHex((int)(value>>32),buf);
         toHex((int)value,buf);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static String toHexString(byte b)
     {
         return toHexString(new byte[]{b}, 0, 1);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static String toHexString(byte[] b)
     {
         return toHexString(b, 0, b.length);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static String toHexString(byte[] b,int offset,int length)
     {
         StringBuilder buf = new StringBuilder();
@@ -540,7 +540,7 @@ public class TypeUtil
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     public static byte[] fromHexString(String s)
     {
         if (s.length()%2!=0)
@@ -584,7 +584,7 @@ public class TypeUtil
         return Boolean.parseBoolean(o.toString());
     }
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * @param o Object to test for false
      * @return True if passed object is not null and is either a Boolean with value false or evaluates to a string that evaluates to false.
@@ -598,7 +598,7 @@ public class TypeUtil
         return "false".equalsIgnoreCase(o.toString());
     }
     
-    /* ------------------------------------------------------------ */
+
 
     /**
      * Attempt to find the Location of a loaded Class.

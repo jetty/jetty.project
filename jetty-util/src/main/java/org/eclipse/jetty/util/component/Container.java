@@ -25,7 +25,7 @@ import java.util.Collection;
  */
 public interface Container
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * Add a bean.  If the bean is-a {@link Listener}, then also do an implicit {@link #addEventListener(Listener)}.
      * @param o the bean object to add

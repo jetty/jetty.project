@@ -47,18 +47,18 @@ public class IO
 {
     private static final Logger LOG = Log.getLogger(IO.class);
 
-    /* ------------------------------------------------------------------- */
+
     public final static String
         CRLF      = "\015\012";
 
-    /* ------------------------------------------------------------------- */
+
     public final static byte[]
         CRLF_BYTES    = {(byte)'\015',(byte)'\012'};
 
-    /* ------------------------------------------------------------------- */
+
     public static final int bufferSize = 64*1024;
 
-    /* ------------------------------------------------------------------- */
+
     static class Job implements Runnable
     {
         InputStream in;
@@ -81,7 +81,7 @@ public class IO
             this.write=write;
         }
 
-        /* ------------------------------------------------------------ */
+
         /*
          * @see java.lang.Runnable#run()
          */
@@ -111,7 +111,7 @@ public class IO
         }
     }
 
-    /* ------------------------------------------------------------------- */
+
     /** Copy Stream in to Stream out until EOF or exception.
      * @param in the input stream to read from (until EOF)
      * @param out the output stream to write to
@@ -123,7 +123,7 @@ public class IO
         copy(in,out,-1);
     }
 
-    /* ------------------------------------------------------------------- */
+
     /** Copy Reader to Writer out until EOF or exception.
      * @param in the read to read from (until EOF)
      * @param out the writer to write to
@@ -135,7 +135,7 @@ public class IO
         copy(in,out,-1);
     }
 
-    /* ------------------------------------------------------------------- */
+
     /** Copy Stream in to Stream for byteCount bytes or until EOF or exception.
      * @param in the stream to read from
      * @param out the stream to write to
@@ -176,7 +176,7 @@ public class IO
         }
     }
 
-    /* ------------------------------------------------------------------- */
+
     /** Copy Reader to Writer for byteCount bytes or until EOF or exception.
      * @param in the Reader to read from
      * @param out the Writer to write to
@@ -230,7 +230,7 @@ public class IO
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Copy files or directories
      * @param from the file to copy
      * @param to the destination to copy to
@@ -244,7 +244,7 @@ public class IO
             copyFile(from,to);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static void copyDir(File from,File to) throws IOException
     {
         if (to.exists())
@@ -268,7 +268,7 @@ public class IO
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     public static void copyFile(File from,File to) throws IOException
     {
         try (InputStream in=new FileInputStream(from);
@@ -278,7 +278,7 @@ public class IO
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Read input stream to string.
      * @param in the stream to read from (until EOF)
      * @return the String parsed from stream (default Charset)
@@ -290,7 +290,7 @@ public class IO
         return toString(in,(Charset)null);
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Read input stream to string.
      * @param in the stream to read from (until EOF)
      * @param encoding the encoding to use (can be null to use default Charset)
@@ -319,7 +319,7 @@ public class IO
         return writer.toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /** Read input stream to string.
      * @param in the reader to read from (until EOF)
      * @return the String parsed from the reader
@@ -334,7 +334,7 @@ public class IO
     }
 
 
-    /* ------------------------------------------------------------ */
+
     /** Delete File.
      * This delete will recursively delete directories - BE CAREFUL
      * @param file The file (or directory) to be deleted.
@@ -411,7 +411,7 @@ public class IO
         close((Closeable)writer);
     }
 
-    /* ------------------------------------------------------------ */
+
     public static byte[] readBytes(InputStream in)
         throws IOException
     {
@@ -420,7 +420,7 @@ public class IO
         return bout.toByteArray();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * A gathering write utility wrapper.
      * <p>
@@ -472,7 +472,7 @@ public class IO
         return total;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return An outputstream to nowhere
      */
@@ -481,7 +481,7 @@ public class IO
         return __nullStream;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return An outputstream to nowhere
      */
@@ -490,8 +490,8 @@ public class IO
         return __closedStream;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     private static class NullOS extends OutputStream
     {
         @Override
@@ -508,8 +508,8 @@ public class IO
     private static NullOS __nullStream = new NullOS();
 
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     private static class ClosedIS extends InputStream
     {
         @Override
@@ -520,7 +520,7 @@ public class IO
     }
     private static ClosedIS __closedStream = new ClosedIS();
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return An writer to nowhere
      */
@@ -529,7 +529,7 @@ public class IO
         return __nullWriter;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return An writer to nowhere
      */
@@ -538,8 +538,8 @@ public class IO
         return __nullPrintWriter;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
     private static class NullWrite extends Writer
     {
         @Override

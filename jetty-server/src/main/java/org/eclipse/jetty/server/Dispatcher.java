@@ -315,7 +315,7 @@ public class Dispatcher implements RequestDispatcher
             _attr=attributes;
         }
 
-        /* ------------------------------------------------------------ */
+
         @Override
         public Object getAttribute(String key)
         {

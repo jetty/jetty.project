@@ -48,13 +48,13 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
     
     private ThreadLocal<ClassLoader> _classloader = new ClassLoaderThreadLocal();
     
-    /* ------------------------------------------------------------ */
+
     public ClassLoadingObjectInputStream(java.io.InputStream in) throws IOException
     {
         super(in);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ClassLoadingObjectInputStream () throws IOException
     {
         super();
@@ -76,7 +76,7 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
     }
     
     
-    /* ------------------------------------------------------------ */
+
     @Override
     public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
     {
@@ -94,7 +94,7 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
         }
     }
     
-    /* ------------------------------------------------------------ */
+
     @Override
     protected Class<?> resolveProxyClass(String[] interfaces)
             throws IOException, ClassNotFoundException

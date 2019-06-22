@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 
 
-/* ------------------------------------------------------------------------------- */
+
 /**
  */
 public enum HttpMethod
@@ -43,7 +43,7 @@ public enum HttpMethod
     PROXY,
     PRI;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Optimized lookup to find a method name and trailing space in a byte array.
      * @param bytes Array containing ISO-8859-1 characters
@@ -107,7 +107,7 @@ public enum HttpMethod
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Optimized lookup to find a method name and trailing space in a byte array.
      * @param buffer buffer containing ISO-8859-1 characters, it is not modified.
@@ -132,7 +132,7 @@ public enum HttpMethod
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+
     public final static Trie<HttpMethod> INSENSITIVE_CACHE= new ArrayTrie<>();
     static
     {
@@ -140,7 +140,7 @@ public enum HttpMethod
             INSENSITIVE_CACHE.put(method.toString(),method);
     }
 
-    /* ------------------------------------------------------------ */
+
     public final static Trie<HttpMethod> CACHE= new ArrayTernaryTrie<>(false);
     static
     {
@@ -148,42 +148,42 @@ public enum HttpMethod
             CACHE.put(method.toString(),method);
     }
 
-    /* ------------------------------------------------------------ */
+
     private final ByteBuffer _buffer;
     private final byte[] _bytes;
 
-    /* ------------------------------------------------------------ */
+
     HttpMethod()
     {
         _bytes=StringUtil.getBytes(toString());
         _buffer=ByteBuffer.wrap(_bytes);
     }
 
-    /* ------------------------------------------------------------ */
+
     public byte[] getBytes()
     {
         return _bytes;
     }
 
-    /* ------------------------------------------------------------ */
+
     public boolean is(String s)
     {
         return toString().equalsIgnoreCase(s);
     }
 
-    /* ------------------------------------------------------------ */
+
     public ByteBuffer asBuffer()
     {
         return _buffer.asReadOnlyBuffer();
     }
 
-    /* ------------------------------------------------------------ */
+
     public String asString()
     {
         return toString();
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Converts the given String parameter to an HttpMethod
      * @param method the String to get the equivalent HttpMethod from

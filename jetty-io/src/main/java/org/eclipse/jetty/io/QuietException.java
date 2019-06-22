@@ -19,7 +19,7 @@
 package org.eclipse.jetty.io;
 
 
-/* ------------------------------------------------------------ */
+
 /** A Quiet Exception.
  * <p> Exception classes that extend this interface will be logged
  * less verbosely.

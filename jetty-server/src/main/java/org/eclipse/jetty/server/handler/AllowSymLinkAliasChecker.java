@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
-/* ------------------------------------------------------------ */
+
 
 /**
  * Symbolic Link AliasChecker.

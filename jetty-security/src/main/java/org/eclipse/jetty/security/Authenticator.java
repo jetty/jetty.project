@@ -40,7 +40,7 @@ import org.eclipse.jetty.server.Server;
  */
 public interface Authenticator
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * Configure the Authenticator
      * 
@@ -48,14 +48,14 @@ public interface Authenticator
      */
     void setConfiguration(AuthConfiguration configuration);
 
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The name of the authentication method
      */
     String getAuthMethod();
     
     
-    /* ------------------------------------------------------------ */
+
     /**
      * Called prior to validateRequest. The authenticator can
      * manipulate the request to update it with information that
@@ -71,7 +71,7 @@ public interface Authenticator
     void prepareRequest(ServletRequest request);
     
 
-    /* ------------------------------------------------------------ */
+
     /** 
      * Validate a request
      * 
@@ -87,7 +87,7 @@ public interface Authenticator
      */
     Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException;
 
-    /* ------------------------------------------------------------ */
+
     /**
      * is response secure
      * 
@@ -101,9 +101,9 @@ public interface Authenticator
     boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser) throws ServerAuthException;
 
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     /**
      * Authenticator Configuration
      */
@@ -120,7 +120,7 @@ public interface Authenticator
          */
         String getInitParameter(String param);
 
-        /* ------------------------------------------------------------ */
+
         /** Get a SecurityHandler init parameter names
          * @see SecurityHandler#getInitParameterNames()
          * @return Set of parameter names
@@ -132,9 +132,9 @@ public interface Authenticator
         boolean isSessionRenewedOnAuthentication();
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     /**
      * Authenticator Factory
      */

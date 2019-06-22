@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.SerializedExecutor;
 
-/* ------------------------------------------------------------ */
+
 /**
  * This {@link org.eclipse.jetty.server.handler.HandlerCollection} is creates a
  * Map of contexts to it's contained handlers based
@@ -58,20 +58,20 @@ public class ContextHandlerCollection extends HandlerCollection
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
     private final SerializedExecutor _serializedExecutor = new SerializedExecutor();
 
-    /* ------------------------------------------------------------ */
+
     public ContextHandlerCollection()
     {
         super(true);
     }
     
-    /* ------------------------------------------------------------ */
+
     public ContextHandlerCollection(ContextHandler... contexts)
     {
         super(true);
         setHandlers(contexts);
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Remap the contexts.  Normally this is not required as context
      * mapping is maintained as a side effect of {@link #setHandlers(Handler[])}
@@ -96,7 +96,7 @@ public class ContextHandlerCollection extends HandlerCollection
         });
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     protected Handlers newHandlers(Handler[] handlers)
     {
@@ -167,7 +167,7 @@ public class ContextHandlerCollection extends HandlerCollection
         return mapping;
     }
 
-    /* ------------------------------------------------------------ */
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -235,7 +235,7 @@ public class ContextHandlerCollection extends HandlerCollection
         }
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Thread safe deploy of a Handler.
      * <p>
@@ -270,7 +270,7 @@ public class ContextHandlerCollection extends HandlerCollection
         });
     }
 
-    /* ------------------------------------------------------------ */
+
     /**
      * Thread safe undeploy of a Handler.
      * <p>
@@ -302,9 +302,9 @@ public class ContextHandlerCollection extends HandlerCollection
         });
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     private final static class Branch
     {
         private final Handler _handler;
@@ -361,9 +361,9 @@ public class ContextHandlerCollection extends HandlerCollection
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     private static class Mapping extends Handlers
     {
         private final Map<ContextHandler,Handler> _contextBranches = new HashMap<>();

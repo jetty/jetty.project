@@ -71,7 +71,7 @@ public class BufferedResponseHandler extends HandlerWrapper
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
 
-    /* ------------------------------------------------------------ */
+
     public BufferedResponseHandler()
     {
         // include only GET requests
@@ -88,25 +88,25 @@ public class BufferedResponseHandler extends HandlerWrapper
         LOG.debug("{} mime types {}",this,_mimeTypes);
     }
 
-    /* ------------------------------------------------------------ */
+
     public IncludeExclude<String> getMethodIncludeExclude()
     {
         return _methods;
     }
 
-    /* ------------------------------------------------------------ */
+
     public IncludeExclude<String> getPathIncludeExclude()
     {
         return _paths;
     }
 
-    /* ------------------------------------------------------------ */
+
     public IncludeExclude<String> getMimeIncludeExclude()
     {
         return _mimeTypes;
     }
     
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
@@ -170,13 +170,13 @@ public class BufferedResponseHandler extends HandlerWrapper
             _handler.handle(target,baseRequest, request, response);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected boolean isMimeTypeBufferable(String mimetype)
     {
         return _mimeTypes.test(mimetype);
     }
 
-    /* ------------------------------------------------------------ */
+
     protected boolean isPathBufferable(String requestURI)
     {
         if (requestURI == null)
@@ -185,9 +185,9 @@ public class BufferedResponseHandler extends HandlerWrapper
         return _paths.test(requestURI);
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
+
+
     private class BufferedInterceptor implements HttpOutput.Interceptor
     {
         final Interceptor _next;

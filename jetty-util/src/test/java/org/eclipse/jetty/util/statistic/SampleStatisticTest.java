@@ -25,7 +25,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 
-/* ------------------------------------------------------------ */
+
 public class SampleStatisticTest
 {
     private static long[][] data =
