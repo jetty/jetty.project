@@ -58,7 +58,10 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 {
     private static final Logger LOG = Log.getLogger(EatWhatYouKill.class);
 
-    private enum State { IDLE, PRODUCING, REPRODUCING }
+    private enum State
+    {
+        IDLE, PRODUCING, REPRODUCING
+    }
 
     /* The modes this strategy can work in */
     private enum Mode
@@ -94,9 +97,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     public void dispatch()
     {
         boolean execute = false;
-        synchronized(this)
+        synchronized (this)
         {
-            switch(_state)
+            switch (_state)
             {
                 case IDLE:
                     if (!_pending)
@@ -137,7 +140,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         if (LOG.isDebugEnabled())
             LOG.debug("{} tryProduce {}", this, wasPending);
 
-        synchronized(this)
+        synchronized (this)
         {
             if (wasPending)
                 _pending = false;
@@ -161,7 +164,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
         boolean nonBlocking = Invocable.isNonBlockingInvocation();
 
-        while(isRunning())
+        while (isRunning())
         {
             try
             {
@@ -180,9 +183,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     {
         Runnable task = produceTask();
 
-        if (task==null)
+        if (task == null)
         {
-            synchronized(this)
+            synchronized (this)
             {
                 // Could another task just have been queued with a produce call?
                 switch (_state)
@@ -206,7 +209,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         {
             // The calling thread cannot block, so we only have a choice between PC and PEC modes,
             // based on the invocation type of the task
-            switch(Invocable.getInvocationType(task))
+            switch (Invocable.getInvocationType(task))
             {
                 case NON_BLOCKING:
                     mode = Mode.PRODUCE_CONSUME;
@@ -225,7 +228,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         {
             // The calling thread can block, so we can choose between PC, PEC and EPC modes,
             // based on the invocation type of the task and if a reserved thread is available
-            switch(Invocable.getInvocationType(task))
+            switch (Invocable.getInvocationType(task))
             {
                 case NON_BLOCKING:
                     mode = Mode.PRODUCE_CONSUME;
@@ -234,7 +237,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 case BLOCKING:
                     // The task is blocking, so PC is not an option. Thus we choose
                     // between EPC and PEC based on the availability of a reserved thread.
-                    synchronized(this)
+                    synchronized (this)
                     {
                         if (_pending)
                         {
@@ -257,7 +260,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 case EITHER:
                     // The task may be non blocking, so PC is an option. Thus we choose
                     // between EPC and PC based on the availability of a reserved thread.
-                    synchronized(this)
+                    synchronized (this)
                     {
                         if (_pending)
                         {
@@ -285,10 +288,10 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} m={} t={}/{}", this, mode, task,Invocable.getInvocationType(task));
+            LOG.debug("{} m={} t={}/{}", this, mode, task, Invocable.getInvocationType(task));
 
         // Consume or execute task
-        switch(mode)
+        switch (mode)
         {
             case PRODUCE_CONSUME:
                 _pcMode.increment();
@@ -310,9 +313,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 runTask(task);
 
                 // Try to produce again?
-                synchronized(this)
+                synchronized (this)
                 {
-                    if (_state==State.IDLE)
+                    if (_state == State.IDLE)
                     {
                         // We beat the pending producer, so we will become the producer instead
                         _state = State.PRODUCING;
@@ -417,9 +420,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
     public boolean isIdle()
     {
-        synchronized(this)
+        synchronized (this)
         {
-            return _state==State.IDLE;
+            return _state == State.IDLE;
         }
     }
 
@@ -435,7 +438,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @Override
     public String toString()
     {
-        synchronized(this)
+        synchronized (this)
         {
             return toStringLocked();
         }

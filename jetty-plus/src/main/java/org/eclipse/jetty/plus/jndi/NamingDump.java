@@ -33,7 +33,7 @@ public class NamingDump implements Dumpable
 
     public NamingDump()
     {
-        this(null,"");
+        this(null, "");
     }
 
     public NamingDump(ClassLoader loader, String name)
@@ -50,7 +50,7 @@ public class NamingDump implements Dumpable
         {
             if (!StringUtil.isBlank(_name))
                 out.append(_name).append(" ");
-            if (_loader!=null)
+            if (_loader != null)
                 Thread.currentThread().setContextClassLoader(_loader);
             Object context = new InitialContext().lookup(_name);
             if (context instanceof Dumpable)
@@ -58,13 +58,13 @@ public class NamingDump implements Dumpable
             else
                 Dumpable.dumpObjects(out, indent, context);
         }
-        catch(Throwable th)
+        catch (Throwable th)
         {
             throw new RuntimeException(th);
         }
         finally
         {
-            if (_loader!=null)
+            if (_loader != null)
                 Thread.currentThread().setContextClassLoader(loader);
         }
     }

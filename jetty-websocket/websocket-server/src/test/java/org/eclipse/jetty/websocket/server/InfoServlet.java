@@ -34,12 +34,12 @@ public class InfoServlet extends HttpServlet implements WebSocketCreator
     {
         return new InfoSocket();
     }
-    
+
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         ServletContext context = config.getServletContext();
-        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getAttribute(NativeWebSocketConfiguration.class.getName());
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration)context.getAttribute(NativeWebSocketConfiguration.class.getName());
         configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
         configuration.addMapping("/info/*", this);
     }

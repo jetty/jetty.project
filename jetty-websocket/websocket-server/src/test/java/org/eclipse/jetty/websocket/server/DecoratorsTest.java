@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -49,31 +45,34 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 public class DecoratorsTest
 {
     private static class DecoratorsSocket extends WebSocketAdapter
     {
         private final DecoratedObjectFactory objFactory;
-        
+
         public DecoratorsSocket(DecoratedObjectFactory objFactory)
         {
             this.objFactory = objFactory;
         }
-        
+
         @Override
         public void onWebSocketText(String message)
         {
             StringWriter str = new StringWriter();
             PrintWriter out = new PrintWriter(str);
-            
+
             if (objFactory != null)
             {
                 out.printf("Object is a DecoratedObjectFactory%n");
                 List<Decorator> decorators = objFactory.getDecorators();
-                out.printf("Decorators.size = [%d]%n",decorators.size());
+                out.printf("Decorators.size = [%d]%n", decorators.size());
                 for (Decorator decorator : decorators)
                 {
-                    out.printf(" decorator[] = %s%n",decorator.getClass().getName());
+                    out.printf(" decorator[] = %s%n", decorator.getClass().getName());
                 }
             }
             else
@@ -112,7 +111,7 @@ public class DecoratorsTest
             factory.setCreator(this.creator);
         }
     }
-    
+
     private static class DummyUtilDecorator implements org.eclipse.jetty.util.Decorator
     {
         @Override
@@ -182,7 +181,7 @@ public class DecoratorsTest
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame resp = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             String textMsg = resp.getPayloadAsUTF8();
-            
+
             assertThat("DecoratedObjectFactory", textMsg, containsString("Object is a DecoratedObjectFactory"));
             assertThat("decorators.size", textMsg, containsString("Decorators.size = [1]"));
             assertThat("decorator type", textMsg, containsString("decorator[] = " + DummyUtilDecorator.class.getName()));

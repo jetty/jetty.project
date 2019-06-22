@@ -31,6 +31,6 @@ public class JettyHomeConfigSource extends DirConfigSource
 
     public JettyHomeConfigSource(Path dir) throws IOException
     {
-        super("${jetty.home}",dir,WEIGHT,false);
+        super("${jetty.home}", dir, WEIGHT, false);
     }
 }

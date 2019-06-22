@@ -27,6 +27,7 @@ public class FrameSocket
 {
     /**
      * A frame
+     *
      * @param frame the frame
      */
     @OnWebSocketFrame

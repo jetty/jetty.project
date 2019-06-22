@@ -43,7 +43,9 @@ public class Flusher
     public void flush(Generator.Result... results)
     {
         for (Generator.Result result : results)
+        {
             offer(result);
+        }
         flushCallback.iterate();
     }
 

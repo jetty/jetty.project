@@ -23,11 +23,12 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/invalid")
+@ServerEndpoint(value = "/invalid")
 public class InvalidCloseIntSocket extends TrackingSocket
 {
     /**
      * Invalid Close Method Declaration (parameter type int)
+     *
      * @param statusCode the status code
      */
     @OnClose

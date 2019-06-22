@@ -29,7 +29,7 @@ public class ZeroMasker implements Masker
     public ZeroMasker()
     {
         this.mask = new byte[4];
-        Arrays.fill(mask,(byte)0);
+        Arrays.fill(mask, (byte)0);
     }
 
     @Override

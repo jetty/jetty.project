@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -37,6 +32,11 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTest
 {
@@ -112,8 +112,8 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
         CountDownLatch responseLatch = new CountDownLatch(1);
         Request request = client.newRequest(destination.getHost(), destination.getPort())
-                .scheme(scenario.getScheme())
-                .onResponseSuccess(response -> responseLatch.countDown());
+            .scheme(scenario.getScheme())
+            .onResponseSuccess(response -> responseLatch.countDown());
 
         FutureResponseListener listener = new FutureResponseListener(request);
         connection.send(request, listener);

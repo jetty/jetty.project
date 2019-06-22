@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -70,7 +69,9 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
         {
             String[] configs = StringUtil.csvSplit(header_config);
             for (String config : configs)
+            {
                 _configuredHeaders.add(parseHeaderConfiguration(config));
+            }
         }
 
         if (LOG.isDebugEnabled())
@@ -83,7 +84,7 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
         HttpServletRequest http_request = (HttpServletRequest)request;
         HttpServletResponse http_response = (HttpServletResponse)response;
 
-        if (super.shouldFilter(http_request,http_response))
+        if (super.shouldFilter(http_request, http_response))
         {
             for (ConfiguredHeader header : _configuredHeaders)
             {
@@ -92,28 +93,28 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
                     long header_value = System.currentTimeMillis() + header.getMsOffset();
                     if (header.isAdd())
                     {
-                        http_response.addDateHeader(header.getName(),header_value);
+                        http_response.addDateHeader(header.getName(), header_value);
                     }
                     else
                     {
-                        http_response.setDateHeader(header.getName(),header_value);
+                        http_response.setDateHeader(header.getName(), header_value);
                     }
                 }
                 else // constant header value
                 {
                     if (header.isAdd())
                     {
-                        http_response.addHeader(header.getName(),header.getValue());
+                        http_response.addHeader(header.getName(), header.getValue());
                     }
                     else
                     {
-                        http_response.setHeader(header.getName(),header.getValue());
+                        http_response.setHeader(header.getName(), header.getValue());
                     }
                 }
             }
         }
 
-        chain.doFilter(request,response);
+        chain.doFilter(request, response);
     }
 
     @Override
@@ -123,20 +124,22 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
         sb.append(super.toString()).append("\n");
         sb.append("configured headers:\n");
         for (ConfiguredHeader c : _configuredHeaders)
+        {
             sb.append(c).append("\n");
+        }
 
         return sb.toString();
     }
 
     private ConfiguredHeader parseHeaderConfiguration(String config)
     {
-        String[] config_tokens = config.trim().split(" ",2);
+        String[] config_tokens = config.trim().split(" ", 2);
         String method = config_tokens[0].trim();
         String header = config_tokens[1];
-        String[] header_tokens = header.trim().split(":",2);
+        String[] header_tokens = header.trim().split(":", 2);
         String header_name = header_tokens[0].trim();
         String header_value = header_tokens[1].trim();
-        ConfiguredHeader configured_header = new ConfiguredHeader(header_name,header_value,method.startsWith("add"),method.endsWith("Date"));
+        ConfiguredHeader configured_header = new ConfiguredHeader(header_name, header_value, method.startsWith("add"), method.endsWith("Date"));
         return configured_header;
     }
 
@@ -189,7 +192,7 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
         @Override
         public String toString()
         {
-            return (_add?"add":"set") + (_date?"Date":"") + " " + _name + ": " + _value;
+            return (_add ? "add" : "set") + (_date ? "Date" : "") + " " + _name + ": " + _value;
         }
     }
 }

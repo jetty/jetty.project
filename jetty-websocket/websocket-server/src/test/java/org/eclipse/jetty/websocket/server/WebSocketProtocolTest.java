@@ -67,8 +67,9 @@ public class WebSocketProtocolTest
             {
                 factory.getPolicy().setIdleTimeout(10000);
                 factory.getPolicy().setMaxTextMessageSize(1024 * 1024 * 2);
-                factory.setCreator((req, resp) -> {
-                    if(req.hasSubProtocol("echo"))
+                factory.setCreator((req, resp) ->
+                {
+                    if (req.hasSubProtocol("echo"))
                     {
                         resp.setAcceptedSubProtocol("echo");
                     }
@@ -105,13 +106,13 @@ public class WebSocketProtocolTest
             StringBuilder request = new StringBuilder();
             String secWebSocketKey = Base64.getEncoder().encodeToString(key);
             request.append("GET /ws HTTP/1.1\r\n")
-                    .append("Host: localhost\r\n")
-                    .append("Connection: Upgrade\r\n")
-                    .append("Upgrade: websocket\r\n")
-                    .append("Sec-WebSocket-version: 13\r\n")
-                    .append("Sec-WebSocket-Key:").append(secWebSocketKey).append("\r\n")
-                    .append("Sec-WebSocket-Protocol: echo\r\n")
-                    .append("\r\n");
+                .append("Host: localhost\r\n")
+                .append("Connection: Upgrade\r\n")
+                .append("Upgrade: websocket\r\n")
+                .append("Sec-WebSocket-version: 13\r\n")
+                .append("Sec-WebSocket-Key:").append(secWebSocketKey).append("\r\n")
+                .append("Sec-WebSocket-Protocol: echo\r\n")
+                .append("\r\n");
 
             OutputStream output = client.getOutputStream();
             output.write(request.toString().getBytes(StandardCharsets.UTF_8));

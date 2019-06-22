@@ -41,7 +41,7 @@ public class ConcurrentHashSet<E> extends AbstractSet<E> implements Set<E>
     @Override
     public boolean add(E e)
     {
-        return _map.put(e,Boolean.TRUE) == null;
+        return _map.put(e, Boolean.TRUE) == null;
     }
 
     @Override

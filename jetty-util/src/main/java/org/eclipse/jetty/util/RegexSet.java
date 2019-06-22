@@ -33,10 +33,10 @@ import java.util.regex.Pattern;
  */
 public class RegexSet extends AbstractSet<String> implements Predicate<String>
 {
-    private final Set<String> _patterns=new HashSet<String>();
-    private final Set<String> _unmodifiable=Collections.unmodifiableSet(_patterns);
+    private final Set<String> _patterns = new HashSet<String>();
+    private final Set<String> _unmodifiable = Collections.unmodifiableSet(_patterns);
     private Pattern _pattern;
-    
+
     @Override
     public Iterator<String> iterator()
     {
@@ -48,7 +48,7 @@ public class RegexSet extends AbstractSet<String> implements Predicate<String>
     {
         return _patterns.size();
     }
-    
+
     @Override
     public boolean add(String pattern)
     {
@@ -57,7 +57,7 @@ public class RegexSet extends AbstractSet<String> implements Predicate<String>
             updatePattern();
         return added;
     }
-    
+
     @Override
     public boolean remove(Object pattern)
     {
@@ -78,33 +78,33 @@ public class RegexSet extends AbstractSet<String> implements Predicate<String>
     public void clear()
     {
         _patterns.clear();
-        _pattern=null;
+        _pattern = null;
     }
 
     private void updatePattern()
     {
         StringBuilder builder = new StringBuilder();
         builder.append("^(");
-        for (String pattern: _patterns)
+        for (String pattern : _patterns)
         {
-            if (builder.length()>2)
+            if (builder.length() > 2)
                 builder.append('|');
             builder.append('(');
             builder.append(pattern);
             builder.append(')');
         }
         builder.append(")$");
-        _pattern = Pattern.compile(builder.toString());   
+        _pattern = Pattern.compile(builder.toString());
     }
-    
+
     @Override
     public boolean test(String s)
     {
-        return _pattern!=null && _pattern.matcher(s).matches();
+        return _pattern != null && _pattern.matcher(s).matches();
     }
 
     public boolean matches(String s)
     {
-        return _pattern!=null && _pattern.matcher(s).matches();
+        return _pattern != null && _pattern.matcher(s).matches();
     }
 }

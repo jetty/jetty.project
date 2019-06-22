@@ -67,21 +67,21 @@ public class DigestAuthModule extends BaseAuthModule
     }
 
     @Override
-    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, 
-                           CallbackHandler handler, Map options) 
-    throws AuthException
+    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy,
+                           CallbackHandler handler, Map options)
+        throws AuthException
     {
         super.initialize(requestPolicy, responsePolicy, handler, options);
-        realmName = (String) options.get(REALM_KEY);
+        realmName = (String)options.get(REALM_KEY);
     }
 
     @Override
-    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, 
-                                      Subject serviceSubject) 
-    throws AuthException
+    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject,
+                                      Subject serviceSubject)
+        throws AuthException
     {
-        HttpServletRequest request = (HttpServletRequest) messageInfo.getRequestMessage();
-        HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
+        HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();
+        HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
         String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
 
         try
@@ -91,7 +91,8 @@ public class DigestAuthModule extends BaseAuthModule
             long timestamp = System.currentTimeMillis();
             if (credentials != null)
             {
-                if (LOG.isDebugEnabled()) LOG.debug("Credentials: " + credentials);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Credentials: " + credentials);
                 QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
                 final Digest digest = new Digest(request.getMethod());
                 String last = null;
@@ -131,7 +132,8 @@ public class DigestAuthModule extends BaseAuthModule
                                     digest.qop = tok;
                                 else if ("uri".equalsIgnoreCase(name))
                                     digest.uri = tok;
-                                else if ("response".equalsIgnoreCase(name)) digest.response = tok;
+                                else if ("response".equalsIgnoreCase(name))
+                                    digest.response = tok;
                                 break;
                             }
                     }
@@ -141,22 +143,29 @@ public class DigestAuthModule extends BaseAuthModule
 
                 if (n > 0)
                 {
-                    if (login(clientSubject, digest.username, digest, Constraint.__DIGEST_AUTH, messageInfo)) { return AuthStatus.SUCCESS; }
+                    if (login(clientSubject, digest.username, digest, Constraint.__DIGEST_AUTH, messageInfo))
+                    {
+                        return AuthStatus.SUCCESS;
+                    }
                 }
-                else if (n == 0) stale = true;
-
+                else if (n == 0)
+                    stale = true;
             }
 
-            if (!isMandatory(messageInfo)) { return AuthStatus.SUCCESS; }
+            if (!isMandatory(messageInfo))
+            {
+                return AuthStatus.SUCCESS;
+            }
             String domain = request.getContextPath();
-            if (domain == null) domain = "/";
+            if (domain == null)
+                domain = "/";
             response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + realmName
-                                                             + "\", domain=\""
-                                                             + domain
-                                                             + "\", nonce=\""
-                                                             + newNonce(timestamp)
-                                                             + "\", algorithm=MD5, qop=\"auth\""
-                                                             + (useStale ? (" stale=" + stale) : ""));
+                + "\", domain=\""
+                + domain
+                + "\", nonce=\""
+                + newNonce(timestamp)
+                + "\", algorithm=MD5, qop=\"auth\""
+                + (useStale ? (" stale=" + stale) : ""));
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;
         }
@@ -168,7 +177,6 @@ public class DigestAuthModule extends BaseAuthModule
         {
             throw new AuthException(e.getMessage());
         }
-
     }
 
     public String newNonce(long ts)
@@ -179,9 +187,9 @@ public class DigestAuthModule extends BaseAuthModule
         byte[] nounce = new byte[24];
         for (int i = 0; i < 8; i++)
         {
-            nounce[i] = (byte) (ts & 0xff);
+            nounce[i] = (byte)(ts & 0xff);
             ts = ts >> 8;
-            nounce[8 + i] = (byte) (sk & 0xff);
+            nounce[8 + i] = (byte)(sk & 0xff);
             sk = sk >> 8;
         }
 
@@ -201,7 +209,8 @@ public class DigestAuthModule extends BaseAuthModule
         for (int i = 0; i < hash.length; i++)
         {
             nounce[8 + i] = hash[i];
-            if (i == 23) break;
+            if (i == 23)
+                break;
         }
 
         return Base64.getEncoder().encodeToString(nounce);
@@ -217,7 +226,8 @@ public class DigestAuthModule extends BaseAuthModule
         try
         {
             byte[] n = Base64.getDecoder().decode(nonce);
-            if (n.length != 24) return -1;
+            if (n.length != 24)
+                return -1;
 
             long ts = 0;
             long sk = nonceSecret;
@@ -225,13 +235,14 @@ public class DigestAuthModule extends BaseAuthModule
             System.arraycopy(n, 0, n2, 0, 8);
             for (int i = 0; i < 8; i++)
             {
-                n2[8 + i] = (byte) (sk & 0xff);
+                n2[8 + i] = (byte)(sk & 0xff);
                 sk = sk >> 8;
-                ts = (ts << 8) + (0xff & (long) n[7 - i]);
+                ts = (ts << 8) + (0xff & (long)n[7 - i]);
             }
 
             long age = timestamp - ts;
-            if (LOG.isDebugEnabled()) LOG.debug("age=" + age);
+            if (LOG.isDebugEnabled())
+                LOG.debug("age=" + age);
 
             byte[] hash = null;
             try
@@ -247,9 +258,13 @@ public class DigestAuthModule extends BaseAuthModule
             }
 
             for (int i = 0; i < 16; i++)
-                if (n[i + 8] != hash[i]) return -1;
+            {
+                if (n[i + 8] != hash[i])
+                    return -1;
+            }
 
-            if (maxNonceAge > 0 && (age < 0 || age > maxNonceAge)) return 0; // stale
+            if (maxNonceAge > 0 && (age < 0 || age > maxNonceAge))
+                return 0; // stale
 
             return 1;
         }
@@ -274,17 +289,15 @@ public class DigestAuthModule extends BaseAuthModule
         String uri = null;
         String response = null;
 
-
         Digest(String m)
         {
             method = m;
         }
 
-
         @Override
         public boolean check(Object credentials)
         {
-            String password = (credentials instanceof String) ? (String) credentials : credentials.toString();
+            String password = (credentials instanceof String) ? (String)credentials : credentials.toString();
 
             try
             {
@@ -295,22 +308,22 @@ public class DigestAuthModule extends BaseAuthModule
                     // Credentials are already a MD5 digest - assume it's in
                     // form user:realm:password (we have no way to know since
                     // it's a digest, alright?)
-                    ha1 = ((Credential.MD5) credentials).getDigest();
+                    ha1 = ((Credential.MD5)credentials).getDigest();
                 }
                 else
                 {
                     // calc A1 digest
                     md.update(username.getBytes(StandardCharsets.ISO_8859_1));
-                    md.update((byte) ':');
+                    md.update((byte)':');
                     md.update(realm.getBytes(StandardCharsets.ISO_8859_1));
-                    md.update((byte) ':');
+                    md.update((byte)':');
                     md.update(password.getBytes(StandardCharsets.ISO_8859_1));
                     ha1 = md.digest();
                 }
                 // calc A2 digest
                 md.reset();
                 md.update(method.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(uri.getBytes(StandardCharsets.ISO_8859_1));
                 byte[] ha2 = md.digest();
 
@@ -322,15 +335,15 @@ public class DigestAuthModule extends BaseAuthModule
                 // ) > <">
 
                 md.update(TypeUtil.toString(ha1, 16).getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(nonce.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(nc.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(cnonce.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(qop.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(TypeUtil.toString(ha2, 16).getBytes(StandardCharsets.ISO_8859_1));
                 byte[] digest = md.digest();
 

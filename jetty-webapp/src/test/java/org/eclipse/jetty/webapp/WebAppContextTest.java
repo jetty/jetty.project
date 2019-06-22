@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -59,6 +50,14 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class WebAppContextTest
 {
     public class MySessionListener implements HttpSessionListener
@@ -68,21 +67,20 @@ public class WebAppContextTest
         public void sessionCreated(HttpSessionEvent se)
         {
             // TODO Auto-generated method stub
-            
+
         }
 
         @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
             // TODO Auto-generated method stub
-            
+
         }
-        
     }
-    
+
     @Test
-    public void testSessionListeners ()
-    throws Exception
+    public void testSessionListeners()
+        throws Exception
     {
         Server server = new Server();
 
@@ -96,16 +94,14 @@ public class WebAppContextTest
         assertNotNull(listeners);
         assertEquals(1, listeners.size());
     }
-    
-    
-    
+
     @Test
-    public void testConfigurationClassesFromDefault ()
+    public void testConfigurationClassesFromDefault()
     {
         Server server = new Server();
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertEquals(0,wac.getConfigurations().length);
+        assertEquals(0, wac.getConfigurations().length);
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -115,7 +111,7 @@ public class WebAppContextTest
     }
 
     @Test
-    public void testConfigurationClassesExplicit ()
+    public void testConfigurationClassesExplicit()
     {
         String[] classNames = {"x.y.z"};
 
@@ -130,7 +126,6 @@ public class WebAppContextTest
         String[] names = wac.getConfigurationClasses();
         assertTrue(Arrays.equals(myClassNames, names));
 
-
         //test if no explicit classnames, they come from the server
         WebAppContext wac2 = new WebAppContext();
         wac2.setServer(server);
@@ -138,7 +133,7 @@ public class WebAppContextTest
         {
             wac2.loadConfigurations();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             Log.getRootLogger().ignore(e);
         }
@@ -146,7 +141,7 @@ public class WebAppContextTest
     }
 
     @Test
-    public void testConfigurationInstances ()
+    public void testConfigurationInstances()
     {
         Configuration[] configs = {new WebInfConfiguration()};
         WebAppContext wac = new WebAppContext();
@@ -158,7 +153,7 @@ public class WebAppContextTest
         Server server = new Server();
         server.setAttribute(Configuration.ATTR, classNames);
         wac.setServer(server);
-        assertTrue(Arrays.equals(configs,wac.getConfigurations()));
+        assertTrue(Arrays.equals(configs, wac.getConfigurations()));
     }
 
     @Test
@@ -186,12 +181,12 @@ public class WebAppContextTest
         HandlerList handlers = new HandlerList();
         WebAppContext contextA = new WebAppContext(".", "/A");
 
-        contextA.addServlet( ServletA.class, "/s");
+        contextA.addServlet(ServletA.class, "/s");
         handlers.addHandler(contextA);
         WebAppContext contextB = new WebAppContext(".", "/B");
 
         contextB.addServlet(ServletB.class, "/s");
-        contextB.setContextWhiteList(new String [] { "/doesnotexist", "/B/s" } );
+        contextB.setContextWhiteList(new String[]{"/doesnotexist", "/B/s"});
         handlers.addHandler(contextB);
 
         server.setHandler(handlers);
@@ -206,22 +201,21 @@ public class WebAppContextTest
         assertNotNull(contextB.getServletHandler().getServletContext().getContext("/B/s"));
     }
 
-
     @Test
     public void testAlias() throws Exception
     {
-        File dir = File.createTempFile("dir",null);
+        File dir = File.createTempFile("dir", null);
         dir.delete();
         dir.mkdir();
         dir.deleteOnExit();
 
-        File webinf = new File(dir,"WEB-INF");
+        File webinf = new File(dir, "WEB-INF");
         webinf.mkdir();
 
-        File classes = new File(dir,"classes");
+        File classes = new File(dir, "classes");
         classes.mkdir();
 
-        File someclass = new File(classes,"SomeClass.class");
+        File someclass = new File(classes, "SomeClass.class");
         someclass.createNewFile();
 
         WebAppContext context = new WebAppContext();
@@ -231,9 +225,7 @@ public class WebAppContextTest
 
         assertTrue(Resource.newResource(context.getServletContext().getResource("/WEB-INF/classes/SomeClass.class")).exists());
         assertTrue(Resource.newResource(context.getServletContext().getResource("/classes/SomeClass.class")).exists());
-
     }
-
 
     @Test
     public void testIsProtected() throws Exception
@@ -243,8 +235,7 @@ public class WebAppContextTest
         assertTrue(context.isProtectedTarget("/meta-inf/readme.txt"));
         assertFalse(context.isProtectedTarget("/something-else/web-inf"));
     }
-    
-    
+
     @Test
     public void testNullPath() throws Exception
     {
@@ -257,30 +248,30 @@ public class WebAppContextTest
         server.setHandler(handlers);
         handlers.addHandler(contexts);
         contexts.addHandler(context);
-        
+
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
-        
+
         server.start();
         try
         {
             String response = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
-            assertTrue(response.indexOf("200 OK")>=0);
+            assertTrue(response.indexOf("200 OK") >= 0);
         }
         finally
         {
             server.stop();
         }
     }
-    
+
     @Test
     public void testNullSessionAndSecurityHandler() throws Exception
     {
         Server server = new Server(0);
         HandlerList handlers = new HandlerList();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(), 
-                                                  ServletContextHandler.NO_SESSIONS|ServletContextHandler.NO_SECURITY);
+        WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
+            ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
         context.setBaseResource(Resource.newResource("./src/test/webapp"));
         server.setHandler(handlers);
@@ -301,7 +292,6 @@ public class WebAppContextTest
         }
     }
 
-    
     class ServletA extends GenericServlet
     {
         @Override
@@ -319,7 +309,7 @@ public class WebAppContextTest
             this.getServletContext().getContext("/B/s");
         }
     }
-    
+
     @Test
     public void testServletContextListener() throws Exception
     {
@@ -327,13 +317,13 @@ public class WebAppContextTest
         HotSwapHandler swap = new HotSwapHandler();
         server.setHandler(swap);
         server.start();
-        
+
         ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.setResourceBase(System.getProperty("java.io.tmpdir"));
 
-        final List<String> history=new ArrayList<>();
+        final List<String> history = new ArrayList<>();
 
         context.addEventListener(new ServletContextListener()
         {
@@ -393,13 +383,13 @@ public class WebAppContextTest
                 history.add("D3");
             }
         });
-        
+
         try
         {
             swap.setHandler(context);
             context.start();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             history.add(e.getMessage());
         }
@@ -409,19 +399,21 @@ public class WebAppContextTest
             {
                 swap.setHandler(null);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                while(e.getCause() instanceof Exception)
-                    e=(Exception)e.getCause();
+                while (e.getCause() instanceof Exception)
+                {
+                    e = (Exception)e.getCause();
+                }
                 history.add(e.getMessage());
             }
             finally
             {
             }
         }
-         
-        assertThat(history,contains("I0","I1","I2","Listener2 init broken","D1","D0","Listener1 destroy broken"));
-        
+
+        assertThat(history, contains("I0", "I1", "I2", "Listener2 init broken", "D1", "D0", "Listener1 destroy broken"));
+
         server.stop();
     }
 
@@ -437,5 +429,4 @@ public class WebAppContextTest
         assertEquals(Arrays.asList("acme.jar", "alpha.jar", "omega.jar"),
             context.getMetaData().getWebInfJars().stream().map(r -> r.getURI().toString().replaceFirst(".+/", "")).collect(Collectors.toList()));
     }
-
 }

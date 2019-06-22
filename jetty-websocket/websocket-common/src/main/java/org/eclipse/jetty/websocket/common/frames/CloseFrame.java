@@ -36,13 +36,12 @@ public class CloseFrame extends ControlFrame
 
     /**
      * Truncate arbitrary reason into something that will fit into the CloseFrame limits.
-     * 
-     * @param reason
-     *            the arbitrary reason to possibly truncate.
+     *
+     * @param reason the arbitrary reason to possibly truncate.
      * @return the possibly truncated reason string.
      */
     public static String truncate(String reason)
     {
-        return StringUtil.truncate(reason,(ControlFrame.MAX_CONTROL_PAYLOAD - 2));
+        return StringUtil.truncate(reason, (ControlFrame.MAX_CONTROL_PAYLOAD - 2));
     }
 }

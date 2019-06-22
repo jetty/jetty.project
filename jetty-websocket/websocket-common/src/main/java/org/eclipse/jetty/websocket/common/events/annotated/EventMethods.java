@@ -76,7 +76,7 @@ public class EventMethods
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((pojoClass == null)?0:pojoClass.getName().hashCode());
+        result = (prime * result) + ((pojoClass == null) ? 0 : pojoClass.getName().hashCode());
         return result;
     }
 
@@ -101,5 +101,4 @@ public class EventMethods
         builder.append("]");
         return builder.toString();
     }
-
 }

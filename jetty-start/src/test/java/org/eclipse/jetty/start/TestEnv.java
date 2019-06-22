@@ -35,7 +35,7 @@ public class TestEnv
     {
         FS.ensureDirExists(destDir);
         File srcDir = MavenTestingUtils.getTestResourceDir(testResourceDir);
-        IO.copyDir(srcDir,destDir.toFile());
+        IO.copyDir(srcDir, destDir.toFile());
     }
 
     public static void makeFile(Path dir, String relFilePath, String... contents) throws IOException

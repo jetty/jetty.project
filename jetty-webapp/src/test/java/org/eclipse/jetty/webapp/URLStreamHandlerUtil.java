@@ -35,19 +35,19 @@ public final class URLStreamHandlerUtil
             Field factoryField = getURLStreamHandlerFactoryField();
             factoryField.setAccessible(true);
             factoryField.set(null, null);
-            
-            if(factory != null)
+
+            if (factory != null)
             {
                 // Next, set the factory
                 URL.setURLStreamHandlerFactory(factory);
             }
         }
-        catch(Throwable ignore)
+        catch (Throwable ignore)
         {
             // ignore.printStackTrace(System.err);
         }
     }
-    
+
     public static URLStreamHandlerFactory getFactory()
     {
         try
@@ -55,24 +55,24 @@ public final class URLStreamHandlerUtil
             // First, reset the factory field
             Field factoryField = getURLStreamHandlerFactoryField();
             factoryField.setAccessible(true);
-            return (URLStreamHandlerFactory) factoryField.get(null);
+            return (URLStreamHandlerFactory)factoryField.get(null);
         }
-        catch(Throwable ignore)
+        catch (Throwable ignore)
         {
             return null;
         }
     }
-    
+
     private static Field getURLStreamHandlerFactoryField()
     {
         Optional<Field> optFactoryField = Arrays.stream(URL.class.getDeclaredFields())
-                .filter((f) -> Modifier.isStatic(f.getModifiers()) &&
-                               f.getType().equals(URLStreamHandlerFactory.class))
-                .findFirst();
-        
-        if(optFactoryField.isPresent())
+            .filter((f) -> Modifier.isStatic(f.getModifiers()) &&
+                f.getType().equals(URLStreamHandlerFactory.class))
+            .findFirst();
+
+        if (optFactoryField.isPresent())
             return optFactoryField.get();
-        
-        throw new RuntimeException( "Cannot find URLStreamHandlerFactory field in " + URL.class.getName() );
+
+        throw new RuntimeException("Cannot find URLStreamHandlerFactory field in " + URL.class.getName());
     }
 }

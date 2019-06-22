@@ -27,7 +27,7 @@ public interface WebSocketHandshake
 {
     /**
      * Formulate a WebSocket upgrade handshake response.
-     * 
+     *
      * @param request the request
      * @param response the response
      * @throws IOException if unable to handshake

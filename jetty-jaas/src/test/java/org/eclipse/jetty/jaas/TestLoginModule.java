@@ -16,10 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.jaas;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
@@ -30,6 +27,7 @@ import org.eclipse.jetty.jaas.spi.UserInfo;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.security.Password;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestLoginModule extends AbstractLoginModule
 {
@@ -47,7 +45,6 @@ public class TestLoginModule extends AbstractLoginModule
         return ArrayUtil.addToArray(super.configureCallbacks(), _callback, Callback.class);
     }
 
-
     @Override
     public boolean login() throws LoginException
     {
@@ -55,5 +52,4 @@ public class TestLoginModule extends AbstractLoginModule
         assertNotNull(_callback.getRequest());
         return result;
     }
-
 }

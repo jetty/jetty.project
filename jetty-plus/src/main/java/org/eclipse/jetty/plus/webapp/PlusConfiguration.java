@@ -32,11 +32,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-
 /**
  * Configuration
- *
- *
  */
 public class PlusConfiguration extends AbstractConfiguration
 {
@@ -45,8 +42,8 @@ public class PlusConfiguration extends AbstractConfiguration
     private Integer _key;
 
     @Override
-    public void preConfigure (WebAppContext context)
-    throws Exception
+    public void preConfigure(WebAppContext context)
+        throws Exception
     {
         context.getObjectFactory().addDecorator(new PlusDecorator(context));
     }
@@ -58,8 +55,8 @@ public class PlusConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void configure (WebAppContext context)
-    throws Exception
+    public void configure(WebAppContext context)
+        throws Exception
     {
         bindUserTransaction(context);
 
@@ -74,21 +71,21 @@ public class PlusConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void deconfigure (WebAppContext context)
-    throws Exception
+    public void deconfigure(WebAppContext context)
+        throws Exception
     {
         unlockCompEnv(context);
         _key = null;
-        context.setAttribute(InjectionCollection.INJECTION_COLLECTION,null);
-        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION,null);
+        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, null);
+        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
     }
 
-    public void bindUserTransaction (WebAppContext context)
-    throws Exception
+    public void bindUserTransaction(WebAppContext context)
+        throws Exception
     {
         try
         {
-           Transaction.bindToENC();
+            Transaction.bindToENC();
         }
         catch (NameNotFoundException e)
         {
@@ -96,16 +93,14 @@ public class PlusConfiguration extends AbstractConfiguration
         }
     }
 
-
-
-    protected void lockCompEnv (WebAppContext wac)
-    throws Exception
+    protected void lockCompEnv(WebAppContext wac)
+        throws Exception
     {
         ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
         try
         {
-            Random random = new Random ();
+            Random random = new Random();
             _key = random.nextInt();
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
@@ -117,10 +112,10 @@ public class PlusConfiguration extends AbstractConfiguration
         }
     }
 
-    protected void unlockCompEnv (WebAppContext wac)
-    throws Exception
+    protected void unlockCompEnv(WebAppContext wac)
+        throws Exception
     {
-        if (_key!=null)
+        if (_key != null)
         {
             ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(wac.getClassLoader());

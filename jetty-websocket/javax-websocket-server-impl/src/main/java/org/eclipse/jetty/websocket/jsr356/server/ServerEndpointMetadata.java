@@ -25,6 +25,6 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 public interface ServerEndpointMetadata extends EndpointMetadata
 {
     ServerEndpointConfig getConfig();
-    
+
     public String getPath();
 }

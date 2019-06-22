@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -28,7 +25,6 @@ import java.net.URI;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ContainerProvider;
 import javax.websocket.OnMessage;
@@ -42,9 +38,11 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TextStreamTest
 {
@@ -99,7 +97,7 @@ public class TextStreamTest
 
         try (Writer output = session.getBasicRemote().getSendWriter())
         {
-             output.write(data);
+            output.write(data);
         }
 
         assertTrue(client.await(5, TimeUnit.SECONDS));
@@ -118,7 +116,9 @@ public class TextStreamTest
         try (Writer output = session.getBasicRemote().getSendWriter())
         {
             for (int i = 0; i < size; ++i)
+            {
                 output.write(data[i]);
+            }
         }
 
         assertTrue(client.await(5, TimeUnit.SECONDS));
@@ -130,7 +130,9 @@ public class TextStreamTest
         char[] data = new char[size];
         Random random = new Random();
         for (int i = 0; i < data.length; ++i)
+        {
             data[i] = CHARS.charAt(random.nextInt(CHARS.length()));
+        }
         return data;
     }
 
@@ -175,7 +177,9 @@ public class TextStreamTest
             {
                 int read;
                 while ((read = input.read(buffer)) >= 0)
+                {
                     output.write(buffer, 0, read);
+                }
             }
         }
     }

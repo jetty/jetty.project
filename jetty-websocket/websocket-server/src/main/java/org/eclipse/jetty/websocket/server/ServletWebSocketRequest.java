@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.net.URISyntaxException;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;

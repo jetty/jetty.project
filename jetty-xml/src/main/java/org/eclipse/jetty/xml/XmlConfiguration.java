@@ -84,17 +84,18 @@ public class XmlConfiguration
 {
     private static final Logger LOG = Log.getLogger(XmlConfiguration.class);
     private static final Class<?>[] __primitives =
-    {
-        Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
-    };
+        {
+            Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
+        };
     private static final Class<?>[] __boxedPrimitives =
-    {
-        Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class
-    };
+        {
+            Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class,
+            Void.class
+        };
     private static final Class<?>[] __supportedCollections =
-    {
-        ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
-    };
+        {
+            ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
+        };
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
 
@@ -192,7 +193,7 @@ public class XmlConfiguration
         synchronized (__parser)
         {
             _location = resource;
-            try(InputStream inputStream = resource.getInputStream())
+            try (InputStream inputStream = resource.getInputStream())
             {
                 setConfig(__parser.parse(inputStream));
             }
@@ -227,8 +228,8 @@ public class XmlConfiguration
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
         configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://www.eclipse.org/jetty/configure_9_3.dtd\">"
-                            + configuration;
+            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://www.eclipse.org/jetty/configure_9_3.dtd\">"
+            + configuration;
         try (StringReader reader = new StringReader(configuration))
         {
             InputSource source = new InputSource(reader);
@@ -551,10 +552,10 @@ public class XmlConfiguration
          * <p>This method makes a best effort to find a matching set method.
          * The type of the value is used to find a suitable set method by:</p>
          * <ol>
-         *     <li>Trying for a trivial type match</li>
-         *     <li>Looking for a native type match</li>
-         *     <li>Trying all correctly named methods for an auto conversion</li>
-         *     <li>Attempting to construct a suitable value from original value</li>
+         * <li>Trying for a trivial type match</li>
+         * <li>Looking for a native type match</li>
+         * <li>Trying all correctly named methods for an auto conversion</li>
+         * <li>Attempting to construct a suitable value from original value</li>
          * </ol>
          *
          * @param obj the enclosing object

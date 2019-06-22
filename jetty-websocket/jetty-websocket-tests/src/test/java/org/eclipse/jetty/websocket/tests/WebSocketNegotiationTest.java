@@ -118,7 +118,6 @@ public class WebSocketNegotiationTest
         assertThat(response, containsString("400 Missing request header 'Sec-WebSocket-Key'"));
     }
 
-
     protected static HttpFields newUpgradeRequest(String extensions)
     {
         HttpFields fields = new HttpFields();
@@ -150,16 +149,16 @@ public class WebSocketNegotiationTest
             switch (state)
             {
                 case 0:
-                    state = (b == '\r')?1:0;
+                    state = (b == '\r') ? 1 : 0;
                     break;
                 case 1:
-                    state = (b == '\n')?2:0;
+                    state = (b == '\n') ? 2 : 0;
                     break;
                 case 2:
-                    state = (b == '\r')?3:0;
+                    state = (b == '\r') ? 3 : 0;
                     break;
                 case 3:
-                    state = (b == '\n')?4:0;
+                    state = (b == '\n') ? 4 : 0;
                     break;
                 default:
                     state = 0;

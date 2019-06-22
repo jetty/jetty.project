@@ -49,31 +49,31 @@ public class CallableMethod
     {
         if ((this.pojo == null) || (this.method == null))
         {
-            LOG.warn("Cannot execute call: pojo={}, method={}",pojo,method);
+            LOG.warn("Cannot execute call: pojo={}, method={}", pojo, method);
             return null; // no call event method determined
         }
 
         if (obj == null)
         {
             String err = String.format("Cannot call %s on null object", this.method);
-            LOG.warn(new RuntimeException(err));            
+            LOG.warn(new RuntimeException(err));
             return null;
         }
 
         if (args.length < paramTypes.length)
         {
             throw new IllegalArgumentException("Call arguments length [" + args.length + "] must always be greater than or equal to captured args length ["
-                    + paramTypes.length + "]");
+                + paramTypes.length + "]");
         }
 
         try
         {
-            return this.method.invoke(obj,args);
+            return this.method.invoke(obj, args);
         }
         catch (Throwable t)
         {
             String err = formatMethodCallError(args);
-            throw unwrapRuntimeException(err,t);
+            throw unwrapRuntimeException(err, t);
         }
     }
 
@@ -91,14 +91,14 @@ public class CallableMethod
             return (RuntimeException)ret;
         }
 
-        return new RuntimeException(err,ret);
+        return new RuntimeException(err, ret);
     }
 
     public String formatMethodCallError(Object... args)
     {
         StringBuilder err = new StringBuilder();
         err.append("Cannot call method ");
-        err.append(ReflectUtils.toString(pojo,method));
+        err.append(ReflectUtils.toString(pojo, method));
         err.append(" with args: [");
 
         boolean delim = false;
@@ -140,6 +140,6 @@ public class CallableMethod
     @Override
     public String toString()
     {
-        return String.format("%s[%s]",this.getClass().getSimpleName(),method.toGenericString());
+        return String.format("%s[%s]", this.getClass().getSimpleName(), method.toGenericString());
     }
 }

@@ -22,6 +22,7 @@ package org.eclipse.jetty.http;
  * <p>
  * Http Status Codes
  * </p>
+ *
  * @see <a href="http://www.iana.org/assignments/http-status-codes/">IANA HTTP Status Code Registry</a>
  */
 public class HttpStatus
@@ -95,10 +96,10 @@ public class HttpStatus
     public final static int LOOP_DETECTED_508 = 508;
     public final static int NOT_EXTENDED_510 = 510;
     public final static int NETWORK_AUTHENTICATION_REQUIRED_511 = 511;
-    
+
     public static final int MAX_CODE = 511;
 
-    private static final Code[] codeMap = new Code[MAX_CODE+1];
+    private static final Code[] codeMap = new Code[MAX_CODE + 1];
 
     static
     {
@@ -108,13 +109,11 @@ public class HttpStatus
         }
     }
 
-
     public enum Code
     {
         CONTINUE(CONTINUE_100, "Continue"),
         SWITCHING_PROTOCOLS(SWITCHING_PROTOCOLS_101, "Switching Protocols"),
         PROCESSING(PROCESSING_102, "Processing"),
-
 
         OK(OK_200, "OK"),
         CREATED(CREATED_201, "Created"),
@@ -177,16 +176,16 @@ public class HttpStatus
         LOOP_DETECTED(LOOP_DETECTED_508, "Loop Detected"),
         NOT_EXTENDED(NOT_EXTENDED_510, "Not Extended"),
         NETWORK_AUTHENTICATION_REQUIRED(NETWORK_AUTHENTICATION_REQUIRED_511, "Network Authentication Required"),
-        
+
         ;
-        
+
         private final int _code;
         private final String _message;
 
         private Code(int code, String message)
         {
             this._code = code;
-            _message=message;
+            _message = message;
         }
 
         public int getCode()
@@ -199,7 +198,6 @@ public class HttpStatus
             return _message;
         }
 
-
         public boolean equals(int code)
         {
             return (this._code == code);
@@ -208,7 +206,7 @@ public class HttpStatus
         @Override
         public String toString()
         {
-            return String.format("[%03d %s]",this._code,this.getMessage());
+            return String.format("[%03d %s]", this._code, this.getMessage());
         }
 
         /**
@@ -219,7 +217,7 @@ public class HttpStatus
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
-         *         <code>Informational</code> messages.
+         * <code>Informational</code> messages.
          */
         public boolean isInformational()
         {
@@ -234,7 +232,7 @@ public class HttpStatus
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
-         *         <code>Success</code> messages.
+         * <code>Success</code> messages.
          */
         public boolean isSuccess()
         {
@@ -249,7 +247,7 @@ public class HttpStatus
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
-         *         <code>Redirection</code> messages.
+         * <code>Redirection</code> messages.
          */
         public boolean isRedirection()
         {
@@ -264,7 +262,7 @@ public class HttpStatus
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
-         *         <code>Client Error</code> messages.
+         * <code>Client Error</code> messages.
          */
         public boolean isClientError()
         {
@@ -279,7 +277,7 @@ public class HttpStatus
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
-         *         <code>Server Error</code> messages.
+         * <code>Server Error</code> messages.
          */
         public boolean isServerError()
         {
@@ -287,12 +285,10 @@ public class HttpStatus
         }
     }
 
-
     /**
      * Get the HttpStatusCode for a specific code
      *
-     * @param code
-     *            the code to lookup.
+     * @param code the code to lookup.
      * @return the {@link HttpStatus} if found, or null if not found.
      */
     public static Code getCode(int code)
@@ -307,10 +303,9 @@ public class HttpStatus
     /**
      * Get the status message for a specific code.
      *
-     * @param code
-     *            the code to look up
+     * @param code the code to look up
      * @return the specific message, or the code number itself if code
-     *         does not match known list.
+     * does not match known list.
      */
     public static String getMessage(int code)
     {
@@ -331,10 +326,9 @@ public class HttpStatus
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
-     * @param code
-     *            the code to test.
+     * @param code the code to test.
      * @return true if within range of codes that belongs to
-     *         <code>Informational</code> messages.
+     * <code>Informational</code> messages.
      */
     public static boolean isInformational(int code)
     {
@@ -347,10 +341,9 @@ public class HttpStatus
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
-     * @param code
-     *            the code to test.
+     * @param code the code to test.
      * @return true if within range of codes that belongs to
-     *         <code>Success</code> messages.
+     * <code>Success</code> messages.
      */
     public static boolean isSuccess(int code)
     {
@@ -363,10 +356,9 @@ public class HttpStatus
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
-     * @param code
-     *            the code to test.
+     * @param code the code to test.
      * @return true if within range of codes that belongs to
-     *         <code>Redirection</code> messages.
+     * <code>Redirection</code> messages.
      */
     public static boolean isRedirection(int code)
     {
@@ -379,10 +371,9 @@ public class HttpStatus
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
-     * @param code
-     *            the code to test.
+     * @param code the code to test.
      * @return true if within range of codes that belongs to
-     *         <code>Client Error</code> messages.
+     * <code>Client Error</code> messages.
      */
     public static boolean isClientError(int code)
     {
@@ -395,10 +386,9 @@ public class HttpStatus
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
-     * @param code
-     *            the code to test.
+     * @param code the code to test.
      * @return true if within range of codes that belongs to
-     *         <code>Server Error</code> messages.
+     * <code>Server Error</code> messages.
      */
     public static boolean isServerError(int code)
     {

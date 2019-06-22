@@ -30,7 +30,7 @@ public class StatelessTextMessageStringSocket extends TrackingSocket
     @OnMessage
     public void onText(Session session, String message)
     {
-        addEvent("onText(%s,%s)",session,message);
+        addEvent("onText(%s,%s)", session, message);
         dataLatch.countDown();
     }
 }

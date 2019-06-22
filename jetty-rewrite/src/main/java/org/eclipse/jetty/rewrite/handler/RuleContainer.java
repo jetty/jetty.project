@@ -39,15 +39,15 @@ public class RuleContainer extends Rule implements Dumpable
     private static final Logger LOG = Log.getLogger(RuleContainer.class);
 
     protected Rule[] _rules;
-    
+
     protected String _originalPathAttribute;
     protected String _originalQueryStringAttribute;
-    protected boolean _rewriteRequestURI=true;
-    protected boolean _rewritePathInfo=true;
-     
+    protected boolean _rewriteRequestURI = true;
+    protected boolean _rewritePathInfo = true;
 
     /**
      * Returns the list of rules.
+     *
      * @return an array of {@link Rule}.
      */
     public Rule[] getRules()
@@ -55,27 +55,25 @@ public class RuleContainer extends Rule implements Dumpable
         return _rules;
     }
 
-
     /**
      * Assigns the rules to process.
-     * @param rules an array of {@link Rule}. 
+     *
+     * @param rules an array of {@link Rule}.
      */
     public void setRules(Rule[] rules)
     {
         _rules = rules;
     }
 
-
     /**
      * Add a Rule
+     *
      * @param rule The rule to add to the end of the rules array
      */
     public void addRule(Rule rule)
     {
-        _rules = ArrayUtil.addToArray(_rules,rule,Rule.class);
+        _rules = ArrayUtil.addToArray(_rules, rule, Rule.class);
     }
-   
-
 
     /**
      * @return the rewriteRequestURI If true, this handler will rewrite the value
@@ -86,16 +84,14 @@ public class RuleContainer extends Rule implements Dumpable
         return _rewriteRequestURI;
     }
 
-
     /**
      * @param rewriteRequestURI true if this handler will rewrite the value
      * returned by {@link HttpServletRequest#getRequestURI()}.
      */
     public void setRewriteRequestURI(boolean rewriteRequestURI)
     {
-        _rewriteRequestURI=rewriteRequestURI;
+        _rewriteRequestURI = rewriteRequestURI;
     }
-
 
     /**
      * @return true if this handler will rewrite the value
@@ -106,16 +102,14 @@ public class RuleContainer extends Rule implements Dumpable
         return _rewritePathInfo;
     }
 
-
     /**
      * @param rewritePathInfo true if this handler will rewrite the value
      * returned by {@link HttpServletRequest#getPathInfo()}.
      */
     public void setRewritePathInfo(boolean rewritePathInfo)
     {
-        _rewritePathInfo=rewritePathInfo;
+        _rewritePathInfo = rewritePathInfo;
     }
-
 
     /**
      * @return the originalPathAttribte. If non null, this string will be used
@@ -126,19 +120,19 @@ public class RuleContainer extends Rule implements Dumpable
         return _originalPathAttribute;
     }
 
-
     /**
      * @param originalPathAttribte If non null, this string will be used
      * as the attribute name to store the original request path.
      */
     public void setOriginalPathAttribute(String originalPathAttribte)
     {
-        _originalPathAttribute=originalPathAttribte;
+        _originalPathAttribute = originalPathAttribte;
         _originalQueryStringAttribute = originalPathAttribte + ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX;
     }
-    
+
     /**
      * Process the contained rules
+     *
      * @param target target field to pass on to the contained rules
      * @param request request object to pass on to the contained rules
      * @param response response object to pass on to the contained rules
@@ -150,7 +144,8 @@ public class RuleContainer extends Rule implements Dumpable
     }
 
     /**
-     * Process the contained rules (called by matchAndApply) 
+     * Process the contained rules (called by matchAndApply)
+     *
      * @param target target field to pass on to the contained rules
      * @param request request object to pass on to the contained rules
      * @param response response object to pass on to the contained rules
@@ -159,26 +154,26 @@ public class RuleContainer extends Rule implements Dumpable
      */
     protected String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        boolean original_set=_originalPathAttribute==null;
-        
-        if (_rules==null)
+        boolean original_set = _originalPathAttribute == null;
+
+        if (_rules == null)
             return target;
 
         for (Rule rule : _rules)
         {
-            String applied=rule.matchAndApply(target,request, response);
-            if (applied!=null)
+            String applied = rule.matchAndApply(target, request, response);
+            if (applied != null)
             {
-                LOG.debug("applied {}",rule);
-                LOG.debug("rewrote {} to {}",target,applied);
+                LOG.debug("applied {}", rule);
+                LOG.debug("rewrote {} to {}", target, applied);
                 if (!original_set)
                 {
-                    original_set=true;
+                    original_set = true;
                     request.setAttribute(_originalPathAttribute, target);
-                    
+
                     String query = request.getQueryString();
                     if (query != null)
-                        request.setAttribute(_originalQueryStringAttribute,query);
+                        request.setAttribute(_originalQueryStringAttribute, query);
                 }
 
                 // Ugly hack, we should just pass baseRequest into the API from RewriteHandler itself.
@@ -186,7 +181,7 @@ public class RuleContainer extends Rule implements Dumpable
 
                 if (_rewriteRequestURI)
                 {
-                    String encoded=URIUtil.encodePath(applied);
+                    String encoded = URIUtil.encodePath(applied);
                     if (rule instanceof Rule.ApplyURI)
                         ((Rule.ApplyURI)rule).applyURI(baseRequest, baseRequest.getRequestURI(), encoded);
                     else
@@ -196,17 +191,17 @@ public class RuleContainer extends Rule implements Dumpable
                 if (_rewritePathInfo)
                     baseRequest.setPathInfo(applied);
 
-                target=applied;
-                
+                target = applied;
+
                 if (rule.isHandling())
                 {
-                    LOG.debug("handling {}",rule);
+                    LOG.debug("handling {}", rule);
                     baseRequest.setHandled(true);
                 }
 
                 if (rule.isTerminating())
                 {
-                    LOG.debug("terminating {}",rule);
+                    LOG.debug("terminating {}", rule);
                     break;
                 }
             }

@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.xml;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URL;
 
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class XmlParserTest
 {
@@ -43,5 +43,4 @@ public class XmlParserTest
         assertTrue(testDocStr.startsWith("<Configure"));
         assertTrue(testDocStr.endsWith("</Configure>"));
     }
-
 }

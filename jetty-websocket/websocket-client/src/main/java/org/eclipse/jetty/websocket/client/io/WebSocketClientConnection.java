@@ -43,7 +43,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
 
     public WebSocketClientConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy websocketPolicy, ByteBufferPool bufferPool)
     {
-        super(endp,executor,scheduler,websocketPolicy,bufferPool);
+        super(endp, executor, scheduler, websocketPolicy, bufferPool);
         this.masker = new RandomMasker();
     }
 
@@ -58,7 +58,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     {
         return getEndPoint().getRemoteAddress();
     }
-    
+
     /**
      * Override to set the masker.
      */
@@ -69,7 +69,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
         {
             masker.setMask((WebSocketFrame)frame);
         }
-        super.outgoingFrame(frame,callback, batchMode);
+        super.outgoingFrame(frame, callback, batchMode);
     }
 
     @Override

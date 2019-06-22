@@ -27,12 +27,14 @@ public interface WebSocketSessionScope
 {
     /**
      * Active {@link WebSocketSession} associated with this scope.
+     *
      * @return the websocket session
      */
     WebSocketSession getWebSocketSession();
 
     /**
      * The parent {@link WebSocketContainerScope} for this session scope.
+     *
      * @return the websocket container scope
      */
     WebSocketContainerScope getContainerScope();

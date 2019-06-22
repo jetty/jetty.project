@@ -29,14 +29,14 @@ public class FixedMasker implements Masker
     public FixedMasker()
     {
         this(new byte[]
-        { (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff });
+            {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff});
     }
 
     public FixedMasker(byte[] mask)
     {
         // Copy to avoid that external code keeps a reference
         // to the array parameter to modify masking on-the-fly
-        this.mask=Arrays.copyOf(mask, 4);
+        this.mask = Arrays.copyOf(mask, 4);
     }
 
     @Override

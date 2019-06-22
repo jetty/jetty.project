@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.streaming;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
@@ -46,7 +45,7 @@ public class InputStreamSocket
     @OnError
     public void onError(Session session, Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

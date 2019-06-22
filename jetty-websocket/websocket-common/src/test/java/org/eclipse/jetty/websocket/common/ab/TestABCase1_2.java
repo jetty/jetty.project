@@ -52,7 +52,7 @@ public class TestABCase1_2
 
         ByteBuffer bb = ByteBuffer.allocate(length);
 
-        for ( int i = 0 ; i < length ; ++i)
+        for (int i = 0; i < length; ++i)
         {
             bb.put("*".getBytes());
         }
@@ -63,22 +63,21 @@ public class TestABCase1_2
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
-
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected,0);
+        BufferUtil.flipToFlush(expected, 0);
 
         ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
@@ -90,7 +89,7 @@ public class TestABCase1_2
 
         ByteBuffer bb = ByteBuffer.allocate(length);
 
-        for ( int i = 0 ; i < length ; ++i)
+        for (int i = 0; i < length; ++i)
         {
             bb.put("*".getBytes());
         }
@@ -104,7 +103,7 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -114,12 +113,12 @@ public class TestABCase1_2
         //expected.put((byte)(length & 0xFF));
         expected.putShort((short)length);
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected,0);
+        BufferUtil.flipToFlush(expected, 0);
 
         ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
@@ -131,10 +130,9 @@ public class TestABCase1_2
 
         ByteBuffer bb = ByteBuffer.allocate(length);
 
-        for ( int i = 0 ; i < length ; ++i)
+        for (int i = 0; i < length; ++i)
         {
             bb.put("*".getBytes());
-
         }
 
         bb.flip();
@@ -146,7 +144,7 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -156,12 +154,12 @@ public class TestABCase1_2
         //expected.put((byte)(length & 0xFF));
         expected.putShort((short)length);
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected,0);
+        BufferUtil.flipToFlush(expected, 0);
 
         ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
@@ -173,10 +171,9 @@ public class TestABCase1_2
 
         ByteBuffer bb = ByteBuffer.allocate(length);
 
-        for ( int i = 0 ; i < length ; ++i)
+        for (int i = 0; i < length; ++i)
         {
             bb.put("*".getBytes());
-
         }
 
         bb.flip();
@@ -187,25 +184,24 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
 
-        expected.put((byte)(length>>8));
+        expected.put((byte)(length >> 8));
         expected.put((byte)(length & 0xFF));
         //expected.putShort((short)length);
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected,0);
+        BufferUtil.flipToFlush(expected, 0);
 
         ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
-
     }
 
     @Test
@@ -215,10 +211,9 @@ public class TestABCase1_2
 
         ByteBuffer bb = ByteBuffer.allocate(length);
 
-        for ( int i = 0 ; i < length ; ++i)
+        for (int i = 0; i < length; ++i)
         {
             bb.put("*".getBytes());
-
         }
 
         bb.flip();
@@ -230,19 +225,19 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
-        expected.put(new byte[]{ (byte)0xff, (byte)0xff});
+        expected.put(new byte[]{(byte)0xff, (byte)0xff});
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected,0);
+        BufferUtil.flipToFlush(expected, 0);
 
         ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
@@ -254,10 +249,9 @@ public class TestABCase1_2
 
         ByteBuffer bb = ByteBuffer.allocate(length);
 
-        for ( int i = 0 ; i < length ; ++i)
+        for (int i = 0; i < length; ++i)
         {
             bb.put("*".getBytes());
-
         }
 
         bb.flip();
@@ -269,20 +263,19 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
         expected.put(new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
 
-
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected,0);
+        BufferUtil.flipToFlush(expected, 0);
 
         ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
@@ -290,16 +283,16 @@ public class TestABCase1_2
     @Test
     public void testGenerateEmptyBinaryCase1_2_1()
     {
-        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(new byte[] {});
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(new byte[]{});
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x82, (byte)0x00 });
+            {(byte)0x82, (byte)0x00});
 
-        BufferUtil.flipToFlush(expected,0);
+        BufferUtil.flipToFlush(expected, 0);
 
         ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
@@ -312,12 +305,12 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
@@ -329,10 +322,10 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.BINARY,1);
+        capture.assertHasFrame(OpCode.BINARY, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
@@ -344,13 +337,13 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
         expected.putShort((short)length);
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
@@ -362,10 +355,10 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.BINARY,1);
+        capture.assertHasFrame(OpCode.BINARY, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
@@ -377,13 +370,13 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
         expected.putShort((short)length);
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
@@ -395,10 +388,10 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.BINARY,1);
+        capture.assertHasFrame(OpCode.BINARY, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // .assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
@@ -410,13 +403,13 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
         expected.putShort((short)length);
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
@@ -428,10 +421,10 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.BINARY,1);
+        capture.assertHasFrame(OpCode.BINARY, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
@@ -443,13 +436,13 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
-        expected.put(new byte[]{ (byte)0xff, (byte)0xff});
+        expected.put(new byte[]{(byte)0xff, (byte)0xff});
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
@@ -462,13 +455,12 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.BINARY,1);
+        capture.assertHasFrame(OpCode.BINARY, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
-
 
     @Test
     public void testParse65536ByteBinaryCase1_2_7()
@@ -478,13 +470,13 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
         expected.put(new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
 
-        for ( int i = 0 ; i < length ; ++i )
+        for (int i = 0; i < length; ++i)
         {
             expected.put("*".getBytes());
         }
@@ -498,10 +490,10 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.BINARY,1);
+        capture.assertHasFrame(OpCode.BINARY, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
@@ -512,7 +504,7 @@ public class TestABCase1_2
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x82, (byte)0x00 });
+            {(byte)0x82, (byte)0x00});
 
         expected.flip();
 
@@ -521,10 +513,10 @@ public class TestABCase1_2
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.BINARY,1);
+        capture.assertHasFrame(OpCode.BINARY, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        assertThat("BinaryFrame.payloadLength", pActual.getPayloadLength(), is(0));
         // assertNull(pActual.getPayloadData(), "BinaryFrame.payload");
     }
 }

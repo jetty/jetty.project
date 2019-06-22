@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Consumer;
-
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;

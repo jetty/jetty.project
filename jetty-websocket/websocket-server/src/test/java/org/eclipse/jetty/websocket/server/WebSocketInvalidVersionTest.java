@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +32,11 @@ import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WebSocketInvalidVersionTest
 {
@@ -84,11 +84,11 @@ public class WebSocketInvalidVersionTest
 
         Future<BlockheadConnection> connFut = request.sendAsync();
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()-> {
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
         });
         assertThat(x.getCause(), instanceOf(UpgradeException.class));
         assertThat(x.getMessage(), containsString("400 Unsupported websocket version specification"));
-
     }
 }

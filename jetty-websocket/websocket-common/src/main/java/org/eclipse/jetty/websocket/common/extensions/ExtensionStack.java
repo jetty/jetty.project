@@ -89,10 +89,10 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
                 Extension ext = exts.next();
                 ext.setNextOutgoingFrames(nextOutgoing);
                 nextOutgoing = ext;
-                
+
                 if (ext instanceof LifeCycle)
                 {
-                    addBean(ext,true);
+                    addBean(ext, true);
                 }
             }
 
@@ -107,7 +107,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public String dumpSelf() {
+    public String dumpSelf()
+    {
         return String.format("%s@%x[size=%d,queueSize=%d]", getClass().getSimpleName(), hashCode(), extensions.size(), getQueueSize());
     }
 
@@ -155,7 +156,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 
     /**
      * Get the list of negotiated extensions, each entry being a full "name; params" extension configuration
-     * 
+     *
      * @return list of negotiated extensions
      */
     public List<ExtensionConfig> getNegotiatedExtensions()
@@ -205,14 +206,13 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
      * Perform the extension negotiation.
      * <p>
      * For the list of negotiated extensions, use {@link #getNegotiatedExtensions()}
-     * 
-     * @param configs
-     *            the configurations being requested
+     *
+     * @param configs the configurations being requested
      */
     public void negotiate(List<ExtensionConfig> configs)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Extension Configs={}",configs);
+            LOG.debug("Extension Configs={}", configs);
 
         this.extensions = new ArrayList<>();
 
@@ -230,17 +230,17 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             // Check RSV
             if (ext.isRsv1User() && (rsvClaims[0] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV1",config,rsvClaims[0]);
+                LOG.debug("Not adding extension {}. Extension {} already claimed RSV1", config, rsvClaims[0]);
                 continue;
             }
             if (ext.isRsv2User() && (rsvClaims[1] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV2",config,rsvClaims[1]);
+                LOG.debug("Not adding extension {}. Extension {} already claimed RSV2", config, rsvClaims[1]);
                 continue;
             }
             if (ext.isRsv3User() && (rsvClaims[2] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV3",config,rsvClaims[2]);
+                LOG.debug("Not adding extension {}. Extension {} already claimed RSV3", config, rsvClaims[2]);
                 continue;
             }
 
@@ -249,7 +249,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             addBean(ext);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Adding Extension: {}",config);
+                LOG.debug("Adding Extension: {}", config);
 
             // Record RSV Claims
             if (ext.isRsv1User())
@@ -270,9 +270,9 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        FrameEntry entry = new FrameEntry(frame,callback,batchMode);
+        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
         if (LOG.isDebugEnabled())
-            LOG.debug("Queuing {}",entry);
+            LOG.debug("Queuing {}", entry);
         offerEntry(entry);
         flusher.iterate();
     }
@@ -355,8 +355,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             s.append(']');
         }
-        s.append(",incoming=").append((this.nextIncoming == null)?"<null>":this.nextIncoming.getClass().getName());
-        s.append(",outgoing=").append((this.nextOutgoing == null)?"<null>":this.nextOutgoing.getClass().getName());
+        s.append(",incoming=").append((this.nextIncoming == null) ? "<null>" : this.nextIncoming.getClass().getName());
+        s.append(",outgoing=").append((this.nextOutgoing == null) ? "<null>" : this.nextOutgoing.getClass().getName());
         s.append("]");
         return s.toString();
     }
@@ -396,8 +396,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
                 return Action.IDLE;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("Processing {}",current);
-            nextOutgoing.outgoingFrame(current.frame,this,current.batchMode);
+                LOG.debug("Processing {}", current);
+            nextOutgoing.outgoingFrame(current.frame, this, current.batchMode);
             return Action.SCHEDULED;
         }
 
@@ -406,7 +406,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         {
             // This IteratingCallback never completes.
         }
-        
+
         @Override
         protected void onCompleteFailure(Throwable x)
         {
@@ -414,7 +414,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             // The callback are those provided by WriteCallback (implemented
             // below) and even in case of writeFailed() we call succeeded().
         }
-        
+
         @Override
         public void writeSuccess()
         {
@@ -432,7 +432,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             // this flusher into a final state that cannot be exited,
             // and the failure of a frame may not mean that the whole
             // connection is now invalid.
-            notifyCallbackFailure(current.callback,x);
+            notifyCallbackFailure(current.callback, x);
             succeeded();
         }
 
@@ -445,7 +445,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying success of callback " + callback,x);
+                LOG.debug("Exception while notifying success of callback " + callback, x);
             }
         }
 
@@ -458,7 +458,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying failure of callback " + callback,x);
+                LOG.debug("Exception while notifying failure of callback " + callback, x);
             }
         }
     }

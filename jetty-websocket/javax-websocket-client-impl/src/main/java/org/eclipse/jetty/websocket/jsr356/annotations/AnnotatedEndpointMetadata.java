@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.annotation.Annotation;
 import java.util.LinkedList;
-
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
@@ -34,11 +33,9 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 
 /**
  * Static reference to a specific annotated classes metadata.
- * 
- * @param <T>
- *            the annotation this metadata is based off of
- * @param <C>
- *            the endpoint configuration this is based off of
+ *
+ * @param <T> the annotation this metadata is based off of
+ * @param <C> the endpoint configuration this is based off of
  */
 public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends EndpointConfig> implements EndpointMetadata
 {
@@ -121,19 +118,19 @@ public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends 
     public abstract T getAnnotation();
 
     public abstract C getConfig();
-    
+
     @Override
     public long maxBinaryMessageSize()
     {
         return maxBinaryMessageSize;
     }
-    
+
     @Override
     public long maxTextMessageSize()
     {
         return maxTextMessageSize;
     }
-    
+
     @Override
     public DecoderMetadataSet getDecoders()
     {
@@ -151,12 +148,12 @@ public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends 
     {
         return endpointClass;
     }
-    
+
     public void setMaxBinaryMessageSize(long maxBinaryMessageSize)
     {
         this.maxBinaryMessageSize = maxBinaryMessageSize;
     }
-    
+
     public void setMaxTextMessageSize(long maxTextMessageSize)
     {
         this.maxTextMessageSize = maxTextMessageSize;

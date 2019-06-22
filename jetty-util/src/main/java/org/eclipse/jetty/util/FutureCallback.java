@@ -27,14 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class FutureCallback implements Future<Void>,Callback
+public class FutureCallback implements Future<Void>, Callback
 {
-    private final static Throwable COMPLETED=new ConstantThrowable();
-    public final static FutureCallback SUCCEEDED=new FutureCallback(true);
-    private final AtomicBoolean _done=new AtomicBoolean(false);
-    private final CountDownLatch _latch=new CountDownLatch(1);
+    private final static Throwable COMPLETED = new ConstantThrowable();
+    public final static FutureCallback SUCCEEDED = new FutureCallback(true);
+    private final AtomicBoolean _done = new AtomicBoolean(false);
+    private final CountDownLatch _latch = new CountDownLatch(1);
     private Throwable _cause;
-    
+
     public FutureCallback()
     {}
 
@@ -42,7 +42,7 @@ public class FutureCallback implements Future<Void>,Callback
     {
         if (completed)
         {
-            _cause=COMPLETED;
+            _cause = COMPLETED;
             _done.set(true);
             _latch.countDown();
         }
@@ -50,7 +50,7 @@ public class FutureCallback implements Future<Void>,Callback
 
     public FutureCallback(Throwable failed)
     {
-        _cause=failed;
+        _cause = failed;
         _done.set(true);
         _latch.countDown();
     }
@@ -58,9 +58,9 @@ public class FutureCallback implements Future<Void>,Callback
     @Override
     public void succeeded()
     {
-        if (_done.compareAndSet(false,true))
+        if (_done.compareAndSet(false, true))
         {
-            _cause=COMPLETED;
+            _cause = COMPLETED;
             _latch.countDown();
         }
     }
@@ -68,9 +68,9 @@ public class FutureCallback implements Future<Void>,Callback
     @Override
     public void failed(Throwable cause)
     {
-        if (_done.compareAndSet(false,true))
+        if (_done.compareAndSet(false, true))
         {
-            _cause=cause;
+            _cause = cause;
             _latch.countDown();
         }
     }
@@ -78,9 +78,9 @@ public class FutureCallback implements Future<Void>,Callback
     @Override
     public boolean cancel(boolean mayInterruptIfRunning)
     {
-        if (_done.compareAndSet(false,true))
+        if (_done.compareAndSet(false, true))
         {
-            _cause=new CancellationException();
+            _cause = new CancellationException();
             _latch.countDown();
             return true;
         }
@@ -108,38 +108,38 @@ public class FutureCallback implements Future<Void>,Callback
     @Override
     public boolean isDone()
     {
-        return _done.get() && _latch.getCount()==0;
+        return _done.get() && _latch.getCount() == 0;
     }
 
     @Override
     public Void get() throws InterruptedException, ExecutionException
     {
         _latch.await();
-        if (_cause==COMPLETED)
+        if (_cause == COMPLETED)
             return null;
         if (_cause instanceof CancellationException)
-            throw (CancellationException) new CancellationException().initCause(_cause);
+            throw (CancellationException)new CancellationException().initCause(_cause);
         throw new ExecutionException(_cause);
     }
 
     @Override
     public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        if (!_latch.await(timeout,unit))
+        if (!_latch.await(timeout, unit))
             throw new TimeoutException();
 
-        if (_cause==COMPLETED)
+        if (_cause == COMPLETED)
             return null;
         if (_cause instanceof TimeoutException)
             throw (TimeoutException)_cause;
         if (_cause instanceof CancellationException)
-            throw (CancellationException) new CancellationException().initCause(_cause);
+            throw (CancellationException)new CancellationException().initCause(_cause);
         throw new ExecutionException(_cause);
     }
 
     public static void rethrow(ExecutionException e) throws IOException
     {
-        Throwable cause=e.getCause();
+        Throwable cause = e.getCause();
         if (cause instanceof IOException)
             throw (IOException)cause;
         if (cause instanceof Error)
@@ -148,11 +148,10 @@ public class FutureCallback implements Future<Void>,Callback
             throw (RuntimeException)cause;
         throw new RuntimeException(cause);
     }
-    
+
     @Override
     public String toString()
     {
-        return String.format("FutureCallback@%x{%b,%b}",hashCode(),_done.get(),_cause==COMPLETED);
+        return String.format("FutureCallback@%x{%b,%b}", hashCode(), _done.get(), _cause == COMPLETED);
     }
-    
 }

@@ -186,7 +186,6 @@ public class DigestAuthenticator extends LoginAuthenticator
                 }
                 else if (n == 0)
                     stale = true;
-
             }
 
             if (!DeferredAuthentication.isDeferred(response))
@@ -195,12 +194,12 @@ public class DigestAuthenticator extends LoginAuthenticator
                 if (domain == null)
                     domain = "/";
                 response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName()
-                        + "\", domain=\""
-                        + domain
-                        + "\", nonce=\""
-                        + newNonce((Request)request)
-                        + "\", algorithm=MD5, qop=\"auth\","
-                        + " stale=" + stale);
+                    + "\", domain=\""
+                    + domain
+                    + "\", nonce=\""
+                    + newNonce((Request)request)
+                    + "\", algorithm=MD5, qop=\"auth\","
+                    + " stale=" + stale);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 
                 return Authentication.SEND_CONTINUE;
@@ -241,7 +240,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     /**
-     * @param digest  the digest data to check
+     * @param digest the digest data to check
      * @param request the request object
      * @return -1 for a bad nonce, 0 for a stale none, 1 for a good nonce
      */
@@ -319,12 +318,10 @@ public class DigestAuthenticator extends LoginAuthenticator
         String uri = "";
         String response = "";
 
-
         Digest(String m)
         {
             method = m;
         }
-
 
         @Override
         public boolean check(Object credentials)

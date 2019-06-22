@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.misbehaving;
 
 import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -44,7 +43,7 @@ public class EndpointRuntimeOnOpen extends Endpoint
     @Override
     public void onClose(Session session, CloseReason closeReason)
     {
-        super.onClose(session,closeReason);
+        super.onClose(session, closeReason);
         this.closeReason = closeReason;
         closeLatch.countDown();
     }
@@ -52,7 +51,7 @@ public class EndpointRuntimeOnOpen extends Endpoint
     @Override
     public void onError(Session session, Throwable thr)
     {
-        super.onError(session,thr);
+        super.onError(session, thr);
         errors.add(thr);
     }
 }

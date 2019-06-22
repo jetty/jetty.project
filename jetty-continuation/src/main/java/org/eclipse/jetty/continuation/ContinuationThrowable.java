@@ -16,16 +16,14 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.continuation;
 
-
-
-/** ContinuationThrowable
+/**
+ * ContinuationThrowable
  * <p>
  * A ContinuationThrowable is throw by {@link Continuation#undispatch()}
  * in order to exit the dispatch to a Filter or Servlet.  Use of
- * ContinuationThrowable is discouraged and it is preferable to 
+ * ContinuationThrowable is discouraged and it is preferable to
  * allow return to be used. ContinuationThrowables should only be
  * used when there is a Filter/Servlet which cannot be modified
  * to avoid committing a response when {@link Continuation#isSuspended()}
@@ -41,6 +39,7 @@ package org.eclipse.jetty.continuation;
  * to be uncaught (or rethrown) by a Filter/Servlet.  A ContinuationThrowable
  * does not represent and error condition.
  * </p>
+ *
  * @deprecated use Servlet 3.0 {@link javax.servlet.AsyncContext} instead
  */
 @Deprecated

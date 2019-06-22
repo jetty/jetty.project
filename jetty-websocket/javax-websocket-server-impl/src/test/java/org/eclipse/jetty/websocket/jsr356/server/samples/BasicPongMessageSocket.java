@@ -24,13 +24,13 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicPongMessageSocket extends TrackingSocket
 {
     @OnMessage
     public void onPong(PongMessage pong)
     {
-        addEvent("onPong(%s)",pong);
+        addEvent("onPong(%s)", pong);
         dataLatch.countDown();
     }
 }

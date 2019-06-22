@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -34,9 +31,11 @@ import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.jupiter.api.AfterAll;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Testing various aspects of the server side support for WebSocket {@link org.eclipse.jetty.websocket.api.Session}

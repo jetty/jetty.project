@@ -49,10 +49,10 @@ public interface ISession extends Session
     /**
      * <p>Enqueues the given frames to be written to the connection.</p>
      *
-     * @param stream   the stream the frames belong to
+     * @param stream the stream the frames belong to
      * @param callback the callback that gets notified when the frames have been sent
-     * @param frame    the first frame to enqueue
-     * @param frames   additional frames to enqueue
+     * @param frame the first frame to enqueue
+     * @param frames additional frames to enqueue
      */
     public void frames(IStream stream, Callback callback, Frame frame, Frame... frames);
 
@@ -61,9 +61,9 @@ public interface ISession extends Session
      * <p>Differently from {@link #frames(IStream, Callback, Frame, Frame...)}, this method
      * generates atomically the stream id for the pushed stream.</p>
      *
-     * @param stream   the stream associated to the pushed stream
-     * @param promise  the promise that gets notified of the pushed stream creation
-     * @param frame    the PUSH_PROMISE frame to enqueue
+     * @param stream the stream associated to the pushed stream
+     * @param promise the promise that gets notified of the pushed stream creation
+     * @param frame the PUSH_PROMISE frame to enqueue
      * @param listener the listener that gets notified of pushed stream events
      */
     public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener);
@@ -71,9 +71,9 @@ public interface ISession extends Session
     /**
      * <p>Enqueues the given DATA frame to be written to the connection.</p>
      *
-     * @param stream   the stream the data frame belongs to
+     * @param stream the stream the data frame belongs to
      * @param callback the callback that gets notified when the frame has been sent
-     * @param frame    the DATA frame to send
+     * @param frame the DATA frame to send
      */
     public void data(IStream stream, Callback callback, DataFrame frame);
 
@@ -97,7 +97,7 @@ public interface ISession extends Session
      * <p>Callback method invoked when a WINDOW_UPDATE frame has been received.</p>
      *
      * @param stream the stream the window update belongs to, or null if the window update belongs to the session
-     * @param frame  the WINDOW_UPDATE frame received
+     * @param frame the WINDOW_UPDATE frame received
      */
     public void onWindowUpdate(IStream stream, WindowUpdateFrame frame);
 
@@ -117,9 +117,9 @@ public interface ISession extends Session
     /**
      * <p>Callback invoked when the idle timeout expires.</p>
      *
+     * @return {@code true} if the session has expired
      * @see #onShutdown()
      * @see #close(int, String, Callback)
-     * @return {@code true} if the session has expired
      */
     public boolean onIdleTimeout();
 

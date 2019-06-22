@@ -37,33 +37,27 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-
 public class JarResource extends URLResource
 {
     private static final Logger LOG = Log.getLogger(JarResource.class);
     protected JarURLConnection _jarConnection;
-    
 
     protected JarResource(URL url)
     {
-        super(url,null);
+        super(url, null);
     }
-
 
     protected JarResource(URL url, boolean useCaches)
     {
         super(url, null, useCaches);
     }
-    
 
     @Override
     public synchronized void close()
     {
-        _jarConnection=null;
+        _jarConnection = null;
         super.close();
     }
-    
 
     @Override
     protected synchronized boolean checkConnection()
@@ -71,27 +65,25 @@ public class JarResource extends URLResource
         super.checkConnection();
         try
         {
-            if (_jarConnection!=_connection)
+            if (_jarConnection != _connection)
                 newConnection();
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             LOG.ignore(e);
-            _jarConnection=null;
+            _jarConnection = null;
         }
-        
-        return _jarConnection!=null;
+
+        return _jarConnection != null;
     }
 
-
     /**
-     * @throws IOException Sub-classes of <code>JarResource</code> may throw an IOException (or subclass) 
+     * @throws IOException Sub-classes of <code>JarResource</code> may throw an IOException (or subclass)
      */
     protected void newConnection() throws IOException
     {
-        _jarConnection=(JarURLConnection)_connection;
+        _jarConnection = (JarURLConnection)_connection;
     }
-    
 
     /**
      * Returns true if the represented resource exists.
@@ -103,8 +95,7 @@ public class JarResource extends URLResource
             return checkConnection();
         else
             return super.exists();
-    }    
-
+    }
 
     @Override
     public File getFile()
@@ -112,28 +103,23 @@ public class JarResource extends URLResource
     {
         return null;
     }
-    
 
     @Override
     public InputStream getInputStream()
         throws java.io.IOException
-    {     
+    {
         checkConnection();
         if (!_urlString.endsWith("!/"))
-            return new FilterInputStream(getInputStream(false)) 
+            return new FilterInputStream(getInputStream(false))
             {
                 @Override
-                public void close() throws IOException {this.in=IO.getClosedStream();}
+                public void close() throws IOException {this.in = IO.getClosedStream();}
             };
 
-        URL url = new URL(_urlString.substring(4,_urlString.length()-2));      
+        URL url = new URL(_urlString.substring(4, _urlString.length() - 2));
         InputStream is = url.openStream();
         return is;
     }
-    
- 
-    
-    
 
     @Override
     public void copyTo(File directory)
@@ -141,23 +127,23 @@ public class JarResource extends URLResource
     {
         if (!exists())
             return;
-        
-        if(LOG.isDebugEnabled())
-            LOG.debug("Extract "+this+" to "+directory);
-        
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Extract " + this + " to " + directory);
+
         String urlString = this.getURL().toExternalForm().trim();
         int endOfJarUrl = urlString.indexOf("!/");
-        int startOfJarUrl = (endOfJarUrl >= 0?4:0);
-        
+        int startOfJarUrl = (endOfJarUrl >= 0 ? 4 : 0);
+
         if (endOfJarUrl < 0)
-            throw new IOException("Not a valid jar url: "+urlString);
-        
+            throw new IOException("Not a valid jar url: " + urlString);
+
         URL jarFileURL = new URL(urlString.substring(startOfJarUrl, endOfJarUrl));
-        String subEntryName = (endOfJarUrl+2 < urlString.length() ? urlString.substring(endOfJarUrl + 2) : null);
-        boolean subEntryIsDir = (subEntryName != null && subEntryName.endsWith("/")?true:false);
-      
-        if (LOG.isDebugEnabled()) 
-            LOG.debug("Extracting entry = "+subEntryName+" from jar "+jarFileURL);
+        String subEntryName = (endOfJarUrl + 2 < urlString.length() ? urlString.substring(endOfJarUrl + 2) : null);
+        boolean subEntryIsDir = (subEntryName != null && subEntryName.endsWith("/") ? true : false);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Extracting entry = " + subEntryName + " from jar " + jarFileURL);
         URLConnection c = jarFileURL.openConnection();
         c.setUseCaches(false);
         try (InputStream is = c.getInputStream();
@@ -165,14 +151,14 @@ public class JarResource extends URLResource
         {
             JarEntry entry;
             boolean shouldExtract;
-            while((entry=jin.getNextJarEntry())!=null)
+            while ((entry = jin.getNextJarEntry()) != null)
             {
                 String entryName = entry.getName();
                 if ((subEntryName != null) && (entryName.startsWith(subEntryName)))
                 {
                     // is the subentry really a dir?
-                    if (!subEntryIsDir && subEntryName.length()+1==entryName.length() && entryName.endsWith("/"))
-                            subEntryIsDir=true;
+                    if (!subEntryIsDir && subEntryName.length() + 1 == entryName.length() && entryName.endsWith("/"))
+                        subEntryIsDir = true;
 
                     //if there is a particular subEntry that we are looking for, only
                     //extract it.
@@ -203,13 +189,13 @@ public class JarResource extends URLResource
                 else
                 {
                     //we are extracting everything
-                    shouldExtract =  true;
+                    shouldExtract = true;
                 }
 
                 if (!shouldExtract)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Skipping entry: "+entryName);
+                        LOG.debug("Skipping entry: " + entryName);
                     continue;
                 }
 
@@ -218,11 +204,11 @@ public class JarResource extends URLResource
                 if (dotCheck == null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Invalid entry: "+entryName);
+                        LOG.debug("Invalid entry: " + entryName);
                     continue;
                 }
 
-                File file=new File(directory,entryName);
+                File file = new File(directory, entryName);
 
                 if (entry.isDirectory())
                 {
@@ -240,11 +226,11 @@ public class JarResource extends URLResource
                     // Make file
                     try (OutputStream fout = new FileOutputStream(file))
                     {
-                        IO.copy(jin,fout);
+                        IO.copy(jin, fout);
                     }
 
                     // touch the file.
-                    if (entry.getTime()>=0)
+                    if (entry.getTime() >= 0)
                         file.setLastModified(entry.getTime());
                 }
             }
@@ -254,7 +240,7 @@ public class JarResource extends URLResource
                 Manifest manifest = jin.getManifest();
                 if (manifest != null)
                 {
-                    File metaInf = new File (directory, "META-INF");
+                    File metaInf = new File(directory, "META-INF");
                     metaInf.mkdir();
                     File f = new File(metaInf, "MANIFEST.MF");
                     try (OutputStream fout = new FileOutputStream(f))
@@ -264,8 +250,8 @@ public class JarResource extends URLResource
                 }
             }
         }
-    }   
-    
+    }
+
     public static Resource newJarResource(Resource resource) throws IOException
     {
         if (resource instanceof JarResource)

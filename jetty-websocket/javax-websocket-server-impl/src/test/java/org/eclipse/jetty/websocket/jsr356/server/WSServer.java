@@ -50,7 +50,6 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 
-
 /**
  * Utility to build out exploded directory WebApps, in the /target/tests/ directory, for testing out servers that use javax.websocket endpoints.
  * <p>
@@ -69,7 +68,7 @@ public class WSServer
 
     public WSServer(WorkDir testdir, String contextName)
     {
-        this(testdir.getPath(),contextName);
+        this(testdir.getPath(), contextName);
     }
 
     public WSServer(File testdir, String contextName)
@@ -89,11 +88,11 @@ public class WSServer
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         String endpointPath = TypeUtil.toClassReference(clazz);
         URL classUrl = cl.getResource(endpointPath);
-        assertThat("Class URL for: " + clazz,classUrl,notNullValue());
-        File destFile = Paths.get( classesDir.toString(), FS.separators( endpointPath)).toFile();
+        assertThat("Class URL for: " + clazz, classUrl, notNullValue());
+        File destFile = Paths.get(classesDir.toString(), FS.separators(endpointPath)).toFile();
         FS.ensureDirExists(destFile.getParentFile());
         File srcFile = new File(classUrl.toURI());
-        IO.copy(srcFile,destFile);
+        IO.copy(srcFile, destFile);
     }
 
     public void copyEndpoint(Class<?> endpointClass) throws Exception
@@ -109,7 +108,7 @@ public class WSServer
         FS.ensureDirExists(classesDir);
         Path webxml = webinf.resolve("web.xml");
         Path testWebXml = MavenTestingUtils.getTestResourcePath(testResourceName);
-        IO.copy(testWebXml.toFile(),webxml.toFile());
+        IO.copy(testWebXml.toFile(), webxml.toFile());
     }
 
     public WebAppContext createWebAppContext()
@@ -117,16 +116,17 @@ public class WSServer
         WebAppContext context = new WebAppContext();
         context.setContextPath(this.contextPath);
         context.setBaseResource(new PathResource(this.contextDir));
-        context.setAttribute("org.eclipse.jetty.websocket.jsr356",Boolean.TRUE);
+        context.setAttribute("org.eclipse.jetty.websocket.jsr356", Boolean.TRUE);
 
-        context.setConfigurations(new Configuration[] {
-                new AnnotationConfiguration(),
-                new WebXmlConfiguration(),
-                new WebInfConfiguration(),
-                new PlusConfiguration(), 
-                new MetaInfConfiguration(),
-                new FragmentConfiguration(), 
-                new EnvConfiguration()});
+        context.setConfigurations(new Configuration[]{
+            new AnnotationConfiguration(),
+            new WebXmlConfiguration(),
+            new WebInfConfiguration(),
+            new PlusConfiguration(),
+            new MetaInfConfiguration(),
+            new FragmentConfiguration(),
+            new EnvConfiguration()
+        });
 
         return context;
     }
@@ -156,7 +156,7 @@ public class WSServer
     {
         return serverUri;
     }
-    
+
     public Server getServer()
     {
         return server;
@@ -187,9 +187,9 @@ public class WSServer
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d%s/",host,port,contextPath));
+        serverUri = new URI(String.format("ws://%s:%d%s/", host, port, contextPath));
         if (LOG.isDebugEnabled())
-            LOG.debug("Server started on {}",serverUri);
+            LOG.debug("Server started on {}", serverUri);
     }
 
     public void stop()

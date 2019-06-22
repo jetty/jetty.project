@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.List;
 import java.util.Map;
-
 import javax.websocket.HandshakeResponse;
 
 import org.eclipse.jetty.websocket.api.UpgradeResponse;

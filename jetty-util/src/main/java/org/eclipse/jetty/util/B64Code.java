@@ -25,54 +25,65 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Base64;
 
-
-/** Fast B64 Encoder/Decoder as described in RFC 1421.
+/**
+ * Fast B64 Encoder/Decoder as described in RFC 1421.
  * <p>Does not insert or interpret whitespace as described in RFC
  * 1521. If you require this you must pre/post process your data.
  * <p> Note that in a web context the usual case is to not want
  * linebreaks or other white space in the encoded output.
+ *
  * @deprecated use {@link java.util.Base64} instead
  */
 @Deprecated
 public class B64Code
 {
-    private static final char __pad='=';
-    private static final char[] __rfc1421alphabet=
+    private static final char __pad = '=';
+    private static final char[] __rfc1421alphabet =
         {
-        'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
-        'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
-        'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
-        'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+            'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+            'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+            'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
         };
 
     private static final byte[] __rfc1421nibbles;
+
     static
     {
-        __rfc1421nibbles=new byte[256];
-        for (int i=0;i<256;i++)
-            __rfc1421nibbles[i]=-1;
-        for (byte b=0;b<64;b++)
-            __rfc1421nibbles[(byte)__rfc1421alphabet[b]]=b;
-        __rfc1421nibbles[(byte)__pad]=0;
-    }
-    
-    private static final char[] __rfc4648urlAlphabet=
+        __rfc1421nibbles = new byte[256];
+        for (int i = 0; i < 256; i++)
         {
-        'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
-        'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
-        'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
-        'w','x','y','z','0','1','2','3','4','5','6','7','8','9','-','_'
+            __rfc1421nibbles[i] = -1;
+        }
+        for (byte b = 0; b < 64; b++)
+        {
+            __rfc1421nibbles[(byte)__rfc1421alphabet[b]] = b;
+        }
+        __rfc1421nibbles[(byte)__pad] = 0;
+    }
+
+    private static final char[] __rfc4648urlAlphabet =
+        {
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+            'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+            'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+            'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_'
         };
 
     private static final byte[] __rfc4648urlNibbles;
+
     static
     {
-        __rfc4648urlNibbles=new byte[256];
-        for (int i=0;i<256;i++)
-            __rfc4648urlNibbles[i]=-1;
-        for (byte b=0;b<64;b++)
-            __rfc4648urlNibbles[(byte)__rfc4648urlAlphabet[b]]=b;
-        __rfc4648urlNibbles[(byte)__pad]=0;
+        __rfc4648urlNibbles = new byte[256];
+        for (int i = 0; i < 256; i++)
+        {
+            __rfc4648urlNibbles[i] = -1;
+        }
+        for (byte b = 0; b < 64; b++)
+        {
+            __rfc4648urlNibbles[(byte)__rfc4648urlAlphabet[b]] = b;
+        }
+        __rfc4648urlNibbles[(byte)__pad] = 0;
     }
 
     private B64Code()
@@ -82,6 +93,7 @@ public class B64Code
     /**
      * Base 64 encode as described in RFC 1421.
      * <p>Does not insert whitespace as described in RFC 1521.
+     *
      * @param s String to encode.
      * @return String containing the encoded form of the input.
      * @deprecated use {@link Base64.Encoder#encodeToString(byte[])}} instead.
@@ -95,25 +107,27 @@ public class B64Code
     /**
      * Base 64 encode as described in RFC 1421.
      * <p>Does not insert whitespace as described in RFC 1521.
+     *
      * @param s String to encode.
      * @param charEncoding String representing the name of
-     *        the character encoding of the provided input String.
+     * the character encoding of the provided input String.
      * @return String containing the encoded form of the input.
      */
-    public static String encode(String s,String charEncoding)
+    public static String encode(String s, String charEncoding)
     {
         // FIXME: no Jetty mainline code uses this anymore
         byte[] bytes;
-        if (charEncoding==null)
-            bytes=s.getBytes(StandardCharsets.ISO_8859_1);
+        if (charEncoding == null)
+            bytes = s.getBytes(StandardCharsets.ISO_8859_1);
         else
-            bytes=s.getBytes(Charset.forName(charEncoding));
+            bytes = s.getBytes(Charset.forName(charEncoding));
         return new String(encode(bytes));
     }
 
     /**
      * Base 64 encode as described in RFC 1421.
      * <p>Does not insert whitespace as described in RFC 1521.
+     *
      * @param s String to encode.
      * @param charEncoding The character encoding of the provided input String.
      * @return String containing the encoded form of the input.
@@ -121,7 +135,7 @@ public class B64Code
     public static String encode(String s, Charset charEncoding)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        byte[] bytes=s.getBytes(charEncoding==null ? StandardCharsets.ISO_8859_1 : charEncoding);
+        byte[] bytes = s.getBytes(charEncoding == null ? StandardCharsets.ISO_8859_1 : charEncoding);
         return new String(encode(bytes));
     }
 
@@ -129,52 +143,53 @@ public class B64Code
      * Fast Base 64 encode as described in RFC 1421.
      * <p>Does not insert whitespace as described in RFC 1521.
      * <p> Avoids creating extra copies of the input/output.
+     *
      * @param b byte array to encode.
      * @return char array containing the encoded form of the input.
      */
     public static char[] encode(byte[] b)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        if (b==null)
+        if (b == null)
             return null;
 
-        int bLen=b.length;
-        int cLen=((bLen+2)/3)*4;
-        char c[]=new char[cLen];
-        int ci=0;
-        int bi=0;
+        int bLen = b.length;
+        int cLen = ((bLen + 2) / 3) * 4;
+        char c[] = new char[cLen];
+        int ci = 0;
+        int bi = 0;
         byte b0, b1, b2;
-        int stop=(bLen/3)*3;
-        while (bi<stop)
+        int stop = (bLen / 3) * 3;
+        while (bi < stop)
         {
-            b0=b[bi++];
-            b1=b[bi++];
-            b2=b[bi++];
-            c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
-            c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
-            c[ci++]=__rfc1421alphabet[(b1<<2)&0x3f|(b2>>>6)&0x03];
-            c[ci++]=__rfc1421alphabet[b2&0x3f];
+            b0 = b[bi++];
+            b1 = b[bi++];
+            b2 = b[bi++];
+            c[ci++] = __rfc1421alphabet[(b0 >>> 2) & 0x3f];
+            c[ci++] = __rfc1421alphabet[(b0 << 4) & 0x3f | (b1 >>> 4) & 0x0f];
+            c[ci++] = __rfc1421alphabet[(b1 << 2) & 0x3f | (b2 >>> 6) & 0x03];
+            c[ci++] = __rfc1421alphabet[b2 & 0x3f];
         }
 
-        if (bLen!=bi)
+        if (bLen != bi)
         {
-            switch (bLen%3)
+            switch (bLen % 3)
             {
                 case 2:
-                    b0=b[bi++];
-                    b1=b[bi++];
-                    c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
-                    c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
-                    c[ci++]=__rfc1421alphabet[(b1<<2)&0x3f];
-                    c[ci++]=__pad;
+                    b0 = b[bi++];
+                    b1 = b[bi++];
+                    c[ci++] = __rfc1421alphabet[(b0 >>> 2) & 0x3f];
+                    c[ci++] = __rfc1421alphabet[(b0 << 4) & 0x3f | (b1 >>> 4) & 0x0f];
+                    c[ci++] = __rfc1421alphabet[(b1 << 2) & 0x3f];
+                    c[ci++] = __pad;
                     break;
 
                 case 1:
-                    b0=b[bi++];
-                    c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
-                    c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f];
-                    c[ci++]=__pad;
-                    c[ci++]=__pad;
+                    b0 = b[bi++];
+                    c[ci++] = __rfc1421alphabet[(b0 >>> 2) & 0x3f];
+                    c[ci++] = __rfc1421alphabet[(b0 << 4) & 0x3f];
+                    c[ci++] = __pad;
+                    c[ci++] = __pad;
                     break;
 
                 default:
@@ -189,6 +204,7 @@ public class B64Code
      * Fast Base 64 encode as described in RFC 1421 and RFC2045
      * <p>Does not insert whitespace as described in RFC 1521, unless rfc2045 is passed as true.
      * <p> Avoids creating extra copies of the input/output.
+     *
      * @param b byte array to encode.
      * @param rfc2045 If true, break lines at 76 characters with CRLF
      * @return char array containing the encoded form of the input.
@@ -196,56 +212,56 @@ public class B64Code
     public static char[] encode(byte[] b, boolean rfc2045)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        if (b==null)
+        if (b == null)
             return null;
         if (!rfc2045)
             return encode(b);
 
-        int bLen=b.length;
-        int cLen=((bLen+2)/3)*4;
-        cLen+=2+2*(cLen/76);
-        char c[]=new char[cLen];
-        int ci=0;
-        int bi=0;
+        int bLen = b.length;
+        int cLen = ((bLen + 2) / 3) * 4;
+        cLen += 2 + 2 * (cLen / 76);
+        char c[] = new char[cLen];
+        int ci = 0;
+        int bi = 0;
         byte b0, b1, b2;
-        int stop=(bLen/3)*3;
-        int l=0;
-        while (bi<stop)
+        int stop = (bLen / 3) * 3;
+        int l = 0;
+        while (bi < stop)
         {
-            b0=b[bi++];
-            b1=b[bi++];
-            b2=b[bi++];
-            c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
-            c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
-            c[ci++]=__rfc1421alphabet[(b1<<2)&0x3f|(b2>>>6)&0x03];
-            c[ci++]=__rfc1421alphabet[b2&0x3f];
-            l+=4;
-            if (l%76==0)
+            b0 = b[bi++];
+            b1 = b[bi++];
+            b2 = b[bi++];
+            c[ci++] = __rfc1421alphabet[(b0 >>> 2) & 0x3f];
+            c[ci++] = __rfc1421alphabet[(b0 << 4) & 0x3f | (b1 >>> 4) & 0x0f];
+            c[ci++] = __rfc1421alphabet[(b1 << 2) & 0x3f | (b2 >>> 6) & 0x03];
+            c[ci++] = __rfc1421alphabet[b2 & 0x3f];
+            l += 4;
+            if (l % 76 == 0)
             {
-                c[ci++]=13;
-                c[ci++]=10;
+                c[ci++] = 13;
+                c[ci++] = 10;
             }
         }
 
-        if (bLen!=bi)
+        if (bLen != bi)
         {
-            switch (bLen%3)
+            switch (bLen % 3)
             {
                 case 2:
-                    b0=b[bi++];
-                    b1=b[bi++];
-                    c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
-                    c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f|(b1>>>4)&0x0f];
-                    c[ci++]=__rfc1421alphabet[(b1<<2)&0x3f];
-                    c[ci++]=__pad;
+                    b0 = b[bi++];
+                    b1 = b[bi++];
+                    c[ci++] = __rfc1421alphabet[(b0 >>> 2) & 0x3f];
+                    c[ci++] = __rfc1421alphabet[(b0 << 4) & 0x3f | (b1 >>> 4) & 0x0f];
+                    c[ci++] = __rfc1421alphabet[(b1 << 2) & 0x3f];
+                    c[ci++] = __pad;
                     break;
 
                 case 1:
-                    b0=b[bi++];
-                    c[ci++]=__rfc1421alphabet[(b0>>>2)&0x3f];
-                    c[ci++]=__rfc1421alphabet[(b0<<4)&0x3f];
-                    c[ci++]=__pad;
-                    c[ci++]=__pad;
+                    b0 = b[bi++];
+                    c[ci++] = __rfc1421alphabet[(b0 >>> 2) & 0x3f];
+                    c[ci++] = __rfc1421alphabet[(b0 << 4) & 0x3f];
+                    c[ci++] = __pad;
+                    c[ci++] = __pad;
                     break;
 
                 default:
@@ -253,50 +269,52 @@ public class B64Code
             }
         }
 
-        c[ci++]=13;
-        c[ci++]=10;
+        c[ci++] = 13;
+        c[ci++] = 10;
         return c;
     }
 
     /**
      * Base 64 decode as described in RFC 2045.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
+     *
      * @param encoded String to decode.
      * @param charEncoding String representing the character encoding
-     *        used to map the decoded bytes into a String. If null
-     *        the platforms default charset is used.
+     * used to map the decoded bytes into a String. If null
+     * the platforms default charset is used.
      * @return String decoded byte array.
      * @throws UnsupportedCharsetException if the encoding is not supported
      * @throws IllegalArgumentException if the input is not a valid
-     *         B64 encoding.
+     * B64 encoding.
      */
     @SuppressWarnings("DefaultCharset")
-    public static String decode(String encoded,String charEncoding)
+    public static String decode(String encoded, String charEncoding)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        byte[] decoded=decode(encoded);
-        if (charEncoding==null)
+        byte[] decoded = decode(encoded);
+        if (charEncoding == null)
             return new String(decoded);
-        return new String(decoded,Charset.forName(charEncoding));
+        return new String(decoded, Charset.forName(charEncoding));
     }
 
     /**
      * Base 64 decode as described in RFC 2045.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
+     *
      * @param encoded String to decode.
      * @param charEncoding Character encoding
-     *        used to map the decoded bytes into a String. If null
-     *        the platforms default charset is used.
+     * used to map the decoded bytes into a String. If null
+     * the platforms default charset is used.
      * @return String decoded byte array.
      * @throws IllegalArgumentException if the input is not a valid
-     *         B64 encoding.
+     * B64 encoding.
      */
     @SuppressWarnings("DefaultCharset")
     public static String decode(String encoded, Charset charEncoding)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        byte[] decoded=decode(encoded);
-        if (charEncoding==null)
+        byte[] decoded = decode(encoded);
+        if (charEncoding == null)
             return new String(decoded);
         return new String(decoded, charEncoding);
     }
@@ -308,71 +326,74 @@ public class B64Code
      * cope with extra whitespace as described in RFC 1521/2045.
      * <p> Avoids creating extra copies of the input/output.
      * <p> Note this code has been flattened for performance.
+     *
      * @param b char array to decode.
      * @return byte array containing the decoded form of the input.
      * @throws IllegalArgumentException if the input is not a valid
-     *         B64 encoding.
+     * B64 encoding.
      */
     public static byte[] decode(char[] b)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        if (b==null)
+        if (b == null)
             return null;
 
-        int bLen=b.length;
-        if (bLen%4!=0)
+        int bLen = b.length;
+        if (bLen % 4 != 0)
             throw new IllegalArgumentException("Input block size is not 4");
 
-        int li=bLen-1;
-        while (li>=0 && b[li]==(byte)__pad)
+        int li = bLen - 1;
+        while (li >= 0 && b[li] == (byte)__pad)
+        {
             li--;
+        }
 
-        if (li<0)
+        if (li < 0)
             return new byte[0];
 
         // Create result array of exact required size.
-        int rLen=((li+1)*3)/4;
-        byte r[]=new byte[rLen];
-        int ri=0;
-        int bi=0;
-        int stop=(rLen/3)*3;
-        byte b0,b1,b2,b3;
+        int rLen = ((li + 1) * 3) / 4;
+        byte r[] = new byte[rLen];
+        int ri = 0;
+        int bi = 0;
+        int stop = (rLen / 3) * 3;
+        byte b0, b1, b2, b3;
         try
         {
-            while (ri<stop)
+            while (ri < stop)
             {
-                b0=__rfc1421nibbles[b[bi++]];
-                b1=__rfc1421nibbles[b[bi++]];
-                b2=__rfc1421nibbles[b[bi++]];
-                b3=__rfc1421nibbles[b[bi++]];
-                if (b0<0 || b1<0 || b2<0 || b3<0)
+                b0 = __rfc1421nibbles[b[bi++]];
+                b1 = __rfc1421nibbles[b[bi++]];
+                b2 = __rfc1421nibbles[b[bi++]];
+                b3 = __rfc1421nibbles[b[bi++]];
+                if (b0 < 0 || b1 < 0 || b2 < 0 || b3 < 0)
                     throw new IllegalArgumentException("Not B64 encoded");
 
-                r[ri++]=(byte)(b0<<2|b1>>>4);
-                r[ri++]=(byte)(b1<<4|b2>>>2);
-                r[ri++]=(byte)(b2<<6|b3);
+                r[ri++] = (byte)(b0 << 2 | b1 >>> 4);
+                r[ri++] = (byte)(b1 << 4 | b2 >>> 2);
+                r[ri++] = (byte)(b2 << 6 | b3);
             }
 
-            if (rLen!=ri)
+            if (rLen != ri)
             {
-                switch (rLen%3)
+                switch (rLen % 3)
                 {
                     case 2:
-                        b0=__rfc1421nibbles[b[bi++]];
-                        b1=__rfc1421nibbles[b[bi++]];
-                        b2=__rfc1421nibbles[b[bi++]];
-                        if (b0<0 || b1<0 || b2<0)
+                        b0 = __rfc1421nibbles[b[bi++]];
+                        b1 = __rfc1421nibbles[b[bi++]];
+                        b2 = __rfc1421nibbles[b[bi++]];
+                        if (b0 < 0 || b1 < 0 || b2 < 0)
                             throw new IllegalArgumentException("Not B64 encoded");
-                        r[ri++]=(byte)(b0<<2|b1>>>4);
-                        r[ri++]=(byte)(b1<<4|b2>>>2);
+                        r[ri++] = (byte)(b0 << 2 | b1 >>> 4);
+                        r[ri++] = (byte)(b1 << 4 | b2 >>> 2);
                         break;
 
                     case 1:
-                        b0=__rfc1421nibbles[b[bi++]];
-                        b1=__rfc1421nibbles[b[bi++]];
-                        if (b0<0 || b1<0)
+                        b0 = __rfc1421nibbles[b[bi++]];
+                        b1 = __rfc1421nibbles[b[bi++]];
+                        if (b0 < 0 || b1 < 0)
                             throw new IllegalArgumentException("Not B64 encoded");
-                        r[ri++]=(byte)(b0<<2|b1>>>4);
+                        r[ri++] = (byte)(b0 << 2 | b1 >>> 4);
                         break;
 
                     default:
@@ -382,8 +403,8 @@ public class B64Code
         }
         catch (IndexOutOfBoundsException e)
         {
-            throw new IllegalArgumentException("char "+bi
-                    +" was not B64 encoded");
+            throw new IllegalArgumentException("char " + bi
+                + " was not B64 encoded");
         }
 
         return r;
@@ -392,180 +413,178 @@ public class B64Code
     /**
      * Base 64 decode as described in RFC 2045.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
+     *
      * @param encoded String to decode.
      * @return byte array containing the decoded form of the input.
      * @throws IllegalArgumentException if the input is not a valid
-     *         B64 encoding.
+     * B64 encoding.
      */
     public static byte[] decode(String encoded)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        if (encoded==null)
+        if (encoded == null)
             return null;
 
-        ByteArrayOutputStream bout = new ByteArrayOutputStream(4*encoded.length()/3);        
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(4 * encoded.length() / 3);
         decode(encoded, bout);
         return bout.toByteArray();
     }
-    
 
     /**
      * Base 64 decode as described in RFC 2045.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
+     *
      * @param encoded String to decode.
      * @param bout stream for decoded bytes
      * @throws IllegalArgumentException if the input is not a valid
-     *         B64 encoding.
+     * B64 encoding.
      */
     static public void decode(String encoded, ByteArrayOutputStream bout)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        if (encoded==null)
+        if (encoded == null)
             return;
-        
+
         if (bout == null)
             throw new IllegalArgumentException("No outputstream for decoded bytes");
-        
-        int ci=0;
-        byte nibbles[] = new byte[4];
-        int s=0;
-  
-        while (ci<encoded.length())
-        {
-            char c=encoded.charAt(ci++);
 
-            if (c==__pad)
+        int ci = 0;
+        byte nibbles[] = new byte[4];
+        int s = 0;
+
+        while (ci < encoded.length())
+        {
+            char c = encoded.charAt(ci++);
+
+            if (c == __pad)
                 break;
 
             if (Character.isWhitespace(c))
                 continue;
 
-            byte nibble=__rfc1421nibbles[c];
-            if (nibble<0)
+            byte nibble = __rfc1421nibbles[c];
+            if (nibble < 0)
                 throw new IllegalArgumentException("Not B64 encoded");
 
-            nibbles[s++]=__rfc1421nibbles[c];
+            nibbles[s++] = __rfc1421nibbles[c];
 
-            switch(s)
+            switch (s)
             {
                 case 1:
                     break;
                 case 2:
-                    bout.write(nibbles[0]<<2|nibbles[1]>>>4);
+                    bout.write(nibbles[0] << 2 | nibbles[1] >>> 4);
                     break;
                 case 3:
-                    bout.write(nibbles[1]<<4|nibbles[2]>>>2);
+                    bout.write(nibbles[1] << 4 | nibbles[2] >>> 2);
                     break;
                 case 4:
-                    bout.write(nibbles[2]<<6|nibbles[3]);
-                    s=0;
+                    bout.write(nibbles[2] << 6 | nibbles[3]);
+                    s = 0;
                     break;
             }
-
         }
 
         return;
     }
-    
 
     public static byte[] decodeRFC4648URL(String encoded)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        if (encoded==null)
+        if (encoded == null)
             return null;
 
-        ByteArrayOutputStream bout = new ByteArrayOutputStream(4*encoded.length()/3);        
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(4 * encoded.length() / 3);
         decodeRFC4648URL(encoded, bout);
         return bout.toByteArray();
     }
-    
 
     /**
      * Base 64 decode as described in RFC 4648 URL.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
+     *
      * @param encoded String to decode.
      * @param bout stream for decoded bytes
      * @throws IllegalArgumentException if the input is not a valid
-     *         B64 encoding.
+     * B64 encoding.
      */
-    static public void decodeRFC4648URL (String encoded, ByteArrayOutputStream bout)
+    static public void decodeRFC4648URL(String encoded, ByteArrayOutputStream bout)
     {
         // FIXME: no Jetty mainline code uses this anymore
-        if (encoded==null)
+        if (encoded == null)
             return;
-        
+
         if (bout == null)
             throw new IllegalArgumentException("No outputstream for decoded bytes");
-        
-        int ci=0;
-        byte nibbles[] = new byte[4];
-        int s=0;
-  
-        while (ci<encoded.length())
-        {
-            char c=encoded.charAt(ci++);
 
-            if (c==__pad)
+        int ci = 0;
+        byte nibbles[] = new byte[4];
+        int s = 0;
+
+        while (ci < encoded.length())
+        {
+            char c = encoded.charAt(ci++);
+
+            if (c == __pad)
                 break;
 
             if (Character.isWhitespace(c))
                 continue;
 
-            byte nibble=__rfc4648urlNibbles[c];
-            if (nibble<0)
+            byte nibble = __rfc4648urlNibbles[c];
+            if (nibble < 0)
                 throw new IllegalArgumentException("Not B64 encoded");
 
-            nibbles[s++]=__rfc4648urlNibbles[c];
+            nibbles[s++] = __rfc4648urlNibbles[c];
 
-            switch(s)
+            switch (s)
             {
                 case 1:
                     break;
                 case 2:
-                    bout.write(nibbles[0]<<2|nibbles[1]>>>4);
+                    bout.write(nibbles[0] << 2 | nibbles[1] >>> 4);
                     break;
                 case 3:
-                    bout.write(nibbles[1]<<4|nibbles[2]>>>2);
+                    bout.write(nibbles[1] << 4 | nibbles[2] >>> 2);
                     break;
                 case 4:
-                    bout.write(nibbles[2]<<6|nibbles[3]);
-                    s=0;
+                    bout.write(nibbles[2] << 6 | nibbles[3]);
+                    s = 0;
                     break;
             }
-
         }
 
         return;
     }
 
-    public static void encode(int value,Appendable buf) throws IOException
+    public static void encode(int value, Appendable buf) throws IOException
     {
         // FIXME: no Jetty mainline code uses this anymore
-        buf.append(__rfc1421alphabet[0x3f&((0xFC000000&value)>>26)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x03F00000&value)>>20)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x000FC000&value)>>14)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x00003F00&value)>>8)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x000000FC&value)>>2)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x00000003&value)<<4)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0xFC000000 & value) >> 26)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x03F00000 & value) >> 20)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x000FC000 & value) >> 14)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x00003F00 & value) >> 8)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x000000FC & value) >> 2)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x00000003 & value) << 4)]);
     }
 
-    public static void encode(long lvalue,Appendable buf) throws IOException
+    public static void encode(long lvalue, Appendable buf) throws IOException
     {
         // FIXME: no Jetty mainline code uses this anymore
-        int value=(int)(0xFFFFFFFC&(lvalue>>32));
-        buf.append(__rfc1421alphabet[0x3f&((0xFC000000&value)>>26)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x03F00000&value)>>20)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x000FC000&value)>>14)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x00003F00&value)>>8)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x000000FC&value)>>2)]);
+        int value = (int)(0xFFFFFFFC & (lvalue >> 32));
+        buf.append(__rfc1421alphabet[0x3f & ((0xFC000000 & value) >> 26)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x03F00000 & value) >> 20)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x000FC000 & value) >> 14)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x00003F00 & value) >> 8)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x000000FC & value) >> 2)]);
 
-        buf.append(__rfc1421alphabet[0x3f&((0x00000003&value)<<4) + (0xf&(int)(lvalue>>28))]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x00000003 & value) << 4) + (0xf & (int)(lvalue >> 28))]);
 
-        value=0x0FFFFFFF&(int)lvalue;
-        buf.append(__rfc1421alphabet[0x3f&((0x0FC00000&value)>>22)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x003F0000&value)>>16)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x0000FC00&value)>>10)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x000003F0&value)>>4)]);
-        buf.append(__rfc1421alphabet[0x3f&((0x0000000F&value)<<2)]);
+        value = 0x0FFFFFFF & (int)lvalue;
+        buf.append(__rfc1421alphabet[0x3f & ((0x0FC00000 & value) >> 22)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x003F0000 & value) >> 16)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x0000FC00 & value) >> 10)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x000003F0 & value) >> 4)]);
+        buf.append(__rfc1421alphabet[0x3f & ((0x0000000F & value) << 2)]);
     }
 }

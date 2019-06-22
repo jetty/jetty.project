@@ -19,13 +19,13 @@
 package org.eclipse.jetty.test;
 
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 /**
  * A SCI that tosses an Error to intentionally to cause issues with the DeploymentManager
+ *
  * @see <a href="https://github.com/eclipse/jetty.project/issues/1602">Issue #1602</a>
  */
 public class DeploymentErrorInitializer implements ServletContainerInitializer

@@ -20,7 +20,6 @@ package org.eclipse.jetty.tests.webapp;
 
 import java.io.IOException;
 import java.util.Enumeration;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -28,7 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * Servlet declaring the various do* methods.
- * 
+ *
  * The Jetty internals for OPTIONS should detect the declared do* methods and
  * return an appropriate listing of available OPTIONS on an OPTIONS request.
  */
@@ -46,7 +45,7 @@ public class HttpMethodsServlet extends HttpServlet
 
     /**
      * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse
-     *      response)
+     * response)
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -56,7 +55,7 @@ public class HttpMethodsServlet extends HttpServlet
 
     /**
      * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse
-     *      response)
+     * response)
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -97,7 +96,7 @@ public class HttpMethodsServlet extends HttpServlet
     @Override
     protected void doTrace(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        response.addHeader("Content-Type","message/http");
+        response.addHeader("Content-Type", "message/http");
         StringBuffer msg = new StringBuffer();
         msg.append(request.getMethod()).append(' ');
         msg.append(request.getRequestURI()).append(' ');

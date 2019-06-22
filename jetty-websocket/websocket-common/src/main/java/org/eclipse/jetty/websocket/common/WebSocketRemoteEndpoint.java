@@ -101,7 +101,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     private void blockingWrite(WebSocketFrame frame) throws IOException
     {
-        try(WriteBlocker b=blocker.acquireWriteBlocker())
+        try (WriteBlocker b = blocker.acquireWriteBlocker())
         {
             uncheckedSendFrame(frame, b);
             b.block();
@@ -211,7 +211,6 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                     if (msgState.compareAndSet(PARTIAL_TEXT_MASK, 0))
                         return;
                     throw new IllegalStateException(String.format("Not Partial Text in state %x", state));
-
             }
         }
     }
@@ -224,7 +223,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public InetSocketAddress getInetSocketAddress()
     {
-        if(connection == null)
+        if (connection == null)
             return null;
         return connection.getRemoteAddress();
     }

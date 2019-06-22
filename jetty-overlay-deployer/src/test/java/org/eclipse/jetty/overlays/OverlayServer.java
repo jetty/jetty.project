@@ -21,7 +21,6 @@ package org.eclipse.jetty.overlays;
 import java.io.File;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.overlays.OverlayedAppProvider;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -37,12 +36,12 @@ public class OverlayServer
     public static void main(String[] args) throws Exception
     {
         // NamingUtil.__log.setDebugEnabled(true);
-        String jetty_home = System.getProperty("jetty.home","target/test-classes/home");
-        System.setProperty("jetty.home",jetty_home);
-        
+        String jetty_home = System.getProperty("jetty.home", "target/test-classes/home");
+        System.setProperty("jetty.home", jetty_home);
+
         Server server = new Server();
         server.setAttribute("org.eclipse.jetty.webapp.configuration",
-                new String[]
+            new String[]
                 {
                     org.eclipse.jetty.webapp.WebInfConfiguration.class.getCanonicalName(),
                     org.eclipse.jetty.webapp.WebXmlConfiguration.class.getCanonicalName(),
@@ -51,49 +50,45 @@ public class OverlayServer
                     org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
                     org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
                     org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
-                }
+                    }
         );
-        
+
         // Setup Connectors
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(8080);
         server.addConnector(connector);
-        
+
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         RequestLogHandler requestLogHandler = new RequestLogHandler();
         handlers.setHandlers(new Handler[]
-        { contexts, new DefaultHandler(), requestLogHandler });
-        
+            {contexts, new DefaultHandler(), requestLogHandler});
+
         StatisticsHandler stats = new StatisticsHandler();
         stats.setHandler(handlers);
-        
+
         server.setHandler(stats);
 
         // Setup deployers
         DeploymentManager deployer = new DeploymentManager();
         deployer.setContexts(contexts);
-        server.addBean(deployer);   
-        
+        server.addBean(deployer);
+
         OverlayedAppProvider provider = new OverlayedAppProvider();
 
         provider.setNodeName("nodeA");
         provider.setScanDir(new File(jetty_home + "/overlays"));
         provider.setScanInterval(2);
-        
+
         deployer.addAppProvider(provider);
 
         server.setStopAtShutdown(true);
         //server.setSendServerVersion(true);
-        
+
         // Uncomment to work with JNDI examples
         // new org.eclipse.jetty.plus.jndi.Transaction(new com.atomikos.icatch.jta.UserTransactionImp());
-        
 
-
-        
         server.start();
         server.join();
     }
-
 }

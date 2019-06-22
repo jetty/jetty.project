@@ -93,6 +93,7 @@ public class IdleTimeoutTest
 
     /**
      * Test IdleTimeout on server.
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -120,10 +121,10 @@ public class IdleTimeoutTest
             // Expect server to have closed due to its own timeout
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("frame opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frame opcode", frame.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
-            assertThat("close code",close.getStatusCode(),is(StatusCode.SHUTDOWN));
-            assertThat("close reason",close.getReason(),containsString("timeout"));
+            assertThat("close code", close.getStatusCode(), is(StatusCode.SHUTDOWN));
+            assertThat("close reason", close.getReason(), containsString("timeout"));
         }
     }
 }

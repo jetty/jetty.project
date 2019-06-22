@@ -18,24 +18,24 @@
 
 package test;
 
+import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
-@WebServlet( "/*" )
+@WebServlet("/*")
 public class Greeter
     extends HttpServlet
 {
 
     @Override
-    protected void doGet( final HttpServletRequest req, final HttpServletResponse resp )
+    protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
         throws ServletException, IOException
     {
-        String who = req.getParameter( "name" );
+        String who = req.getParameter("name");
 
-        resp.getWriter().write( "Hello " + (who == null ? "unknown" : who) );
+        resp.getWriter().write("Hello " + (who == null ? "unknown" : who));
     }
 }

@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.decoders;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
-
 /**
  * Default implementation of the {@link javax.websocket.Decoder.Text} Message to {@link Short} decoder
  */
@@ -38,7 +37,7 @@ public class ShortDecoder extends AbstractDecoder implements Decoder.Text<Short>
         }
         catch (NumberFormatException e)
         {
-            throw new DecodeException(s,"Unable to parse Short",e);
+            throw new DecodeException(s, "Unable to parse Short", e);
         }
     }
 

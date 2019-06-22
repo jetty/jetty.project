@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
-
-import org.junit.jupiter.api.Test;
 
 public class ServletPathSpecTest
 {
@@ -43,14 +43,14 @@ public class ServletPathSpecTest
 
     private void assertMatches(ServletPathSpec spec, String path)
     {
-        String msg = String.format("Spec(\"%s\").matches(\"%s\")",spec.getDeclaration(),path);
-        assertThat(msg,spec.matches(path),is(true));
+        String msg = String.format("Spec(\"%s\").matches(\"%s\")", spec.getDeclaration(), path);
+        assertThat(msg, spec.matches(path), is(true));
     }
 
     private void assertNotMatches(ServletPathSpec spec, String path)
     {
-        String msg = String.format("!Spec(\"%s\").matches(\"%s\")",spec.getDeclaration(),path);
-        assertThat(msg,spec.matches(path),is(false));
+        String msg = String.format("!Spec(\"%s\").matches(\"%s\")", spec.getDeclaration(), path);
+        assertThat(msg, spec.matches(path), is(false));
     }
 
     @Test
@@ -98,13 +98,13 @@ public class ServletPathSpecTest
         assertEquals("/abs/path", spec.getDeclaration(), "Spec.pathSpec");
         assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
 
-        assertMatches(spec,"/abs/path");
-        
-        assertNotMatches(spec,"/abs/path/");
-        assertNotMatches(spec,"/abs/path/more");
-        assertNotMatches(spec,"/foo");
-        assertNotMatches(spec,"/foo/abs/path");
-        assertNotMatches(spec,"/foo/abs/path/");
+        assertMatches(spec, "/abs/path");
+
+        assertNotMatches(spec, "/abs/path/");
+        assertNotMatches(spec, "/abs/path/more");
+        assertNotMatches(spec, "/foo");
+        assertNotMatches(spec, "/foo/abs/path");
+        assertNotMatches(spec, "/foo/abs/path/");
     }
 
     @Test
@@ -128,7 +128,7 @@ public class ServletPathSpecTest
         assertEquals("", spec.getDeclaration(), "Spec.pathSpec");
         assertEquals(-1, spec.getPathDepth(), "Spec.pathDepth");
     }
-    
+
     @Test
     public void testRootPathSpec()
     {
@@ -157,12 +157,12 @@ public class ServletPathSpecTest
         assertEquals("/downloads/*", spec.getDeclaration(), "Spec.pathSpec");
         assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
 
-        assertMatches(spec,"/downloads/logo.jpg");
-        assertMatches(spec,"/downloads/distribution.tar.gz");
-        assertMatches(spec,"/downloads/distribution.tgz");
-        assertMatches(spec,"/downloads/distribution.zip");
+        assertMatches(spec, "/downloads/logo.jpg");
+        assertMatches(spec, "/downloads/distribution.tar.gz");
+        assertMatches(spec, "/downloads/distribution.tgz");
+        assertMatches(spec, "/downloads/distribution.zip");
 
-        assertMatches(spec,"/downloads");
+        assertMatches(spec, "/downloads");
 
         assertEquals("/", spec.getPathInfo("/downloads/"), "Spec.pathInfo");
         assertEquals("/distribution.zip", spec.getPathInfo("/downloads/distribution.zip"), "Spec.pathInfo");
@@ -176,12 +176,12 @@ public class ServletPathSpecTest
         assertEquals("*.gz", spec.getDeclaration(), "Spec.pathSpec");
         assertEquals(0, spec.getPathDepth(), "Spec.pathDepth");
 
-        assertMatches(spec,"/downloads/distribution.tar.gz");
-        assertMatches(spec,"/downloads/jetty.log.gz");
+        assertMatches(spec, "/downloads/distribution.tar.gz");
+        assertMatches(spec, "/downloads/jetty.log.gz");
 
-        assertNotMatches(spec,"/downloads/distribution.zip");
-        assertNotMatches(spec,"/downloads/distribution.tgz");
-        assertNotMatches(spec,"/abs/path");
+        assertNotMatches(spec, "/downloads/distribution.zip");
+        assertNotMatches(spec, "/downloads/distribution.tgz");
+        assertNotMatches(spec, "/abs/path");
 
         assertEquals(null, spec.getPathInfo("/downloads/distribution.tar.gz"), "Spec.pathInfo");
     }

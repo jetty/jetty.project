@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +33,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
 
@@ -55,6 +48,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 @ExtendWith(WorkDirExtension.class)
 public class MultiPartCaptureTest
@@ -166,10 +165,10 @@ public class MultiPartCaptureTest
         MultipartConfigElement config = newMultipartConfigElement(outputDir);
         try (InputStream in = Files.newInputStream(multipartRawFile))
         {
-            org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in,multipartExpectations.contentType,config,outputDir.toFile());
+            org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
 
-            multipartExpectations.checkParts(parser.getParts(),s->
-            { 
+            multipartExpectations.checkParts(parser.getParts(), s ->
+            {
                 try
                 {
                     return parser.getPart(s);
@@ -177,7 +176,7 @@ public class MultiPartCaptureTest
                 catch (Exception e)
                 {
                     throw new RuntimeException(e);
-                } 
+                }
             });
         }
     }
@@ -196,8 +195,8 @@ public class MultiPartCaptureTest
         {
             MultiPartFormInputStream parser = new MultiPartFormInputStream(in, multipartExpectations.contentType, config, outputDir.toFile());
 
-            multipartExpectations.checkParts(parser.getParts(),s->
-            { 
+            multipartExpectations.checkParts(parser.getParts(), s ->
+            {
                 try
                 {
                     return parser.getPart(s);
@@ -205,11 +204,11 @@ public class MultiPartCaptureTest
                 catch (Exception e)
                 {
                     throw new RuntimeException(e);
-                } 
+                }
             });
         }
     }
-    
+
     private MultipartConfigElement newMultipartConfigElement(Path path)
     {
         return new MultipartConfigElement(path.toString(), MAX_FILE_SIZE, MAX_REQUEST_SIZE, FILE_SIZE_THRESHOLD);
@@ -250,7 +249,7 @@ public class MultiPartCaptureTest
                     switch (split[0])
                     {
                         case "Request-Header":
-                            if(split[1].equalsIgnoreCase("Content-Type"))
+                            if (split[1].equalsIgnoreCase("Content-Type"))
                             {
                                 parsedContentType = split[2];
                             }
@@ -306,11 +305,10 @@ public class MultiPartCaptureTest
 
             String defaultCharset = UTF_8.toString();
             Part charSetPart = getPart.apply("_charset_");
-            if(charSetPart != null)
+            if (charSetPart != null)
             {
                 defaultCharset = IO.toString(charSetPart.getInputStream());
             }
-
 
             // Evaluate expected Contents
             for (NameValue expected : partContainsContents)
@@ -352,16 +350,16 @@ public class MultiPartCaptureTest
 
         private String getCharsetFromContentType(String contentType, String defaultCharset)
         {
-            if(StringUtil.isBlank(contentType))
+            if (StringUtil.isBlank(contentType))
             {
                 return defaultCharset;
             }
 
             QuotedStringTokenizer tok = new QuotedStringTokenizer(contentType, ";", false, false);
-            while(tok.hasMoreTokens())
+            while (tok.hasMoreTokens())
             {
                 String str = tok.nextToken().trim();
-                if(str.startsWith("charset="))
+                if (str.startsWith("charset="))
                 {
                     return str.substring("charset=".length());
                 }

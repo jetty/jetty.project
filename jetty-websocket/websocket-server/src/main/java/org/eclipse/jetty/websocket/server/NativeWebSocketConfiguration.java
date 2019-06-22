@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.util.Iterator;
-
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
@@ -45,26 +44,26 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
 {
     private final WebSocketServerFactory factory;
     private final PathMappings<WebSocketCreator> mappings = new PathMappings<>();
-    
+
     public NativeWebSocketConfiguration(ServletContext context)
     {
         this(new WebSocketServerFactory(context));
     }
-    
+
     public NativeWebSocketConfiguration(WebSocketServerFactory webSocketServerFactory)
     {
         this.factory = webSocketServerFactory;
         addBean(this.factory);
         addBean(this.mappings);
     }
-    
+
     @Override
     public void doStop() throws Exception
     {
         mappings.removeIf((mapped) -> !(mapped.getResource() instanceof PersistedWebSocketCreator));
         super.doStop();
     }
-    
+
     /**
      * Get WebSocketServerFactory being used.
      *
@@ -74,7 +73,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     {
         return this.factory;
     }
-    
+
     /**
      * Get the matching {@link MappedResource} for the provided target.
      *
@@ -85,7 +84,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     {
         return this.mappings.getMatch(target);
     }
-    
+
     /**
      * Used to configure the Default {@link WebSocketPolicy} used by all endpoints that
      * don't redeclare the values.
@@ -96,13 +95,13 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     {
         return this.factory.getPolicy();
     }
-    
+
     /**
      * Manually add a WebSocket mapping.
      * <p>
-     *     If mapping is added before this configuration is started, then it is persisted through
-     *     stop/start of this configuration's lifecycle.  Otherwise it will be removed when
-     *     this configuration is stopped.
+     * If mapping is added before this configuration is started, then it is persisted through
+     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
+     * this configuration is stopped.
      * </p>
      *
      * @param pathSpec the pathspec to respond on
@@ -118,7 +117,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
         }
         mappings.put(pathSpec, wsCreator);
     }
-    
+
     /**
      * Manually add a WebSocket mapping.
      *
@@ -142,7 +141,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
             throw new RuntimeException("Unsupported (Deprecated) PathSpec implementation type: " + spec.getClass().getName());
         }
     }
-    
+
     /**
      * Manually add a WebSocket mapping.
      *
@@ -165,7 +164,6 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
             }
         });
     }
-    
 
     @Override
     public void addMapping(String rawspec, WebSocketCreator creator)
@@ -242,18 +240,18 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     private class PersistedWebSocketCreator implements WebSocketCreator
     {
         private final WebSocketCreator delegate;
-        
+
         public PersistedWebSocketCreator(WebSocketCreator delegate)
         {
             this.delegate = delegate;
         }
-        
+
         @Override
         public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
         {
             return delegate.createWebSocket(req, resp);
         }
-    
+
         @Override
         public String toString()
         {

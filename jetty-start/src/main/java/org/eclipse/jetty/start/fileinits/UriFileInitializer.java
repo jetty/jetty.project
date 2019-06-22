@@ -27,24 +27,24 @@ import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FileInitializer;
 
 public class UriFileInitializer extends FileInitializer
-{    
+{
     public UriFileInitializer(BaseHome baseHome)
     {
-        super(baseHome,"http", "https");
+        super(baseHome, "http", "https");
     }
-    
+
     @Override
     public boolean create(URI uri, String location) throws IOException
     {
-        Path destination = getDestination(uri,location);
-        
+        Path destination = getDestination(uri, location);
+
         if (Files.isDirectory(destination))
-            destination = destination.resolve(uri.getSchemeSpecificPart().substring(uri.getRawSchemeSpecificPart().lastIndexOf('/')+1));
-        
-        if(isFilePresent(destination))
+            destination = destination.resolve(uri.getSchemeSpecificPart().substring(uri.getRawSchemeSpecificPart().lastIndexOf('/') + 1));
+
+        if (isFilePresent(destination))
             return false;
 
-        download(uri,destination);
+        download(uri, destination);
 
         return true;
     }

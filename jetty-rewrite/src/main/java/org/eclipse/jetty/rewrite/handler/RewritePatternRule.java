@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,12 +35,10 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     private String _replacement;
     private String _query;
 
-
     public RewritePatternRule()
     {
-        this(null,null);
+        this(null, null);
     }
-    
 
     public RewritePatternRule(@Name("pattern") String pattern, @Name("replacement") String replacement)
     {
@@ -50,8 +47,6 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
         _terminating = false;
         setReplacement(replacement);
     }
-    
-    
 
     /**
      * Whenever a match is found, it replaces with this value.
@@ -60,10 +55,10 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
      */
     public void setReplacement(String replacement)
     {
-        if (replacement==null)
+        if (replacement == null)
         {
-            _replacement=null;
-            _query=null;
+            _replacement = null;
+            _query = null;
         }
         else
         {
@@ -73,14 +68,12 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
         }
     }
 
-
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         target = URIUtil.addPaths(_replacement, PathMap.pathInfo(_pattern, target));
         return target;
     }
-
 
     /**
      * This method will add _query to the requests's queryString and also combine it with existing queryStrings in
@@ -113,13 +106,12 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
         }
     }
 
-
     /**
      * Returns the replacement string.
      */
     @Override
     public String toString()
     {
-        return super.toString()+"["+_replacement+"]";
+        return super.toString() + "[" + _replacement + "]";
     }
 }

@@ -18,14 +18,9 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,6 +31,10 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ContentResponseTest extends AbstractHttpClientServerTest
 {
@@ -56,9 +55,9 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(content, response.getContent());
@@ -84,9 +83,9 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(content, response.getContentAsString());
@@ -114,9 +113,9 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(content, response.getContentAsString());
@@ -144,9 +143,9 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(content, response.getContentAsString());

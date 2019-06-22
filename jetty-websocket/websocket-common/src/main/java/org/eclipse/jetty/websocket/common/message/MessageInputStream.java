@@ -48,10 +48,10 @@ public class MessageInputStream extends InputStream implements MessageAppender
     private static boolean isTheEofBuffer(ByteBuffer buf)
     {
         @SuppressWarnings("ReferenceEquality")
-        boolean isTheEofBuffer = (buf==EOF);
+        boolean isTheEofBuffer = (buf == EOF);
         return isTheEofBuffer;
     }
-    
+
     public MessageInputStream()
     {
         this(-1);
@@ -67,7 +67,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Appending {} chunk: {}",fin?"final":"non-final",BufferUtil.toDetailString(framePayload));
+            LOG.debug("Appending {} chunk: {}", fin ? "final" : "non-final", BufferUtil.toDetailString(framePayload));
         }
 
         // If closed, we should just toss incoming payloads into the bit bucket.
@@ -94,7 +94,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
                 return;
             }
             // TODO: the copy buffer should be pooled too, but no buffer pool available from here.
-            ByteBuffer copy = framePayload.isDirect()?ByteBuffer.allocateDirect(capacity):ByteBuffer.allocate(capacity);
+            ByteBuffer copy = framePayload.isDirect() ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
             copy.put(framePayload).flip();
             buffers.put(copy);
         }

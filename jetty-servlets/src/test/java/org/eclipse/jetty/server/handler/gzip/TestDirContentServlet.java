@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -43,18 +42,18 @@ public class TestDirContentServlet extends HttpServlet
 
     public File getTestFile(String filename)
     {
-        File testfile = new File(basedir,filename);
-        PathAssert.assertFileExists("Content File should exist",testfile);
+        File testfile = new File(basedir, filename);
+        PathAssert.assertFileExists("Content File should exist", testfile);
         return testfile;
     }
 
     protected byte[] loadContentFileBytes(final String fileName) throws IOException
     {
         String relPath = fileName;
-        relPath = relPath.replaceFirst("^/context/","");
-        relPath = relPath.replaceFirst("^/","");
+        relPath = relPath.replaceFirst("^/context/", "");
+        relPath = relPath.replaceFirst("^/", "");
 
-        File contentFile =  getTestFile(relPath);
+        File contentFile = getTestFile(relPath);
 
         FileInputStream in = null;
         ByteArrayOutputStream out = null;
@@ -62,7 +61,7 @@ public class TestDirContentServlet extends HttpServlet
         {
             in = new FileInputStream(contentFile);
             out = new ByteArrayOutputStream();
-            IO.copy(in,out);
+            IO.copy(in, out);
             return out.toByteArray();
         }
         finally

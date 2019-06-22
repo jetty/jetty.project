@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +33,9 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class SafariD00
 {
@@ -49,7 +48,7 @@ public class SafariD00
     public SafariD00(URI uri)
     {
         this.uri = uri;
-        this.endpoint = new InetSocketAddress(uri.getHost(),uri.getPort());
+        this.endpoint = new InetSocketAddress(uri.getHost(), uri.getPort());
     }
 
     /**
@@ -61,7 +60,7 @@ public class SafariD00
     public Socket connect() throws IOException
     {
         socket = new Socket();
-        socket.connect(endpoint,1000);
+        socket.connect(endpoint, 1000);
 
         out = socket.getOutputStream();
         in = socket.getInputStream();
@@ -96,11 +95,11 @@ public class SafariD00
         byte reqBytes[] = req.toString().getBytes(StandardCharsets.UTF_8);
         byte hixieBytes[] = TypeUtil.fromHexString("e739617916c9daf3");
         byte buf[] = new byte[reqBytes.length + hixieBytes.length];
-        System.arraycopy(reqBytes,0,buf,0,reqBytes.length);
-        System.arraycopy(hixieBytes,0,buf,reqBytes.length,hixieBytes.length);
+        System.arraycopy(reqBytes, 0, buf, 0, reqBytes.length);
+        System.arraycopy(hixieBytes, 0, buf, reqBytes.length, hixieBytes.length);
 
         // Send HTTP GET Request (with hixie bytes)
-        out.write(buf,0,buf.length);
+        out.write(buf, 0, buf.length);
         out.flush();
 
         // Read HTTP 101 Upgrade / Handshake Response
@@ -126,8 +125,8 @@ public class SafariD00
         byte hixieHandshakeExpected[] = TypeUtil.fromHexString("c7438d956cf611a6af70603e6fa54809");
         byte hixieHandshake[] = new byte[hixieHandshakeExpected.length];
 
-        int readLen = in.read(hixieHandshake,0,hixieHandshake.length);
-        assertThat("Read hixie handshake bytes",readLen,is(hixieHandshake.length));
+        int readLen = in.read(hixieHandshake, 0, hixieHandshake.length);
+        assertThat("Read hixie handshake bytes", readLen, is(hixieHandshake.length));
     }
 
     public void sendMessage(String... msgs) throws IOException
@@ -147,7 +146,7 @@ public class SafariD00
             buf.put((byte)0xFF);
         }
 
-        BufferUtil.writeTo(buf,out);
+        BufferUtil.writeTo(buf, out);
         out.flush();
     }
 }

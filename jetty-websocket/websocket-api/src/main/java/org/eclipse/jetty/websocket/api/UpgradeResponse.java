@@ -32,7 +32,7 @@ public interface UpgradeResponse
 {
     /**
      * Add a header value to the response.
-     * 
+     *
      * @param name the header name
      * @param value the header value
      */
@@ -40,21 +40,21 @@ public interface UpgradeResponse
 
     /**
      * Get the accepted WebSocket protocol.
-     * 
+     *
      * @return the accepted WebSocket protocol.
      */
     String getAcceptedSubProtocol();
 
     /**
      * Get the list of extensions that should be used for the websocket.
-     * 
+     *
      * @return the list of negotiated extensions to use.
      */
     List<ExtensionConfig> getExtensions();
 
     /**
      * Get a header value
-     * 
+     *
      * @param name the header name
      * @return the value (null if header doesn't exist)
      */
@@ -62,21 +62,21 @@ public interface UpgradeResponse
 
     /**
      * Get the header names
-     * 
+     *
      * @return the set of header names
      */
     Set<String> getHeaderNames();
 
     /**
      * Get the headers map
-     * 
+     *
      * @return the map of headers
      */
     Map<String, List<String>> getHeaders();
 
     /**
      * Get the multi-value header value
-     * 
+     *
      * @param name the header name
      * @return the list of values (null if header doesn't exist)
      */
@@ -84,14 +84,14 @@ public interface UpgradeResponse
 
     /**
      * Get the HTTP Response Status Code
-     * 
+     *
      * @return the status code
      */
     int getStatusCode();
 
     /**
      * Get the HTTP Response Status Reason
-     * 
+     *
      * @return the HTTP Response status reason
      */
     String getStatusReason();
@@ -101,7 +101,7 @@ public interface UpgradeResponse
      * <p>
      * Merely notes if the response was sent as a WebSocket Upgrade,
      * or was failed (resulting in no upgrade handshake)
-     * 
+     *
      * @return true if upgrade response was generated, false if no upgrade response was generated
      */
     boolean isSuccess();
@@ -113,19 +113,16 @@ public interface UpgradeResponse
      * access.
      * <p>
      * Use this when the origin or authentication is invalid.
-     * 
-     * @param message
-     * the short 1 line detail message about the forbidden response
-     * @throws IOException
-     * if unable to send the forbidden
+     *
+     * @param message the short 1 line detail message about the forbidden response
+     * @throws IOException if unable to send the forbidden
      */
     void sendForbidden(String message) throws IOException;
 
     /**
      * Set the accepted WebSocket Protocol.
-     * 
-     * @param protocol
-     * the protocol to list as accepted
+     *
+     * @param protocol the protocol to list as accepted
      */
     void setAcceptedSubProtocol(String protocol);
 
@@ -140,9 +137,8 @@ public interface UpgradeResponse
      * complete list of extensions that are
      * available in this WebSocket server implementation.</li>
      * </ul>
-     * 
-     * @param extensions
-     * the list of extensions to use.
+     *
+     * @param extensions the list of extensions to use.
      */
     void setExtensions(List<ExtensionConfig> extensions);
 
@@ -150,7 +146,7 @@ public interface UpgradeResponse
      * Set a header
      * <p>
      * Overrides previous value of header (if set)
-     * 
+     *
      * @param name the header name
      * @param value the header value
      */
@@ -158,7 +154,7 @@ public interface UpgradeResponse
 
     /**
      * Set the HTTP Response status code
-     * 
+     *
      * @param statusCode the status code
      */
     void setStatusCode(int statusCode);
@@ -167,7 +163,7 @@ public interface UpgradeResponse
      * Set the HTTP Response status reason phrase
      * <p>
      * Note, not all implementation of UpgradeResponse can support this feature
-     * 
+     *
      * @param statusReason the status reason phrase
      */
     void setStatusReason(String statusReason);
@@ -175,7 +171,7 @@ public interface UpgradeResponse
     /**
      * Set the success of the upgrade response.
      * <p>
-     * 
+     *
      * @param success true to indicate a response to the upgrade handshake was sent, false to indicate no upgrade
      * response was sent
      */

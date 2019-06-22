@@ -285,8 +285,8 @@ public class WebSocketClientTest
             // but smaller than maxMessageSize of 100k
             int size = 80 * 1024;
             byte buf[] = new byte[size];
-            Arrays.fill(buf,(byte)'x');
-            String msg = StringUtil.toUTF8String(buf,0,buf.length);
+            Arrays.fill(buf, (byte)'x');
+            String msg = StringUtil.toUTF8String(buf, 0, buf.length);
 
             sess.getRemote().sendString(msg);
 

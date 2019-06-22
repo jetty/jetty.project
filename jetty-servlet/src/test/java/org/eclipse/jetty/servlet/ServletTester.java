@@ -24,7 +24,6 @@ import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
@@ -43,21 +42,21 @@ import org.eclipse.jetty.util.resource.Resource;
 public class ServletTester extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(ServletTester.class);
-    
-    private final Server _server=new Server();
-    private final LocalConnector _connector=new LocalConnector(_server);
+
+    private final Server _server = new Server();
+    private final LocalConnector _connector = new LocalConnector(_server);
     private final ServletContextHandler _context;
-    
+
     public Server getServer()
     {
         return _server;
     }
-    
+
     public LocalConnector getConnector()
     {
         return _connector;
     }
-    
+
     public void setVirtualHosts(String[] vhosts)
     {
         _context.setVirtualHosts(vhosts);
@@ -70,32 +69,32 @@ public class ServletTester extends ContainerLifeCycle
 
     public ServletHolder addServlet(String className, String pathSpec)
     {
-        return _context.addServlet(className,pathSpec);
+        return _context.addServlet(className, pathSpec);
     }
 
     public ServletHolder addServlet(Class<? extends Servlet> servlet, String pathSpec)
     {
-        return _context.addServlet(servlet,pathSpec);
+        return _context.addServlet(servlet, pathSpec);
     }
 
     public void addServlet(ServletHolder servlet, String pathSpec)
     {
-        _context.addServlet(servlet,pathSpec);
+        _context.addServlet(servlet, pathSpec);
     }
 
     public void addFilter(FilterHolder holder, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
-        _context.addFilter(holder,pathSpec,dispatches);
+        _context.addFilter(holder, pathSpec, dispatches);
     }
 
     public FilterHolder addFilter(Class<? extends Filter> filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
-        return _context.addFilter(filterClass,pathSpec,dispatches);
+        return _context.addFilter(filterClass, pathSpec, dispatches);
     }
 
     public FilterHolder addFilter(String filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
-        return _context.addFilter(filterClass,pathSpec,dispatches);
+        return _context.addFilter(filterClass, pathSpec, dispatches);
     }
 
     public Object getAttribute(String name)
@@ -125,7 +124,7 @@ public class ServletTester extends ContainerLifeCycle
 
     public String setInitParameter(String name, String value)
     {
-        return _context.setInitParameter(name,value);
+        return _context.setInitParameter(name, value);
     }
 
     public Enumeration<String> getInitParameterNames()
@@ -145,7 +144,7 @@ public class ServletTester extends ContainerLifeCycle
 
     public void setAttribute(String name, Object value)
     {
-        _context.setAttribute(name,value);
+        _context.setAttribute(name, value);
     }
 
     public void setContextPath(String contextPath)
@@ -170,17 +169,17 @@ public class ServletTester extends ContainerLifeCycle
 
     public ServletTester()
     {
-        this("/",ServletContextHandler.SECURITY|ServletContextHandler.SESSIONS);
+        this("/", ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS);
     }
 
     public ServletTester(String ctxPath)
     {
-        this(ctxPath,ServletContextHandler.SECURITY|ServletContextHandler.SESSIONS);
+        this(ctxPath, ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS);
     }
 
-    public ServletTester(String contextPath,int options)
+    public ServletTester(String contextPath, int options)
     {
-        _context=new ServletContextHandler(_server,contextPath,options);
+        _context = new ServletContextHandler(_server, contextPath, options);
         _server.setConnectors(new Connector[]{_connector});
         addBean(_server);
     }
@@ -194,40 +193,42 @@ public class ServletTester extends ContainerLifeCycle
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Request: {}",request);
+            LOG.debug("Request: {}", request);
         }
         return _connector.getResponse(request);
     }
-    
-    public String getResponses(String request, long idleFor,TimeUnit units) throws Exception
+
+    public String getResponses(String request, long idleFor, TimeUnit units) throws Exception
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Request: {}",request);
+            LOG.debug("Request: {}", request);
         }
         return _connector.getResponse(request, idleFor, units);
     }
-    
+
     public ByteBuffer getResponses(ByteBuffer request) throws Exception
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Request (Buffer): {}",BufferUtil.toUTF8String(request));
+            LOG.debug("Request (Buffer): {}", BufferUtil.toUTF8String(request));
         }
         return _connector.getResponse(request);
     }
-    
-    public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
+
+    public ByteBuffer getResponses(ByteBuffer requestsBuffer, long idleFor, TimeUnit units) throws Exception
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Requests (Buffer): {}",BufferUtil.toUTF8String(requestsBuffer));
+            LOG.debug("Requests (Buffer): {}", BufferUtil.toUTF8String(requestsBuffer));
         }
         return _connector.getResponse(requestsBuffer, idleFor, units);
     }
 
-    /** Create a port based connector.
+    /**
+     * Create a port based connector.
      * This methods adds a port connector to the server
+     *
      * @param localhost true if connector should use localhost, false for default host behavior.
      * @return A URL to access the server via the connector.
      * @throws Exception on test failure
@@ -243,9 +244,9 @@ public class ServletTester extends ContainerLifeCycle
         else
             connector.open();
 
-        return "http://"+(localhost?"127.0.0.1":
+        return "http://" + (localhost ? "127.0.0.1" :
             InetAddress.getLocalHost().getHostAddress()
-        )+":"+connector.getLocalPort();
+        ) + ":" + connector.getLocalPort();
     }
 
     public LocalConnector createLocalConnector()
@@ -254,7 +255,4 @@ public class ServletTester extends ContainerLifeCycle
         _server.addConnector(connector);
         return connector;
     }
-
-
-
 }

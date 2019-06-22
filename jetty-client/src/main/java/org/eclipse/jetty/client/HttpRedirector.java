@@ -102,11 +102,11 @@ public class HttpRedirector
     /**
      * Redirects the given {@code response}, blocking until the redirect is complete.
      *
-     * @param request  the original request that triggered the redirect
+     * @param request the original request that triggered the redirect
      * @param response the response to the original request
      * @return a {@link Result} object containing the request to the redirected location and its response
      * @throws InterruptedException if the thread is interrupted while waiting for the redirect to complete
-     * @throws ExecutionException   if the redirect failed
+     * @throws ExecutionException if the redirect failed
      * @see #redirect(Request, Response, Response.CompleteListener)
      */
     public Result redirect(Request request, Response response) throws InterruptedException, ExecutionException
@@ -119,9 +119,9 @@ public class HttpRedirector
             public void onComplete(Result result)
             {
                 resultRef.set(new Result(result.getRequest(),
-                        result.getRequestFailure(),
-                        new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()),
-                        result.getResponseFailure()));
+                    result.getRequestFailure(),
+                    new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()),
+                    result.getResponseFailure()));
                 latch.countDown();
             }
         });
@@ -145,7 +145,7 @@ public class HttpRedirector
     /**
      * Redirects the given {@code response} asynchronously.
      *
-     * @param request  the original request that triggered the redirect
+     * @param request the original request that triggered the redirect
      * @param response the response to the original request
      * @param listener the listener that receives response events
      * @return the request to the redirected location

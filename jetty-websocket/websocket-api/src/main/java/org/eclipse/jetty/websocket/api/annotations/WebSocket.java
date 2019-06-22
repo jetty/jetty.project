@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value =
-{ ElementType.TYPE })
+    {ElementType.TYPE})
 public @interface WebSocket
 {
     int inputBufferSize() default -2;
@@ -42,6 +42,6 @@ public @interface WebSocket
     int maxIdleTime() default -2;
 
     int maxTextMessageSize() default -2;
-    
+
     BatchMode batchMode() default BatchMode.AUTO;
 }

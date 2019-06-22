@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -38,6 +32,12 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 // TODO: these tests seems to fail spuriously, figure out why.
 @Disabled
@@ -96,11 +96,11 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
         final CountDownLatch latch = new CountDownLatch(2);
         Request request = scenario.client.newRequest(host, port);
         request.timeout(connectTimeout / 2, TimeUnit.MILLISECONDS)
-                .send(result ->
-                {
-                    completes.incrementAndGet();
-                    latch.countDown();
-                });
+            .send(result ->
+            {
+                completes.incrementAndGet();
+                latch.countDown();
+            });
 
         assertFalse(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
         assertEquals(1, completes.get());

@@ -20,7 +20,6 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 import java.util.regex.Matcher;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,7 +35,7 @@ public class TerminatingRegexRule extends RegexRule
     {
         this(null);
     }
-    
+
     public TerminatingRegexRule(@Name("regex") String regex)
     {
         super(regex);

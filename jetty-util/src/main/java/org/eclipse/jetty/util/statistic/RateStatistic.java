@@ -26,9 +26,9 @@ import java.util.stream.Collectors;
 /**
  * <p>Statistics on a time sequence rate.</p>
  * <p>Calculates the rate at which the {@link #record()} method is called
- * over the configured period, retaining also the total count and maximum 
+ * over the configured period, retaining also the total count and maximum
  * rate achieved.</p>
- * <p>The implementation keeps a Deque of timestamps for all records for 
+ * <p>The implementation keeps a Deque of timestamps for all records for
  * the last time period, so this method is not suitable for large rates
  * unless a small time period is used.</p>
  */
@@ -42,26 +42,26 @@ public class RateStatistic
 
     public RateStatistic(long period, TimeUnit units)
     {
-        _nanoPeriod = TimeUnit.NANOSECONDS.convert(period,units);    
+        _nanoPeriod = TimeUnit.NANOSECONDS.convert(period, units);
         _units = units;
     }
-    
+
     public long getPeriod()
     {
-        return _units.convert(_nanoPeriod,TimeUnit.NANOSECONDS);
+        return _units.convert(_nanoPeriod, TimeUnit.NANOSECONDS);
     }
-    
+
     public TimeUnit getUnits()
     {
         return _units;
     }
-    
+
     /**
      * Resets the statistics.
      */
     public void reset()
     {
-        synchronized(this)
+        synchronized (this)
         {
             _samples.clear();
             _max = 0;
@@ -87,30 +87,33 @@ public class RateStatistic
 
     protected void age(long period, TimeUnit units)
     {
-        long increment = TimeUnit.NANOSECONDS.convert(period,units);
-        synchronized(this)
+        long increment = TimeUnit.NANOSECONDS.convert(period, units);
+        synchronized (this)
         {
             int size = _samples.size();
-            for (int i=0; i<size; i++)
-                _samples.addLast(_samples.removeFirst()-increment);
+            for (int i = 0; i < size; i++)
+            {
+                _samples.addLast(_samples.removeFirst() - increment);
+            }
             update();
         }
     }
 
     /**
      * Records a sample value.
+     *
      * @return the number of records in the current period.
      */
     public int record()
     {
         long now = System.nanoTime();
-        synchronized(this)
+        synchronized (this)
         {
             _count++;
             _samples.add(now);
             update(now);
             int rate = _samples.size();
-            if (rate>_max)
+            if (rate > _max)
                 _max = rate;
             return rate;
         }
@@ -121,7 +124,7 @@ public class RateStatistic
      */
     public int getRate()
     {
-        synchronized(this)
+        synchronized (this)
         {
             update();
             return _samples.size();
@@ -133,24 +136,24 @@ public class RateStatistic
      */
     public long getMax()
     {
-        synchronized(this)
+        synchronized (this)
         {
             return _max;
         }
     }
-    
+
     /**
      * @param units the units of the return
      * @return the age of the oldest sample in the requested units
      */
     public long getOldest(TimeUnit units)
     {
-        synchronized(this)
-        {        
+        synchronized (this)
+        {
             Long head = _samples.peekFirst();
-            if (head==null)
+            if (head == null)
                 return -1;
-            return units.convert(System.nanoTime()-head,TimeUnit.NANOSECONDS);
+            return units.convert(System.nanoTime() - head, TimeUnit.NANOSECONDS);
         }
     }
 
@@ -159,7 +162,7 @@ public class RateStatistic
      */
     public long getCount()
     {
-        synchronized(this)
+        synchronized (this)
         {
             return _count;
         }
@@ -173,12 +176,12 @@ public class RateStatistic
     public String dump(TimeUnit units)
     {
         long now = System.nanoTime();
-        synchronized(this)
+        synchronized (this)
         {
             String samples = _samples.stream()
-                    .mapToLong(t -> units.convert(now - t, TimeUnit.NANOSECONDS))
-                    .mapToObj(Long::toString)
-                    .collect(Collectors.joining(System.lineSeparator()));
+                .mapToLong(t -> units.convert(now - t, TimeUnit.NANOSECONDS))
+                .mapToObj(Long::toString)
+                .collect(Collectors.joining(System.lineSeparator()));
             return String.format("%s%n%s", toString(now), samples);
         }
     }
@@ -191,13 +194,13 @@ public class RateStatistic
 
     private String toString(long nanoTime)
     {
-        synchronized(this)
+        synchronized (this)
         {
             update(nanoTime);
             return String.format("%s@%x{count=%d,max=%d,rate=%d per %d %s}",
-                    getClass().getSimpleName(), hashCode(),
-                    _count, _max, _samples.size(),
-                    _units.convert(_nanoPeriod,TimeUnit.NANOSECONDS), _units);
+                getClass().getSimpleName(), hashCode(),
+                _count, _max, _samples.size(),
+                _units.convert(_nanoPeriod, TimeUnit.NANOSECONDS), _units);
         }
     }
 }

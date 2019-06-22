@@ -21,7 +21,6 @@ package org.eclipse.jetty.alpn.client;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -49,7 +48,7 @@ public class ALPNClientConnection extends NegotiatingClientConnection
 
     public void selected(String protocol)
     {
-        if (protocol==null || !protocols.contains(protocol))
+        if (protocol == null || !protocols.contains(protocol))
             close();
         else
             super.completed();

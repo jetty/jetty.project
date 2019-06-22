@@ -28,9 +28,9 @@ public class JettyBaseConfigSource extends DirConfigSource
 {
     // Standard weight for ${jetty.base}, so that it comes after command line, and before everything else 
     private final static int WEIGHT = 0;
-    
+
     public JettyBaseConfigSource(Path dir) throws IOException
     {
-        super("${jetty.base}",dir,WEIGHT,true);
+        super("${jetty.base}", dir, WEIGHT, true);
     }
 }

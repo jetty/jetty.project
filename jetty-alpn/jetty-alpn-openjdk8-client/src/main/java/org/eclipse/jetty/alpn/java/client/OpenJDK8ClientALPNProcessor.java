@@ -19,7 +19,6 @@
 package org.eclipse.jetty.alpn.java.client;
 
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.alpn.ALPN;
@@ -37,9 +36,9 @@ public class OpenJDK8ClientALPNProcessor implements ALPNProcessor.Client
     @Override
     public void init()
     {
-        if (JavaVersion.VERSION.getPlatform()!=8)
-            throw new IllegalStateException(this + " not applicable for java "+JavaVersion.VERSION);
-        if (ALPN.class.getClassLoader()!=null)
+        if (JavaVersion.VERSION.getPlatform() != 8)
+            throw new IllegalStateException(this + " not applicable for java " + JavaVersion.VERSION);
+        if (ALPN.class.getClassLoader() != null)
             throw new IllegalStateException(ALPN.class.getName() + " must be on JVM boot classpath");
         if (LOG.isDebugEnabled())
             ALPN.debug = true;

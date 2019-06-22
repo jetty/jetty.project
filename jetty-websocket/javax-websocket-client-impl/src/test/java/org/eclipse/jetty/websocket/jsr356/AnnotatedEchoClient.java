@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;

@@ -36,7 +36,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
 {
     public HttpClientTransportOverHTTP()
     {
-        this(Math.max( 1, ProcessorUtils.availableProcessors() / 2));
+        this(Math.max(1, ProcessorUtils.availableProcessors() / 2));
     }
 
     public HttpClientTransportOverHTTP(int selectors)

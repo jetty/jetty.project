@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.util.IPAddressMap;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
 
 /**
  * IP Access Handler
@@ -94,15 +92,16 @@ import org.eclipse.jetty.util.log.Logger;
  * <li>10.10.0-255.0-255 - all requests from IPs within 10.10.0.0/16 subnet
  * <li>10.10.0-.-255|/foo/bar - all requests from IPs within 10.10.0.0/16 subnet to URI /foo/bar
  * <li>10.10.0-3,1,3,7,15|/foo/* - all requests from IPs addresses with last octet equal
- *                                  to 1,3,7,15 in subnet 10.10.0.0/22 to URIs starting with /foo/
+ * to 1,3,7,15 in subnet 10.10.0.0/22 to URIs starting with /foo/
  * </ul>
  * <p>
  * Earlier versions of the handler used internet address prefix wildcard specification
  * to define a range of the internet addresses (e.g. 127., 10.10., 172.16.1.).
  * They also used the first "/" character of the URI pattern to separate it from the
  * internet address. Both of these features have been deprecated in the current version.
- * @deprecated
+ *
  * @see InetAccessHandler
+ * @deprecated
  */
 public class IPAccessHandler extends HandlerWrapper
 {
@@ -112,7 +111,6 @@ public class IPAccessHandler extends HandlerWrapper
     PathMap<IPAddressMap<Boolean>> _black = new PathMap<IPAddressMap<Boolean>>(true);
     boolean _whiteListByPath = false;
 
-
     /**
      * Creates new handler object
      */
@@ -121,14 +119,13 @@ public class IPAccessHandler extends HandlerWrapper
         super();
     }
 
-
     /**
      * Creates new handler object and initializes white- and black-list
      *
      * @param white array of whitelist entries
      * @param black array of blacklist entries
      */
-    public IPAccessHandler(String[] white, String []black)
+    public IPAccessHandler(String[] white, String[] black)
     {
         super();
 
@@ -137,7 +134,6 @@ public class IPAccessHandler extends HandlerWrapper
         if (black != null && black.length > 0)
             setBlack(black);
     }
-
 
     /**
      * Add a whitelist entry to an existing handler configuration
@@ -149,7 +145,6 @@ public class IPAccessHandler extends HandlerWrapper
         add(entry, _white);
     }
 
-
     /**
      * Add a blacklist entry to an existing handler configuration
      *
@@ -159,7 +154,6 @@ public class IPAccessHandler extends HandlerWrapper
     {
         add(entry, _black);
     }
-
 
     /**
      * Re-initialize the whitelist of existing handler object
@@ -171,7 +165,6 @@ public class IPAccessHandler extends HandlerWrapper
         set(entries, _white);
     }
 
-
     /**
      * Re-initialize the blacklist of existing handler object
      *
@@ -181,7 +174,6 @@ public class IPAccessHandler extends HandlerWrapper
     {
         set(entries, _black);
     }
-
 
     /**
      * Re-initialize the mode of path matching
@@ -193,7 +185,6 @@ public class IPAccessHandler extends HandlerWrapper
         this._whiteListByPath = whiteListByPath;
     }
 
-
     /**
      * Checks the incoming request against the whitelist and blacklist
      *
@@ -204,13 +195,13 @@ public class IPAccessHandler extends HandlerWrapper
     {
         // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
         HttpChannel channel = baseRequest.getHttpChannel();
-        if (channel!=null)
+        if (channel != null)
         {
-            EndPoint endp=channel.getEndPoint();
-            if (endp!=null)
+            EndPoint endp = channel.getEndPoint();
+            if (endp != null)
             {
                 InetSocketAddress address = endp.getRemoteAddress();
-                if (address!=null && !isAddrUriAllowed(address.getHostString(),baseRequest.getPathInfo()))
+                if (address != null && !isAddrUriAllowed(address.getHostString(), baseRequest.getPathInfo()))
                 {
                     response.sendError(HttpStatus.FORBIDDEN_403);
                     baseRequest.setHandled(true);
@@ -219,10 +210,8 @@ public class IPAccessHandler extends HandlerWrapper
             }
         }
 
-        getHandler().handle(target,baseRequest, request, response);
+        getHandler().handle(target, baseRequest, request, response);
     }
-
-
 
     /**
      * Helper method to parse the new entry and add it to
@@ -237,7 +226,7 @@ public class IPAccessHandler extends HandlerWrapper
         {
             boolean deprecated = false;
             int idx;
-            if (entry.indexOf('|') > 0 )
+            if (entry.indexOf('|') > 0)
             {
                 idx = entry.indexOf('|');
             }
@@ -247,29 +236,28 @@ public class IPAccessHandler extends HandlerWrapper
                 deprecated = (idx >= 0);
             }
 
-            String addr = idx > 0 ? entry.substring(0,idx) : entry;
+            String addr = idx > 0 ? entry.substring(0, idx) : entry;
             String path = idx > 0 ? entry.substring(idx) : "/*";
 
             if (addr.endsWith("."))
                 deprecated = true;
-            if (path!=null && (path.startsWith("|") || path.startsWith("/*.")))
-                path=path.substring(1);
+            if (path != null && (path.startsWith("|") || path.startsWith("/*.")))
+                path = path.substring(1);
 
             IPAddressMap<Boolean> addrMap = patternMap.get(path);
             if (addrMap == null)
             {
                 addrMap = new IPAddressMap<Boolean>();
-                patternMap.put(path,addrMap);
+                patternMap.put(path, addrMap);
             }
             if (addr != null && !"".equals(addr))
                 // MUST NOT BE null
                 addrMap.put(addr, true);
 
             if (deprecated)
-                LOG.debug(toString() +" - deprecated specification syntax: "+entry);
+                LOG.debug(toString() + " - deprecated specification syntax: " + entry);
         }
     }
-
 
     /**
      * Helper method to process a list of new entries and replace
@@ -278,19 +266,18 @@ public class IPAccessHandler extends HandlerWrapper
      * @param entries new entries
      * @param patternMap target address pattern map
      */
-    protected void set(String[] entries,  PathMap<IPAddressMap<Boolean>> patternMap)
+    protected void set(String[] entries, PathMap<IPAddressMap<Boolean>> patternMap)
     {
         patternMap.clear();
 
         if (entries != null && entries.length > 0)
         {
-            for (String addrPath:entries)
+            for (String addrPath : entries)
             {
                 add(addrPath, patternMap);
             }
         }
     }
-
 
     /**
      * Check if specified request is allowed by current IPAccess rules.
@@ -298,26 +285,25 @@ public class IPAccessHandler extends HandlerWrapper
      * @param addr internet address
      * @param path context path
      * @return true if request is allowed
-     *
      */
     protected boolean isAddrUriAllowed(String addr, String path)
     {
-        if (_white.size()>0)
+        if (_white.size() > 0)
         {
             boolean match = false;
             boolean matchedByPath = false;
 
-            for (Map.Entry<String,IPAddressMap<Boolean>> entry : _white.getMatches(path))
+            for (Map.Entry<String, IPAddressMap<Boolean>> entry : _white.getMatches(path))
             {
-                matchedByPath=true;
+                matchedByPath = true;
                 IPAddressMap<Boolean> addrMap = entry.getValue();
-                if ((addrMap!=null && (addrMap.size()==0 || addrMap.match(addr)!=null)))
+                if ((addrMap != null && (addrMap.size() == 0 || addrMap.match(addr) != null)))
                 {
-                    match=true;
+                    match = true;
                     break;
                 }
             }
-            
+
             if (_whiteListByPath)
             {
                 if (matchedByPath && !match)
@@ -332,18 +318,16 @@ public class IPAccessHandler extends HandlerWrapper
 
         if (_black.size() > 0)
         {
-            for (Map.Entry<String,IPAddressMap<Boolean>> entry : _black.getMatches(path))
+            for (Map.Entry<String, IPAddressMap<Boolean>> entry : _black.getMatches(path))
             {
                 IPAddressMap<Boolean> addrMap = entry.getValue();
-                if (addrMap!=null && (addrMap.size()==0 || addrMap.match(addr)!=null))
+                if (addrMap != null && (addrMap.size() == 0 || addrMap.match(addr) != null))
                     return false;
             }
-            
         }
 
         return true;
     }
-
 
     /**
      * Dump the handler configuration
@@ -351,8 +335,8 @@ public class IPAccessHandler extends HandlerWrapper
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpObjects(out, indent,
-          DumpableCollection.from("white", _white),
-          DumpableCollection.from("black", _black),
-          DumpableCollection.from("whiteListByPath", _whiteListByPath));
+            DumpableCollection.from("white", _white),
+            DumpableCollection.from("black", _black),
+            DumpableCollection.from("whiteListByPath", _whiteListByPath));
     }
- }
+}

@@ -29,10 +29,10 @@ public class JsrEndpointImpl implements EventDriverImpl
     {
         if (!(websocket instanceof EndpointInstance))
         {
-            throw new IllegalStateException(String.format("Websocket %s must be an %s",websocket.getClass().getName(),EndpointInstance.class.getName()));
+            throw new IllegalStateException(String.format("Websocket %s must be an %s", websocket.getClass().getName(), EndpointInstance.class.getName()));
         }
 
-        return new JsrEndpointEventDriver(policy,(EndpointInstance)websocket);
+        return new JsrEndpointEventDriver(policy, (EndpointInstance)websocket);
     }
 
     @Override

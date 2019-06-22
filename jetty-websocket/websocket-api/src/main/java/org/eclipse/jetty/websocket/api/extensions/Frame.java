@@ -88,7 +88,7 @@ public interface Frame
 
     /**
      * The original payload length ({@link ByteBuffer#remaining()})
-     * 
+     *
      * @return the original payload length ({@link ByteBuffer#remaining()})
      */
     public int getPayloadLength();
@@ -101,7 +101,7 @@ public interface Frame
 
     /**
      * Same as {@link #isFin()}
-     * 
+     *
      * @return true if final frame.
      * @deprecated use {@link #isFin()} instead
      */
@@ -115,5 +115,4 @@ public interface Frame
     public boolean isRsv2();
 
     public boolean isRsv3();
-
 }

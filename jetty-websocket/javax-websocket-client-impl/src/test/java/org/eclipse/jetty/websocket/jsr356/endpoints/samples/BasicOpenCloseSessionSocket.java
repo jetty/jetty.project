@@ -32,7 +32,7 @@ public class BasicOpenCloseSessionSocket extends TrackingSocket
     @OnClose
     public void onClose(CloseReason close, Session session)
     {
-        addEvent("onClose(%s, %s)",close,session);
+        addEvent("onClose(%s, %s)", close, session);
         this.closeReason = close;
         closeLatch.countDown();
     }
@@ -40,7 +40,7 @@ public class BasicOpenCloseSessionSocket extends TrackingSocket
     @OnOpen
     public void onOpen(Session session)
     {
-        addEvent("onOpen(%s)",session);
+        addEvent("onOpen(%s)", session);
         openLatch.countDown();
     }
 }

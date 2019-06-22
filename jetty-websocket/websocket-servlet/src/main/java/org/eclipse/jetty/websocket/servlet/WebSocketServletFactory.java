@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,14 +37,16 @@ public interface WebSocketServletFactory
     class Loader
     {
         final static String DEFAULT_IMPL = "org.eclipse.jetty.websocket.server.WebSocketServerFactory";
-        
+
         public static WebSocketServletFactory load(ServletContext ctx, WebSocketPolicy policy)
         {
             try
             {
                 Class<? extends WebSocketServletFactory> wsClazz =
-                        (Class<? extends WebSocketServletFactory>) Class.forName(DEFAULT_IMPL,true,Thread.currentThread().getContextClassLoader());
-                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(new Class<?>[]{ServletContext.class, WebSocketPolicy.class});
+                    (Class<? extends WebSocketServletFactory>)Class.forName(DEFAULT_IMPL, true, Thread.currentThread().getContextClassLoader());
+                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(new Class<?>[]{
+                    ServletContext.class, WebSocketPolicy.class
+                });
                 return ctor.newInstance(ctx, policy);
             }
             catch (ClassNotFoundException e)
@@ -58,18 +59,19 @@ public interface WebSocketServletFactory
             }
         }
     }
-    
+
     boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException;
-    
+
     boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException;
-    
+
     void start() throws Exception;
+
     void stop() throws Exception;
-    
+
     WebSocketCreator getCreator();
-    
+
     ExtensionFactory getExtensionFactory();
-    
+
     /**
      * Get the base policy in use for WebSockets.
      * <p>
@@ -78,9 +80,9 @@ public interface WebSocketServletFactory
      * @return the base policy
      */
     WebSocketPolicy getPolicy();
-    
+
     boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response);
-    
+
     /**
      * Register a websocket class pojo with the default {@link WebSocketCreator}.
      * <p>
@@ -89,6 +91,6 @@ public interface WebSocketServletFactory
      * @param websocketPojo the class to instantiate for each incoming websocket upgrade request.
      */
     void register(Class<?> websocketPojo);
-    
+
     void setCreator(WebSocketCreator creator);
 }

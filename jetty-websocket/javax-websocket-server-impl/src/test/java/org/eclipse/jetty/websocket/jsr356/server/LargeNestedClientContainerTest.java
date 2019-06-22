@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.Path;
@@ -37,10 +34,11 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoAnnotatedSocket;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Test send of large messages from within a Server using a ClientContainer
@@ -70,43 +68,43 @@ public class LargeNestedClientContainerTest
         List<WSServerConfig[]> scenarios = new ArrayList<>();
 
         scenarios.add(new WSServerConfig[]{
-                new WSServerConfig("Servlet using ContainerProvider.getWebSocketContainer() (default)")
+            new WSServerConfig("Servlet using ContainerProvider.getWebSocketContainer() (default)")
+            {
+                @Override
+                public void configure(WSServer server) throws Exception
                 {
-                    @Override
-                    public void configure(WSServer server) throws Exception
-                    {
-                        server.copyWebInf("large-client-container-servlet-web.xml");
-                        server.copyClass(LargeClientContainerServlet.class);
-                        server.copyEndpoint(LargeEchoAnnotatedSocket.class);
-                    }
+                    server.copyWebInf("large-client-container-servlet-web.xml");
+                    server.copyClass(LargeClientContainerServlet.class);
+                    server.copyEndpoint(LargeEchoAnnotatedSocket.class);
                 }
+            }
         });
 
         scenarios.add(new WSServerConfig[]{
-                new WSServerConfig("Servlet using ContainerProvider.getWebSocketContainer() (init / server-container)")
+            new WSServerConfig("Servlet using ContainerProvider.getWebSocketContainer() (init / server-container)")
+            {
+                @Override
+                public void configure(WSServer server) throws Exception
                 {
-                    @Override
-                    public void configure(WSServer server) throws Exception
-                    {
-                        server.copyWebInf("large-client-container-servlet-init-use-server-web.xml");
-                        server.copyClass(LargeClientContainerInitAsServerListener.class);
-                        server.copyClass(LargeClientContainerServlet.class);
-                        server.copyEndpoint(LargeEchoAnnotatedSocket.class);
-                    }
+                    server.copyWebInf("large-client-container-servlet-init-use-server-web.xml");
+                    server.copyClass(LargeClientContainerInitAsServerListener.class);
+                    server.copyClass(LargeClientContainerServlet.class);
+                    server.copyEndpoint(LargeEchoAnnotatedSocket.class);
                 }
+            }
         });
 
         scenarios.add(new WSServerConfig[]{
-                new WSServerConfig("Servlet using ServerContainer as ClientContainer")
+            new WSServerConfig("Servlet using ServerContainer as ClientContainer")
+            {
+                @Override
+                public void configure(WSServer server) throws Exception
                 {
-                    @Override
-                    public void configure(WSServer server) throws Exception
-                    {
-                        server.copyWebInf("large-client-container-servlet-web.xml");
-                        server.copyClass(LargeServerContainerAsClientContainerServlet.class);
-                        server.copyEndpoint(LargeEchoAnnotatedSocket.class);
-                    }
+                    server.copyWebInf("large-client-container-servlet-web.xml");
+                    server.copyClass(LargeServerContainerAsClientContainerServlet.class);
+                    server.copyEndpoint(LargeEchoAnnotatedSocket.class);
                 }
+            }
         });
 
         return scenarios;
@@ -120,7 +118,6 @@ public class LargeNestedClientContainerTest
     }
 
     private static final AtomicInteger appDirIdx = new AtomicInteger(0);
-
 
     @ParameterizedTest
     @MethodSource("usecases")

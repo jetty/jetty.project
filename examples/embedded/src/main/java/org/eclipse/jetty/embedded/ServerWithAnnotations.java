@@ -34,20 +34,20 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithAnnotations
 {
-    public static final void main( String args[] ) throws Exception
+    public static final void main(String args[]) throws Exception
     {
         // Create the server
         Server server = new Server(8080);
 
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
         Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
+            .setServerDefault(server);
         classlist.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+            "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+            "org.eclipse.jetty.plus.webapp.PlusConfiguration");
         classlist.addBefore(
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
+            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+            "org.eclipse.jetty.annotations.AnnotationConfiguration");
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
@@ -78,10 +78,8 @@ public class ServerWithAnnotations
         loginService.setConfig("examples/embedded/src/test/resources/realm.properties");
         server.addBean(loginService);
 
-
         server.start();
         server.dumpStdErr();
         server.join();
     }
-
 }

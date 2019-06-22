@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
@@ -233,7 +232,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (_metadata.getMethod() == null)
             _httpConnection.close();
         else if (onEarlyEOF() || _delayedForContent)
-        { 
+        {
             _delayedForContent = false;
             handle();
         }
@@ -290,7 +289,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (_complianceViolations != null && !_complianceViolations.isEmpty())
         {
             this.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
-            _complianceViolations=null;
+            _complianceViolations = null;
         }
 
         boolean persistent;
@@ -367,9 +366,9 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 _upgrade = PREAMBLE_UPGRADE_H2C;
 
                 if (HttpMethod.PRI.is(_metadata.getMethod()) &&
-                        "*".equals(_metadata.getURI().toString()) &&
-                        _fields.size() == 0 &&
-                        upgrade())
+                    "*".equals(_metadata.getURI().toString()) &&
+                    _fields.size() == 0 &&
+                    upgrade())
                     return true;
 
                 badMessage(new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426));
@@ -391,10 +390,10 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         // Should we delay dispatch until we have some content?
         // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
         _delayedForContent = (getHttpConfiguration().isDelayDispatchUntilContent()
-                && (_httpConnection.getParser().getContentLength() > 0 || _httpConnection.getParser().isChunking())
-                && !isExpecting100Continue()
-                && !isCommitted()
-                && _httpConnection.isRequestBufferEmpty());
+            && (_httpConnection.getParser().getContentLength() > 0 || _httpConnection.getParser().isChunking())
+            && !isExpecting100Continue()
+            && !isCommitted()
+            && _httpConnection.isRequestBufferEmpty());
 
         return !_delayedForContent;
     }
@@ -527,7 +526,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             {
                 _complianceViolations = new ArrayList<>();
             }
-            String record = String.format("%s (see %s) in mode %s for %s in %s", 
+            String record = String.format("%s (see %s) in mode %s for %s in %s",
                 violation.getDescription(), violation.getURL(), compliance, reason, getHttpTransport());
             _complianceViolations.add(record);
             if (LOG.isDebugEnabled())

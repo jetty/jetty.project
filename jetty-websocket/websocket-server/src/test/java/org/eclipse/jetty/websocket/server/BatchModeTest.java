@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -36,6 +34,8 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BatchModeTest
 {

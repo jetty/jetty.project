@@ -48,7 +48,7 @@ public class Param
         static
         {
             messageRoles = new Role[]
-            { MESSAGE_TEXT, MESSAGE_TEXT_STREAM, MESSAGE_BINARY, MESSAGE_BINARY_STREAM, MESSAGE_PONG, };
+                {MESSAGE_TEXT, MESSAGE_TEXT_STREAM, MESSAGE_BINARY, MESSAGE_BINARY_STREAM, MESSAGE_PONG,};
         }
 
         public static Role[] getMessageRoles()
@@ -76,7 +76,7 @@ public class Param
             this.annotations = new HashMap<>();
             for (Annotation anno : annos)
             {
-                this.annotations.put(anno.annotationType(),anno);
+                this.annotations.put(anno.annotationType(), anno);
             }
         }
     }

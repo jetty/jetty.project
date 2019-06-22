@@ -38,25 +38,27 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
  */
-public class App implements EntryPoint {
-	/**
-	 * The message displayed to the user when the server cannot be reached or
-	 * returns an error.
-	 */
-	private static final String SERVER_ERROR = "An error occurred while "
-			+ "attempting to contact the server. Please check your network "
-			+ "connection and try again.";
+public class App implements EntryPoint
+{
+    /**
+     * The message displayed to the user when the server cannot be reached or
+     * returns an error.
+     */
+    private static final String SERVER_ERROR = "An error occurred while "
+        + "attempting to contact the server. Please check your network "
+        + "connection and try again.";
 
     /**
      * Create a remote service proxy to talk to the server-side Greeting service.
      */
     private final GreetingServiceAsync greetingService = GWT
-            .create(GreetingService.class);
+        .create(GreetingService.class);
 
     /**
      * This is the entry point method.
      */
-    public void onModuleLoad() {
+    public void onModuleLoad()
+    {
         final Button sendButton = new Button("Send");
         final TextBox nameField = new TextBox();
         nameField.setText("GWT User");
@@ -95,8 +97,10 @@ public class App implements EntryPoint {
         dialogBox.setWidget(dialogVPanel);
 
         // Add a handler to close the DialogBox
-        closeButton.addClickHandler(new ClickHandler() {
-            public void onClick(ClickEvent event) {
+        closeButton.addClickHandler(new ClickHandler()
+        {
+            public void onClick(ClickEvent event)
+            {
                 dialogBox.hide();
                 sendButton.setEnabled(true);
                 sendButton.setFocus(true);
@@ -104,19 +108,23 @@ public class App implements EntryPoint {
         });
 
         // Create a handler for the sendButton and nameField
-        class MyHandler implements ClickHandler, KeyUpHandler {
+        class MyHandler implements ClickHandler, KeyUpHandler
+        {
             /**
              * Fired when the user clicks on the sendButton.
              */
-            public void onClick(ClickEvent event) {
+            public void onClick(ClickEvent event)
+            {
                 sendNameToServer();
             }
 
             /**
              * Fired when the user types in the nameField.
              */
-            public void onKeyUp(KeyUpEvent event) {
-                if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
+            public void onKeyUp(KeyUpEvent event)
+            {
+                if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER)
+                {
                     sendNameToServer();
                 }
             }
@@ -124,11 +132,13 @@ public class App implements EntryPoint {
             /**
              * Send the name from the nameField to the server and wait for a response.
              */
-            private void sendNameToServer() {
+            private void sendNameToServer()
+            {
                 // First, we validate the input.
                 errorLabel.setText("");
                 String textToServer = nameField.getText();
-                if (!FieldVerifier.isValidName(textToServer)) {
+                if (!FieldVerifier.isValidName(textToServer))
+                {
                     errorLabel.setText("Please enter at least four characters");
                     return;
                 }
@@ -138,33 +148,36 @@ public class App implements EntryPoint {
                 textToServerLabel.setText(textToServer);
                 serverResponseLabel.setText("");
                 greetingService.greetServer(textToServer,
-                        new AsyncCallback<GreetingResponse>() {
-                            public void onFailure(Throwable caught) {
-                                // Show the RPC error message to the user
-                                dialogBox
-                                        .setText("Remote Procedure Call - Failure");
-                                serverResponseLabel
-                                        .addStyleName("serverResponseLabelError");
-                                serverResponseLabel.setHTML(SERVER_ERROR);
-                                dialogBox.center();
-                                closeButton.setFocus(true);
-                            }
+                    new AsyncCallback<GreetingResponse>()
+                    {
+                        public void onFailure(Throwable caught)
+                        {
+                            // Show the RPC error message to the user
+                            dialogBox
+                                .setText("Remote Procedure Call - Failure");
+                            serverResponseLabel
+                                .addStyleName("serverResponseLabelError");
+                            serverResponseLabel.setHTML(SERVER_ERROR);
+                            dialogBox.center();
+                            closeButton.setFocus(true);
+                        }
 
-                            public void onSuccess(GreetingResponse result) {
-                                dialogBox.setText("Remote Procedure Call");
-                                serverResponseLabel
-                                        .removeStyleName("serverResponseLabelError");
-                                serverResponseLabel.setHTML(new SafeHtmlBuilder()
-                                        .appendEscaped(result.getGreeting())
-                                        .appendHtmlConstant("<br><br>I am running ")
-                                        .appendEscaped(result.getServerInfo())
-                                        .appendHtmlConstant(".<br><br>It looks like you are using:<br>")
-                                        .appendEscaped(result.getUserAgent())
-                                        .toSafeHtml());
-                                dialogBox.center();
-                                closeButton.setFocus(true);
-                            }
-                        });
+                        public void onSuccess(GreetingResponse result)
+                        {
+                            dialogBox.setText("Remote Procedure Call");
+                            serverResponseLabel
+                                .removeStyleName("serverResponseLabelError");
+                            serverResponseLabel.setHTML(new SafeHtmlBuilder()
+                                .appendEscaped(result.getGreeting())
+                                .appendHtmlConstant("<br><br>I am running ")
+                                .appendEscaped(result.getServerInfo())
+                                .appendHtmlConstant(".<br><br>It looks like you are using:<br>")
+                                .appendEscaped(result.getUserAgent())
+                                .toSafeHtml());
+                            dialogBox.center();
+                            closeButton.setFocus(true);
+                        }
+                    });
             }
         }
 

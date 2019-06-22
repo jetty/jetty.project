@@ -25,19 +25,17 @@ import org.junit.jupiter.api.AfterEach;
  */
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-       return JdbcTestHelper.newSessionDataStoreFactory();
+        return JdbcTestHelper.newSessionDataStoreFactory();
     }
 
-
-    
     @AfterEach
-    public void tearDown() throws Exception 
+    public void tearDown() throws Exception
     {
         JdbcTestHelper.shutdown(null);
     }

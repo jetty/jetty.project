@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 public class ReadOnlyDelegatedFrame implements Frame
 {
     private final Frame delegate;
-    
+
     public ReadOnlyDelegatedFrame(Frame frame)
     {
         this.delegate = frame;
@@ -49,7 +49,8 @@ public class ReadOnlyDelegatedFrame implements Frame
     @Override
     public ByteBuffer getPayload()
     {
-        if(!delegate.hasPayload()) {
+        if (!delegate.hasPayload())
+        {
             return null;
         }
         return delegate.getPayload().asReadOnlyBuffer();

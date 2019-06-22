@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.ant.types;
 
 import java.util.ArrayList;
@@ -27,7 +26,7 @@ import org.eclipse.jetty.ant.utils.TaskLog;
 
 /**
  * SystemProperties
- * <p> 
+ * <p>
  * Ant &lt;systemProperties/&gt; tag definition.
  */
 public class SystemProperties
@@ -47,7 +46,8 @@ public class SystemProperties
 
     /**
      * Set a System.property with this value if it is not already set.
-     * @param property the property to test 
+     *
+     * @param property the property to test
      * @return true if property has been set
      */
     public static boolean setIfNotSetAlready(Property property)
@@ -55,9 +55,9 @@ public class SystemProperties
         if (System.getProperty(property.getName()) == null)
         {
             System.setProperty(property.getName(), (property.getValue() == null ? "" : property
-                    .getValue()));
+                .getValue()));
             TaskLog.log("Setting property '" + property.getName() + "' to value '"
-                    + property.getValue() + "'");
+                + property.getValue() + "'");
             return true;
         }
 

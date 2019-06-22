@@ -29,12 +29,12 @@ public class AdapterConnectCloseSocket extends WebSocketAdapter
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        capture.offer("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onWebSocketClose(%d, %s)", statusCode, capture.q(reason));
     }
 
     @Override
     public void onWebSocketConnect(Session sess)
     {
-        capture.offer("onWebSocketConnect(%s)",sess);
+        capture.offer("onWebSocketConnect(%s)", sess);
     }
 }

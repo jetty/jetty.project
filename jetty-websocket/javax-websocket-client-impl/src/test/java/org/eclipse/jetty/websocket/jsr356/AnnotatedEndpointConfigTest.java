@@ -18,16 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
 import java.util.List;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Decoder;
@@ -44,6 +36,13 @@ import org.eclipse.jetty.websocket.jsr356.encoders.TimeEncoder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AnnotatedEndpointConfigTest
 {
@@ -80,7 +79,7 @@ public class AnnotatedEndpointConfigTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
+        serverUri = new URI(String.format("ws://%s:%d/", host, port));
 
         // Connect client
 
@@ -88,15 +87,15 @@ public class AnnotatedEndpointConfigTest
         server.addBean(container); // allow to shutdown with server
         socket = new AnnotatedEndpointClient();
 
-        session = container.connectToServer(socket,serverUri);
-        assertThat("Session",session,notNullValue());
+        session = container.connectToServer(socket, serverUri);
+        assertThat("Session", session, notNullValue());
 
         config = socket.config;
-        assertThat("EndpointConfig",config,notNullValue());
-        assertThat("EndpointConfig",config,instanceOf(ClientEndpointConfig.class));
+        assertThat("EndpointConfig", config, notNullValue());
+        assertThat("EndpointConfig", config, instanceOf(ClientEndpointConfig.class));
 
         ceconfig = (ClientEndpointConfig)config;
-        assertThat("EndpointConfig",ceconfig,notNullValue());
+        assertThat("EndpointConfig", ceconfig, notNullValue());
     }
 
     @AfterAll
@@ -127,30 +126,30 @@ public class AnnotatedEndpointConfigTest
     public void testTextMax() throws Exception
     {
         assertThat("Client Text Max",
-                socket.session.getMaxTextMessageBufferSize(),
-                is(111222));
+            socket.session.getMaxTextMessageBufferSize(),
+            is(111222));
     }
-    
+
     @Test
     public void testBinaryMax() throws Exception
     {
         assertThat("Client Binary Max",
-                socket.session.getMaxBinaryMessageBufferSize(),
-                is(333444));
+            socket.session.getMaxBinaryMessageBufferSize(),
+            is(333444));
     }
-    
+
     @Test
     public void testSubProtocols() throws Exception
     {
         List<String> subprotocols = ceconfig.getPreferredSubprotocols();
-        assertThat("Client Preferred SubProtocols",subprotocols,contains("chat","echo"));
+        assertThat("Client Preferred SubProtocols", subprotocols, contains("chat", "echo"));
     }
 
     @Test
     public void testDecoders() throws Exception
     {
         List<Class<? extends Decoder>> decoders = config.getDecoders();
-        assertThat("Decoders",decoders,notNullValue());
+        assertThat("Decoders", decoders, notNullValue());
 
         Class<?> expectedClass = DateDecoder.class;
         boolean hasExpectedDecoder = false;
@@ -162,14 +161,14 @@ public class AnnotatedEndpointConfigTest
             }
         }
 
-        assertTrue(hasExpectedDecoder,"Client Decoders has " + expectedClass.getName());
+        assertTrue(hasExpectedDecoder, "Client Decoders has " + expectedClass.getName());
     }
 
     @Test
     public void testEncoders() throws Exception
     {
         List<Class<? extends Encoder>> encoders = config.getEncoders();
-        assertThat("Encoders",encoders,notNullValue());
+        assertThat("Encoders", encoders, notNullValue());
 
         Class<?> expectedClass = TimeEncoder.class;
         boolean hasExpectedEncoder = false;
@@ -181,7 +180,7 @@ public class AnnotatedEndpointConfigTest
             }
         }
 
-        assertTrue(hasExpectedEncoder,"Client Encoders has " + expectedClass.getName());
+        assertTrue(hasExpectedEncoder, "Client Encoders has " + expectedClass.getName());
     }
 
     @Test
@@ -189,6 +188,6 @@ public class AnnotatedEndpointConfigTest
     {
         ClientEndpointConfig ceconfig = (ClientEndpointConfig)config;
 
-        assertThat("Client Configurator",ceconfig.getConfigurator(),instanceOf(AnnotatedEndpointConfigurator.class));
+        assertThat("Client Configurator", ceconfig.getConfigurator(), instanceOf(AnnotatedEndpointConfigurator.class));
     }
 }

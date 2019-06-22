@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.security.jaspi.callback;
 
 import javax.security.auth.Subject;
@@ -36,44 +35,41 @@ public class CredentialValidationCallback implements Callback
     private boolean _result;
     private Subject _subject;
     private String _userName;
-    
-    
-    public CredentialValidationCallback (Subject subject, String userName, Credential credential)
+
+    public CredentialValidationCallback(Subject subject, String userName, Credential credential)
     {
         _subject = subject;
         _userName = userName;
         _credential = credential;
     }
-    
-    public Credential getCredential ()
+
+    public Credential getCredential()
     {
         return _credential;
     }
-    
-    public void clearCredential ()
+
+    public void clearCredential()
     {
         _credential = null;
-    } 
-    
+    }
+
     public boolean getResult()
     {
         return _result;
     }
-    
+
     public javax.security.auth.Subject getSubject()
     {
         return _subject;
     }
-    
+
     public java.lang.String getUsername()
     {
-        return _userName;     
+        return _userName;
     }
-    
+
     public void setResult(boolean result)
     {
         _result = result;
     }
-    
-    
 }

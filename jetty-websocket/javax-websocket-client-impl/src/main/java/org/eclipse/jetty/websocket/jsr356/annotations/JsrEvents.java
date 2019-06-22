@@ -24,7 +24,6 @@ import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 /**
  * The live event methods found for a specific Annotated Endpoint
+ *
  * @param <T> the annotation type
  * @param <C> the endpoint config type
  */
@@ -96,14 +96,14 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
     public JsrEvents(AnnotatedEndpointMetadata<T, C> metadata)
     {
         this.metadata = metadata;
-        this.onOpen = (metadata.onOpen == null)?null:new OnOpenCallable(metadata.onOpen);
-        this.onClose = (metadata.onClose == null)?null:new OnCloseCallable(metadata.onClose);
-        this.onError = (metadata.onError == null)?null:new OnErrorCallable(metadata.onError);
-        this.onBinary = (metadata.onBinary == null)?null:new OnMessageBinaryCallable(metadata.onBinary);
-        this.onBinaryStream = (metadata.onBinaryStream == null)?null:new OnMessageBinaryStreamCallable(metadata.onBinaryStream);
-        this.onText = (metadata.onText == null)?null:new OnMessageTextCallable(metadata.onText);
-        this.onTextStream = (metadata.onTextStream == null)?null:new OnMessageTextStreamCallable(metadata.onTextStream);
-        this.onPong = (metadata.onPong == null)?null:new OnMessagePongCallable(metadata.onPong);
+        this.onOpen = (metadata.onOpen == null) ? null : new OnOpenCallable(metadata.onOpen);
+        this.onClose = (metadata.onClose == null) ? null : new OnCloseCallable(metadata.onClose);
+        this.onError = (metadata.onError == null) ? null : new OnErrorCallable(metadata.onError);
+        this.onBinary = (metadata.onBinary == null) ? null : new OnMessageBinaryCallable(metadata.onBinary);
+        this.onBinaryStream = (metadata.onBinaryStream == null) ? null : new OnMessageBinaryStreamCallable(metadata.onBinaryStream);
+        this.onText = (metadata.onText == null) ? null : new OnMessageTextCallable(metadata.onText);
+        this.onTextStream = (metadata.onTextStream == null) ? null : new OnMessageTextStreamCallable(metadata.onTextStream);
+        this.onPong = (metadata.onPong == null) ? null : new OnMessagePongCallable(metadata.onPong);
     }
 
     public void callBinary(RemoteEndpoint.Async endpoint, Object websocket, ByteBuffer buf, boolean fin) throws DecodeException
@@ -113,12 +113,12 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
             return;
         }
 
-        Object ret = onBinary.call(websocket,buf,fin);
+        Object ret = onBinary.call(websocket, buf, fin);
         if (ret != null)
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("returning: {}",ret);
+                LOG.debug("returning: {}", ret);
             }
             endpoint.sendObject(ret);
         }
@@ -131,12 +131,12 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
             return;
         }
 
-        Object ret = onBinaryStream.call(websocket,stream);
+        Object ret = onBinaryStream.call(websocket, stream);
         if (ret != null)
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("returning: {}",ret);
+                LOG.debug("returning: {}", ret);
             }
             endpoint.sendObject(ret);
         }
@@ -148,7 +148,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         {
             return;
         }
-        onClose.call(websocket,close);
+        onClose.call(websocket, close);
     }
 
     public void callError(Object websocket, Throwable cause)
@@ -158,7 +158,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
             LOG.warn("Unable to report throwable to websocket (no @OnError handler declared): " + websocket.getClass().getName(), cause);
             return;
         }
-        onError.call(websocket,cause);
+        onError.call(websocket, cause);
     }
 
     public void callOpen(Object websocket, EndpointConfig config)
@@ -167,7 +167,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         {
             return;
         }
-        onOpen.call(websocket,config);
+        onOpen.call(websocket, config);
     }
 
     public void callPong(RemoteEndpoint.Async endpoint, Object websocket, ByteBuffer pong)
@@ -177,12 +177,12 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
             return;
         }
 
-        Object ret = onPong.call(websocket,pong);
+        Object ret = onPong.call(websocket, pong);
         if (ret != null)
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("returning: {}",ret);
+                LOG.debug("returning: {}", ret);
             }
             endpoint.sendObject(ret);
         }
@@ -194,12 +194,12 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         {
             return;
         }
-        Object ret = onText.call(websocket,text,fin);
+        Object ret = onText.call(websocket, text, fin);
         if (ret != null)
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("returning: {}",ret);
+                LOG.debug("returning: {}", ret);
             }
             endpoint.sendObject(ret);
         }
@@ -211,12 +211,12 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         {
             return;
         }
-        Object ret = onTextStream.call(websocket,reader);
+        Object ret = onTextStream.call(websocket, reader);
         if (ret != null)
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("returning: {}",ret);
+                LOG.debug("returning: {}", ret);
             }
             endpoint.sendObject(ret);
         }

@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -332,11 +331,11 @@ public class SPNEGOAuthentication extends AbstractAuthentication
         public void handle(Callback[] callbacks) throws IOException
         {
             PasswordCallback callback = Arrays.stream(callbacks)
-                    .filter(PasswordCallback.class::isInstance)
-                    .map(PasswordCallback.class::cast)
-                    .findAny()
-                    .filter(c -> c.getPrompt().contains(getUserName()))
-                    .orElseThrow(IOException::new);
+                .filter(PasswordCallback.class::isInstance)
+                .map(PasswordCallback.class::cast)
+                .findAny()
+                .filter(c -> c.getPrompt().contains(getUserName()))
+                .orElseThrow(IOException::new);
             callback.setPassword(getUserPassword().toCharArray());
         }
     }

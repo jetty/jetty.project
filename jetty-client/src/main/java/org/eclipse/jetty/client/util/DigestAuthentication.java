@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
 
 /**
  * Implementation of the HTTP "Digest" authentication defined in RFC 2617.
@@ -69,15 +68,14 @@ public class DigestAuthentication extends AbstractAuthentication
         return "Digest";
     }
 
-    
     @Override
     public boolean matches(String type, URI uri, String realm)
     {
         // digest authenication requires a realm
         if (realm == null)
             return false;
-        
-        return super.matches(type,uri,realm);
+
+        return super.matches(type, uri, realm);
     }
 
     @Override
@@ -98,7 +96,7 @@ public class DigestAuthentication extends AbstractAuthentication
         String clientQOP = null;
         if (serverQOP != null)
         {
-            List<String> serverQOPValues = StringUtil.csvSplit(null,serverQOP,0,serverQOP.length());
+            List<String> serverQOPValues = StringUtil.csvSplit(null, serverQOP, 0, serverQOP.length());
             if (serverQOPValues.contains("auth"))
                 clientQOP = "auth";
             else if (serverQOPValues.contains("auth-int"))
@@ -180,7 +178,7 @@ public class DigestAuthentication extends AbstractAuthentication
             {
                 nonceCount = nextNonceCount();
                 clientNonce = newClientNonce();
-                A3 = hashA1 + ":" + nonce + ":" +  nonceCount + ":" + clientNonce + ":" + qop + ":" + hashA2;
+                A3 = hashA1 + ":" + nonce + ":" + nonceCount + ":" + clientNonce + ":" + qop + ":" + hashA2;
             }
             else
             {

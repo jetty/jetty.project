@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
 import java.util.Collections;
-
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
@@ -29,7 +28,7 @@ public class EchoSocketConfigurator extends ServerEndpointConfig.Configurator
     @Override
     public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
     {
-        response.getHeaders().put("X-Test",Collections.singletonList("Extra"));
-        super.modifyHandshake(sec,request,response);
+        response.getHeaders().put("X-Test", Collections.singletonList("Extra"));
+        super.modifyHandshake(sec, request, response);
     }
 }

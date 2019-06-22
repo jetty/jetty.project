@@ -99,8 +99,8 @@ class ReadState
                 case READING:
                     return false;
                 case SUSPENDING:
-                   state = State.SUSPENDED;
-                   return true;
+                    state = State.SUSPENDED;
+                    return true;
                 case SUSPENDED:
                     if (buffer == null)
                         throw new IllegalStateException();

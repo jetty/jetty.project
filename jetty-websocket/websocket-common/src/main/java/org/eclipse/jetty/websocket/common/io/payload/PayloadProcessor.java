@@ -30,11 +30,9 @@ public interface PayloadProcessor
 {
     /**
      * Used to process payloads for in the spec.
-     * 
-     * @param payload
-     *            the payload to process
-     * @throws BadPayloadException
-     *             the exception when the payload fails to validate properly
+     *
+     * @param payload the payload to process
+     * @throws BadPayloadException the exception when the payload fails to validate properly
      */
     public void process(ByteBuffer payload);
 

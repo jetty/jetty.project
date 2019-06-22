@@ -24,11 +24,12 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/invalid")
+@ServerEndpoint(value = "/invalid")
 public class InvalidOpenSessionIntSocket extends TrackingSocket
 {
     /**
      * Invalid Open Method Declaration (parameter of type int)
+     *
      * @param session the sesion
      * @param count the count
      */

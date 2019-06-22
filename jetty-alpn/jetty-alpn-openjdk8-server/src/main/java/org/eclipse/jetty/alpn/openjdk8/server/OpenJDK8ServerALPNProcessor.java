@@ -20,7 +20,6 @@ package org.eclipse.jetty.alpn.openjdk8.server;
 
 import java.util.Collections;
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -35,13 +34,13 @@ import org.eclipse.jetty.util.log.Logger;
 public class OpenJDK8ServerALPNProcessor implements ALPNProcessor.Server
 {
     private static final Logger LOG = Log.getLogger(OpenJDK8ServerALPNProcessor.class);
-    
+
     @Override
     public void init()
     {
-        if (JavaVersion.VERSION.getPlatform()!=8)
-            throw new IllegalStateException(this + " not applicable for java "+JavaVersion.VERSION);
-        if (ALPN.class.getClassLoader()!=null)
+        if (JavaVersion.VERSION.getPlatform() != 8)
+            throw new IllegalStateException(this + " not applicable for java " + JavaVersion.VERSION);
+        if (ALPN.class.getClassLoader() != null)
             throw new IllegalStateException(ALPN.class.getName() + " must be on JVM boot classpath");
         if (LOG.isDebugEnabled())
             ALPN.debug = true;
@@ -83,7 +82,7 @@ public class OpenJDK8ServerALPNProcessor implements ALPNProcessor.Server
                 LOG.debug("onClosed {}", alpnConnection);
             ALPN.remove(alpnConnection.getSSLEngine());
         }
-        
+
         @Override
         public void unsupported()
         {

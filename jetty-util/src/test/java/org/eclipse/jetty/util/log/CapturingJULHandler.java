@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.logging.Handler;
@@ -28,6 +25,8 @@ import java.util.logging.LogRecord;
 
 import org.eclipse.jetty.util.IO;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class CapturingJULHandler extends Handler
 {
@@ -83,6 +82,6 @@ public class CapturingJULHandler extends Handler
 
     public void assertContainsLine(String line)
     {
-        assertThat(output.toString(),containsString(line));
+        assertThat(output.toString(), containsString(line));
     }
 }

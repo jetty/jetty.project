@@ -64,7 +64,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
     /**
      * Establishes a physical connection to the given {@code address}.
      *
-     *  @param address the address to connect to
+     * @param address the address to connect to
      * @param context the context information to establish the connection
      */
     public void connect(InetSocketAddress address, Map<String, Object> context);

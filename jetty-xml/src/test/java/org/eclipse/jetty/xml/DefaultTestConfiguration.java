@@ -23,9 +23,9 @@ public class DefaultTestConfiguration
     private String first;
     private String second;
     private String third;
-    
+
     DefaultTestConfiguration nested;
-    
+
     public DefaultTestConfiguration()
     {
         /* default constructor */
@@ -70,5 +70,4 @@ public class DefaultTestConfiguration
     {
         this.nested = nested;
     }
-    
 }

@@ -36,7 +36,7 @@ public class EchoStringEndpoint extends AbstractStringEndpoint
         super.onOpen(session, config);
         this.session.getUserProperties().put("endpoint", this);
     }
-    
+
     @Override
     public void onMessage(String message)
     {

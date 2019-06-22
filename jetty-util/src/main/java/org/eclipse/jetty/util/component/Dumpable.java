@@ -35,7 +35,7 @@ public interface Dumpable
 {
     String KEY = "key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +@ map, +> undefined";
 
-    @ManagedOperation(value="Dump the nested Object state as a String", impact="INFO")
+    @ManagedOperation(value = "Dump the nested Object state as a String", impact = "INFO")
     default String dump()
     {
         return dump(this);
@@ -44,14 +44,16 @@ public interface Dumpable
     /**
      * Dump this object (and children) into an Appendable using the provided indent after any new lines.
      * The indent should not be applied to the first object dumped.
+     *
      * @param out The appendable to dump to
      * @param indent The indent to apply after any new lines.
      * @throws IOException if unable to write to Appendable
      */
-    void dump(Appendable out,String indent) throws IOException;
+    void dump(Appendable out, String indent) throws IOException;
 
     /**
      * Utility method to implement {@link #dump()} by calling {@link #dump(Appendable, String)}
+     *
      * @param dumpable The dumpable to dump
      * @return The dumped string
      */
@@ -82,6 +84,7 @@ public interface Dumpable
 
     /**
      * Dump just an Object (but not it's contained items) to an Appendable.
+     *
      * @param out The Appendable to dump to
      * @param o The object to dump.
      * @throws IOException May be thrown by the Appendable
@@ -91,7 +94,7 @@ public interface Dumpable
         try
         {
             String s;
-            if (o==null)
+            if (o == null)
                 s = "null";
             else if (o instanceof Dumpable)
             {
@@ -100,11 +103,11 @@ public interface Dumpable
                 s = StringUtil.replace(s, '\n', '|');
             }
             else if (o instanceof Collection)
-                s = String.format("%s@%x(size=%d)",o.getClass().getName(),o.hashCode(),((Collection)o).size());
+                s = String.format("%s@%x(size=%d)", o.getClass().getName(), o.hashCode(), ((Collection)o).size());
             else if (o.getClass().isArray())
-                s = String.format("%s@%x[size=%d]",o.getClass().getComponentType(),o.hashCode(), Array.getLength(o));
+                s = String.format("%s@%x[size=%d]", o.getClass().getComponentType(), o.hashCode(), Array.getLength(o));
             else if (o instanceof Map)
-                s = String.format("%s@%x{size=%d}",o.getClass().getName(),o.hashCode(),((Map<?,?>)o).size());
+                s = String.format("%s@%x{size=%d}", o.getClass().getName(), o.hashCode(), ((Map<?, ?>)o).size());
             else
             {
                 s = String.valueOf(o);
@@ -127,19 +130,20 @@ public interface Dumpable
      * Dump an Object, it's contained items and additional items to an {@link Appendable}.
      * If the object in an {@link Iterable} or an {@link Array}, then its contained items
      * are also dumped.
+     *
      * @param out the Appendable to dump to
      * @param indent The indent to apply after any new lines
      * @param object The object to dump. If the object is an instance
-     *          of {@link Container}, {@link Stream}, {@link Iterable}, {@link Array} or {@link Map},
-     *          then children of the object a recursively dumped.
+     * of {@link Container}, {@link Stream}, {@link Iterable}, {@link Array} or {@link Map},
+     * then children of the object a recursively dumped.
      * @param extraChildren Items to be dumped as children of the object, in addition to any discovered children of object
      * @throws IOException May be thrown by the Appendable
      */
     static void dumpObjects(Appendable out, String indent, Object object, Object... extraChildren) throws IOException
     {
-        dumpObject(out,object);
+        dumpObject(out, object);
 
-        int extras = extraChildren==null?0:extraChildren.length;
+        int extras = extraChildren == null ? 0 : extraChildren.length;
 
         if (object instanceof Stream)
             object = ((Stream)object).toArray();
@@ -148,28 +152,28 @@ public interface Dumpable
 
         if (object instanceof Container)
         {
-            dumpContainer(out, indent, (Container)object, extras==0);
+            dumpContainer(out, indent, (Container)object, extras == 0);
         }
         if (object instanceof Iterable)
         {
-            dumpIterable(out, indent, (Iterable<?>)object, extras==0);
+            dumpIterable(out, indent, (Iterable<?>)object, extras == 0);
         }
         else if (object instanceof Map)
         {
-            dumpMapEntries(out, indent, (Map<?,?>)object, extras==0);
+            dumpMapEntries(out, indent, (Map<?, ?>)object, extras == 0);
         }
 
-        if (extras==0)
+        if (extras == 0)
             return;
 
         int i = 0;
         for (Object item : extraChildren)
         {
             i++;
-            String nextIndent = indent + (i<extras ? "|  " : "   ");
+            String nextIndent = indent + (i < extras ? "|  " : "   ");
             out.append(indent).append("+> ");
             if (item instanceof Dumpable)
-                ((Dumpable)item).dump(out,nextIndent);
+                ((Dumpable)item).dump(out, nextIndent);
             else
                 dumpObjects(out, nextIndent, item);
         }
@@ -179,7 +183,7 @@ public interface Dumpable
     {
         Container container = object;
         ContainerLifeCycle containerLifeCycle = container instanceof ContainerLifeCycle ? (ContainerLifeCycle)container : null;
-        for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext();)
+        for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext(); )
         {
             Object bean = i.next();
             String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
@@ -189,7 +193,7 @@ public interface Dumpable
                 {
                     out.append(indent).append("+= ");
                     if (bean instanceof Dumpable)
-                        ((Dumpable)bean).dump(out,nextIndent);
+                        ((Dumpable)bean).dump(out, nextIndent);
                     else
                         dumpObjects(out, nextIndent, bean);
                 }
@@ -197,7 +201,7 @@ public interface Dumpable
                 {
                     out.append(indent).append("+? ");
                     if (bean instanceof Dumpable)
-                        ((Dumpable)bean).dump(out,nextIndent);
+                        ((Dumpable)bean).dump(out, nextIndent);
                     else
                         dumpObjects(out, nextIndent, bean);
                 }
@@ -216,7 +220,7 @@ public interface Dumpable
             {
                 out.append(indent).append("+- ");
                 if (bean instanceof Dumpable)
-                    ((Dumpable)bean).dump(out,nextIndent);
+                    ((Dumpable)bean).dump(out, nextIndent);
                 else
                     dumpObjects(out, nextIndent, bean);
             }
@@ -225,31 +229,30 @@ public interface Dumpable
 
     static void dumpIterable(Appendable out, String indent, Iterable<?> iterable, boolean last) throws IOException
     {
-        for (Iterator i = iterable.iterator(); i.hasNext();)
+        for (Iterator i = iterable.iterator(); i.hasNext(); )
         {
             Object item = i.next();
             String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
             out.append(indent).append("+: ");
             if (item instanceof Dumpable)
-                ((Dumpable)item).dump(out,nextIndent);
+                ((Dumpable)item).dump(out, nextIndent);
             else
-                dumpObjects(out,nextIndent, item);
+                dumpObjects(out, nextIndent, item);
         }
-
     }
 
-    static void dumpMapEntries(Appendable out, String indent, Map<?,?> map, boolean last) throws IOException
+    static void dumpMapEntries(Appendable out, String indent, Map<?, ?> map, boolean last) throws IOException
     {
-        for (Iterator<? extends Map.Entry<?, ?>> i = map.entrySet().iterator(); i.hasNext();)
+        for (Iterator<? extends Map.Entry<?, ?>> i = map.entrySet().iterator(); i.hasNext(); )
         {
             Map.Entry entry = i.next();
             String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
             out.append(indent).append("+@ ").append(String.valueOf(entry.getKey())).append(" = ");
             Object item = entry.getValue();
             if (item instanceof Dumpable)
-                ((Dumpable)item).dump(out,nextIndent);
+                ((Dumpable)item).dump(out, nextIndent);
             else
-                dumpObjects(out,nextIndent, item);
+                dumpObjects(out, nextIndent, item);
         }
     }
 

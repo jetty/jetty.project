@@ -42,7 +42,7 @@ public class DeploymentManagerMBean extends ObjectMBean
     public DeploymentManagerMBean(Object managedObject)
     {
         super(managedObject);
-        _manager = (DeploymentManager) managedObject;
+        _manager = (DeploymentManager)managedObject;
     }
 
     @ManagedAttribute(value = "list apps being tracked")
@@ -91,7 +91,9 @@ public class DeploymentManagerMBean extends ObjectMBean
     {
         List<ContextHandler> apps = new ArrayList<ContextHandler>();
         for (App app : _manager.getApps())
+        {
             apps.add(app.getContextHandler());
+        }
         return apps;
     }
 

@@ -123,7 +123,7 @@ public class WebSocketConnectionStatsTest
     @Test
     public void echoStatsTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/testPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/testPath");
         EventSocket socket = new EventSocket();
         Future<Session> connect = client.connect(socket, uri);
 

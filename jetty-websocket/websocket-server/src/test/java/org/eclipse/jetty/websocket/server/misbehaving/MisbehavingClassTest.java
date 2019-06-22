@@ -99,27 +99,27 @@ public class MisbehavingClassTest
         {
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frames[0].opcode", frame.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
-            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+            assertThat("Close Status Code", close.getStatusCode(), is(StatusCode.SERVER_ERROR));
 
             clientConn.write(close.asFrame()); // respond with close
 
             // ensure server socket got close event
-            assertThat("Close Latch",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-            assertThat("closeStatusCode",socket.closeStatusCode,is(StatusCode.SERVER_ERROR));
+            assertThat("Close Latch", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
+            assertThat("closeStatusCode", socket.closeStatusCode, is(StatusCode.SERVER_ERROR));
 
             // Validate errors (must be "java.lang.RuntimeException: Intentional Exception from onWebSocketConnect")
-            assertThat("socket.onErrors",socket.errors.size(),greaterThanOrEqualTo(1));
+            assertThat("socket.onErrors", socket.errors.size(), greaterThanOrEqualTo(1));
             Throwable cause = socket.errors.pop();
-            assertThat("Error type",cause,instanceOf(RuntimeException.class));
+            assertThat("Error type", cause, instanceOf(RuntimeException.class));
             // ... with optional ClosedChannelException
             cause = socket.errors.peek();
-            if(cause != null)
-                assertThat("Error type",cause,instanceOf(ClosedChannelException.class));
+            if (cause != null)
+                assertThat("Error type", cause, instanceOf(ClosedChannelException.class));
         }
     }
-    
+
     @Test
     public void testAnnotatedRuntimeOnConnect() throws Exception
     {
@@ -137,24 +137,24 @@ public class MisbehavingClassTest
         {
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frames[0].opcode", frame.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
-            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+            assertThat("Close Status Code", close.getStatusCode(), is(StatusCode.SERVER_ERROR));
 
             clientConn.write(close.asFrame()); // respond with close
 
             // ensure server socket got close event
-            assertThat("Close Latch",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-            assertThat("closeStatusCode",socket.closeStatusCode,is(StatusCode.SERVER_ERROR));
+            assertThat("Close Latch", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
+            assertThat("closeStatusCode", socket.closeStatusCode, is(StatusCode.SERVER_ERROR));
 
             // Validate errors (must be "java.lang.RuntimeException: Intentional Exception from onWebSocketConnect")
-            assertThat("socket.onErrors",socket.errors.size(),greaterThanOrEqualTo(1));
+            assertThat("socket.onErrors", socket.errors.size(), greaterThanOrEqualTo(1));
             Throwable cause = socket.errors.pop();
-            assertThat("Error type",cause,instanceOf(RuntimeException.class));
+            assertThat("Error type", cause, instanceOf(RuntimeException.class));
             // ... with optional ClosedChannelException
             cause = socket.errors.peek();
-            if(cause != null)
-                assertThat("Error type",cause,instanceOf(ClosedChannelException.class));
+            if (cause != null)
+                assertThat("Error type", cause, instanceOf(ClosedChannelException.class));
         }
     }
 }

@@ -38,75 +38,73 @@ public class Transaction extends NamingEntry
 {
     private static final Logger LOG = Log.getLogger(Transaction.class);
     public static final String USER_TRANSACTION = "UserTransaction";
-    
 
-    public static void bindToENC ()
-    throws NamingException
+    public static void bindToENC()
+        throws NamingException
     {
         Transaction txEntry = (Transaction)NamingEntryUtil.lookupNamingEntry(null, Transaction.USER_TRANSACTION);
 
-        if ( txEntry != null )
+        if (txEntry != null)
         {
             txEntry.bindToComp();
         }
         else
         {
-            throw new NameNotFoundException( USER_TRANSACTION + " not found" );
+            throw new NameNotFoundException(USER_TRANSACTION + " not found");
         }
     }
-    
-    public Transaction (UserTransaction userTransaction)
-    throws NamingException
+
+    public Transaction(UserTransaction userTransaction)
+        throws NamingException
     {
-        super (USER_TRANSACTION);
+        super(USER_TRANSACTION);
         save(userTransaction);
     }
-    
-    
-    /** 
+
+    /**
      * Allow other bindings of UserTransaction.
-     * 
+     *
      * These should be in ADDITION to java:comp/UserTransaction
+     *
      * @see NamingEntry#bindToENC(java.lang.String)
      */
     @Override
-    public void bindToENC (String localName)
-    throws NamingException
-    {   
+    public void bindToENC(String localName)
+        throws NamingException
+    {
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp/env");
-        if(LOG.isDebugEnabled())
-            LOG.debug("Binding java:comp/env"+getJndiName()+" to "+_objectNameString);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Binding java:comp/env" + getJndiName() + " to " + _objectNameString);
         NamingUtil.bind(env, localName, new LinkRef(_objectNameString));
     }
-    
+
     /**
      * Insist on the java:comp/UserTransaction binding
-     * @throws NamingException
      */
-    private void bindToComp ()
-    throws NamingException
-    {   
+    private void bindToComp()
+        throws NamingException
+    {
         //ignore the name, it is always bound to java:comp
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp");
-        if(LOG.isDebugEnabled())
-            LOG.debug("Binding java:comp/"+getJndiName()+" to "+_objectNameString);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Binding java:comp/" + getJndiName() + " to " + _objectNameString);
         NamingUtil.bind(env, getJndiName(), new LinkRef(_objectNameString));
     }
-    
+
     /**
      * Unbind this Transaction from a java:comp
      */
     @Override
-    public void unbindENC ()
+    public void unbindENC()
     {
         try
         {
             InitialContext ic = new InitialContext();
             Context env = (Context)ic.lookup("java:comp");
-            if(LOG.isDebugEnabled())
-                LOG.debug("Unbinding java:comp/"+getJndiName());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unbinding java:comp/" + getJndiName());
             env.unbind(getJndiName());
         }
         catch (NamingException e)

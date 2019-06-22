@@ -18,14 +18,13 @@
 
 package com.acme.jmx;
 
+import com.acme.Derived;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import com.acme.Derived;
 
 @ManagedObject("Derived MBean Wrapper")
 public class DerivedMBean extends ObjectMBean
@@ -48,5 +47,4 @@ public class DerivedMBean extends ObjectMBean
     {
         return "goop";
     }
-
 }

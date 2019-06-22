@@ -58,7 +58,7 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
 
     protected void appendMessage(ByteBuffer buffer, boolean fin) throws IOException
     {
-        activeMessage.appendFrame(buffer,fin);
+        activeMessage.appendFrame(buffer, fin);
 
         if (fin)
         {
@@ -89,7 +89,7 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("incomingFrame({})",frame);
+            LOG.debug("incomingFrame({})", frame);
         }
 
         try
@@ -103,7 +103,7 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
                 {
                     boolean validate = true;
                     CloseFrame closeframe = (CloseFrame)frame;
-                    CloseInfo close = new CloseInfo(closeframe,validate);
+                    CloseInfo close = new CloseInfo(closeframe, validate);
 
                     // process handshake
                     session.getConnection().remoteClose(close);
@@ -114,14 +114,14 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
                 {
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.debug("PING: {}",BufferUtil.toDetailString(frame.getPayload()));
+                        LOG.debug("PING: {}", BufferUtil.toDetailString(frame.getPayload()));
                     }
                     ByteBuffer pongBuf;
                     if (frame.hasPayload())
                     {
                         pongBuf = ByteBuffer.allocate(frame.getPayload().remaining());
-                        BufferUtil.put(frame.getPayload().slice(),pongBuf);
-                        BufferUtil.flipToFlush(pongBuf,0);
+                        BufferUtil.put(frame.getPayload().slice(), pongBuf);
+                        BufferUtil.flipToFlush(pongBuf, 0);
                     }
                     else
                     {
@@ -135,30 +135,30 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
                 {
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.debug("PONG: {}",BufferUtil.toDetailString(frame.getPayload()));
+                        LOG.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
                     }
                     onPong(frame.getPayload());
                     break;
                 }
                 case OpCode.BINARY:
                 {
-                    onBinaryFrame(frame.getPayload(),frame.isFin());
+                    onBinaryFrame(frame.getPayload(), frame.isFin());
                     return;
                 }
                 case OpCode.TEXT:
                 {
-                    onTextFrame(frame.getPayload(),frame.isFin());
+                    onTextFrame(frame.getPayload(), frame.isFin());
                     return;
                 }
                 case OpCode.CONTINUATION:
                 {
-                    onContinuationFrame(frame.getPayload(),frame.isFin());
+                    onContinuationFrame(frame.getPayload(), frame.isFin());
                     return;
                 }
                 default:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Unhandled OpCode: {}",opcode);
+                        LOG.debug("Unhandled OpCode: {}", opcode);
                 }
             }
         }
@@ -180,7 +180,7 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
             throw new IOException("Out of order Continuation frame encountered");
         }
 
-        appendMessage(buffer,fin);
+        appendMessage(buffer, fin);
     }
 
     @Override
@@ -209,7 +209,7 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
         }
         this.session = session;
         this.session.getContainerScope().getObjectFactory().decorate(this.websocket);
-        
+
         try
         {
             // Call application onOpen

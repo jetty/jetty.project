@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.MessageHandler;
@@ -58,7 +57,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
 
     public JsrEndpointEventDriver(WebSocketPolicy policy, EndpointInstance endpointInstance)
     {
-        super(policy,endpointInstance);
+        super(policy, endpointInstance);
         this.endpoint = (Endpoint)endpointInstance.getEndpoint();
     }
 
@@ -103,11 +102,11 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             }
             else
             {
-                activeMessage = new BinaryWholeMessage(this,wrapper);
+                activeMessage = new BinaryWholeMessage(this, wrapper);
             }
         }
 
-        activeMessage.appendFrame(buffer,fin);
+        activeMessage.appendFrame(buffer, fin);
 
         if (fin)
         {
@@ -125,7 +124,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     @Override
     protected void onClose(CloseReason closereason)
     {
-        endpoint.onClose(this.jsrsession,closereason);
+        endpoint.onClose(this.jsrsession, closereason);
     }
 
     @Override
@@ -133,11 +132,11 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onConnect({}, {})",jsrsession,config);
+            LOG.debug("onConnect({}, {})", jsrsession, config);
         }
 
         // Let unhandled exceptions flow out
-        endpoint.onOpen(jsrsession,config);
+        endpoint.onOpen(jsrsession, config);
     }
 
     @Override
@@ -145,11 +144,11 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     {
         try
         {
-            endpoint.onError(jsrsession,cause);
+            endpoint.onError(jsrsession, cause);
         }
         catch (Throwable t)
         {
-            LOG.warn("Unable to report to onError due to exception",t);
+            LOG.warn("Unable to report to onError due to exception", t);
         }
     }
 
@@ -207,11 +206,11 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             }
             else
             {
-                activeMessage = new TextWholeMessage(this,wrapper);
+                activeMessage = new TextWholeMessage(this, wrapper);
             }
         }
 
-        activeMessage.appendFrame(buffer,fin);
+        activeMessage.appendFrame(buffer, fin);
 
         if (fin)
         {
@@ -259,8 +258,8 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
         else
         {
             pongBuf = ByteBuffer.allocate(buffer.remaining());
-            BufferUtil.put(buffer,pongBuf);
-            BufferUtil.flipToFlush(pongBuf,0);
+            BufferUtil.put(buffer, pongBuf);
+            BufferUtil.flipToFlush(pongBuf, 0);
         }
 
         @SuppressWarnings("unchecked")
@@ -277,6 +276,6 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     @Override
     public String toString()
     {
-        return String.format("%s[%s]",JsrEndpointEventDriver.class.getSimpleName(),endpoint.getClass().getName());
+        return String.format("%s[%s]", JsrEndpointEventDriver.class.getSimpleName(), endpoint.getClass().getName());
     }
 }

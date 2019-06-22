@@ -35,8 +35,6 @@ public class CDITests extends AbstractDistributionTest
     /**
      * Tests a WAR file that is CDI complete as it includes the weld
      * library in its WEB-INF/lib directory.
-     *
-     * @throws Exception
      */
     @Test
     public void testCDI2_IncludedInWebapp() throws Exception
@@ -85,18 +83,16 @@ public class CDITests extends AbstractDistributionTest
      * Tests a WAR file that is expects CDI to be configured by the server.
      *
      * <p>
-     *     This means the WAR has the weld libs in its
-     *     WEB-INF/lib directory.
+     * This means the WAR has the weld libs in its
+     * WEB-INF/lib directory.
      * </p>
      *
      * <p>
-     *     The expectation is that a context xml deployable file is not
-     *     required when using this `cdi2` module, and the appropriate
-     *     server side libs are made available to allow weld to function.
-     *     (the required server side javax.el support comes from the cdi2 module)
+     * The expectation is that a context xml deployable file is not
+     * required when using this `cdi2` module, and the appropriate
+     * server side libs are made available to allow weld to function.
+     * (the required server side javax.el support comes from the cdi2 module)
      * </p>
-     *
-     * @throws Exception
      */
     @Test
     public void testCDI2_ConfiguredByServer() throws Exception

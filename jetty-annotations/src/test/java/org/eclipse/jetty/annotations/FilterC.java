@@ -19,7 +19,6 @@
 package org.eclipse.jetty.annotations;
 
 import java.io.IOException;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
@@ -37,15 +36,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-@WebFilter(filterName="CFilter", dispatcherTypes={DispatcherType.REQUEST}, urlPatterns = {"/*"}, initParams={@WebInitParam(name="a", value="99")}, asyncSupported=false)
+@WebFilter(filterName = "CFilter", dispatcherTypes = {DispatcherType.REQUEST}, urlPatterns = {"/*"}, initParams = {
+    @WebInitParam(name = "a", value = "99")
+}, asyncSupported = false)
 @RunAs("admin")
 public class FilterC implements Filter
 {
-    @Resource (mappedName="foo")
+    @Resource(mappedName = "foo")
     private Double foo;
 
     @PreDestroy
-    public void pre ()
+    public void pre()
     {
 
     }
@@ -56,16 +57,15 @@ public class FilterC implements Filter
 
     }
 
-
     @Override
     public void doFilter(ServletRequest arg0, ServletResponse arg1, FilterChain arg2)
-    throws IOException, ServletException
+        throws IOException, ServletException
     {
         HttpServletRequest request = (HttpServletRequest)arg0;
         HttpServletResponse response = (HttpServletResponse)arg1;
         HttpSession session = request.getSession(true);
         String val = request.getParameter("action");
-        if (val!=null)
+        if (val != null)
             session.setAttribute("action", val);
         arg2.doFilter(request, response);
     }

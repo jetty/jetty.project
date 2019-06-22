@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
@@ -35,7 +32,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -52,6 +48,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class IPAccessHandlerTest
 {
     private static Server _server;
@@ -64,22 +63,21 @@ public class IPAccessHandlerTest
     {
         _server = new Server();
         _connector = new ServerConnector(_server);
-        _server.setConnectors(new Connector[] { _connector });
+        _server.setConnectors(new Connector[]{_connector});
 
         _handler = new IPAccessHandler();
         _handler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-                {
-                    baseRequest.setHandled(true);
-                    response.setStatus(HttpStatus.OK_200);
-                }
-            });
+                baseRequest.setHandled(true);
+                response.setStatus(HttpStatus.OK_200);
+            }
+        });
         _server.setHandler(_handler);
         _server.start();
     }
-
 
     @AfterAll
     public static void tearDown()
@@ -88,17 +86,16 @@ public class IPAccessHandlerTest
         _server.stop();
     }
 
-
     @ParameterizedTest
     @MethodSource("data")
     public void testHandler(String white, String black, String host, String uri, String code, boolean byPath)
         throws Exception
     {
-        _handler.setWhite(white.split(";",-1));
-        _handler.setBlack(black.split(";",-1));
+        _handler.setWhite(white.split(";", -1));
+        _handler.setBlack(black.split(";", -1));
         _handler.setWhiteListByPath(byPath);
 
-        String request = "GET " + uri + " HTTP/1.1\n" + "Host: "+ host + "\n\n";
+        String request = "GET " + uri + " HTTP/1.1\n" + "Host: " + host + "\n\n";
         Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
         try
@@ -111,8 +108,9 @@ public class IPAccessHandlerTest
 
             Response response = readResponse(input);
             Object[] params = new Object[]{
-                    "Request WBHUC", white, black, host, uri, code,
-                    "Response", response.getCode()};
+                "Request WBHUC", white, black, host, uri, code,
+                "Response", response.getCode()
+            };
             assertEquals(code, response.getCode(), Arrays.deepToString(params));
         }
         finally
@@ -120,7 +118,6 @@ public class IPAccessHandlerTest
             socket.close();
         }
     }
-
 
     protected Response readResponse(BufferedReader reader)
         throws IOException
@@ -181,13 +178,11 @@ public class IPAccessHandlerTest
         return new Response(code, headers, body.toString().trim());
     }
 
-
-   protected class Response
+    protected class Response
     {
         private final String code;
         private final Map<String, String> headers;
         private final String body;
-
 
         private Response(String code, Map<String, String> headers, String body)
         {
@@ -196,24 +191,20 @@ public class IPAccessHandlerTest
             this.body = body;
         }
 
-
         public String getCode()
         {
             return code;
         }
-
 
         public Map<String, String> getHeaders()
         {
             return headers;
         }
 
-
         public String getBody()
         {
             return body;
         }
-
 
         @Override
         public String toString()
@@ -221,325 +212,328 @@ public class IPAccessHandlerTest
             StringBuilder builder = new StringBuilder();
             builder.append(code).append("\r\n");
             for (Map.Entry<String, String> entry : headers.entrySet())
+            {
                 builder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
+            }
             builder.append("\r\n");
             builder.append(body);
             return builder.toString();
         }
     }
 
-
-    public static Stream<Arguments> data() {
-        Object[][] data = new Object[][] {
+    public static Stream<Arguments> data()
+    {
+        Object[][] data = new Object[][]{
             // Empty lists
-            {"", "", "127.0.0.1", "/",          "200", false},
+            {"", "", "127.0.0.1", "/", "200", false},
             {"", "", "127.0.0.1", "/dump/info", "200", false},
 
             // White list
-            {"127.0.0.1", "", "127.0.0.1", "/",          "200", false},
-            {"127.0.0.1", "", "127.0.0.1", "/dispatch",  "200", false},
+            {"127.0.0.1", "", "127.0.0.1", "/", "200", false},
+            {"127.0.0.1", "", "127.0.0.1", "/dispatch", "200", false},
             {"127.0.0.1", "", "127.0.0.1", "/dump/info", "200", false},
 
-            {"127.0.0.1|/", "", "127.0.0.1", "/",          "200", false},
-            {"127.0.0.1|/", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"127.0.0.1|/", "", "127.0.0.1", "/", "200", false},
+            {"127.0.0.1|/", "", "127.0.0.1", "/dispatch", "403", false},
             {"127.0.0.1|/", "", "127.0.0.1", "/dump/info", "403", false},
 
-            {"127.0.0.1|/*", "", "127.0.0.1", "/",          "200", false},
-            {"127.0.0.1|/*", "", "127.0.0.1", "/dispatch",  "200", false},
+            {"127.0.0.1|/*", "", "127.0.0.1", "/", "200", false},
+            {"127.0.0.1|/*", "", "127.0.0.1", "/dispatch", "200", false},
             {"127.0.0.1|/*", "", "127.0.0.1", "/dump/info", "200", false},
 
-            {"127.0.0.1|/dump/*", "", "127.0.0.1", "/",          "403", false},
-            {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"127.0.0.1|/dump/*", "", "127.0.0.1", "/", "403", false},
+            {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dispatch", "403", false},
             {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dump/test", "200", false},
 
-            {"127.0.0.1|/dump/info", "", "127.0.0.1", "/",          "403", false},
-            {"127.0.0.1|/dump/info", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"127.0.0.1|/dump/info", "", "127.0.0.1", "/", "403", false},
+            {"127.0.0.1|/dump/info", "", "127.0.0.1", "/dispatch", "403", false},
             {"127.0.0.1|/dump/info", "", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.1|/dump/info", "", "127.0.0.1", "/dump/test", "403", false},
 
-            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/",          "403", false},
-            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/", "403", false},
+            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dispatch", "403", false},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/test", "200", false},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/fail", "403", false},
 
-            {"127.0.0.0-2|", "", "127.0.0.1", "/",          "200", false},
+            {"127.0.0.0-2|", "", "127.0.0.1", "/", "200", false},
             {"127.0.0.0-2|", "", "127.0.0.1", "/dump/info", "403", false},
 
-            {"127.0.0.0-2|/", "", "127.0.0.1", "/",          "200", false},
-            {"127.0.0.0-2|/", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"127.0.0.0-2|/", "", "127.0.0.1", "/", "200", false},
+            {"127.0.0.0-2|/", "", "127.0.0.1", "/dispatch", "403", false},
             {"127.0.0.0-2|/", "", "127.0.0.1", "/dump/info", "403", false},
 
-            {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/",          "403", false},
-            {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/", "403", false},
+            {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/dispatch", "403", false},
             {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/dump/info", "200", false},
 
-            {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/",          "403", false},
-            {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/", "403", false},
+            {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/dispatch", "403", false},
             {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/dump/test", "403", false},
 
-            {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/",          "403", false},
-            {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/", "403", false},
+            {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dispatch", "403", false},
             {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dump/test", "200", false},
             {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dump/fail", "403", false},
 
             // Black list
-            {"", "127.0.0.1", "127.0.0.1", "/",          "403", false},
-            {"", "127.0.0.1", "127.0.0.1", "/dispatch",  "403", false},
+            {"", "127.0.0.1", "127.0.0.1", "/", "403", false},
+            {"", "127.0.0.1", "127.0.0.1", "/dispatch", "403", false},
             {"", "127.0.0.1", "127.0.0.1", "/dump/info", "403", false},
 
-            {"", "127.0.0.1|/", "127.0.0.1", "/",          "403", false},
-            {"", "127.0.0.1|/", "127.0.0.1", "/dispatch",  "200", false},
+            {"", "127.0.0.1|/", "127.0.0.1", "/", "403", false},
+            {"", "127.0.0.1|/", "127.0.0.1", "/dispatch", "200", false},
             {"", "127.0.0.1|/", "127.0.0.1", "/dump/info", "200", false},
 
-            {"", "127.0.0.1|/*", "127.0.0.1", "/",          "403", false},
-            {"", "127.0.0.1|/*", "127.0.0.1", "/dispatch",  "403", false},
+            {"", "127.0.0.1|/*", "127.0.0.1", "/", "403", false},
+            {"", "127.0.0.1|/*", "127.0.0.1", "/dispatch", "403", false},
             {"", "127.0.0.1|/*", "127.0.0.1", "/dump/info", "403", false},
 
-            {"", "127.0.0.1|/dump/*", "127.0.0.1", "/",          "200", false},
-            {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dispatch",  "200", false},
+            {"", "127.0.0.1|/dump/*", "127.0.0.1", "/", "200", false},
+            {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dispatch", "200", false},
             {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dump/info", "403", false},
             {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dump/test", "403", false},
 
-            {"", "127.0.0.1|/dump/info", "127.0.0.1", "/",          "200", false},
-            {"", "127.0.0.1|/dump/info", "127.0.0.1", "/dispatch",  "200", false},
+            {"", "127.0.0.1|/dump/info", "127.0.0.1", "/", "200", false},
+            {"", "127.0.0.1|/dump/info", "127.0.0.1", "/dispatch", "200", false},
             {"", "127.0.0.1|/dump/info", "127.0.0.1", "/dump/info", "403", false},
             {"", "127.0.0.1|/dump/info", "127.0.0.1", "/dump/test", "200", false},
 
-            {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/",          "200", false},
-            {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dispatch",  "200", false},
+            {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/", "200", false},
+            {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dispatch", "200", false},
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/info", "403", false},
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/test", "403", false},
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/fail", "200", false},
 
-            {"", "127.0.0.0-2|", "127.0.0.1", "/",          "403", false},
+            {"", "127.0.0.0-2|", "127.0.0.1", "/", "403", false},
             {"", "127.0.0.0-2|", "127.0.0.1", "/dump/info", "200", false},
 
-            {"", "127.0.0.0-2|/", "127.0.0.1", "/",          "403", false},
-            {"", "127.0.0.0-2|/", "127.0.0.1", "/dispatch",  "200", false},
+            {"", "127.0.0.0-2|/", "127.0.0.1", "/", "403", false},
+            {"", "127.0.0.0-2|/", "127.0.0.1", "/dispatch", "200", false},
             {"", "127.0.0.0-2|/", "127.0.0.1", "/dump/info", "200", false},
 
-            {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/",          "200", false},
-            {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/dispatch",  "200", false},
+            {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/", "200", false},
+            {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/dispatch", "200", false},
             {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/dump/info", "403", false},
 
-            {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/",          "200", false},
-            {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/dispatch",  "200", false},
+            {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/", "200", false},
+            {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/dispatch", "200", false},
             {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/dump/info", "403", false},
             {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/dump/test", "200", false},
 
-            {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/",          "200", false},
-            {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dispatch",  "200", false},
+            {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/", "200", false},
+            {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dispatch", "200", false},
             {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dump/info", "403", false},
             {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dump/test", "403", false},
             {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dump/fail", "200", false},
 
             // Both lists
-            {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump",      "200", false},
+            {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump", "200", false},
             {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump/info", "403", false},
             {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump/fail", "403", false},
 
-            {"127.0.0.1|/dump/*", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump",      "200", false},
+            {"127.0.0.1|/dump/*", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump", "200", false},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump/fail", "403", false},
 
-            {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump",      "200", false},
+            {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump", "200", false},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump/test", "403", false},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump/fail", "403", false},
 
-            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump",      "403", false},
+            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump", "403", false},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump/test", "403", false},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump/fail", "403", false},
 
-            {"127.0.0.1|/;127.0.0.0-2|/dump/*", "127.0.0.0,1|/dump/fail", "127.0.0.1", "/",          "200", false},
+            {"127.0.0.1|/;127.0.0.0-2|/dump/*", "127.0.0.0,1|/dump/fail", "127.0.0.1", "/", "200", false},
             {"127.0.0.1|/;127.0.0.0-2|/dump/*", "127.0.0.0,1|/dump/fail", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.1|/;127.0.0.0-2|/dump/*", "127.0.0.0,1|/dump/fail", "127.0.0.1", "/dump/fail", "403", false},
 
             // Different address
-            {"127.0.0.2", "", "127.0.0.1", "/",          "403", false},
+            {"127.0.0.2", "", "127.0.0.1", "/", "403", false},
             {"127.0.0.2", "", "127.0.0.1", "/dump/info", "403", false},
 
-            {"127.0.0.2|/dump/*", "", "127.0.0.1", "/",          "403", false},
+            {"127.0.0.2|/dump/*", "", "127.0.0.1", "/", "403", false},
             {"127.0.0.2|/dump/*", "", "127.0.0.1", "/dump/info", "403", false},
 
-            {"127.0.0.2|/dump/info", "", "127.0.0.1", "/",          "403", false},
+            {"127.0.0.2|/dump/info", "", "127.0.0.1", "/", "403", false},
             {"127.0.0.2|/dump/info", "", "127.0.0.1", "/dump/info", "403", false},
             {"127.0.0.2|/dump/info", "", "127.0.0.1", "/dump/test", "403", false},
 
-            {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/",          "403", false},
-            {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/", "403", false},
+            {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dispatch", "403", false},
             {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dump/info", "200", false},
             {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dump/test", "403", false},
             {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dump/fail", "403", false},
 
-            {"172.0.0.0-255", "", "127.0.0.1", "/",          "403", false},
+            {"172.0.0.0-255", "", "127.0.0.1", "/", "403", false},
             {"172.0.0.0-255", "", "127.0.0.1", "/dump/info", "403", false},
 
-            {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/",          "403", false},
-            {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dispatch",  "403", false},
+            {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/", "403", false},
+            {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dispatch", "403", false},
             {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dump/info", "200", false},
-
 
             // Match by path starts with [117]
             // test cases affected by _whiteListByPath highlighted accordingly
 
-            {"", "", "127.0.0.1", "/",          "200", true},
+            {"", "", "127.0.0.1", "/", "200", true},
             {"", "", "127.0.0.1", "/dump/info", "200", true},
 
             // White list
-            {"127.0.0.1", "", "127.0.0.1", "/",          "200", true},
-            {"127.0.0.1", "", "127.0.0.1", "/dispatch",  "200", true},
+            {"127.0.0.1", "", "127.0.0.1", "/", "200", true},
+            {"127.0.0.1", "", "127.0.0.1", "/dispatch", "200", true},
             {"127.0.0.1", "", "127.0.0.1", "/dump/info", "200", true},
 
-            {"127.0.0.1|/", "", "127.0.0.1", "/",          "200", true},
-            {"127.0.0.1|/", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"127.0.0.1|/", "", "127.0.0.1", "/", "200", true},
+            {"127.0.0.1|/", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"127.0.0.1|/", "", "127.0.0.1", "/dump/info", "200", true}, // _whiteListByPath
 
-            {"127.0.0.1|/*", "", "127.0.0.1", "/",          "200", true},
-            {"127.0.0.1|/*", "", "127.0.0.1", "/dispatch",  "200", true},
+            {"127.0.0.1|/*", "", "127.0.0.1", "/", "200", true},
+            {"127.0.0.1|/*", "", "127.0.0.1", "/dispatch", "200", true},
             {"127.0.0.1|/*", "", "127.0.0.1", "/dump/info", "200", true},
 
-            {"127.0.0.1|/dump/*", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
-            {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/*", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dump/test", "200", true},
 
-            {"127.0.0.1|/dump/info", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
-            {"127.0.0.1|/dump/info", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/info", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/info", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"127.0.0.1|/dump/info", "", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.1|/dump/info", "", "127.0.0.1", "/dump/test", "200", true}, // _whiteListByPath
 
-            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
-            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/test", "200", true},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/fail", "200", true}, // _whiteListByPath
 
-            {"127.0.0.0-2|", "", "127.0.0.1", "/",          "200", true},
+            {"127.0.0.0-2|", "", "127.0.0.1", "/", "200", true},
             {"127.0.0.0-2|", "", "127.0.0.1", "/dump/info", "200", true},
 
-            {"127.0.0.0-2|/", "", "127.0.0.1", "/",          "200", true},
-            {"127.0.0.0-2|/", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"127.0.0.0-2|/", "", "127.0.0.1", "/", "200", true},
+            {"127.0.0.0-2|/", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"127.0.0.0-2|/", "", "127.0.0.1", "/dump/info", "200", true}, // _whiteListByPath
 
-            {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
-            {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
+            {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"127.0.0.0-2|/dump/*", "", "127.0.0.1", "/dump/info", "200", true},
 
-            {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
-            {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
+            {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.0-2|/dump/info", "", "127.0.0.1", "/dump/test", "200", true}, // _whiteListByPath
 
-            {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
-            {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
+            {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dump/test", "200", true},
             {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dump/fail", "200", true}, // _whiteListByPath
 
             // Black list
-            {"", "127.0.0.1", "127.0.0.1", "/",          "403", true},
-            {"", "127.0.0.1", "127.0.0.1", "/dispatch",  "403", true},
+            {"", "127.0.0.1", "127.0.0.1", "/", "403", true},
+            {"", "127.0.0.1", "127.0.0.1", "/dispatch", "403", true},
             {"", "127.0.0.1", "127.0.0.1", "/dump/info", "403", true},
 
-            {"", "127.0.0.1|/", "127.0.0.1", "/",          "403", true},
-            {"", "127.0.0.1|/", "127.0.0.1", "/dispatch",  "200", true},
+            {"", "127.0.0.1|/", "127.0.0.1", "/", "403", true},
+            {"", "127.0.0.1|/", "127.0.0.1", "/dispatch", "200", true},
             {"", "127.0.0.1|/", "127.0.0.1", "/dump/info", "200", true},
 
-            {"", "127.0.0.1|/*", "127.0.0.1", "/",          "403", true},
-            {"", "127.0.0.1|/*", "127.0.0.1", "/dispatch",  "403", true},
+            {"", "127.0.0.1|/*", "127.0.0.1", "/", "403", true},
+            {"", "127.0.0.1|/*", "127.0.0.1", "/dispatch", "403", true},
             {"", "127.0.0.1|/*", "127.0.0.1", "/dump/info", "403", true},
 
-            {"", "127.0.0.1|/dump/*", "127.0.0.1", "/",          "200", true},
-            {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dispatch",  "200", true},
+            {"", "127.0.0.1|/dump/*", "127.0.0.1", "/", "200", true},
+            {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dispatch", "200", true},
             {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dump/info", "403", true},
             {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dump/test", "403", true},
 
-            {"", "127.0.0.1|/dump/info", "127.0.0.1", "/",          "200", true},
-            {"", "127.0.0.1|/dump/info", "127.0.0.1", "/dispatch",  "200", true},
+            {"", "127.0.0.1|/dump/info", "127.0.0.1", "/", "200", true},
+            {"", "127.0.0.1|/dump/info", "127.0.0.1", "/dispatch", "200", true},
             {"", "127.0.0.1|/dump/info", "127.0.0.1", "/dump/info", "403", true},
             {"", "127.0.0.1|/dump/info", "127.0.0.1", "/dump/test", "200", true},
 
-            {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/",          "200", true},
-            {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dispatch",  "200", true},
+            {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/", "200", true},
+            {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dispatch", "200", true},
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/info", "403", true},
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/test", "403", true},
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/fail", "200", true},
 
-            {"", "127.0.0.0-2|", "127.0.0.1", "/",          "403", true},
+            {"", "127.0.0.0-2|", "127.0.0.1", "/", "403", true},
             {"", "127.0.0.0-2|", "127.0.0.1", "/dump/info", "200", true},
 
-            {"", "127.0.0.0-2|/", "127.0.0.1", "/",          "403", true},
-            {"", "127.0.0.0-2|/", "127.0.0.1", "/dispatch",  "200", true},
+            {"", "127.0.0.0-2|/", "127.0.0.1", "/", "403", true},
+            {"", "127.0.0.0-2|/", "127.0.0.1", "/dispatch", "200", true},
             {"", "127.0.0.0-2|/", "127.0.0.1", "/dump/info", "200", true},
 
-            {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/",          "200", true},
-            {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/dispatch",  "200", true},
+            {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/", "200", true},
+            {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/dispatch", "200", true},
             {"", "127.0.0.0-2|/dump/*", "127.0.0.1", "/dump/info", "403", true},
 
-            {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/",          "200", true},
-            {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/dispatch",  "200", true},
+            {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/", "200", true},
+            {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/dispatch", "200", true},
             {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/dump/info", "403", true},
             {"", "127.0.0.0-2|/dump/info", "127.0.0.1", "/dump/test", "200", true},
 
-            {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/",          "200", true},
-            {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dispatch",  "200", true},
+            {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/", "200", true},
+            {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dispatch", "200", true},
             {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dump/info", "403", true},
             {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dump/test", "403", true},
             {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dump/fail", "200", true},
 
             // Both lists
-            {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump",      "200", true},
+            {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump", "200", true},
             {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump/info", "200", true}, // _whiteListByPath
             {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump/fail", "403", true},
 
-            {"127.0.0.1|/dump/*", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump",      "200", true},
+            {"127.0.0.1|/dump/*", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump", "200", true},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump/fail", "403", true},
 
-            {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump",      "200", true},
+            {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump", "200", true},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump/test", "403", true},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump/fail", "403", true},
 
-            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump",      "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump", "200", true},
+            // _whiteListByPath
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump/test", "403", true},
-            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump/fail", "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump/fail", "200", true},
+            // _whiteListByPath
 
-            {"127.0.0.1|/;127.0.0.0-2|/dump/*", "127.0.0.0,1|/dump/fail", "127.0.0.1", "/",          "200", true},
+            {"127.0.0.1|/;127.0.0.0-2|/dump/*", "127.0.0.0,1|/dump/fail", "127.0.0.1", "/", "200", true},
             {"127.0.0.1|/;127.0.0.0-2|/dump/*", "127.0.0.0,1|/dump/fail", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.1|/;127.0.0.0-2|/dump/*", "127.0.0.0,1|/dump/fail", "127.0.0.1", "/dump/fail", "403", true},
 
             // Different address
-            {"127.0.0.2", "", "127.0.0.1", "/",          "403", true},
+            {"127.0.0.2", "", "127.0.0.1", "/", "403", true},
             {"127.0.0.2", "", "127.0.0.1", "/dump/info", "403", true},
 
-            {"127.0.0.2|/dump/*", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
+            {"127.0.0.2|/dump/*", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
             {"127.0.0.2|/dump/*", "", "127.0.0.1", "/dump/info", "403", true},
 
-            {"127.0.0.2|/dump/info", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
+            {"127.0.0.2|/dump/info", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
             {"127.0.0.2|/dump/info", "", "127.0.0.1", "/dump/info", "403", true},
             {"127.0.0.2|/dump/info", "", "127.0.0.1", "/dump/test", "200", true}, // _whiteListByPath
 
-            {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
-            {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
+            {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dump/info", "200", true},
             {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dump/test", "403", true},
             {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dump/fail", "200", true}, // _whiteListByPath
 
-            {"172.0.0.0-255", "", "127.0.0.1", "/",          "403", true},
+            {"172.0.0.0-255", "", "127.0.0.1", "/", "403", true},
             {"172.0.0.0-255", "", "127.0.0.1", "/dump/info", "403", true},
 
-            {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/",          "200", true}, // _whiteListByPath
-            {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dispatch",  "200", true}, // _whiteListByPath
+            {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/", "200", true}, // _whiteListByPath
+            {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dispatch", "200", true}, // _whiteListByPath
             {"172.0.0.0-255|/dump/*;127.0.0.0-255|/dump/*", "", "127.0.0.1", "/dump/info", "200", true},
-        };
+            };
         return Arrays.asList(data).stream().map(Arguments::of);
     }
 }

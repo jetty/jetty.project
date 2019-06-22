@@ -60,7 +60,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     {
         this(policy, bufferPool, null, objectFactory);
     }
-    
+
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, Executor executor, DecoratedObjectFactory objectFactory)
     {
         this(policy, bufferPool, executor, null, objectFactory);
@@ -71,7 +71,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
         this.logger = Log.getLogger(this.getClass());
         this.policy = policy;
         this.bufferPool = bufferPool;
-        
+
         if (objectFactory == null)
         {
             this.objectFactory = new DecoratedObjectFactory();
@@ -93,7 +93,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
         {
             this.sslContextFactory = ssl;
         }
-        
+
         if (executor == null)
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();

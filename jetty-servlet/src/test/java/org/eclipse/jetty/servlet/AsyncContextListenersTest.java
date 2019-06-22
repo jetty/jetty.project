@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -27,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -41,6 +38,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AsyncContextListenersTest
 {
@@ -64,7 +63,7 @@ public class AsyncContextListenersTest
     {
         _server.stop();
     }
-    
+
     @SuppressWarnings("Duplicates")
     @Test
     public void testListenerClearedOnSecondRequest() throws Exception
@@ -103,22 +102,22 @@ public class AsyncContextListenersTest
                 asyncContext.complete();
             }
         });
-    
+
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             OutputStream output = socket.getOutputStream();
 
             String request = "" +
-                    "GET " + path + " HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+                "GET " + path + " HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
-    
+
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
             assertEquals(200, response.getStatus());
-            completes.get().await(10,TimeUnit.SECONDS);
+            completes.get().await(10, TimeUnit.SECONDS);
 
             // Send a second request
             completes.set(new CountDownLatch(1));
@@ -127,7 +126,7 @@ public class AsyncContextListenersTest
 
             response = HttpTester.parseResponse(input);
             assertEquals(200, response.getStatus());
-            completes.get().await(10,TimeUnit.SECONDS);
+            completes.get().await(10, TimeUnit.SECONDS);
         }
     }
 
@@ -180,27 +179,28 @@ public class AsyncContextListenersTest
             OutputStream output = socket.getOutputStream();
 
             String request = "" +
-                    "GET " + path + " HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+                "GET " + path + " HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
             assertEquals(200, response.getStatus());
-            completes.get().await(10,TimeUnit.SECONDS);
+            completes.get().await(10, TimeUnit.SECONDS);
 
             // Send a second request
             completes.set(new CountDownLatch(1));
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
-    
+
             response = HttpTester.parseResponse(input);
             assertEquals(200, response.getStatus());
-            completes.get().await(10,TimeUnit.SECONDS);
+            completes.get().await(10, TimeUnit.SECONDS);
         }
     }
+
     @Test
     public void testAsyncDispatchAsyncCompletePreservesListener() throws Exception
     {
@@ -257,16 +257,16 @@ public class AsyncContextListenersTest
             OutputStream output = socket.getOutputStream();
 
             String request = "" +
-                    "GET " + path + "/one HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+                "GET " + path + "/one HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
-    
+
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
             assertEquals(200, response.getStatus());
-            completes.get().await(10,TimeUnit.SECONDS);
+            completes.get().await(10, TimeUnit.SECONDS);
 
             // Send a second request
             completes.set(new CountDownLatch(1));
@@ -275,7 +275,7 @@ public class AsyncContextListenersTest
 
             response = HttpTester.parseResponse(input);
             assertEquals(200, response.getStatus());
-            completes.get().await(10,TimeUnit.SECONDS);
+            completes.get().await(10, TimeUnit.SECONDS);
         }
     }
 }

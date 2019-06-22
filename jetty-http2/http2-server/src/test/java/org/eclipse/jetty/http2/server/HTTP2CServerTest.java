@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http2.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -64,6 +58,12 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HTTP2CServerTest extends AbstractServerTest
 {
@@ -121,12 +121,12 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             OutputStream output = client.getOutputStream();
             output.write(("" +
-                    "GET /one HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: something, else, upgrade, HTTP2-Settings\r\n" +
-                    "Upgrade: h2c\r\n" +
-                    "HTTP2-Settings: \r\n" +
-                    "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                "GET /one HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: something, else, upgrade, HTTP2-Settings\r\n" +
+                "Upgrade: h2c\r\n" +
+                "HTTP2-Settings: \r\n" +
+                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             output.flush();
 
             InputStream input = client.getInputStream();
@@ -198,7 +198,9 @@ public class HTTP2CServerTest extends AbstractServerTest
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:" + connector.getLocalPort()), "/two", HttpVersion.HTTP_2, new HttpFields());
             generator.control(lease, new HeadersFrame(3, metaData, null, true));
             for (ByteBuffer buffer : lease.getByteBuffers())
+            {
                 output.write(BufferUtil.toArray(buffer));
+            }
             output.flush();
 
             parseResponse(client, parser);
@@ -300,7 +302,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint,getHttpCompliance(),isRecordHttpComplianceViolations())
+                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint, getHttpCompliance(), isRecordHttpComplianceViolations())
                 {
                     @Override
                     public void onFillable()
@@ -330,7 +332,9 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
+            {
                 output.write(BufferUtil.toArray(buffer));
+            }
 
             // We sent a HTTP/2 preface, but the server has no "h2c" connection
             // factory so it does not know how to handle this request.

@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -49,14 +43,22 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentest4j.TestAbortedException;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+
 public class AllowSymLinkAliasCheckerTest
 {
     public static Stream<Arguments> params()
     {
         List<Arguments> data = new ArrayList<>();
 
-        String dirs[] = {"/workDir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/",
-                "/testdirwraplnk/"};
+        String dirs[] = {
+            "/workDir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/",
+            "/testdirwraplnk/"
+        };
 
         for (String dirname : dirs)
         {
@@ -83,7 +85,7 @@ public class AllowSymLinkAliasCheckerTest
     @AfterEach
     public void teardown() throws Exception
     {
-        if( server != null )
+        if (server != null)
         {
             server.stop();
         }
@@ -198,7 +200,8 @@ public class AllowSymLinkAliasCheckerTest
         request.setHeader("Host", "tester");
         request.setURI(requestURI);
 
-        assertTimeoutPreemptively(ofSeconds(5), ()-> {
+        assertTimeoutPreemptively(ofSeconds(5), () ->
+        {
             String responseString = localConnector.getResponse(BufferUtil.toString(request.generate()));
             assertThat("Response status code", responseString, startsWith("HTTP/1.1 " + expectedResponseStatus + " "));
             assertThat("Response Content-Type", responseString, containsString("\nContent-Type: " + expectedResponseContentType));

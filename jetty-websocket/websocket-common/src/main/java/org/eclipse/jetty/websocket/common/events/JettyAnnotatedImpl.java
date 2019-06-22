@@ -38,9 +38,9 @@ public class JettyAnnotatedImpl implements EventDriverImpl
             {
                 JettyAnnotatedScanner scanner = new JettyAnnotatedScanner();
                 metadata = scanner.scan(websocketClass);
-                cache.put(websocketClass,metadata);
+                cache.put(websocketClass, metadata);
             }
-            return new JettyAnnotatedEventDriver(policy,websocket,metadata);
+            return new JettyAnnotatedEventDriver(policy, websocket, metadata);
         }
     }
 
@@ -60,6 +60,6 @@ public class JettyAnnotatedImpl implements EventDriverImpl
     @Override
     public String toString()
     {
-        return String.format("%s [cache.count=%d]",this.getClass().getSimpleName(),cache.size());
+        return String.format("%s [cache.count=%d]", this.getClass().getSimpleName(), cache.size());
     }
 }

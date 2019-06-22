@@ -63,15 +63,17 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        this(httpConfiguration,"h2");
+        this(httpConfiguration, "h2");
     }
 
     protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(protocols);
-        for (String p:protocols)
+        for (String p : protocols)
+        {
             if (!HTTP2ServerConnection.isSupportedProtocol(p))
-                throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: "+p);
+                throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: " + p);
+        }
         addBean(sessionContainer);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         addBean(httpConfiguration);
@@ -188,8 +190,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     /**
      * @param threads ignored
-     * @deprecated feature removed, no replacement
      * @throws UnsupportedOperationException when invoked
+     * @deprecated feature removed, no replacement
      */
     @Deprecated
     public void setReservedThreads(int threads)
@@ -240,7 +242,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
-                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
+            endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.addListener(sessionContainer);
         return configure(connection, connector, endPoint);
     }
@@ -293,7 +295,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable.dumpObjects(out,indent,this, sessions);
+            Dumpable.dumpObjects(out, indent, this, sessions);
         }
 
         @Override

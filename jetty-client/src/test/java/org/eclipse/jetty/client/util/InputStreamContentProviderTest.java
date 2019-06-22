@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,8 +26,12 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class InputStreamContentProviderTest
 {
@@ -91,7 +90,7 @@ public class InputStreamContentProviderTest
 
         assertNotNull(buffer);
 
-        assertThrows(NoSuchElementException.class, ()->iterator.next());
+        assertThrows(NoSuchElementException.class, () -> iterator.next());
 
         assertFalse(iterator.hasNext());
         assertTrue(closed.get());
@@ -122,7 +121,7 @@ public class InputStreamContentProviderTest
 
         assertNotNull(iterator);
 
-        assertThrows(NoSuchElementException.class, ()->iterator.next());
+        assertThrows(NoSuchElementException.class, () -> iterator.next());
 
         assertFalse(iterator.hasNext());
         assertTrue(closed.get());
@@ -154,7 +153,7 @@ public class InputStreamContentProviderTest
         assertNotNull(iterator);
         assertTrue(iterator.hasNext());
 
-        assertThrows(NoSuchElementException.class, ()->iterator.next());
+        assertThrows(NoSuchElementException.class, () -> iterator.next());
 
         assertFalse(iterator.hasNext());
         assertTrue(closed.get());

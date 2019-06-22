@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.pong;
 
 import java.nio.charset.StandardCharsets;
-
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -31,7 +30,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-@ServerEndpoint(value="/pong-socket", configurator=PongContextListener.Config.class)
+@ServerEndpoint(value = "/pong-socket", configurator = PongContextListener.Config.class)
 public class PongSocket
 {
     private static final Logger LOG = Log.getLogger(PongSocket.class);
@@ -44,14 +43,14 @@ public class PongSocket
         this.session = session;
         this.path = (String)config.getUserProperties().get("path");
     }
-    
+
     @OnMessage
     public void onPong(PongMessage pong)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onPong(): PongMessage.appData={}",BufferUtil.toDetailString(pong.getApplicationData()));
+            LOG.debug("onPong(): PongMessage.appData={}", BufferUtil.toDetailString(pong.getApplicationData()));
         byte buf[] = BufferUtil.toArray(pong.getApplicationData());
-        String message = new String(buf,StandardCharsets.UTF_8);
+        String message = new String(buf, StandardCharsets.UTF_8);
         this.session.getAsyncRemote().sendText("@OnMessage(PongMessage)[" + path + "]:" + message);
     }
 }

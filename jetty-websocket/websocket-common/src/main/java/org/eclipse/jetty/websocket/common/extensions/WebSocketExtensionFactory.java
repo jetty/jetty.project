@@ -68,7 +68,7 @@ public class WebSocketExtensionFactory extends ExtensionFactory
         }
         catch (Exception e)
         {
-            throw new WebSocketException("Cannot instantiate extension: " + extClass,e);
+            throw new WebSocketException("Cannot instantiate extension: " + extClass, e);
         }
     }
 }

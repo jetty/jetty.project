@@ -24,7 +24,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -67,11 +66,11 @@ public class TestJettyOSGiBootHTTP2
     {
         ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true,"jetty-http2.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
         options.addAll(http2JettyDependencies());
 
         options.addAll(TestOSGiUtil.coreJettyDependencies());
@@ -95,16 +94,21 @@ public class TestJettyOSGiBootHTTP2
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
 
         String alpnBoot = System.getProperty("mortbay-alpn-boot");
-        if (alpnBoot == null) { throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot"); }
+        if (alpnBoot == null)
+        {
+            throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot");
+        }
         File checkALPNBoot = new File(alpnBoot);
-        if (!checkALPNBoot.exists()) { throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot); }
+        if (!checkALPNBoot.exists())
+        {
+            throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot);
+        }
 
         res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + checkALPNBoot.getAbsolutePath()));
-        
+
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-openjdk8-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
-
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-hpack").versionAsInProject().start());
@@ -126,7 +130,7 @@ public class TestJettyOSGiBootHTTP2
         Bundle openjdk8 = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.openjdk8.server");
         assertNotNull(openjdk8);
         ServiceReference[] services = openjdk8.getRegisteredServices();
-        assertNotNull(services);        
+        assertNotNull(services);
         Bundle server = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.server");
         assertNotNull(server);
     }
@@ -142,16 +146,16 @@ public class TestJettyOSGiBootHTTP2
 
         HttpClient httpClient = null;
         HTTP2Client http2Client = null;
-        try 
+        try
         {
             //get the port chosen for https
             String tmp = System.getProperty("boot.https.port");
             assertNotNull(tmp);
             int port = Integer.valueOf(tmp.trim());
-            
-            Path path = Paths.get("src",  "test", "config");
+
+            Path path = Paths.get("src", "test", "config");
             File keys = path.resolve("etc").resolve("keystore").toFile();
-            
+
             //set up client to do http2
             http2Client = new HTTP2Client();
             SslContextFactory sslContextFactory = new SslContextFactory.Client();
@@ -165,15 +169,17 @@ public class TestJettyOSGiBootHTTP2
             httpClient.setExecutor(executor);
             httpClient.start();
 
-            ContentResponse response = httpClient.GET("https://localhost:"+port+"/jsp/jstl.jsp");
+            ContentResponse response = httpClient.GET("https://localhost:" + port + "/jsp/jstl.jsp");
             assertEquals(response.toString(), response.getStatus(), HttpStatus.OK_200);
             String body = response.getContentAsString();
             assertTrue("Body contains \"JSTL Example\": " + body, body.contains("JSTL Example"));
         }
         finally
         {
-            if (httpClient != null) httpClient.stop();
-            if (http2Client != null) http2Client.stop();
+            if (httpClient != null)
+                httpClient.stop();
+            if (http2Client != null)
+                http2Client.stop();
         }
     }
 }

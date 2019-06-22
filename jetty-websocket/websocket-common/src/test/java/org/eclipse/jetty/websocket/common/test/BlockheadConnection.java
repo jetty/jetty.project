@@ -182,7 +182,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     public void onOpen()
     {
         super.onOpen();
-        if(this.openFuture != null)
+        if (this.openFuture != null)
             this.openFuture.complete(this);
         fillInterested();
     }
@@ -190,7 +190,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     public void processConnectionError(Throwable cause)
     {
         LOG.warn("Connection Error", cause);
-        if(this.openFuture != null)
+        if (this.openFuture != null)
             this.openFuture.completeExceptionally(cause);
     }
 
@@ -352,7 +352,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
         @Override
         public void incomingFrame(Frame frame)
         {
-            if(frameConsumer != null)
+            if (frameConsumer != null)
                 frameConsumer.accept(frame);
 
             incomingFrames.offer(WebSocketFrame.copy(frame));
@@ -396,7 +396,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
         {
             if (writeCallback instanceof org.eclipse.jetty.util.Callback)
             {
-                return (org.eclipse.jetty.util.Callback) writeCallback;
+                return (org.eclipse.jetty.util.Callback)writeCallback;
             }
             else
             {

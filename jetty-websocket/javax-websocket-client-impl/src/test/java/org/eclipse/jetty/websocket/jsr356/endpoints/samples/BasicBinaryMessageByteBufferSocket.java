@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
 import java.nio.ByteBuffer;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 
@@ -31,7 +30,7 @@ public class BasicBinaryMessageByteBufferSocket extends TrackingSocket
     @OnMessage
     public void onBinary(ByteBuffer data)
     {
-        addEvent("onBinary(%s)",data);
+        addEvent("onBinary(%s)", data);
         dataLatch.countDown();
     }
 }

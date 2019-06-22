@@ -30,8 +30,8 @@ public class TestServer
     public static int DEFAULT_MAX_INACTIVE = 30;
     public static int DEFAULT_SCAVENGE_SEC = 10;
     public static int DEFAULT_EVICTIONPOLICY = SessionCache.NEVER_EVICT;
-    
-    protected static int __workers=0;
+
+    protected static int __workers = 0;
 
     protected final Server _server;
     protected final int _maxInactivePeriod;
@@ -43,24 +43,23 @@ public class TestServer
     protected SessionCacheFactory _cacheFactory;
     protected SessionDataStoreFactory _storeFactory;
 
-    public static String extractSessionId (String sessionCookie)
+    public static String extractSessionId(String sessionCookie)
     {
         if (sessionCookie == null)
             return null;
         sessionCookie = sessionCookie.trim();
         int i = sessionCookie.indexOf(';');
         if (i >= 0)
-            sessionCookie = sessionCookie.substring(0,i);
+            sessionCookie = sessionCookie.substring(0, i);
         if (sessionCookie.startsWith("JSESSIONID"))
             sessionCookie = sessionCookie.substring("JSESSIONID=".length());
         i = sessionCookie.indexOf('.');
-        if (i >=0)
-            sessionCookie = sessionCookie.substring(0,i);
+        if (i >= 0)
+            sessionCookie = sessionCookie.substring(0, i);
         return sessionCookie;
     }
 
-    
-    public TestServer(int port, int maxInactivePeriod, int scavengePeriod,  SessionCacheFactory cacheFactory, SessionDataStoreFactory storeFactory) throws Exception
+    public TestServer(int port, int maxInactivePeriod, int scavengePeriod, SessionCacheFactory cacheFactory, SessionDataStoreFactory storeFactory) throws Exception
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
@@ -70,7 +69,7 @@ public class TestServer
         _contexts = new ContextHandlerCollection();
         _sessionIdManager = newSessionIdManager();
         _server.setSessionIdManager(_sessionIdManager);
-        ((DefaultSessionIdManager) _sessionIdManager).setServer(_server);
+        ((DefaultSessionIdManager)_sessionIdManager).setServer(_server);
         _housekeeper = new HouseKeeper();
         _housekeeper.setIntervalSec(_scavengePeriod);
         ((DefaultSessionIdManager)_sessionIdManager).setSessionHouseKeeper(_housekeeper);
@@ -79,12 +78,12 @@ public class TestServer
     public SessionIdManager newSessionIdManager()
     {
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(getServer());
-        idManager.setWorkerName("w"+(__workers++));
+        idManager.setWorkerName("w" + (__workers++));
         return idManager;
     }
 
     public SessionHandler newSessionHandler()
-    throws Exception
+        throws Exception
     {
         SessionHandler h = new SessionHandler();
         SessionCache c = _cacheFactory.getSessionCache(h);
@@ -93,7 +92,6 @@ public class TestServer
         h.setSessionCache(c);
         return h;
     }
-    
 
     public void start() throws Exception
     {
@@ -101,12 +99,12 @@ public class TestServer
         _server.setHandler(_contexts);
         _server.start();
     }
-    
+
     public HouseKeeper getHouseKeeper()
     {
         return _housekeeper;
     }
-    
+
     public int getPort()
     {
         return ((NetworkConnector)getServer().getConnectors()[0]).getLocalPort();
@@ -133,12 +131,12 @@ public class TestServer
         WebAppContext context = new WebAppContext(_contexts, warPath, contextPath);
         SessionHandler sessionHandler = newSessionHandler();
         sessionHandler.setSessionIdManager(_sessionIdManager);
-        sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);   
+        sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);
         context.setSessionHandler(sessionHandler);
 
         return context;
     }
-    
+
     public Server getServer()
     {
         return _server;

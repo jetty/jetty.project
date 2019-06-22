@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.common.events.ParamList;
 
 /**
  * Basic scanner for Annotated Methods
+ *
  * @param <T> The type of metadata
  */
 public abstract class AbstractMethodAnnotationScanner<T>
@@ -76,7 +77,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
 
     protected void assertIsVoidReturn(Method method)
     {
-        assertIsReturn(method,Void.TYPE);
+        assertIsReturn(method, Void.TYPE);
     }
 
     protected void assertUnset(CallableMethod callable, Class<? extends Annotation> annoClass, Method method)
@@ -99,7 +100,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
     protected void assertValidSignature(Method method, Class<? extends Annotation> annoClass, ParamList validParams)
     {
         assertIsPublicNonStatic(method);
-        assertIsReturn(method,Void.TYPE);
+        assertIsReturn(method, Void.TYPE);
 
         boolean valid = false;
 
@@ -107,7 +108,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
         Class<?> actual[] = method.getParameterTypes();
         for (Class<?>[] params : validParams)
         {
-            if (isSameParameters(actual,params))
+            if (isSameParameters(actual, params))
             {
                 valid = true;
                 break;
@@ -116,7 +117,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
 
         if (!valid)
         {
-            throw InvalidSignatureException.build(method,annoClass,validParams);
+            throw InvalidSignatureException.build(method, annoClass, validParams);
         }
     }
 
@@ -148,13 +149,13 @@ public abstract class AbstractMethodAnnotationScanner<T>
     protected boolean isSignatureMatch(Method method, ParamList validParams)
     {
         assertIsPublicNonStatic(method);
-        assertIsReturn(method,Void.TYPE);
+        assertIsReturn(method, Void.TYPE);
 
         // validate parameters
         Class<?> actual[] = method.getParameterTypes();
         for (Class<?>[] params : validParams)
         {
-            if (isSameParameters(actual,params))
+            if (isSameParameters(actual, params))
             {
                 return true;
             }
@@ -185,7 +186,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
                 }
                 for (Annotation annotation : annotations)
                 {
-                    onMethodAnnotation(metadata,clazz,method,annotation);
+                    onMethodAnnotation(metadata, clazz, method, annotation);
                 }
             }
 

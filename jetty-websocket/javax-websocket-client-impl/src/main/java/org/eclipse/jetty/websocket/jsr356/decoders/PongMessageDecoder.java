@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
 import java.nio.ByteBuffer;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.PongMessage;
@@ -36,8 +35,8 @@ public class PongMessageDecoder extends AbstractDecoder implements Decoder.Binar
         {
             int len = buf.remaining();
             this.bytes = ByteBuffer.allocate(len);
-            BufferUtil.put(buf,this.bytes);
-            BufferUtil.flipToFlush(this.bytes,0);
+            BufferUtil.put(buf, this.bytes);
+            BufferUtil.flipToFlush(this.bytes, 0);
         }
 
         @Override

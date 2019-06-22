@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.nio.ByteBuffer;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
@@ -30,10 +29,10 @@ import org.eclipse.jetty.websocket.jsr356.decoders.DateDecoder;
 import org.eclipse.jetty.websocket.jsr356.encoders.TimeEncoder;
 
 @ClientEndpoint(
-        subprotocols = { "chat", "echo" },
-        decoders = { DateDecoder.class },
-        encoders = { TimeEncoder.class },
-        configurator = AnnotatedEndpointConfigurator.class)
+    subprotocols = {"chat", "echo"},
+    decoders = {DateDecoder.class},
+    encoders = {TimeEncoder.class},
+    configurator = AnnotatedEndpointConfigurator.class)
 public class AnnotatedEndpointClient
 {
     public Session session;

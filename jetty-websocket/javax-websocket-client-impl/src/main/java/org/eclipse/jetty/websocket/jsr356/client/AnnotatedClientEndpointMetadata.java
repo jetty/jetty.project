@@ -37,8 +37,8 @@ public class AnnotatedClientEndpointMetadata extends AnnotatedEndpointMetadata<C
         ClientEndpoint anno = websocket.getAnnotation(ClientEndpoint.class);
         if (anno == null)
         {
-            throw new InvalidWebSocketException(String.format("Unsupported WebSocket object [%s], missing @%s annotation",websocket.getName(),
-                    ClientEndpoint.class.getName()));
+            throw new InvalidWebSocketException(String.format("Unsupported WebSocket object [%s], missing @%s annotation", websocket.getName(),
+                ClientEndpoint.class.getName()));
         }
 
         this.endpoint = anno;

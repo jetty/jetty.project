@@ -38,9 +38,8 @@ public class AcceptHash
 
     /**
      * Concatenate the provided key with the Magic GUID and return the Base64 encoded form.
-     * 
-     * @param key
-     *            the key to hash
+     *
+     * @param key the key to hash
      * @return the <code>Sec-WebSocket-Accept</code> header response (per opening handshake spec)
      */
     public static String hashKey(String key)

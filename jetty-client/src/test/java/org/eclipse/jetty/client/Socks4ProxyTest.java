@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -30,9 +27,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Socks4ProxyTest
 {
@@ -73,14 +72,14 @@ public class Socks4ProxyTest
         String method = "GET";
         String path = "/path";
         client.newRequest(serverHost, serverPort)
-                .method(method)
-                .path(path)
-                .timeout(5, TimeUnit.SECONDS)
-                .send(result ->
-                {
-                    if (result.isSucceeded())
-                        latch.countDown();
-                });
+            .method(method)
+            .path(path)
+            .timeout(5, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            });
 
         try (SocketChannel channel = server.accept())
         {
@@ -108,10 +107,10 @@ public class Socks4ProxyTest
 
             // Response
             String response = "" +
-                    "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
             channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -130,16 +129,16 @@ public class Socks4ProxyTest
         int serverPort = proxyPort + 1; // Any port will do
         String method = "GET";
         client.newRequest(serverHost, serverPort)
-                .method(method)
-                .path("/path")
-                .timeout(5, TimeUnit.SECONDS)
-                .send(result ->
-                {
-                    if (result.isSucceeded())
-                        latch.countDown();
-                    else
-                        result.getFailure().printStackTrace();
-                });
+            .method(method)
+            .path("/path")
+            .timeout(5, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+                else
+                    result.getFailure().printStackTrace();
+            });
 
         try (SocketChannel channel = server.accept())
         {
@@ -166,10 +165,10 @@ public class Socks4ProxyTest
 
             // Response
             String response = "" +
-                    "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
             channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));

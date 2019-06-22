@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
-import org.junit.jupiter.api.Test;
-
 import javax.websocket.DecodeException;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -64,5 +64,4 @@ public class FloatDecoderTest
     {
         assertEquals(4.1F, new FloatDecoder().decode("4.1"), 0.01F);
     }
-
 }

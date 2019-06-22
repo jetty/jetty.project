@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -92,9 +91,9 @@ public class OptionalSslConnectionTest
         startServer(this::optionalSsl, new EmptyServerHandler());
 
         String request = "" +
-                "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+            "GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
         byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
 
         // Try first a plain text connection.
@@ -183,9 +182,9 @@ public class OptionalSslConnectionTest
         startServer(this::optionalSslNoOtherProtocol, new EmptyServerHandler());
 
         String request = "" +
-                "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+            "GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
         byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
 
         // Send a plain text HTTP request to SSL port,

@@ -33,7 +33,6 @@ import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 public abstract class LoginAuthenticator implements Authenticator
 {
     private static final Logger LOG = Log.getLogger(LoginAuthenticator.class);
@@ -41,8 +40,6 @@ public abstract class LoginAuthenticator implements Authenticator
     protected LoginService _loginService;
     protected IdentityService _identityService;
     private boolean _renewSession;
-    
-
 
     protected LoginAuthenticator()
     {
@@ -55,16 +52,15 @@ public abstract class LoginAuthenticator implements Authenticator
     }
 
     /**
-     * If the UserIdentity is not null after this method calls {@link LoginService#login(String,Object,ServletRequest)}, it
+     * If the UserIdentity is not null after this method calls {@link LoginService#login(String, Object, ServletRequest)}, it
      * is assumed that the user is fully authenticated and we need to change the session id to prevent
      * session fixation vulnerability. If the UserIdentity is not necessarily fully
      * authenticated, then subclasses must override this method and
      * determine when the UserIdentity IS fully authenticated and renew the session id.
-     * 
+     *
      * @param username the username of the client to be authenticated
      * @param password the user's credential
      * @param servletRequest the inbound request that needs authentication
-     * @return
      */
     public UserIdentity login(String username, Object password, ServletRequest servletRequest)
     {
@@ -78,19 +74,16 @@ public abstract class LoginAuthenticator implements Authenticator
         return null;
     }
 
-    
-    public void logout (ServletRequest request)
+    public void logout(ServletRequest request)
     {
         HttpServletRequest httpRequest = (HttpServletRequest)request;
         HttpSession session = httpRequest.getSession(false);
         if (session == null)
             return;
-        
+
         session.removeAttribute(Session.SESSION_CREATED_SECURE);
     }
-    
-    
-    
+
     @Override
     public void setConfiguration(AuthConfiguration configuration)
     {
@@ -116,7 +109,7 @@ public abstract class LoginAuthenticator implements Authenticator
      * <li>The session ID has been given to unauthenticated responses
      * </ul>
      *
-     * @param request  the request
+     * @param request the request
      * @param response the response
      * @return The new session.
      */

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.ant.types;
 
 import java.io.File;
@@ -43,7 +42,7 @@ public class FileMatchingConfiguration
 
     /**
      * @param directoryScanner new directory scanner retrieved from the
-     *            <code>&lt;fileset/&gt;</code> element.
+     * <code>&lt;fileset/&gt;</code> element.
      */
     public void addDirectoryScanner(DirectoryScanner directoryScanner)
     {
@@ -52,7 +51,7 @@ public class FileMatchingConfiguration
 
     /**
      * @return a list of base directories denoted by a list of directory
-     *         scanners.
+     * scanners.
      */
     public List getBaseDirectories()
     {
@@ -60,7 +59,7 @@ public class FileMatchingConfiguration
         Iterator scanners = directoryScanners.iterator();
         while (scanners.hasNext())
         {
-            DirectoryScanner scanner = (DirectoryScanner) scanners.next();
+            DirectoryScanner scanner = (DirectoryScanner)scanners.next();
             baseDirs.add(scanner.getBasedir());
         }
 
@@ -69,7 +68,7 @@ public class FileMatchingConfiguration
 
     /**
      * Checks if passed file is scanned by any of the directory scanners.
-     * 
+     *
      * @param pathToFile a fully qualified path to tested file.
      * @return true if so, false otherwise.
      */
@@ -78,7 +77,7 @@ public class FileMatchingConfiguration
         Iterator scanners = directoryScanners.iterator();
         while (scanners.hasNext())
         {
-            DirectoryScanner scanner = (DirectoryScanner) scanners.next();
+            DirectoryScanner scanner = (DirectoryScanner)scanners.next();
             scanner.scan();
             String[] includedFiles = scanner.getIncludedFiles();
 

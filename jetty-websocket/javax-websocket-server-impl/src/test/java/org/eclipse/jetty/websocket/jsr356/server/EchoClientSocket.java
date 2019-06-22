@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.EncodeException;
@@ -43,7 +42,7 @@ public class EchoClientSocket extends TrackingSocket
     {
         if (session != null)
         {
-            this.session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE,"Test Complete"));
+            this.session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Test Complete"));
         }
     }
 
@@ -89,19 +88,19 @@ public class EchoClientSocket extends TrackingSocket
 
     public void sendPartialBinary(ByteBuffer part, boolean fin) throws IOException
     {
-        remote.sendBinary(part,fin);
+        remote.sendBinary(part, fin);
     }
 
     public void sendPartialText(String part, boolean fin) throws IOException
     {
-        remote.sendText(part,fin);
+        remote.sendText(part, fin);
     }
-    
+
     public void sendPing(String message) throws IOException
     {
         remote.sendPing(BufferUtil.toBuffer(message));
     }
-    
+
     public void sendPong(String message) throws IOException
     {
         remote.sendPong(BufferUtil.toBuffer(message));

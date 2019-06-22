@@ -96,7 +96,7 @@ public class DecoderReaderManySmallTest
         }
     }
 
-    @ClientEndpoint(decoders = { EventIdDecoder.class })
+    @ClientEndpoint(decoders = {EventIdDecoder.class})
     public static class EventIdSocket
     {
         public LinkedBlockingQueue<EventId> messageQueue = new LinkedBlockingQueue<>();
@@ -116,7 +116,7 @@ public class DecoderReaderManySmallTest
 
         public void awaitClose() throws InterruptedException
         {
-            closeLatch.await(4,TimeUnit.SECONDS);
+            closeLatch.await(4, TimeUnit.SECONDS);
         }
     }
 
@@ -130,7 +130,7 @@ public class DecoderReaderManySmallTest
     {
         client = ContainerProvider.getWebSocketContainer();
     }
-    
+
     @AfterEach
     public void stopClient() throws Exception
     {
@@ -158,7 +158,7 @@ public class DecoderReaderManySmallTest
         server.addConnectFuture(serverConnFut);
 
         EventIdSocket ids = new EventIdSocket();
-        client.connectToServer(ids,server.getWsUri());
+        client.connectToServer(ids, server.getWsUri());
 
         final int from = 1000;
         final int to = 2000;
@@ -168,7 +168,7 @@ public class DecoderReaderManySmallTest
             // Setup echo of frames on server side
             serverConn.setIncomingFrameConsumer((frame) ->
             {
-                WebSocketFrame wsFrame = (WebSocketFrame) frame;
+                WebSocketFrame wsFrame = (WebSocketFrame)frame;
                 if (wsFrame.getOpCode() == OpCode.TEXT)
                 {
                     String msg = wsFrame.getPayloadAsUTF8();

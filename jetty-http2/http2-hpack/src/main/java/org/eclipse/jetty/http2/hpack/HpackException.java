@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-
 @SuppressWarnings("serial")
 public abstract class HpackException extends Exception
 {
@@ -26,19 +25,19 @@ public abstract class HpackException extends Exception
     {
         super(String.format(messageFormat, args));
     }
-    
+
     /**
      * A Stream HPACK exception.
-     * <p>Stream exceptions are not fatal to the connection and the 
+     * <p>Stream exceptions are not fatal to the connection and the
      * hpack state is complete and able to continue handling other
-     * decoding/encoding for the session. 
+     * decoding/encoding for the session.
      * </p>
      */
     public static class StreamException extends HpackException
     {
         StreamException(String messageFormat, Object... args)
         {
-            super(messageFormat,args);
+            super(messageFormat, args);
         }
     }
 
@@ -51,7 +50,7 @@ public abstract class HpackException extends Exception
     {
         SessionException(String messageFormat, Object... args)
         {
-            super(messageFormat,args);
+            super(messageFormat, args);
         }
     }
 
@@ -59,7 +58,7 @@ public abstract class HpackException extends Exception
     {
         public CompressionException(String messageFormat, Object... args)
         {
-            super(messageFormat,args);    
+            super(messageFormat, args);
         }
     }
 }

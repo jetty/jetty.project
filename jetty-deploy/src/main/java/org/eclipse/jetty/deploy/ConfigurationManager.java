@@ -22,7 +22,7 @@ import java.util.Map;
 
 /**
  * ConfigurationManager
- * 
+ *
  * Type for allow injection of property values for replacement in jetty xml files during deployment.
  */
 public interface ConfigurationManager

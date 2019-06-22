@@ -28,12 +28,11 @@ import java.util.concurrent.Callable;
  * <li>non-blocking, the invocation will certainly <strong>not</strong> block</li>
  * <li>either, the invocation <em>may</em> block</li>
  * </ul>
- * 
+ *
  * <p>
- * Static methods and are provided that allow the current thread to be tagged 
+ * Static methods and are provided that allow the current thread to be tagged
  * with a {@link ThreadLocal} to indicate if it has a blocking invocation type.
  * </p>
- * 
  */
 public interface Invocable
 {
@@ -46,6 +45,7 @@ public interface Invocable
 
     /**
      * Test if the current thread has been tagged as non blocking
+     *
      * @return True if the task the current thread is running has
      * indicated that it will not block.
      */
@@ -57,6 +57,7 @@ public interface Invocable
     /**
      * Invoke a task with the calling thread, tagged to indicate
      * that it will not block.
+     *
      * @param task The task to invoke.
      */
     public static void invokeNonBlocking(Runnable task)
@@ -75,6 +76,7 @@ public interface Invocable
 
     /**
      * Get the invocation type of an Object.
+     *
      * @param o The object to check the invocation type of.
      * @return If the object is an Invocable, it is coerced and the {@link #getInvocationType()}
      * used, otherwise {@link InvocationType#BLOCKING} is returned.

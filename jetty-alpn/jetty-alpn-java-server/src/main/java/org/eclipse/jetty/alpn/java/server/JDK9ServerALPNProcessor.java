@@ -20,7 +20,6 @@ package org.eclipse.jetty.alpn.java.server;
 
 import java.util.List;
 import java.util.function.BiFunction;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnection;
@@ -39,15 +38,15 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
     @Override
     public void init()
     {
-        if (JavaVersion.VERSION.getPlatform()<9)
-            throw new IllegalStateException(this + " not applicable for java "+JavaVersion.VERSION);
+        if (JavaVersion.VERSION.getPlatform() < 9)
+            throw new IllegalStateException(this + " not applicable for java " + JavaVersion.VERSION);
     }
 
     @Override
     public boolean appliesTo(SSLEngine sslEngine)
     {
         Module module = sslEngine.getClass().getModule();
-        return module!=null && "java.base".equals(module.getName());
+        return module != null && "java.base".equals(module.getName());
     }
 
     @Override
@@ -56,7 +55,7 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
         sslEngine.setHandshakeApplicationProtocolSelector(new ALPNCallback((ALPNServerConnection)connection));
     }
 
-    private final class ALPNCallback implements BiFunction<SSLEngine,List<String>,String>, SslHandshakeListener
+    private final class ALPNCallback implements BiFunction<SSLEngine, List<String>, String>, SslHandshakeListener
     {
         private final ALPNServerConnection alpnConnection;
 
@@ -81,7 +80,7 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
             String protocol = alpnConnection.getProtocol();
             if (LOG.isDebugEnabled())
                 LOG.debug("TLS handshake succeeded, protocol={} for {}", protocol, alpnConnection);
-            if (protocol ==null)
+            if (protocol == null)
                 alpnConnection.unsupported();
         }
 

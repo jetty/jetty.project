@@ -127,17 +127,15 @@ public class ReflectUtils
 
     /**
      * Given a Base (concrete) Class, find the interface specified, and return its concrete Generic class declaration.
-     * 
-     * @param baseClass
-     *            the base (concrete) class to look in
-     * @param ifaceClass
-     *            the interface of interest
+     *
+     * @param baseClass the base (concrete) class to look in
+     * @param ifaceClass the interface of interest
      * @return the (concrete) generic class that the interface exposes
      */
     public static Class<?> findGenericClassFor(Class<?> baseClass, Class<?> ifaceClass)
     {
-        GenericRef ref = new GenericRef(baseClass,ifaceClass);
-        if (resolveGenericRef(ref,baseClass))
+        GenericRef ref = new GenericRef(baseClass, ifaceClass);
+        if (resolveGenericRef(ref, baseClass))
         {
             // debug("Generic Found: %s",ref.genericClass);
             return ref.genericClass;
@@ -194,13 +192,13 @@ public class ReflectUtils
             {
                 // is this a straight ref or a TypeVariable?
                 // debug("Found ref (as class): %s",toShortName(type));
-                ref.setGenericFromType(type,0);
+                ref.setGenericFromType(type, 0);
                 return true;
             }
             else
             {
                 // Keep digging
-                return resolveGenericRef(ref,type);
+                return resolveGenericRef(ref, type);
             }
         }
 
@@ -212,13 +210,13 @@ public class ReflectUtils
             {
                 // debug("Found ref on [%s] as ParameterizedType [%s]",toShortName(clazz),toShortName(ptype));
                 // Always get the raw type parameter, let unwrap() solve for what it is
-                ref.setGenericFromType(ptype.getActualTypeArguments()[0],0);
+                ref.setGenericFromType(ptype.getActualTypeArguments()[0], 0);
                 return true;
             }
             else
             {
                 // Keep digging
-                return resolveGenericRef(ref,rawType);
+                return resolveGenericRef(ref, rawType);
             }
         }
         return false;
@@ -245,7 +243,7 @@ public class ReflectUtils
             for (Type iface : ifaces)
             {
                 // debug("resolve %s interface[]: %s",toShortName(clazz),toShortName(iface));
-                if (resolveGenericRef(ref,clazz,iface))
+                if (resolveGenericRef(ref, clazz, iface))
                 {
                     if (ref.needsUnwrap())
                     {
@@ -254,7 +252,7 @@ public class ReflectUtils
                         // debug("needs unwrap of type var [%s] - index [%d]",toShortName(needVar),ref.genericIndex);
 
                         // attempt to find typeParameter on class itself
-                        int typeParamIdx = findTypeParameterIndex(clazz,needVar);
+                        int typeParamIdx = findTypeParameterIndex(clazz, needVar);
                         // debug("type param index for %s[%s] is [%d]",toShortName(clazz),toShortName(needVar),typeParamIdx);
 
                         if (typeParamIdx >= 0)
@@ -264,14 +262,14 @@ public class ReflectUtils
                             TypeVariable<?> params[] = clazz.getTypeParameters();
                             if (params.length >= typeParamIdx)
                             {
-                                ref.setGenericFromType(params[typeParamIdx],typeParamIdx);
+                                ref.setGenericFromType(params[typeParamIdx], typeParamIdx);
                             }
                         }
                         else if (iface instanceof ParameterizedType)
                         {
                             // use actual args on interface
                             Type arg = ((ParameterizedType)iface).getActualTypeArguments()[ref.genericIndex];
-                            ref.setGenericFromType(arg,ref.genericIndex);
+                            ref.setGenericFromType(arg, ref.genericIndex);
                         }
                     }
                     return true;
@@ -279,25 +277,25 @@ public class ReflectUtils
             }
 
             type = clazz.getGenericSuperclass();
-            return resolveGenericRef(ref,type);
+            return resolveGenericRef(ref, type);
         }
 
         if (type instanceof ParameterizedType)
         {
             ParameterizedType ptype = (ParameterizedType)type;
             Class<?> rawClass = (Class<?>)ptype.getRawType();
-            if (resolveGenericRef(ref,rawClass))
+            if (resolveGenericRef(ref, rawClass))
             {
                 if (ref.needsUnwrap())
                 {
                     // debug("## Unwrap ParameterizedType %s::%s",toShortName(type),toShortName(rawClass));
                     TypeVariable<?> needVar = (TypeVariable<?>)ref.genericType;
                     // debug("needs unwrap of type var [%s] - index [%d]",toShortName(needVar),ref.genericIndex);
-                    int typeParamIdx = findTypeParameterIndex(rawClass,needVar);
+                    int typeParamIdx = findTypeParameterIndex(rawClass, needVar);
                     // debug("type paramIdx of %s::%s is index [%d]",toShortName(rawClass),toShortName(needVar),typeParamIdx);
 
                     Type arg = ptype.getActualTypeArguments()[typeParamIdx];
-                    ref.setGenericFromType(arg,typeParamIdx);
+                    ref.setGenericFromType(arg, typeParamIdx);
                     return true;
                 }
             }
@@ -354,7 +352,7 @@ public class ReflectUtils
 
         // return type
         Type retType = method.getGenericReturnType();
-        appendTypeName(str,retType,false).append(' ');
+        appendTypeName(str, retType, false).append(' ');
 
         // class name
         str.append(pojo.getName());
@@ -369,7 +367,7 @@ public class ReflectUtils
         for (int j = 0; j < params.length; j++)
         {
             boolean ellipses = method.isVarArgs() && (j == (params.length - 1));
-            appendTypeName(str,params[j],ellipses);
+            appendTypeName(str, params[j], ellipses);
             if (j < (params.length - 1))
             {
                 str.append(", ");

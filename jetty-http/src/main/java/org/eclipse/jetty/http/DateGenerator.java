@@ -30,18 +30,18 @@ import org.eclipse.jetty.util.StringUtil;
 public class DateGenerator
 {
     private static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
+
     static
     {
         __GMT.setID("GMT");
     }
-    
+
     static final String[] DAYS =
-        { "Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+        {"Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
     static final String[] MONTHS =
-        { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan"};
+        {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan"};
 
-
-    private static final ThreadLocal<DateGenerator> __dateGenerator =new ThreadLocal<DateGenerator>()
+    private static final ThreadLocal<DateGenerator> __dateGenerator = new ThreadLocal<DateGenerator>()
     {
         @Override
         protected DateGenerator initialValue()
@@ -50,11 +50,11 @@ public class DateGenerator
         }
     };
 
+    public final static String __01Jan1970 = DateGenerator.formatDate(0);
 
-    public final static String __01Jan1970=DateGenerator.formatDate(0);
-    
     /**
      * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+     *
      * @param date the date in milliseconds
      * @return the formatted date
      */
@@ -65,17 +65,19 @@ public class DateGenerator
 
     /**
      * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
+     *
      * @param buf the buffer to put the formatted date into
      * @param date the date in milliseconds
      */
     public static void formatCookieDate(StringBuilder buf, long date)
     {
-        __dateGenerator.get().doFormatCookieDate(buf,date);
+        __dateGenerator.get().doFormatCookieDate(buf, date);
     }
 
     /**
      * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
-     * @param date the date in milliseconds 
+     *
+     * @param date the date in milliseconds
      * @return the formatted date
      */
     public static String formatCookieDate(long date)
@@ -84,12 +86,13 @@ public class DateGenerator
         formatCookieDate(buf, date);
         return buf.toString();
     }
-    
+
     private final StringBuilder buf = new StringBuilder(32);
     private final GregorianCalendar gc = new GregorianCalendar(__GMT);
 
     /**
      * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+     *
      * @param date the date in milliseconds
      * @return the formatted date
      */
@@ -132,6 +135,7 @@ public class DateGenerator
 
     /**
      * Format "EEE, dd-MMM-yy HH:mm:ss 'GMT'" for cookies
+     *
      * @param buf the buffer to format the date into
      * @param date the date in milliseconds
      */
@@ -145,7 +149,7 @@ public class DateGenerator
         int year = gc.get(Calendar.YEAR);
         year = year % 10000;
 
-        int epoch = (int) ((date / 1000) % (60 * 60 * 24));
+        int epoch = (int)((date / 1000) % (60 * 60 * 24));
         int seconds = epoch % 60;
         epoch = epoch / 60;
         int minutes = epoch % 60;
@@ -159,8 +163,8 @@ public class DateGenerator
         buf.append('-');
         buf.append(MONTHS[month]);
         buf.append('-');
-        StringUtil.append2digits(buf, year/100);
-        StringUtil.append2digits(buf, year%100);
+        StringUtil.append2digits(buf, year / 100);
+        StringUtil.append2digits(buf, year % 100);
 
         buf.append(' ');
         StringUtil.append2digits(buf, hours);

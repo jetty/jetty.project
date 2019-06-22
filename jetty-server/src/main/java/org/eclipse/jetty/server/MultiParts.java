@@ -36,20 +36,22 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
 
-
 /*
  * Used to switch between the old and new implementation of MultiPart Form InputStream Parsing.
  * The new implementation is preferred will be used as default unless specified otherwise constructor.
  */
 public interface MultiParts extends Closeable
-{   
+{
     Collection<Part> getParts() throws IOException;
+
     Part getPart(String name) throws IOException;
+
     boolean isEmpty();
+
     ContextHandler.Context getContext();
 
     class MultiPartsHttpParser implements MultiParts
-    {   
+    {
         private final MultiPartFormInputStream _httpParser;
         private final ContextHandler.Context _context;
 
@@ -89,10 +91,10 @@ public interface MultiParts extends Closeable
             return _context;
         }
     }
-    
+
     @SuppressWarnings("deprecation")
     class MultiPartsUtilParser implements MultiParts
-    {   
+    {
         private final MultiPartInputStreamParser _utilParser;
         private final ContextHandler.Context _context;
         private final Request _request;
@@ -148,7 +150,9 @@ public interface MultiParts extends Closeable
             EnumSet<NonCompliance> nonComplianceWarnings = _utilParser.getNonComplianceWarnings();
             violations = new ArrayList<>();
             for (NonCompliance nc : nonComplianceWarnings)
+            {
                 violations.add(nc.name() + ": " + nc.getURL());
+            }
             _request.setAttribute(HttpCompliance.VIOLATIONS_ATTR, violations);
         }
     }

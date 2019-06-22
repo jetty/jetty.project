@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
@@ -93,8 +92,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
 
         final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-                .method(clientRequest.getMethod())
-                .version(HttpVersion.fromString(clientRequest.getProtocol()));
+            .method(clientRequest.getMethod())
+            .version(HttpVersion.fromString(clientRequest.getProtocol()));
 
         copyRequestHeaders(clientRequest, proxyRequest);
 
@@ -831,7 +830,9 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         private ByteBuffer gzip(List<ByteBuffer> buffers, boolean finished) throws IOException
         {
             for (ByteBuffer buffer : buffers)
+            {
                 write(gzipOut, buffer);
+            }
             if (finished)
                 gzipOut.close();
             byte[] gzipBytes = out.toByteArray();

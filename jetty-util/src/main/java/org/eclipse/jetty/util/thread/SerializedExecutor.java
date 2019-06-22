@@ -27,13 +27,13 @@ import org.eclipse.jetty.util.log.Log;
 /**
  * An executor than ensurers serial execution of submitted tasks.
  * <p>
- *     Callers of this execute will never block in the executor, but they may
- *     be required to either execute the task they submit or tasks submitted
- *     by other threads whilst they are executing tasks.
+ * Callers of this execute will never block in the executor, but they may
+ * be required to either execute the task they submit or tasks submitted
+ * by other threads whilst they are executing tasks.
  * </p>
  * <p>
- *     This class was inspired by the public domain class
- *     <a href="https://github.com/jroper/reactive-streams-servlet/blob/master/reactive-streams-servlet/src/main/java/org/reactivestreams/servlet/NonBlockingMutexExecutor.java">NonBlockingMutexExecutor</a>
+ * This class was inspired by the public domain class
+ * <a href="https://github.com/jroper/reactive-streams-servlet/blob/master/reactive-streams-servlet/src/main/java/org/reactivestreams/servlet/NonBlockingMutexExecutor.java">NonBlockingMutexExecutor</a>
  * </p>
  */
 public class SerializedExecutor implements Executor
@@ -45,7 +45,7 @@ public class SerializedExecutor implements Executor
     {
         Link link = new Link(task);
         Link lastButOne = _tail.getAndSet(link);
-        if (lastButOne==null)
+        if (lastButOne == null)
             run(link);
         else
             lastButOne._next.lazySet(link);
@@ -60,7 +60,7 @@ public class SerializedExecutor implements Executor
 
     private void run(Link link)
     {
-        while(link!=null)
+        while (link != null)
         {
             try
             {

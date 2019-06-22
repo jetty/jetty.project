@@ -31,7 +31,6 @@ public interface ClientConnectionFactory
     public static final String CONNECTOR_CONTEXT_KEY = "client.connector";
 
     /**
-     *
      * @param endPoint the {@link org.eclipse.jetty.io.EndPoint} to link the newly created connection to
      * @param context the context data to create the connection
      * @return a new {@link Connection}

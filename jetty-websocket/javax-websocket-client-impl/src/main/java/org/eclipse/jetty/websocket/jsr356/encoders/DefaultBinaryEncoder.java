@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.encoders;
 
 import java.nio.ByteBuffer;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 

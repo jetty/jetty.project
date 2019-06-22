@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.util.Iterator;
 import java.util.ServiceLoader;
-
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Test the JettyServerEndpointConfigurator impl.
@@ -38,16 +37,16 @@ public class JettyServerEndpointConfiguratorTest
     @Test
     public void testServiceLoader()
     {
-        System.out.printf("Service Name: %s%n",ServerEndpointConfig.Configurator.class.getName());
+        System.out.printf("Service Name: %s%n", ServerEndpointConfig.Configurator.class.getName());
 
         ServiceLoader<ServerEndpointConfig.Configurator> loader = ServiceLoader.load(javax.websocket.server.ServerEndpointConfig.Configurator.class);
-        assertThat("loader",loader,notNullValue());
+        assertThat("loader", loader, notNullValue());
         Iterator<ServerEndpointConfig.Configurator> iter = loader.iterator();
-        assertThat("loader.iterator",iter,notNullValue());
-        assertThat("loader.iterator.hasNext",iter.hasNext(),is(true));
+        assertThat("loader.iterator", iter, notNullValue());
+        assertThat("loader.iterator.hasNext", iter.hasNext(), is(true));
 
         ServerEndpointConfig.Configurator configr = iter.next();
-        assertThat("Configurator",configr,notNullValue());
-        assertThat("Configurator type",configr,instanceOf(ContainerDefaultConfigurator.class));
+        assertThat("Configurator", configr, notNullValue());
+        assertThat("Configurator type", configr, instanceOf(ContainerDefaultConfigurator.class));
     }
 }

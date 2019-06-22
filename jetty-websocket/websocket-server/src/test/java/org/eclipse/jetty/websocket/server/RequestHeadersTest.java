@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
@@ -45,6 +40,11 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class RequestHeadersTest
 {
@@ -136,18 +136,18 @@ public class RequestHeadersTest
         try (BlockheadConnection ignore = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             UpgradeRequest req = echoCreator.getLastRequest();
-            assertThat("Last Request",req,notNullValue());
+            assertThat("Last Request", req, notNullValue());
             List<HttpCookie> cookies = req.getCookies();
-            assertThat("Request cookies",cookies,notNullValue());
-            assertThat("Request cookies.size",cookies.size(),is(2));
+            assertThat("Request cookies", cookies, notNullValue());
+            assertThat("Request cookies.size", cookies.size(), is(2));
             for (HttpCookie cookie : cookies)
             {
-                assertThat("Cookie name",cookie.getName(),anyOf(is("fruit"),is("type")));
-                assertThat("Cookie value",cookie.getValue(),anyOf(is("Pear"),is("Anjou")));
+                assertThat("Cookie name", cookie.getName(), anyOf(is("fruit"), is("type")));
+                assertThat("Cookie value", cookie.getValue(), anyOf(is("Pear"), is("Anjou")));
             }
         }
     }
-    
+
     @Test
     public void testRequestURI() throws Exception
     {
@@ -160,7 +160,7 @@ public class RequestHeadersTest
         try (BlockheadConnection ignore = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             UpgradeRequest req = echoCreator.getLastRequest();
-            assertThat("Last Request",req,notNullValue());
+            assertThat("Last Request", req, notNullValue());
             assertThat("Request.host", req.getHost(), is(server.getServerUri().getHost()));
             assertThat("Request.queryString", req.getQueryString(), is("abc=x%20z&breakfast=bacon%26eggs&2*2%3d5=false"));
             assertThat("Request.uri.path", req.getRequestURI().getPath(), is("/"));

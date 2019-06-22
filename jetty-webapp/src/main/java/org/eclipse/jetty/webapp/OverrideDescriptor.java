@@ -22,8 +22,6 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * OverrideDescriptor
- *
- *
  */
 public class OverrideDescriptor extends WebDescriptor
 {

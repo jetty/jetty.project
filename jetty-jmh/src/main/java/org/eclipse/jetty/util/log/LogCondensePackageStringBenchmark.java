@@ -41,8 +41,9 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 4, time = 5, timeUnit = TimeUnit.SECONDS)
 public class LogCondensePackageStringBenchmark
 {
-    @Param({"com.acme.Dump",
-            "org.eclipse.jetty.websocket.common.extensions.compress.DeflateFrameExtension$Pool"
+    @Param({
+        "com.acme.Dump",
+        "org.eclipse.jetty.websocket.common.extensions.compress.DeflateFrameExtension$Pool"
     })
     String fqClassName;
 

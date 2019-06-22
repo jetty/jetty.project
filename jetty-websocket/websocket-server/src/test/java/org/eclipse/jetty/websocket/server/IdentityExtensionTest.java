@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +35,10 @@ import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 public class IdentityExtensionTest
 {
@@ -94,7 +94,7 @@ public class IdentityExtensionTest
 
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is("Hello"));
+            assertThat("TEXT.payload", frame.getPayloadAsUTF8(), is("Hello"));
         }
     }
 }

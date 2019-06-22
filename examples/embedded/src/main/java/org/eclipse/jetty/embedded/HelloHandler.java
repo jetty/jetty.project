@@ -20,7 +20,6 @@ package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,23 +37,23 @@ public class HelloHandler extends AbstractHandler
         this("Hello World");
     }
 
-    public HelloHandler( String greeting )
+    public HelloHandler(String greeting)
     {
         this(greeting, null);
     }
 
-    public HelloHandler( String greeting, String body )
+    public HelloHandler(String greeting, String body)
     {
         this.greeting = greeting;
         this.body = body;
     }
 
     @Override
-    public void handle( String target,
-                        Request baseRequest,
-                        HttpServletRequest request,
-                        HttpServletResponse response ) throws IOException,
-                                                      ServletException
+    public void handle(String target,
+                       Request baseRequest,
+                       HttpServletRequest request,
+                       HttpServletResponse response) throws IOException,
+        ServletException
     {
         response.setContentType("text/html; charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);

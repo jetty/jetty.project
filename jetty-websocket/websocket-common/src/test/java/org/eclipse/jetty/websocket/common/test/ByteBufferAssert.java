@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * @deprecated use {@link org.eclipse.jetty.toolchain.test.ByteBufferAssert} instead
@@ -33,11 +33,11 @@ public class ByteBufferAssert
 {
     public static void assertEquals(String message, byte[] expected, byte[] actual)
     {
-        assertThat(message + " byte[].length",actual.length,is(expected.length));
+        assertThat(message + " byte[].length", actual.length, is(expected.length));
         int len = expected.length;
         for (int i = 0; i < len; i++)
         {
-            assertThat(message + " byte[" + i + "]",actual[i],is(expected[i]));
+            assertThat(message + " byte[" + i + "]", actual[i], is(expected[i]));
         }
     }
 
@@ -50,20 +50,20 @@ public class ByteBufferAssert
     {
         if (expectedBuffer == null)
         {
-            assertThat(message,actualBuffer,nullValue());
+            assertThat(message, actualBuffer, nullValue());
         }
         else
         {
             byte expectedBytes[] = BufferUtil.toArray(expectedBuffer);
             byte actualBytes[] = BufferUtil.toArray(actualBuffer);
-            assertEquals(message,expectedBytes,actualBytes);
+            assertEquals(message, expectedBytes, actualBytes);
         }
     }
 
     public static void assertEquals(String message, String expectedString, ByteBuffer actualBuffer)
     {
         String actualString = BufferUtil.toString(actualBuffer);
-        assertThat(message,actualString,is(expectedString));
+        assertThat(message, actualString, is(expectedString));
     }
 
     public static void assertSize(String message, int expectedSize, ByteBuffer buffer)
@@ -72,6 +72,6 @@ public class ByteBufferAssert
         {
             return;
         }
-        assertThat(message + " buffer.remaining",buffer.remaining(),is(expectedSize));
+        assertThat(message + " buffer.remaining", buffer.remaining(), is(expectedSize));
     }
 }

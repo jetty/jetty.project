@@ -28,7 +28,7 @@ public class HttpResponseException extends RuntimeException
     {
         this(message, response, null);
     }
-    
+
     public HttpResponseException(String message, Response response, Throwable cause)
     {
         super(message, cause);

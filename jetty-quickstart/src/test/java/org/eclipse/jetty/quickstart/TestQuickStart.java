@@ -16,10 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.quickstart;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 
@@ -31,37 +28,37 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * TestQuickStart
- *
- *
  */
 public class TestQuickStart
 {
     File testDir;
     File webInf;
-    
-    
+
     @BeforeEach
     public void setUp()
     {
         testDir = MavenTestingUtils.getTargetTestingDir("foo");
-        FS.ensureEmpty(testDir); 
+        FS.ensureEmpty(testDir);
         webInf = new File(testDir, "WEB-INF");
         FS.ensureDirExists(webInf);
     }
-    
 
-    
     @Test
     public void testProgrammaticOverrideOfDefaultServletMapping() throws Exception
     {
-        
+
         File quickstartXml = new File(webInf, "quickstart-web.xml");
         assertFalse(quickstartXml.exists());
-        
+
         Server server = new Server();
-        
+
         //generate a quickstart-web.xml
         QuickStartWebApp quickstart = new QuickStartWebApp();
         quickstart.setResourceBase(testDir.getAbsolutePath());
@@ -77,23 +74,22 @@ public class TestQuickStart
         server.setHandler(quickstart);
         server.start();
         server.stop();
-        
+
         assertTrue(quickstartXml.exists());
-        
+
         //now run the webapp again purely from the generated quickstart
         QuickStartWebApp webapp = new QuickStartWebApp();
         webapp.setResourceBase(testDir.getAbsolutePath());
         webapp.setPreconfigure(false);
         webapp.setClassLoader(Thread.currentThread().getContextClassLoader()); //only necessary for junit testing
         server.setHandler(webapp);
-        
+
         server.start();
-        
+
         //verify that FooServlet is now mapped to / and not the DefaultServlet
         ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getResource();
         assertNotNull(sh);
         assertEquals("foo", sh.getName());
         server.stop();
     }
-
 }

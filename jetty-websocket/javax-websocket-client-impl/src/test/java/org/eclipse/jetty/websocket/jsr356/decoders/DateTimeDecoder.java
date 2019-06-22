@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.decoders;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -40,7 +39,7 @@ public class DateTimeDecoder implements Decoder.Text<Date>
         }
         catch (ParseException e)
         {
-            throw new DecodeException(s,e.getMessage(),e);
+            throw new DecodeException(s, e.getMessage(), e);
         }
     }
 

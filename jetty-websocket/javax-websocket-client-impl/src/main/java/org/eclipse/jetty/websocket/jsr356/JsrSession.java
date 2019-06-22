@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
@@ -62,9 +61,13 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private final EndpointMetadata metadata;
     private final DecoderFactory decoderFactory;
     private final EncoderFactory encoderFactory;
-    /** Factory for MessageHandlers */
+    /**
+     * Factory for MessageHandlers
+     */
     private final MessageHandlerFactory messageHandlerFactory;
-    /** Array of MessageHandlerWrappers, indexed by {@link MessageType#ordinal()} */
+    /**
+     * Array of MessageHandlerWrappers, indexed by {@link MessageType#ordinal()}
+     */
     private final MessageHandlerWrapper wrappers[];
     private Set<MessageHandler> messageHandlerSet;
     private List<Extension> negotiatedExtensions;
@@ -84,8 +87,8 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         this.metadata = jsr.getMetadata();
         this.container = container;
         this.id = id;
-        this.decoderFactory = new DecoderFactory(this,metadata.getDecoders(),container.getDecoderFactory());
-        this.encoderFactory = new EncoderFactory(this,metadata.getEncoders(),container.getEncoderFactory());
+        this.decoderFactory = new DecoderFactory(this, metadata.getDecoders(), container.getDecoderFactory());
+        this.encoderFactory = new EncoderFactory(this, metadata.getEncoders(), container.getEncoderFactory());
         this.messageHandlerFactory = new MessageHandlerFactory();
         this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
         this.messageHandlerSet = new HashSet<>();
@@ -131,7 +134,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
                 }
                 else
                 {
-                    MessageHandlerWrapper handlerWrapper = new MessageHandlerWrapper(handler,metadata,wrapper);
+                    MessageHandlerWrapper handlerWrapper = new MessageHandlerWrapper(handler, metadata, wrapper);
                     wrappers[key.ordinal()] = handlerWrapper;
                 }
             }
@@ -144,7 +147,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public void close(CloseReason closeReason) throws IOException
     {
-        close(closeReason.getCloseCode().getCode(),closeReason.getReasonPhrase());
+        close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
     }
 
     @Override
@@ -320,7 +323,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
             }
             catch (IllegalStateException e)
             {
-                LOG.warn("Unable to identify MessageHandler: " + handler.getClass().getName(),e);
+                LOG.warn("Unable to identify MessageHandler: " + handler.getClass().getName(), e);
             }
         }
     }

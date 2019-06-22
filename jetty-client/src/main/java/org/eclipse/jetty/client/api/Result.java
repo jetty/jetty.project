@@ -120,9 +120,9 @@ public class Result
     public String toString()
     {
         return String.format("%s[%s > %s] %s",
-                Result.class.getSimpleName(),
-                request,
-                response,
-                getFailure());
+            Result.class.getSimpleName(),
+            request,
+            response,
+            getFailure());
     }
 }

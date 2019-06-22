@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -56,8 +53,10 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FlowControlStalledTest
 {

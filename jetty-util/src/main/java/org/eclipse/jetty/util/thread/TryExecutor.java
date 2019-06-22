@@ -21,27 +21,28 @@ package org.eclipse.jetty.util.thread;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
-/** 
- * A variation of Executor that can confirm if a thread is available immediately 
+/**
+ * A variation of Executor that can confirm if a thread is available immediately
  */
 public interface TryExecutor extends Executor
 {
     /**
      * Attempt to execute a task.
+     *
      * @param task The task to be executed
-     * @return True IFF the task has been given directly to a thread to execute.  The task cannot be queued pending the later availability of a Thread. 
+     * @return True IFF the task has been given directly to a thread to execute.  The task cannot be queued pending the later availability of a Thread.
      */
     boolean tryExecute(Runnable task);
-    
+
     @Override
     default void execute(Runnable task)
     {
         if (!tryExecute(task))
             throw new RejectedExecutionException();
     }
-    
+
     public static TryExecutor asTryExecutor(Executor executor)
-    {        
+    {
         if (executor instanceof TryExecutor)
             return (TryExecutor)executor;
         return new NoTryExecutor(executor);
@@ -89,5 +90,4 @@ public interface TryExecutor extends Executor
             return "NO_TRY";
         }
     };
-
 }

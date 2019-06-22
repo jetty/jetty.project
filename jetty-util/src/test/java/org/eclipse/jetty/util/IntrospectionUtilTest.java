@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.util;
 
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Array;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,21 +50,21 @@ public class IntrospectionUtilTest
     public void testFindMethodWithEmptyString()
     {
         assertThrows(NoSuchMethodException.class,
-                () -> IntrospectionUtil.findMethod(Integer.class, "", null, false, false));
+            () -> IntrospectionUtil.findMethod(Integer.class, "", null, false, false));
     }
 
     @Test
     public void testFindMethodWithNullMethodParameter()
     {
         assertThrows(NoSuchMethodException.class,
-                () -> IntrospectionUtil.findMethod(String.class, null, (Class<Integer>[])Array.newInstance(Class.class, 3), true, true));
+            () -> IntrospectionUtil.findMethod(String.class, null, (Class<Integer>[])Array.newInstance(Class.class, 3), true, true));
     }
 
     @Test
     public void testFindMethodWithNullClassParameter() throws NoSuchMethodException
     {
         assertThrows(NoSuchMethodException.class,
-                () -> IntrospectionUtil.findMethod(null, "subSequence", (Class<Object>[])Array.newInstance(Class.class, 9), false, false));
+            () -> IntrospectionUtil.findMethod(null, "subSequence", (Class<Object>[])Array.newInstance(Class.class, 9), false, false));
     }
 
     @Test
@@ -72,5 +72,4 @@ public class IntrospectionUtilTest
     {
         assertFalse(IntrospectionUtil.isJavaBeanCompliantSetter(null));
     }
-
 }

@@ -30,11 +30,9 @@ import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
  * An durable collection of {@link CoderMetadata}.
  * <p>
  * This is a write-only collection, and cannot be modified once initialized.
- * 
- * @param <T>
- *            The type of coder ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder}
- * @param <M>
- *            The metadata for the coder
+ *
+ * @param <T> The type of coder ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder}
+ * @param <M> The metadata for the coder
  */
 public abstract class CoderMetadataSet<T, M extends CoderMetadata<T>> implements Iterable<M>
 {
@@ -97,13 +95,11 @@ public abstract class CoderMetadataSet<T, M extends CoderMetadata<T>> implements
 
     /**
      * Coder Specific discovery of Metadata for a specific coder.
-     * 
-     * @param coder
-     *            the coder to discover metadata in.
+     *
+     * @param coder the coder to discover metadata in.
      * @return the list of metadata discovered
-     * @throws InvalidWebSocketException
-     *             if unable to discover some metadata. Sucha as: a duplicate {@link CoderMetadata#getObjectType()} encountered, , or if unable to find the
-     *             concrete generic class reference for the coder, or if the provided coder is not valid per spec.
+     * @throws InvalidWebSocketException if unable to discover some metadata. Sucha as: a duplicate {@link CoderMetadata#getObjectType()} encountered, , or if unable to find the
+     * concrete generic class reference for the coder, or if the provided coder is not valid per spec.
      */
     protected abstract List<M> discover(Class<? extends T> coder);
 
@@ -147,7 +143,7 @@ public abstract class CoderMetadataSet<T, M extends CoderMetadata<T>> implements
             if (idx != null)
             {
                 // add new entry map
-                typeMap.put(type,idx);
+                typeMap.put(type, idx);
             }
         }
 
@@ -239,7 +235,7 @@ public abstract class CoderMetadataSet<T, M extends CoderMetadata<T>> implements
             int newidx = metadatas.size();
             metadatas.add(metadata);
             coders.add(coderClass);
-            typeMap.put(type,newidx);
+            typeMap.put(type, newidx);
 
             List<Integer> indexes = implMap.get(coderClass);
             if (indexes == null)
@@ -251,7 +247,7 @@ public abstract class CoderMetadataSet<T, M extends CoderMetadata<T>> implements
                 // possible duplicate, TODO: how?
             }
             indexes.add(newidx);
-            implMap.put(coderClass,indexes);
+            implMap.put(coderClass, indexes);
         }
     }
 }

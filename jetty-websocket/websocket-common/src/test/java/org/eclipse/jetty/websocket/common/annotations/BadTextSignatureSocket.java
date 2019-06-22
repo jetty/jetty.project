@@ -30,6 +30,7 @@ public class BadTextSignatureSocket
 {
     /**
      * Declaring a static method
+     *
      * @param session the session
      * @param text the text message
      */

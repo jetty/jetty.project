@@ -31,7 +31,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
-
 public class IncomingFramesCapture implements IncomingFrames
 {
     private LinkedBlockingQueue<WebSocketFrame> frames = new LinkedBlockingQueue<>();
@@ -41,33 +40,33 @@ public class IncomingFramesCapture implements IncomingFrames
         if (frames.size() != expectedCount)
         {
             // dump details
-            System.err.printf("Expected %d frame(s)%n",expectedCount);
-            System.err.printf("But actually captured %d frame(s)%n",frames.size());
+            System.err.printf("Expected %d frame(s)%n", expectedCount);
+            System.err.printf("But actually captured %d frame(s)%n", frames.size());
             int i = 0;
             for (Frame frame : frames)
             {
-                System.err.printf(" [%d] Frame[%s] - %s%n", i++, 
-                        OpCode.name(frame.getOpCode()),
-                        BufferUtil.toDetailString(frame.getPayload()));
+                System.err.printf(" [%d] Frame[%s] - %s%n", i++,
+                    OpCode.name(frame.getOpCode()),
+                    BufferUtil.toDetailString(frame.getPayload()));
             }
         }
-        assertThat("Captured frame count",frames.size(),is(expectedCount));
+        assertThat("Captured frame count", frames.size(), is(expectedCount));
     }
 
     public void assertHasFrame(byte op)
     {
-        assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
+        assertThat(OpCode.name(op), getFrameCount(op), greaterThanOrEqualTo(1));
     }
 
     public void assertHasFrame(byte op, int expectedCount)
     {
-        String msg = String.format("%s frame count",OpCode.name(op));
-        assertThat(msg,getFrameCount(op),is(expectedCount));
+        String msg = String.format("%s frame count", OpCode.name(op));
+        assertThat(msg, getFrameCount(op), is(expectedCount));
     }
 
     public void assertHasNoFrames()
     {
-        assertThat("Frame count",frames.size(),is(0));
+        assertThat("Frame count", frames.size(), is(0));
     }
 
     public void clear()
@@ -77,12 +76,12 @@ public class IncomingFramesCapture implements IncomingFrames
 
     public void dump()
     {
-        System.err.printf("Captured %d incoming frames%n",frames.size());
+        System.err.printf("Captured %d incoming frames%n", frames.size());
         int i = 0;
         for (Frame frame : frames)
         {
-            System.err.printf("[%3d] %s%n",i++,frame);
-            System.err.printf("          payload: %s%n",BufferUtil.toDetailString(frame.getPayload()));
+            System.err.printf("[%3d] %s%n", i++, frame);
+            System.err.printf("          payload: %s%n", BufferUtil.toDetailString(frame.getPayload()));
         }
     }
 

@@ -26,7 +26,6 @@ import org.apache.tools.ant.Task;
 /**
  * Provides logging functionality for classes without access to the Ant project
  * variable.
- * 
  */
 public class TaskLog
 {
@@ -34,7 +33,7 @@ public class TaskLog
     private static Task task;
 
     private static final SimpleDateFormat format = new SimpleDateFormat(
-            "yyyy-MM-dd HH:mm:ss.SSS");
+        "yyyy-MM-dd HH:mm:ss.SSS");
 
     public static void setTask(Task task)
     {

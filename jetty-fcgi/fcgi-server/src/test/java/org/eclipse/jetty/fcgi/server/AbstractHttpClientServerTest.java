@@ -56,8 +56,8 @@ public abstract class AbstractHttpClientServerTest
 
         ServerFCGIConnectionFactory fcgiConnectionFactory = new ServerFCGIConnectionFactory(new HttpConfiguration());
         serverBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        connector = new ServerConnector( server, null, null, serverBufferPool,
-                                         1, Math.max( 1, ProcessorUtils.availableProcessors() / 2), fcgiConnectionFactory);
+        connector = new ServerConnector(server, null, null, serverBufferPool,
+            1, Math.max(1, ProcessorUtils.availableProcessors() / 2), fcgiConnectionFactory);
 //        connector.setPort(9000);
 
         server.addConnector(connector);

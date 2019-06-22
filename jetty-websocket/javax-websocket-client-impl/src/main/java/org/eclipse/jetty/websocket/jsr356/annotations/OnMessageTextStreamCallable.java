@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Method;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
@@ -31,7 +30,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
  * Callable for {@link OnMessage} annotated methods for {@link Reader} based text message objects
- * 
+ *
  * @see javax.websocket.Decoder.TextStream
  */
 public class OnMessageTextStreamCallable extends OnMessageCallable
@@ -40,11 +39,12 @@ public class OnMessageTextStreamCallable extends OnMessageCallable
 
     public OnMessageTextStreamCallable(Class<?> pojo, Method method)
     {
-        super(pojo,method);
+        super(pojo, method);
     }
 
     /**
      * Copy Constructor
+     *
      * @param copy the callable to copy from
      */
     public OnMessageTextStreamCallable(OnMessageCallable copy)
@@ -57,16 +57,16 @@ public class OnMessageTextStreamCallable extends OnMessageCallable
         // Bug-430088 - streaming based calls are dispatched.
         // create a copy of the calling args array to prevent concurrency problems.
         Object copy[] = new Object[super.args.length];
-        System.arraycopy(super.args,0,copy,0,super.args.length);
+        System.arraycopy(super.args, 0, copy, 0, super.args.length);
         copy[idxMessageObject] = textDecoder.decode(reader);
-        return super.call(endpoint,copy);
+        return super.call(endpoint, copy);
     }
 
     @Override
     public void init(JsrSession session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_TEXT_STREAM);
-        assertRoleRequired(idxMessageObject,"Text Reader Message Object");
+        assertRoleRequired(idxMessageObject, "Text Reader Message Object");
         super.init(session);
         assertDecoderRequired();
         textDecoder = (Decoder.TextStream<?>)getDecoder();

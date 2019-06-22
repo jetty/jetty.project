@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
@@ -74,17 +73,17 @@ public class EncoderFactory implements Configurable
 
     public EncoderFactory(WebSocketContainerScope containerScope, EncoderMetadataSet metadatas)
     {
-        this(containerScope,metadatas,null);
+        this(containerScope, metadatas, null);
     }
 
     public EncoderFactory(WebSocketSessionScope sessionScope, EncoderMetadataSet metadatas, EncoderFactory parentFactory)
     {
-        this(sessionScope.getContainerScope(),metadatas,parentFactory);
+        this(sessionScope.getContainerScope(), metadatas, parentFactory);
     }
 
     protected EncoderFactory(WebSocketContainerScope containerScope, EncoderMetadataSet metadatas, EncoderFactory parentFactory)
     {
-        Objects.requireNonNull(containerScope,"Container Scope cannot be null");
+        Objects.requireNonNull(containerScope, "Container Scope cannot be null");
         this.containerScope = containerScope;
         this.metadatas = metadatas;
         this.activeWrappers = new ConcurrentHashMap<>();
@@ -105,7 +104,7 @@ public class EncoderFactory implements Configurable
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("getMetadataFor({})",type);
+            LOG.debug("getMetadataFor({})", type);
         }
         EncoderMetadata metadata = metadatas.getMetadataByType(type);
 
@@ -144,7 +143,7 @@ public class EncoderFactory implements Configurable
                 }
                 wrapper = newWrapper(metadata);
                 // track wrapper
-                activeWrappers.put(type,wrapper);
+                activeWrappers.put(type, wrapper);
             }
 
             return wrapper;
@@ -156,14 +155,14 @@ public class EncoderFactory implements Configurable
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("init({})",config);
+            LOG.debug("init({})", config);
         }
 
         // Instantiate all declared encoders
         for (EncoderMetadata metadata : metadatas)
         {
             Wrapper wrapper = newWrapper(metadata);
-            activeWrappers.put(metadata.getObjectType(),wrapper);
+            activeWrappers.put(metadata.getObjectType(), wrapper);
         }
 
         // Initialize all encoders
@@ -179,11 +178,11 @@ public class EncoderFactory implements Configurable
         try
         {
             Encoder encoder = containerScope.getObjectFactory().createInstance(encoderClass);
-            return new Wrapper(encoder,metadata);
+            return new Wrapper(encoder, metadata);
         }
         catch (Exception e)
         {
-            throw new IllegalStateException("Unable to instantiate Encoder: " + encoderClass.getName(),e);
+            throw new IllegalStateException("Unable to instantiate Encoder: " + encoderClass.getName(), e);
         }
     }
 }

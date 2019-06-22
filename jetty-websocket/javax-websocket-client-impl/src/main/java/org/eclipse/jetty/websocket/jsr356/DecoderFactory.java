@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
@@ -81,17 +80,17 @@ public class DecoderFactory implements Configurable
 
     public DecoderFactory(WebSocketContainerScope containerScope, DecoderMetadataSet metadatas)
     {
-        this(containerScope,metadatas,null);
+        this(containerScope, metadatas, null);
     }
-    
+
     public DecoderFactory(WebSocketSessionScope sessionScope, DecoderMetadataSet metadatas, DecoderFactory parentFactory)
     {
-        this(sessionScope.getContainerScope(),metadatas,parentFactory);
+        this(sessionScope.getContainerScope(), metadatas, parentFactory);
     }
 
     protected DecoderFactory(WebSocketContainerScope containerScope, DecoderMetadataSet metadatas, DecoderFactory parentFactory)
     {
-        Objects.requireNonNull(containerScope,"Container Scope cannot be null");
+        Objects.requireNonNull(containerScope, "Container Scope cannot be null");
         this.containerScope = containerScope;
         this.metadatas = metadatas;
         this.activeWrappers = new ConcurrentHashMap<>();
@@ -112,9 +111,9 @@ public class DecoderFactory implements Configurable
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("getMetadataFor({})",type);
+            LOG.debug("getMetadataFor({})", type);
         }
-        
+
         DecoderMetadata metadata = metadatas.getMetadataByType(type);
 
         if (metadata != null)
@@ -152,7 +151,7 @@ public class DecoderFactory implements Configurable
                 }
                 wrapper = newWrapper(metadata);
                 // track wrapper
-                activeWrappers.put(type,wrapper);
+                activeWrappers.put(type, wrapper);
             }
 
             return wrapper;
@@ -164,19 +163,19 @@ public class DecoderFactory implements Configurable
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("init({})",config);
+            LOG.debug("init({})", config);
         }
-        
-        if(!containerScope.isRunning())
+
+        if (!containerScope.isRunning())
         {
             throw new RuntimeException(containerScope.getClass().getName() + " is not running yet");
         }
-        
+
         // Instantiate all declared decoders
         for (DecoderMetadata metadata : metadatas)
         {
             Wrapper wrapper = newWrapper(metadata);
-            activeWrappers.put(metadata.getObjectType(),wrapper);
+            activeWrappers.put(metadata.getObjectType(), wrapper);
         }
 
         // Initialize all decoders
@@ -192,7 +191,7 @@ public class DecoderFactory implements Configurable
         try
         {
             Decoder decoder = containerScope.getObjectFactory().createInstance(decoderClass);
-            return new Wrapper(decoder,metadata);
+            return new Wrapper(decoder, metadata);
         }
         catch (Exception e)
         {

@@ -83,7 +83,7 @@ public class FrameFlusherTest
         closeCallback.get(5, TimeUnit.SECONDS);
         // If this throws a TimeoutException then the callback wasn't called.
         ExecutionException x = assertThrows(ExecutionException.class,
-                ()-> textFrameCallback.get(5, TimeUnit.SECONDS));
+            () -> textFrameCallback.get(5, TimeUnit.SECONDS));
         assertThat(x.getCause(), instanceOf(ClosedChannelException.class));
     }
 
@@ -104,7 +104,7 @@ public class FrameFlusherTest
 
         int largeMessageSize = 60000;
         byte[] buf = new byte[largeMessageSize];
-        Arrays.fill(buf, (byte) 'x');
+        Arrays.fill(buf, (byte)'x');
         String largeMessage = new String(buf, UTF_8);
 
         int messageCount = 10000;
@@ -112,7 +112,8 @@ public class FrameFlusherTest
 
         CompletableFuture<Void> serverTask = new CompletableFuture<>();
 
-        CompletableFuture.runAsync(() -> {
+        CompletableFuture.runAsync(() ->
+        {
             // Run Server Task
             try
             {

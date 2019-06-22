@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.net.URI;
-
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HttpVersion;
@@ -98,7 +97,7 @@ public class SimpleServletServer
             https_config.addCustomizer(new SecureRequestCustomizer());
 
             // SSL Connector
-            connector = new ServerConnector(server,new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),new HttpConnectionFactory(https_config));
+            connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), new HttpConnectionFactory(https_config));
             connector.setPort(0);
         }
         else
@@ -115,7 +114,7 @@ public class SimpleServletServer
         server.setHandler(context);
 
         // Serve capture servlet
-        context.addServlet(new ServletHolder(servlet),"/*");
+        context.addServlet(new ServletHolder(servlet), "/*");
 
         // Start Server
         server.start();
@@ -127,7 +126,7 @@ public class SimpleServletServer
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("%s://%s:%d/",ssl?"wss":"ws",host,port));
+        serverUri = new URI(String.format("%s://%s:%d/", ssl ? "wss" : "ws", host, port));
 
         // Some debugging
         if (LOG.isDebugEnabled())

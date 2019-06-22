@@ -28,9 +28,9 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A utility test class to locate a Jetty Distribution for testing purposes by searching:
  * <ul>
- *     <li>The <code>jetty.home</code> system property</li>
- *     <li>The <code>JETTY_HOME</code> environment variable</li>
- *     <li>The working directory hierarchy with subdirectory <code>jetty-distribution/target/home</code></li>
+ * <li>The <code>jetty.home</code> system property</li>
+ * <li>The <code>JETTY_HOME</code> environment variable</li>
+ * <li>The working directory hierarchy with subdirectory <code>jetty-distribution/target/home</code></li>
  * </ul>
  */
 public class JettyDistribution
@@ -41,21 +41,21 @@ public class JettyDistribution
     static
     {
         Path distro = asJettyDistribution(System.getProperty("jetty.home"));
-        if (distro==null)
+        if (distro == null)
             distro = asJettyDistribution(System.getenv().get("JETTY_HOME"));
 
-        if (distro==null)
+        if (distro == null)
         {
             try
             {
                 Path working = new File(".").getAbsoluteFile().getCanonicalFile().toPath();
-                while(distro == null && working !=null )
+                while (distro == null && working != null)
                 {
                     distro = asJettyDistribution(working.resolve("jetty-distribution/target/distribution").toString());
                     working = working.getParent();
                 }
             }
-            catch(Throwable th)
+            catch (Throwable th)
             {
                 LOG.warn(th);
             }
@@ -80,7 +80,7 @@ public class JettyDistribution
                 return null;
             }
 
-            File demoBase = new File(dir,"demo-base");
+            File demoBase = new File(dir, "demo-base");
             if (!demoBase.exists() || !demoBase.isDirectory())
             {
                 LOG.info("asJettyDistribution {} has no demo-base", test);
@@ -90,7 +90,7 @@ public class JettyDistribution
             LOG.info("asJettyDistribution {}", dir);
             return dir.getAbsoluteFile().getCanonicalFile().toPath();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             LOG.ignore(e);
         }

@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +35,11 @@ import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class FragmentExtensionTest
 {
@@ -82,7 +82,7 @@ public class FragmentExtensionTest
         for (int i = 0; i < count; i++)
         {
             idx = (i * partSize);
-            ret[i] = str.substring(idx,Math.min(idx + partSize,strLength));
+            ret[i] = str.substring(idx, Math.min(idx + partSize, strLength));
         }
         return ret;
     }
@@ -91,10 +91,10 @@ public class FragmentExtensionTest
     public void testFragmentExtension() throws Exception
     {
         assumeTrue(server.getWebSocketServletFactory().getExtensionFactory().isAvailable("fragment"),
-                "Server has fragment registered");
+            "Server has fragment registered");
 
         assumeTrue(client.getExtensionFactory().isAvailable("fragment"),
-                "Client has fragment registered");
+            "Client has fragment registered");
 
         int fragSize = 4;
 
@@ -111,17 +111,17 @@ public class FragmentExtensionTest
             HttpFields responseHeaders = clientConn.getUpgradeResponseHeaders();
             HttpField extensionHeader = responseHeaders.getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
 
-            assertThat("Response",extensionHeader.getValue(),containsString("fragment"));
+            assertThat("Response", extensionHeader.getValue(), containsString("fragment"));
 
             String msg = "Sent as a long message that should be split";
             clientConn.write(new TextFrame().setPayload(msg));
 
-            String parts[] = split(msg,fragSize);
+            String parts[] = split(msg, fragSize);
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             for (int i = 0; i < parts.length; i++)
             {
                 WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-                assertThat("text[" + i + "].payload",frame.getPayloadAsUTF8(),is(parts[i]));
+                assertThat("text[" + i + "].payload", frame.getPayloadAsUTF8(), is(parts[i]));
             }
         }
     }

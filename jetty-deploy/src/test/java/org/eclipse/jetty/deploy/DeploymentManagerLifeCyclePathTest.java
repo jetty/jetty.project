@@ -21,7 +21,6 @@ package org.eclipse.jetty.deploy;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
@@ -53,7 +52,7 @@ public class DeploymentManagerLifeCyclePathTest
         App app = depman.getAppByOriginId("mock-foo-webapp-1.war");
 
         // Request Deploy of App
-        depman.requestAppGoal(app,"deployed");
+        depman.requestAppGoal(app, "deployed");
 
         // Setup Expectations.
         List<String> expected = new ArrayList<String>();
@@ -61,7 +60,7 @@ public class DeploymentManagerLifeCyclePathTest
         expected.add("deploying");
         expected.add("deployed");
 
-        pathtracker.assertExpected("Test StateTransition / New -> Deployed",expected);
+        pathtracker.assertExpected("Test StateTransition / New -> Deployed", expected);
     }
 
     @Test
@@ -87,7 +86,7 @@ public class DeploymentManagerLifeCyclePathTest
         // Setup Expectations.
         List<String> expected = new ArrayList<String>();
 
-        pathtracker.assertExpected("Test StateTransition / New only",expected);
+        pathtracker.assertExpected("Test StateTransition / New only", expected);
     }
 
     @Test
@@ -99,7 +98,7 @@ public class DeploymentManagerLifeCyclePathTest
         MockAppProvider mockProvider = new MockAppProvider();
 
         // Setup JMX
-        MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         depman.addBean(mbContainer);
 
         depman.addLifeCycleBinding(pathtracker);
@@ -115,15 +114,15 @@ public class DeploymentManagerLifeCyclePathTest
         App app = depman.getAppByOriginId("mock-foo-webapp-1.war");
 
         // Request Deploy of App
-        depman.requestAppGoal(app,"deployed");
+        depman.requestAppGoal(app, "deployed");
 
         JmxServiceConnection jmxConnection = new JmxServiceConnection();
         jmxConnection.connect();
 
         MBeanServerConnection mbsConnection = jmxConnection.getConnection();
         ObjectName dmObjName = new ObjectName("org.eclipse.jetty.deploy:type=deploymentmanager,id=0");
-        String[] params = new String[] {"mock-foo-webapp-1.war", "undeployed"};
-        String[] signature = new String[] {"java.lang.String", "java.lang.String"};
+        String[] params = new String[]{"mock-foo-webapp-1.war", "undeployed"};
+        String[] signature = new String[]{"java.lang.String", "java.lang.String"};
         mbsConnection.invoke(dmObjName, "requestAppGoal", params, signature);
 
         // Setup Expectations.
@@ -134,6 +133,6 @@ public class DeploymentManagerLifeCyclePathTest
         expected.add("undeploying");
         expected.add("undeployed");
 
-        pathtracker.assertExpected("Test JMX StateTransition / Deployed -> Undeployed",expected);
+        pathtracker.assertExpected("Test JMX StateTransition / Deployed -> Undeployed", expected);
     }
 }

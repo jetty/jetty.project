@@ -45,12 +45,12 @@ public class ByteAccumulator
         }
 
         byte copy[] = new byte[length - offset];
-        System.arraycopy(buf,offset,copy,0,length);
+        System.arraycopy(buf, offset, copy, 0, length);
 
         chunks.add(copy);
         this.length += length;
     }
-    
+
     public int getLength()
     {
         return length;
@@ -61,14 +61,14 @@ public class ByteAccumulator
         if (buffer.remaining() < length)
         {
             throw new IllegalArgumentException(String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]",
-                    buffer.remaining(),length));
+                buffer.remaining(), length));
         }
 
         int position = buffer.position();
         for (byte[] chunk : chunks)
         {
-            buffer.put(chunk,0,chunk.length);
+            buffer.put(chunk, 0, chunk.length);
         }
-        BufferUtil.flipToFlush(buffer,position);
+        BufferUtil.flipToFlush(buffer, position);
     }
 }

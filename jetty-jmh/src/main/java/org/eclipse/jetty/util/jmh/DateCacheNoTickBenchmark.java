@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.util.jmh;
 
+import java.time.Instant;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -31,10 +35,6 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
-
-import java.time.Instant;
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
 @Threads(4)
@@ -67,24 +67,24 @@ public class DateCacheNoTickBenchmark
         dateCache.formatNow(System.currentTimeMillis());
     }
 
-    public static void main(String[] args) throws RunnerException 
+    public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                .include(DateCacheNoTickBenchmark.class.getSimpleName())
-                .warmupIterations(2)
-                .measurementIterations(3)
-                .forks(1)
-                .threads(400)
-                // .syncIterations(true) // Don't start all threads at same time
-                .warmupTime(new TimeValue(10000,TimeUnit.MILLISECONDS))
-                .measurementTime(new TimeValue(10000,TimeUnit.MILLISECONDS))
-                // .addProfiler(CompilerProfiler.class)
-                // .addProfiler(LinuxPerfProfiler.class)
-                // .addProfiler(LinuxPerfNormProfiler.class)
-                // .addProfiler(LinuxPerfAsmProfiler.class)
-                // .resultFormat(ResultFormatType.CSV)
-                .build();
-        
+            .include(DateCacheNoTickBenchmark.class.getSimpleName())
+            .warmupIterations(2)
+            .measurementIterations(3)
+            .forks(1)
+            .threads(400)
+            // .syncIterations(true) // Don't start all threads at same time
+            .warmupTime(new TimeValue(10000, TimeUnit.MILLISECONDS))
+            .measurementTime(new TimeValue(10000, TimeUnit.MILLISECONDS))
+            // .addProfiler(CompilerProfiler.class)
+            // .addProfiler(LinuxPerfProfiler.class)
+            // .addProfiler(LinuxPerfNormProfiler.class)
+            // .addProfiler(LinuxPerfAsmProfiler.class)
+            // .resultFormat(ResultFormatType.CSV)
+            .build();
+
         new Runner(opt).run();
     }
 }

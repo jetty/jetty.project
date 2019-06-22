@@ -44,8 +44,8 @@ import org.osgi.framework.BundleReference;
 
 /**
  * OSGiWebappClassLoader
- * 
- * 
+ *
+ *
  * Extends the webapp classloader to also use the classloader of the Bundle defining the webapp.
  */
 public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleReference
@@ -78,7 +78,6 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     private Bundle _contributor;
 
-
     /**
      * @param parent The parent classloader.
      * @param context The WebAppContext
@@ -86,14 +85,12 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * @throws IOException if unable to cerate the OSGiWebappClassLoader
      */
     public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor)
-    throws IOException
+        throws IOException
     {
         super(parent, context);
         _contributor = contributor;
         _osgiBundleClassLoader = BundleClassLoaderHelperFactory.getFactory().getHelper().getBundleClassLoader(contributor);
     }
-    
-
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException
@@ -116,19 +113,17 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         }
     }
 
-
     /**
      * Returns the <code>Bundle</code> that defined this web-application.
-     * 
+     *
      * @return The <code>Bundle</code> object associated with this
-     *         <code>BundleReference</code>.
+     * <code>BundleReference</code>.
      */
     @Override
     public Bundle getBundle()
     {
         return _contributor;
     }
-
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException
@@ -138,7 +133,6 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         List<URL> resources = toList(osgiUrls, urls);
         return Collections.enumeration(resources);
     }
-    
 
     @Override
     public URL getResource(String name)
@@ -146,27 +140,22 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         URL url = _osgiBundleClassLoader.getResource(name);
         return url != null ? url : super.getResource(name);
     }
-    
-    
-    
-    
+
     @Override
     public URL findResource(String name)
     {
         URL url = _osgiBundleClassLoader.getResource(name);
         return url != null ? url : super.findResource(name);
     }
-    
-    
 
-    /** 
+    /**
      * Try to load the class from the bundle classloader.
      * We do NOT load it as a resource as the WebAppClassLoader does because the
      * url that is returned is an osgi-special url that does not play
      * properly with WebAppClassLoader's method of extracting the class
      * from the resource.  This implementation directly asks the osgi
      * bundle classloader to load the given class name.
-     * 
+     *
      * @see org.eclipse.jetty.webapp.WebAppClassLoader#loadAsResource(java.lang.String, boolean)
      */
     @Override
@@ -189,17 +178,19 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         }
     }
 
-
     private List<URL> toList(Enumeration<URL> e, Enumeration<URL> e2)
     {
         List<URL> list = new ArrayList<>();
         while (e != null && e.hasMoreElements())
+        {
             list.add(e.nextElement());
+        }
         while (e2 != null && e2.hasMoreElements())
+        {
             list.add(e2.nextElement());
+        }
         return list;
-    } 
-    
+    }
 
     /**
      * Parse the classpath ourselves to be able to filter things. This is a
@@ -226,13 +217,9 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
                 __logger.info("Did not add " + path + " to the classloader of the webapp " + getContext());
             }
         }
-
     }
 
-    
-
     /**
-     * @param lib
      * @return true if the lib should be included in the webapp classloader.
      */
     private boolean isAcceptableLibrary(File file, Set<String> pathToClassFiles)
@@ -243,7 +230,10 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             {
                 for (String criteria : pathToClassFiles)
                 {
-                    if (new File(file, criteria).exists()) { return false; }
+                    if (new File(file, criteria).exists())
+                    {
+                        return false;
+                    }
                 }
             }
             else
@@ -254,18 +244,22 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
                     jar = new JarFile(file);
                     for (String criteria : pathToClassFiles)
                     {
-                        if (jar.getEntry(criteria) != null) { return false; }
+                        if (jar.getEntry(criteria) != null)
+                        {
+                            return false;
+                        }
                     }
                 }
                 finally
                 {
-                    if (jar != null) try
-                    {
-                        jar.close();
-                    }
-                    catch (IOException ioe)
-                    {
-                    }
+                    if (jar != null)
+                        try
+                        {
+                            jar.close();
+                        }
+                        catch (IOException ioe)
+                        {
+                        }
                 }
             }
         }
@@ -279,14 +273,13 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     private static Field _contextField;
 
-    
-
     /**
      * In the case of the generation of a webapp via a jetty context file we
      * need a proper classloader to setup the app before we have the
      * WebappContext So we place a fake one there to start with. We replace it
      * with the actual webapp context with this method. We also apply the
      * extraclasspath there at the same time.
+     *
      * @param webappContext the web app context
      */
     public void setWebappContext(WebAppContext webappContext)

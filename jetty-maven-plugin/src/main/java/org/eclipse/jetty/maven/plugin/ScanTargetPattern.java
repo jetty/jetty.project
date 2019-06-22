@@ -25,22 +25,22 @@ import java.util.List;
 /**
  * ScanTargetPattern
  *
- * Utility class to provide the ability for the mvn jetty:run 
- * mojo to be able to specify filesets of extra files to 
+ * Utility class to provide the ability for the mvn jetty:run
+ * mojo to be able to specify filesets of extra files to
  * regularly scan for changes in order to redeploy the webapp.
- * 
+ *
  * For example:
- * 
+ *
  * &lt;scanTargetPattern&gt;
- *   &lt;directory&gt;/some/place&lt;/directory&gt;
- *   &lt;includes&gt;
- *     &lt;include&gt;some ant pattern here &lt;/include&gt;
- *     &lt;include&gt;some ant pattern here &lt;/include&gt; 
- *   &lt;/includes&gt;
- *   &lt;excludes&gt;
- *     &lt;exclude&gt;some ant pattern here &lt;/exclude&gt;
- *     &lt;exclude&gt;some ant pattern here &lt;/exclude&gt;
- *   &lt;/excludes&gt;
+ * &lt;directory&gt;/some/place&lt;/directory&gt;
+ * &lt;includes&gt;
+ * &lt;include&gt;some ant pattern here &lt;/include&gt;
+ * &lt;include&gt;some ant pattern here &lt;/include&gt;
+ * &lt;/includes&gt;
+ * &lt;excludes&gt;
+ * &lt;exclude&gt;some ant pattern here &lt;/exclude&gt;
+ * &lt;exclude&gt;some ant pattern here &lt;/exclude&gt;
+ * &lt;/excludes&gt;
  * &lt;/scanTargetPattern&gt;
  */
 public class ScanTargetPattern
@@ -63,29 +63,28 @@ public class ScanTargetPattern
     {
         this._directory = directory;
     }
-    
-    public void setIncludes (List<String> includes)
+
+    public void setIncludes(List<String> includes)
     {
         if (_pattern == null)
             _pattern = new ScanPattern();
         _pattern.setIncludes(includes);
     }
-    
+
     public void setExcludes(List<String> excludes)
     {
         if (_pattern == null)
             _pattern = new ScanPattern();
         _pattern.setExcludes(excludes);
     }
-    
+
     public List<String> getIncludes()
     {
-        return (_pattern == null? Collections.emptyList() : _pattern.getIncludes());
-    }
-    
-    public List<String> getExcludes()
-    {
-        return (_pattern == null? Collections.emptyList() : _pattern.getExcludes());
+        return (_pattern == null ? Collections.emptyList() : _pattern.getIncludes());
     }
 
+    public List<String> getExcludes()
+    {
+        return (_pattern == null ? Collections.emptyList() : _pattern.getExcludes());
+    }
 }

@@ -33,12 +33,11 @@ public class App
 
     /**
      * Create an App with specified Origin ID and archivePath
-     * 
-     * @param manager the deployment manager 
+     *
+     * @param manager the deployment manager
      * @param provider the app provider
-     * @param originId
-     *            the origin ID (The ID that the {@link AppProvider} knows
-     *            about)
+     * @param originId the origin ID (The ID that the {@link AppProvider} knows
+     * about)
      * @see App#getOriginId()
      * @see App#getContextPath()
      */
@@ -51,21 +50,19 @@ public class App
 
     /**
      * Create an App with specified Origin ID and archivePath
-     * 
-     * @param manager the deployment manager 
+     *
+     * @param manager the deployment manager
      * @param provider the app provider
-     * @param originId
-     *            the origin ID (The ID that the {@link AppProvider} knows
-     *            about)
+     * @param originId the origin ID (The ID that the {@link AppProvider} knows
+     * about)
+     * @param context Some implementations of AppProvider might have to use an
+     * already created ContextHandler.
      * @see App#getOriginId()
      * @see App#getContextPath()
-     * @param context
-     *            Some implementations of AppProvider might have to use an
-     *            already created ContextHandler.
      */
     public App(DeploymentManager manager, AppProvider provider, String originId, ContextHandler context)
     {
-        this(manager,provider,originId);
+        this(manager, provider, originId);
         _context = context;
     }
 
@@ -87,12 +84,12 @@ public class App
 
     /**
      * Get ContextHandler for the App.
-     * 
+     *
      * Create it if needed.
-     * 
+     *
      * @return the {@link ContextHandler} to use for the App when fully started.
-     *         (Portions of which might be ignored when App is not yet 
-     *         {@link AppLifeCycle#DEPLOYED} or {@link AppLifeCycle#STARTED})
+     * (Portions of which might be ignored when App is not yet
+     * {@link AppLifeCycle#DEPLOYED} or {@link AppLifeCycle#STARTED})
      * @throws Exception if unable to get the context handler
      */
     public ContextHandler getContextHandler() throws Exception
@@ -100,9 +97,9 @@ public class App
         if (_context == null)
         {
             _context = getAppProvider().createContextHandler(this);
-            
+
             AttributesMap attributes = _manager.getContextAttributes();
-            if (attributes!=null && attributes.size()>0)
+            if (attributes != null && attributes.size() > 0)
             {
                 // Merge the manager attributes under the existing attributes
                 attributes = new AttributesMap(attributes);
@@ -113,28 +110,26 @@ public class App
         return _context;
     }
 
-    
     /**
      * The context path {@link App} relating to how it is installed on the
      * jetty server side.
-     * 
+     *
      * NOTE that although the method name indicates that this is a unique
      * identifier, it is not, as many contexts may have the same contextPath,
      * yet different virtual hosts.
-     * 
-     * @deprecated Use getContextPath instead.
+     *
      * @return the context path for the App
+     * @deprecated Use getContextPath instead.
      */
     public String getContextId()
     {
         return getContextPath();
     }
-    
-    
+
     /**
      * The context path {@link App} relating to how it is installed on the
      * jetty server side.
-     * 
+     *
      * @return the contextPath for the App
      */
     public String getContextPath()
@@ -148,7 +143,7 @@ public class App
 
     /**
      * The origin of this {@link App} as specified by the {@link AppProvider}
-     * 
+     *
      * @return String representing the origin of this app.
      */
     public String getOriginId()

@@ -134,6 +134,7 @@ public abstract class CompletableCallback implements Callback
 
     /**
      * Callback method invoked when this callback is failed.
+     *
      * @param failure the throwable reprsenting the callback failure
      */
     public abstract void abort(Throwable failure);

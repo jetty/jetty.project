@@ -49,7 +49,7 @@ public class PathFinderTest
         finder.setFileMatcher("glob:**/*.ini");
         finder.setBase(homePath);
 
-        Files.walkFileTree(homePath,EnumSet.of(FileVisitOption.FOLLOW_LINKS),30,finder);
+        Files.walkFileTree(homePath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 30, finder);
 
         List<String> expected = new ArrayList<>();
         expected.add("${jetty.home}/start.d/jmx.ini");
@@ -60,8 +60,8 @@ public class PathFinderTest
         expected.add("${jetty.home}/start.ini");
         FSTest.toFsSeparators(expected);
 
-        BaseHome hb = new BaseHome(new String[] { "jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString() });
-        BaseHomeTest.assertPathList(hb,"Files found",expected,finder);
+        BaseHome hb = new BaseHome(new String[]{"jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString()});
+        BaseHomeTest.assertPathList(hb, "Files found", expected, finder);
     }
 
     @Test
@@ -72,7 +72,7 @@ public class PathFinderTest
         Path basePath = testdir.getEmptyPathDir();
 
         List<String> expected = new ArrayList<>();
-        File modulesDir = new File(homeDir,"modules");
+        File modulesDir = new File(homeDir, "modules");
         for (File file : modulesDir.listFiles())
         {
             if (file.getName().endsWith(".mod"))
@@ -81,16 +81,16 @@ public class PathFinderTest
             }
         }
         FSTest.toFsSeparators(expected);
-        
+
         Path modulesPath = modulesDir.toPath();
 
         PathFinder finder = new PathFinder();
         finder.setFileMatcher(PathMatchers.getMatcher("modules/*.mod"));
         finder.setBase(modulesPath);
-        
-        Files.walkFileTree(modulesPath,EnumSet.of(FileVisitOption.FOLLOW_LINKS),1,finder);
 
-        BaseHome hb = new BaseHome(new String[] { "jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString() });
-        BaseHomeTest.assertPathList(hb,"Files found",expected,finder);
+        Files.walkFileTree(modulesPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, finder);
+
+        BaseHome hb = new BaseHome(new String[]{"jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString()});
+        BaseHomeTest.assertPathList(hb, "Files found", expected, finder);
     }
 }

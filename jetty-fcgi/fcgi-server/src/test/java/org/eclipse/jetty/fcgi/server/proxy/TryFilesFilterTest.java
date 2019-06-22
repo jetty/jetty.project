@@ -20,7 +20,6 @@ package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -104,9 +103,9 @@ public class TryFilesFilterTest
         });
 
         ContentResponse response = client.newRequest("localhost", sslConnector.getLocalPort())
-                .scheme("https")
-                .path(path)
-                .send();
+            .scheme("https")
+            .path(path)
+            .send();
 
         assertEquals(200, response.getStatus());
     }

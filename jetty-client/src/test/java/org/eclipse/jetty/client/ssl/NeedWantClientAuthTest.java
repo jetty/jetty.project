@@ -21,7 +21,6 @@ package org.eclipse.jetty.client.ssl;
 import java.security.cert.Certificate;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
@@ -108,8 +107,8 @@ public class NeedWantClientAuthTest
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(10, TimeUnit.SECONDS)
-                .send();
+            .timeout(10, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -147,8 +146,8 @@ public class NeedWantClientAuthTest
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(10, TimeUnit.SECONDS)
-                .send();
+            .timeout(10, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
@@ -190,16 +189,16 @@ public class NeedWantClientAuthTest
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(10, TimeUnit.SECONDS)
-                .send(result ->
+            .timeout(10, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                if (result.isFailed())
                 {
-                    if (result.isFailed())
-                    {
-                        Throwable failure = result.getFailure();
-                        if (failure instanceof SSLException)
-                            latch.countDown();
-                    }
-                });
+                    Throwable failure = result.getFailure();
+                    if (failure instanceof SSLException)
+                        latch.countDown();
+                }
+            });
 
         assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -238,8 +237,8 @@ public class NeedWantClientAuthTest
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(10, TimeUnit.SECONDS)
-                .send();
+            .timeout(10, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));

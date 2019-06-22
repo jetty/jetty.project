@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.IO;
 
-@WebServlet(urlPatterns="/classloader")
+@WebServlet(urlPatterns = "/classloader")
 public class ClassLoaderServlet extends HttpServlet
 {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -54,8 +54,8 @@ public class ClassLoaderServlet extends HttpServlet
             URI serverURI = getLocationOfClass(serverIO);
             String serverVersion = serverIO.getPackage().getImplementationVersion();
 
-            writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n",webappVersion,webappURI);
-            writer.printf("<br/>Server loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n",serverVersion, serverURI);
+            writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n", webappVersion, webappURI);
+            writer.printf("<br/>Server loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n", serverVersion, serverURI);
             if (webappVersion.equals(serverVersion))
                 writer.println("<br/><b>Version Result: <span class=\"fail\">FAIL</span></b>");
             else
@@ -70,12 +70,11 @@ public class ClassLoaderServlet extends HttpServlet
             writer.flush();
             writer.close();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new ServletException(e);
         }
     }
-
 
     public static URI getLocationOfClass(Class<?> clazz)
     {
@@ -109,7 +108,6 @@ public class ClassLoaderServlet extends HttpServlet
         return null;
     }
 
-
     public static URI getJarSource(URI uri)
     {
         try
@@ -119,11 +117,11 @@ public class ClassLoaderServlet extends HttpServlet
             // Get SSP (retaining encoded form)
             String s = uri.getRawSchemeSpecificPart();
             int bang_slash = s.indexOf("!/");
-            if (bang_slash>=0)
-                s=s.substring(0,bang_slash);
+            if (bang_slash >= 0)
+                s = s.substring(0, bang_slash);
             return new URI(s);
         }
-        catch(URISyntaxException e)
+        catch (URISyntaxException e)
         {
             throw new IllegalArgumentException(e);
         }
