@@ -47,82 +47,20 @@
   <build>
     <plugins>
       <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <configuration>
-              <instructions>
-                <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
-                <Bundle-Classpath />
-                <Fragment-Host>org.eclipse.jetty.osgi.boot</Fragment-Host>
-                <Export-Package>!org.eclipse.jetty.osgi.boot.*</Export-Package>
-                <Import-Package>org.eclipse.jdt.*;resolution:=optional,
-                                org.eclipse.jdt.core.compiler.*;resolution:=optional,
-                com.sun.el;resolution:=optional,
- com.sun.el.lang;resolution:=optional,
- com.sun.el.parser;resolution:=optional,
- com.sun.el.util;resolution:=optional,
- javax.el;version="[3.0,3.1)",
- javax.servlet;version="[3.1,4.1)",
- javax.servlet.resources;version="[3.1,4.1)",
- javax.servlet.jsp.resources;version="[2.3,4.1)",
- javax.servlet.jsp;version="[2.3,2.4.1)",
- javax.servlet.jsp.el;version="[2.3,2.4.1)",
- javax.servlet.jsp.tagext;version="[2.3,2.4.1)",
- javax.servlet.jsp.jstl.core;version="1.2";resolution:=optional,
- javax.servlet.jsp.jstl.fmt;version="1.2";resolution:=optional,
- javax.servlet.jsp.jstl.sql;version="1.2";resolution:=optional,
- javax.servlet.jsp.jstl.tlv;version="1.2";resolution:=optional,
- org.apache.el;version="[8.0.23,10)";resolution:=optional,
- org.apache.el.lang;version="[8.0.23,10)";resolution:=optional,
- org.apache.el.stream;version="[8.0.23,10)";resolution:=optional,
- org.apache.el.util;version="[8.0.23,10)";resolution:=optional,
- org.apache.el.parser;version="[8.0.23,10)";resolution:=optional,
- org.apache.jasper;version="[8.0.23,10)";resolution:=optional,
- org.apache.jasper.compiler;version="[8.0.23,10)";resolution:=optional,
- org.apache.jasper.compiler.tagplugin;version="[8.0.23,10)";resolution:=optional,
- org.apache.jasper.runtime;version="[8.0.23,10)";resolution:=optional,
- org.apache.jasper.security;version="[8.0.23,10)";resolution:=optional,
- org.apache.jasper.servlet;version="[8.0.23,10)";resolution:=optional,
- org.apache.jasper.tagplugins.jstl;version="[8.0.23,10)";resolution:=optional,
- org.apache.jasper.util;version="[8.0.23,10)";resolution:=optional,
- org.apache.jasper.xmlparser;version="[8.0.23,10)";resolution:=optional,
- org.apache.taglibs.standard;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.extra.spath;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.functions;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.lang.jstl;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.lang.jstl.parser;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.lang.jstl.test;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.lang.jstl.test.beans;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.lang.support;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.resources;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.common.core;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.common.fmt;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.common.sql;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.common.xml;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.el.core;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.el.fmt;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.el.sql;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.el.xml;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.rt.core;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.rt.fmt;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.rt.sql;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tag.rt.xml;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tei;version="1.2";resolution:=optional,
- org.apache.taglibs.standard.tlv;version="1.2";resolution:=optional,
- org.apache.tomcat;version="[8.0.23,10)";resolution:=optional,
- org.eclipse.jetty.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional,
- org.osgi.*,
- org.xml.*;resolution:=optional,
- org.xml.sax.*;resolution:=optional,
- javax.xml.*;resolution:=optional,
- org.w3c.dom;resolution:=optional,
- org.w3c.dom.ls;resolution:=optional,
- javax.xml.parser;resolution:=optional
- </Import-Package>
-               <DynamicImport-Package>org.eclipse.jetty.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",org.apache.jasper.*;version="8.0.23",org.apache.el.*;version="8.0.23"</DynamicImport-Package>
-              </instructions>
-          </configuration>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
+            <Bundle-Classpath />
+            <Fragment-Host>org.eclipse.jetty.osgi.boot</Fragment-Host>
+            <Export-Package>!org.eclipse.jetty.osgi.boot.*</Export-Package>
+            <Import-Package>org.eclipse.jdt.*;resolution:=optional, org.eclipse.jdt.core.compiler.*;resolution:=optional, com.sun.el;resolution:=optional, com.sun.el.lang;resolution:=optional, com.sun.el.parser;resolution:=optional, com.sun.el.util;resolution:=optional, javax.el;version="[3.0,3.1)", javax.servlet;version="[3.1,4.1)", javax.servlet.resources;version="[3.1,4.1)", javax.servlet.jsp.resources;version="[2.3,4.1)", javax.servlet.jsp;version="[2.3,2.4.1)", javax.servlet.jsp.el;version="[2.3,2.4.1)", javax.servlet.jsp.tagext;version="[2.3,2.4.1)", javax.servlet.jsp.jstl.core;version="1.2";resolution:=optional, javax.servlet.jsp.jstl.fmt;version="1.2";resolution:=optional, javax.servlet.jsp.jstl.sql;version="1.2";resolution:=optional, javax.servlet.jsp.jstl.tlv;version="1.2";resolution:=optional, org.apache.el;version="[8.0.23,10)";resolution:=optional, org.apache.el.lang;version="[8.0.23,10)";resolution:=optional, org.apache.el.stream;version="[8.0.23,10)";resolution:=optional, org.apache.el.util;version="[8.0.23,10)";resolution:=optional, org.apache.el.parser;version="[8.0.23,10)";resolution:=optional, org.apache.jasper;version="[8.0.23,10)";resolution:=optional, org.apache.jasper.compiler;version="[8.0.23,10)";resolution:=optional, org.apache.jasper.compiler.tagplugin;version="[8.0.23,10)";resolution:=optional, org.apache.jasper.runtime;version="[8.0.23,10)";resolution:=optional, org.apache.jasper.security;version="[8.0.23,10)";resolution:=optional, org.apache.jasper.servlet;version="[8.0.23,10)";resolution:=optional, org.apache.jasper.tagplugins.jstl;version="[8.0.23,10)";resolution:=optional, org.apache.jasper.util;version="[8.0.23,10)";resolution:=optional, org.apache.jasper.xmlparser;version="[8.0.23,10)";resolution:=optional, org.apache.taglibs.standard;version="1.2";resolution:=optional, org.apache.taglibs.standard.extra.spath;version="1.2";resolution:=optional, org.apache.taglibs.standard.functions;version="1.2";resolution:=optional, org.apache.taglibs.standard.lang.jstl;version="1.2";resolution:=optional, org.apache.taglibs.standard.lang.jstl.parser;version="1.2";resolution:=optional, org.apache.taglibs.standard.lang.jstl.test;version="1.2";resolution:=optional, org.apache.taglibs.standard.lang.jstl.test.beans;version="1.2";resolution:=optional, org.apache.taglibs.standard.lang.support;version="1.2";resolution:=optional, org.apache.taglibs.standard.resources;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.common.core;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.common.fmt;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.common.sql;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.common.xml;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.el.core;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.el.fmt;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.el.sql;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.el.xml;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.rt.core;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.rt.fmt;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.rt.sql;version="1.2";resolution:=optional, org.apache.taglibs.standard.tag.rt.xml;version="1.2";resolution:=optional, org.apache.taglibs.standard.tei;version="1.2";resolution:=optional, org.apache.taglibs.standard.tlv;version="1.2";resolution:=optional, org.apache.tomcat;version="[8.0.23,10)";resolution:=optional, org.eclipse.jetty.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional, org.osgi.*, org.xml.*;resolution:=optional, org.xml.sax.*;resolution:=optional, javax.xml.*;resolution:=optional, org.w3c.dom;resolution:=optional, org.w3c.dom.ls;resolution:=optional, javax.xml.parser;resolution:=optional
+            </Import-Package>
+            <DynamicImport-Package>org.eclipse.jetty.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",org.apache.jasper.*;version="8.0.23",org.apache.el.*;version="8.0.23"</DynamicImport-Package>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

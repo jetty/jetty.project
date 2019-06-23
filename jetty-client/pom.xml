@@ -19,12 +19,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine}
-            --add-reads org.eclipse.jetty.client=jetty.servlet.api
-            --add-modules java.security.jgss
-            --add-modules jetty.servlet.api
-            --add-modules org.eclipse.jetty.jmx
-            --add-modules org.slf4j
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.client=jetty.servlet.api --add-modules java.security.jgss --add-modules jetty.servlet.api --add-modules org.eclipse.jetty.jmx --add-modules org.slf4j
           </argLine>
         </configuration>
       </plugin>

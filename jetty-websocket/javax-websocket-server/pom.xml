@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
@@ -49,10 +47,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine}
-            --add-exports org.eclipse.jetty.websocket.javax.server/org.eclipse.jetty.websocket.javax.server.examples=org.eclipse.jetty.websocket.javax.common
-            --add-reads org.eclipse.jetty.websocket.javax.server=org.eclipse.jetty.security
-            --add-reads org.eclipse.jetty.websocket.javax.common=org.eclipse.jetty.websocket.javax.server
+            @{argLine} ${jetty.surefire.argLine} --add-exports org.eclipse.jetty.websocket.javax.server/org.eclipse.jetty.websocket.javax.server.examples=org.eclipse.jetty.websocket.javax.common --add-reads org.eclipse.jetty.websocket.javax.server=org.eclipse.jetty.security --add-reads org.eclipse.jetty.websocket.javax.common=org.eclipse.jetty.websocket.javax.server
           </argLine>
         </configuration>
       </plugin>

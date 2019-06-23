@@ -96,7 +96,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-distribution</artifactId>
-      <version>${project.version}</version> 
+      <version>${project.version}</version>
       <type>pom</type>
     </dependency>
     <dependency>

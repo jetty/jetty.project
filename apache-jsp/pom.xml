@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
@@ -24,11 +23,9 @@
           <instructions>
             <Bundle-Description>Jetty-specific ServletContainerInitializer for Jasper</Bundle-Description>
             <Export-Package>
-              org.eclipse.jetty.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",
-              org.eclipse.jetty.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+              org.eclipse.jetty.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", org.eclipse.jetty.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
             </Export-Package>
-            <Require-Capability>osgi.extender;
-              filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
             </Require-Capability>
             <Provide-Capability>
               osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=org.apache.juli.logging.Log
