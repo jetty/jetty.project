@@ -23,8 +23,8 @@
             </goals>
             <configuration>
               <instructions>
-               <Import-Package>org.eclipse.jetty.alpn;resolution:=optional,*</Import-Package>
-               <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional, osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Client)";resolution:=optional;cardinality:=multiple</Require-Capability>
+                <Import-Package>org.eclipse.jetty.alpn;resolution:=optional,*</Import-Package>
+                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional, osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Client)";resolution:=optional;cardinality:=multiple</Require-Capability>
               </instructions>
             </configuration>
           </execution>
@@ -33,8 +33,8 @@
       <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
       with a snapshot. -->
       <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-source-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

@@ -96,7 +96,7 @@
               <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
               <jvmArgs>${jetty.jvmArgs}</jvmArgs>
               <jettyProperties>
-               <jettyProperty>jetty.port.file=${jetty.port.file}</jettyProperty>
+                <jettyProperty>jetty.port.file=${jetty.port.file}</jettyProperty>
               </jettyProperties>
             </configuration>
           </execution>
@@ -113,6 +113,5 @@
       </plugin>
     </plugins>
   </build>
-
 
 </project>

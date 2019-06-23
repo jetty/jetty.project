@@ -13,7 +13,6 @@
 
   <name>Jetty :: Simple :: Webapp</name>
 
-
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-run-war-port.txt</jetty.port.file>
   </properties>
@@ -119,6 +118,5 @@
       </plugin>
     </plugins>
   </build>
-
 
 </project>

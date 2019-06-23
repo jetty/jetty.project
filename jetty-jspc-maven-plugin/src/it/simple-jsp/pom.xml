@@ -16,7 +16,6 @@
     <jetty.version>@project.version@</jetty.version>
   </properties>
 
-
   <build>
     <plugins>
       <plugin>
