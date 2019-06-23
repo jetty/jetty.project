@@ -8,12 +8,13 @@
 
   <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
     <Arg>
-      <New class="com.acme.MockUserTransaction"/>
+      <New class="com.acme.MockUserTransaction" />
     </Arg>
   </New>
 
   <Set name="contextPath">/test-jndi</Set>
-  <Set name="war"><Property name="jetty.webapps" default="."/>/test-jndi.war</Set>
+  <Set name="war"><Property name="jetty.webapps" default="." />/test-jndi.war
+  </Set>
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
   <Set name="configurationDiscovered">true</Set>

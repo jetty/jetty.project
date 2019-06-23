@@ -10,7 +10,9 @@
   <!-- Add plus Configuring classes to all webapps for this Server -->
   <!-- =========================================================== -->
   <Call class="org.eclipse.jetty.webapp.Configurations" name="setServerDefault">
-    <Arg><Ref refid="Server" /></Arg>
+    <Arg>
+      <Ref refid="Server" />
+    </Arg>
     <Call name="add">
       <Arg>
         <Array type="String">
@@ -22,7 +24,9 @@
   </Call>
 
   <Call name="addBean">
-    <Arg><New class="org.eclipse.jetty.plus.jndi.NamingDump"/></Arg>
+    <Arg>
+      <New class="org.eclipse.jetty.plus.jndi.NamingDump" />
+    </Arg>
   </Call>
 
 </Configure>

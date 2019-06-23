@@ -8,7 +8,9 @@
   <Call name="addLifeCycleListener">
     <Arg>
       <New class="org.eclipse.jetty.util.component.FileNoticeLifeCycleListener">
-        <Arg><Property name="jetty.state" default="./jetty.state"/></Arg>
+        <Arg>
+          <Property name="jetty.state" default="./jetty.state" />
+        </Arg>
       </New>
     </Arg>
   </Call>

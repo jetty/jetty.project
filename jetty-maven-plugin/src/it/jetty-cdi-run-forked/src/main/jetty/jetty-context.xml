@@ -8,13 +8,13 @@
     <Arg>
       <New class="org.eclipse.jetty.webapp.ClassMatcher">
         <Arg>
-         <Array type="java.lang.String">
-           <Item>-org.eclipse.jetty.util.Decorator</Item>
-           <Item>-org.eclipse.jetty.util.DecoratedObjectFactory</Item>
-           <Item>-org.eclipse.jetty.server.handler.ContextHandler.</Item>
-           <Item>-org.eclipse.jetty.server.handler.ContextHandler</Item>
-           <Item>-org.eclipse.jetty.servlet.ServletContextHandler</Item>
-         </Array>
+          <Array type="java.lang.String">
+            <Item>-org.eclipse.jetty.util.Decorator</Item>
+            <Item>-org.eclipse.jetty.util.DecoratedObjectFactory</Item>
+            <Item>-org.eclipse.jetty.server.handler.ContextHandler.</Item>
+            <Item>-org.eclipse.jetty.server.handler.ContextHandler</Item>
+            <Item>-org.eclipse.jetty.servlet.ServletContextHandler</Item>
+          </Array>
         </Arg>
       </New>
     </Arg>

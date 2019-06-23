@@ -15,12 +15,15 @@
         <Call id="webappprovider" name="addAppProvider">
           <Arg>
             <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-              <Set name="monitoredDirName"><Property name="test.webapps" default="target/webapps" /></Set>
+              <Set name="monitoredDirName">
+                <Property name="test.webapps" default="target/webapps" />
+              </Set>
               <Set name="scanInterval">1</Set>
               <Set name="extractWars">true</Set>
               <Set name="configurationManager">
                 <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
-                  <Set name="file"><Property name="test.targetdir" default="target"/>/testable-jetty-server-config.properties</Set>
+                  <Set name="file"><Property name="test.targetdir" default="target" />/testable-jetty-server-config.properties
+                  </Set>
                 </New>
               </Set>
             </New>

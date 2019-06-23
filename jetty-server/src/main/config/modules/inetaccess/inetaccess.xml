@@ -5,8 +5,12 @@
   <Call name="insertHandler">
     <Arg>
       <New id="InetAccessHandler" class="org.eclipse.jetty.server.handler.InetAccessHandler">
-	<Call name="include"><Arg>127.0.0.1-127.0.0.255</Arg></Call>
-	<Call name="exclude"><Arg>127.0.0.128-127.0.0.129</Arg></Call>
+        <Call name="include">
+          <Arg>127.0.0.1-127.0.0.255</Arg>
+        </Call>
+        <Call name="exclude">
+          <Arg>127.0.0.128-127.0.0.129</Arg>
+        </Call>
       </New>
     </Arg>
   </Call>

@@ -21,19 +21,29 @@
   <Call name="addConnector">
     <Arg>
       <New class="org.eclipse.jetty.server.ServerConnector">
-        <Arg name="server"><Ref refid="Server" /></Arg>
+        <Arg name="server">
+          <Ref refid="Server" />
+        </Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
             <Item>
               <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-                <Arg name="config"><Ref refid="httpConfig" /></Arg>
+                <Arg name="config">
+                  <Ref refid="httpConfig" />
+                </Arg>
               </New>
             </Item>
           </Array>
         </Arg>
-        <Set name="host"><Property name="jetty.http.host" /></Set>
-        <Set name="port"><Property name="jetty.http.port" default="80" /></Set>
-        <Set name="idleTimeout"><Property name="jetty.http.idleTimeout" default="30000"/></Set>
+        <Set name="host">
+          <Property name="jetty.http.host" />
+        </Set>
+        <Set name="port">
+          <Property name="jetty.http.port" default="80" />
+        </Set>
+        <Set name="idleTimeout">
+          <Property name="jetty.http.idleTimeout" default="30000" />
+        </Set>
       </New>
     </Arg>
   </Call>

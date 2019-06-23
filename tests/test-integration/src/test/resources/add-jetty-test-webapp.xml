@@ -5,7 +5,8 @@
   <Call name="addHandler">
     <New class="org.eclipse.jetty.webapp.WebAppContext">
       <Set name="contextPath">/test-jetty-webapp</Set>
-      <Set name="war"><Property name="test.webapps" default="." />/test-jetty-webapp.war</Set>
+      <Set name="war"><Property name="test.webapps" default="." />/test-jetty-webapp.war
+      </Set>
       <Set name="gzipHandler">
         <New class="org.eclipse.jetty.server.handler.gzip.GzipHandler">
           <Set name="minGzipSize">1024</Set>

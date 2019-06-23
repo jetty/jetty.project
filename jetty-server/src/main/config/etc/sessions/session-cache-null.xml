@@ -3,17 +3,16 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-
   <!-- ===================================================================== -->
   <!-- Configure a factory for NullSessionCache                              -->
   <!-- ===================================================================== -->
   <Call name="addBean">
-   <Arg>
-    <New class="org.eclipse.jetty.server.session.NullSessionCacheFactory">
-     <Set name="saveOnCreate" property="jetty.session.saveOnCreate"/>
-     <Set name="removeUnloadableSessions" property="jetty.session.removeUnloadableSessions"/>
-    </New>
-   </Arg>
+    <Arg>
+      <New class="org.eclipse.jetty.server.session.NullSessionCacheFactory">
+        <Set name="saveOnCreate" property="jetty.session.saveOnCreate" />
+        <Set name="removeUnloadableSessions" property="jetty.session.removeUnloadableSessions" />
+      </New>
+    </Arg>
   </Call>
 
 </Configure>

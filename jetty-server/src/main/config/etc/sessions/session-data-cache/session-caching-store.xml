@@ -9,19 +9,21 @@
 
   <Call name="removeBean">
     <Arg>
-      <Ref refid="sessionDataStoreFactory"/>
+      <Ref refid="sessionDataStoreFactory" />
     </Arg>
   </Call>
 
-  
-  
   <Call name="addBean">
-   <Arg>
-    <New class="org.eclipse.jetty.server.session.CachingSessionDataStoreFactory">
-       <Set name="sessionStoreFactory"><Ref refid="sessionDataStoreFactory"/></Set>
-       <Set name="sessionDataMapFactory"><Ref refid="sessionDataMapFactory"/></Set>
-    </New>
-   </Arg> 
+    <Arg>
+      <New class="org.eclipse.jetty.server.session.CachingSessionDataStoreFactory">
+        <Set name="sessionStoreFactory">
+          <Ref refid="sessionDataStoreFactory" />
+        </Set>
+        <Set name="sessionDataMapFactory">
+          <Ref refid="sessionDataMapFactory" />
+        </Set>
+      </New>
+    </Arg>
   </Call>
 
 </Configure>

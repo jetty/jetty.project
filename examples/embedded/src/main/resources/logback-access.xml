@@ -1,6 +1,6 @@
 <configuration>
   <!-- always a good activate OnConsoleStatusListener -->
-  <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />  
+  <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>logs/access.log</file>
@@ -11,6 +11,6 @@
       <pattern>combined</pattern>
     </encoder>
   </appender>
- 
+
   <appender-ref ref="FILE" />
 </configuration>

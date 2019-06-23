@@ -8,23 +8,25 @@
         <Set name="contexts">
           <Ref refid="Contexts" />
         </Set>
-        
+
         <Call name="setContextAttribute">
           <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
           <Arg>.*/jetty-servlet-api-[^/]*\.jar$</Arg>
         </Call>
-        
+
         <Call id="webappprovider" name="addAppProvider">
           <Arg>
             <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-              <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps</Set>
-              <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
+              <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps
+              </Set>
+              <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml
+              </Set>
               <Set name="scanInterval">1</Set>
               <Set name="extractWars">true</Set>
               <Set name="configurationManager">
                 <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
                   <Set name="file">
-                    <SystemProperty name="jetty.home"/>/xml-configured-jetty.properties
+                    <SystemProperty name="jetty.home" />/xml-configured-jetty.properties
                   </Set>
                 </New>
               </Set>

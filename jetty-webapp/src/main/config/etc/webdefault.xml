@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app 
-   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
-   metadata-complete="false"
-   version="3.1"> 
+<web-app
+  xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+  metadata-complete="false"
+  version="3.1">
 
   <!-- ===================================================================== -->
   <!-- This file contains the default descriptor for web applications.       -->
@@ -25,7 +25,7 @@
   <!-- ===================================================================== -->
 
   <description>
-    Default web.xml file.  
+    Default web.xml file.
     This file is applied to a Web application before its own WEB_INF/web.xml file
   </description>
 
@@ -34,17 +34,16 @@
   <!-- ensure webapp classloader can be released on undeploy                -->
   <!-- ==================================================================== -->
   <listener>
-   <listener-class>org.eclipse.jetty.servlet.listener.ELContextCleaner</listener-class>
+    <listener-class>org.eclipse.jetty.servlet.listener.ELContextCleaner</listener-class>
   </listener>
-  
+
   <!-- ==================================================================== -->
   <!-- Removes static cache of Methods from java.beans.Introspector to      -->
   <!-- ensure webapp classloader can be released on undeploy                -->
-  <!-- ==================================================================== -->  
+  <!-- ==================================================================== -->
   <listener>
-   <listener-class>org.eclipse.jetty.servlet.listener.IntrospectorCleaner</listener-class>
+    <listener-class>org.eclipse.jetty.servlet.listener.IntrospectorCleaner</listener-class>
   </listener>
-  
 
   <!-- ==================================================================== -->
   <!-- Context params to control Session Cookies                            -->
@@ -139,7 +138,7 @@
  *                    defaults to .svgz but a comma separated list of gzip equivalent file extensions can be supplied
  *
  -->
- <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet>
     <servlet-name>default</servlet-name>
     <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
@@ -186,7 +185,6 @@
     <servlet-name>default</servlet-name>
     <url-pattern>/</url-pattern>
   </servlet-mapping>
-
 
   <!-- ==================================================================== -->
   <!-- JSP Servlet                                                          -->
@@ -309,7 +307,6 @@
     <url-pattern>*.JSPX</url-pattern>
     <url-pattern>*.XSP</url-pattern>
   </servlet-mapping>
-
 
   <!-- ==================================================================== -->
   <!-- Default session configuration                                        -->
@@ -511,7 +508,7 @@
       <url-pattern>/</url-pattern>
       <http-method>TRACE</http-method>
     </web-resource-collection>
-    <auth-constraint/>
+    <auth-constraint />
   </security-constraint>
   <security-constraint>
     <web-resource-collection>

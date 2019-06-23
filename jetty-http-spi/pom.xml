@@ -22,7 +22,7 @@
       <artifactId>jetty-client</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>  
+    </dependency>
     <dependency>
       <groupId>com.sun.net.httpserver</groupId>
       <artifactId>http</artifactId>
@@ -74,14 +74,14 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-            <configuration>
-              <instructions>
-                <Bundle-Description>Jetty Http SPI</Bundle-Description>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                <Provide-Capability>osgi.serviceloader; osgi.serviceloader=com.sun.net.httpserver.spi.HttpServerProvider</Provide-Capability>
-                <_nouses>true</_nouses>
-              </instructions>
-            </configuration>
+        <configuration>
+          <instructions>
+            <Bundle-Description>Jetty Http SPI</Bundle-Description>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=com.sun.net.httpserver.spi.HttpServerProvider</Provide-Capability>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>

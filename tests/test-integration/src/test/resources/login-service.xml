@@ -13,7 +13,9 @@
     <Arg>
       <New class="org.eclipse.jetty.security.HashLoginService">
         <Set name="name">Test Realm</Set>
-        <Set name="config"><Property name="login.realm" default="src/test/resources/realm.properties"/></Set>
+        <Set name="config">
+          <Property name="login.realm" default="src/test/resources/realm.properties" />
+        </Set>
         <Set name="hotReload">false</Set>
       </New>
     </Arg>

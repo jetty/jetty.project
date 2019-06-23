@@ -3,34 +3,40 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-    <!-- =========================================================== -->
-    <!-- Set connectors                                              -->
-    <!-- =========================================================== --> 
-   <Call id="httpsConnector" name="addConnector">
+  <!-- =========================================================== -->
+  <!-- Set connectors                                              -->
+  <!-- =========================================================== -->
+  <Call id="httpsConnector" name="addConnector">
     <Arg>
       <New class="org.eclipse.jetty.server.ServerConnector">
-        <Arg name="server"><Ref refid="Server" /></Arg>
-          <Arg name="factories">
-            <Array type="org.eclipse.jetty.server.ConnectionFactory">
-              <Item>
-                <New class="org.eclipse.jetty.server.SslConnectionFactory">
-                  <Arg name="next">http/1.1</Arg>
-                  <Arg name="sslContextFactory"><Ref refid="sslContextFactory"/></Arg>
-                </New>
-              </Item>
-              <Item>
-                <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-                  <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
-                </New>
-              </Item>
-            </Array>
-          </Arg>
-          <Set name="host"><Property name="jetty.http.host" /></Set>
-          <Set name="idleTimeout">30000</Set>
-        </New>
+        <Arg name="server">
+          <Ref refid="Server" />
+        </Arg>
+        <Arg name="factories">
+          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+            <Item>
+              <New class="org.eclipse.jetty.server.SslConnectionFactory">
+                <Arg name="next">http/1.1</Arg>
+                <Arg name="sslContextFactory">
+                  <Ref refid="sslContextFactory" />
+                </Arg>
+              </New>
+            </Item>
+            <Item>
+              <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                <Arg name="config">
+                  <Ref refid="sslHttpConfig" />
+                </Arg>
+              </New>
+            </Item>
+          </Array>
+        </Arg>
+        <Set name="host">
+          <Property name="jetty.http.host" />
+        </Set>
+        <Set name="idleTimeout">30000</Set>
+      </New>
     </Arg>
   </Call>
-    
-    
 
 </Configure>

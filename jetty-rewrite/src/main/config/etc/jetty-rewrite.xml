@@ -9,21 +9,29 @@
   <Call name="insertHandler">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
-	<Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI"/>
-	<Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo"/>
-	<Set name="originalPathAttribute" property="jetty.rewrite.originalPathAttribute"/>
-     
-	<!-- Set DispatcherTypes  -->
-	<Set name="dispatcherTypes">
-	  <Array type="javax.servlet.DispatcherType">
-	    <Item><Call class="javax.servlet.DispatcherType" name="valueOf"><Arg>REQUEST</Arg></Call></Item>
-	    <Item><Call class="javax.servlet.DispatcherType" name="valueOf"><Arg>ASYNC</Arg></Call></Item>
-	  </Array>
-	</Set>
+        <Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI" />
+        <Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo" />
+        <Set name="originalPathAttribute" property="jetty.rewrite.originalPathAttribute" />
 
-        <Get id="Rewrite" name="ruleContainer"/>
+        <!-- Set DispatcherTypes  -->
+        <Set name="dispatcherTypes">
+          <Array type="javax.servlet.DispatcherType">
+            <Item>
+              <Call class="javax.servlet.DispatcherType" name="valueOf">
+                <Arg>REQUEST</Arg>
+              </Call>
+            </Item>
+            <Item>
+              <Call class="javax.servlet.DispatcherType" name="valueOf">
+                <Arg>ASYNC</Arg>
+              </Call>
+            </Item>
+          </Array>
+        </Set>
 
-	<!-- see rewrite-rules.xml in $JETTY_BASE for how to add a rule(s) -->
+        <Get id="Rewrite" name="ruleContainer" />
+
+        <!-- see rewrite-rules.xml in $JETTY_BASE for how to add a rule(s) -->
 
       </New>
     </Arg>

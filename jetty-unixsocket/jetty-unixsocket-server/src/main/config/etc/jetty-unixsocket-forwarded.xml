@@ -5,12 +5,12 @@
   <Call name="addCustomizer">
     <Arg>
       <New class="org.eclipse.jetty.server.ForwardedRequestCustomizer">
-        <Set name="forwardedHostHeader" property="jetty.unixSocketHttpConfig.forwardedHostHeader"/>
-        <Set name="forwardedServerHeader" property="jetty.unixSocketHttpConfig.forwardedServerHeader"/>
-        <Set name="forwardedProtoHeader" property="jetty.unixSocketHttpConfig.forwardedProtoHeader"/>
-        <Set name="forwardedForHeader" property="jetty.unixSocketHttpConfig.forwardedForHeader"/>
-        <Set name="forwardedSslSessionIdHeader" property="jetty.unixSocketHttpConfig.forwardedSslSessionIdHeader"/>
-        <Set name="forwardedCipherSuiteHeader" property="jetty.unixSocketHttpConfig.forwardedCipherSuiteHeader"/>
+        <Set name="forwardedHostHeader" property="jetty.unixSocketHttpConfig.forwardedHostHeader" />
+        <Set name="forwardedServerHeader" property="jetty.unixSocketHttpConfig.forwardedServerHeader" />
+        <Set name="forwardedProtoHeader" property="jetty.unixSocketHttpConfig.forwardedProtoHeader" />
+        <Set name="forwardedForHeader" property="jetty.unixSocketHttpConfig.forwardedForHeader" />
+        <Set name="forwardedSslSessionIdHeader" property="jetty.unixSocketHttpConfig.forwardedSslSessionIdHeader" />
+        <Set name="forwardedCipherSuiteHeader" property="jetty.unixSocketHttpConfig.forwardedCipherSuiteHeader" />
       </New>
     </Arg>
   </Call>

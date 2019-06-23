@@ -2,6 +2,7 @@
   <Call name="getServerClassMatcher">
     <Call name="include">
       <Arg>org.eclipse.foo.</Arg>
-    </Call>`
+    </Call>
+    `
   </Call>
 </Configure>

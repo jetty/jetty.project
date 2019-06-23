@@ -13,6 +13,8 @@
     </Arg>
   </Call>
   <Call class="org.eclipse.jetty.server.ServerConnectionStatistics" name="addToAllConnectors">
-    <Arg><Ref refid="Server"/></Arg>
+    <Arg>
+      <Ref refid="Server" />
+    </Arg>
   </Call>
 </Configure>
