@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 <Configure id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
   <!-- =========================================================== -->
   <!-- configure rewrite rule container as a customizer            -->

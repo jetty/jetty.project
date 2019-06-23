@@ -13,8 +13,7 @@
 </Arg>
 <Arg>jdbc/mydatasource</Arg>
 <Arg>
-  <New class="com.acme.MockDataSource">
-  </New>
+  <New class="com.acme.MockDataSource"></New>
 </Arg>
 </New>
 

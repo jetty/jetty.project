@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure id="FileServer" class="org.eclipse.jetty.server.Server">
 
@@ -30,8 +29,7 @@
             </New>
           </Item>
           <Item>
-            <New class="org.eclipse.jetty.server.handler.DefaultHandler">
-            </New>
+            <New class="org.eclipse.jetty.server.handler.DefaultHandler"></New>
           </Item>
         </Array>
       </Set>

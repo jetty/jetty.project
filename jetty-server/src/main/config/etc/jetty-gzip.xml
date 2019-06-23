@@ -1,12 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- Mixin the GZIP Handler                                          -->
-<!-- This applies the GZIP Handler to the entire server              -->
-<!-- If a GZIP handler is required for an individual context, then   -->
-<!-- use a context XML (see test.xml example in distribution)        -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- Mixin the GZIP Handler                                          --><!-- This applies the GZIP Handler to the entire server              --><!-- If a GZIP handler is required for an individual context, then   --><!-- use a context XML (see test.xml example in distribution)        --><!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="insertHandler">

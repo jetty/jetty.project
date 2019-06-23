@@ -1,11 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- ============================================================= -->
-<!-- Base SSL configuration                                        -->
-<!-- This configuration needs to be used together with 1 or more   -->
-<!-- of jetty-https.xml and/or jetty-http2.xml                     -->
-<!-- ============================================================= -->
+<!-- ============================================================= --><!-- Base SSL configuration                                        --><!-- This configuration needs to be used together with 1 or more   --><!-- of jetty-https.xml and/or jetty-http2.xml                     --><!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
@@ -18,8 +13,7 @@
           <Ref refid="Server" />
         </Arg>
         <Arg name="factories">
-          <Array type="org.eclipse.jetty.server.ConnectionFactory">
-          </Array>
+          <Array type="org.eclipse.jetty.server.ConnectionFactory"></Array>
         </Arg>
         <Set name="host">
           <Property name="jetty.ssl.host" />

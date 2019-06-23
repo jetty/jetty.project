@@ -29,8 +29,7 @@
       <serverAuthContext>
         <serverAuthModule>
           <className>org.eclipse.jetty.security.jaspi.HttpHeaderAuthModule</className>
-          <options>
-          </options>
+          <options></options>
         </serverAuthModule>
       </serverAuthContext>
     </serverAuthConfig>

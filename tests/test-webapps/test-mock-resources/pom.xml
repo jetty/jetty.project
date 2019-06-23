@@ -30,9 +30,7 @@
                   com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
                 <Import-Package>
-                  javax.sql,
-                  javax.transaction;version="1.1",
-                  javax.mail;version="1.4.1"
+                  javax.sql, javax.transaction;version="1.1", javax.mail;version="1.4.1"
                 </Import-Package>
                 <_nouses>true</_nouses>
               </instructions>

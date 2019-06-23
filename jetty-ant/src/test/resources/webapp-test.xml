@@ -6,8 +6,7 @@
 
   <taskdef classpathref="jetty.plugin.classpath" resource="tasks.properties" loaderref="jetty.loader" />
 
-  <typedef name="webapp" classname="org.eclipse.jetty.ant.AntWebAppContext"
-           classpathref="jetty.plugin.classpath" loaderref="jetty.loader" />
+  <typedef name="webapp" classname="org.eclipse.jetty.ant.AntWebAppContext" classpathref="jetty.plugin.classpath" loaderref="jetty.loader" />
 
   <target name="jetty.run">
     <jetty.run daemon="true" scanIntervalSeconds="10" jettyPort="0">

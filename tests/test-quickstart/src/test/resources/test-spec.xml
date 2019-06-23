@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
 
@@ -34,8 +33,7 @@
     </Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>
-      <New class="com.acme.MockDataSource">
-      </New>
+      <New class="com.acme.MockDataSource"></New>
     </Arg>
   </New>
 

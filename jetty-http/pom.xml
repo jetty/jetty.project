@@ -42,8 +42,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.http.HttpFieldPreEncoder)";resolution:=optional;cardinality:=multiple, osgi.extender;
-              filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
+            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.http.HttpFieldPreEncoder)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
             </Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.http.HttpFieldPreEncoder</Provide-Capability>
           </instructions>
@@ -86,8 +85,7 @@
                 </includes>
               </artifactSet>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>org.openjdk.jmh.Main</mainClass>
                 </transformer>
               </transformers>

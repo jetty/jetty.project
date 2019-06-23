@@ -1,11 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 
-<!-- =============================================================== -->
-<!-- Configure the Jetty Server with Spring                          -->
-<!-- This file is the similar to jetty.xml, but written in spring    -->
-<!-- XmlBeanFactory format.                                          -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- Configure the Jetty Server with Spring                          --><!-- This file is the similar to jetty.xml, but written in spring    --><!-- XmlBeanFactory format.                                          --><!-- =============================================================== -->
 
 <beans>
 

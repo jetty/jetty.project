@@ -1,9 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- Mixin the Jamon Handler                                         -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- Mixin the Jamon Handler                                         --><!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 

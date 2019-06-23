@@ -14,8 +14,7 @@
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
   </properties>
 
-  <build>
-  </build>
+  <build></build>
 
   <dependencies>
     <dependency>

@@ -1,8 +1,7 @@
 <copyright>
   <year>1995-2018</year>
   <holder>Mort Bay Consulting Pty. Ltd.</holder>
-</copyright>
-<revhistory>
+</copyright><revhistory>
 <revision>
   <revnumber>{revnumber}</revnumber>
   <date>
@@ -12,8 +11,7 @@
     <para>This documentation is produced and contributed to under the Eclipse Public License v1.0.</para>
   </revdescription>
 </revision>
-</revhistory>
-<keywordset>
+</revhistory><keywordset>
 <keyword>jetty</keyword>
 <keyword>servlet</keyword>
 <keyword>servlet-api</keyword>
@@ -25,8 +23,7 @@
 <keyword>java</keyword>
 <keyword>server</keyword>
 <keyword>software</keyword>
-</keywordset>
-<authorgroup>
+</keywordset><authorgroup>
 <author>
   <personname>
     <firstname>Jan</firstname>

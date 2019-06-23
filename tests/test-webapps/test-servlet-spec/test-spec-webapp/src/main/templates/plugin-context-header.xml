@@ -1,9 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- Configure the test-annotations webapp                           -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- Configure the test-annotations webapp                           --><!-- =============================================================== -->
 
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
 

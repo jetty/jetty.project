@@ -63,8 +63,7 @@
             </goals>
             <configuration>
               <archive>
-                <manifest>
-                </manifest>
+                <manifest></manifest>
                 <manifestEntries>
                   <mode>development</mode>
                   <url>http://eclipse.org/jetty</url>

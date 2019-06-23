@@ -1,5 +1,4 @@
-<?xml version="1.0"  encoding="ISO-8859-1"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"  encoding="ISO-8859-1"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <!-- ==================================================================
 Configure and deploy the test web application in $(jetty.home)/webapps/test

@@ -8,8 +8,7 @@
   <Arg type="boolean">false</Arg>
 </New>
 
-  <!-- Define an env entry with webapp scope for java:comp/env                   -->
-<New id="wiggle" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <!-- Define an env entry with webapp scope for java:comp/env                   --><New id="wiggle" class="org.eclipse.jetty.plus.jndi.EnvEntry">
 <Arg>
   <Ref refid='wac' />
 </Arg>
@@ -18,8 +17,7 @@
 <Arg type="boolean">true</Arg>
 </New>
 
-  <!-- Mail Session setup                                          -->
-<New id="xxxmail" class="org.eclipse.jetty.plus.jndi.Resource">
+  <!-- Mail Session setup                                          --><New id="xxxmail" class="org.eclipse.jetty.plus.jndi.Resource">
 <Arg>
   <Ref refid='wac' />
 </Arg>
@@ -40,8 +38,7 @@
 </Arg>
 </New>
 
-  <!-- A mock DataSource                                           -->
-<New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
+  <!-- A mock DataSource                                           --><New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
 <Arg>
   <Ref refid='wac' />
 </Arg>
