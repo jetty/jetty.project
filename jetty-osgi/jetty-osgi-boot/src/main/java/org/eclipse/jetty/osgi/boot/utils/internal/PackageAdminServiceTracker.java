@@ -39,7 +39,7 @@ import org.osgi.service.startlevel.StartLevel;
  * <p>
  * When the PackageAdmin service is activated we can look for the fragments
  * attached to this bundle and do a fake "activate" on them.
- * <p> 
+ * <p>
  * See particularly the jetty-osgi-boot-jsp fragment bundle that uses this
  * facility.
  */
@@ -83,12 +83,13 @@ public class PackageAdminServiceTracker implements ServiceListener
     {
         ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
         _fragmentsWereActivated = sr != null;
-        if (sr != null) invokeFragmentActivators(sr);
+        if (sr != null)
+            invokeFragmentActivators(sr);
 
         sr = _context.getServiceReference(StartLevel.class.getName());
         if (sr != null)
         {
-            _startLevel = (StartLevel) _context.getService(sr);
+            _startLevel = (StartLevel)_context.getService(sr);
             try
             {
                 _maxStartLevel = Integer.parseInt(System.getProperty("osgi.startLevel", "6"));
@@ -107,7 +108,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      * bundle activator for a fragment must be in the package that is defined by
      * the symbolic name of the fragment and the name of the class must be
      * 'FragmentActivator'.
-     * 
+     *
      * @param event The <code>ServiceEvent</code> object.
      */
     @Override
@@ -123,7 +124,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      * Helper to access the PackageAdmin and return the fragments hosted by a
      * bundle. when we drop the support for the older versions of OSGi, we will
      * stop using the PackageAdmin service.
-     * 
+     *
      * @param bundle the bundle
      * @return the bundle fragment list
      */
@@ -131,10 +132,11 @@ public class PackageAdminServiceTracker implements ServiceListener
     {
         ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
         if (sr == null)
-        {// we should never be here really.
+        {
+            // we should never be here really.
             return null;
         }
-        PackageAdmin admin = (PackageAdmin) _context.getService(sr);
+        PackageAdmin admin = (PackageAdmin)_context.getService(sr);
         return admin.getFragments(bundle);
     }
 
@@ -142,7 +144,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      * Returns the fragments and the required-bundles of a bundle. Recursively
      * collect the required-bundles and fragment when the directive
      * visibility:=reexport is added to a required-bundle.
-     * 
+     *
      * @param bundle the bundle
      * @return the bundle fragment and required list
      */
@@ -150,10 +152,11 @@ public class PackageAdminServiceTracker implements ServiceListener
     {
         ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
         if (sr == null)
-        {// we should never be here really.
+        {
+            // we should never be here really.
             return null;
         }
-        PackageAdmin admin = (PackageAdmin) _context.getService(sr);
+        PackageAdmin admin = (PackageAdmin)_context.getService(sr);
         LinkedHashMap<String, Bundle> deps = new LinkedHashMap<>();
         collectFragmentsAndRequiredBundles(bundle, admin, deps, false);
         return deps.values().toArray(new Bundle[deps.size()]);
@@ -163,14 +166,14 @@ public class PackageAdminServiceTracker implements ServiceListener
      * Returns the fragments and the required-bundles. Collects them
      * transitively when the directive 'visibility:=reexport' is added to a
      * required-bundle.
-     * 
+     *
      * @param bundle the bundle
      * @param admin the admin package
      * @param deps The map of fragment and required bundles associated to the value of the
-     *         jetty-web attribute.
+     * jetty-web attribute.
      * @param onlyReexport true to collect resources and web-fragments
-     *            transitively if and only if the directive visibility is
-     *            reexport.
+     * transitively if and only if the directive visibility is
+     * reexport.
      */
     protected void collectFragmentsAndRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
     {
@@ -195,19 +198,22 @@ public class PackageAdminServiceTracker implements ServiceListener
     /**
      * A simplistic but good enough parser for the Require-Bundle header. Parses
      * the version range attribute and the visibility directive.
-     * 
+     *
      * @param bundle the bundle
-     * @param admin the admin package 
+     * @param admin the admin package
      * @param deps The map of required bundles associated to the value of the
-     *         jetty-web attribute.
+     * jetty-web attribute.
      * @param onlyReexport true to collect resources and web-fragments
-     *            transitively if and only if the directive visibility is
-     *            reexport.
+     * transitively if and only if the directive visibility is
+     * reexport.
      */
     protected void collectRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
     {
-        String requiredBundleHeader = (String) bundle.getHeaders().get("Require-Bundle");
-        if (requiredBundleHeader == null) { return; }
+        String requiredBundleHeader = (String)bundle.getHeaders().get("Require-Bundle");
+        if (requiredBundleHeader == null)
+        {
+            return;
+        }
         StringTokenizer tokenizer = new ManifestTokenizer(requiredBundleHeader);
         while (tokenizer.hasMoreTokens())
         {
@@ -241,7 +247,10 @@ public class PackageAdminServiceTracker implements ServiceListener
                     reexport = true;
                 }
             }
-            if (!reexport && onlyReexport) { return; }
+            if (!reexport && onlyReexport)
+            {
+                return;
+            }
             Bundle[] reqBundles = admin.getBundles(symbolicName, versionRange);
             if (reqBundles != null && reqBundles.length != 0)
             {
@@ -268,9 +277,12 @@ public class PackageAdminServiceTracker implements ServiceListener
 
     private void invokeFragmentActivators(ServiceReference sr)
     {
-        PackageAdmin admin = (PackageAdmin) _context.getService(sr);
+        PackageAdmin admin = (PackageAdmin)_context.getService(sr);
         Bundle[] fragments = admin.getFragments(_context.getBundle());
-        if (fragments == null) { return; }
+        if (fragments == null)
+        {
+            return;
+        }
         for (Bundle frag : fragments)
         {
             // find a convention to look for a class inside the fragment.
@@ -280,7 +292,7 @@ public class PackageAdminServiceTracker implements ServiceListener
                 Class<?> c = Class.forName(fragmentActivator);
                 if (c != null)
                 {
-                    BundleActivator bActivator = (BundleActivator) c.getDeclaredConstructor().newInstance();
+                    BundleActivator bActivator = (BundleActivator)c.getDeclaredConstructor().newInstance();
                     bActivator.start(_context);
                     _activatedFragments.add(bActivator);
                 }
@@ -342,7 +354,10 @@ public class PackageAdminServiceTracker implements ServiceListener
             do
             {
                 int quote = getQuote(token, i + 1);
-                if (quote < 0) { return false; }
+                if (quote < 0)
+                {
+                    return false;
+                }
 
                 i = token.indexOf(quote, i + 1);
                 i = token.indexOf(quote, i + 1);
@@ -366,12 +381,16 @@ public class PackageAdminServiceTracker implements ServiceListener
                     return '\'';
                 }
             }
-            if (j < 0) { return '"'; }
-            if (i < j) { return '"'; }
+            if (j < 0)
+            {
+                return '"';
+            }
+            if (i < j)
+            {
+                return '"';
+            }
             return '\'';
         }
-
     }
-
 }
 

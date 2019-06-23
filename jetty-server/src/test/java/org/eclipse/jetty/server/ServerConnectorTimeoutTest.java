@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -35,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,24 +35,32 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 {
     @BeforeEach
     public void init() throws Exception
     {
-        ServerConnector connector = new ServerConnector(_server,1,1);
+        ServerConnector connector = new ServerConnector(_server, 1, 1);
         connector.setIdleTimeout(MAX_IDLE_TIME);
         startServer(connector);
     }
-    
+
     @Test
     public void testStartStopStart() throws Exception
     {
-        assertTimeoutPreemptively(ofSeconds(10),()->{
+        assertTimeoutPreemptively(ofSeconds(10), () ->
+        {
             _server.stop();
             _server.start();
         });
@@ -79,7 +78,8 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 
         _handler.setSuspendFor(100);
         _handler.setResumeAfter(25);
-        assertTimeoutPreemptively(ofSeconds(10),()-> {
+        assertTimeoutPreemptively(ofSeconds(10), () ->
+        {
             String process = process(null).toUpperCase(Locale.ENGLISH);
             assertThat(process, containsString("RESUMED"));
         });
@@ -96,7 +96,8 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         _server.start();
 
         _handler.setSuspendFor(50);
-        assertTimeoutPreemptively(ofSeconds(10),()-> {
+        assertTimeoutPreemptively(ofSeconds(10), () ->
+        {
             String process = process(null).toUpperCase(Locale.ENGLISH);
             assertThat(process, containsString("TIMEOUT"));
         });
@@ -114,7 +115,8 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 
         _handler.setSuspendFor(100);
         _handler.setCompleteAfter(25);
-        assertTimeoutPreemptively(ofSeconds(10),()-> {
+        assertTimeoutPreemptively(ofSeconds(10), () ->
+        {
             String process = process(null).toUpperCase(Locale.ENGLISH);
             assertThat(process, containsString("COMPLETED"));
         });
@@ -141,7 +143,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
             long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             String response = IO.toString(inputStream);
             long timeElapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-            assertThat(timeElapsed,greaterThanOrEqualTo(MAX_IDLE_TIME-100L));
+            assertThat(timeElapsed, greaterThanOrEqualTo(MAX_IDLE_TIME - 100L));
             return response;
         }
     }
@@ -161,13 +163,13 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
-    
+
         assertFalse(client.isClosed());
-    
+
         final OutputStream os = client.getOutputStream();
         final InputStream is = client.getInputStream();
         final StringBuilder response = new StringBuilder();
-    
+
         CompletableFuture<Void> responseFuture = CompletableFuture.runAsync(() ->
         {
             try (InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8))
@@ -175,7 +177,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
                 int c;
                 while ((c = reader.read()) != -1)
                 {
-                    response.append((char) c);
+                    response.append((char)c);
                 }
             }
             catch (IOException e)
@@ -184,19 +186,19 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
                 // t.printStackTrace(System.err);
             }
         });
-    
+
         CompletableFuture<Void> requestFuture = CompletableFuture.runAsync(() ->
         {
             try
             {
                 os.write((
-                        "POST /echo HTTP/1.0\r\n" +
-                                "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
-                                "content-type: text/plain; charset=utf-8\r\n" +
-                                "content-length: 20\r\n" +
-                                "\r\n").getBytes("utf-8"));
+                    "POST /echo HTTP/1.0\r\n" +
+                        "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+                        "content-type: text/plain; charset=utf-8\r\n" +
+                        "content-length: 20\r\n" +
+                        "\r\n").getBytes("utf-8"));
                 os.flush();
-            
+
                 os.write("123456789\n".getBytes("utf-8"));
                 os.flush();
                 TimeUnit.SECONDS.sleep(1);
@@ -209,7 +211,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
                 // e.printStackTrace(System.err);
             }
         });
-    
+
         try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
             requestFuture.get(2, TimeUnit.SECONDS);

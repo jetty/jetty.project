@@ -18,10 +18,9 @@
 
 package mca.webapp;
 
+import java.net.URL;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-
-import java.net.URL;
 
 import static java.lang.String.format;
 
@@ -49,8 +48,8 @@ public class WebAppServletListener implements ServletContextListener
         String res = className.replaceAll("\\.", "/") + ".class";
         URL url = Thread.currentThread().getContextClassLoader().getResource(res);
         System.out.println(
-                format("(%sa) >> %s loaded from %s << (%sb)",
-                        counter, className, url, counter)
+            format("(%sa) >> %s loaded from %s << (%sb)",
+                counter, className, url, counter)
         );
     }
 }

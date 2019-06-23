@@ -36,8 +36,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class ManyConnectors
 {
-    public static void main( String[] args ) throws Exception
-    {        
+    public static void main(String[] args) throws Exception
+    {
         // Since this example shows off SSL configuration, we need a keystore
         // with the appropriate key. These lookup of jetty.home is purely a hack
         // to get access to a keystore that we use in many unit tests and should
@@ -65,10 +65,10 @@ public class ManyConnectors
         // <code>http</code> of course, as the default for secured http is
         // <code>https</code> but we show setting the scheme to show it can be
         // done. The port for secured communication is also set here.
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(8443);
-        http_config.setOutputBufferSize(32768);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecureScheme("https");
+        httpConfig.setSecurePort(8443);
+        httpConfig.setOutputBufferSize(32768);
 
         // HTTP connector
         // The first server connector we create is the one for http, passing in
@@ -76,7 +76,7 @@ public class ManyConnectors
         // the output buffer size, etc. We also set the port (8080) and
         // configure an idle timeout.
         ServerConnector http = new ServerConnector(server,
-                new HttpConnectionFactory(http_config));
+            new HttpConnectionFactory(httpConfig));
         http.setPort(8080);
         http.setIdleTimeout(30000);
 
@@ -86,7 +86,7 @@ public class ManyConnectors
         // to know about. Much more configuration is available the ssl context,
         // including things like choosing the particular certificate out of a
         // keystore to be used.
-        
+
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
@@ -105,19 +105,19 @@ public class ManyConnectors
         // SecureRequestCustomizer which is how a new connector is able to
         // resolve the https connection before handing control over to the Jetty
         // Server.
-        HttpConfiguration https_config = new HttpConfiguration(http_config);
+        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
         SecureRequestCustomizer src = new SecureRequestCustomizer();
         src.setStsMaxAge(2000);
         src.setStsIncludeSubDomains(true);
-        https_config.addCustomizer(src);
+        httpsConfig.addCustomizer(src);
 
         // HTTPS connector
         // We create a second ServerConnector, passing in the http configuration
         // we just made along with the previously created ssl context factory.
         // Next we set the port and a longer idle timeout.
         ServerConnector https = new ServerConnector(server,
-            new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(https_config));
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(httpsConfig));
         https.setPort(8443);
         https.setIdleTimeout(500000);
 
@@ -128,7 +128,7 @@ public class ManyConnectors
         // has something to pass requests off to.
 
         // Set the connectors
-        server.setConnectors(new Connector[] { http, https });
+        server.setConnectors(new Connector[]{http, https});
 
         // Set a handler
         server.setHandler(new HelloHandler());

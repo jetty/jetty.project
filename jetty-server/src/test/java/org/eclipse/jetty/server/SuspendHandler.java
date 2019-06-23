@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -34,9 +33,9 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 class SuspendHandler extends HandlerWrapper implements AsyncListener
 {
     private int _read;
-    private long _suspendFor=-1;
-    private long _resumeAfter=-1;
-    private long _completeAfter=-1;
+    private long _suspendFor = -1;
+    private long _resumeAfter = -1;
+    private long _completeAfter = -1;
 
     public SuspendHandler()
     {
@@ -87,27 +86,30 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
     {
         if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
         {
-            if (_read>0)
+            if (_read > 0)
             {
-                byte[] buf=new byte[_read];
+                byte[] buf = new byte[_read];
                 request.getInputStream().read(buf);
             }
-            else if (_read<0)
+            else if (_read < 0)
             {
                 InputStream in = request.getInputStream();
-                int b=in.read();
-                while(b!=-1)
-                    b=in.read();
+                int b = in.read();
+                while (b != -1)
+                {
+                    b = in.read();
+                }
             }
 
             final AsyncContext asyncContext = baseRequest.startAsync();
             asyncContext.addListener(this);
-            if (_suspendFor>0)
+            if (_suspendFor > 0)
                 asyncContext.setTimeout(_suspendFor);
 
-            if (_completeAfter>0)
+            if (_completeAfter > 0)
             {
-                new Thread() {
+                new Thread()
+                {
                     @Override
                     public void run()
                     {
@@ -119,14 +121,14 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
                             baseRequest.setHandled(true);
                             asyncContext.complete();
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             e.printStackTrace();
                         }
                     }
                 }.start();
             }
-            else if (_completeAfter==0)
+            else if (_completeAfter == 0)
             {
                 response.getOutputStream().println("COMPLETED");
                 response.setStatus(200);
@@ -134,9 +136,10 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
                 asyncContext.complete();
             }
 
-            if (_resumeAfter>0)
+            if (_resumeAfter > 0)
             {
-                new Thread() {
+                new Thread()
+                {
                     @Override
                     public void run()
                     {
@@ -145,19 +148,19 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
                             Thread.sleep(_resumeAfter);
                             asyncContext.dispatch();
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             e.printStackTrace();
                         }
                     }
                 }.start();
             }
-            else if (_resumeAfter==0)
+            else if (_resumeAfter == 0)
             {
                 asyncContext.dispatch();
             }
         }
-        else if (request.getAttribute("TIMEOUT")!=null)
+        else if (request.getAttribute("TIMEOUT") != null)
         {
             response.setStatus(200);
             response.getOutputStream().print("TIMEOUT");
@@ -179,7 +182,7 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
     @Override
     public void onTimeout(AsyncEvent asyncEvent) throws IOException
     {
-        asyncEvent.getSuppliedRequest().setAttribute("TIMEOUT",Boolean.TRUE);
+        asyncEvent.getSuppliedRequest().setAttribute("TIMEOUT", Boolean.TRUE);
         asyncEvent.getAsyncContext().dispatch();
     }
 

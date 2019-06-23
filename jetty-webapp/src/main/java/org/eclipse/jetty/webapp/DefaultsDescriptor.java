@@ -22,7 +22,6 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * DefaultsDescriptor
- *
  */
 public class DefaultsDescriptor extends WebDescriptor
 {

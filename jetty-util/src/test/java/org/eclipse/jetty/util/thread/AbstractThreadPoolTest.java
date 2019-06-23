@@ -45,34 +45,34 @@ public abstract class AbstractThreadPoolTest
     }
 
     abstract protected SizedThreadPool newPool(int max);
-    
+
     @Test
     public void testBudget_constructMaxThenLease()
     {
         SizedThreadPool pool = newPool(4);
-        
-        pool.getThreadPoolBudget().leaseTo(this,2);
+
+        pool.getThreadPoolBudget().leaseTo(this, 2);
 
         try
         {
-            pool.getThreadPoolBudget().leaseTo(this,3);
+            pool.getThreadPoolBudget().leaseTo(this, 3);
             fail();
         }
-        catch(IllegalStateException e)
+        catch (IllegalStateException e)
         {
-            assertThat(e.getMessage(),Matchers.containsString("Insufficient configured threads"));
+            assertThat(e.getMessage(), Matchers.containsString("Insufficient configured threads"));
         }
 
-        pool.getThreadPoolBudget().leaseTo(this,1);
+        pool.getThreadPoolBudget().leaseTo(this, 1);
     }
 
     @Test
     public void testBudget_LeaseThenSetMax()
     {
         SizedThreadPool pool = newPool(4);
-        
-        pool.getThreadPoolBudget().leaseTo(this,2);
-        
+
+        pool.getThreadPoolBudget().leaseTo(this, 2);
+
         pool.setMaxThreads(3);
 
         try
@@ -80,13 +80,11 @@ public abstract class AbstractThreadPoolTest
             pool.setMaxThreads(1);
             fail();
         }
-        catch(IllegalStateException e)
+        catch (IllegalStateException e)
         {
-            assertThat(e.getMessage(),Matchers.containsString("Insufficient configured threads"));
+            assertThat(e.getMessage(), Matchers.containsString("Insufficient configured threads"));
         }
 
-        assertThat(pool.getMaxThreads(),Matchers.is(3));
-        
+        assertThat(pool.getMaxThreads(), Matchers.is(3));
     }
-    
 }

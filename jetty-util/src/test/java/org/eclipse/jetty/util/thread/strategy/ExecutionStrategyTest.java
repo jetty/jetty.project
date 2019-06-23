@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.util.thread.strategy;
 
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -43,6 +38,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class ExecutionStrategyTest
 {
     public static Stream<Arguments> strategies()
@@ -59,27 +58,27 @@ public class ExecutionStrategyTest
 
     protected ExecutionStrategy newExecutionStrategy(Class<? extends ExecutionStrategy> strategyClass, Producer producer, Executor executor) throws Exception
     {
-        ExecutionStrategy strategy = strategyClass.getDeclaredConstructor(Producer.class,Executor.class).newInstance(producer,executor);
+        ExecutionStrategy strategy = strategyClass.getDeclaredConstructor(Producer.class, Executor.class).newInstance(producer, executor);
         strategies.add(strategy);
         LifeCycle.start(strategy);
         return strategy;
     }
-    
+
     @BeforeEach
     public void before() throws Exception
     {
         _threads.setDetailedDump(true);
         _threads.start();
     }
-    
+
     @AfterEach
     public void after() throws Exception
     {
-        strategies.forEach((strategy)->LifeCycle.stop(strategy));
+        strategies.forEach((strategy) -> LifeCycle.stop(strategy));
         _threads.stop();
     }
-    
-    public static abstract class TestProducer implements Producer
+
+    public abstract static class TestProducer implements Producer
     {
         @Override
         public String toString()
@@ -87,7 +86,7 @@ public class ExecutionStrategyTest
             return "TestProducer";
         }
     }
-    
+
     @ParameterizedTest
     @MethodSource("strategies")
     public void idleTest(Class<? extends ExecutionStrategy> strategyClass) throws Exception
@@ -105,22 +104,23 @@ public class ExecutionStrategyTest
 
         ExecutionStrategy strategy = newExecutionStrategy(strategyClass, producer, _threads);
         strategy.produce();
-        assertThat(count.get(),greaterThan(0));
+        assertThat(count.get(), greaterThan(0));
     }
 
     @ParameterizedTest
     @MethodSource("strategies")
     public void simpleTest(Class<? extends ExecutionStrategy> strategyClass) throws Exception
     {
-        final int TASKS = 3*_threads.getMaxThreads();
+        final int TASKS = 3 * _threads.getMaxThreads();
         final CountDownLatch latch = new CountDownLatch(TASKS);
         Producer producer = new TestProducer()
         {
             int tasks = TASKS;
+
             @Override
             public Runnable produce()
             {
-                if (tasks-->0)
+                if (tasks-- > 0)
                 {
                     return new Runnable()
                     {
@@ -138,35 +138,39 @@ public class ExecutionStrategyTest
 
         ExecutionStrategy strategy = newExecutionStrategy(strategyClass, producer, _threads);
 
-        for (int p=0; latch.getCount()>0 && p<TASKS; p++)
+        for (int p = 0; latch.getCount() > 0 && p < TASKS; p++)
+        {
             strategy.produce();
+        }
 
         assertTrue(latch.await(10, TimeUnit.SECONDS),
-                () -> {
-                    // Dump state on failure
-                    return String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d%n%s",
-                            strategy, TASKS, latch.getCount(), _threads.dump());
-                });
+            () ->
+            {
+                // Dump state on failure
+                return String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d%n%s",
+                    strategy, TASKS, latch.getCount(), _threads.dump());
+            });
     }
 
     @ParameterizedTest
     @MethodSource("strategies")
     public void blockingProducerTest(Class<? extends ExecutionStrategy> strategyClass) throws Exception
     {
-        final int TASKS = 3*_threads.getMaxThreads();
+        final int TASKS = 3 * _threads.getMaxThreads();
         final BlockingQueue<CountDownLatch> q = new ArrayBlockingQueue<>(_threads.getMaxThreads());
-        
+
         Producer producer = new TestProducer()
         {
             AtomicInteger tasks = new AtomicInteger(TASKS);
+
             @Override
             public Runnable produce()
             {
                 final int id = tasks.decrementAndGet();
 
-                if (id>=0)
+                if (id >= 0)
                 {
-                    while(_threads.isRunning())
+                    while (_threads.isRunning())
                     {
                         try
                         {
@@ -181,7 +185,7 @@ public class ExecutionStrategyTest
                                 }
                             };
                         }
-                        catch(InterruptedException e)
+                        catch (InterruptedException e)
                         {
                             e.printStackTrace();
                         }
@@ -203,21 +207,21 @@ public class ExecutionStrategyTest
             {
                 try
                 {
-                    for (int t=TASKS;t-->0;)
+                    for (int t = TASKS; t-- > 0; )
                     {
                         Thread.sleep(20);
                         q.offer(latch);
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     e.printStackTrace();
                 }
             }
         });
 
-        assertTrue(latch.await(30,TimeUnit.SECONDS),
-                String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d q=%d%n%s",
-                        strategy, TASKS, latch.getCount(), q.size(), _threads.dump()));
+        assertTrue(latch.await(30, TimeUnit.SECONDS),
+            String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d q=%d%n%s",
+                strategy, TASKS, latch.getCount(), q.size(), _threads.dump()));
     }
 }

@@ -90,7 +90,7 @@ public abstract class PathSpec implements Comparable<PathSpec>
      * Get the number of path elements that this path spec declares.
      * <p>
      * This is used to determine longest match logic.
-     * 
+     *
      * @return the depth of the path segments that this spec declares
      */
     public int getPathDepth()
@@ -100,25 +100,23 @@ public abstract class PathSpec implements Comparable<PathSpec>
 
     /**
      * Return the portion of the path that is after the path spec.
-     * 
-     * @param path
-     *            the path to match against
+     *
+     * @param path the path to match against
      * @return the path info portion of the string
      */
     public abstract String getPathInfo(String path);
 
     /**
      * Return the portion of the path that matches a path spec.
-     * 
-     * @param path
-     *            the path to match against
+     *
+     * @param path the path to match against
      * @return the match, or null if no match at all
      */
     public abstract String getPathMatch(String path);
 
     /**
      * The as-provided path spec.
-     * 
+     *
      * @return the as-provided path spec
      */
     public String getDeclaration()
@@ -128,6 +126,7 @@ public abstract class PathSpec implements Comparable<PathSpec>
 
     /**
      * A simple prefix match for the pathspec or null
+     *
      * @return A simple prefix match for the pathspec or null
      */
     public String getPrefix()
@@ -137,20 +136,19 @@ public abstract class PathSpec implements Comparable<PathSpec>
 
     /**
      * A simple suffix match for the pathspec or null
+     *
      * @return A simple suffix match for the pathspec or null
      */
     public String getSuffix()
     {
         return suffix;
     }
-    
+
     /**
      * Get the relative path.
-     * 
-     * @param base
-     *            the base the path is relative to
-     * @param path
-     *            the additional path
+     *
+     * @param base the base the path is relative to
+     * @param path the additional path
      * @return the base plus path with pathSpec portion removed
      */
     public abstract String getRelativePath(String base, String path);
@@ -160,15 +158,14 @@ public abstract class PathSpec implements Comparable<PathSpec>
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((pathSpec == null)?0:pathSpec.hashCode());
+        result = (prime * result) + ((pathSpec == null) ? 0 : pathSpec.hashCode());
         return result;
     }
 
     /**
      * Test to see if the provided path matches this path spec
-     * 
-     * @param path
-     *            the path to test
+     *
+     * @param path the path to test
      * @return true if the path matches this path spec, false otherwise
      */
     public abstract boolean matches(String path);

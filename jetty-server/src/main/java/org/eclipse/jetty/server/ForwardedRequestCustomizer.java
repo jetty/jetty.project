@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.log.Logger;
 
 import static java.lang.invoke.MethodType.methodType;
 
-
 /**
  * Customize Requests for Proxy Forwarding.
  * <p>
@@ -98,7 +97,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param proxyAsAuthority if true, use the proxy address obtained via
-     *                         {@code X-Forwarded-Server} or RFC7239 "by" as the request authority.
+     * {@code X-Forwarded-Server} or RFC7239 "by" as the request authority.
      */
     public void setProxyAsAuthority(boolean proxyAsAuthority)
     {
@@ -107,9 +106,9 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param rfc7239only Configure to only support the RFC7239 Forwarded header and to
-     *                    not support any {@code X-Forwarded-} headers.   This convenience method
-     *                    clears all the non RFC headers if passed true and sets them to
-     *                    the default values (if not already set) if passed false.
+     * not support any {@code X-Forwarded-} headers.   This convenience method
+     * clears all the non RFC headers if passed true and sets them to
+     * the default values (if not already set) if passed false.
      */
     public void setForwardedOnly(boolean rfc7239only)
     {
@@ -263,6 +262,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * Set if the X-Forwarded-Port header will be used for Authority
+     *
      * @param forwardedPortAsAuthority if true, the X-Forwarded-Port header applies to the authority,
      * else it applies to the remote client address
      */
@@ -366,7 +366,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param sslIsSecure true if the presence of a SSL session or certificate header is sufficient
-     *                    to indicate a secure request (default is true)
+     * to indicate a secure request (default is true)
      */
     public void setSslIsSecure(boolean sslIsSecure)
     {
@@ -394,23 +394,23 @@ public class ForwardedRequestCustomizer implements Customizer
             throw new RuntimeException(e);
         }
 
-        if (forwarded._proto!=null)
+        if (forwarded._proto != null)
         {
             request.setScheme(forwarded._proto);
             if (forwarded._proto.equalsIgnoreCase(config.getSecureScheme()))
                 request.setSecure(true);
         }
 
-        if (forwarded._host!=null)
+        if (forwarded._host != null)
         {
             httpFields.put(new HostPortHttpField(forwarded._host));
             request.setAuthority(forwarded._host.getHost(), forwarded._host.getPort());
         }
 
-        if (forwarded._for!=null)
+        if (forwarded._for != null)
         {
-            int port = forwarded._for.getPort()>0 ? forwarded._for.getPort() : request.getRemotePort();
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for.getHost(),port));
+            int port = forwarded._for.getPort() > 0 ? forwarded._for.getPort() : request.getRemotePort();
+            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for.getHost(), port));
         }
     }
 
@@ -544,7 +544,7 @@ public class ForwardedRequestCustomizer implements Customizer
             super(false);
             _request = request;
             _config = config;
-            if (_forcedHost!=null)
+            if (_forcedHost != null)
                 _host = _forcedHost.getHostPort();
         }
 
@@ -577,7 +577,7 @@ public class ForwardedRequestCustomizer implements Customizer
                 else if (_for instanceof PortSetHostPort)
                     _host = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _host.getPort());
             }
-            else if (_host==null)
+            else if (_host == null)
             {
                 _host = new HostPort(getLeftMost(field.getValue()));
             }
@@ -592,7 +592,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handleProto(HttpField field)
         {
-            if (_proto==null)
+            if (_proto == null)
                 _proto = getLeftMost(field.getValue());
         }
 
@@ -631,7 +631,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handleHttps(HttpField field)
         {
-            if (_proto==null && ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue())))
+            if (_proto == null && ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue())))
                 _proto = HttpScheme.HTTPS.asString();
         }
 

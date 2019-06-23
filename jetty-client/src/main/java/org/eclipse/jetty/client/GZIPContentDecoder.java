@@ -36,7 +36,7 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
 
     public GZIPContentDecoder(int bufferSize)
     {
-        this(null,bufferSize);
+        this(null, bufferSize);
     }
 
     public GZIPContentDecoder(ByteBufferPool byteBufferPool, int bufferSize)

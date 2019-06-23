@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 /**
  * An asynchronously writing RequestLogWriter
  */

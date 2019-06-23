@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;
@@ -29,45 +28,44 @@ import org.eclipse.jetty.server.UserIdentity;
  */
 public interface IdentityService
 {
-    final static String[] NO_ROLES = new String[]{};
+    static final String[] NO_ROLES = new String[]{};
 
-    /* ------------------------------------------------------------ */
     /**
      * Associate a user identity with the current thread.
      * This is called with as a thread enters the
      * {@link SecurityHandler#handle(String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
      * method and then again with a null argument as that call exits.
+     *
      * @param user The current user or null for no user to associated.
      * @return an object representing the previous associated state
      */
     Object associate(UserIdentity user);
 
-    /* ------------------------------------------------------------ */
     /**
      * Disassociate the user identity from the current thread
      * and restore previous identity.
+     *
      * @param previous The opaque object returned from a call to {@link IdentityService#associate(UserIdentity)}
      */
     void disassociate(Object previous);
 
-    /* ------------------------------------------------------------ */
     /**
      * Associate a runas Token with the current user and thread.
+     *
      * @param user The UserIdentity
      * @param token The runAsToken to associate.
      * @return The previous runAsToken or null.
      */
     Object setRunAs(UserIdentity user, RunAsToken token);
 
-    /* ------------------------------------------------------------ */
     /**
      * Disassociate the current runAsToken from the thread
      * and reassociate the previous token.
+     *
      * @param token RUNAS returned from previous associateRunAs call
      */
     void unsetRunAs(Object token);
 
-    /* ------------------------------------------------------------ */
     /**
      * Create a new UserIdentity for use with this identity service.
      * The UserIdentity should be immutable and able to be cached.
@@ -79,14 +77,13 @@ public interface IdentityService
      */
     UserIdentity newUserIdentity(Subject subject, Principal userPrincipal, String[] roles);
 
-    /* ------------------------------------------------------------ */
     /**
      * Create a new RunAsToken from a runAsName (normally a role).
+     *
      * @param runAsName Normally a role name
      * @return A new immutable RunAsToken
      */
     RunAsToken newRunAsToken(String runAsName);
 
-    /* ------------------------------------------------------------ */
     UserIdentity getSystemUserIdentity();
 }

@@ -27,10 +27,10 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>JNDI Configuration</p>
  * <p>This configuration configures the WebAppContext system/server classes to
- * be able to see the org.eclipse.jetty.jaas package.   
+ * be able to see the org.eclipse.jetty.jaas package.
  * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
  * which is unknown to the jndi package.  However, the corresponding {@link ServiceLoader}
- * resource is defined in the jndi package, so that this configuration only be 
+ * resource is defined in the jndi package, so that this configuration only be
  * loaded if the jetty-jndi jars are on the classpath.
  * </p>
  */
@@ -50,7 +50,7 @@ public class JndiConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.jndi.InitialContextFactory")!=null;
+            return Loader.loadClass("org.eclipse.jetty.jndi.InitialContextFactory") != null;
         }
         catch (Throwable e)
         {

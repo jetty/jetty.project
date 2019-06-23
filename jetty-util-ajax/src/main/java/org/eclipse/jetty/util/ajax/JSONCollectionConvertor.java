@@ -39,7 +39,7 @@ public class JSONCollectionConvertor implements JSON.Convertor
         try
         {
             Collection result = (Collection)Loader.loadClass((String)object.get("class"))
-                .getDeclaredConstructor().newInstance();
+                                                .getDeclaredConstructor().newInstance();
             Collections.addAll(result, (Object[])object.get("list"));
             return result;
         }

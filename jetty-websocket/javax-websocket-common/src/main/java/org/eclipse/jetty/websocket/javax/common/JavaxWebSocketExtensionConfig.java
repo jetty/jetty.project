@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-
 import javax.websocket.Extension;
+
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 public class JavaxWebSocketExtensionConfig extends ExtensionConfig
 {

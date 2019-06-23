@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -129,8 +128,8 @@ public class ServletUpgradeResponse
     public Map<String, List<String>> getHeadersMap()
     {
         Map<String, List<String>> headers = response.getHeaderNames().stream()
-            .collect(Collectors.toMap((name) -> name,
-                (name) -> new ArrayList<>(response.getHeaders(name))));
+                                                .collect(Collectors.toMap((name) -> name,
+                                                    (name) -> new ArrayList<>(response.getHeaders(name))));
         return Collections.unmodifiableMap(headers);
     }
 

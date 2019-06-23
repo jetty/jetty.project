@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -118,8 +117,8 @@ public class HttpClientUploadDuringServerShutdown
                 {
                     int length = 16 * 1024 * 1024 + random.nextInt(16 * 1024 * 1024);
                     client.newRequest("localhost", 8888)
-                            .content(new BytesContentProvider(new byte[length]))
-                            .send(result -> latch.countDown());
+                        .content(new BytesContentProvider(new byte[length]))
+                        .send(result -> latch.countDown());
                     long sleep = 1 + random.nextInt(10);
                     TimeUnit.MILLISECONDS.sleep(sleep);
                 }
@@ -232,20 +231,20 @@ public class HttpClientUploadDuringServerShutdown
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .timeout(10, TimeUnit.SECONDS)
-                .onRequestBegin(request ->
+            .timeout(10, TimeUnit.SECONDS)
+            .onRequestBegin(request ->
+            {
+                try
                 {
-                    try
-                    {
-                        beginLatch.countDown();
-                        completeLatch.await(5, TimeUnit.SECONDS);
-                    }
-                    catch (InterruptedException x)
-                    {
-                        x.printStackTrace();
-                    }
-                })
-                .send(result -> completeLatch.countDown());
+                    beginLatch.countDown();
+                    completeLatch.await(5, TimeUnit.SECONDS);
+                }
+                catch (InterruptedException x)
+                {
+                    x.printStackTrace();
+                }
+            })
+            .send(result -> completeLatch.countDown());
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 

@@ -78,5 +78,4 @@ public class Derived extends Base implements Signature
     {
         return superManagedInstance;
     }
-
 }

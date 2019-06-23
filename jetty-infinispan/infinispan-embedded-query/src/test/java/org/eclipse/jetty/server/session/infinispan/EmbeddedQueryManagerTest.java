@@ -42,17 +42,15 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 public class EmbeddedQueryManagerTest
 {
-    public static final String DEFAULT_CACHE_NAME =  "session_test_cache";
+    public static final String DEFAULT_CACHE_NAME = "session_test_cache";
 
-    
     @Test
     public void test() throws Exception
     {
 
-        String _name = DEFAULT_CACHE_NAME+System.currentTimeMillis();
+        String _name = DEFAULT_CACHE_NAME + System.currentTimeMillis();
         EmbeddedCacheManager _manager;
 
         _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().globalJmxStatistics().allowDuplicateDomains(true).build());
@@ -71,36 +69,36 @@ public class EmbeddedQueryManagerTest
 
         b.indexing().index(Index.ALL).addIndexedEntity(SessionData.class).withProperties(properties);
         Configuration c = b.build();
-        
+
         _manager.defineConfiguration(_name, c);
-        Cache<String, SessionData> _cache = _manager.getCache(_name);                
-        
+        Cache<String, SessionData> _cache = _manager.getCache(_name);
+
         //put some sessions into the cache
         int numSessions = 10;
         long currentTime = 500;
         int maxExpiryTime = 1000;
         Set<String> expiredSessions = new HashSet<>();
         Random r = new Random();
-        
-        for (int i=0; i<numSessions; i++)
+
+        for (int i = 0; i < numSessions; i++)
         {
             //create new sessiondata with random expiry time
             long expiryTime = r.nextInt(maxExpiryTime);
-            SessionData sd = new SessionData("sd"+i, "", "", 0, 0, 0, 0);
+            SessionData sd = new SessionData("sd" + i, "", "", 0, 0, 0, 0);
             sd.setExpiry(expiryTime);
-            
+
             //if this entry has expired add it to expiry list
             if (expiryTime <= currentTime)
-                expiredSessions.add("sd"+i);
-            
+                expiredSessions.add("sd" + i);
+
             //add to cache
-            _cache.put("sd"+i,sd);
+            _cache.put("sd" + i, sd);
         }
-       
+
         //run the query
         QueryManager qm = new EmbeddedQueryManager(_cache);
         Set<String> queryResult = qm.queryExpiredSessions(currentTime);
-        
+
         // Check that the result is correct
         assertEquals(expiredSessions.size(), queryResult.size());
         for (String s : expiredSessions)

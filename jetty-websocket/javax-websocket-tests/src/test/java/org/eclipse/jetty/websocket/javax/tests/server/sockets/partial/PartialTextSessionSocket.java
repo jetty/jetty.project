@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server.sockets.partial;
 
-import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
+import java.io.IOException;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
+
+import org.eclipse.jetty.toolchain.test.StackUtils;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 @ServerEndpoint("/echo/partial/textsession")
 public class PartialTextSessionSocket

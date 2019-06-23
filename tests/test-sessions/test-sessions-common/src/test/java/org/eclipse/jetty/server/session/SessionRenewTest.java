@@ -18,15 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -41,6 +33,12 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * SessionRenewTest
@@ -50,26 +48,23 @@ import org.junit.jupiter.api.Test;
 public class SessionRenewTest
 {
     protected TestServer _server;
-    
+
     /**
      * Tests renewing a session id when sessions are not being cached.
-     * @throws Exception
      */
     @Test
     public void testSessionRenewalNullCache() throws Exception
     {
         SessionCacheFactory cacheFactory = new NullSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        
+
         //make the server with a NullSessionCache
         _server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
         doTest(new RenewalVerifier());
     }
-    
-    
+
     /**
      * Test renewing session id when sessions are cached
-     * @throws Exception
      */
     @Test
     public void testSessionRenewalDefaultCache() throws Exception
@@ -77,30 +72,29 @@ public class SessionRenewTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        
+
         _server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
-        
-        doTest(new RenewalVerifier() {
+
+        doTest(new RenewalVerifier()
+        {
 
             @Override
             public void verify(WebAppContext context, String oldSessionId, String newSessionId)
-            throws Exception
+                throws Exception
             {
                 //verify the contents of the cache changed
                 assertTrue(context.getSessionHandler().getSessionCache().contains(newSessionId));
                 assertFalse(context.getSessionHandler().getSessionCache().contains(oldSessionId));
                 super.verify(context, oldSessionId, newSessionId);
             }
-            
         });
     }
-    
 
     /**
-     *  Perform the test by making a request to create a session
+     * Perform the test by making a request to create a session
      * then another request that will renew the session id.
+     *
      * @param verifier the class that verifies the session id changes in cache/store
-     * @throws Exception
      */
     public void doTest(RenewalVerifier verifier) throws Exception
     {
@@ -111,20 +105,18 @@ public class SessionRenewTest
         context.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionIdListener testListener = new TestHttpSessionIdListener();
         context.addEventListener(testListener);
-        
-
 
         HttpClient client = new HttpClient();
         try
         {
             _server.start();
-            int port=_server.getPort();
-            
+            int port = _server.getPort();
+
             client.start();
 
             //make a request to create a session
             ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
@@ -134,7 +126,7 @@ public class SessionRenewTest
             Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=renew");
             ContentResponse renewResponse = request.send();
 
-            assertEquals(HttpServletResponse.SC_OK,renewResponse.getStatus());
+            assertEquals(HttpServletResponse.SC_OK, renewResponse.getStatus());
             String renewSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
@@ -150,33 +142,25 @@ public class SessionRenewTest
         }
     }
 
-
-   
-
-    
     /**
      * RenewalVerifier
-     *
-     *
      */
     public class RenewalVerifier
     {
         public void verify(WebAppContext context, String oldSessionId, String newSessionId)
-        throws Exception
+            throws Exception
         {
             //verify that the session id changed in the session store
-           TestSessionDataStore store = (TestSessionDataStore)context.getSessionHandler().getSessionCache().getSessionDataStore();
-           assertTrue(store.exists(newSessionId));
-           assertFalse(store.exists(oldSessionId));
+            TestSessionDataStore store = (TestSessionDataStore)context.getSessionHandler().getSessionCache().getSessionDataStore();
+            assertTrue(store.exists(newSessionId));
+            assertFalse(store.exists(oldSessionId));
         }
     }
-    
-    
 
     public static class TestHttpSessionIdListener implements HttpSessionIdListener
     {
         boolean called = false;
-        
+
         @Override
         public void sessionIdChanged(HttpSessionEvent event, String oldSessionId)
         {
@@ -184,13 +168,12 @@ public class SessionRenewTest
             assertNotSame(oldSessionId, event.getSession().getId());
             called = true;
         }
-        
+
         public boolean isCalled()
         {
             return called;
         }
     }
-
 
     public static class TestServlet extends HttpServlet
     {
@@ -218,7 +201,7 @@ public class SessionRenewTest
                 assertTrue(afterSession != null);
                 String afterSessionId = afterSession.getId();
 
-                assertTrue(beforeSession==afterSession); //same object
+                assertTrue(beforeSession == afterSession); //same object
                 assertFalse(beforeSessionId.equals(afterSessionId)); //different id
 
                 SessionHandler sessionManager = ((Session)afterSession).getSessionHandler();
@@ -237,5 +220,4 @@ public class SessionRenewTest
             }
         }
     }
-
 }

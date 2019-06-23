@@ -87,32 +87,33 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     private static final Logger LOG = Log.getLogger(HttpParser.class);
     public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
 
-    public final static HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
-    public final static HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE));
-    public final static HttpCompliance LEGACY = new HttpCompliance("LEGACY", complementOf(of(Violation.CASE_INSENSITIVE_METHOD)));
-    public final static HttpCompliance RFC2616_LEGACY = RFC2616.with( "RFC2616_LEGACY",
-            Violation.CASE_INSENSITIVE_METHOD,
-            Violation.NO_COLON_AFTER_FIELD_NAME,
-            Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH,
-            Violation.MULTIPLE_CONTENT_LENGTHS);
-    public final static HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
+    public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
+    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE));
+    public static final HttpCompliance LEGACY = new HttpCompliance("LEGACY", complementOf(of(Violation.CASE_INSENSITIVE_METHOD)));
+    public static final HttpCompliance RFC2616_LEGACY = RFC2616.with("RFC2616_LEGACY",
+        Violation.CASE_INSENSITIVE_METHOD,
+        Violation.NO_COLON_AFTER_FIELD_NAME,
+        Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH,
+        Violation.MULTIPLE_CONTENT_LENGTHS);
+    public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
 
-
-    private final static List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230,RFC2616,LEGACY,RFC2616_LEGACY,RFC7230_LEGACY);
-    private final static AtomicInteger __custom = new AtomicInteger();
+    private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
+    private static final AtomicInteger __custom = new AtomicInteger();
 
     public static HttpCompliance valueOf(String name)
     {
         for (HttpCompliance compliance : KNOWN_MODES)
+        {
             if (compliance.getName().equals(name))
                 return compliance;
+        }
         return null;
     }
 
     /**
      * Create compliance set from string.
      * <p>
-     *     Format:
+     * Format:
      * </p>
      * <dl>
      * <dt>0</dt><dd>No {@link Violation}s</dd>
@@ -126,6 +127,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * The remainder of the list can contain then names of {@link Violation}s to include them in the mode, or prefixed
      * with a '-' to exclude thm from the mode.
      * </p>
+     *
      * @param spec A string in the format of a comma separated list starting with one of the following strings:
      * @return the compliance from the string spec
      */
@@ -133,7 +135,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     {
         Set<Violation> sections;
         String[] elements = spec.split("\\s*,\\s*");
-        switch(elements[0])
+        switch (elements[0])
         {
             case "0":
                 sections = noneOf(Violation.class);
@@ -146,23 +148,23 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             default:
             {
                 HttpCompliance mode = HttpCompliance.valueOf(elements[0]);
-                if (mode==null)
+                if (mode == null)
                     sections = noneOf(Violation.class);
                 else
                     sections = copyOf(mode.getAllowed());
             }
         }
 
-        for (int i=1; i<elements.length; i++)
+        for (int i = 1; i < elements.length; i++)
         {
             String element = elements[i];
             boolean exclude = element.startsWith("-");
             if (exclude)
                 element = element.substring(1);
             Violation section = Violation.valueOf(element);
-            if (section==null)
+            if (section == null)
             {
-                LOG.warn("Unknown section '"+element+"' in HttpCompliance spec: "+spec);
+                LOG.warn("Unknown section '" + element + "' in HttpCompliance spec: " + spec);
                 continue;
             }
             if (exclude)
@@ -174,7 +176,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         return new HttpCompliance("CUSTOM" + __custom.getAndIncrement(), sections);
     }
 
-
     private final String _name;
     private final Set<Violation> _violations;
 
@@ -182,7 +183,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     {
         Objects.nonNull(violations);
         _name = name;
-        _violations = unmodifiableSet(violations.isEmpty()?noneOf(Violation.class):copyOf(violations));
+        _violations = unmodifiableSet(violations.isEmpty() ? noneOf(Violation.class) : copyOf(violations));
     }
 
     @Override
@@ -199,6 +200,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
     /**
      * Get the set of {@link Violation}s allowed by this compliance mode.
+     *
      * @return The immutable set of {@link Violation}s allowed by this compliance mode.
      */
     @Override
@@ -215,26 +217,28 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
     /**
      * Create a new HttpCompliance mode that includes the passed {@link Violation}s.
+     *
      * @param name The name of the new mode
      * @param violations The violations to include
      * @return A new {@link HttpCompliance} mode.
      */
     public HttpCompliance with(String name, Violation... violations)
     {
-        Set<Violation> union = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);
+        Set<Violation> union = _violations.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_violations);
         union.addAll(copyOf(violations));
         return new HttpCompliance(name, union);
     }
 
     /**
      * Create a new HttpCompliance mode that excludes the passed {@link Violation}s.
+     *
      * @param name The name of the new mode
      * @param violations The violations to exclude
      * @return A new {@link HttpCompliance} mode.
      */
     public HttpCompliance without(String name, Violation... violations)
     {
-        Set<Violation> remainder = _violations.isEmpty()?EnumSet.noneOf(Violation.class):copyOf(_violations);
+        Set<Violation> remainder = _violations.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_violations);
         remainder.removeAll(copyOf(violations));
         return new HttpCompliance(name, remainder);
     }
@@ -242,20 +246,19 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     @Override
     public String toString()
     {
-        return String.format("%s%s",_name,_violations);
+        return String.format("%s%s", _name, _violations);
     }
-
 
     private static Set<Violation> copyOf(Violation[] violations)
     {
-        if (violations==null || violations.length==0)
+        if (violations == null || violations.length == 0)
             return EnumSet.noneOf(Violation.class);
         return EnumSet.copyOf(asList(violations));
     }
 
     private static Set<Violation> copyOf(Set<Violation> violations)
     {
-        if (violations==null || violations.isEmpty())
+        if (violations == null || violations.isEmpty())
             return EnumSet.noneOf(Violation.class);
         return EnumSet.copyOf(violations);
     }

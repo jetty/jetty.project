@@ -38,7 +38,7 @@ public interface RemoteEndpoint
      * Initiates the asynchronous transmission of a binary message. This method returns before the message is transmitted.
      * Developers may provide a callback to be notified when the message has been transmitted or resulted in an error.
      *
-     * @param data     the data being sent
+     * @param data the data being sent
      * @param callback callback to notify of success or failure of the write operation
      */
     void sendBytes(ByteBuffer data, WriteCallback callback);
@@ -49,7 +49,7 @@ public interface RemoteEndpoint
      * sent with isLast set to false. The final piece must be sent with isLast set to true.
      *
      * @param fragment the piece of the message being sent
-     * @param isLast   true if this is the last piece of the partial bytes
+     * @param isLast true if this is the last piece of the partial bytes
      * @throws IOException if unable to send the partial bytes
      */
     void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException;
@@ -61,8 +61,8 @@ public interface RemoteEndpoint
      * set to false. The final piece must be sent with isLast set to true.
      * Developers may provide a callback to be notified when the message has been transmitted or resulted in an error.
      *
-     * @param fragment     the data being sent
-     * @param isLast   true if this is the last piece of the partial bytes
+     * @param fragment the data being sent
+     * @param isLast true if this is the last piece of the partial bytes
      * @param callback callback to notify of success or failure of the write operation
      */
     void sendPartialBytes(ByteBuffer fragment, boolean isLast, WriteCallback callback);
@@ -82,7 +82,7 @@ public interface RemoteEndpoint
      * transmitted. Developers may provide a callback to
      * be notified when the message has been transmitted or resulted in an error.
      *
-     * @param text     the text being sent
+     * @param text the text being sent
      * @param callback callback to notify of success or failure of the write operation
      */
     void sendString(String text, WriteCallback callback);
@@ -93,7 +93,7 @@ public interface RemoteEndpoint
      * with isLast set to false. The final piece must be sent with isLast set to true.
      *
      * @param fragment the piece of the message being sent
-     * @param isLast   true if this is the last piece of the partial bytes
+     * @param isLast true if this is the last piece of the partial bytes
      * @throws IOException if unable to send the partial bytes
      */
     void sendPartialString(String fragment, boolean isLast) throws IOException;
@@ -105,8 +105,8 @@ public interface RemoteEndpoint
      * set to false. The final piece must be sent with isLast set to true.
      * Developers may provide a callback to be notified when the message has been transmitted or resulted in an error.
      *
-     * @param fragment     the text being sent
-     * @param isLast   true if this is the last piece of the partial bytes
+     * @param fragment the text being sent
+     * @param isLast true if this is the last piece of the partial bytes
      * @param callback callback to notify of success or failure of the write operation
      */
     void sendPartialString(String fragment, boolean isLast, WriteCallback callback) throws IOException;

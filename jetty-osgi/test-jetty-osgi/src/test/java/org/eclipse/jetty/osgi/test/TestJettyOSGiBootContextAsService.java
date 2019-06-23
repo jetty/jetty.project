@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.test;
 
 import java.util.ArrayList;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;

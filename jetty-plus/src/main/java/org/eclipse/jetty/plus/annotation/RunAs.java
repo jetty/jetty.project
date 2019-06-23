@@ -33,28 +33,27 @@ public class RunAs
     public RunAs()
     {}
 
-
-    public void setTargetClassName (String className)
+    public void setTargetClassName(String className)
     {
         _className = className;
     }
-    
+
     public String getTargetClassName()
     {
         return _className;
     }
 
-    public void setRoleName (String roleName)
+    public void setRoleName(String roleName)
     {
         _roleName = roleName;
     }
 
-    public String getRoleName ()
+    public String getRoleName()
     {
         return _roleName;
     }
 
-    public void setRunAs (ServletHolder holder)
+    public void setRunAs(ServletHolder holder)
     {
         if (holder == null)
             return;

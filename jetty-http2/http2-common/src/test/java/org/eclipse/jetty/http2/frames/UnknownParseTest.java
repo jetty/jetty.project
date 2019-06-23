@@ -68,7 +68,9 @@ public class UnknownParseTest
         byte[] bytes = new byte[]{0, 0x40, 0x01, 64, 0, 0, 0, 0, 0};
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         while (buffer.hasRemaining())
+        {
             parser.parse(buffer);
+        }
 
         assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, failure.get());
     }
@@ -92,7 +94,9 @@ public class UnknownParseTest
             byte[] bytes = new byte[]{0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0};
             ByteBuffer buffer = ByteBuffer.wrap(bytes);
             while (buffer.hasRemaining())
+            {
                 parser.parse(fn.apply(buffer));
+            }
         }
 
         assertFalse(failure.get());

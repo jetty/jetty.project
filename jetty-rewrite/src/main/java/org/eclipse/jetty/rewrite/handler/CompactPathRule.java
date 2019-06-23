@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -27,7 +26,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Rewrite the URI by compacting to remove // 
+ * Rewrite the URI by compacting to remove //
  */
 public class CompactPathRule extends Rule implements Rule.ApplyURI
 {

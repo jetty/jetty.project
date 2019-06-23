@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.plus.webapp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
@@ -33,10 +30,13 @@ import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 public class TestConfiguration
 {
     @Test
-    public void testIt () throws Exception
+    public void testIt() throws Exception
     {
         ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
 
@@ -81,7 +81,6 @@ public class TestConfiguration
             //make a new env configuration
             EnvConfiguration envConfig = new EnvConfiguration();
 
-
             Thread.currentThread().setContextClassLoader(wac.getClassLoader());
             MetaData metadata = new MetaData();
             envConfig.preConfigure(wac);
@@ -93,25 +92,25 @@ public class TestConfiguration
             val = (String)ic.lookup("java:comp/env/yyy/b");
             assertEquals("910", val);//webapp overrides server
             val = (String)ic.lookup("java:comp/env/zzz/c");
-            assertEquals("920",val);//webapp overrides server
+            assertEquals("920", val);//webapp overrides server
             val = (String)ic.lookup("java:comp/env/zzz/d");
             assertEquals("400", val);//from server naming
             val = (String)ic.lookup("java:comp/env/zzz/e");
             assertEquals("930", val);//from webapp naming
 
-            NamingEntry ne = (NamingEntry)ic.lookup("java:comp/env/"+NamingEntry.__contextName+"/xxx/a");
+            NamingEntry ne = (NamingEntry)ic.lookup("java:comp/env/" + NamingEntry.__contextName + "/xxx/a");
             assertNotNull(ne);
-            ne = (NamingEntry)ic.lookup("java:comp/env/"+NamingEntry.__contextName+"/yyy/b");
+            ne = (NamingEntry)ic.lookup("java:comp/env/" + NamingEntry.__contextName + "/yyy/b");
             assertNotNull(ne);
-            ne = (NamingEntry)ic.lookup("java:comp/env/"+NamingEntry.__contextName+"/zzz/c");
+            ne = (NamingEntry)ic.lookup("java:comp/env/" + NamingEntry.__contextName + "/zzz/c");
             assertNotNull(ne);
-            ne = (NamingEntry)ic.lookup("java:comp/env/"+NamingEntry.__contextName+"/zzz/d");
+            ne = (NamingEntry)ic.lookup("java:comp/env/" + NamingEntry.__contextName + "/zzz/d");
             assertNotNull(ne);
-            ne = (NamingEntry)ic.lookup("java:comp/env/"+NamingEntry.__contextName+"/zzz/e");
+            ne = (NamingEntry)ic.lookup("java:comp/env/" + NamingEntry.__contextName + "/zzz/e");
             assertNotNull(ne);
 
             plusProcessor.bindEnvEntry("foo", "99");
-            assertEquals("99",ic.lookup( "java:comp/env/foo"));
+            assertEquals("99", ic.lookup("java:comp/env/foo"));
 
             plusProcessor.bindEnvEntry("xxx/a", "7");
             assertEquals("900", ic.lookup("java:comp/env/xxx/a")); //webapp overrides web.xml

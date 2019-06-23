@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -57,8 +56,8 @@ public class JettyServerUpgradeRequest
     }
 
     /**
-     * @see HttpServletRequest#getCookies()
      * @return Request cookies
+     * @see HttpServletRequest#getCookies()
      */
     public List<HttpCookie> getCookies()
     {

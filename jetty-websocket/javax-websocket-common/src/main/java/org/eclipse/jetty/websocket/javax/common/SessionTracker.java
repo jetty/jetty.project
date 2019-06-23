@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;

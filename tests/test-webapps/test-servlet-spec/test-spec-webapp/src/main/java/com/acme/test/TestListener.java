@@ -17,8 +17,8 @@
 //
 
 package com.acme.test;
-import java.util.EventListener;
 
+import java.util.EventListener;
 import javax.annotation.Resource;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
@@ -36,10 +36,9 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
-
 @com.acme.initializer.Foo(1)
 @WebListener
-public class TestListener implements HttpSessionListener,  HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
+public class TestListener implements HttpSessionListener, HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
 {
     public static class NaughtyServletContextListener implements ServletContextListener
     {
@@ -56,33 +55,30 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
             throw new IllegalStateException("Should not call NaughtServletContextListener.contextDestroyed");
         }
     }
-    
+
     public static class InvalidListener implements EventListener
     {
         public InvalidListener()
         {}
     }
-    
+
     public static class ValidListener implements HttpSessionIdListener
     {
-        @Resource(mappedName="maxAmount")
+        @Resource(mappedName = "maxAmount")
         private Double maxAmount;
-        
+
         public ValidListener()
         {}
-        
+
         @Override
         public void sessionIdChanged(HttpSessionEvent event, String oldSessionId)
         {
-           
+
         }
-        
     }
 
-    @Resource(mappedName="maxAmount")
+    @Resource(mappedName = "maxAmount")
     private Double maxAmount;
-    
-
 
     @Override
     public void attributeAdded(HttpSessionBindingEvent se)
@@ -119,9 +115,9 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
     {
         if (sce.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectTest") != null)
             throw new IllegalStateException("TestListener already initialized");
-        
+
         sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectTest", Boolean.valueOf(maxAmount != null));
-        
+
         //Can't add a ServletContextListener from a ServletContextListener even if it is declared in web.xml
         try
         {
@@ -136,8 +132,7 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
         {
             sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclFromSclRegoTest", Boolean.FALSE);
         }
-        
-        
+
         //Can't add an EventListener not part of the specified list for addListener()
         try
         {
@@ -151,14 +146,14 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
         catch (Exception e)
         {
             sce.getServletContext().setAttribute("com.acme.AnnotationTest.invalidListenerRegoTest", Boolean.FALSE);
-        } 
-        
+        }
+
         //Programmatically add a listener and make sure its injected
         try
         {
             ValidListener l = sce.getServletContext().createListener(ValidListener.class);
             sce.getServletContext().setAttribute("com.acme.AnnotationTest.programListenerInjectTest", Boolean.valueOf(l != null && l.maxAmount != null));
-        }   
+        }
         catch (Exception e)
         {
             sce.getServletContext().setAttribute("com.acme.AnnotationTest.programListenerInjectTest", Boolean.FALSE);
@@ -234,19 +229,18 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
     public void requestCompleted(ServletRequestEvent rre)
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void requestResumed(ServletRequestEvent rre)
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void requestSuspended(ServletRequestEvent rre)
     {
         // TODO Auto-generated method stub
-        
-    }
 
+    }
 }

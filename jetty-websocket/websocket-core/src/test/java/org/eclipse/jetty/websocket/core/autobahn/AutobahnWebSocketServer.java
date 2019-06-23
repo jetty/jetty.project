@@ -67,11 +67,11 @@ public class AutobahnWebSocketServer
     public static void main(String[] args) throws Exception
     {
         int port = 9001; // same port as found in fuzzing-client.json
-        if(args != null && args.length>0)
+        if (args != null && args.length > 0)
         {
-            port = Integer.parseInt( args[0] );
+            port = Integer.parseInt(args[0]);
         }
-        Server server = new Server( port );
+        Server server = new Server(port);
 
         ServerConnector connector = new ServerConnector(
             server,

@@ -27,7 +27,8 @@ import org.eclipse.jetty.util.log.Logger;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED;
 
-/** Cookie parser
+/**
+ * Cookie parser
  */
 public abstract class CookieCutter
 {
@@ -44,7 +45,7 @@ public abstract class CookieCutter
 
     protected void parseFields(List<String> rawFields)
     {
-        StringBuilder unquoted=null;
+        StringBuilder unquoted = null;
 
         // For each cookie field
         for (String hdr : rawFields)
@@ -59,15 +60,15 @@ public abstract class CookieCutter
             String cookieComment = null;
             int cookieVersion = 0;
 
-            boolean invalue=false;
-            boolean inQuoted=false;
-            boolean quoted=false;
-            boolean escaped=false;
-            int tokenstart=-1;
-            int tokenend=-1;
+            boolean invalue = false;
+            boolean inQuoted = false;
+            boolean quoted = false;
+            boolean escaped = false;
+            int tokenstart = -1;
+            int tokenend = -1;
             for (int i = 0, length = hdr.length(); i <= length; i++)
             {
-                char c = i==length?0:hdr.charAt(i);
+                char c = i == length ? 0 : hdr.charAt(i);
 
                 // System.err.printf("i=%d/%d c=%s v=%b q=%b/%b e=%b u=%s s=%d e=%d \t%s=%s%n" ,i,length,c==0?"|":(""+c),invalue,inQuoted,quoted,escaped,unquoted,tokenstart,tokenend,name,value);
 
@@ -76,8 +77,8 @@ public abstract class CookieCutter
                 {
                     if (escaped)
                     {
-                        escaped=false;
-                        if (c>0)
+                        escaped = false;
+                        if (c > 0)
                             unquoted.append(c);
                         else
                         {
@@ -107,7 +108,7 @@ public abstract class CookieCutter
                             inQuoted = false;
                             i--;
                             continue;
-                            
+
                         default:
                             unquoted.append(c);
                             continue;
@@ -127,20 +128,20 @@ public abstract class CookieCutter
 
                             case ',':
                                 if (COMMA_NOT_VALID_OCTET.isAllowedBy(_complianceMode))
-                                    reportComplianceViolation(COMMA_NOT_VALID_OCTET, "Cookie "+cookieName);
+                                    reportComplianceViolation(COMMA_NOT_VALID_OCTET, "Cookie " + cookieName);
                                 else
                                 {
                                     if (quoted)
                                     {
                                         // must have been a bad internal quote. let's fix as best we can
-                                        unquoted.append(hdr,tokenstart,i--);
+                                        unquoted.append(hdr, tokenstart, i--);
                                         inQuoted = true;
                                         quoted = false;
                                         continue;
                                     }
-                                    if (tokenstart<0)
+                                    if (tokenstart < 0)
                                         tokenstart = i;
-                                    tokenend=i;
+                                    tokenend = i;
                                     continue;
                                 }
                                 // fall through
@@ -155,8 +156,8 @@ public abstract class CookieCutter
                                     unquoted.setLength(0);
                                     quoted = false;
                                 }
-                                else if(tokenstart>=0)
-                                    value = tokenend>=tokenstart?hdr.substring(tokenstart, tokenend+1):hdr.substring(tokenstart);
+                                else if (tokenstart >= 0)
+                                    value = tokenend >= tokenstart ? hdr.substring(tokenstart, tokenend + 1) : hdr.substring(tokenstart);
                                 else
                                     value = "";
 
@@ -166,9 +167,9 @@ public abstract class CookieCutter
                                     {
                                         if (RESERVED_NAMES_NOT_DOLLAR_PREFIXED.isAllowedBy(_complianceMode))
                                         {
-                                            reportComplianceViolation(RESERVED_NAMES_NOT_DOLLAR_PREFIXED, "Cookie "+cookieName+" field "+name);
+                                            reportComplianceViolation(RESERVED_NAMES_NOT_DOLLAR_PREFIXED, "Cookie " + cookieName + " field " + name);
                                             String lowercaseName = name.toLowerCase(Locale.ENGLISH);
-                                            switch(lowercaseName)
+                                            switch (lowercaseName)
                                             {
                                                 case "$path":
                                                     cookiePath = value;
@@ -177,7 +178,7 @@ public abstract class CookieCutter
                                                     cookieDomain = value;
                                                     break;
                                                 case "$port":
-                                                    cookieComment = "$port="+value;
+                                                    cookieComment = "$port=" + value;
                                                     break;
                                                 case "$version":
                                                     cookieVersion = Integer.parseInt(value);
@@ -190,7 +191,7 @@ public abstract class CookieCutter
                                     else
                                     {
                                         // This is a new cookie, so add the completed last cookie if we have one
-                                        if (cookieName!=null)
+                                        if (cookieName != null)
                                         {
                                             addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
                                             cookieDomain = null;
@@ -208,18 +209,18 @@ public abstract class CookieCutter
 
                                 name = null;
                                 tokenstart = -1;
-                                invalue=false;
+                                invalue = false;
 
                                 break;
                             }
 
                             case '"':
-                                if (tokenstart<0)
+                                if (tokenstart < 0)
                                 {
-                                    tokenstart=i;
-                                    inQuoted=true;
-                                    if (unquoted==null)
-                                        unquoted=new StringBuilder();
+                                    tokenstart = i;
+                                    inQuoted = true;
+                                    if (unquoted == null)
+                                        unquoted = new StringBuilder();
                                     break;
                                 }
                                 // fall through to default case
@@ -228,14 +229,14 @@ public abstract class CookieCutter
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
-                                    unquoted.append(hdr,tokenstart,i--);
+                                    unquoted.append(hdr, tokenstart, i--);
                                     inQuoted = true;
                                     quoted = false;
                                     continue;
                                 }
-                                if (tokenstart<0)
+                                if (tokenstart < 0)
                                     tokenstart = i;
-                                tokenend=i;
+                                tokenend = i;
                                 continue;
                         }
                     }
@@ -255,8 +256,8 @@ public abstract class CookieCutter
                                     unquoted.setLength(0);
                                     quoted = false;
                                 }
-                                else if(tokenstart>=0)
-                                    name = tokenend>=tokenstart?hdr.substring(tokenstart, tokenend+1):hdr.substring(tokenstart);
+                                else if (tokenstart >= 0)
+                                    name = tokenend >= tokenstart ? hdr.substring(tokenstart, tokenend + 1) : hdr.substring(tokenstart);
 
                                 tokenstart = -1;
                                 invalue = true;
@@ -266,22 +267,22 @@ public abstract class CookieCutter
                                 if (quoted)
                                 {
                                     // must have been a bad internal quote. let's fix as best we can
-                                    unquoted.append(hdr,tokenstart,i--);
+                                    unquoted.append(hdr, tokenstart, i--);
                                     inQuoted = true;
                                     quoted = false;
                                     continue;
                                 }
-                                if (tokenstart<0)
-                                    tokenstart=i;
-                                tokenend=i;
+                                if (tokenstart < 0)
+                                    tokenstart = i;
+                                tokenend = i;
                                 continue;
                         }
                     }
                 }
             }
 
-            if (cookieName!=null)
-                addCookie(cookieName,cookieValue,cookieDomain,cookiePath,cookieVersion,cookieComment);
+            if (cookieName != null)
+                addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
         }
     }
 

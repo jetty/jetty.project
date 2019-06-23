@@ -36,23 +36,23 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithAnnotations
 {
-    public static final void main( String args[] ) throws Exception
+    public static final void main(String[] args) throws Exception
     {
         // Create the server
         Server server = new Server(8080);
 
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
-        
+
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
-        webapp.addConfiguration(new EnvConfiguration(),new PlusConfiguration(),new AnnotationConfiguration());
-        
+        webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
+
         webapp.setContextPath("/");
         File warFile = JettyDistribution.resolve("demo-base/webapps/test-spec.war").toFile();
         webapp.setWar(warFile.getAbsolutePath());
         webapp.setAttribute(
-                "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                ".*/jetty-servlet-api-[^/]*\\.jar$");
+            "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+            ".*/jetty-servlet-api-[^/]*\\.jar$");
         server.setHandler(webapp);
 
         // Register new transaction manager in JNDI
@@ -75,10 +75,8 @@ public class ServerWithAnnotations
         loginService.setConfig("examples/embedded/src/test/resources/realm.properties");
         server.addBean(loginService);
 
-
         server.start();
         server.dumpStdErr();
         server.join();
     }
-
 }

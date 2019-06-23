@@ -110,8 +110,8 @@ public class JettyServerUpgradeResponse
     public void setExtensions(List<ExtensionConfig> configs)
     {
         upgradeResponse.setExtensions(configs.stream()
-                .map(c->new org.eclipse.jetty.websocket.core.ExtensionConfig(c.getName(), c.getParameters()))
-                .collect(Collectors.toList()));
+                                          .map(c -> new org.eclipse.jetty.websocket.core.ExtensionConfig(c.getName(), c.getParameters()))
+                                          .collect(Collectors.toList()));
     }
 
     public void setStatusCode(int statusCode)

@@ -175,7 +175,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         // 98765432109876543210987654321
         // PROXY P R.R.R.R L.L.L.L R Lrn
 
-        private final int[] __size = {29, 23, 21, 13, 5, 3, 1};
+        private static final int[] SIZE = {29, 23, 21, 13, 5, 3, 1};
         private final Connector _connector;
         private final String _next;
         private final StringBuilder _builder = new StringBuilder();
@@ -250,7 +250,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                     // Create a buffer that will not read too much data
                     // since once read it is impossible to push back for the 
                     // real connection to read it.
-                    int size = Math.max(1, __size[_fields] - _builder.length());
+                    int size = Math.max(1, SIZE[_fields] - _builder.length());
                     if (buffer == null || buffer.capacity() != size)
                         buffer = BufferUtil.allocate(size);
                     else
@@ -576,7 +576,6 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} {}", getEndPoint(), proxyEndPoint.toString());
-
                 }
                 catch (Exception e)
                 {
@@ -621,13 +620,14 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         }
 
         @Override
-        public String toString() {
+        public String toString()
+        {
             return String.format("%s@%x[remote=%s,local=%s,endpoint=%s]",
-                    getClass().getSimpleName(),
-                    hashCode(),
-                    _remote,
-                    _local,
-                    _endp);
+                getClass().getSimpleName(),
+                hashCode(),
+                _remote,
+                _local,
+                _endp);
         }
 
         @Override

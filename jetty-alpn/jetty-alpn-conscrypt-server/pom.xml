@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn-parent</artifactId>
@@ -67,25 +66,24 @@
   <build>
     <plugins>
       <plugin>
-       <groupId>org.apache.felix</groupId>
-       <artifactId>maven-bundle-plugin</artifactId>
-       <extensions>true</extensions>
-           <configuration>
-             <instructions>
-               <Bundle-Description>Conscrypt ALPN</Bundle-Description>
-               <Import-Package>org.conscrypt;version="${conscrypt.version}",*</Import-Package>
-               <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-               <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server</Provide-Capability>
-               <_nouses>true</_nouses>
-             </instructions>
-           </configuration>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Description>Conscrypt ALPN</Bundle-Description>
+            <Import-Package>org.conscrypt;version="${conscrypt.version}",*</Import-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server</Provide-Capability>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine}
-            --add-reads org.eclipse.jetty.alpn.conscrypt.server=org.eclipse.jetty.server
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.alpn.conscrypt.server=org.eclipse.jetty.server
           </argLine>
         </configuration>
       </plugin>

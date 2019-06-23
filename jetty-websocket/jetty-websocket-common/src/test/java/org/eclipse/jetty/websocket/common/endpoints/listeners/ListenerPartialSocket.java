@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.endpoints.listeners;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
 import org.eclipse.jetty.websocket.common.EventQueue;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-
-import java.nio.ByteBuffer;
 
 public class ListenerPartialSocket implements WebSocketPartialListener
 {

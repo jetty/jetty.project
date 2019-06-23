@@ -12,8 +12,7 @@ public class EmbeddedQueryManagerFactory implements QueryManagerFactory
     {
         if (!(cache instanceof Cache))
             throw new IllegalArgumentException("Argument was not of type Cache");
-        
+
         return new EmbeddedQueryManager((Cache<String, SessionData>)cache);
     }
-
 }

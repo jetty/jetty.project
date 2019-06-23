@@ -27,9 +27,8 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
-/** A scheduler based on the the JVM Timer class
+/**
+ * A scheduler based on the the JVM Timer class
  */
 public class TimerScheduler extends AbstractLifeCycle implements Scheduler, Runnable
 {
@@ -121,9 +120,9 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler, Runn
         public String toString()
         {
             return String.format("%s.%s@%x",
-                    TimerScheduler.class.getSimpleName(),
-                    SimpleTask.class.getSimpleName(),
-                    hashCode());
+                TimerScheduler.class.getSimpleName(),
+                SimpleTask.class.getSimpleName(),
+                hashCode());
         }
     }
 }

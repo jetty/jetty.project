@@ -60,7 +60,9 @@ public class HttpSenderOverFCGI extends HttpSender
         // Copy the request headers to be able to convert them properly
         HttpFields headers = new HttpFields();
         for (HttpField field : request.getHeaders())
+        {
             headers.put(field);
+        }
         HttpFields fcgiHeaders = new HttpFields();
 
         // FastCGI headers based on the URI
@@ -100,7 +102,7 @@ public class HttpSenderOverFCGI extends HttpSender
         int id = getHttpChannel().getRequest();
         boolean hasContent = content.hasContent();
         Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders,
-                hasContent ? callback : Callback.NOOP);
+            hasContent ? callback : Callback.NOOP);
         if (hasContent)
         {
             getHttpChannel().flush(headersResult);

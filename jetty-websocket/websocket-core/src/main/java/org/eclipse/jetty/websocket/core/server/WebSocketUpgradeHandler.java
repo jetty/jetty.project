@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import java.io.IOException;
+import java.util.function.Function;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -25,15 +31,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.function.Function;
-
 public class WebSocketUpgradeHandler extends HandlerWrapper
 {
-    final static Logger LOG = Log.getLogger(WebSocketUpgradeHandler.class);
+    static final Logger LOG = Log.getLogger(WebSocketUpgradeHandler.class);
     final Handshaker handshaker = Handshaker.newInstance();
     final PathSpecSet paths = new PathSpecSet();
     final WebSocketNegotiator negotiator;
@@ -61,7 +61,9 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
         if (pathSpecs != null)
         {
             for (String spec : pathSpecs)
+            {
                 this.paths.add(spec);
+            }
         }
     }
 

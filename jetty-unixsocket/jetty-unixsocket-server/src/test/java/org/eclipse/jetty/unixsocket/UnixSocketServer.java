@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -39,15 +38,15 @@ public class UnixSocketServer
     public static void main(String... args) throws Exception
     {
         Server server = new Server();
-        
+
         HttpConnectionFactory http = new HttpConnectionFactory();
         UnixSocketConnector connector = new UnixSocketConnector(server, http);
         server.addConnector(connector);
-        
+
         Path socket = Paths.get(connector.getUnixSocket());
         if (Files.exists(socket))
             Files.delete(socket);
-        
+
         server.setHandler(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
@@ -73,9 +72,9 @@ public class UnixSocketServer
                 response.getWriter().write("read =" + l + "\r\n");
             }
         });
-        
+
         server.start();
-        
+
         while (true)
         {
             Thread.sleep(5000);
@@ -83,7 +82,7 @@ public class UnixSocketServer
             System.err.println("==============================");
             connector.dumpStdErr();
         }
-        
+
         // server.join();
     }
 }

@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.server.internal;
 
+import java.util.List;
+
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-
-import java.util.List;
 
 public class UpgradeResponseAdapter implements UpgradeResponse
 {

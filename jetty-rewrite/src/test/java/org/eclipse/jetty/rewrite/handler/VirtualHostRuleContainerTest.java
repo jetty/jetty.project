@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
 {
@@ -46,12 +45,12 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
         _fooRule.setReplacement("/cheese/fooRule");
 
         _fooContainerRule = new VirtualHostRuleContainer();
-        _fooContainerRule.setVirtualHosts(new String[] {"foo.com"});
-        _fooContainerRule.setRules(new Rule[] { _fooRule });
+        _fooContainerRule.setVirtualHosts(new String[]{"foo.com"});
+        _fooContainerRule.setRules(new Rule[]{_fooRule});
 
         start(false);
         _request.setURIPathQuery("/cheese/bar");
-        
+
         _handler.setServer(_server);
         _handler.start();
     }
@@ -59,8 +58,8 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testArbitraryHost() throws Exception
     {
-        _request.setAuthority("cheese.com",0);
-        _handler.setRules(new Rule[] { _rule, _fooContainerRule });
+        _request.setAuthority("cheese.com", 0);
+        _handler.setRules(new Rule[]{_rule, _fooContainerRule});
         handleRequest();
         assertEquals("/rule/bar", _request.getRequestURI(), "{_rule, _fooContainerRule, Host: cheese.com}: applied _rule");
     }
@@ -68,8 +67,8 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testVirtualHost() throws Exception
     {
-        _request.setAuthority("foo.com",0);
-        _handler.setRules(new Rule[] { _fooContainerRule });
+        _request.setAuthority("foo.com", 0);
+        _handler.setRules(new Rule[]{_fooContainerRule});
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule, Host: foo.com}: applied _fooRule");
     }
@@ -77,7 +76,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testCascadingRules() throws Exception
     {
-        _request.setAuthority("foo.com",0);
+        _request.setAuthority("foo.com", 0);
         _request.setURIPathQuery("/cheese/bar");
 
         _rule.setTerminating(false);
@@ -89,7 +88,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
         assertEquals("/rule/bar", _request.getRequestURI(), "{_rule, _fooContainerRule}: applied _rule, didn't match _fooRule");
 
         _request.setURIPathQuery("/cheese/bar");
-        _handler.setRules(new Rule[] { _fooContainerRule, _rule });
+        _handler.setRules(new Rule[]{_fooContainerRule, _rule});
         handleRequest();
         assertEquals("/rule/fooRule", _request.getRequestURI(), "{_fooContainerRule, _rule}: applied _fooRule, _rule");
 
@@ -108,10 +107,10 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testCaseInsensitiveHostname() throws Exception
     {
-        _request.setAuthority("Foo.com",0);
-        _fooContainerRule.setVirtualHosts(new String[] {"foo.com"} );
+        _request.setAuthority("Foo.com", 0);
+        _fooContainerRule.setVirtualHosts(new String[]{"foo.com"});
 
-        _handler.setRules(new Rule[]{ _fooContainerRule });
+        _handler.setRules(new Rule[]{_fooContainerRule});
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "Foo.com and foo.com are equivalent");
     }
@@ -119,39 +118,38 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testEmptyVirtualHost() throws Exception
     {
-        _request.setAuthority("cheese.com",0);
+        _request.setAuthority("cheese.com", 0);
 
-        _handler.setRules(new Rule[] { _fooContainerRule });
+        _handler.setRules(new Rule[]{_fooContainerRule});
         _fooContainerRule.setVirtualHosts(null);
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule: virtual hosts array is null, Host: cheese.com}: apply _fooRule");
 
         _request.setURIPathQuery("/cheese/bar");
         _request.setURIPathQuery("/cheese/bar");
-        _fooContainerRule.setVirtualHosts(new String[] {});
+        _fooContainerRule.setVirtualHosts(new String[]{});
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule: virtual hosts array is empty, Host: cheese.com}: apply _fooRule");
 
         _request.setURIPathQuery("/cheese/bar");
         _request.setURIPathQuery("/cheese/bar");
-        _fooContainerRule.setVirtualHosts(new String[] {null});
+        _fooContainerRule.setVirtualHosts(new String[]{null});
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule: virtual host is null, Host: cheese.com}: apply _fooRule");
-
     }
 
     @Test
     public void testMultipleVirtualHosts() throws Exception
     {
-        _request.setAuthority("foo.com",0);
-        _handler.setRules(new Rule[] {_fooContainerRule });
+        _request.setAuthority("foo.com", 0);
+        _handler.setRules(new Rule[]{_fooContainerRule});
 
-        _fooContainerRule.setVirtualHosts(new String[]{ "cheese.com" });
+        _fooContainerRule.setVirtualHosts(new String[]{"cheese.com"});
         handleRequest();
         assertEquals("/cheese/bar", _request.getRequestURI(), "{_fooContainerRule: vhosts[cheese.com], Host: foo.com}: no effect");
 
         _request.setURIPathQuery("/cheese/bar");
-        _fooContainerRule.addVirtualHost( "foo.com" );
+        _fooContainerRule.addVirtualHost("foo.com");
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule: vhosts[cheese.com, foo.com], Host: foo.com}: apply _fooRule");
     }
@@ -159,37 +157,41 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testWildcardVirtualHosts() throws Exception
     {
-        checkWildcardHost(true,null,new String[] {"foo.com", ".foo.com", "vhost.foo.com"});
-        checkWildcardHost(true,new String[] {null},new String[] {"foo.com", ".foo.com", "vhost.foo.com"});
+        checkWildcardHost(true, null, new String[]{"foo.com", ".foo.com", "vhost.foo.com"});
+        checkWildcardHost(true, new String[]{null}, new String[]{"foo.com", ".foo.com", "vhost.foo.com"});
 
-        checkWildcardHost(true,new String[] {"foo.com", "*.foo.com"}, new String[] {"foo.com", ".foo.com", "vhost.foo.com"});
-        checkWildcardHost(false,new String[] {"foo.com", "*.foo.com"}, new String[] {"badfoo.com", ".badfoo.com", "vhost.badfoo.com"});
+        checkWildcardHost(true, new String[]{"foo.com", "*.foo.com"}, new String[]{"foo.com", ".foo.com", "vhost.foo.com"});
+        checkWildcardHost(false, new String[]{"foo.com", "*.foo.com"}, new String[]{
+            "badfoo.com", ".badfoo.com", "vhost.badfoo.com"
+        });
 
-        checkWildcardHost(false,new String[] {"*."}, new String[] {"anything.anything"});
+        checkWildcardHost(false, new String[]{"*."}, new String[]{"anything.anything"});
 
-        checkWildcardHost(true,new String[] {"*.foo.com"}, new String[] {"vhost.foo.com", ".foo.com"});
-        checkWildcardHost(false,new String[] {"*.foo.com"}, new String[] {"vhost.www.foo.com", "foo.com", "www.vhost.foo.com"});
+        checkWildcardHost(true, new String[]{"*.foo.com"}, new String[]{"vhost.foo.com", ".foo.com"});
+        checkWildcardHost(false, new String[]{"*.foo.com"}, new String[]{"vhost.www.foo.com", "foo.com", "www.vhost.foo.com"});
 
-        checkWildcardHost(true,new String[] {"*.sub.foo.com"}, new String[] {"vhost.sub.foo.com", ".sub.foo.com"});
-        checkWildcardHost(false,new String[] {"*.sub.foo.com"}, new String[] {".foo.com", "sub.foo.com", "vhost.foo.com"});
+        checkWildcardHost(true, new String[]{"*.sub.foo.com"}, new String[]{"vhost.sub.foo.com", ".sub.foo.com"});
+        checkWildcardHost(false, new String[]{"*.sub.foo.com"}, new String[]{".foo.com", "sub.foo.com", "vhost.foo.com"});
 
-        checkWildcardHost(false,new String[] {"foo.*.com","foo.com.*"}, new String[] {"foo.vhost.com", "foo.com.vhost", "foo.com"});
+        checkWildcardHost(false, new String[]{"foo.*.com", "foo.com.*"}, new String[]{
+            "foo.vhost.com", "foo.com.vhost", "foo.com"
+        });
     }
 
     private void checkWildcardHost(boolean succeed, String[] ruleHosts, String[] requestHosts) throws Exception
     {
         _fooContainerRule.setVirtualHosts(ruleHosts);
-        _handler.setRules(new Rule[] { _fooContainerRule });
+        _handler.setRules(new Rule[]{_fooContainerRule});
 
-        for(String host: requestHosts)
+        for (String host : requestHosts)
         {
-            _request.setAuthority(host,0);
+            _request.setAuthority(host, 0);
             _request.setURIPathQuery("/cheese/bar");
             handleRequest();
-            if(succeed)
-                assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule, Host: "+host+"}: should apply _fooRule");
+            if (succeed)
+                assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule, Host: " + host + "}: should apply _fooRule");
             else
-                assertEquals("/cheese/bar", _request.getRequestURI(), "{_fooContainerRule, Host: "+host+"}: should not apply _fooRule");
+                assertEquals("/cheese/bar", _request.getRequestURI(), "{_fooContainerRule, Host: " + host + "}: should not apply _fooRule");
         }
     }
 

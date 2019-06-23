@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSink;
 import org.eclipse.jetty.websocket.core.Frame;
-
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Support class for reading a (single) WebSocket TEXT message via a Reader.

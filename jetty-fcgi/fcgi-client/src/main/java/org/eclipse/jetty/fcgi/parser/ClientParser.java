@@ -96,7 +96,9 @@ public class ClientParser extends Parser
         {
             listener.onEnd(request);
             for (StreamContentParser streamParser : streamParsers)
+            {
                 streamParser.end(request);
+            }
         }
 
         @Override
@@ -104,7 +106,9 @@ public class ClientParser extends Parser
         {
             listener.onFailure(request, failure);
             for (StreamContentParser streamParser : streamParsers)
+            {
                 streamParser.end(request);
+            }
         }
     }
 }

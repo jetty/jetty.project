@@ -39,9 +39,9 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * HTTP Configuration.
- * <p>This class is a holder of HTTP configuration for use by the 
+ * <p>This class is a holder of HTTP configuration for use by the
  * {@link HttpChannel} class.  Typically a HTTPConfiguration instance
- * is instantiated and passed to a {@link ConnectionFactory} that can 
+ * is instantiated and passed to a {@link ConnectionFactory} that can
  * create HTTP channels (e.g. HTTP, AJP or FCGI).</p>
  * <p>The configuration held by this class is not for the wire protocol,
  * but for the interpretation and handling of HTTP requests that could
@@ -54,16 +54,16 @@ public class HttpConfiguration implements Dumpable
     private static final Logger LOG = Log.getLogger(HttpConfiguration.class);
 
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
-    private final List<Customizer> _customizers=new CopyOnWriteArrayList<>();
+    private final List<Customizer> _customizers = new CopyOnWriteArrayList<>();
     private final Trie<Boolean> _formEncodedMethods = new TreeTrie<>();
-    private int _outputBufferSize=32*1024;
-    private int _outputAggregationSize=_outputBufferSize/4;
-    private int _requestHeaderSize=8*1024;
-    private int _responseHeaderSize=8*1024;
-    private int _headerCacheSize=4*1024;
-    private boolean _headerCacheCaseSensitive=false;
+    private int _outputBufferSize = 32 * 1024;
+    private int _outputAggregationSize = _outputBufferSize / 4;
+    private int _requestHeaderSize = 8 * 1024;
+    private int _responseHeaderSize = 8 * 1024;
+    private int _headerCacheSize = 4 * 1024;
+    private boolean _headerCacheCaseSensitive = false;
     private int _securePort;
-    private long _idleTimeout=-1;
+    private long _idleTimeout = -1;
     private String _secureScheme = HttpScheme.HTTPS.asString();
     private boolean _sendServerVersion = true;
     private boolean _sendXPoweredBy = false;
@@ -80,37 +80,37 @@ public class HttpConfiguration implements Dumpable
     private boolean _notifyRemoteAsyncErrors = true;
 
     /**
-     * <p>An interface that allows a request object to be customized 
+     * <p>An interface that allows a request object to be customized
      * for a particular HTTP connector configuration.  Unlike Filters, customizer are
-     * applied before the request is submitted for processing and can be specific to the 
+     * applied before the request is submitted for processing and can be specific to the
      * connector on which the request was received.</p>
-     * 
+     *
      * <p>Typically Customizers perform tasks such as:</p>
      * <ul>
-     *  <li>process header fields that may be injected by a proxy or load balancer.
-     *  <li>setup attributes that may come from the connection/connector such as SSL Session IDs
-     *  <li>Allow a request to be marked as secure or authenticated if those have been offloaded
-     *  and communicated by header, cookie or other out-of-band mechanism
-     *  <li>Set request attributes/fields that are determined by the connector on which the
-     *  request was received
+     * <li>process header fields that may be injected by a proxy or load balancer.
+     * <li>setup attributes that may come from the connection/connector such as SSL Session IDs
+     * <li>Allow a request to be marked as secure or authenticated if those have been offloaded
+     * and communicated by header, cookie or other out-of-band mechanism
+     * <li>Set request attributes/fields that are determined by the connector on which the
+     * request was received
      * </ul>
      */
     public interface Customizer
     {
         public void customize(Connector connector, HttpConfiguration channelConfig, Request request);
     }
-    
+
     public interface ConnectionFactory
     {
         HttpConfiguration getHttpConfiguration();
     }
-    
+
     public HttpConfiguration()
     {
-        _formEncodedMethods.put(HttpMethod.POST.asString(),Boolean.TRUE);
-        _formEncodedMethods.put(HttpMethod.PUT.asString(),Boolean.TRUE);
+        _formEncodedMethods.put(HttpMethod.POST.asString(), Boolean.TRUE);
+        _formEncodedMethods.put(HttpMethod.PUT.asString(), Boolean.TRUE);
     }
-    
+
     /**
      * Creates a configuration from another.
      *
@@ -119,42 +119,45 @@ public class HttpConfiguration implements Dumpable
     public HttpConfiguration(HttpConfiguration config)
     {
         _customizers.addAll(config._customizers);
-        for (String s:config._formEncodedMethods.keySet())
-            _formEncodedMethods.put(s,Boolean.TRUE);
-        _outputBufferSize=config._outputBufferSize;
-        _outputAggregationSize=config._outputAggregationSize;
-        _requestHeaderSize=config._requestHeaderSize;
-        _responseHeaderSize=config._responseHeaderSize;
-        _headerCacheSize=config._headerCacheSize;
-        _secureScheme=config._secureScheme;
-        _securePort=config._securePort;
-        _idleTimeout=config._idleTimeout;
-        _sendDateHeader=config._sendDateHeader;
-        _sendServerVersion=config._sendServerVersion;
-        _sendXPoweredBy=config._sendXPoweredBy;
-        _delayDispatchUntilContent=config._delayDispatchUntilContent;
-        _persistentConnectionsEnabled=config._persistentConnectionsEnabled;
-        _maxErrorDispatches=config._maxErrorDispatches;
-        _useDirectByteBuffers=config._useDirectByteBuffers;
-        _minRequestDataRate=config._minRequestDataRate;
-        _minResponseDataRate=config._minResponseDataRate;
-        _requestCookieCompliance =config._requestCookieCompliance;
-        _responseCookieCompliance =config._responseCookieCompliance;
-        _notifyRemoteAsyncErrors=config._notifyRemoteAsyncErrors;
+        for (String s : config._formEncodedMethods.keySet())
+        {
+            _formEncodedMethods.put(s, Boolean.TRUE);
+        }
+        _outputBufferSize = config._outputBufferSize;
+        _outputAggregationSize = config._outputAggregationSize;
+        _requestHeaderSize = config._requestHeaderSize;
+        _responseHeaderSize = config._responseHeaderSize;
+        _headerCacheSize = config._headerCacheSize;
+        _secureScheme = config._secureScheme;
+        _securePort = config._securePort;
+        _idleTimeout = config._idleTimeout;
+        _sendDateHeader = config._sendDateHeader;
+        _sendServerVersion = config._sendServerVersion;
+        _sendXPoweredBy = config._sendXPoweredBy;
+        _delayDispatchUntilContent = config._delayDispatchUntilContent;
+        _persistentConnectionsEnabled = config._persistentConnectionsEnabled;
+        _maxErrorDispatches = config._maxErrorDispatches;
+        _useDirectByteBuffers = config._useDirectByteBuffers;
+        _minRequestDataRate = config._minRequestDataRate;
+        _minResponseDataRate = config._minResponseDataRate;
+        _requestCookieCompliance = config._requestCookieCompliance;
+        _responseCookieCompliance = config._responseCookieCompliance;
+        _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
     }
-    
+
     /**
      * <p>Adds a {@link Customizer} that is invoked for every
      * request received.</p>
      * <p>Customizers are often used to interpret optional headers (eg {@link ForwardedRequestCustomizer}) or
-     * optional protocol semantics (eg {@link SecureRequestCustomizer}). 
+     * optional protocol semantics (eg {@link SecureRequestCustomizer}).
+     *
      * @param customizer A request customizer
      */
     public void addCustomizer(Customizer customizer)
     {
         _customizers.add(customizer);
     }
-    
+
     public List<Customizer> getCustomizers()
     {
         return _customizers;
@@ -163,8 +166,10 @@ public class HttpConfiguration implements Dumpable
     public <T> T getCustomizer(Class<T> type)
     {
         for (Customizer c : _customizers)
+        {
             if (type.isAssignableFrom(c.getClass()))
                 return (T)c;
+        }
         return null;
     }
 
@@ -226,7 +231,7 @@ public class HttpConfiguration implements Dumpable
      * <p>The max idle time is applied to a HTTP request for IO operations and
      * delayed dispatch.</p>
      *
-     * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0 
+     * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
     @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of a HTTP request")
@@ -239,12 +244,12 @@ public class HttpConfiguration implements Dumpable
      * <p>The max idle time is applied to a HTTP request for IO operations and
      * delayed dispatch.</p>
      *
-     * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0 
+     * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
     public void setIdleTimeout(long timeoutMs)
     {
-        _idleTimeout=timeoutMs;
+        _idleTimeout = timeoutMs;
     }
 
     public void setPersistentConnectionsEnabled(boolean persistentConnectionsEnabled)
@@ -252,7 +257,7 @@ public class HttpConfiguration implements Dumpable
         _persistentConnectionsEnabled = persistentConnectionsEnabled;
     }
 
-    public void setSendServerVersion (boolean sendServerVersion)
+    public void setSendServerVersion(boolean sendServerVersion)
     {
         _sendServerVersion = sendServerVersion;
     }
@@ -263,21 +268,21 @@ public class HttpConfiguration implements Dumpable
         return _sendServerVersion;
     }
 
-    public void writePoweredBy(Appendable out,String preamble,String postamble) throws IOException
+    public void writePoweredBy(Appendable out, String preamble, String postamble) throws IOException
     {
         if (getSendServerVersion())
         {
-            if (preamble!=null)
+            if (preamble != null)
                 out.append(preamble);
             out.append(Jetty.POWERED_BY);
-            if (postamble!=null)
+            if (postamble != null)
                 out.append(postamble);
         }
     }
-    
-    public void setSendXPoweredBy (boolean sendXPoweredBy)
+
+    public void setSendXPoweredBy(boolean sendXPoweredBy)
     {
-        _sendXPoweredBy=sendXPoweredBy;
+        _sendXPoweredBy = sendXPoweredBy;
     }
 
     @ManagedAttribute("Whether to send the X-Powered-By header in responses")
@@ -352,7 +357,7 @@ public class HttpConfiguration implements Dumpable
         _outputBufferSize = outputBufferSize;
         setOutputAggregationSize(outputBufferSize / 4);
     }
-    
+
     /**
      * Set the max size of the response content write that is copied into the aggregate buffer.
      * Writes that are smaller of this size are copied into the aggregate buffer, while
@@ -367,7 +372,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded 
+     * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded
      * in a URL. However, larger headers consume more memory and can make a server more vulnerable to denial of service
      * attacks.</p>
      *
@@ -427,15 +432,17 @@ public class HttpConfiguration implements Dumpable
      *
      * @param methods the HTTP methods of requests that can be decoded as
      * {@code x-www-form-urlencoded} content to be made available via the
-     * {@link Request#getParameter(String)} and associated APIs 
+     * {@link Request#getParameter(String)} and associated APIs
      */
     public void setFormEncodedMethods(String... methods)
     {
         _formEncodedMethods.clear();
-        for (String method:methods)
+        for (String method : methods)
+        {
             addFormEncodedMethod(method);
+        }
     }
-    
+
     /**
      * @return the set of HTTP methods of requests that can be decoded as
      * {@code x-www-form-urlencoded} content to be made available via the
@@ -455,12 +462,12 @@ public class HttpConfiguration implements Dumpable
      */
     public void addFormEncodedMethod(String method)
     {
-        _formEncodedMethods.put(method,Boolean.TRUE);
+        _formEncodedMethods.put(method, Boolean.TRUE);
     }
-    
+
     /**
      * Tests whether the HTTP method supports {@code x-www-form-urlencoded} content
-     * 
+     *
      * @param method the HTTP method
      * @return true if requests with this method can be
      * decoded as {@code x-www-form-urlencoded} content to be made available via the
@@ -485,7 +492,7 @@ public class HttpConfiguration implements Dumpable
      */
     public void setMaxErrorDispatches(int max)
     {
-        _maxErrorDispatches=max;
+        _maxErrorDispatches = max;
     }
 
     /**
@@ -502,7 +509,7 @@ public class HttpConfiguration implements Dumpable
      */
     public void setMinRequestDataRate(long bytesPerSecond)
     {
-        _minRequestDataRate=bytesPerSecond;
+        _minRequestDataRate = bytesPerSecond;
     }
 
     /**
@@ -538,8 +545,8 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @see #getResponseCookieCompliance()
      * @return The CookieCompliance used for parsing request <code>Cookie</code> headers.
+     * @see #getResponseCookieCompliance()
      */
     public CookieCompliance getRequestCookieCompliance()
     {
@@ -547,8 +554,8 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @see #getRequestCookieCompliance()
      * @return The CookieCompliance used for generating response <code>Set-Cookie</code> headers
+     * @see #getRequestCookieCompliance()
      */
     public CookieCompliance getResponseCookieCompliance()
     {
@@ -556,21 +563,21 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @see #setRequestCookieCompliance(CookieCompliance)
      * @param cookieCompliance The CookieCompliance to use for parsing request <code>Cookie</code> headers.
+     * @see #setRequestCookieCompliance(CookieCompliance)
      */
     public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
     {
-        _requestCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+        _requestCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
     }
 
     /**
-     * @see #setResponseCookieCompliance(CookieCompliance)
      * @param cookieCompliance The CookieCompliance to use for generating response <code>Set-Cookie</code> headers
+     * @see #setResponseCookieCompliance(CookieCompliance)
      */
     public void setResponseCookieCompliance(CookieCompliance cookieCompliance)
     {
-        _responseCookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+        _responseCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
     }
 
     /**
@@ -590,16 +597,18 @@ public class HttpConfiguration implements Dumpable
         return _notifyRemoteAsyncErrors;
     }
 
-    @Override public String dump()
+    @Override
+    public String dump()
     {
         return Dumpable.dump(this);
     }
 
-    @Override public void dump(Appendable out, String indent) throws IOException
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,this,
-            new DumpableCollection("customizers",_customizers),
-            new DumpableCollection("formEncodedMethods",_formEncodedMethods.keySet()),
+        Dumpable.dumpObjects(out, indent, this,
+            new DumpableCollection("customizers", _customizers),
+            new DumpableCollection("formEncodedMethods", _formEncodedMethods.keySet()),
             "outputBufferSize=" + _outputBufferSize,
             "outputAggregationSize=" + _outputAggregationSize,
             "requestHeaderSize=" + _requestHeaderSize,

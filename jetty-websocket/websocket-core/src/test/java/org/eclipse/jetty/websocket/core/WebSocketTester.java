@@ -79,7 +79,7 @@ public class WebSocketTester
     {
         return newClient(port, tls, null);
     }
-    
+
     protected Socket newClient(int port, String extensions) throws Exception
     {
         return newClient(port, false, extensions);
@@ -116,16 +116,16 @@ public class WebSocketTester
             switch (state)
             {
                 case 0:
-                    state = (b == '\r')?1:0;
+                    state = (b == '\r') ? 1 : 0;
                     break;
                 case 1:
-                    state = (b == '\n')?2:0;
+                    state = (b == '\n') ? 2 : 0;
                     break;
                 case 2:
-                    state = (b == '\r')?3:0;
+                    state = (b == '\r') ? 3 : 0;
                     break;
                 case 3:
-                    state = (b == '\n')?4:0;
+                    state = (b == '\n') ? 4 : 0;
                     break;
                 default:
                     state = 0;

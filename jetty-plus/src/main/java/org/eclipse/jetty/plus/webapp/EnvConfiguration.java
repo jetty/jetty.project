@@ -48,7 +48,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-
 /**
  * EnvConfiguration
  */
@@ -72,23 +71,23 @@ public class EnvConfiguration extends AbstractConfiguration
         this.jettyEnvXmlResource = resource;
     }
 
-    public void setJettyEnvXml (URL url)
+    public void setJettyEnvXml(URL url)
     {
         this.jettyEnvXmlResource = Resource.newResource(url);
     }
 
     @Override
-    public void preConfigure (WebAppContext context) throws Exception
+    public void preConfigure(WebAppContext context) throws Exception
     {
         //create a java:comp/env
         createEnvContext(context);
     }
 
     @Override
-    public void configure (WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Created java:comp/env for webapp "+context.getContextPath());
+            LOG.debug("Created java:comp/env for webapp " + context.getContextPath());
 
         //check to see if an explicit file has been set, if not,
         //look in WEB-INF/jetty-env.xml
@@ -96,11 +95,11 @@ public class EnvConfiguration extends AbstractConfiguration
         {
             //look for a file called WEB-INF/jetty-env.xml
             //and process it if it exists
-            org.eclipse.jetty.util.resource.Resource web_inf = context.getWebInf();
-            if(web_inf!=null && web_inf.isDirectory())
+            org.eclipse.jetty.util.resource.Resource webInf = context.getWebInf();
+            if (webInf != null && webInf.isDirectory())
             {
-                org.eclipse.jetty.util.resource.Resource jettyEnv = web_inf.addPath("jetty-env.xml");
-                if(jettyEnv.exists())
+                org.eclipse.jetty.util.resource.Resource jettyEnv = webInf.addPath("jetty-env.xml");
+                if (jettyEnv.exists())
                 {
                     jettyEnvXmlResource = jettyEnv;
                 }
@@ -123,7 +122,7 @@ public class EnvConfiguration extends AbstractConfiguration
                     @Override
                     public Binding bind(NamingContext ctx, Binding binding)
                     {
-                        bindings.add(new Bound(ctx,binding.getName()));
+                        bindings.add(new Bound(ctx, binding.getName()));
                         return binding;
                     }
                 };
@@ -133,12 +132,16 @@ public class EnvConfiguration extends AbstractConfiguration
                     localContextRoot.getRoot().addListener(listener);
                     XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlResource);
                     configuration.setJettyStandardIdsAndProperties(context.getServer(), null);
-                    WebAppClassLoader.runWithServerClassAccess(()->{configuration.configure(context);return null;});
+                    WebAppClassLoader.runWithServerClassAccess(() ->
+                    {
+                        configuration.configure(context);
+                        return null;
+                    });
                 }
                 finally
                 {
                     localContextRoot.getRoot().removeListener(listener);
-                    context.setAttribute(JETTY_ENV_BINDINGS,bindings);
+                    context.setAttribute(JETTY_ENV_BINDINGS, bindings);
                 }
             }
         }
@@ -146,17 +149,17 @@ public class EnvConfiguration extends AbstractConfiguration
         //add java:comp/env entries for any EnvEntries that have been defined so far
         bindEnvEntries(context);
 
-        _dumper = new NamingDump(context.getClassLoader(),"java:comp");
+        _dumper = new NamingDump(context.getClassLoader(), "java:comp");
         context.addBean(_dumper);
     }
 
-
     /**
      * Remove jndi setup from start
+     *
      * @throws Exception if unable to deconfigure
      */
     @Override
-    public void deconfigure (WebAppContext context) throws Exception
+    public void deconfigure(WebAppContext context) throws Exception
     {
         context.removeBean(_dumper);
         _dumper = null;
@@ -168,18 +171,20 @@ public class EnvConfiguration extends AbstractConfiguration
         try
         {
             Context ic = new InitialContext();
-            Context compCtx =  (Context)ic.lookup ("java:comp");
+            Context compCtx = (Context)ic.lookup("java:comp");
             compCtx.destroySubcontext("env");
 
             //unbind any NamingEntries that were configured in this webapp's name space
             @SuppressWarnings("unchecked")
             List<Bound> bindings = (List<Bound>)context.getAttribute(JETTY_ENV_BINDINGS);
-            context.setAttribute(JETTY_ENV_BINDINGS,null);
-            if (bindings!=null)
+            context.setAttribute(JETTY_ENV_BINDINGS, null);
+            if (bindings != null)
             {
                 Collections.reverse(bindings);
-                for (Bound b:bindings)
+                for (Bound b : bindings)
+                {
                     b._context.destroySubcontext(b._name);
+                }
             }
         }
         catch (NameNotFoundException e)
@@ -193,13 +198,13 @@ public class EnvConfiguration extends AbstractConfiguration
         }
     }
 
-
     /**
      * Remove all jndi setup
+     *
      * @throws Exception if unable to destroy
      */
     @Override
-    public void destroy (WebAppContext context) throws Exception
+    public void destroy(WebAppContext context) throws Exception
     {
         try
         {
@@ -214,7 +219,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         catch (NamingException e)
         {
-            LOG.debug("Error unbinding jndi entries scoped to webapp "+context, e);
+            LOG.debug("Error unbinding jndi entries scoped to webapp " + context, e);
         }
     }
 
@@ -223,11 +228,12 @@ public class EnvConfiguration extends AbstractConfiguration
      * web.xml file can potentially override them.
      *
      * We first bind EnvEntries declared in Server scope, then WebAppContext scope.
+     *
      * @param context the context to use for the object scope
      * @throws NamingException if unable to bind env entries
      */
-    public void bindEnvEntries (WebAppContext context)
-    throws NamingException
+    public void bindEnvEntries(WebAppContext context)
+        throws NamingException
     {
         InitialContext ic = new InitialContext();
         Context envCtx = (Context)ic.lookup("java:comp/env");
@@ -252,22 +258,22 @@ public class EnvConfiguration extends AbstractConfiguration
         }
     }
 
-    protected void createEnvContext (WebAppContext wac)
-    throws NamingException
+    protected void createEnvContext(WebAppContext wac)
+        throws NamingException
     {
-        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
         ContextFactory.associateClassLoader(wac.getClassLoader());
         try
         {
             Context context = new InitialContext();
-            Context compCtx =  (Context)context.lookup ("java:comp");
+            Context compCtx = (Context)context.lookup("java:comp");
             compCtx.createSubcontext("env");
         }
         finally
         {
             ContextFactory.disassociateClassLoader();
-            Thread.currentThread().setContextClassLoader(old_loader);
+            Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
 
@@ -275,10 +281,11 @@ public class EnvConfiguration extends AbstractConfiguration
     {
         final NamingContext _context;
         final String _name;
+
         Bound(NamingContext context, String name)
         {
-            _context=context;
-            _name=name;
+            _context = context;
+            _name = name;
         }
     }
 }

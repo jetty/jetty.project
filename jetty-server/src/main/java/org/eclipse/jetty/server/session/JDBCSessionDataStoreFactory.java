@@ -16,29 +16,25 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 /**
  * JDBCSessionDataStoreFactory
- *
- *
  */
 public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
-    
+
     /**
-     * 
+     *
      */
     DatabaseAdaptor _adaptor;
-    
+
     /**
-     * 
+     *
      */
     JDBCSessionDataStore.SessionTableSchema _schema;
 
-
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
@@ -52,20 +48,18 @@ public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
         return ds;
     }
 
-    
     /**
      * @param adaptor the {@link DatabaseAdaptor} to set
      */
-    public void setDatabaseAdaptor (DatabaseAdaptor adaptor)
+    public void setDatabaseAdaptor(DatabaseAdaptor adaptor)
     {
         _adaptor = adaptor;
     }
-    
-    
+
     /**
      * @param schema the {@link JDBCSessionDataStoreFactory} to set
      */
-    public void setSessionTableSchema (JDBCSessionDataStore.SessionTableSchema schema)
+    public void setSessionTableSchema(JDBCSessionDataStore.SessionTableSchema schema)
     {
         _schema = schema;
     }

@@ -49,7 +49,7 @@ public class RFC2616NIOHttpsTest extends RFC2616BaseTest
     {
         return new HttpsSocketImpl();
     }
-    
+
     @Override
     public void test8_2_ExpectInvalid() throws Exception
     {

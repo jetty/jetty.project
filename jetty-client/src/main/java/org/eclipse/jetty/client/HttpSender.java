@@ -180,7 +180,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         if (expects100Continue(request))
             newSenderState = content.hasContent() ? SenderState.EXPECTING_WITH_CONTENT : SenderState.EXPECTING;
 
-        out: while (true)
+        out:
+        while (true)
         {
             SenderState current = senderState.get();
             switch (current)
@@ -530,7 +531,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     {
         // Update the state to avoid more request processing.
         boolean terminate;
-        out: while (true)
+        out:
+        while (true)
         {
             RequestState current = requestState.get();
             switch (current)
@@ -602,11 +604,11 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     public String toString()
     {
         return String.format("%s@%x(req=%s,snd=%s,failure=%s)",
-                getClass().getSimpleName(),
-                hashCode(),
-                requestState,
-                senderState,
-                failure);
+            getClass().getSimpleName(),
+            hashCode(),
+            requestState,
+            senderState,
+            failure);
     }
 
     /**
@@ -729,7 +731,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (!headersToCommit(exchange))
                 return;
 
-             HttpContent content = HttpSender.this.content;
+            HttpContent content = HttpSender.this.content;
             if (content == null)
                 return;
 

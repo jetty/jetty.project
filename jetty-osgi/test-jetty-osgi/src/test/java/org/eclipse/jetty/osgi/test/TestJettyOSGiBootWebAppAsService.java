@@ -20,7 +20,6 @@ package org.eclipse.jetty.osgi.test;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -68,9 +67,9 @@ public class TestJettyOSGiBootWebAppAsService
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-webapp-as-service.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
 
         options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
@@ -93,7 +92,7 @@ public class TestJettyOSGiBootWebAppAsService
 
         //a bundle that registers a new named Server instance
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-server").versionAsInProject().start());
-       
+
         return res;
     }
 
@@ -108,13 +107,13 @@ public class TestJettyOSGiBootWebAppAsService
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             assertAllBundlesActiveOrResolved();
-        
+
         ServiceReference<?>[] refs = bundleContext.getServiceReferences(WebAppContext.class.getName(), null);
         assertNotNull(refs);
         assertEquals(2, refs.length);
-        WebAppContext wac = (WebAppContext) bundleContext.getService(refs[0]);
+        WebAppContext wac = (WebAppContext)bundleContext.getService(refs[0]);
         assertEquals("/acme", wac.getContextPath());
-        wac = (WebAppContext) bundleContext.getService(refs[1]);
+        wac = (WebAppContext)bundleContext.getService(refs[1]);
         assertEquals("/acme", wac.getContextPath());
 
         // now test getting a static file
@@ -129,13 +128,13 @@ public class TestJettyOSGiBootWebAppAsService
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content,
-                    "<h1>Test OSGi WebAppA</h1>");
+                "<h1>Test OSGi WebAppA</h1>");
 
             response = client.GET("http://127.0.0.1:" + port + "/acme/mime");
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content,
-                    "MIMETYPE=application/gzip");
+                "MIMETYPE=application/gzip");
 
             port = System.getProperty("bundle.server.port");
             assertNotNull(port);
@@ -144,7 +143,7 @@ public class TestJettyOSGiBootWebAppAsService
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content,
-                    "<h1>Test OSGi WebAppB</h1>");
+                "<h1>Test OSGi WebAppB</h1>");
         }
         finally
         {

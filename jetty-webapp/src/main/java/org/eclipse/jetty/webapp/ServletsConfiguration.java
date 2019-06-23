@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>This configuration configures the WebAppContext server/system classes to
  * expose the jetty utility servlets if they are on the server classpath.
  * </p>
- *
  */
 public class ServletsConfiguration extends AbstractConfiguration
 {
@@ -39,8 +38,8 @@ public class ServletsConfiguration extends AbstractConfiguration
         addDependents(JettyWebXmlConfiguration.class);
         protectAndExpose();
         protect("org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
-                "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
-                );
+            "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
+        );
         expose("org.eclipse.jetty.servlets."); // don't hide jetty servlets
     }
 
@@ -49,7 +48,7 @@ public class ServletsConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.servlets.PushCacheFilter")!=null;
+            return Loader.loadClass("org.eclipse.jetty.servlets.PushCacheFilter") != null;
         }
         catch (Throwable e)
         {

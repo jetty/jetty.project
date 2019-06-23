@@ -32,40 +32,37 @@ import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 
 /**
- * 
- *  <p>
- *  This goal is used to assemble your webapp into an exploded war and automatically deploy it to Jetty.
- *  </p>
- *  <p>
- *  Once invoked, the plugin runs continuously, and can be configured to scan for changes in the pom.xml and 
- *  to WEB-INF/web.xml, WEB-INF/classes or WEB-INF/lib and hot redeploy when a change is detected. 
- *  </p>
- *  <p>
- *  You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
- *  This can be used, for example, to deploy a static webapp that is not part of your maven build. 
- *  </p>
+ * <p>
+ * This goal is used to assemble your webapp into an exploded war and automatically deploy it to Jetty.
+ * </p>
+ * <p>
+ * Once invoked, the plugin runs continuously, and can be configured to scan for changes in the pom.xml and
+ * to WEB-INF/web.xml, WEB-INF/classes or WEB-INF/lib and hot redeploy when a change is detected.
+ * </p>
+ * <p>
+ * You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
+ * This can be used, for example, to deploy a static webapp that is not part of your maven build.
+ * </p>
  */
-@Mojo( name = "run-exploded", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "run-exploded", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 @Execute(phase = LifecyclePhase.PACKAGE)
 public class JettyRunWarExplodedMojo extends AbstractJettyMojo
 {
-    
+
     /**
      * The location of the war file.
      */
-    @Parameter(defaultValue="${project.build.directory}/${project.build.finalName}", required = true)
+    @Parameter(defaultValue = "${project.build.directory}/${project.build.finalName}", required = true)
     private File war;
 
-    /** 
+    /**
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
      */
     @Override
-    public void execute () throws MojoExecutionException, MojoFailureException
+    public void execute() throws MojoExecutionException, MojoFailureException
     {
         super.execute();
     }
-    
-    
 
     @Override
     public void finishConfigurationBeforeStart() throws Exception
@@ -73,7 +70,6 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
         server.setStopAtShutdown(true); //as we will normally be stopped with a cntrl-c, ensure server stopped 
         super.finishConfigurationBeforeStart();
     }
-    
 
     /**
      * @see AbstractJettyMojo#configureScanner()
@@ -82,7 +78,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     public void configureScanner() throws MojoExecutionException
     {
         scanner.watch(project.getFile().toPath());
-        File webInfDir = new File(war,"WEB-INF");
+        File webInfDir = new File(war, "WEB-INF");
         File webXml = new File(webInfDir, "web.xml");
         if (webXml.exists())
             scanner.watch(webXml.toPath());
@@ -106,7 +102,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
         {
             PathWatcher.Config libConfig = new PathWatcher.Config(lib.toPath());
             libConfig.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-            scanner.watch(libConfig);   
+            scanner.watch(libConfig);
         }
 
         scanner.addListener(new PathWatcher.EventListListener()
@@ -118,7 +114,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
                 try
                 {
                     boolean reconfigure = false;
-                    for (PathWatchEvent e:events)
+                    for (PathWatchEvent e : events)
                     {
                         if (e.getPath().equals(project.getFile().toPath()))
                         {
@@ -130,20 +126,17 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
                 }
                 catch (Exception e)
                 {
-                    getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
+                    getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
                 }
             }
         });
     }
 
-    
-    
-    
-    /** 
+    /**
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
      */
     @Override
-    public void restartWebApp(boolean reconfigureScanner) throws Exception 
+    public void restartWebApp(boolean reconfigureScanner) throws Exception
     {
         getLog().info("Restarting webapp");
         getLog().debug("Stopping webapp ...");
@@ -168,16 +161,13 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
         getLog().info("Restart completed.");
     }
 
-   
-
-    
-    /** 
+    /**
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureWebApplication()
      */
     @Override
-    public void configureWebApplication () throws Exception
+    public void configureWebApplication() throws Exception
     {
-        super.configureWebApplication();        
+        super.configureWebApplication();
         webApp.setWar(war.getCanonicalPath());
     }
 }

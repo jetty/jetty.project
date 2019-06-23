@@ -30,27 +30,26 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * Bootstrap a ContextHandler
- * 
- * 
  */
 public class Activator implements BundleActivator
 {
 
     private ServiceRegistration _sr;
+
     /**
-     * 
-     * @param context
+     *
      */
     @Override
     public void start(final BundleContext context) throws Exception
     {
         ContextHandler ch = new ContextHandler();
-        ch.addEventListener(new ServletContextListener () {
+        ch.addEventListener(new ServletContextListener()
+        {
 
             @Override
             public void contextInitialized(ServletContextEvent sce)
             {
-               //System.err.println("Context is initialized");
+                //System.err.println("Context is initialized");
             }
 
             @Override
@@ -58,19 +57,17 @@ public class Activator implements BundleActivator
             {
                 //System.err.println("CONTEXT IS DESTROYED!");                
             }
-            
         });
         Dictionary props = new Hashtable();
-        props.put("Web-ContextPath","/acme");
+        props.put("Web-ContextPath", "/acme");
         props.put("Jetty-ContextFilePath", "acme.xml");
-        _sr = context.registerService(ContextHandler.class.getName(),ch,props);
+        _sr = context.registerService(ContextHandler.class.getName(), ch, props);
     }
 
     /**
      * Stop the activator.
-     * 
-     * @see
-     * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
+     *
+     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
     @Override
     public void stop(BundleContext context) throws Exception

@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.core.autobahn.client;
 
-import org.eclipse.jetty.websocket.core.CloseStatus;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 public class UpdateReportsHandler extends AbstractClientFrameHandler
 {

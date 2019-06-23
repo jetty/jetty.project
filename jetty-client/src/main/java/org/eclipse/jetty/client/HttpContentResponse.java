@@ -129,10 +129,10 @@ public class HttpContentResponse implements ContentResponse
     public String toString()
     {
         return String.format("%s[%s %d %s - %d bytes]",
-                HttpContentResponse.class.getSimpleName(),
-                getVersion(),
-                getStatus(),
-                getReason(),
-                getContent().length);
+            HttpContentResponse.class.getSimpleName(),
+            getVersion(),
+            getStatus(),
+            getReason(),
+            getContent().length);
     }
 }

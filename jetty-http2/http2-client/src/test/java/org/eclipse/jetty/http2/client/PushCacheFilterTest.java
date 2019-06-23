@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
@@ -742,7 +741,7 @@ public class PushCacheFilterTest extends AbstractTest
     {
         String name = "foo";
         String value = "bar";
-        final String primaryResource = "/primary.html?"+name + "=" +value;
+        final String primaryResource = "/primary.html?" + name + "=" + value;
         final String secondaryResource = "/secondary.html?" + name + "=" + value;
         start(new HttpServlet()
         {

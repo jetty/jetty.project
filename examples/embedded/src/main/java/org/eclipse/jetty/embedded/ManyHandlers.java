@@ -21,7 +21,6 @@ package org.eclipse.jetty.embedded;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -72,11 +71,11 @@ public class ManyHandlers
     public static class ParamHandler extends AbstractHandler
     {
         @Override
-        public void handle( String target,
-                            Request baseRequest,
-                            HttpServletRequest request,
-                            HttpServletResponse response ) throws IOException,
-                                                          ServletException
+        public void handle(String target,
+                           Request baseRequest,
+                           HttpServletRequest request,
+                           HttpServletResponse response) throws IOException,
+                                                                    ServletException
         {
             Map<String, String[]> params = request.getParameterMap();
             if (!params.isEmpty())
@@ -94,18 +93,18 @@ public class ManyHandlers
     public static class WelcomeWrapHandler extends HandlerWrapper
     {
         @Override
-        public void handle( String target,
-                            Request baseRequest,
-                            HttpServletRequest request,
-                            HttpServletResponse response ) throws IOException,
-                                                          ServletException
+        public void handle(String target,
+                           Request baseRequest,
+                           HttpServletRequest request,
+                           HttpServletResponse response) throws IOException,
+                                                                    ServletException
         {
             request.setAttribute("welcome", "Hello");
             super.handle(target, baseRequest, request, response);
         }
     }
 
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
 
@@ -126,8 +125,8 @@ public class ManyHandlers
 
         // link them all together
         wrapper.setHandler(hello);
-        list.setHandlers(new Handler[] { param, new GzipHandler() });
-        handlers.setHandlers(new Handler[] { list, dft });
+        list.setHandlers(new Handler[]{param, new GzipHandler()});
+        handlers.setHandlers(new Handler[]{list, dft});
 
         server.setHandler(handlers);
 

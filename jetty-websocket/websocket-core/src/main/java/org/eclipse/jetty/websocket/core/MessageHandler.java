@@ -86,7 +86,7 @@ public class MessageHandler implements FrameHandler
         };
     }
 
-    private Logger LOG = Log.getLogger(MessageHandler.class);
+    private static final Logger LOG = Log.getLogger(MessageHandler.class);
 
     private final int factor;
 
@@ -181,7 +181,7 @@ public class MessageHandler implements FrameHandler
                     if (utf8StringBuilder == null)
                     {
                         final int maxSize = getMaxTextMessageSize();
-                        utf8StringBuilder = (maxSize < 0)?new Utf8StringBuilder():new Utf8StringBuilder()
+                        utf8StringBuilder = (maxSize < 0) ? new Utf8StringBuilder() : new Utf8StringBuilder()
                         {
                             @Override
                             protected void appendByte(byte b) throws IOException
@@ -291,7 +291,7 @@ public class MessageHandler implements FrameHandler
         {
             if (BufferUtil.space(binaryMessage) < frame.getPayloadLength())
                 binaryMessage = BufferUtil
-                    .ensureCapacity(binaryMessage, binaryMessage.capacity() + Math.max(binaryMessage.capacity(), frame.getPayloadLength() * factor));
+                                    .ensureCapacity(binaryMessage, binaryMessage.capacity() + Math.max(binaryMessage.capacity(), frame.getPayloadLength() * factor));
 
             BufferUtil.append(binaryMessage, frame.getPayload());
         }
@@ -355,9 +355,9 @@ public class MessageHandler implements FrameHandler
     /**
      * Send a String as a single text frame.
      *
-     * @param message  The message to send
+     * @param message The message to send
      * @param callback The callback to call when the send is complete
-     * @param batch    The batch mode to send the frames in.
+     * @param batch The batch mode to send the frames in.
      */
     public void sendText(String message, Callback callback, boolean batch)
     {
@@ -371,8 +371,8 @@ public class MessageHandler implements FrameHandler
      * single fragment need be converted to bytes
      *
      * @param callback The callback to call when the send is complete
-     * @param batch    The batch mode to send the frames in.
-     * @param parts    The parts of the message.
+     * @param batch The batch mode to send the frames in.
+     * @param parts The parts of the message.
      */
     public void sendText(Callback callback, boolean batch, final String... parts)
     {
@@ -400,7 +400,7 @@ public class MessageHandler implements FrameHandler
 
                 String part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
-                    i == 1?OpCode.TEXT:OpCode.CONTINUATION,
+                    i == 1 ? OpCode.TEXT : OpCode.CONTINUATION,
                     i == parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }
@@ -410,9 +410,9 @@ public class MessageHandler implements FrameHandler
     /**
      * Send a ByteBuffer as a single binary frame.
      *
-     * @param message  The message to send
+     * @param message The message to send
      * @param callback The callback to call when the send is complete
-     * @param batch    The batch mode to send the frames in.
+     * @param batch The batch mode to send the frames in.
      */
     public void sendBinary(ByteBuffer message, Callback callback, boolean batch)
     {
@@ -423,8 +423,8 @@ public class MessageHandler implements FrameHandler
      * Send a sequence of ByteBuffers as a sequences for fragmented text frame.
      *
      * @param callback The callback to call when the send is complete
-     * @param batch    The batch mode to send the frames in.
-     * @param parts    The parts of the message.
+     * @param batch The batch mode to send the frames in.
+     * @param parts The parts of the message.
      */
     public void sendBinary(Callback callback, boolean batch, final ByteBuffer... parts)
     {
@@ -452,7 +452,7 @@ public class MessageHandler implements FrameHandler
 
                 ByteBuffer part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
-                    i == 1?OpCode.BINARY:OpCode.CONTINUATION,
+                    i == 1 ? OpCode.BINARY : OpCode.CONTINUATION,
                     i == parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }

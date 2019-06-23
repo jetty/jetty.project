@@ -27,26 +27,24 @@ public abstract class Descriptor
     protected XmlParser.Node _root;
     protected String _dtd;
     protected boolean _validating;
-    
-    public Descriptor (Resource xml)
+
+    public Descriptor(Resource xml)
     {
         _xml = xml;
     }
-    
+
     public abstract XmlParser ensureParser()
-    throws ClassNotFoundException;
-    
-    
-    public void setValidating (boolean validating)
+        throws ClassNotFoundException;
+
+    public void setValidating(boolean validating)
     {
-       _validating = validating;
+        _validating = validating;
     }
-    
-    public void parse ()
-    throws Exception
+
+    public void parse()
+        throws Exception
     {
 
-        
         if (_root == null)
         {
             try
@@ -61,20 +59,20 @@ public abstract class Descriptor
             }
         }
     }
-    
-    public Resource getResource ()
+
+    public Resource getResource()
     {
         return _xml;
     }
-    
-    public XmlParser.Node getRoot ()
+
+    public XmlParser.Node getRoot()
     {
         return _root;
     }
-    
+
     @Override
     public String toString()
     {
-        return this.getClass().getSimpleName()+"("+_xml+")";
+        return this.getClass().getSimpleName() + "(" + _xml + ")";
     }
 }

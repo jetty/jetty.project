@@ -44,55 +44,50 @@ import org.osgi.util.tracker.ServiceTracker;
  * ServiceContextProvider
  *
  * Jetty DeploymentManager Provider that is able to deploy ContextHandlers discovered via OSGi as services.
- * 
- * 
  */
 public class ServiceContextProvider extends AbstractContextProvider implements ServiceProvider
-{ 
+{
     private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
-    
+
     private Map<ServiceReference, App> _serviceMap = new HashMap<>();
-    
+
     private ServiceRegistration _serviceRegForServices;
-    
+
     ServiceTracker _tracker;
-    
-    
+
     /**
      * ContextTracker
-     *
-     *
      */
     public class ContextTracker extends ServiceTracker
     {
-        
-        public ContextTracker (BundleContext bundleContext, Filter filter)
+
+        public ContextTracker(BundleContext bundleContext, Filter filter)
         {
             super(bundleContext, filter, null);
         }
 
-        /** 
+        /**
          * @see org.osgi.util.tracker.ServiceTracker#addingService(org.osgi.framework.ServiceReference)
          */
         @Override
         public Object addingService(ServiceReference reference)
         {
             ContextHandler h = (ContextHandler)context.getService(reference);
-            serviceAdded (reference, h);                      
+            serviceAdded(reference, h);
             return h;
         }
 
-        /** 
+        /**
          * @see org.osgi.util.tracker.ServiceTracker#modifiedService(org.osgi.framework.ServiceReference, java.lang.Object)
          */
         @Override
         public void modifiedService(ServiceReference reference, Object service)
         {
-            removedService(reference,service);
+            removedService(reference, service);
             addingService(reference);
         }
 
-        /** 
+        /**
          * @see org.osgi.util.tracker.ServiceTracker#removedService(org.osgi.framework.ServiceReference, java.lang.Object)
          */
         @Override
@@ -102,13 +97,9 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             serviceRemoved(reference, (ContextHandler)service);
         }
     }
-    
-    
-    
+
     /**
      * ServiceApp
-     *
-     *
      */
     public class ServiceApp extends OSGiApp
     {
@@ -134,30 +125,25 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             //not applicable for apps that are already services
         }
     }
-    
-    
-    
-    /* ------------------------------------------------------------ */
+
     public ServiceContextProvider(ServerInstanceWrapper wrapper)
     {
         super(wrapper);
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
-    public boolean serviceAdded (ServiceReference serviceRef, ContextHandler context)
+    public boolean serviceAdded(ServiceReference serviceRef, ContextHandler context)
     {
         if (context == null || serviceRef == null)
             return false;
-        
+
         if (context instanceof org.eclipse.jetty.webapp.WebAppContext)
             return false; //the ServiceWebAppProvider will deploy it
-        
+
         String watermark = (String)serviceRef.getProperty(OSGiWebappConstants.WATERMARK);
         if (watermark != null && !"".equals(watermark))
             return false;  //this service represents a contexthandler that has already been registered as a service by another of our deployers
-        
+
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(getServerInstanceWrapper().getParentClassLoaderForWebapps());
         try
@@ -166,15 +152,17 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             String contextFile = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
 
             String[] keys = serviceRef.getPropertyKeys();
-            Dictionary<String,Object> properties = new Hashtable<>();
+            Dictionary<String, Object> properties = new Hashtable<>();
             if (keys != null)
             {
-                for (String key:keys)
+                for (String key : keys)
+                {
                     properties.put(key, serviceRef.getProperty(key));
+                }
             }
-            Bundle bundle = serviceRef.getBundle();                
-            String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-"+(contextFile!=null?contextFile:serviceRef.getProperty(Constants.SERVICE_ID));
-            ServiceApp app = new ServiceApp(getDeploymentManager(), this, bundle, properties, contextFile, originId);         
+            Bundle bundle = serviceRef.getBundle();
+            String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-" + (contextFile != null ? contextFile : serviceRef.getProperty(Constants.SERVICE_ID));
+            ServiceApp app = new ServiceApp(getDeploymentManager(), this, bundle, properties, contextFile, originId);
             app.setHandler(context); //set the pre=made ContextHandler instance
             _serviceMap.put(serviceRef, app);
             getDeploymentManager().addApp(app);
@@ -182,23 +170,21 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
         }
         finally
         {
-            Thread.currentThread().setContextClassLoader(cl); 
+            Thread.currentThread().setContextClassLoader(cl);
         }
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
-    public boolean serviceRemoved (ServiceReference serviceRef, ContextHandler context)
+    public boolean serviceRemoved(ServiceReference serviceRef, ContextHandler context)
     {
 
         if (context == null || serviceRef == null)
             return false;
-        
+
         String watermark = (String)serviceRef.getProperty(OSGiWebappConstants.WATERMARK);
         if (watermark != null && !"".equals(watermark))
             return false;  //this service represents a contexthandler that will be deregistered as a service by another of our deployers
-        
+
         App app = _serviceMap.remove(serviceRef);
         if (app != null)
         {
@@ -208,10 +194,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
 
         return false;
     }
-    
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStart() throws Exception
     {
@@ -219,27 +202,25 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
         BundleContext bundleContext = FrameworkUtil.getBundle(this.getClass()).getBundleContext();
 
         //Start a tracker to find webapps that are osgi services that are targeted to my server name
-        _tracker = new ContextTracker (bundleContext, 
-                                       Util.createFilter(bundleContext, ContextHandler.class.getName(), getServerInstanceWrapper().getManagedServerName()));
+        _tracker = new ContextTracker(bundleContext,
+            Util.createFilter(bundleContext, ContextHandler.class.getName(), getServerInstanceWrapper().getManagedServerName()));
         _tracker.open();
 
-        
         //register as an osgi service for deploying contexts defined in a bundle, advertising the name of the jetty Server instance we are related to
-        Dictionary<String,String> properties = new Hashtable<>();
+        Dictionary<String, String> properties = new Hashtable<>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServerInstanceWrapper().getManagedServerName());
-        
+
         //register as an osgi service for deploying contexts, advertising the name of the jetty Server instance we are related to
         _serviceRegForServices = FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ServiceProvider.class.getName(), this, properties);
         super.doStart();
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStop() throws Exception
     {
         if (_tracker != null)
             _tracker.close();
-        
+
         //unregister ourselves 
         if (_serviceRegForServices != null)
         {

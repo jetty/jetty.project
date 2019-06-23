@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -52,7 +51,7 @@ public class SecuredRedirectHandler extends AbstractHandler
         if (httpConfig == null)
         {
             // no config, show error
-            response.sendError(HttpStatus.FORBIDDEN_403,"No http configuration available");
+            response.sendError(HttpStatus.FORBIDDEN_403, "No http configuration available");
             return;
         }
 
@@ -61,15 +60,15 @@ public class SecuredRedirectHandler extends AbstractHandler
             String scheme = httpConfig.getSecureScheme();
             int port = httpConfig.getSecurePort();
 
-            String url = URIUtil.newURI(scheme,baseRequest.getServerName(),port,baseRequest.getRequestURI(),baseRequest.getQueryString());
+            String url = URIUtil.newURI(scheme, baseRequest.getServerName(), port, baseRequest.getRequestURI(), baseRequest.getQueryString());
             response.setContentLength(0);
             response.sendRedirect(url);
         }
         else
         {
-            response.sendError(HttpStatus.FORBIDDEN_403,"Not Secure");
+            response.sendError(HttpStatus.FORBIDDEN_403, "Not Secure");
         }
-        
+
         baseRequest.setHandled(true);
     }
 }

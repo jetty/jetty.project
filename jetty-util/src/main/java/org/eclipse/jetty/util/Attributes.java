@@ -20,17 +20,19 @@ package org.eclipse.jetty.util;
 
 import java.util.Enumeration;
 
-/* ------------------------------------------------------------ */
-/** Attributes.
+/**
+ * Attributes.
  * Interface commonly used for storing attributes.
- * 
- *
  */
 public interface Attributes
 {
     public void removeAttribute(String name);
+
     public void setAttribute(String name, Object attribute);
+
     public Object getAttribute(String name);
+
     public Enumeration<String> getAttributeNames();
+
     public void clearAttributes();
 }

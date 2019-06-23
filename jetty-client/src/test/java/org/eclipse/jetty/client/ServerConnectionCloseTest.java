@@ -111,22 +111,22 @@ public class ServerConnectionCloseTest
 
                 OutputStream output = socket.getOutputStream();
                 String serverResponse = "" +
-                        "HTTP/1.1 200 OK\r\n" +
-                        "Connection: close\r\n";
+                                            "HTTP/1.1 200 OK\r\n" +
+                                            "Connection: close\r\n";
                 if (chunked)
                 {
                     serverResponse += "" +
-                            "Transfer-Encoding: chunked\r\n" +
-                            "\r\n";
+                                          "Transfer-Encoding: chunked\r\n" +
+                                          "\r\n";
                     for (int i = 0; i < 2; ++i)
                     {
                         serverResponse +=
-                                Integer.toHexString(content.length()) + "\r\n" +
-                                        content + "\r\n";
+                            Integer.toHexString(content.length()) + "\r\n" +
+                                content + "\r\n";
                     }
                     serverResponse += "" +
-                            "0\r\n" +
-                            "\r\n";
+                                          "0\r\n" +
+                                          "\r\n";
                 }
                 else
                 {

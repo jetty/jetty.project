@@ -70,90 +70,83 @@ import org.eclipse.jetty.util.resource.Resource;
  * </p>
  * Runs jspc compiler to produce .java and .class files
  */
-@Mojo( name = "jspc", defaultPhase = LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "jspc", defaultPhase = LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class JspcMojo extends AbstractMojo
 {
     public static final String END_OF_WEBAPP = "</web-app>";
     public static final String PRECOMPILED_FLAG = "org.eclipse.jetty.jsp.precompiled";
-
 
     /**
      * JettyJspC
      *
      * Add some extra setters to standard JspC class to help configure it
      * for running in maven.
-     * 
+     *
      * TODO move all setters on the plugin onto this jspc class instead.
      */
     public static class JettyJspC extends JspC
     {
-   
+
         private boolean scanAll;
-        
-        public void setClassLoader (ClassLoader loader)
+
+        public void setClassLoader(ClassLoader loader)
         {
             this.loader = loader;
         }
-        
-       public void setScanAllDirectories (boolean scanAll)
-       {
-           this.scanAll = scanAll;
-       }
-       
-       public boolean getScanAllDirectories ()
-       {
-           return this.scanAll;
-       }
-       
+
+        public void setScanAllDirectories(boolean scanAll)
+        {
+            this.scanAll = scanAll;
+        }
+
+        public boolean getScanAllDirectories()
+        {
+            return this.scanAll;
+        }
 
         @Override
         protected TldScanner newTldScanner(JspCServletContext context, boolean namespaceAware, boolean validate, boolean blockExternal)
-        {            
-            if (context != null && context.getAttribute(JarScanner.class.getName()) == null) 
+        {
+            if (context != null && context.getAttribute(JarScanner.class.getName()) == null)
             {
-                StandardJarScanner jarScanner = new StandardJarScanner();             
+                StandardJarScanner jarScanner = new StandardJarScanner();
                 jarScanner.setScanAllDirectories(getScanAllDirectories());
                 context.setAttribute(JarScanner.class.getName(), jarScanner);
             }
-                
+
             return super.newTldScanner(context, namespaceAware, validate, blockExternal);
-        }      
+        }
     }
-    
-    
+
     /**
      * Whether or not to include dependencies on the plugin's classpath with &lt;scope&gt;provided&lt;/scope&gt;
      * Use WITH CAUTION as you may wind up with duplicate jars/classes.
-     * 
+     *
      * @since jetty-7.6.3
      */
     @Parameter(defaultValue = "false")
     private boolean useProvidedScope;
-    
+
     /**
      * The artifacts for the project.
-     * 
+     *
      * @since jetty-7.6.3
      */
     @Parameter(defaultValue = "${project.artifacts}", readonly = true)
     private Set<Artifact> projectArtifacts;
-    
-    
+
     /**
      * The maven project.
      */
-    @Parameter(defaultValue = "${project}", readonly = true , required = true)
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
-
-    
 
     /**
      * The artifacts for the plugin itself.
      */
     @Parameter(defaultValue = "${plugin.artifacts}", readonly = true)
     private List<Artifact> pluginArtifacts;
-    
-    
+
     /**
      * File into which to generate the &lt;servlet&gt; and
      * &lt;servlet-mapping&gt; tags for the compiled jsps
@@ -204,7 +197,6 @@ public class JspcMojo extends AbstractMojo
     @Parameter(defaultValue = "${basedir}/src/main/webapp/WEB-INF/web.xml")
     private String webXml;
 
-
     /**
      * The comma separated list of patterns for file extensions to be processed. By default
      * will include all .jsp and .jspx files.
@@ -224,34 +216,29 @@ public class JspcMojo extends AbstractMojo
     @Parameter(defaultValue = "${project.build.outputDirectory}")
     private File classesDirectory;
 
-    
     /**
      * Patterns of jars on the system path that contain tlds. Use | to separate each pattern.
      */
     @Parameter(defaultValue = ".*taglibs[^/]*\\.jar|.*jstl[^/]*\\.jar$")
     private String tldJarNamePatterns;
-    
-    
+
     /**
      * Source version - if not set defaults to jsp default (currently 1.7)
      */
     @Parameter
     private String sourceVersion;
-    
-    
+
     /**
      * Target version - if not set defaults to jsp default (currently 1.7)
      */
     @Parameter
     private String targetVersion;
-    
+
     /**
-     * 
      * The JspC instance being used to compile the jsps.
      */
     @Parameter
     private JettyJspC jspc;
-
 
     /**
      * Whether dirs on the classpath should be scanned as well as jars.
@@ -260,7 +247,6 @@ public class JspcMojo extends AbstractMojo
      */
     @Parameter(defaultValue = "true")
     private boolean scanAllDirectories;
-    
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
@@ -271,14 +257,14 @@ public class JspcMojo extends AbstractMojo
             getLog().info("webAppSourceDirectory=" + webAppSourceDirectory);
             getLog().info("generatedClasses=" + generatedClasses);
             getLog().info("webXmlFragment=" + webXmlFragment);
-            getLog().info("webXml="+webXml);
-            getLog().info("insertionMarker="+ (insertionMarker == null || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker));
+            getLog().info("webXml=" + webXml);
+            getLog().info("insertionMarker=" + (insertionMarker == null || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker));
             getLog().info("keepSources=" + keepSources);
-            getLog().info("mergeFragment=" + mergeFragment);  
+            getLog().info("mergeFragment=" + mergeFragment);
             if (sourceVersion != null)
-                getLog().info("sourceVersion="+sourceVersion);
+                getLog().info("sourceVersion=" + sourceVersion);
             if (targetVersion != null)
-                getLog().info("targetVersion="+targetVersion);
+                getLog().info("targetVersion=" + targetVersion);
         }
         try
         {
@@ -299,17 +285,16 @@ public class JspcMojo extends AbstractMojo
 
         //set up the classpath of the webapp
         List<URL> webAppUrls = setUpWebAppClassPath();
-        
+
         //set up the classpath of the container (ie jetty and jsp jars)
         Set<URL> pluginJars = getPluginJars();
         Set<URL> providedJars = getProvidedScopeJars(pluginJars);
- 
 
         //Make a classloader so provided jars will be on the classpath
         List<URL> sysUrls = new ArrayList<>();
-        sysUrls.addAll(providedJars);     
+        sysUrls.addAll(providedJars);
         URLClassLoader sysClassLoader = new URLClassLoader(sysUrls.toArray(new URL[0]), currentClassLoader);
-      
+
         //make a classloader with the webapp classpath
         URLClassLoader webAppClassLoader = new URLClassLoader(webAppUrls.toArray(new URL[0]), sysClassLoader);
         StringBuilder webAppClassPath = new StringBuilder();
@@ -317,26 +302,25 @@ public class JspcMojo extends AbstractMojo
         for (int i = 0; i < webAppUrls.size(); i++)
         {
             if (getLog().isDebugEnabled())
-                getLog().debug("webappclassloader contains: " + webAppUrls.get(i));                
+                getLog().debug("webappclassloader contains: " + webAppUrls.get(i));
             webAppClassPath.append(new File(webAppUrls.get(i).toURI()).getCanonicalPath());
             if (getLog().isDebugEnabled())
                 getLog().debug("added to classpath: " + (webAppUrls.get(i)).getFile());
-            if (i+1<webAppUrls.size())
+            if (i + 1 < webAppUrls.size())
                 webAppClassPath.append(System.getProperty("path.separator"));
         }
-        
+
         //Interpose a fake classloader as the webapp class loader. This is because the Apache JspC class
         //uses a TldScanner which ignores jars outside of the WEB-INF/lib path on the webapp classloader.
         //It will, however, look at all jars on the parents of the webapp classloader.
         URLClassLoader fakeWebAppClassLoader = new URLClassLoader(new URL[0], webAppClassLoader);
         Thread.currentThread().setContextClassLoader(fakeWebAppClassLoader);
-  
+
         if (jspc == null)
             jspc = new JettyJspC();
-        
 
         jspc.setWebXmlInclude(webXmlFragment);
-        jspc.setUriroot(webAppSourceDirectory);     
+        jspc.setUriroot(webAppSourceDirectory);
         jspc.setOutputDir(generatedClasses);
         jspc.setClassLoader(fakeWebAppClassLoader);
         jspc.setScanAllDirectories(scanAllDirectories);
@@ -349,7 +333,7 @@ public class JspcMojo extends AbstractMojo
         // JspC#setExtensions() does not exist, so 
         // always set concrete list of files that will be processed.
         String jspFiles = getJspFiles(webAppSourceDirectory);
-       
+
         try
         {
             if (jspFiles == null | jspFiles.equals(""))
@@ -358,7 +342,7 @@ public class JspcMojo extends AbstractMojo
             }
             else
             {
-                getLog().info("Compiling "+jspFiles+" from includes="+includes+" excludes="+excludes);
+                getLog().info("Compiling " + jspFiles + " from includes=" + includes + " excludes=" + excludes);
                 jspc.setJspFiles(jspFiles);
                 jspc.execute();
             }
@@ -370,17 +354,16 @@ public class JspcMojo extends AbstractMojo
     }
 
     private String getJspFiles(String webAppSourceDirectory)
-    throws Exception
+        throws Exception
     {
-        List<String> fileNames =  FileUtils.getFileNames(new File(webAppSourceDirectory),includes, excludes, false);
+        List<String> fileNames = FileUtils.getFileNames(new File(webAppSourceDirectory), includes, excludes, false);
         return StringUtils.join(fileNames.toArray(new String[0]), ",");
-
     }
 
     /**
      * Until Jasper supports the option to generate the srcs in a different dir
      * than the classes, this is the best we can do.
-     * 
+     *
      * @throws Exception if unable to clean srcs
      */
     public void cleanupSrcs() throws Exception
@@ -390,23 +373,24 @@ public class JspcMojo extends AbstractMojo
         {
             File generatedClassesDir = new File(generatedClasses);
 
-            if(generatedClassesDir.exists() && generatedClassesDir.isDirectory())
+            if (generatedClassesDir.exists() && generatedClassesDir.isDirectory())
             {
-                delete(generatedClassesDir, pathname -> {
+                delete(generatedClassesDir, pathname ->
+                {
                     return pathname.isDirectory() || pathname.getName().endsWith(".java");
                 });
             }
         }
     }
-    
+
     static void delete(File dir, FileFilter filter)
     {
         File[] files = dir.listFiles(filter);
         if (files != null)
         {
-            for(File f: files)
+            for (File f : files)
             {
-                if(f.isDirectory())
+                if (f.isDirectory())
                     delete(f, filter);
                 else
                     f.delete();
@@ -416,13 +400,13 @@ public class JspcMojo extends AbstractMojo
 
     /**
      * Take the web fragment and put it inside a copy of the web.xml.
-     * 
+     *
      * You can specify the insertion point by specifying the string in the
      * insertionMarker configuration entry.
-     * 
+     *
      * If you dont specify the insertionMarker, then the fragment will be
      * inserted at the end of the file just before the &lt;/webapp&gt;
-     * 
+     *
      * @throws Exception if unable to merge the web xml
      */
     public void mergeWebXml() throws Exception
@@ -431,18 +415,18 @@ public class JspcMojo extends AbstractMojo
         {
             // open the src web.xml
             File webXml = getWebXmlFile();
-           
+
             if (!webXml.exists())
             {
                 getLog().info(webXml.toString() + " does not exist, cannot merge with generated fragment");
                 return;
             }
 
-            File fragmentWebXml = new File(webXmlFragment);         
+            File fragmentWebXml = new File(webXmlFragment);
             File mergedWebXml = new File(fragmentWebXml.getParentFile(), "web.xml");
 
             try (BufferedReader webXmlReader = new BufferedReader(new FileReader(webXml));
-                 PrintWriter mergedWebXmlWriter = new PrintWriter(new FileWriter(mergedWebXml))) 
+                 PrintWriter mergedWebXmlWriter = new PrintWriter(new FileWriter(mergedWebXml)))
             {
 
                 if (!fragmentWebXml.exists())
@@ -457,8 +441,7 @@ public class JspcMojo extends AbstractMojo
                     // marker
                     boolean atInsertPoint = false;
                     boolean atEOF = false;
-                    String marker = (insertionMarker == null
-                            || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker);
+                    String marker = (insertionMarker == null || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker);
                     while (!atInsertPoint && !atEOF)
                     {
                         String line = webXmlReader.readLine();
@@ -475,15 +458,14 @@ public class JspcMojo extends AbstractMojo
                     }
 
                     if (atEOF && !atInsertPoint)
-                        throw new IllegalStateException("web.xml does not contain insertionMarker "+insertionMarker);
+                        throw new IllegalStateException("web.xml does not contain insertionMarker " + insertionMarker);
 
                     //put in a context init-param to flag that the contents have been precompiled
-                    mergedWebXmlWriter.println("<context-param><param-name>"+PRECOMPILED_FLAG+"</param-name><param-value>true</param-value></context-param>");
-
+                    mergedWebXmlWriter.println("<context-param><param-name>" + PRECOMPILED_FLAG + "</param-name><param-value>true</param-value></context-param>");
 
                     // put in the generated fragment
-                    try (BufferedReader fragmentWebXmlReader = 
-                            new BufferedReader(new FileReader(fragmentWebXml))) 
+                    try (BufferedReader fragmentWebXmlReader =
+                             new BufferedReader(new FileReader(fragmentWebXml)))
                     {
                         IO.copy(fragmentWebXmlReader, mergedWebXmlWriter);
 
@@ -510,12 +492,11 @@ public class JspcMojo extends AbstractMojo
 
     /**
      * Set up the execution classpath for Jasper.
-     * 
+     *
      * Put everything in the classesDirectory and all of the dependencies on the
      * classpath.
-     * 
+     *
      * @returns a list of the urls of the dependencies
-     * @throws Exception
      */
     private List<URL> setUpWebAppClassPath() throws Exception
     {
@@ -529,7 +510,7 @@ public class JspcMojo extends AbstractMojo
             getLog().debug("Adding to classpath classes dir: " + classesDir);
 
         //add the dependencies of the webapp (which will form WEB-INF/lib)
-        for (Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext();)
+        for (Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
         {
             Artifact artifact = iter.next();
 
@@ -545,14 +526,11 @@ public class JspcMojo extends AbstractMojo
         }
         return urls;
     }
-    
-    
-    
+
     /**
-     * @return
-     * @throws MalformedURLException
+     *
      */
-    private Set<URL> getPluginJars () throws MalformedURLException
+    private Set<URL> getPluginJars() throws MalformedURLException
     {
         HashSet<URL> pluginJars = new HashSet<>();
         for (Iterator<Artifact> iter = pluginArtifacts.iterator(); iter.hasNext(); )
@@ -560,30 +538,29 @@ public class JspcMojo extends AbstractMojo
             Artifact pluginArtifact = iter.next();
             if ("jar".equalsIgnoreCase(pluginArtifact.getType()))
             {
-                if (getLog().isDebugEnabled()) { getLog().debug("Adding plugin artifact "+pluginArtifact);}
+                if (getLog().isDebugEnabled())
+                {
+                    getLog().debug("Adding plugin artifact " + pluginArtifact);
+                }
                 pluginJars.add(pluginArtifact.getFile().toURI().toURL());
             }
         }
-        
+
         return pluginJars;
     }
-    
-    
-    
+
     /**
-     * @param pluginJars
-     * @return
-     * @throws MalformedURLException
+     *
      */
-    private Set<URL>  getProvidedScopeJars (Set<URL> pluginJars) throws MalformedURLException
+    private Set<URL> getProvidedScopeJars(Set<URL> pluginJars) throws MalformedURLException
     {
         if (!useProvidedScope)
             return Collections.emptySet();
-        
+
         HashSet<URL> providedJars = new HashSet<>();
-        
-        for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
-        {                   
+
+        for (Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
+        {
             Artifact artifact = iter.next();
             if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
             {
@@ -592,39 +569,43 @@ public class JspcMojo extends AbstractMojo
                 if (!pluginJars.contains(jar))
                 {
                     providedJars.add(jar);
-                    if (getLog().isDebugEnabled()) { getLog().debug("Adding provided artifact: "+artifact);}
-                }  
+                    if (getLog().isDebugEnabled())
+                    {
+                        getLog().debug("Adding provided artifact: " + artifact);
+                    }
+                }
                 else
                 {
-                    if (getLog().isDebugEnabled()) { getLog().debug("Skipping provided artifact: "+artifact);}
+                    if (getLog().isDebugEnabled())
+                    {
+                        getLog().debug("Skipping provided artifact: " + artifact);
+                    }
                 }
             }
         }
         return providedJars;
     }
 
-    
-    
-    private File getWebXmlFile ()
-    throws IOException
+    private File getWebXmlFile()
+        throws IOException
     {
         File file = null;
         File baseDir = project.getBasedir().getCanonicalFile();
-        File defaultWebAppSrcDir = new File (baseDir, "src/main/webapp").getCanonicalFile();
-        File webAppSrcDir = new File (webAppSourceDirectory).getCanonicalFile();
-        File defaultWebXml = new File (defaultWebAppSrcDir, "web.xml").getCanonicalFile();
-        
+        File defaultWebAppSrcDir = new File(baseDir, "src/main/webapp").getCanonicalFile();
+        File webAppSrcDir = new File(webAppSourceDirectory).getCanonicalFile();
+        File defaultWebXml = new File(defaultWebAppSrcDir, "web.xml").getCanonicalFile();
+
         //If the web.xml has been changed from the default, try that
-        File webXmlFile = new File (webXml).getCanonicalFile();
+        File webXmlFile = new File(webXml).getCanonicalFile();
         if (webXmlFile.compareTo(defaultWebXml) != 0)
         {
-            file = new File (webXml);
+            file = new File(webXml);
             return file;
         }
-        
+
         //If the web app src directory has not been changed from the default, use whatever
         //is set for the web.xml location
-        file = new File (webAppSrcDir, "web.xml");
+        file = new File(webAppSrcDir, "web.xml");
         return file;
     }
 }

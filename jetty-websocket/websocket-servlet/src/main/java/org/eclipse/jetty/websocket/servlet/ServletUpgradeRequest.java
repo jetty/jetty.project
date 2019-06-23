@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -90,8 +89,8 @@ public class ServletUpgradeRequest
     }
 
     /**
-     * @see HttpServletRequest#getCookies()
      * @return Request cookies
+     * @see HttpServletRequest#getCookies()
      */
     public List<HttpCookie> getCookies()
     {
@@ -252,7 +251,9 @@ public class ServletUpgradeRequest
             {
                 parameterMap = new HashMap<>(requestParams.size());
                 for (Map.Entry<String, String[]> entry : requestParams.entrySet())
+                {
                     parameterMap.put(entry.getKey(), Arrays.asList(entry.getValue()));
+                }
             }
         }
         return parameterMap;

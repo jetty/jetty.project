@@ -287,16 +287,16 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
 
         int max = anno.inputBufferSize();
-        if (max>=0)
+        if (max >= 0)
             metadata.setInputBufferSize(max);
         max = anno.maxBinaryMessageSize();
-        if (max>=0)
-           metadata.setMaxBinaryMessageSize(max);
+        if (max >= 0)
+            metadata.setMaxBinaryMessageSize(max);
         max = anno.maxTextMessageSize();
-        if (max>=0)
+        if (max >= 0)
             metadata.setMaxTextMessageSize(max);
         max = anno.idleTimeout();
-        if (max>=0)
+        if (max >= 0)
             metadata.setIdleTimeout(Duration.ofMillis(max));
         metadata.setBatchMode(anno.batchMode());
 
@@ -353,34 +353,34 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         }
 
         // OnWebSocketMessage [0..2]
-        Method onMessages[] = ReflectUtils.findAnnotatedMethods(endpointClass, OnWebSocketMessage.class);
+        Method[] onMessages = ReflectUtils.findAnnotatedMethods(endpointClass, OnWebSocketMessage.class);
         if (onMessages != null && onMessages.length > 0)
         {
             // The different kind of @OnWebSocketMessage method parameter signatures expected
 
-            InvokerUtils.Arg textCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(String.class).required()
             };
 
-            InvokerUtils.Arg binaryBufferCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(ByteBuffer.class).required()
             };
 
-            InvokerUtils.Arg binaryArrayCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(byte[].class).required(),
                 new InvokerUtils.Arg(int.class), // offset
                 new InvokerUtils.Arg(int.class) // length
             };
 
-            InvokerUtils.Arg inputStreamCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(InputStream.class).required()
             };
 
-            InvokerUtils.Arg readerCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(Reader.class).required()
             };

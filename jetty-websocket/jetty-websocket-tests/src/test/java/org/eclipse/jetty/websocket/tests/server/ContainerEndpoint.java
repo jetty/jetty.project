@@ -42,7 +42,7 @@ public class ContainerEndpoint extends AbstractCloseEndpoint
     @Override
     public void onWebSocketText(String message)
     {
-        LOG.debug("onWebSocketText({})",message);
+        LOG.debug("onWebSocketText({})", message);
         if (message.equalsIgnoreCase("openSessions"))
         {
             Collection<Session> sessions = container.getOpenSessions();
@@ -56,13 +56,13 @@ public class ContainerEndpoint extends AbstractCloseEndpoint
             }
             session.getRemote().sendString(ret.toString(), WriteCallback.NOOP);
         }
-        session.close(StatusCode.NORMAL,"ContainerEndpoint");
+        session.close(StatusCode.NORMAL, "ContainerEndpoint");
     }
 
     @Override
     public void onWebSocketConnect(Session sess)
     {
-        LOG.debug("onWebSocketConnect({})",sess);
+        LOG.debug("onWebSocketConnect({})", sess);
         this.session = sess;
     }
 }

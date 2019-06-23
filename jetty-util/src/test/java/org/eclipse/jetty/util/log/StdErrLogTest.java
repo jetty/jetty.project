@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -34,9 +27,15 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Tests for StdErrLog
@@ -47,7 +46,7 @@ public class StdErrLogTest
     {
         StdErrLog.setTagPad(0);
     }
-    
+
     @BeforeEach
     public void before()
     {
@@ -57,16 +56,16 @@ public class StdErrLogTest
     @Test
     public void testStdErrLogFormat() throws UnsupportedEncodingException
     {
-        StdErrLog log = new StdErrLog(LogTest.class.getName(),new Properties());
+        StdErrLog log = new StdErrLog(LogTest.class.getName(), new Properties());
         StdErrCapture output = new StdErrCapture(log);
 
-        log.info("testing:{},{}","test","format1");
-        log.info("testing:{}","test","format2");
-        log.info("testing","test","format3");
-        log.info("testing:{},{}","test",null);
-        log.info("testing {} {}",null,null);
-        log.info("testing:{}",null,null);
-        log.info("testing",null,null);
+        log.info("testing:{},{}", "test", "format1");
+        log.info("testing:{}", "test", "format2");
+        log.info("testing", "test", "format3");
+        log.info("testing:{},{}", "test", null);
+        log.info("testing {} {}", null, null);
+        log.info("testing:{}", null, null);
+        log.info("testing", null, null);
 
         System.err.println(output);
         output.assertContains("INFO:oejul.LogTest:tname: testing:test,format1");
@@ -82,28 +81,28 @@ public class StdErrLogTest
     @Test
     public void testStdErrLogDebug()
     {
-        StdErrLog log = new StdErrLog("xxx",new Properties());
+        StdErrLog log = new StdErrLog("xxx", new Properties());
         StdErrCapture output = new StdErrCapture(log);
 
         log.setLevel(StdErrLog.LEVEL_DEBUG);
-        log.debug("testing {} {}","test","debug");
-        log.info("testing {} {}","test","info");
-        log.warn("testing {} {}","test","warn");
+        log.debug("testing {} {}", "test", "debug");
+        log.info("testing {} {}", "test", "info");
+        log.warn("testing {} {}", "test", "warn");
         log.setLevel(StdErrLog.LEVEL_INFO);
-        log.debug("YOU SHOULD NOT SEE THIS!",null,null);
+        log.debug("YOU SHOULD NOT SEE THIS!", null, null);
 
         // Test for backward compat with old (now deprecated) method
         Logger before = log.getLogger("before");
         log.setDebugEnabled(true);
         Logger after = log.getLogger("after");
-        before.debug("testing {} {}","test","debug-before");
-        log.debug("testing {} {}","test","debug-deprecated");
-        after.debug("testing {} {}","test","debug-after");
+        before.debug("testing {} {}", "test", "debug-before");
+        log.debug("testing {} {}", "test", "debug-deprecated");
+        after.debug("testing {} {}", "test", "debug-after");
 
         log.setDebugEnabled(false);
-        before.debug("testing {} {}","test","debug-before-false");
-        log.debug("testing {} {}","test","debug-deprecated-false");
-        after.debug("testing {} {}","test","debug-after-false");
+        before.debug("testing {} {}", "test", "debug-before-false");
+        log.debug("testing {} {}", "test", "debug-deprecated-false");
+        after.debug("testing {} {}", "test", "debug-after-false");
 
         output.assertContains("DBUG:xxx:tname: testing test debug");
         output.assertContains("INFO:xxx:tname: testing test info");
@@ -120,14 +119,14 @@ public class StdErrLogTest
     @Test
     public void testStdErrLogName()
     {
-        StdErrLog log = new StdErrLog("test",new Properties());
+        StdErrLog log = new StdErrLog("test", new Properties());
         log.setPrintLongNames(true);
         StdErrCapture output = new StdErrCapture(log);
 
         assertThat("Log.name", log.getName(), is("test"));
-        Logger next=log.getLogger("next");
+        Logger next = log.getLogger("next");
         assertThat("Log.name(child)", next.getName(), is("test.next"));
-        next.info("testing {} {}","next","info");
+        next.info("testing {} {}", "next", "info");
 
         output.assertContains(":test.next:tname: testing next info");
     }
@@ -144,20 +143,20 @@ public class StdErrLogTest
         String ths = tout.toString();
 
         // Start test
-        StdErrLog log = new StdErrLog("test",new Properties());
+        StdErrLog log = new StdErrLog("test", new Properties());
         StdErrCapture output = new StdErrCapture(log);
 
-        log.warn("ex",th);
+        log.warn("ex", th);
         output.assertContains(ths);
 
         th = new Throwable("Message with \033 escape");
 
-        log.warn("ex",th);
+        log.warn("ex", th);
         output.assertNotContains("Message with \033 escape");
         log.info(th.toString());
         output.assertNotContains("Message with \033 escape");
 
-        log.warn("ex",th);
+        log.warn("ex", th);
         output.assertContains("Message with ? escape");
         log.info(th.toString());
         output.assertContains("Message with ? escape");
@@ -165,41 +164,42 @@ public class StdErrLogTest
 
     /**
      * Test to make sure that using a Null parameter on parameterized messages does not result in a NPE
+     *
      * @throws Exception failed test
      */
     @Test
     public void testParameterizedMessage_NullValues() throws Exception
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
         log.setLevel(StdErrLog.LEVEL_DEBUG);
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
-            log.info("Testing info(msg,null,null) - {} {}","arg0","arg1");
-            log.info("Testing info(msg,null,null) - {} {}",null,null);
-            log.info("Testing info(msg,null,null) - {}",null,null);
-            log.info("Testing info(msg,null,null)",null,null);
-            log.info(null,"Testing","info(null,arg0,arg1)");
-            log.info(null,null,null);
+            log.info("Testing info(msg,null,null) - {} {}", "arg0", "arg1");
+            log.info("Testing info(msg,null,null) - {} {}", null, null);
+            log.info("Testing info(msg,null,null) - {}", null, null);
+            log.info("Testing info(msg,null,null)", null, null);
+            log.info(null, "Testing", "info(null,arg0,arg1)");
+            log.info(null, null, null);
 
-            log.debug("Testing debug(msg,null,null) - {} {}","arg0","arg1");
-            log.debug("Testing debug(msg,null,null) - {} {}",null,null);
-            log.debug("Testing debug(msg,null,null) - {}",null,null);
-            log.debug("Testing debug(msg,null,null)",null,null);
-            log.debug(null,"Testing","debug(null,arg0,arg1)");
-            log.debug(null,null,null);
+            log.debug("Testing debug(msg,null,null) - {} {}", "arg0", "arg1");
+            log.debug("Testing debug(msg,null,null) - {} {}", null, null);
+            log.debug("Testing debug(msg,null,null) - {}", null, null);
+            log.debug("Testing debug(msg,null,null)", null, null);
+            log.debug(null, "Testing", "debug(null,arg0,arg1)");
+            log.debug(null, null, null);
 
             log.debug("Testing debug(msg,null)");
-            log.debug(null,new Throwable("Testing debug(null,thrw)").fillInStackTrace());
+            log.debug(null, new Throwable("Testing debug(null,thrw)").fillInStackTrace());
 
-            log.warn("Testing warn(msg,null,null) - {} {}","arg0","arg1");
-            log.warn("Testing warn(msg,null,null) - {} {}",null,null);
-            log.warn("Testing warn(msg,null,null) - {}",null,null);
-            log.warn("Testing warn(msg,null,null)",null,null);
-            log.warn(null,"Testing","warn(msg,arg0,arg1)");
-            log.warn(null,null,null);
+            log.warn("Testing warn(msg,null,null) - {} {}", "arg0", "arg1");
+            log.warn("Testing warn(msg,null,null) - {} {}", null, null);
+            log.warn("Testing warn(msg,null,null) - {}", null, null);
+            log.warn("Testing warn(msg,null,null)", null, null);
+            log.warn(null, "Testing", "warn(msg,arg0,arg1)");
+            log.warn(null, null, null);
 
             log.warn("Testing warn(msg,null)");
-            log.warn(null,new Throwable("Testing warn(msg,thrw)").fillInStackTrace());
+            log.warn(null, new Throwable("Testing warn(msg,thrw)").fillInStackTrace());
         }
     }
 
@@ -209,10 +209,10 @@ public class StdErrLogTest
         Properties props = new Properties();
 
         // Default Levels
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, null), "Default Logging Level");
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, ""), "Default Logging Level");
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"), "Default Logging Level");
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, StdErrLogTest.class.getName()), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, null), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, ""), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, StdErrLogTest.class.getName()), "Default Logging Level");
     }
 
     @Test
@@ -220,10 +220,10 @@ public class StdErrLogTest
     {
         Properties props = new Properties();
         props.setProperty("log.LEVEL", "WARN");
-        props.setProperty("org.eclipse.jetty.bad.LEVEL","EXPECTED_BAD_LEVEL");
+        props.setProperty("org.eclipse.jetty.bad.LEVEL", "EXPECTED_BAD_LEVEL");
 
         // Default Level (because of bad level value)
-        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.bad"), "Bad Logging Level");
+        assertEquals(StdErrLog.LEVEL_WARN, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.bad"), "Bad Logging Level");
     }
 
     @Test
@@ -231,25 +231,25 @@ public class StdErrLogTest
     {
         Properties props = new Properties();
         props.setProperty("log.LEVEL", "warn");
-        props.setProperty("org.eclipse.jetty.util.LEVEL","info");
+        props.setProperty("org.eclipse.jetty.util.LEVEL", "info");
 
         // Default Level
-        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"), "Lowercase Level");
+        assertEquals(StdErrLog.LEVEL_WARN, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"), "Lowercase Level");
         // Specific Level
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util"), "Lowercase Level");
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util"), "Lowercase Level");
     }
 
     @Test
     public void testGetLoggingLevel_Root()
     {
         Properties props = new Properties();
-        props.setProperty("log.LEVEL","DEBUG");
+        props.setProperty("log.LEVEL", "DEBUG");
 
         // Default Levels
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props, null), "Default Logging Level");
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props, ""), "Default Logging Level");
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"), "Default Logging Level");
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props, StdErrLogTest.class.getName()), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, null), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, ""), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, StdErrLogTest.class.getName()), "Default Logging Level");
     }
 
     @Test
@@ -257,68 +257,69 @@ public class StdErrLogTest
     {
         String name = StdErrLogTest.class.getName();
         Properties props = new Properties();
-        props.setProperty(name + ".LEVEL","ALL");
+        props.setProperty(name + ".LEVEL", "ALL");
 
         // Default Levels
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,null));
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,""));
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, null));
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, ""));
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"));
 
         // Specified Level
-        assertEquals(StdErrLog.LEVEL_ALL,StdErrLog.getLoggingLevel(props,name));
+        assertEquals(StdErrLog.LEVEL_ALL, StdErrLog.getLoggingLevel(props, name));
     }
 
     @Test
     public void testGetLoggingLevel_UtilLevel()
     {
         Properties props = new Properties();
-        props.setProperty("org.eclipse.jetty.util.LEVEL","DEBUG");
+        props.setProperty("org.eclipse.jetty.util.LEVEL", "DEBUG");
 
         // Default Levels
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,null));
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,""));
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
-        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.server.BogusObject"));
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, null));
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, ""));
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"));
+        assertEquals(StdErrLog.LEVEL_INFO, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.server.BogusObject"));
 
         // Configured Level
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,StdErrLogTest.class.getName()));
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.Bogus"));
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util"));
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.resource.PathResource"));
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, StdErrLogTest.class.getName()));
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util.Bogus"));
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util"));
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util.resource.PathResource"));
     }
 
     @Test
     public void testGetLoggingLevel_MixedLevels()
     {
         Properties props = new Properties();
-        props.setProperty("log.LEVEL","DEBUG");
-        props.setProperty("org.eclipse.jetty.util.LEVEL","WARN");
-        props.setProperty("org.eclipse.jetty.util.ConcurrentHashMap.LEVEL","ALL");
+        props.setProperty("log.LEVEL", "DEBUG");
+        props.setProperty("org.eclipse.jetty.util.LEVEL", "WARN");
+        props.setProperty("org.eclipse.jetty.util.ConcurrentHashMap.LEVEL", "ALL");
 
         // Default Levels
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,null));
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,""));
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
-        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.server.ServerObject"));
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, null));
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, ""));
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"));
+        assertEquals(StdErrLog.LEVEL_DEBUG, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.server.ServerObject"));
 
         // Configured Level
-        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,StdErrLogTest.class.getName()));
-        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.MagicUtil"));
-        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util"));
-        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.resource.PathResource"));
-        assertEquals(StdErrLog.LEVEL_ALL,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.ConcurrentHashMap"));
+        assertEquals(StdErrLog.LEVEL_WARN, StdErrLog.getLoggingLevel(props, StdErrLogTest.class.getName()));
+        assertEquals(StdErrLog.LEVEL_WARN, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util.MagicUtil"));
+        assertEquals(StdErrLog.LEVEL_WARN, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util"));
+        assertEquals(StdErrLog.LEVEL_WARN, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util.resource.PathResource"));
+        assertEquals(StdErrLog.LEVEL_ALL, StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util.ConcurrentHashMap"));
     }
 
     /**
      * Tests StdErrLog.warn() methods with level filtering.
      * <p>
      * Should always see WARN level messages, regardless of set level.
+     *
      * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testWarnFiltering() throws UnsupportedEncodingException
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             StdErrCapture output = new StdErrCapture(log);
@@ -354,12 +355,13 @@ public class StdErrLogTest
      * Tests StdErrLog.info() methods with level filtering.
      * <p>
      * Should only see INFO level messages when level is set to {@link StdErrLog#LEVEL_INFO} and below.
+     *
      * @throws Exception failed test
      */
     @Test
     public void testInfoFiltering() throws Exception
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             StdErrCapture output = new StdErrCapture(log);
@@ -401,12 +403,13 @@ public class StdErrLogTest
 
     /**
      * Tests {@link StdErrLog#LEVEL_OFF} filtering.
+     *
      * @throws Exception failed test
      */
     @Test
     public void testOffFiltering() throws Exception
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             log.setLevel(StdErrLog.LEVEL_OFF);
@@ -431,13 +434,14 @@ public class StdErrLogTest
      * Tests StdErrLog.debug() methods with level filtering.
      * <p>
      * Should only see DEBUG level messages when level is set to {@link StdErrLog#LEVEL_DEBUG} and below.
+     *
      * @throws Exception failed test
      */
     @Test
     public void testDebugFiltering() throws Exception
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
-        try(StacklessLogging stackless = new StacklessLogging(log))
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
+        try (StacklessLogging stackless = new StacklessLogging(log))
         {
             StdErrCapture output = new StdErrCapture(log);
 
@@ -481,12 +485,13 @@ public class StdErrLogTest
      * Tests StdErrLog with {@link Logger#ignore(Throwable)} use.
      * <p>
      * Should only see IGNORED level messages when level is set to {@link StdErrLog#LEVEL_ALL}.
+     *
      * @throws Exception failed test
      */
     @Test
     public void testIgnores() throws Exception
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             StdErrCapture output = new StdErrCapture(log);
@@ -513,7 +518,7 @@ public class StdErrLogTest
     @Test
     public void testIsDebugEnabled() throws Exception
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             log.setLevel(StdErrLog.LEVEL_ALL);
@@ -536,7 +541,7 @@ public class StdErrLogTest
     @Test
     public void testSetGetLevel()
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             log.setLevel(StdErrLog.LEVEL_ALL);
@@ -560,7 +565,7 @@ public class StdErrLogTest
     public void testGetChildLogger_Simple()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName,new Properties());
+        StdErrLog log = new StdErrLog(baseName, new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
@@ -574,7 +579,7 @@ public class StdErrLogTest
     public void testGetChildLogger_Deep()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName,new Properties());
+        StdErrLog log = new StdErrLog(baseName, new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
@@ -588,7 +593,7 @@ public class StdErrLogTest
     public void testGetChildLogger_Null()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName,new Properties());
+        StdErrLog log = new StdErrLog(baseName, new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
@@ -604,7 +609,7 @@ public class StdErrLogTest
     public void testGetChildLogger_EmptyName()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName,new Properties());
+        StdErrLog log = new StdErrLog(baseName, new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
@@ -620,7 +625,7 @@ public class StdErrLogTest
     public void testGetChildLogger_EmptyNameSpaces()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName,new Properties());
+        StdErrLog log = new StdErrLog(baseName, new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
@@ -635,7 +640,7 @@ public class StdErrLogTest
     @Test
     public void testGetChildLogger_NullParent()
     {
-        AbstractLogger log = new StdErrLog(null,new Properties());
+        AbstractLogger log = new StdErrLog(null, new Properties());
 
         assertThat("Logger.name", log.getName(), is(""));
 
@@ -647,7 +652,7 @@ public class StdErrLogTest
     @Test
     public void testToString()
     {
-        StdErrLog log = new StdErrLog("jetty",new Properties());
+        StdErrLog log = new StdErrLog("jetty", new Properties());
 
         log.setLevel(StdErrLog.LEVEL_ALL);
         assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=ALL"));
@@ -668,9 +673,9 @@ public class StdErrLogTest
     @Test
     public void testPrintSource() throws UnsupportedEncodingException
     {
-        Properties props=new Properties();
-        props.put("test.SOURCE","true");
-        StdErrLog log = new StdErrLog("test",props);
+        Properties props = new Properties();
+        props.put("test.SOURCE", "true");
+        StdErrLog log = new StdErrLog("test", props);
         log.setLevel(StdErrLog.LEVEL_DEBUG);
 
         ByteArrayOutputStream test = new ByteArrayOutputStream();
@@ -683,60 +688,68 @@ public class StdErrLogTest
         // System.err.print(output);
 
         assertThat(output, containsString(".StdErrLogTest#testPrintSource(StdErrLogTest.java:"));
-        
 
-        props.put("test.SOURCE","false");
-        log=new StdErrLog("other",props);
+        props.put("test.SOURCE", "false");
+        log = new StdErrLog("other", props);
     }
 
     @Test
     public void testConfiguredAndSetDebugEnabled()
     {
         Properties props = new Properties();
-        props.setProperty("org.eclipse.jetty.util.LEVEL","WARN");
+        props.setProperty("org.eclipse.jetty.util.LEVEL", "WARN");
         props.setProperty("org.eclipse.jetty.io.LEVEL", "WARN");
 
         StdErrLog root = new StdErrLog("", props);
-        assertLevel(root,StdErrLog.LEVEL_INFO); // default
+        assertLevel(root, StdErrLog.LEVEL_INFO); // default
 
         StdErrLog log = (StdErrLog)root.getLogger(StdErrLogTest.class.getName());
         assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
-        assertLevel(log,StdErrLog.LEVEL_WARN); // as configured
+        assertLevel(log, StdErrLog.LEVEL_WARN); // as configured
 
         // Boot stomp it all to debug
         root.setDebugEnabled(true);
         assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(true));
-        assertLevel(log,StdErrLog.LEVEL_DEBUG); // as stomped
+        assertLevel(log, StdErrLog.LEVEL_DEBUG); // as stomped
 
         // Restore configured
         root.setDebugEnabled(false);
         assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
-        assertLevel(log,StdErrLog.LEVEL_WARN); // as configured
+        assertLevel(log, StdErrLog.LEVEL_WARN); // as configured
     }
 
     @Test
     public void testSuppressed()
     {
-        StdErrLog log = new StdErrLog("xxx",new Properties());
+        StdErrLog log = new StdErrLog("xxx", new Properties());
         StdErrCapture output = new StdErrCapture(log);
 
         Exception inner = new Exception("inner");
-        inner.addSuppressed( new IllegalStateException(){{addSuppressed(new Exception("branch0"));}});
-        IOException outer = new IOException("outer",inner);
-        
-        outer.addSuppressed( new IllegalStateException(){{addSuppressed(new Exception("branch1"));}});
-        outer.addSuppressed( new IllegalArgumentException(){{addSuppressed(new Exception("branch2"));}});
-        
-        log.warn("problem",outer);
+        inner.addSuppressed(new IllegalStateException()
+        {{
+            addSuppressed(new Exception("branch0"));
+        }});
+        IOException outer = new IOException("outer", inner);
+
+        outer.addSuppressed(new IllegalStateException()
+        {{
+            addSuppressed(new Exception("branch1"));
+        }});
+        outer.addSuppressed(new IllegalArgumentException()
+        {{
+            addSuppressed(new Exception("branch2"));
+        }});
+
+        log.warn("problem", outer);
 
         output.assertContains("\t|\t|java.lang.Exception: branch2");
         output.assertContains("\t|\t|java.lang.Exception: branch1");
         output.assertContains("\t|\t|java.lang.Exception: branch0");
     }
-    
+
     private void assertLevel(StdErrLog log, int expectedLevel)
     {
-        assertThat("Log[" + log.getName() + "].level",levelToString(log.getLevel()),is(levelToString(expectedLevel)));
+        assertThat("Log[" + log.getName() + "].level", levelToString(log.getLevel()), is(levelToString(expectedLevel)));
     }
 
     private String levelToString(int level)

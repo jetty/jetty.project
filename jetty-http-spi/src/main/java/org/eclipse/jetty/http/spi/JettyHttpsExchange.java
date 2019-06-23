@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
-
 import javax.net.ssl.SSLSession;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,8 +32,8 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpPrincipal;
 import com.sun.net.httpserver.HttpsExchange;
 
-/* ------------------------------------------------------------ */
 /**
+ *
  */
 public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
 {
@@ -43,7 +42,7 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
     public JettyHttpsExchange(HttpContext jaxWsContext, HttpServletRequest req, HttpServletResponse resp)
     {
         super();
-        _delegate = new JettyHttpExchangeDelegate(jaxWsContext,req,resp);
+        _delegate = new JettyHttpExchangeDelegate(jaxWsContext, req, resp);
     }
 
     @Override
@@ -109,7 +108,7 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
     @Override
     public void sendResponseHeaders(int rCode, long responseLength) throws IOException
     {
-        _delegate.sendResponseHeaders(rCode,responseLength);
+        _delegate.sendResponseHeaders(rCode, responseLength);
     }
 
     @Override
@@ -145,13 +144,13 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
     @Override
     public void setAttribute(String name, Object value)
     {
-        _delegate.setAttribute(name,value);
+        _delegate.setAttribute(name, value);
     }
 
     @Override
     public void setStreams(InputStream i, OutputStream o)
     {
-        _delegate.setStreams(i,o);
+        _delegate.setStreams(i, o);
     }
 
     @Override
@@ -172,7 +171,6 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
         return _delegate.toString();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @see com.sun.net.httpserver.HttpsExchange#getSSLSession()
      */
@@ -181,5 +179,4 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
     {
         return null;
     }
-
 }

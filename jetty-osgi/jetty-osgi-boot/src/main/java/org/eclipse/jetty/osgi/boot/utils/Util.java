@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.osgi.boot.utils;
 
 import java.net.URL;
@@ -38,41 +37,36 @@ public class Util
 {
     public static final String DEFAULT_DELIMS = ",;";
 
-    
     /**
      * Create an osgi filter for the given classname and server name.
-     * 
+     *
      * @param bundleContext the {@link BundleContext} instance to use
      * @param classname the class to match on the filter
      * @param managedServerName the name of the jetty server instance
      * @return a new filter
-     * 
      * @throws InvalidSyntaxException If the filter contains an invalid string that cannot be parsed.
      */
-    public static Filter createFilter (BundleContext bundleContext, String classname, String managedServerName) throws InvalidSyntaxException
+    public static Filter createFilter(BundleContext bundleContext, String classname, String managedServerName) throws InvalidSyntaxException
     {
         if (StringUtil.isBlank(managedServerName) || managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME))
         {
-            return bundleContext.createFilter("(&(objectclass=" + classname
-                                                + ")(|(managedServerName="+managedServerName
-                                                +")(!(managedServerName=*))))");
+            return bundleContext.createFilter("(&(objectclass=" + classname + ")(|(managedServerName=" + managedServerName + ")(!(managedServerName=*))))");
         }
         else
         {
-            return bundleContext.createFilter("(&(objectclass=" + classname+ ")(managedServerName="+managedServerName+"))");
+            return bundleContext.createFilter("(&(objectclass=" + classname + ")(managedServerName=" + managedServerName + "))");
         }
-
     }
-    
+
     /**
      * Get the value of a manifest header.
-     * 
+     *
      * @param name the name of the header
      * @param altName an alternative name for the header (useful for deprecated names)
      * @param manifest the dictionary
      * @return the value from the manifest
      */
-    public static String getManifestHeaderValue (String name, String altName, Dictionary<String,String> manifest)
+    public static String getManifestHeaderValue(String name, String altName, Dictionary<String, String> manifest)
     {
         if (manifest == null)
             return null;
@@ -90,24 +84,22 @@ public class Util
      * @param manifest the dictionary
      * @return the value from the manifest
      */
-    public static String getManifestHeaderValue (String name, Dictionary<String,String> manifest)
+    public static String getManifestHeaderValue(String name, Dictionary<String, String> manifest)
     {
         return getManifestHeaderValue(name, null, manifest);
     }
 
-    
-    /* ------------------------------------------------------------ */
     /**
      * Treating the string as a separated list of filenames,
      * convert and return the list of urls.
-     * 
+     *
      * @param val the separated list of filenames
      * @param delims the separators (default is <code>,;</code>)
      * @return the list of URLs found in the input list
      * @throws Exception if unable to convert entry to a URL
      */
-    public static List<URL> fileNamesAsURLs(String val, String delims) 
-    throws Exception
+    public static List<URL> fileNamesAsURLs(String val, String delims)
+        throws Exception
     {
         String separators = DEFAULT_DELIMS;
         if (delims == null)
@@ -121,34 +113,36 @@ public class Util
         }
         return urls;
     }
-    
-    
-    /* ------------------------------------------------------------ */
-    public static void setProperty(Dictionary<String,Object> properties, String key, Object value)
+
+    public static void setProperty(Dictionary<String, Object> properties, String key, Object value)
     {
         if (value != null)
         {
             properties.put(key, value);
         }
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * recursively substitute the <code>${sysprop}</code> by their actual system property.
      * <code>${sysprop,defaultvalue}</code> will use <code>'defaultvalue'</code> as the value if no
      * sysprop is defined. Not the most efficient code but we are shooting for
      * simplicity and speed of development here.
-     * 
+     *
      * @param value the input string
      * @return the string with replaced properties
      */
     public static String resolvePropertyValue(String value)
     {
         int ind = value.indexOf("${");
-        if (ind == -1) { return value; }
+        if (ind == -1)
+        {
+            return value;
+        }
         int ind2 = value.indexOf('}', ind);
-        if (ind2 == -1) { return value; }
+        if (ind2 == -1)
+        {
+            return value;
+        }
         String sysprop = value.substring(ind + 2, ind2);
         String defaultValue = null;
         int comma = sysprop.indexOf(',');

@@ -17,13 +17,8 @@ package org.acme;
 //  ========================================================================
 //
 
-
-
-
 /**
  * ClassOne
- *
- *
  */
 public class ClassOne
 {
@@ -31,5 +26,4 @@ public class ClassOne
     public void one()
     {
     }
-
 }

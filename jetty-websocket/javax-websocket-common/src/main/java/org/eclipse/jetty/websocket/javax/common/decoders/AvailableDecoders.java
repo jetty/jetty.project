@@ -211,10 +211,10 @@ public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredD
         try
         {
             RegisteredDecoder conflicts = registeredDecoders.stream()
-                .filter(registered -> registered.isType(objectType))
-                .filter(registered -> !registered.primitive)
-                .findFirst()
-                .get();
+                                              .filter(registered -> registered.isType(objectType))
+                                              .filter(registered -> !registered.primitive)
+                                              .findFirst()
+                                              .get();
 
             if (conflicts.decoder.equals(decoder) && conflicts.implementsInterface(interfaceClass))
             {
@@ -241,16 +241,16 @@ public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredD
     public List<RegisteredDecoder> supporting(Class<? extends Decoder> interfaceType)
     {
         return registeredDecoders.stream()
-            .filter(registered -> registered.implementsInterface(interfaceType))
-            .collect(Collectors.toList());
+                   .filter(registered -> registered.implementsInterface(interfaceType))
+                   .collect(Collectors.toList());
     }
 
     public RegisteredDecoder getRegisteredDecoderFor(Class<?> type)
     {
         return registeredDecoders.stream()
-            .filter(registered -> registered.isType(type))
-            .findFirst()
-            .orElse(null);
+                   .filter(registered -> registered.isType(type))
+                   .findFirst()
+                   .orElse(null);
     }
 
     // TODO: consider removing (if not used)

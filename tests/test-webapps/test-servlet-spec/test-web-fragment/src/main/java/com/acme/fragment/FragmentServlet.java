@@ -19,7 +19,6 @@
 package com.acme.fragment;
 
 import java.io.IOException;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -29,15 +28,14 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * FragmentServlet
- * 
- * A web fragment jar. 
+ *
+ * A web fragment jar.
  */
 
-public class FragmentServlet extends HttpServlet 
+public class FragmentServlet extends HttpServlet
 {
     private ServletConfig config;
-    
-    
+
     @Override
     public void init(ServletConfig config) throws ServletException
     {
@@ -45,19 +43,15 @@ public class FragmentServlet extends HttpServlet
         this.config = config;
     }
 
-    
-    
-    /* ------------------------------------------------------------ */
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-    {      
+    {
         try
         {
             response.setContentType("text/html");
@@ -65,7 +59,7 @@ public class FragmentServlet extends HttpServlet
             out.println("<html>");
             out.println("<h1>Jetty Fragment Servlet</h1>");
             out.println("<body>");
-            out.println("</body>");            
+            out.println("</body>");
             out.println("</html>");
             out.flush();
         }
@@ -74,8 +68,4 @@ public class FragmentServlet extends HttpServlet
             throw new ServletException(e);
         }
     }
-    
-
-  
-   
 }

@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -37,13 +31,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SchedulerTest
 {
-    public static Stream<Class<? extends Scheduler>> schedulerProvider() {
+    public static Stream<Class<? extends Scheduler>> schedulerProvider()
+    {
         return Stream.of(
-                TimerScheduler.class,
-                ScheduledExecutorScheduler.class
+            TimerScheduler.class,
+            ScheduledExecutorScheduler.class
         );
     }
 
@@ -62,7 +62,8 @@ public class SchedulerTest
     @AfterEach
     public void after()
     {
-        schedulers.forEach((scheduler) -> {
+        schedulers.forEach((scheduler) ->
+        {
             try
             {
                 scheduler.stop();
@@ -79,20 +80,20 @@ public class SchedulerTest
     {
         Scheduler scheduler = start(impl);
         final AtomicLong executed = new AtomicLong();
-        long expected=System.currentTimeMillis()+1000;
-        Scheduler.Task task=scheduler.schedule(new Runnable()
+        long expected = System.currentTimeMillis() + 1000;
+        Scheduler.Task task = scheduler.schedule(new Runnable()
         {
             @Override
             public void run()
             {
                 executed.set(System.currentTimeMillis());
             }
-        },1000,TimeUnit.MILLISECONDS);
+        }, 1000, TimeUnit.MILLISECONDS);
 
         Thread.sleep(1500);
         assertFalse(task.cancel());
-        assertThat(executed.get(),Matchers.greaterThanOrEqualTo(expected));
-        assertThat(expected-executed.get(),Matchers.lessThan(1000L));
+        assertThat(executed.get(), Matchers.greaterThanOrEqualTo(expected));
+        assertThat(expected - executed.get(), Matchers.lessThan(1000L));
     }
 
     @ParameterizedTest
@@ -101,36 +102,36 @@ public class SchedulerTest
     {
         Scheduler scheduler = start(impl);
         final AtomicLong executed = new AtomicLong();
-        long expected=System.currentTimeMillis()+1000;
-        Scheduler.Task task=scheduler.schedule(new Runnable()
+        long expected = System.currentTimeMillis() + 1000;
+        Scheduler.Task task = scheduler.schedule(new Runnable()
         {
             @Override
             public void run()
             {
                 executed.set(System.currentTimeMillis());
             }
-        },1000,TimeUnit.MILLISECONDS);
+        }, 1000, TimeUnit.MILLISECONDS);
 
         Thread.sleep(1500);
         assertFalse(task.cancel());
-        assertThat(executed.get(),Matchers.greaterThanOrEqualTo(expected));
-        assertThat(expected-executed.get(),Matchers.lessThan(1000L));
+        assertThat(executed.get(), Matchers.greaterThanOrEqualTo(expected));
+        assertThat(expected - executed.get(), Matchers.lessThan(1000L));
 
         final AtomicLong executed1 = new AtomicLong();
-        long expected1=System.currentTimeMillis()+1000;
-        Scheduler.Task task1=scheduler.schedule(new Runnable()
+        long expected1 = System.currentTimeMillis() + 1000;
+        Scheduler.Task task1 = scheduler.schedule(new Runnable()
         {
             @Override
             public void run()
             {
                 executed1.set(System.currentTimeMillis());
             }
-        },1000,TimeUnit.MILLISECONDS);
+        }, 1000, TimeUnit.MILLISECONDS);
 
         Thread.sleep(1500);
         assertFalse(task1.cancel());
-        assertThat(executed1.get(),Matchers.greaterThanOrEqualTo(expected1));
-        assertThat(expected1-executed1.get(),Matchers.lessThan(1000L));
+        assertThat(executed1.get(), Matchers.greaterThanOrEqualTo(expected1));
+        assertThat(expected1 - executed1.get(), Matchers.lessThan(1000L));
     }
 
     @ParameterizedTest
@@ -139,19 +140,19 @@ public class SchedulerTest
     {
         Scheduler scheduler = start(impl);
         final AtomicLong executed = new AtomicLong();
-        Scheduler.Task task=scheduler.schedule(new Runnable()
+        Scheduler.Task task = scheduler.schedule(new Runnable()
         {
             @Override
             public void run()
             {
                 executed.set(System.currentTimeMillis());
             }
-        },2000,TimeUnit.MILLISECONDS);
+        }, 2000, TimeUnit.MILLISECONDS);
 
         Thread.sleep(100);
         assertTrue(task.cancel());
         Thread.sleep(2500);
-        assertEquals(0,executed.get());
+        assertEquals(0, executed.get());
     }
 
     @ParameterizedTest
@@ -160,19 +161,19 @@ public class SchedulerTest
     {
         Scheduler scheduler = start(impl);
         final AtomicLong executed = new AtomicLong();
-        Scheduler.Task task=scheduler.schedule(new Runnable()
+        Scheduler.Task task = scheduler.schedule(new Runnable()
         {
             @Override
             public void run()
             {
                 executed.set(System.currentTimeMillis());
             }
-        },2000,TimeUnit.MILLISECONDS);
+        }, 2000, TimeUnit.MILLISECONDS);
 
         Thread.sleep(100);
         assertTrue(task.cancel());
         Thread.sleep(2500);
-        assertEquals(0,executed.get());
+        assertEquals(0, executed.get());
     }
 
     @ParameterizedTest

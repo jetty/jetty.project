@@ -179,7 +179,6 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private DirContext _rootContext;
 
-
     public class LDAPUserInfo extends UserInfo
     {
         Attributes attributes;
@@ -200,9 +199,7 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             return getUserRoles(_rootContext, getUserName(), attributes);
         }
-
     }
-
 
     /**
      * get the available information about the user
@@ -268,9 +265,7 @@ public class LdapLoginModule extends AbstractLoginModule
      * <p>
      * NOTE: this is not an user authenticated operation
      *
-     * @param username
      * @return the {@link Attributes} from the user
-     * @throws LoginException
      */
     private Attributes getUserAttributes(String username) throws LoginException
     {
@@ -298,7 +293,8 @@ public class LdapLoginModule extends AbstractLoginModule
             }
         }
 
-        if(LOG.isDebugEnabled()) LOG.debug("user cred is: " + ldapCredential);
+        if (LOG.isDebugEnabled())
+            LOG.debug("user cred is: " + ldapCredential);
 
         return ldapCredential;
     }
@@ -307,11 +303,6 @@ public class LdapLoginModule extends AbstractLoginModule
      * attempts to get the users roles from the root context
      * <p>
      * NOTE: this is not an user authenticated operation
-     *
-     * @param dirContext
-     * @param username
-     * @return
-     * @throws LoginException
      */
     private List<String> getUserRoles(DirContext dirContext, String username, Attributes attributes) throws LoginException, NamingException
     {
@@ -323,7 +314,7 @@ public class LdapLoginModule extends AbstractLoginModule
             {
                 rdnValue = (String)attribute.get();        // switch to the value stored in the _userRdnAttribute if we can
             }
-            catch (NamingException e)
+            catch (NamingException ignored)
             {
             }
         }
@@ -331,8 +322,8 @@ public class LdapLoginModule extends AbstractLoginModule
         String filter = "({0}={1})";
 
         Object[] filterArguments = new Object[]{
-                _userRdnAttribute,
-                rdnValue
+            _userRdnAttribute,
+            rdnValue
         };
 
         SearchResult searchResult = findUser(dirContext, filter, filterArguments);
@@ -358,7 +349,8 @@ public class LdapLoginModule extends AbstractLoginModule
         Object[] filterArguments = {_roleObjectClass, _roleMemberAttribute, userDn};
         NamingEnumeration<SearchResult> results = dirContext.search(_roleBaseDn, filter, filterArguments, ctls);
 
-        if(LOG.isDebugEnabled()) LOG.debug("Found user roles?: " + results.hasMoreElements());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Found user roles?: " + results.hasMoreElements());
 
         while (results.hasMoreElements())
         {
@@ -387,7 +379,6 @@ public class LdapLoginModule extends AbstractLoginModule
 
         return roleList;
     }
-
 
     /**
      * since ldap uses a context bind for valid authentication checking, we override login()
@@ -460,15 +451,15 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             if (_debug)
             {
-                LOG.info( e );
+                LOG.info(e);
             }
             throw new LoginException("IO Error performing login.");
         }
-        catch ( AuthenticationException e )
+        catch (AuthenticationException e)
         {
             if (_debug)
             {
-                LOG.info( e );
+                LOG.info(e);
             }
             return false;
         }
@@ -480,7 +471,7 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             if (_debug)
                 LOG.info(e);
-            throw new LoginException ("Error obtaining user info");
+            throw new LoginException("Error obtaining user info");
         }
     }
 
@@ -506,7 +497,7 @@ public class LdapLoginModule extends AbstractLoginModule
      * @param username the user name
      * @param password the password
      * @return true always
-     * @throws LoginException  if unable to bind the login
+     * @throws LoginException if unable to bind the login
      */
     public boolean bindingLogin(String username, Object password) throws LoginException
     {
@@ -547,7 +538,7 @@ public class LdapLoginModule extends AbstractLoginModule
         }
         catch (NamingException e)
         {
-            throw new FailedLoginException (e.getMessage());
+            throw new FailedLoginException(e.getMessage());
         }
     }
 
@@ -559,9 +550,9 @@ public class LdapLoginModule extends AbstractLoginModule
             LOG.debug("Searching for user " + username + " with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
 
         Object[] filterArguments = new Object[]{
-                _userObjectClass,
-                _userIdAttribute,
-                username
+            _userObjectClass,
+            _userIdAttribute,
+            username
         };
 
         return findUser(_rootContext, filter, filterArguments);
@@ -578,9 +569,9 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
         }
-        catch (NamingException ne)
+        catch (NamingException ex)
         {
-            throw new FailedLoginException(ne.getMessage());
+            throw new FailedLoginException(ex.getMessage());
         }
 
         if (LOG.isDebugEnabled())
@@ -596,16 +587,15 @@ public class LdapLoginModule extends AbstractLoginModule
         return searchResult;
     }
 
-
     /**
      * Init LoginModule.
      * <p>
      * Called once by JAAS after new instance is created.
      *
-     * @param subject         the subect
+     * @param subject the subect
      * @param callbackHandler the callback handler
-     * @param sharedState     the shared state map
-     * @param options         the option map
+     * @param sharedState the shared state map
+     * @param options the option map
      */
     @Override
     public void initialize(Subject subject,

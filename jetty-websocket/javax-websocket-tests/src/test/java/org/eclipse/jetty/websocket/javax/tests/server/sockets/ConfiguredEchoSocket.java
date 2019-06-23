@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server.sockets;
 
-import org.eclipse.jetty.websocket.javax.tests.coders.DateDecoder;
-import org.eclipse.jetty.websocket.javax.tests.coders.TimeEncoder;
-import org.eclipse.jetty.websocket.javax.tests.server.configs.EchoSocketConfigurator;
-
+import java.nio.ByteBuffer;
+import java.util.Locale;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
-import java.nio.ByteBuffer;
-import java.util.Locale;
+
+import org.eclipse.jetty.websocket.javax.tests.coders.DateDecoder;
+import org.eclipse.jetty.websocket.javax.tests.coders.TimeEncoder;
+import org.eclipse.jetty.websocket.javax.tests.server.configs.EchoSocketConfigurator;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
@@ -39,9 +39,9 @@ import static java.util.stream.Collectors.joining;
  */
 @ServerEndpoint(
     value = "/echo",
-    decoders = { DateDecoder.class },
-    encoders = { TimeEncoder.class },
-    subprotocols = { "test", "echo", "chat" },
+    decoders = {DateDecoder.class},
+    encoders = {TimeEncoder.class},
+    subprotocols = {"test", "echo", "chat"},
     configurator = EchoSocketConfigurator.class)
 public class ConfiguredEchoSocket
 {

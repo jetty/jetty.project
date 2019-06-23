@@ -54,7 +54,7 @@ public class JettyWebSocketFilterTest
         server.setHandler(contextHandler);
 
         JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addMapping("/", (req, resp) -> new EchoSocket()));
+                                                                                container.addMapping("/", (req, resp) -> new EchoSocket()));
         server.start();
 
         client = new WebSocketClient();
@@ -71,10 +71,10 @@ public class JettyWebSocketFilterTest
     @Test
     public void test() throws Exception
     {
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
-        try(Session session = connect.get(5, TimeUnit.SECONDS))
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             session.getRemote().sendString("hello world");
         }

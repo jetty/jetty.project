@@ -23,7 +23,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -104,10 +103,10 @@ public class QoSFilter implements Filter
     @Override
     public void init(FilterConfig filterConfig)
     {
-        int max_priority = __DEFAULT_MAX_PRIORITY;
+        int maxPriority = __DEFAULT_MAX_PRIORITY;
         if (filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM) != null)
-            max_priority = Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
-        _queues = new Queue[max_priority + 1];
+            maxPriority = Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
+        _queues = new Queue[maxPriority + 1];
         _listeners = new AsyncListener[_queues.length];
         for (int p = 0; p < _queues.length; ++p)
         {

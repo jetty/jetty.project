@@ -36,40 +36,40 @@ import org.eclipse.jetty.util.Loader;
  * You can also set the logger level using <a href="http://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html">
  * standard java.util.logging configuration</a>.
  * </p>
- * 
+ *
  * Configuration Properties:
  * <dl>
- *   <dt>${name|hierarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
- *   <dd>
- *   Sets the level that the Logger should log at.<br>
- *   Names can be a package name, or a fully qualified class name.<br>
- *   Default: The default from the java.util.logging mechanism/configuration
- *   <br>
- *   <dt>org.eclipse.jetty.util.log.javautil.PROPERTIES=&lt;property-resource-name&gt;</dt>
- *   <dd>If set, it is used as a classpath resource name to find a java.util.logging 
- *   property file.
- *   <br>
- *   Default: null
- *   </dd>
- *   <dt>org.eclipse.jetty.util.log.javautil.SOURCE=(true|false)</dt>
- *   <dd>Set the LogRecord source class and method for JavaUtilLog.<br>
- *   Default: true
- *   </dd>
- *   <dt>org.eclipse.jetty.util.log.SOURCE=(true|false)</dt>
- *   <dd>Set the LogRecord source class and method for all Loggers.<br>
- *   Default: depends on Logger class
- *   </dd>
+ * <dt>${name|hierarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
+ * <dd>
+ * Sets the level that the Logger should log at.<br>
+ * Names can be a package name, or a fully qualified class name.<br>
+ * Default: The default from the java.util.logging mechanism/configuration
+ * <br>
+ * <dt>org.eclipse.jetty.util.log.javautil.PROPERTIES=&lt;property-resource-name&gt;</dt>
+ * <dd>If set, it is used as a classpath resource name to find a java.util.logging
+ * property file.
+ * <br>
+ * Default: null
+ * </dd>
+ * <dt>org.eclipse.jetty.util.log.javautil.SOURCE=(true|false)</dt>
+ * <dd>Set the LogRecord source class and method for JavaUtilLog.<br>
+ * Default: true
+ * </dd>
+ * <dt>org.eclipse.jetty.util.log.SOURCE=(true|false)</dt>
+ * <dd>Set the LogRecord source class and method for all Loggers.<br>
+ * Default: depends on Logger class
+ * </dd>
  * </dl>
  */
 public class JavaUtilLog extends AbstractLogger
 {
-    private final static String THIS_CLASS= JavaUtilLog.class.getName();
-    private final static boolean __source = 
-            Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
-            Log.__props.getProperty("org.eclipse.jetty.util.log.javautil.SOURCE","true")));
-    
-    private static boolean _initialized=false;
-    
+    private static final String THIS_CLASS = JavaUtilLog.class.getName();
+    private static final boolean __source =
+        Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
+            Log.__props.getProperty("org.eclipse.jetty.util.log.javautil.SOURCE", "true")));
+
+    private static boolean _initialized = false;
+
     private Level configuredLevel;
     private java.util.logging.Logger _logger;
 
@@ -84,10 +84,10 @@ public class JavaUtilLog extends AbstractLogger
         {
             if (!_initialized)
             {
-                _initialized=true;
+                _initialized = true;
 
-                final String properties=Log.__props.getProperty("org.eclipse.jetty.util.log.javautil.PROPERTIES",null);
-                if (properties!=null)
+                final String properties = Log.__props.getProperty("org.eclipse.jetty.util.log.javautil.PROPERTIES", null);
+                if (properties != null)
                 {
                     AccessController.doPrivileged(new PrivilegedAction<Object>()
                     {
@@ -100,22 +100,22 @@ public class JavaUtilLog extends AbstractLogger
                                 if (props != null)
                                     LogManager.getLogManager().readConfiguration(props.openStream());
                             }
-                            catch(Throwable e)
+                            catch (Throwable e)
                             {
                                 System.err.println("[WARN] Error loading logging config: " + properties);
                                 e.printStackTrace(System.err);
                             }
-                            
+
                             return null;
                         }
                     });
                 }
             }
         }
-        
+
         _logger = java.util.logging.Logger.getLogger(name);
-        
-        switch(lookupLoggingLevel(Log.__props,name))
+
+        switch (lookupLoggingLevel(Log.__props, name))
         {
             case LEVEL_ALL:
                 _logger.setLevel(Level.ALL);
@@ -136,7 +136,7 @@ public class JavaUtilLog extends AbstractLogger
             default:
                 break;
         }
-        
+
         configuredLevel = _logger.getLevel();
     }
 
@@ -146,18 +146,18 @@ public class JavaUtilLog extends AbstractLogger
         return _logger.getName();
     }
 
-    protected void log(Level level,String msg,Throwable thrown)
+    protected void log(Level level, String msg, Throwable thrown)
     {
-        LogRecord record = new LogRecord(level,msg);
-        if (thrown!=null)
+        LogRecord record = new LogRecord(level, msg);
+        if (thrown != null)
             record.setThrown(thrown);
         record.setLoggerName(_logger.getName());
         if (__source)
         {
             StackTraceElement[] stack = new Throwable().getStackTrace();
-            for (int i=0;i<stack.length;i++)
+            for (int i = 0; i < stack.length; i++)
             {
-                StackTraceElement e=stack[i];
+                StackTraceElement e = stack[i];
                 if (!e.getClassName().equals(THIS_CLASS))
                 {
                     record.setSourceClassName(e.getClassName());
@@ -168,47 +168,47 @@ public class JavaUtilLog extends AbstractLogger
         }
         _logger.log(record);
     }
-    
+
     @Override
     public void warn(String msg, Object... args)
     {
         if (_logger.isLoggable(Level.WARNING))
-            log(Level.WARNING,format(msg,args),null);
+            log(Level.WARNING, format(msg, args), null);
     }
 
     @Override
     public void warn(Throwable thrown)
     {
         if (_logger.isLoggable(Level.WARNING))
-            log(Level.WARNING,"",thrown);
+            log(Level.WARNING, "", thrown);
     }
 
     @Override
     public void warn(String msg, Throwable thrown)
     {
         if (_logger.isLoggable(Level.WARNING))
-            log(Level.WARNING,msg,thrown);
+            log(Level.WARNING, msg, thrown);
     }
 
     @Override
     public void info(String msg, Object... args)
     {
         if (_logger.isLoggable(Level.INFO))
-            log(Level.INFO, format(msg, args),null);
+            log(Level.INFO, format(msg, args), null);
     }
 
     @Override
     public void info(Throwable thrown)
     {
         if (_logger.isLoggable(Level.INFO))
-            log(Level.INFO, "",thrown);
+            log(Level.INFO, "", thrown);
     }
 
     @Override
     public void info(String msg, Throwable thrown)
     {
         if (_logger.isLoggable(Level.INFO))
-            log(Level.INFO,msg,thrown);
+            log(Level.INFO, msg, thrown);
     }
 
     @Override
@@ -235,28 +235,28 @@ public class JavaUtilLog extends AbstractLogger
     public void debug(String msg, Object... args)
     {
         if (_logger.isLoggable(Level.FINE))
-            log(Level.FINE,format(msg, args),null);
+            log(Level.FINE, format(msg, args), null);
     }
 
     @Override
     public void debug(String msg, long arg)
     {
         if (_logger.isLoggable(Level.FINE))
-            log(Level.FINE,format(msg, arg),null);
+            log(Level.FINE, format(msg, arg), null);
     }
 
     @Override
     public void debug(Throwable thrown)
     {
         if (_logger.isLoggable(Level.FINE))
-            log(Level.FINE,"",thrown);
+            log(Level.FINE, "", thrown);
     }
 
     @Override
     public void debug(String msg, Throwable thrown)
     {
         if (_logger.isLoggable(Level.FINE))
-            log(Level.FINE,msg,thrown);
+            log(Level.FINE, msg, thrown);
     }
 
     /**
@@ -272,7 +272,7 @@ public class JavaUtilLog extends AbstractLogger
     public void ignore(Throwable ignored)
     {
         if (_logger.isLoggable(Level.FINEST))
-            log(Level.FINEST,Log.IGNORED,ignored);
+            log(Level.FINEST, Log.IGNORED, ignored);
     }
 
     private String format(String msg, Object... args)

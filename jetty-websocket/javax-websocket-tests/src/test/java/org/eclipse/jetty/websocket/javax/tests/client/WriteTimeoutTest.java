@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.javax.tests.client;
 
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
@@ -91,11 +90,15 @@ public class WriteTimeoutTest
         String string = "xxxxxxx";
         StringBuilder sb = new StringBuilder();
         while (sb.length() < session.getMaxTextMessageBufferSize() - string.length())
+        {
             sb.append(string);
+        }
         string = sb.toString();
 
         while (session.isOpen())
+        {
             session.getAsyncRemote().sendText(string);
+        }
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.error.get(), instanceOf(WebSocketWriteTimeoutException.class));

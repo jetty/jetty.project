@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -38,8 +35,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReverseProxyTest
 {
@@ -142,7 +140,10 @@ public class ReverseProxyTest
                 assertEquals(proxyConnector.getLocalPort(), request.getServerPort());
             }
         });
-        startProxy(new HashMap<String, String>() {{ put("preserveHost", "true"); }});
+        startProxy(new HashMap<String, String>()
+        {{
+            put("preserveHost", "true");
+        }});
         startClient();
 
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort()).send();

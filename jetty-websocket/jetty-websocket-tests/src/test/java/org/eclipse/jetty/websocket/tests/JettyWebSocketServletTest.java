@@ -45,7 +45,7 @@ public class JettyWebSocketServletTest
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping("/",(req, resp)->new EchoSocket());
+            factory.addMapping("/", (req, resp) -> new EchoSocket());
         }
     }
 
@@ -83,10 +83,10 @@ public class JettyWebSocketServletTest
     @Test
     public void echoTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/servletPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/servletPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
-        try(Session session = connect.get(5, TimeUnit.SECONDS))
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             session.getRemote().sendString("hello world");
         }

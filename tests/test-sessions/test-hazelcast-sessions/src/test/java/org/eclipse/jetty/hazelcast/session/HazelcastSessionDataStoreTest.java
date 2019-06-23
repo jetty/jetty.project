@@ -34,8 +34,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * HazelcastSessionDataStoreTest
- *
- *
  */
 public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
@@ -77,8 +75,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         return _testHelper.checkSessionExists(data);
     }
-    
-    
+
     @Test
     @Override
     public void testGetExpiredDifferentNode() throws Exception
@@ -103,8 +100,6 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         //to find zombie sessions.
     }
 
-    
-    
     @Override
     public void testStoreSession() throws Exception
     {
@@ -116,9 +111,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         //to find zombie sessions.
     }
 
-
     /**
-     * 
      * This test deliberately sets the sessionDataMap to null for the
      * HazelcastSessionDataStore to provoke an exception in the load() method.
      */
@@ -130,7 +123,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory) factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
@@ -143,7 +136,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
 
         store.start();
 
-        ((HazelcastSessionDataStore) store).setSessionDataMap(null);
+        ((HazelcastSessionDataStore)store).setSessionDataMap(null);
 
         // test that loading it fails
         try
@@ -161,14 +154,14 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader (_contextClassLoader); 
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
             return _testHelper.checkSessionPersisted(data);
         }
         finally
         {
-            Thread.currentThread().setContextClassLoader(old); 
-        }   
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 }

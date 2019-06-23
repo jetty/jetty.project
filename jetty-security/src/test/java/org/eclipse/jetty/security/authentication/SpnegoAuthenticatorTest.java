@@ -36,7 +36,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SpnegoAuthenticatorTest {
+public class SpnegoAuthenticatorTest
+{
     private ConfigurableSpnegoAuthenticator _authenticator;
 
     @BeforeEach
@@ -68,7 +69,7 @@ public class SpnegoAuthenticatorTest {
         MetaData.Request metadata = new MetaData.Request(new HttpFields());
         metadata.setURI(new HttpURI("http://localhost"));
         req.setMetaData(metadata);
-        
+
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.memcached.sessions;
 
 import java.net.InetSocketAddress;
@@ -36,24 +35,20 @@ import org.eclipse.jetty.server.session.SessionHandler;
 
 /**
  * MemcachedTestHelper
- *
- *
  */
 public class MemcachedTestHelper
 {
 
     public static class MockDataStore extends AbstractSessionDataStore
     {
-        private Map<String,SessionData> _store = new HashMap<>();
+        private Map<String, SessionData> _store = new HashMap<>();
         private int _loadCount = 0;
-        
-        
+
         @Override
         public boolean isPassivating()
         {
             return true;
         }
-
 
         @Override
         public boolean exists(String id) throws Exception
@@ -61,19 +56,18 @@ public class MemcachedTestHelper
             return _store.get(id) != null;
         }
 
-
         @Override
         public SessionData doLoad(String id) throws Exception
         {
             _loadCount++;
             return _store.get(id);
         }
-        
+
         public void zeroLoadCount()
         {
             _loadCount = 0;
         }
-        
+
         public int getLoadCount()
         {
             return _loadCount;
@@ -89,7 +83,6 @@ public class MemcachedTestHelper
         public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
         {
             _store.put(id, data);
-            
         }
 
         @Override
@@ -99,7 +92,7 @@ public class MemcachedTestHelper
             long now = System.currentTimeMillis();
             if (candidates != null)
             {
-                for (String id:candidates)
+                for (String id : candidates)
                 {
                     SessionData sd = _store.get(id);
                     if (sd == null)
@@ -108,14 +101,14 @@ public class MemcachedTestHelper
                         expiredIds.add(id);
                 }
             }
-            
-            for (String id:_store.keySet())
+
+            for (String id : _store.keySet())
             {
                 SessionData sd = _store.get(id);
                 if (sd.isExpiredAt(now))
                     expiredIds.add(id);
             }
-            
+
             return expiredIds;
         }
 
@@ -125,12 +118,11 @@ public class MemcachedTestHelper
             super.doStop();
         }
     }
- 
-    
+
     public static class MockDataStoreFactory extends AbstractSessionDataStoreFactory
     {
 
-        /** 
+        /**
          * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
          */
         @Override
@@ -138,7 +130,6 @@ public class MemcachedTestHelper
         {
             return new MockDataStore();
         }
-        
     }
 
     public static SessionDataStoreFactory newSessionDataStoreFactory()
@@ -146,11 +137,10 @@ public class MemcachedTestHelper
         MockDataStoreFactory storeFactory = new MockDataStoreFactory();
         MemcachedSessionDataMapFactory mapFactory = new MemcachedSessionDataMapFactory();
         mapFactory.setAddresses(new InetSocketAddress("localhost", 11211));
-        
+
         CachingSessionDataStoreFactory factory = new CachingSessionDataStoreFactory();
         factory.setSessionDataMapFactory(mapFactory);
         factory.setSessionStoreFactory(storeFactory);
         return factory;
     }
-
 }

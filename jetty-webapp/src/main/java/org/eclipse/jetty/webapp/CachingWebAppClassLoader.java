@@ -28,24 +28,23 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 /**
  * A WebAppClassLoader that caches {@link #getResource(String)} results.
  * Specifically this ClassLoader caches not found classes and resources,
- * which can greatly increase performance for applications that search 
+ * which can greatly increase performance for applications that search
  * for resources.
  */
 @ManagedObject
 public class CachingWebAppClassLoader extends WebAppClassLoader
 {
     private static final Logger LOG = Log.getLogger(CachingWebAppClassLoader.class);
-    
+
     private final Set<String> _notFound = ConcurrentHashMap.newKeySet();
-    private final ConcurrentHashMap<String,URL> _cache = new ConcurrentHashMap<>();
-    
+    private final ConcurrentHashMap<String, URL> _cache = new ConcurrentHashMap<>();
+
     public CachingWebAppClassLoader(ClassLoader parent, Context context) throws IOException
     {
-        super(parent,context);
+        super(parent, context);
     }
 
     public CachingWebAppClassLoader(Context context) throws IOException
@@ -59,28 +58,28 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
         if (_notFound.contains(name))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Not found cache hit resource {}",name);
+                LOG.debug("Not found cache hit resource {}", name);
             return null;
         }
-        
+
         URL url = _cache.get(name);
 
         if (url == null)
         {
             // Not found in cache, try parent
             url = super.getResource(name);
-        
-            if (url==null)
+
+            if (url == null)
             {
                 // Still not found, cache the not-found result
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Caching not found resource {}",name);
+                    LOG.debug("Caching not found resource {}", name);
                 _notFound.add(name);
             }
             else
             {
                 // Cache the new result
-                _cache.putIfAbsent(name,url);
+                _cache.putIfAbsent(name, url);
             }
         }
 
@@ -93,8 +92,8 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
         if (_notFound.contains(name))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Not found cache hit resource {}",name);
-            throw new ClassNotFoundException(name+": in notfound cache");
+                LOG.debug("Not found cache hit resource {}", name);
+            throw new ClassNotFoundException(name + ": in notfound cache");
         }
         try
         {
@@ -105,10 +104,10 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
             if (_notFound.add(name))
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Caching not found {}",name);
+                    LOG.debug("Caching not found {}", name);
                     LOG.debug(nfe);
                 }
-            throw nfe; 
+            throw nfe;
         }
     }
 
@@ -118,10 +117,10 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
         _cache.clear();
         _notFound.clear();
     }
-    
+
     @Override
     public String toString()
     {
-        return "Caching["+super.toString()+"]";
+        return "Caching[" + super.toString() + "]";
     }
 }

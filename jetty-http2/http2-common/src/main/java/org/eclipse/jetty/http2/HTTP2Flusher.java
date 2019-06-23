@@ -139,11 +139,15 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
             WindowEntry windowEntry;
             while ((windowEntry = windows.poll()) != null)
+            {
                 windowEntry.perform();
+            }
 
             Entry entry;
             while ((entry = entries.poll()) != null)
+            {
                 pendingEntries.offer(entry);
+            }
         }
 
         if (pendingEntries.isEmpty())
@@ -237,12 +241,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         if (LOG.isDebugEnabled())
             LOG.debug("Writing {} buffers ({} bytes) - entries processed/pending {}/{}: {}/{}",
-                    byteBuffers.size(),
-                    lease.getTotalLength(),
-                    processedEntries.size(),
-                    pendingEntries.size(),
-                    processedEntries,
-                    pendingEntries);
+                byteBuffers.size(),
+                lease.getTotalLength(),
+                processedEntries.size(),
+                pendingEntries.size(),
+                processedEntries,
+                pendingEntries);
 
         session.getEndPoint().write(this, byteBuffers.toArray(EMPTY_BYTE_BUFFERS));
         return Action.SCHEDULED;
@@ -252,7 +256,9 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     {
         // A single EndPoint write may be flushed multiple times (for example with SSL).
         for (Entry entry : processedEntries)
+        {
             bytes = entry.onFlushed(bytes);
+        }
     }
 
     @Override
@@ -260,11 +266,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Written {} buffers - entries processed/pending {}/{}: {}/{}",
-                    lease.getByteBuffers().size(),
-                    processedEntries.size(),
-                    pendingEntries.size(),
-                    processedEntries,
-                    pendingEntries);
+                lease.getByteBuffers().size(),
+                processedEntries.size(),
+                pendingEntries.size(),
+                processedEntries,
+                pendingEntries);
         finish();
         super.succeeded();
     }
@@ -310,10 +316,10 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             terminated = x;
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("%s, entries processed/pending/queued=%d/%d/%d",
-                        closed != null ? "Closing" : "Failing",
-                        processedEntries.size(),
-                        pendingEntries.size(),
-                        entries.size()), x);
+                    closed != null ? "Closing" : "Failing",
+                    processedEntries.size(),
+                    pendingEntries.size(),
+                    entries.size()), x);
             allEntries = new HashSet<>(entries);
             entries.clear();
         }
@@ -365,14 +371,14 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public String toString()
     {
         return String.format("%s[window_queue=%d,frame_queue=%d,processed/pending=%d/%d]",
-                super.toString(),
-                getWindowQueueSize(),
-                getFrameQueueSize(),
-                processedEntries.size(),
-                pendingEntries.size());
+            super.toString(),
+            getWindowQueueSize(),
+            getFrameQueueSize(),
+            processedEntries.size(),
+            pendingEntries.size());
     }
 
-    public static abstract class Entry extends Callback.Nested
+    public abstract static class Entry extends Callback.Nested
     {
         protected final Frame frame;
         protected final IStream stream;

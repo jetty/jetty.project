@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.tests.coders;
 
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.websocket.Decoder;
+import javax.websocket.Encoder;
 
 /**
  * Singleton used for tracking events of {@link javax.websocket.Decoder} and {@link javax.websocket.Encoder}

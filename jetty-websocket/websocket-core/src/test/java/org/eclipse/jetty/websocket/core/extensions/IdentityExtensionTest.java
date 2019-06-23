@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -28,10 +32,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

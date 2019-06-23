@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value =
-    { ElementType.TYPE })
+            {ElementType.TYPE})
 public @interface WebSocket
 {
     /**

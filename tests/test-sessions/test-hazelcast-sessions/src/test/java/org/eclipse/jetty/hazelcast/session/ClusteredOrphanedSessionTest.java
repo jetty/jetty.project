@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.hazelcast.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;

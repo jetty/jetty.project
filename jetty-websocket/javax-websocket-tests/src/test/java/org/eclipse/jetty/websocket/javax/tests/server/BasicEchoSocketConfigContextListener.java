@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
-import org.eclipse.jetty.websocket.javax.tests.server.sockets.echo.BasicEchoSocket;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
+
+import org.eclipse.jetty.websocket.javax.tests.server.sockets.echo.BasicEchoSocket;
 
 /**
  * Example of adding a server socket (which extends {@link javax.websocket.Endpoint}) programmatically via the {@link ServerContainer#addEndpoint(ServerEndpointConfig)}

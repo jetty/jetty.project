@@ -29,8 +29,7 @@ public class StandardStarter implements AppLifeCycle.Binding
     @Override
     public String[] getBindingTargets()
     {
-        return new String[]
-        { "starting" };
+        return new String[]{"starting"};
     }
 
     @Override

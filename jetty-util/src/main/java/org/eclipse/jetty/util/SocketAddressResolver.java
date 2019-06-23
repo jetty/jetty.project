@@ -43,7 +43,8 @@ public interface SocketAddressResolver
     /**
      * Resolves the given host and port, returning a {@link SocketAddress} through the given {@link Promise}
      * with the default timeout.
-     *  @param host the host to resolve
+     *
+     * @param host the host to resolve
      * @param port the port of the resulting socket address
      * @param promise the callback invoked when the resolution succeeds or fails
      */
@@ -64,7 +65,9 @@ public interface SocketAddressResolver
 
                 List<InetSocketAddress> result = new ArrayList<>(addresses.length);
                 for (InetAddress address : addresses)
+                {
                     result.add(new InetSocketAddress(address, port));
+                }
 
                 if (result.isEmpty())
                     promise.failed(new UnknownHostException());
@@ -114,9 +117,9 @@ public interface SocketAddressResolver
          * Creates a new instance with the given executor (to perform DNS resolution in a separate thread),
          * the given scheduler (to cancel the operation if it takes too long) and the given timeout, in milliseconds.
          *
-         * @param executor  the thread pool to use to perform DNS resolution in pooled threads
+         * @param executor the thread pool to use to perform DNS resolution in pooled threads
          * @param scheduler the scheduler to schedule tasks to cancel DNS resolution if it takes too long
-         * @param timeout   the timeout, in milliseconds, for the DNS resolution to complete
+         * @param timeout the timeout, in milliseconds, for the DNS resolution to complete
          */
         public Async(Executor executor, Scheduler scheduler, long timeout)
         {
@@ -171,7 +174,9 @@ public interface SocketAddressResolver
 
                     List<InetSocketAddress> result = new ArrayList<>(addresses.length);
                     for (InetAddress address : addresses)
+                    {
                         result.add(new InetSocketAddress(address, port));
+                    }
 
                     if (complete.compareAndSet(false, true))
                     {

@@ -16,22 +16,17 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import java.io.File;
 
 /**
  * FileSessionDataStoreFactory
- *
- *
  */
 public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
     boolean _deleteUnrestorableFiles;
     File _storeDir;
-
-
 
     /**
      * @return the deleteUnrestorableFiles
@@ -40,7 +35,6 @@ public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     {
         return _deleteUnrestorableFiles;
     }
-
 
     /**
      * @param deleteUnrestorableFiles the deleteUnrestorableFiles to set
@@ -58,7 +52,6 @@ public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
         return _storeDir;
     }
 
-
     /**
      * @param storeDir the storeDir to set
      */
@@ -67,8 +60,7 @@ public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
         _storeDir = storeDir;
     }
 
-    
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
@@ -81,5 +73,4 @@ public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
         fsds.setSavePeriodSec(getSavePeriodSec());
         return fsds;
     }
-
 }

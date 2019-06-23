@@ -112,7 +112,9 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 ByteBuffer buffer = ByteBuffer.allocate(9);
                 buffer.put((byte)4).put((byte)1).putShort(port);
                 for (int i = 1; i <= 4; ++i)
+                {
                     buffer.put((byte)Integer.parseInt(matcher.group(i)));
+                }
                 buffer.put((byte)0);
                 buffer.flip();
                 getEndPoint().write(this, buffer);

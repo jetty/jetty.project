@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Frame;
-
-import java.nio.ByteBuffer;
 
 /**
  * Generating a frame in WebSocket land.
@@ -54,8 +54,7 @@ public class Generator
      * The overhead (maximum) for a framing header. Assuming a maximum sized payload with masking key.
      */
     public static final int MAX_HEADER_LENGTH = 28;
-    private static byte[] mask = new byte[]
-        { 0x00, (byte)0xF0, 0x0F, (byte)0xFF };
+    private static byte[] mask = {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
 
     public static void putMask(ByteBuffer buffer)
     {
@@ -88,7 +87,6 @@ public class Generator
      * Construct Generator with provided policy and bufferPool
      *
      * @param bufferPool the buffer pool to use
-     * @param readOnly
      */
     public Generator(ByteBufferPool bufferPool, boolean readOnly)
     {
@@ -137,7 +135,7 @@ public class Generator
         buffer.put(b);
 
         // is masked
-        b = (frame.isMasked()?(byte)0x80:(byte)0x00);
+        b = (frame.isMasked() ? (byte)0x80 : (byte)0x00);
 
         // payload lengths
         int payloadLength = frame.getPayloadLength();
@@ -185,7 +183,9 @@ public class Generator
             buffer.put(mask);
             int maskInt = 0;
             for (byte maskByte : mask)
+            {
                 maskInt = (maskInt << 8) + (maskByte & 0xFF);
+            }
 
             // perform data masking here
             ByteBuffer payload = frame.getPayload();
@@ -219,7 +219,7 @@ public class Generator
      * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
      *
      * @param frame the frame to generate
-     * @param buf   the buffer to output the generated frame to
+     * @param buf the buffer to output the generated frame to
      */
     public void generateWholeFrame(Frame frame, ByteBuffer buf)
     {

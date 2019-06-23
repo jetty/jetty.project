@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.start.config;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -34,6 +32,8 @@ import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
+
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * Weighted List of ConfigSources.
@@ -57,10 +57,10 @@ public class ConfigSources implements Iterable<ConfigSource>
         if (sources.contains(source))
         {
             // TODO: needs a better/more clear error message
-            throw new UsageException(ERR_BAD_ARG,"Duplicate Configuration Source Reference: " + source);
+            throw new UsageException(ERR_BAD_ARG, "Duplicate Configuration Source Reference: " + source);
         }
         sources.add(source);
-        Collections.sort(sources,new WeightedConfigSourceComparator());
+        Collections.sort(sources, new WeightedConfigSourceComparator());
 
         // look for --include-jetty-dir entries
         for (RawArgs.Entry arg : source.getArgs())
@@ -70,7 +70,7 @@ public class ConfigSources implements Iterable<ConfigSource>
                 String ref = getValue(arg.getLine());
                 String dirName = getProps().expand(ref);
                 Path dir = FS.toPath(dirName).normalize().toAbsolutePath();
-                DirConfigSource dirsource = new DirConfigSource(ref,dir,sourceWeight.incrementAndGet(),true);
+                DirConfigSource dirsource = new DirConfigSource(ref, dir, sourceWeight.incrementAndGet(), true);
                 add(dirsource);
             }
         }
@@ -92,7 +92,7 @@ public class ConfigSources implements Iterable<ConfigSource>
     {
         return getProps().getProp(key);
     }
-    
+
     public Props getProps()
     {
         Props props = new Props();
@@ -112,12 +112,12 @@ public class ConfigSources implements Iterable<ConfigSource>
         int idx = arg.indexOf('=');
         if (idx == (-1))
         {
-            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+            throw new UsageException(ERR_BAD_ARG, "Argument is missing a required value: %s", arg);
         }
         String value = arg.substring(idx + 1).trim();
         if (value.length() <= 0)
         {
-            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+            throw new UsageException(ERR_BAD_ARG, "Argument is missing a required value: %s", arg);
         }
         return value;
     }

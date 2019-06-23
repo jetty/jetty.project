@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.tests;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiConsumer;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.OnMessage;
@@ -117,7 +116,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
      * Get a WSURI with query parameters identifying the testcase.
      *
      * @param testClazz the test class
-     * @param testName  the test name
+     * @param testName the test name
      * @return the {@code ws://} URI with query parameters
      */
     public URI getWsUri(Class<?> testClazz, String testName)
@@ -167,7 +166,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
         servletContextHandler.setContextPath("/");
         JavaxWebSocketServletContainerInitializer.configure(servletContextHandler, (context, container) ->
-                ((JavaxWebSocketServerContainer)container).addSessionListener(trackingListener));
+                                                                                       ((JavaxWebSocketServerContainer)container).addSessionListener(trackingListener));
         configureServletContextHandler(servletContextHandler);
         return servletContextHandler;
     }
@@ -188,14 +187,14 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         if (ssl)
         {
             // HTTP Configuration
-            HttpConfiguration http_config = new HttpConfiguration();
-            http_config.setSecureScheme("https");
-            http_config.setSecurePort(0);
-            http_config.setOutputBufferSize(32768);
-            http_config.setRequestHeaderSize(8192);
-            http_config.setResponseHeaderSize(8192);
-            http_config.setSendServerVersion(true);
-            http_config.setSendDateHeader(false);
+            HttpConfiguration httpConfig = new HttpConfiguration();
+            httpConfig.setSecureScheme("https");
+            httpConfig.setSecurePort(0);
+            httpConfig.setOutputBufferSize(32768);
+            httpConfig.setRequestHeaderSize(8192);
+            httpConfig.setResponseHeaderSize(8192);
+            httpConfig.setSendServerVersion(true);
+            httpConfig.setSendDateHeader(false);
 
             sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
@@ -206,12 +205,12 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
 
             // SSL HTTP Configuration
-            HttpConfiguration https_config = new HttpConfiguration(http_config);
-            https_config.addCustomizer(new SecureRequestCustomizer());
+            HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+            httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
             // SSL Connector
             connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(https_config));
+                new HttpConnectionFactory(httpsConfig));
         }
         else
         {
@@ -241,7 +240,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("%s://%s:%d/", ssl?"https":"http", host, port));
+        serverUri = new URI(String.format("%s://%s:%d/", ssl ? "https" : "http", host, port));
         wsUri = WSURI.toWebsocket(serverUri);
 
         // Some debugging

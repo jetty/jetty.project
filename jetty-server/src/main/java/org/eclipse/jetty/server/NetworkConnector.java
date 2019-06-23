@@ -44,14 +44,14 @@ public interface NetworkConnector extends Connector, Closeable
     @Override
     void close();
 
-    /* ------------------------------------------------------------ */
     /**
      * A Connector may be opened and not started (to reserve a port)
      * or closed and running (to allow graceful shutdown of existing connections)
+     *
      * @return True if the connector is Open.
      */
     boolean isOpen();
-    
+
     /**
      * @return The hostname representing the interface to which
      * this connector will bind, or null for all interfaces.
