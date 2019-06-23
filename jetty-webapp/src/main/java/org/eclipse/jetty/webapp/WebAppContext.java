@@ -1548,53 +1548,38 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     public static void addServerClasses(Server server,String... pattern )
     {
-        if (pattern == null || pattern.length == 0)
-            return;
-        
-        // look for a Server attribute with the list of Server classes
-        // to apply to every web application. If not present, use our defaults.        
-        Object o = server.getAttribute(SERVER_SRV_CLASSES);
-        if (o instanceof ClassMatcher)
-        {
-            ((ClassMatcher)o).add(pattern);
-            return;
-        }
-        
-        String[] server_classes;
-        if (o instanceof String[])
-            server_classes = (String[])o;
-        else
-            server_classes = __dftServerClasses.getPatterns();
-        int l = server_classes.length;
-        server_classes = Arrays.copyOf(server_classes,l+pattern.length);
-        System.arraycopy(pattern,0,server_classes,l,pattern.length);
-        server.setAttribute(SERVER_SRV_CLASSES,server_classes);
+        addClasses(__dftServerClasses, SERVER_SRV_CLASSES, server, pattern);
     }
 
     /* ------------------------------------------------------------ */
     public static void addSystemClasses(Server server,String... pattern )
     {
+        addClasses(__dftSystemClasses, SERVER_SYS_CLASSES, server, pattern);
+    }
+
+    /* ------------------------------------------------------------ */
+    private static void addClasses(ClassMatcher matcher, String attribute, Server server,String... pattern )
+    {
         if (pattern == null || pattern.length == 0)
             return;
-        
+
         // look for a Server attribute with the list of System classes
         // to apply to every web application. If not present, use our defaults.
-        Object o = server.getAttribute(SERVER_SYS_CLASSES);
+        Object o = server.getAttribute(attribute);
         if (o instanceof ClassMatcher)
         {
             ((ClassMatcher)o).add(pattern);
             return;
         }
-        
-        String[] system_classes;
-        if (o instanceof String[])
-            system_classes = (String[])o;
-        else
-            system_classes = __dftSystemClasses.getPatterns();
-        int l = system_classes.length;
-        system_classes = Arrays.copyOf(system_classes,l+pattern.length);
-        System.arraycopy(pattern,0,system_classes,l,pattern.length);
-        server.setAttribute(SERVER_SYS_CLASSES,system_classes);
-    }
 
+        String[] classes;
+        if (o instanceof String[])
+            classes = (String[])o;
+        else
+            classes = matcher.getPatterns();
+        int l = classes.length;
+        classes = Arrays.copyOf(classes,l+pattern.length);
+        System.arraycopy(pattern,0,classes,l,pattern.length);
+        server.setAttribute(attribute,classes);
+    }
 }

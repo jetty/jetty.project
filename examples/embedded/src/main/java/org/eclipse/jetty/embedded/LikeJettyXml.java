@@ -28,8 +28,8 @@ import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.rewrite.handler.MsieSslRule;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.rewrite.handler.MsieSslRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.ValidUrlRule;
 import org.eclipse.jetty.security.HashLoginService;
@@ -215,7 +215,6 @@ public class LikeJettyXml
         
         // Start the server
         server.start();
-        server.dumpStdErr();
         server.join();
     }
 }
