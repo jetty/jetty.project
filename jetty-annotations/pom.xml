@@ -18,13 +18,12 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Import-Package>org.objectweb.asm;version="5",*</Import-Package>
-            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
-            </Require-Capability>
-          </instructions>
-        </configuration>
+            <configuration>
+              <instructions>
+                <Import-Package>org.objectweb.asm;version="5",*</Import-Package>
+                <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional</Require-Capability>
+              </instructions>
+            </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

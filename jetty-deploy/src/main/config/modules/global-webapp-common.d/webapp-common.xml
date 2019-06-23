@@ -2,8 +2,8 @@
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
-  <!-- ===================================== -->
-  <!-- Add common setup for all webapps here -->
-  <!-- ===================================== -->
+<!-- ===================================== -->
+<!-- Add common setup for all webapps here -->
+<!-- ===================================== -->
 
 </Configure>

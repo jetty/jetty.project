@@ -15,16 +15,16 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-    </dependency>
+      <dependency>
+         <groupId>javax.servlet</groupId>
+         <artifactId>javax.servlet-api</artifactId>
+      </dependency>
 
-    <!--
-        <dependency>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
-        </dependency>
-    -->
+<!--
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
+    </dependency>
+-->
   </dependencies>
 </project>

@@ -6,7 +6,7 @@
     <New id="RequestLog" class="ch.qos.logback.access.jetty.RequestLogImpl">
       <Set name="name">logback-access</Set>
       <Set name="resource">/logback-access.xml</Set>
-      <Call name="start" />
+      <Call name="start"/>
     </New>
   </Set>
 </Configure>

@@ -2,29 +2,17 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <New id="unixSocketHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-    <Arg>
-      <Ref refid="httpConfig" />
-    </Arg>
+    <Arg><Ref refid="httpConfig"/></Arg>
   </New>
 
   <Call name="addConnector">
     <Arg>
       <New id="unixSocketConnector" class="org.eclipse.jetty.unixsocket.UnixSocketConnector">
-        <Arg name="server">
-          <Ref refid="Server" />
-        </Arg>
-        <Arg name="selectors" type="int">
-          <Property name="jetty.unixsocket.selectors" default="-1" />
-        </Arg>
-        <Set name="unixSocket">
-          <Property name="jetty.unixsocket.path" default="/tmp/jetty.sock" />
-        </Set>
-        <Set name="idleTimeout">
-          <Property name="jetty.unixsocket.idleTimeout" default="30000" />
-        </Set>
-        <Set name="acceptQueueSize">
-          <Property name="jetty.unixsocket.acceptQueueSize" default="0" />
-        </Set>
+        <Arg name="server"><Ref refid="Server" /></Arg>
+        <Arg name="selectors" type="int"><Property name="jetty.unixsocket.selectors" default="-1"/></Arg>
+        <Set name="unixSocket"><Property name="jetty.unixsocket.path" default="/tmp/jetty.sock" /></Set>
+        <Set name="idleTimeout"><Property name="jetty.unixsocket.idleTimeout" default="30000"/></Set>
+        <Set name="acceptQueueSize"><Property name="jetty.unixsocket.acceptQueueSize" default="0"/></Set>
       </New>
     </Arg>
   </Call>

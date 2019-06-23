@@ -1,4 +1,6 @@
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
   <id>webbundle</id>
   <formats>
     <format>jar</format>
@@ -18,19 +20,19 @@
       </excludes>
     </fileSet>
   </fileSets>
-  <!-- Removed until PropertyUserStore supports packed realm.properties -->
-  <!--
-    <files>
-      <file>
-        <source>src/main/assembly/embedded-jetty-web-for-webbundle.xml</source>
-        <outputDirectory>WEB-INF</outputDirectory>
-        <destName>jetty-web.xml</destName>
-      </file>
-      <file>
-        <source>src/main/config/demo-base/etc/realm.properties</source>
-        <outputDirectory>WEB-INF</outputDirectory>
-        <destName>realm.properties</destName>
-      </file>
-    </files>
-  -->
+<!-- Removed until PropertyUserStore supports packed realm.properties -->
+<!--
+  <files>
+    <file>
+      <source>src/main/assembly/embedded-jetty-web-for-webbundle.xml</source>
+      <outputDirectory>WEB-INF</outputDirectory>
+      <destName>jetty-web.xml</destName>
+    </file>
+    <file>
+      <source>src/main/config/demo-base/etc/realm.properties</source>
+      <outputDirectory>WEB-INF</outputDirectory>
+      <destName>realm.properties</destName>
+    </file>
+  </files>
+-->
 </assembly>

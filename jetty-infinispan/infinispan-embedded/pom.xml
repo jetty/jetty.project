@@ -62,8 +62,8 @@
             <configuration>
               <tasks>
                 <concat destfile="${project.build.directory}/infinispan-embedded-libs.mod">
-                  <fileset file="src/main/config-templates/modules/sessions/infinispan/embedded/infinispan-embedded-libs.mod" />
-                  <fileset file="${project.build.directory}/deps.txt" />
+                    <fileset file="src/main/config-templates/modules/sessions/infinispan/embedded/infinispan-embedded-libs.mod"/>
+                    <fileset file="${project.build.directory}/deps.txt"/>
                 </concat>
               </tasks>
             </configuration>
@@ -82,7 +82,7 @@
             </goals>
             <configuration>
               <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
+                  <descriptor>src/main/assembly/config.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
@@ -92,14 +92,14 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+         <groupId>org.eclipse.jetty</groupId>
+         <artifactId>infinispan-common</artifactId>
+         <version>${project.version}</version>
+    </dependency>  
     <dependency>
-      <groupId>org.infinispan</groupId>
-      <artifactId>infinispan-core</artifactId>
-      <version>${infinispan.version}</version>
-    </dependency>
+         <groupId>org.infinispan</groupId>
+         <artifactId>infinispan-core</artifactId>
+         <version>${infinispan.version}</version>
+    </dependency>  
   </dependencies>
 </project>

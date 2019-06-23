@@ -2,54 +2,51 @@
 
 <!-- =============================================================== --><!-- Configure the Jetty Server                                      --><!--                                                                 --><!-- Documentation of this file format can be found at:              --><!-- http://docs.codehaus.org/display/JETTY/jetty.xml                --><!--                                                                 --><!-- =============================================================== -->
 
+
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-  <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-    <Set name="secureScheme">https</Set>
-    <Set name="securePort">
-      <Property name="jetty.secure.port" default="8443" />
-    </Set>
-    <Set name="outputBufferSize">32768</Set>
-    <Set name="requestHeaderSize">8192</Set>
-    <Set name="responseHeaderSize">8192</Set>
-    <Set name="sendServerVersion">true</Set>
-    <Set name="sendDateHeader">false</Set>
-    <Set name="headerCacheSize">4096</Set>
+    <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+      <Set name="secureScheme">https</Set>
+      <Set name="securePort"><Property name="jetty.secure.port" default="8443" /></Set>
+      <Set name="outputBufferSize">32768</Set>
+      <Set name="requestHeaderSize">8192</Set>
+      <Set name="responseHeaderSize">8192</Set>
+      <Set name="sendServerVersion">true</Set>
+      <Set name="sendDateHeader">false</Set>
+      <Set name="headerCacheSize">4096</Set>
 
-    <!-- Uncomment to enable handling of X-Forwarded- style headers
-    <Call name="addCustomizer">
-      <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
-    </Call>
-    -->
-  </New>
-
-  <!-- =========================================================== -->
-  <!-- Set handler Collection Structure                            -->
-  <!-- =========================================================== -->
-  <Set name="handler">
-    <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
-      <Set name="handlers">
-        <Array type="org.eclipse.jetty.server.Handler">
-          <Item>
-            <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
-              <Set name="contextPath">/tests</Set>
-              <Set name="ResourceBase"><Property name="test.docroot.base" />/default
-              </Set>
-              <Set name="Handler">
-                <New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler" />
-              </Set>
-              <Set name="DisplayName">default</Set>
-            </New>
-          </Item>
-        </Array>
-      </Set>
+      <!-- Uncomment to enable handling of X-Forwarded- style headers
+      <Call name="addCustomizer">
+        <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
+      </Call>
+      -->
     </New>
-  </Set>
 
-  <!-- =========================================================== -->
-  <!-- extra options                                               -->
-  <!-- =========================================================== -->
-  <Set name="stopAtShutdown">true</Set>
-  <Set name="stopTimeout">1000</Set>
+
+    <!-- =========================================================== -->
+    <!-- Set handler Collection Structure                            -->
+    <!-- =========================================================== -->
+    <Set name="handler">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+        <Set name="handlers">
+         <Array type="org.eclipse.jetty.server.Handler">
+           <Item>
+             <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
+               <Set name="contextPath">/tests</Set>
+               <Set name="ResourceBase"><Property name="test.docroot.base"/>/default</Set>
+	       <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+	       <Set name="DisplayName">default</Set>
+             </New>
+           </Item>
+         </Array>
+        </Set>
+      </New>
+    </Set>
+
+    <!-- =========================================================== -->
+    <!-- extra options                                               -->
+    <!-- =========================================================== -->
+    <Set name="stopAtShutdown">true</Set>
+    <Set name="stopTimeout">1000</Set>
 
 </Configure>

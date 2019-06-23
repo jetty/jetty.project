@@ -7,12 +7,10 @@
     <servlet-name>JavadocTransparentProxy</servlet-name>
     <servlet-class>org.eclipse.jetty.proxy.ProxyServlet$Transparent</servlet-class>
     <init-param>
-      <param-name>proxyTo</param-name>
-      <param-value>http://www.eclipse.org/jetty/javadoc/</param-value>
+      <param-name>proxyTo</param-name><param-value>http://www.eclipse.org/jetty/javadoc/</param-value>
     </init-param>
     <init-param>
-      <param-name>hostHeader</param-name>
-      <param-value>eclipse.org</param-value>
+      <param-name>hostHeader</param-name><param-value>eclipse.org</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>

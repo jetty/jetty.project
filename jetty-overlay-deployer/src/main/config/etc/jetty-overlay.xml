@@ -6,11 +6,8 @@
     <Call name="addAppProvider">
       <Arg>
         <New id="OverlayedAppProvider" class="org.eclipse.jetty.overlays.OverlayedAppProvider">
-          <Set name="scanDir"><Property name="jetty.home" default="." />/overlays
-          </Set>
-          <Set name="nodeName">
-            <Property name="node.name" default="nonameNode" />
-          </Set>
+          <Set name="scanDir"><Property name="jetty.home" default="." />/overlays</Set>
+          <Set name="nodeName"><Property name="node.name" default="nonameNode"/></Set>
           <Set name="scanInterval">1</Set>
         </New>
       </Arg>

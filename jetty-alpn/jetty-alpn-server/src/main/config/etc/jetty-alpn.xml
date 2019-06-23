@@ -6,22 +6,16 @@
     <Arg>
       <New class="org.eclipse.jetty.server.SslConnectionFactory">
         <Arg name="next">alpn</Arg>
-        <Arg name="sslContextFactory">
-          <Ref refid="sslContextFactory" />
-        </Arg>
+        <Arg name="sslContextFactory"><Ref refid="sslContextFactory"/></Arg>
       </New>
     </Arg>
   </Call>
-
+  
   <Call name="addConnectionFactory">
     <Arg>
       <New id="alpn" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
-        <Arg name="protocols" type="String">
-          <Property name="jetty.alpn.protocols" deprecated="alpn.protocols" default="" />
-        </Arg>
-        <Set name="defaultProtocol">
-          <Property name="jetty.alpn.defaultProtocol" deprecated="alpn.defaultProtocol" />
-        </Set>
+        <Arg name="protocols" type="String"><Property name="jetty.alpn.protocols" deprecated="alpn.protocols" default="" /></Arg>
+        <Set name="defaultProtocol"><Property name="jetty.alpn.defaultProtocol" deprecated="alpn.defaultProtocol" /></Set>  
       </New>
     </Arg>
   </Call>

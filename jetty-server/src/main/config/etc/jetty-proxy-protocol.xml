@@ -3,7 +3,7 @@
 <Configure id="httpConnector" class="org.eclipse.jetty.server.ServerConnector">
   <Call name="addFirstConnectionFactory">
     <Arg>
-      <New class="org.eclipse.jetty.server.ProxyConnectionFactory" />
+      <New class="org.eclipse.jetty.server.ProxyConnectionFactory"/>
     </Arg>
   </Call>
 </Configure>

@@ -7,76 +7,62 @@
   <!-- ===================================================================== -->
   <New id="mapping" class="org.hibernate.search.cfg.SearchMapping">
     <Call name="entity">
-      <Arg>
-        <Call class="java.lang.Class" name="forName">
-          <Arg>org.eclipse.jetty.server.session.SessionData</Arg>
-        </Call>
-      </Arg>
+      <Arg><Call class="java.lang.Class" name="forName"><Arg>org.eclipse.jetty.server.session.SessionData</Arg></Call></Arg>
       <Call name="indexed">
         <Call name="providedId">
           <Call name="property">
             <Arg type="String">expiry</Arg>
-            <Arg>
-              <Get class="java.lang.annotation.ElementType" name="FIELD" />
-            </Arg>
-            <Call name="field" />
+            <Arg><Get class="java.lang.annotation.ElementType" name="FIELD"/></Arg>
+              <Call name="field"/>
           </Call>
         </Call>
       </Call>
     </Call>
   </New>
-
+  
   <New id="properties" class="java.util.Properties">
     <Call name="load">
       <Arg>
-        <New class="java.io.FileInputStream">
-          <Arg><Property name="jetty.base" default="." />/resources/hotrod-client.properties
-          </Arg>
-        </New>
+	  <New class="java.io.FileInputStream">
+              <Arg><Property name="jetty.base" default="."/>/resources/hotrod-client.properties</Arg>
+          </New>
       </Arg>
     </Call>
     <Call name="put">
-      <Arg>
-        <Get class="org.hibernate.search.cfg.Environment" name="MODEL_MAPPING" />
-      </Arg>
-      <Arg>
-        <Ref refid="mapping" />
-      </Arg>
+      <Arg><Get class="org.hibernate.search.cfg.Environment" name="MODEL_MAPPING"/></Arg>
+      <Arg><Ref refid="mapping"/></Arg>
     </Call>
   </New>
+  
 
   <!-- ===================================================================== -->
   <!-- Convert properties to configuration.                                  -->
   <!-- ===================================================================== -->
   <New class="org.infinispan.client.hotrod.configuration.ConfigurationBuilder">
     <Call name="withProperties">
-      <Arg>
-        <Ref refid="properties" />
-      </Arg>
+      <Arg><Ref refid="properties"/></Arg>
     </Call>
     <Call name="marshaller">
       <Arg>
-        <New class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller" />
-      </Arg>
+          <New class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller"/>
+       </Arg>
     </Call>
-    <Call id="config" name="build" />
-  </New>
+    <Call id="config" name="build"/>
+  </New>  
 
   <!-- ===================================================================== -->
   <!-- Get a reference to the remote cachemanager.                           -->
   <!-- ===================================================================== -->
   <New id="remoteCacheManager" class="org.infinispan.client.hotrod.RemoteCacheManager">
-    <Arg>
-      <Ref refid="config" />
-    </Arg>
+    <Arg><Ref refid="config"/></Arg>
   </New>
-
+  
   <!-- ===================================================================== -->
   <!-- Set up custom session serialization.                                  -->
   <!-- ===================================================================== -->
   <Call id="serial_context" class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller" name="getSerializationContext">
     <Arg>
-      <Ref refid="remoteCacheManager" />
+      <Ref refid="remoteCacheManager"/>
     </Arg>
     <Call name="registerProtoFiles">
       <Arg>
@@ -93,25 +79,23 @@
     </Call>
     <Call name="registerMarshaller">
       <Arg>
-        <New class="org.eclipse.jetty.session.infinispan.SessionDataMarshaller" />
+        <New class="org.eclipse.jetty.session.infinispan.SessionDataMarshaller"/>
       </Arg>
     </Call>
   </Call>
-
+  
   <!-- ===================================================================== -->
   <!-- Get a reference to the remote cache.                                  -->
   <!-- ===================================================================== -->
   <Ref refid="remoteCacheManager">
     <Call id="cache" name="getCache">
-      <Arg>
-        <Property name="jetty.session.infinispan.remoteCacheName" default="sessions" />
-      </Arg>
+      <Arg><Property name="jetty.session.infinispan.remoteCacheName" default="sessions"/></Arg>
     </Call>
   </Ref>
-
+  
   <!-- ===================================================================== -->
   <!-- Set queryMgrFactory reference to RemoteQueryManagerFactory            -->
   <!-- ===================================================================== -->
-  <New id="queryMgrFactory" class="org.eclipse.jetty.session.infinispan.RemoteQueryManagerFactory" />
-
+  <New id="queryMgrFactory" class="org.eclipse.jetty.session.infinispan.RemoteQueryManagerFactory"/>  
+  
 </Configure> 

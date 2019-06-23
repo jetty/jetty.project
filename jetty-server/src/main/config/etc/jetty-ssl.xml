@@ -6,18 +6,12 @@
   <!-- =========================================================== -->
   <!-- Add a SSL Connector with no protocol factories              -->
   <!-- =========================================================== -->
-  <Call name="addConnector">
+  <Call  name="addConnector">
     <Arg>
       <New id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
-        <Arg name="server">
-          <Ref refid="Server" />
-        </Arg>
-        <Arg name="acceptors" type="int">
-          <Property name="jetty.ssl.acceptors" deprecated="ssl.acceptors" default="-1" />
-        </Arg>
-        <Arg name="selectors" type="int">
-          <Property name="jetty.ssl.selectors" deprecated="ssl.selectors" default="-1" />
-        </Arg>
+        <Arg name="server"><Ref refid="Server" /></Arg>
+        <Arg name="acceptors" type="int"><Property name="jetty.ssl.acceptors" deprecated="ssl.acceptors" default="-1"/></Arg>
+        <Arg name="selectors" type="int"><Property name="jetty.ssl.selectors" deprecated="ssl.selectors" default="-1"/></Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
             <!-- uncomment to support proxy protocol
@@ -27,25 +21,13 @@
           </Array>
         </Arg>
 
-        <Set name="host">
-          <Property name="jetty.ssl.host" deprecated="jetty.host" />
-        </Set>
-        <Set name="port">
-          <Property name="jetty.ssl.port" deprecated="ssl.port" default="8443" />
-        </Set>
-        <Set name="idleTimeout">
-          <Property name="jetty.ssl.idleTimeout" deprecated="ssl.timeout" default="30000" />
-        </Set>
-        <Set name="acceptorPriorityDelta">
-          <Property name="jetty.ssl.acceptorPriorityDelta" deprecated="ssl.acceptorPriorityDelta" default="0" />
-        </Set>
-        <Set name="acceptQueueSize">
-          <Property name="jetty.ssl.acceptQueueSize" deprecated="ssl.acceptQueueSize" default="0" />
-        </Set>
+        <Set name="host"><Property name="jetty.ssl.host" deprecated="jetty.host" /></Set>
+        <Set name="port"><Property name="jetty.ssl.port" deprecated="ssl.port" default="8443" /></Set>
+        <Set name="idleTimeout"><Property name="jetty.ssl.idleTimeout" deprecated="ssl.timeout" default="30000"/></Set>
+        <Set name="acceptorPriorityDelta"><Property name="jetty.ssl.acceptorPriorityDelta" deprecated="ssl.acceptorPriorityDelta" default="0"/></Set>
+        <Set name="acceptQueueSize"><Property name="jetty.ssl.acceptQueueSize" deprecated="ssl.acceptQueueSize" default="0"/></Set>
         <Get name="SelectorManager">
-          <Set name="connectTimeout">
-            <Property name="jetty.ssl.connectTimeout" default="15000" />
-          </Set>
+          <Set name="connectTimeout"><Property name="jetty.ssl.connectTimeout" default="15000"/></Set>
         </Get>
       </New>
     </Arg>
@@ -58,21 +40,13 @@
   <!-- session information                                         -->
   <!-- =========================================================== -->
   <New id="sslHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-    <Arg>
-      <Ref refid="httpConfig" />
-    </Arg>
+    <Arg><Ref refid="httpConfig"/></Arg>
     <Call name="addCustomizer">
       <Arg>
         <New class="org.eclipse.jetty.server.SecureRequestCustomizer">
-          <Arg name="sniHostCheck" type="boolean">
-            <Property name="jetty.ssl.sniHostCheck" default="true" />
-          </Arg>
-          <Arg name="stsMaxAgeSeconds" type="int">
-            <Property name="jetty.ssl.stsMaxAgeSeconds" default="-1" />
-          </Arg>
-          <Arg name="stsIncludeSubdomains" type="boolean">
-            <Property name="jetty.ssl.stsIncludeSubdomains" default="false" />
-          </Arg>
+          <Arg name="sniHostCheck" type="boolean"><Property name="jetty.ssl.sniHostCheck" default="true"/></Arg>
+          <Arg name="stsMaxAgeSeconds" type="int"><Property name="jetty.ssl.stsMaxAgeSeconds" default="-1"/></Arg>
+          <Arg name="stsIncludeSubdomains" type="boolean"><Property name="jetty.ssl.stsIncludeSubdomains" default="false"/></Arg>
         </New>
       </Arg>
     </Call>

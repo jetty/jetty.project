@@ -15,7 +15,7 @@
   <build>
     <defaultGoal>install</defaultGoal>
     <plugins>
-      <plugin>
+        <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
@@ -63,8 +63,8 @@
             <configuration>
               <tasks>
                 <concat destfile="${project.build.directory}/infinispan-remote-libs.mod">
-                  <fileset file="src/main/config-template/modules/sessions/infinispan/remote/infinispan-remote-libs.mod" />
-                  <fileset file="${project.build.directory}/deps.txt" />
+                    <fileset file="src/main/config-template/modules/sessions/infinispan/remote/infinispan-remote-libs.mod"/>
+                    <fileset file="${project.build.directory}/deps.txt"/>
                 </concat>
               </tasks>
             </configuration>
@@ -83,7 +83,7 @@
             </goals>
             <configuration>
               <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
+                  <descriptor>src/main/assembly/config.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
@@ -93,27 +93,27 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-common</artifactId>
-      <version>${project.version}</version>
+         <groupId>org.eclipse.jetty</groupId>
+         <artifactId>infinispan-common</artifactId>
+         <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.infinispan</groupId>
-      <artifactId>infinispan-client-hotrod</artifactId>
-      <version>${infinispan.version}</version>
-      <scope>provided</scope>
+         <groupId>org.infinispan</groupId>
+         <artifactId>infinispan-client-hotrod</artifactId>
+         <version>${infinispan.version}</version>
+         <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.infinispan</groupId>
-      <artifactId>infinispan-remote-query-client</artifactId>
-      <version>${infinispan.version}</version>
-      <scope>provided</scope>
+         <groupId>org.infinispan</groupId>
+         <artifactId>infinispan-remote-query-client</artifactId>
+         <version>${infinispan.version}</version>
+         <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.infinispan.protostream</groupId>
-      <artifactId>protostream</artifactId>
-      <version>4.2.2.Final</version>
-      <scope>provided</scope>
+         <groupId>org.infinispan.protostream</groupId>
+         <artifactId>protostream</artifactId>
+         <version>4.2.2.Final</version>
+         <scope>provided</scope>
     </dependency>
   </dependencies>
 </project>

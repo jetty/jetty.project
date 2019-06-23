@@ -7,9 +7,7 @@
   <!-- Add plus Configuring classes to all webapps for this Server -->
   <!-- =========================================================== -->
   <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
-    <Arg>
-      <Ref refid="Server" />
-    </Arg>
+    <Arg><Ref refid="Server" /></Arg>
     <Call name="addAfter">
       <Arg name="afterClass">org.eclipse.jetty.webapp.FragmentConfiguration</Arg>
       <Arg>
@@ -22,9 +20,7 @@
   </Call>
 
   <Call name="addBean">
-    <Arg>
-      <New class="org.eclipse.jetty.plus.jndi.NamingDump" />
-    </Arg>
+    <Arg><New class="org.eclipse.jetty.plus.jndi.NamingDump"/></Arg>
   </Call>
 
 </Configure>
