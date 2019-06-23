@@ -12,27 +12,23 @@
     <Arg>
       <New class="org.eclipse.jetty.server.SslConnectionFactory">
         <Arg name="next">http/1.1</Arg>
-        <Arg name="sslContextFactory">
-          <Ref refid="sslContextFactory" />
-        </Arg>
+        <Arg name="sslContextFactory"><Ref refid="sslContextFactory"/></Arg>
       </New>
     </Arg>
   </Call>
-  <Call name="addLifeCycleListener">
-    <Arg>
-      <New class="org.eclipse.jetty.osgi.boot.utils.ServerConnectorListener">
-        <Set name="sysPropertyName">boot.https.port</Set>
-      </New>
-    </Arg>
-  </Call>
+        <Call name="addLifeCycleListener">
+          <Arg>
+            <New class="org.eclipse.jetty.osgi.boot.utils.ServerConnectorListener">
+              <Set name="sysPropertyName">boot.https.port</Set>
+            </New>
+          </Arg>
+        </Call>
   <Call name="addConnectionFactory">
     <Arg>
       <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-        <Arg name="config">
-          <Ref refid="sslHttpConfig" />
-        </Arg>
+        <Arg name="config"><Ref refid="sslHttpConfig" /></Arg>
       </New>
     </Arg>
   </Call>
-
+  
 </Configure>

@@ -2,41 +2,25 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <New id="sessionDataMapFactory" class="org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory">
-    <Set name="addresses">
-      <Array type="java.net.InetSocketAddress">
-        <Item>
-          <New class="java.net.InetSocketAddress">
-            <Arg>
-              <Property name="jetty.session.memcached.host">
-                <Default>
-                  <Env name="MEMCACHE_PORT_11211_TCP_ADDR" default="localhost" />
-                </Default>
-              </Property>
-            </Arg>
-            <Arg type="int">
-              <Property name="jetty.session.memcached.port">
-                <Default>
-                  <Env name="MEMCACHE_PORT_11211_TCP_PORT" default="11211" />
-                </Default>
-              </Property>
-            </Arg>
-          </New>
-        </Item>
-        <!--  Add more here -->
-      </Array>
-    </Set>
-    <!-- Optionally set the weight of each server in the list -->
-    <Set name="weights">
-      <Array type="int">
-        <Item type="int">100</Item>
-      </Array>
-    </Set>
-    <Set name="expirySec">
-      <Property name="jetty.session.memcached.expirySec" default="0" />
-    </Set>
-    <Set name="heartbeats">
-      <Property name="jetty.session.memcached.heartbeats" default="true" />
-    </Set>
-  </New>
+    <New id="sessionDataMapFactory" class="org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory">
+       <Set name="addresses">
+         <Array type="java.net.InetSocketAddress">
+           <Item>
+             <New class="java.net.InetSocketAddress">
+               <Arg><Property name="jetty.session.memcached.host"><Default><Env name="MEMCACHE_PORT_11211_TCP_ADDR" default="localhost"/></Default></Property></Arg>
+               <Arg type="int"><Property name="jetty.session.memcached.port"><Default><Env name="MEMCACHE_PORT_11211_TCP_PORT" default="11211"/></Default></Property></Arg>
+             </New>
+           </Item>
+           <!--  Add more here -->
+         </Array>
+       </Set>
+       <!-- Optionally set the weight of each server in the list -->
+       <Set name="weights">
+         <Array type="int">
+           <Item type="int">100</Item>
+         </Array>
+       </Set>
+      <Set name="expirySec"><Property name="jetty.session.memcached.expirySec" default="0"/></Set>
+      <Set name="heartbeats"><Property name="jetty.session.memcached.heartbeats" default="true"/></Set>
+    </New>
 </Configure>

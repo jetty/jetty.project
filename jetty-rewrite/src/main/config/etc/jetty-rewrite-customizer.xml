@@ -7,11 +7,11 @@
   <Call name="addCustomizer">
     <Arg>
       <New id="Rewrite" class="org.eclipse.jetty.rewrite.RewriteCustomizer">
-        <Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI" />
-        <Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo" />
-        <Set name="originalPathAttribute" property="jetty.rewrite.originalPathAttribute" />
+        <Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI"/>
+        <Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo"/>
+        <Set name="originalPathAttribute" property="jetty.rewrite.originalPathAttribute"/>
       </New>
     </Arg>
-  </Call>
+  </Call>  
 </Configure>
 

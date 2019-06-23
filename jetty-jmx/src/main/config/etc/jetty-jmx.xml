@@ -7,7 +7,7 @@
   <!-- Get the platform MBeanServer                                -->
   <!-- =========================================================== -->
   <Call id="MBeanServer" class="java.lang.management.ManagementFactory"
-        name="getPlatformMBeanServer" />
+    name="getPlatformMBeanServer" />
 
   <!-- =========================================================== -->
   <!-- Initialize the Jetty MBeanContainer                         -->

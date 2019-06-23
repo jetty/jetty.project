@@ -20,15 +20,15 @@
   </appender>
 
   <logger name="org.eclipse.jetty.websocket.core.internal.Parser.CLIENT" level="debug" additivity="false">
-    <appender-ref ref="FILE" />
+    <appender-ref ref="FILE"/>
   </logger>
 
   <logger name="org.eclipse.jetty.websocket.tests.server" level="debug" additivity="false">
-    <appender-ref ref="FILE" />
+    <appender-ref ref="FILE"/>
   </logger>
 
   <root level="warn">
-    <appender-ref ref="STDOUT" />
+    <appender-ref ref="STDOUT"/>
   </root>
 
 </configuration>

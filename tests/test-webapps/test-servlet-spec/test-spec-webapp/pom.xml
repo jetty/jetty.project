@@ -52,11 +52,11 @@
           </archive>
           <webResources>
             <resource>
-              <directory>target</directory>
-              <includes>
-                <include>plugin-context.xml</include>
-              </includes>
-              <targetPath>META-INF</targetPath>
+                <directory>target</directory>
+                <includes>
+                  <include>plugin-context.xml</include>
+                </includes>
+                <targetPath>META-INF</targetPath>
             </resource>
           </webResources>
         </configuration>
@@ -92,10 +92,10 @@
         </configuration>
       </plugin>
 
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
+       <plugin>
+         <artifactId>maven-antrun-plugin</artifactId>
+         <executions>
+           <execution>
             <id>generate-xml-files</id>
             <phase>process-resources</phase>
             <configuration>
@@ -111,10 +111,10 @@
             <goals>
               <goal>run</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
+           </execution>
+         </executions>
+       </plugin>
+       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
@@ -135,10 +135,10 @@
                   <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
                 </artifactItem>
               </artifactItems>
-            </configuration>
+          </configuration>
           </execution>
         </executions>
-      </plugin>
+       </plugin>
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
@@ -146,15 +146,15 @@
         <configuration>
           <scanIntervalSeconds>10</scanIntervalSeconds>
           <useTestClasspath>true</useTestClasspath>
-          <webAppXml>${project.build.directory}/plugin-context.xml</webAppXml>
-          <webAppConfig>
-            <war>src/main/webapp</war>
-            <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
-            <contextPath>/test-spec</contextPath>
+         <webAppXml>${project.build.directory}/plugin-context.xml</webAppXml>
+         <webAppConfig>
+           <war>src/main/webapp</war>
+           <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
+           <contextPath>/test-spec</contextPath>
             <containerIncludeJarPattern>.*/jetty-servlet-api-[^/]*\.jar$</containerIncludeJarPattern>
             <configurationDiscovered>true</configurationDiscovered>
             <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
-          </webAppConfig>
+         </webAppConfig>
           <loginServices>
             <loginService implementation="org.eclipse.jetty.security.HashLoginService">
               <name>Test Realm</name>

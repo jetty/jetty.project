@@ -3,27 +3,19 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call class="org.eclipse.jetty.webapp.WebAppContext" name="addSystemClasses">
-    <Arg>
-      <Ref refid="Server" />
-    </Arg>
+    <Arg><Ref refid="Server"/></Arg>
     <Arg>
       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-        <Arg>
-          <Property name="jetty.webapp.addSystemClasses" />
-        </Arg>
+        <Arg><Property name="jetty.webapp.addSystemClasses"/></Arg>
       </Call>
     </Arg>
   </Call>
 
   <Call class="org.eclipse.jetty.webapp.WebAppContext" name="addServerClasses">
-    <Arg>
-      <Ref refid="Server" />
-    </Arg>
+    <Arg><Ref refid="Server"/></Arg>
     <Arg>
       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-        <Arg>
-          <Property name="jetty.webapp.addServerClasses" />
-        </Arg>
+        <Arg><Property name="jetty.webapp.addServerClasses"/></Arg>
       </Call>
     </Arg>
   </Call>

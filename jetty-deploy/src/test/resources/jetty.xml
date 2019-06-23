@@ -25,118 +25,107 @@
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-  <!-- =========================================================== -->
-  <!-- Configure the Server Thread Pool.                           -->
-  <!-- The server holds a common thread pool which is used by      -->
-  <!-- default as the executor used by all connectors and servlet  -->
-  <!-- dispatches.                                                 -->
-  <!--                                                             -->
-  <!-- Configuring a fixed thread pool is vital to controlling the -->
-  <!-- maximal memory footprint of the server and is a key tuning  -->
-  <!-- parameter for tuning.  In an application that rarely blocks -->
-  <!-- then maximal threads may be close to the number of 5*CPUs.  -->
-  <!-- In an application that frequently blocks, then maximal      -->
-  <!-- threads should be set as high as possible given the memory  -->
-  <!-- available.                                                  -->
-  <!--                                                             -->
-  <!-- Consult the javadoc of o.e.j.util.thread.QueuedThreadPool   -->
-  <!-- for all configuration that may be set here.                 -->
-  <!-- =========================================================== -->
-  <!-- uncomment to change type of threadpool
-  <Arg name="threadpool"><New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool"/></Arg>
-  -->
-  <Get name="ThreadPool">
-    <Set name="minThreads" type="int">
-      <Property name="jetty.threadPool.minThreads" default="10" />
-    </Set>
-    <Set name="maxThreads" type="int">
-      <Property name="jetty.threadPool.maxThreads" default="200" />
-    </Set>
-    <Set name="idleTimeout" type="int">
-      <Property name="jetty.threadPool.idleTimeout" default="60000" />
-    </Set>
-    <Set name="detailedDump">false</Set>
-  </Get>
-
-  <!-- =========================================================== -->
-  <!-- Add shared Scheduler instance                               -->
-  <!-- =========================================================== -->
-  <Call name="addBean">
-    <Arg>
-      <New class="org.eclipse.jetty.util.thread.ScheduledExecutorScheduler" />
-    </Arg>
-  </Call>
-
-  <!-- =========================================================== -->
-  <!-- Http Configuration.                                         -->
-  <!-- This is a common configuration instance used by all         -->
-  <!-- connectors that can carry HTTP semantics (HTTP, HTTPS, etc.)-->
-  <!-- It configures the non wire protocol aspects of the HTTP     -->
-  <!-- semantic.                                                   -->
-  <!--                                                             -->
-  <!-- This configuration is only defined here and is used by      -->
-  <!-- reference from other XML files such as jetty-http.xml,      -->
-  <!-- jetty-https.xml and other configuration files which         -->
-  <!-- instantiate the connectors.                                 -->
-  <!--                                                             -->
-  <!-- Consult the javadoc of o.e.j.server.HttpConfiguration       -->
-  <!-- for all configuration that may be set here.                 -->
-  <!-- =========================================================== -->
-  <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-    <Set name="secureScheme">https</Set>
-    <Set name="securePort" type="java.lang.Integer">
-      <Property name="jetty.httpConfig.securePort" default="8443" />
-    </Set>
-    <Set name="outputBufferSize">32768</Set>
-    <Set name="requestHeaderSize">8192</Set>
-    <Set name="responseHeaderSize">8192</Set>
-    <Set name="sendServerVersion">true</Set>
-    <Set name="sendDateHeader">false</Set>
-    <Set name="headerCacheSize">4096</Set>
-
-    <!-- Uncomment to enable handling of X-Forwarded- style headers
-    <Call name="addCustomizer">
-      <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
-    </Call>
+    <!-- =========================================================== -->
+    <!-- Configure the Server Thread Pool.                           -->
+    <!-- The server holds a common thread pool which is used by      -->
+    <!-- default as the executor used by all connectors and servlet  -->
+    <!-- dispatches.                                                 -->
+    <!--                                                             -->
+    <!-- Configuring a fixed thread pool is vital to controlling the -->
+    <!-- maximal memory footprint of the server and is a key tuning  -->
+    <!-- parameter for tuning.  In an application that rarely blocks -->
+    <!-- then maximal threads may be close to the number of 5*CPUs.  -->
+    <!-- In an application that frequently blocks, then maximal      -->
+    <!-- threads should be set as high as possible given the memory  -->
+    <!-- available.                                                  -->
+    <!--                                                             -->
+    <!-- Consult the javadoc of o.e.j.util.thread.QueuedThreadPool   -->
+    <!-- for all configuration that may be set here.                 -->
+    <!-- =========================================================== -->
+    <!-- uncomment to change type of threadpool
+    <Arg name="threadpool"><New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool"/></Arg>
     -->
-  </New>
+    <Get name="ThreadPool">
+      <Set name="minThreads" type="int"><Property name="jetty.threadPool.minThreads" default="10"/></Set>
+      <Set name="maxThreads" type="int"><Property name="jetty.threadPool.maxThreads" default="200"/></Set>
+      <Set name="idleTimeout" type="int"><Property name="jetty.threadPool.idleTimeout" default="60000"/></Set>
+      <Set name="detailedDump">false</Set>
+    </Get>
 
-  <!-- =========================================================== -->
-  <!-- Set the default handler structure for the Server            -->
-  <!-- A handler collection is used to pass received requests to   -->
-  <!-- both the ContextHandlerCollection, which selects the next   -->
-  <!-- handler by context path and virtual host, and the           -->
-  <!-- DefaultHandler, which handles any requests not handled by   -->
-  <!-- the context handlers.                                       -->
-  <!-- Other handlers may be added to the "Handlers" collection,   -->
-  <!-- for example the jetty-requestlog.xml file adds the          -->
-  <!-- RequestLogHandler after the default handler                 -->
-  <!-- =========================================================== -->
-  <Set name="handler">
-    <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
-      <Set name="handlers">
-        <Array type="org.eclipse.jetty.server.Handler">
-          <Item>
-            <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection" />
-          </Item>
-          <Item>
-            <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler" />
-          </Item>
-        </Array>
-      </Set>
+    <!-- =========================================================== -->
+    <!-- Add shared Scheduler instance                               -->
+    <!-- =========================================================== -->
+    <Call name="addBean">
+      <Arg>
+        <New class="org.eclipse.jetty.util.thread.ScheduledExecutorScheduler"/>
+      </Arg>
+    </Call>
+
+    <!-- =========================================================== -->
+    <!-- Http Configuration.                                         -->
+    <!-- This is a common configuration instance used by all         -->
+    <!-- connectors that can carry HTTP semantics (HTTP, HTTPS, etc.)-->
+    <!-- It configures the non wire protocol aspects of the HTTP     -->
+    <!-- semantic.                                                   -->
+    <!--                                                             -->
+    <!-- This configuration is only defined here and is used by      -->
+    <!-- reference from other XML files such as jetty-http.xml,      -->
+    <!-- jetty-https.xml and other configuration files which         -->
+    <!-- instantiate the connectors.                                 -->
+    <!--                                                             -->
+    <!-- Consult the javadoc of o.e.j.server.HttpConfiguration       -->
+    <!-- for all configuration that may be set here.                 -->
+    <!-- =========================================================== -->
+    <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+      <Set name="secureScheme">https</Set>
+      <Set name="securePort" type="java.lang.Integer"><Property name="jetty.httpConfig.securePort" default="8443" /></Set>
+      <Set name="outputBufferSize">32768</Set>
+      <Set name="requestHeaderSize">8192</Set>
+      <Set name="responseHeaderSize">8192</Set>
+      <Set name="sendServerVersion">true</Set>
+      <Set name="sendDateHeader">false</Set>
+      <Set name="headerCacheSize">4096</Set>
+
+      <!-- Uncomment to enable handling of X-Forwarded- style headers
+      <Call name="addCustomizer">
+        <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
+      </Call>
+      -->
     </New>
-  </Set>
 
-  <!-- =========================================================== -->
-  <!-- extra server options                                        -->
-  <!-- =========================================================== -->
-  <Set name="stopAtShutdown">true</Set>
-  <Set name="stopTimeout">5000</Set>
-  <Set name="dumpAfterStart">
-    <Property name="jetty.server.dumpAfterStart" default="false" />
-  </Set>
-  <Set name="dumpBeforeStop">
-    <Property name="jetty.server.dumpBeforeStop" default="false" />
-  </Set>
+
+    <!-- =========================================================== -->
+    <!-- Set the default handler structure for the Server            -->
+    <!-- A handler collection is used to pass received requests to   -->
+    <!-- both the ContextHandlerCollection, which selects the next   -->
+    <!-- handler by context path and virtual host, and the           -->
+    <!-- DefaultHandler, which handles any requests not handled by   -->
+    <!-- the context handlers.                                       -->
+    <!-- Other handlers may be added to the "Handlers" collection,   -->
+    <!-- for example the jetty-requestlog.xml file adds the          -->
+    <!-- RequestLogHandler after the default handler                 -->
+    <!-- =========================================================== -->
+    <Set name="handler">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+        <Set name="handlers">
+         <Array type="org.eclipse.jetty.server.Handler">
+           <Item>
+             <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+           </Item>
+           <Item>
+             <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+           </Item>
+         </Array>
+        </Set>
+      </New>
+    </Set>
+
+    <!-- =========================================================== -->
+    <!-- extra server options                                        -->
+    <!-- =========================================================== -->
+    <Set name="stopAtShutdown">true</Set>
+    <Set name="stopTimeout">5000</Set>
+    <Set name="dumpAfterStart"><Property name="jetty.server.dumpAfterStart" default="false"/></Set>
+    <Set name="dumpBeforeStop"><Property name="jetty.server.dumpBeforeStop" default="false"/></Set>
 
 </Configure>

@@ -8,11 +8,9 @@
   <Call name="addConnectionFactory">
     <Arg>
       <New class="org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory">
-        <Arg name="config">
-          <Ref refid="httpConfig" />
-        </Arg>
-        <Set name="maxConcurrentStreams" property="jetty.http2c.maxConcurrentStreams" />
-        <Set name="initialStreamRecvWindow" property="jetty.http2c.initialStreamRecvWindow" />
+        <Arg name="config"><Ref refid="httpConfig"/></Arg>
+        <Set name="maxConcurrentStreams" property="jetty.http2c.maxConcurrentStreams"/>
+        <Set name="initialStreamRecvWindow" property="jetty.http2c.initialStreamRecvWindow"/>
       </New>
     </Arg>
   </Call>

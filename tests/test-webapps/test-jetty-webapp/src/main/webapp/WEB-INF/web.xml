@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app
-  xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
-  metadata-complete="false"
-  version="3.1">
+<web-app 
+   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+   metadata-complete="false"
+   version="3.1"> 
 
   <display-name>Test WebApp</display-name>
-
+  
   <context-param>
     <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
     <param-value>PushFilter,QoSFilter,TransparentProxy.ThreadPool,TransparentProxy.HttpClient</param-value>
   </context-param>
-
+  
   <!-- Declare TestListener, which declares TestFilter -->
   <listener>
     <listener-class>com.acme.TestListener</listener-class>
@@ -22,7 +22,7 @@
     <filter-name>PushFilter</filter-name>
     <filter-class>org.eclipse.jetty.servlets.PushCacheFilter</filter-class>
     <async-supported>true</async-supported>
-  </filter>
+  </filter>  
   <filter-mapping>
     <filter-name>PushFilter</filter-name>
     <url-pattern>/*</url-pattern>
@@ -40,7 +40,7 @@
       <param-name>managedAttr</param-name>
       <param-value>true</param-value>
     </init-param>
-  </filter>
+  </filter>  
   <filter-mapping>
     <filter-name>QoSFilter</filter-name>
     <url-pattern>/*</url-pattern>
@@ -57,6 +57,7 @@
     <url-pattern>/login/*</url-pattern>
   </servlet-mapping>
 
+
   <servlet>
     <servlet-name>Hello</servlet-name>
     <servlet-class>com.acme.HelloWorld</servlet-class>
@@ -67,15 +68,13 @@
     <servlet-name>Hello</servlet-name>
     <url-pattern>/hello/*</url-pattern>
   </servlet-mapping>
-
+  
   <servlet>
     <servlet-name>Dump</servlet-name>
     <servlet-class>com.acme.Dump</servlet-class>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
-    <run-as>
-      <role-name>admin</role-name>
-    </run-as>
+    <run-as><role-name>admin</role-name></run-as>
     <multipart-config>
       <location>upload</location>
       <file-size-threshold>4096</file-size-threshold>
@@ -93,46 +92,46 @@
     <servlet-class>com.acme.SessionDump</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
-
+  
   <servlet-mapping>
     <servlet-name>Session</servlet-name>
     <url-pattern>/session/*</url-pattern>
   </servlet-mapping>
-
+  
   <servlet>
     <servlet-name>Cookie</servlet-name>
     <servlet-class>com.acme.CookieDump</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
-
+  
   <servlet-mapping>
     <servlet-name>Cookie</servlet-name>
     <url-pattern>/cookie/*</url-pattern>
   </servlet-mapping>
-
+  
   <servlet>
     <servlet-name>Dispatch</servlet-name>
     <servlet-class>com.acme.DispatchServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
   </servlet>
-
+  
   <servlet-mapping>
     <servlet-name>Dispatch</servlet-name>
     <url-pattern>/dispatch/*</url-pattern>
   </servlet-mapping>
-
+  
   <servlet>
     <servlet-name>CGI</servlet-name>
     <servlet-class>org.eclipse.jetty.servlets.CGI</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
-
+  
   <servlet-mapping>
     <servlet-name>CGI</servlet-name>
     <url-pattern>/cgi-bin/*</url-pattern>
   </servlet-mapping>
-
+  
   <servlet>
     <servlet-name>Chat</servlet-name>
     <servlet-class>com.acme.ChatServlet</servlet-class>
@@ -144,7 +143,7 @@
     <servlet-name>Chat</servlet-name>
     <url-pattern>/chat/*</url-pattern>
   </servlet-mapping>
-
+  
   <servlet>
     <servlet-name>WSChat</servlet-name>
     <servlet-class>com.acme.WebSocketChatServlet</servlet-class>
@@ -155,18 +154,20 @@
     <servlet-name>WSChat</servlet-name>
     <url-pattern>/ws/*</url-pattern>
   </servlet-mapping>
-
+  
+  
   <servlet>
     <servlet-name>Rewrite</servlet-name>
     <servlet-class>com.acme.RewriteServlet</servlet-class>
   </servlet>
-
+  
   <servlet-mapping>
     <servlet-name>Rewrite</servlet-name>
     <url-pattern>/rewritten/*</url-pattern>
     <url-pattern>/redirected/*</url-pattern>
   </servlet-mapping>
-
+  
+  
   <servlet>
     <servlet-name>SecureMode</servlet-name>
     <servlet-class>com.acme.SecureModeServlet</servlet-class>
@@ -177,10 +178,10 @@
     <servlet-name>SecureMode</servlet-name>
     <url-pattern>/secureMode/*</url-pattern>
   </servlet-mapping>
-
+  
   <servlet>
-    <servlet-name>foo.jsp</servlet-name>
-    <jsp-file>/jsp/foo/foo.jsp</jsp-file>
+     <servlet-name>foo.jsp</servlet-name>
+     <jsp-file>/jsp/foo/foo.jsp</jsp-file>
   </servlet>
   <servlet-mapping>
     <servlet-name>foo.jsp</servlet-name>
@@ -247,7 +248,7 @@
       <url-pattern>/dump/auth/noaccess/*</url-pattern>
       <url-pattern>/auth/*</url-pattern>
     </web-resource-collection>
-    <auth-constraint />
+    <auth-constraint/>
   </security-constraint>
 
   <security-constraint>
@@ -260,29 +261,29 @@
     </user-data-constraint>
   </security-constraint>
 
-  <!--
-    <login-config>
-      <auth-method>BASIC</auth-method>
-      <realm-name>Test Realm</realm-name>
-    </login-config>
-  -->
+<!--
+  <login-config>
+    <auth-method>BASIC</auth-method>
+    <realm-name>Test Realm</realm-name>
+  </login-config>
+-->
 
-  <!--
-    <login-config>
-      <auth-method>DIGEST</auth-method>
-      <realm-name>Test Realm</realm-name>
-    </login-config>
-  -->
+<!--
+  <login-config>
+    <auth-method>DIGEST</auth-method>
+    <realm-name>Test Realm</realm-name>
+  </login-config>
+-->
 
   <login-config>
     <auth-method>FORM</auth-method>
     <realm-name>Test Realm</realm-name>
     <form-login-config>
-      <form-login-page>/logon.html?param=test</form-login-page>
-      <form-error-page>/logonError.html?param=test</form-error-page>
+       <form-login-page>/logon.html?param=test</form-login-page>
+       <form-error-page>/logonError.html?param=test</form-error-page>
     </form-login-config>
   </login-config>
-
+  
   <session-config>
     <session-timeout>5</session-timeout>
   </session-config>

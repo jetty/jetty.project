@@ -5,9 +5,7 @@
 
   <!-- Get root for static content, could be on file system or this bundle -->
   <Call id="res" class="org.eclipse.jetty.util.resource.Resource" name="newResource">
-    <Arg>
-      <Property name="bundle.root" />
-    </Arg>
+    <Arg><Property name="bundle.root"/></Arg>
   </Call>
 
   <Ref refid="res">
@@ -20,7 +18,7 @@
 
   <!-- Set up the base resource for static files relative to inside bundle -->
   <Set name="baseResource">
-    <Ref refid="base" />
+     <Ref refid="base"/>
   </Set>
 
   <Set name="handler">

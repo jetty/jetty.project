@@ -3,6 +3,7 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
+
   <!-- ===================================================================== -->
   <!-- Configure a factory for HazelcastSessionDataStore using               -->
   <!-- an embedded Hazelcast Instance                                        -->
@@ -10,13 +11,11 @@
   <Call name="addBean">
     <Arg>
       <New id="sessionDataStoreFactory" class="org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory">
-        <Set name="mapName" property="jetty.session.hazelcast.mapName" />
-        <Set name="hazelcastInstanceName" property="jetty.session.hazelcast.hazelcastInstanceName" />
-        <Set name="scavengeZombies" property="jetty.session.hazelcast.scavengeZombies" />
-        <Set name="gracePeriodSec">
-          <Property name="jetty.session.gracePeriod.seconds" default="3600" />
-        </Set>
-        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds" />
+        <Set name="mapName" property="jetty.session.hazelcast.mapName"/>
+        <Set name="hazelcastInstanceName" property="jetty.session.hazelcast.hazelcastInstanceName"/>
+        <Set name="scavengeZombies" property="jetty.session.hazelcast.scavengeZombies"/>
+        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
       </New>
     </Arg>
   </Call>

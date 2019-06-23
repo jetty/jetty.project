@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="warn" name="Jetty">
+<Configuration status="warn" name="Jetty" >
 
   <properties>
     <property name="logging.dir">${sys:jetty.logging.dir:-logs}</property>
@@ -12,17 +12,18 @@
       </PatternLayout>
     </Console>
 
+
     <RollingRandomAccessFile name="file"
-                             fileName="${logging.dir}/jetty.log"
-                             filePattern="${logging.dir}/jetty-%d{MM-dd-yyyy}.log.gz"
-                             ignoreExceptions="false">
+      fileName="${logging.dir}/jetty.log"
+      filePattern="${logging.dir}/jetty-%d{MM-dd-yyyy}.log.gz"
+      ignoreExceptions="false">
       <PatternLayout>
         <Pattern>%d [%t] %-5p %c %x - %m%n</Pattern>
       </PatternLayout>
 
       <Policies>
         <TimeBasedTriggeringPolicy />
-        <SizeBasedTriggeringPolicy size="10 MB" />
+        <SizeBasedTriggeringPolicy size="10 MB"/>
       </Policies>
     </RollingRandomAccessFile>
 
@@ -30,7 +31,7 @@
 
   <Loggers>
     <Root level="info">
-      <AppenderRef ref="console" />
+      <AppenderRef ref="console"/>
     </Root>
     <!--
     To have all logger async 

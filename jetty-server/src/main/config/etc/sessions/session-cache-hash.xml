@@ -3,18 +3,19 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
+
   <!-- ===================================================================== -->
   <!-- Configure a factory for in-memory Session objects                     -->
   <!-- ===================================================================== -->
   <Call name="addBean">
-    <Arg>
-      <New class="org.eclipse.jetty.server.session.DefaultSessionCacheFactory">
-        <Set name="evictionPolicy" property="jetty.session.evictionPolicy" />
-        <Set name="saveOnInactiveEvict" property="jetty.session.saveOnInactiveEvict" />
-        <Set name="saveOnCreate" property="jetty.session.saveOnCreate" />
-        <Set name="removeUnloadableSessions" property="jetty.session.removeUnloadableSessions" />
-      </New>
-    </Arg>
+   <Arg>
+    <New class="org.eclipse.jetty.server.session.DefaultSessionCacheFactory">
+     <Set name="evictionPolicy" property="jetty.session.evictionPolicy"/>
+     <Set name="saveOnInactiveEvict" property="jetty.session.saveOnInactiveEvict"/>
+     <Set name="saveOnCreate" property="jetty.session.saveOnCreate"/>
+     <Set name="removeUnloadableSessions" property="jetty.session.removeUnloadableSessions"/>
+    </New>
+   </Arg>
   </Call>
 
 </Configure>

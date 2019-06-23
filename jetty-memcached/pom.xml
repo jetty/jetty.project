@@ -12,6 +12,7 @@
   <packaging>pom</packaging>
   <name>Jetty :: Memcached</name>
 
+
   <modules>
     <module>jetty-memcached-sessions</module>
   </modules>

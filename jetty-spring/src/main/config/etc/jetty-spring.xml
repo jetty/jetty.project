@@ -9,21 +9,21 @@
 
 <beans>
 
-  <bean id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection" />
+  <bean id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
 
   <bean id="server" name="Main" class="org.eclipse.jetty.server.Server" init-method="start" destroy-method="stop">
     <constructor-arg>
       <bean id="threadPool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <property name="minThreads" value="10" />
-        <property name="maxThreads" value="50" />
+        <property name="minThreads" value="10"/>
+        <property name="maxThreads" value="50"/>
       </bean>
     </constructor-arg>
 
     <property name="connectors">
       <list>
         <bean id="connector" class="org.eclipse.jetty.server.ServerConnector">
-          <constructor-arg ref="server" />
-          <property name="port" value="8080" />
+          <constructor-arg ref="server"/>
+          <property name="port" value="8080"/>
         </bean>
       </list>
     </property>
@@ -32,8 +32,8 @@
       <bean id="handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
         <property name="handlers">
           <list>
-            <ref bean="contexts" />
-            <bean id="defaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler" />
+            <ref bean="contexts"/>
+            <bean id="defaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
           </list>
         </property>
       </bean>
@@ -42,13 +42,13 @@
     <property name="beans">
       <list>
         <bean id="deploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
-          <property name="contexts" ref="contexts" />
+          <property name="contexts" ref="contexts"/>
           <property name="appProviders">
             <list>
               <bean id="webAppProvider" class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-                <property name="monitoredDirName" value="webapps" />
-                <property name="scanInterval" value="1" />
-                <property name="extractWars" value="true" />
+                <property name="monitoredDirName" value="webapps"/>
+                <property name="scanInterval" value="1"/>
+                <property name="extractWars" value="true"/>
               </bean>
             </list>
           </property>

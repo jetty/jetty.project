@@ -6,7 +6,7 @@
 
   <Set name="Test">SetValue</Set>
   <Set name="Test" type="int"><Property><Name>does.not.exist</Name><Default>2</Default></Property></Set>
-
+  
   <Set name="PropertyTest"><Property><Name>anIntegerNoActualPropDefined</Name><Default>18080</Default></Property></Set>
 
   <Put name="Test">PutValue</Put>
@@ -25,7 +25,7 @@
   <Put name="Object"><New class="java.lang.Double">
       <Arg>1.2345</Arg>
   </New></Put>
-
+ 
   <Put name="ObjectTrim">
     <New class="java.lang.Double">
       <Arg>1.2345</Arg>
@@ -151,7 +151,7 @@
   <Set name="testField1"><Get class="org.eclipse.jetty.xml.TestConfiguration" name="VALUE"/></Set>
   <Set name="testField2"><Get name="testInt"/></Set>
   <Set name="VALUE" type="int">42</Set>
-
+  
   <Map>
     <Id>map</Id>
     <Entry>

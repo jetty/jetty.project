@@ -17,21 +17,21 @@
 <!-- =======================================================================================-->
 <project name="Jetty-Ant integration test" basedir=".">
   <path id="jetty.plugin.classpath">
-    <fileset dir="jetty-lib" includes="*.jar" />
+    <fileset dir="jetty-lib" includes="*.jar"/>
   </path>
   <taskdef classpathref="jetty.plugin.classpath" resource="tasks.properties" loaderref="jetty.loader" />
 
   <typedef name="hashLoginService" classname="org.eclipse.jetty.security.HashLoginService"
            classpathref="jetty.plugin.classpath" loaderref="jetty.loader" />
-
+ 
   <target name="jetty.run">
     <jetty.run tempDirectory="jetty-temp">
       <loginServices>
-        <hashLoginService name="Test Realm" config="realm.properties" />
+        <hashLoginService name="Test Realm" config="realm.properties"/>
       </loginServices>
-      <webApp war="test.war" contextpath="/test">
+      <webApp war="test.war" contextpath="/test" >
         <attributes>
-          <attribute name="org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" value=".*/jetty-servlet-api-[^/]*\.jar$" />
+          <attribute name="org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" value=".*/jetty-servlet-api-[^/]*\.jar$"/>
         </attributes>
       </webApp>
     </jetty.run>

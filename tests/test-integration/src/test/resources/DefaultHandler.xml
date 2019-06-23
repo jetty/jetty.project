@@ -6,7 +6,7 @@
   <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
     <Set name="secureScheme">https</Set>
     <Set name="securePort">
-      <Property name="jetty.secure.port" default="8443" />
+      <Property name="jetty.secure.port" default="8443"/>
     </Set>
     <Set name="outputBufferSize">32768</Set>
     <Set name="requestHeaderSize">8192</Set>
@@ -29,10 +29,10 @@
           <Item>
             <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
               <Set name="contextPath">/tests</Set>
-              <Set name="ResourceBase"><Property name="test.docroot.base" />/default
+              <Set name="ResourceBase"><Property name="test.docroot.base"/>/default
               </Set>
               <Set name="Handler">
-                <New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler" />
+                <New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/>
               </Set>
               <Set name="DisplayName">default</Set>
             </New>

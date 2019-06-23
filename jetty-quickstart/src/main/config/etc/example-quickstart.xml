@@ -17,8 +17,7 @@ time it is run.
 <Configure class="org.eclipse.jetty.quickstart.QuickStartWebApp">
   <Set name="autoPreconfigure">true</Set>
   <Set name="contextPath">/</Set>
-  <Set name="war"><Property name="jetty.webapps" default="." />/application.war
-  </Set>
+  <Set name="war"><Property name="jetty.webapps" default="."/>/application.war</Set>
   <!--
   <Call name="setInitParameter">
     <Arg>org.eclipse.jetty.jsp.precompiled</Arg>

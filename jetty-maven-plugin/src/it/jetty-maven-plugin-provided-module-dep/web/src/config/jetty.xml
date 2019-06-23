@@ -5,7 +5,7 @@
   <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
     <Set name="secureScheme">https</Set>
     <Set name="securePort">
-      <Property name="jetty.secure.port" default="8443" />
+      <Property name="jetty.secure.port" default="8443"/>
     </Set>
     <Set name="outputBufferSize">32768</Set>
     <Set name="requestHeaderSize">8192</Set>
@@ -17,14 +17,14 @@
     <Arg>
       <New class="org.eclipse.jetty.server.ServerConnector">
         <Arg name="server">
-          <Ref refid="Server" />
+          <Ref refid="Server"/>
         </Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
             <Item>
               <New class="org.eclipse.jetty.server.HttpConnectionFactory">
                 <Arg name="config">
-                  <Ref refid="httpConfig" />
+                  <Ref refid="httpConfig"/>
                 </Arg>
               </New>
             </Item>
@@ -37,9 +37,9 @@
           </Arg>
         </Call>
         <Set name="host">
-          <Property name="jetty.host" />
+          <Property name="jetty.host"/>
         </Set>
-        <Set name="port"><Property name="jetty.port" default="0" />0
+        <Set name="port"><Property name="jetty.port" default="0"/>0
         </Set>
         <Set name="idleTimeout">30000</Set>
       </New>

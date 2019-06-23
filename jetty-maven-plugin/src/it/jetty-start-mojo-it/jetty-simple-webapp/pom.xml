@@ -87,18 +87,19 @@
               <goal>start</goal>
             </goals>
             <configuration>
-              <systemProperties>
+               <systemProperties>
                 <systemProperty>
                   <name>jetty.port.file</name>
                   <value>${jetty.port.file}</value>
                 </systemProperty>
-              </systemProperties>
-              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+               </systemProperties>
+               <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
           </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
+
 
 </project>

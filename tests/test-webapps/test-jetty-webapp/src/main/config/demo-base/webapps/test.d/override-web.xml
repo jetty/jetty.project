@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app
-  xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
-  version="3.1">
+<web-app 
+   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" 
+   version="3.1"> 
 
-  <!-- This web.xml format file is an override file that is applied to the test webapp AFTER
-       it has been configured by the default descriptor and the WEB-INF/web.xml descriptor -->
+
+<!-- This web.xml format file is an override file that is applied to the test webapp AFTER
+     it has been configured by the default descriptor and the WEB-INF/web.xml descriptor -->
 
   <!-- Add or override context init parameter -->
   <context-param>
@@ -44,7 +45,7 @@
     <servlet-class>com.acme.SessionDump</servlet-class>
     <load-on-startup>5</load-on-startup>
   </servlet>
-
+  
   <!-- Allow remote access to test webapp -->
   <!--
   <filter>
@@ -57,7 +58,7 @@
     </init-param>
   </filter>
   -->
-
+  
 </web-app>
 
 

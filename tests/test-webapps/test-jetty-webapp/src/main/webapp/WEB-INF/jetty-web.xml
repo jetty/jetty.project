@@ -13,17 +13,14 @@ org.eclipse.jetty.servlet.WebApplicationContext object
     <Call name="exclude">
       <Arg>
         <Array type="String">
-          <Item>org.eclipse.jetty.util.</Item>
-          <Item>org.eclipse.jetty.servlets.</Item>
-        </Array>
+	  <Item>org.eclipse.jetty.util.</Item>
+	  <Item>org.eclipse.jetty.servlets.</Item>
+	</Array>
       </Arg>
     </Call>
   </Get>
 
   <Get name="servletContext">
-    <Call name="log">
-      <Arg>The test-jetty webapp is deployed. DO NOT USE IN PRODUCTION!</Arg>
-      <Arg></Arg>
-    </Call>
+    <Call name="log"><Arg>The test-jetty webapp is deployed. DO NOT USE IN PRODUCTION!</Arg><Arg></Arg></Call>
   </Get>
 </Configure>
