@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
-    private static final byte EMPTY_BUFFER[] = new byte[0];
+    private static final byte[] EMPTY_BUFFER = new byte[0];
     private static final int BUFFER_SIZE = 65535;
     private final Session session;
     private ByteArrayOutputStream out;
@@ -79,7 +79,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 if (out != null)
                 {
-                    byte buf[] = out.toByteArray();
+                    byte[] buf = out.toByteArray();
                     methodHandle.invoke(buf, 0, buf.length);
                 }
                 else

@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.Request;
 
 public interface GzipFactory
 {
-    Deflater getDeflater(Request request, long content_length);
+    Deflater getDeflater(Request request, long contentLength);
 
     boolean isMimeTypeGzipable(String mimetype);
 

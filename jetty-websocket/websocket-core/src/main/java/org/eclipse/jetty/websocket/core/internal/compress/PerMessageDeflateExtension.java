@@ -147,7 +147,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     public void init(final ExtensionConfig config, ByteBufferPool bufferPool)
     {
         configRequested = new ExtensionConfig(config);
-        Map<String, String> params_negotiated = new HashMap<>();
+        Map<String, String> paramsNegotiated = new HashMap<>();
 
         for (String key : config.getParameterKeys())
         {
@@ -163,13 +163,13 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
                 case "client_no_context_takeover":
                 {
-                    params_negotiated.put("client_no_context_takeover", null);
+                    paramsNegotiated.put("client_no_context_takeover", null);
                     incomingContextTakeover = false;
                     break;
                 }
                 case "server_no_context_takeover":
                 {
-                    params_negotiated.put("server_no_context_takeover", null);
+                    paramsNegotiated.put("server_no_context_takeover", null);
                     outgoingContextTakeover = false;
                     break;
                 }
@@ -180,7 +180,7 @@ public class PerMessageDeflateExtension extends CompressExtension
             }
         }
 
-        configNegotiated = new ExtensionConfig(config.getName(), params_negotiated);
+        configNegotiated = new ExtensionConfig(config.getName(), paramsNegotiated);
         LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
         super.init(configNegotiated, bufferPool);

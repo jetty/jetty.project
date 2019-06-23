@@ -38,8 +38,6 @@ import java.nio.charset.Charset;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ======================================================================== */
-
 /**
  * IO Utilities.
  * Provides stream handling utilities in
@@ -150,7 +148,7 @@ public class IO
                             long byteCount)
         throws IOException
     {
-        byte buffer[] = new byte[bufferSize];
+        byte[] buffer = new byte[bufferSize];
         int len = bufferSize;
 
         if (byteCount >= 0)
@@ -192,7 +190,7 @@ public class IO
                             long byteCount)
         throws IOException
     {
-        char buffer[] = new char[bufferSize];
+        char[] buffer = new char[bufferSize];
         int len = bufferSize;
 
         if (byteCount >= 0)

@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
 
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
-    private static final byte EMPTY_BUFFER[] = new byte[0];
+    private static final byte[] EMPTY_BUFFER = new byte[0];
     private static final int BUFFER_SIZE = 65535;
     private ByteArrayOutputStream out;
     private int size;
@@ -78,7 +78,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 if (out != null)
                 {
-                    byte buf[] = out.toByteArray();
+                    byte[] buf = out.toByteArray();
                     methodHandle.invoke(buf);
                 }
                 else

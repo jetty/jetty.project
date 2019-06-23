@@ -46,8 +46,8 @@ public class RelativeOrdering implements Ordering
         TopologicalSort<Resource> sort = new TopologicalSort<>();
         List<Resource> sorted = new ArrayList<>(jars);
         Set<Resource> others = new HashSet<>();
-        Set<Resource> before_others = new HashSet<>();
-        Set<Resource> after_others = new HashSet<>();
+        Set<Resource> beforeOthers = new HashSet<>();
+        Set<Resource> afterOthers = new HashSet<>();
 
         // Pass 1: split the jars into 'before others', 'others' or 'after others'
         for (Resource jar : jars)
@@ -64,10 +64,10 @@ public class RelativeOrdering implements Ordering
                         others.add(jar);
                         break;
                     case Before:
-                        before_others.add(jar);
+                        beforeOthers.add(jar);
                         break;
                     case After:
-                        after_others.add(jar);
+                        afterOthers.add(jar);
                         break;
                 }
             }
@@ -109,13 +109,13 @@ public class RelativeOrdering implements Ordering
                         // jars in the 'others' and 'after others' sets, but
                         // exclude any jars we have already explicitly 
                         // referenced above.
-                        Consumer<Resource> add_before = other ->
+                        Consumer<Resource> addBefore = other ->
                         {
                             if (!referenced.contains(other))
                                 sort.addDependency(other, jar);
                         };
-                        others.forEach(add_before);
-                        after_others.forEach(add_before);
+                        others.forEach(addBefore);
+                        afterOthers.forEach(addBefore);
                         break;
 
                     case After:
@@ -123,13 +123,13 @@ public class RelativeOrdering implements Ordering
                         // jars in the 'before others' and 'others' sets, but
                         // exclude any jars we have already explicitly 
                         // referenced above.
-                        Consumer<Resource> add_after = other ->
+                        Consumer<Resource> addAfter = other ->
                         {
                             if (!referenced.contains(other))
                                 sort.addDependency(jar, other);
                         };
-                        before_others.forEach(add_after);
-                        others.forEach(add_after);
+                        beforeOthers.forEach(addAfter);
+                        others.forEach(addAfter);
                         break;
                 }
             }

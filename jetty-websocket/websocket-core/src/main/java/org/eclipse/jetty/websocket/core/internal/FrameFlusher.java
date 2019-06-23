@@ -219,10 +219,10 @@ public class FrameFlusher extends IteratingCallback
 
                 int batchSpace = batchBuffer == null ? bufferSize : BufferUtil.space(batchBuffer);
 
-                boolean batch = entry.batch
-                                    && !entry.frame.isControlFrame()
-                                    && entry.frame.getPayloadLength() < bufferSize / 4
-                                    && (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
+                boolean batch = entry.batch &&
+                                    !entry.frame.isControlFrame() &&
+                                    entry.frame.getPayloadLength() < bufferSize / 4 &&
+                                    (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
 
                 if (batch)
                 {
@@ -293,7 +293,7 @@ public class FrameFlusher extends IteratingCallback
         {
             int i = 0;
             int bytes = 0;
-            ByteBuffer bufferArray[] = new ByteBuffer[buffers.size()];
+            ByteBuffer[] bufferArray = new ByteBuffer[buffers.size()];
             for (ByteBuffer bb : buffers)
             {
                 bytes += bb.limit() - bb.position();

@@ -177,13 +177,13 @@ public class ThreadLimitHandler extends HandlerWrapper
                     else
                     {
                         // No, then lets try to acquire one
-                        CompletableFuture<Closeable> future_permit = remote.acquire();
+                        CompletableFuture<Closeable> futurePermit = remote.acquire();
 
                         // Did we get a permit?
-                        if (future_permit.isDone())
+                        if (futurePermit.isDone())
                         {
                             // yes
-                            permit = future_permit.get();
+                            permit = futurePermit.get();
                         }
                         else
                         {
@@ -196,7 +196,7 @@ public class ThreadLimitHandler extends HandlerWrapper
                             async.setTimeout(0);
 
                             // dispatch the request when we do eventually get a pass
-                            future_permit.thenAccept(c ->
+                            futurePermit.thenAccept(c ->
                             {
                                 baseRequest.setAttribute(PERMIT, c);
                                 async.dispatch();
@@ -284,9 +284,9 @@ public class ThreadLimitHandler extends HandlerWrapper
         // If no remote IP from a header, determine it directly from the channel
         // Do not use the request methods, as they may have been lied to by the 
         // RequestCustomizer!
-        InetSocketAddress inet_addr = baseRequest.getHttpChannel().getRemoteAddress();
-        if (inet_addr != null && inet_addr.getAddress() != null)
-            return inet_addr.getAddress().getHostAddress();
+        InetSocketAddress inetAddr = baseRequest.getHttpChannel().getRemoteAddress();
+        if (inetAddr != null && inetAddr.getAddress() != null)
+            return inetAddr.getAddress().getHostAddress();
         return null;
     }
 
@@ -314,19 +314,19 @@ public class ThreadLimitHandler extends HandlerWrapper
         // Get the right most XForwarded-For for value.
         // This is the value from the closest proxy and the only one that
         // can be trusted.
-        String forwarded_for = null;
+        String forwardedFor = null;
         HttpFields httpFields = request.getHttpFields();
         for (HttpField field : httpFields)
         {
             if (_forwardedHeader.equalsIgnoreCase(field.getName()))
-                forwarded_for = field.getValue();
+                forwardedFor = field.getValue();
         }
 
-        if (forwarded_for == null || forwarded_for.isEmpty())
+        if (forwardedFor == null || forwardedFor.isEmpty())
             return null;
 
-        int comma = forwarded_for.lastIndexOf(',');
-        return (comma >= 0) ? forwarded_for.substring(comma + 1).trim() : forwarded_for;
+        int comma = forwardedFor.lastIndexOf(',');
+        return (comma >= 0) ? forwardedFor.substring(comma + 1).trim() : forwardedFor;
     }
 
     private final class Remote implements Closeable

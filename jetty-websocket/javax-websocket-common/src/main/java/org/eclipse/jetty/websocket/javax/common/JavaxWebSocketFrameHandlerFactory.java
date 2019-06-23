@@ -252,7 +252,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 }
                 else if (Byte.TYPE.isAssignableFrom(type))
                 {
-                    byte buf[] = strValue.getBytes(UTF_8);
+                    byte[] buf = strValue.getBytes(UTF_8);
                     if (buf.length != 1)
                         throw new IllegalArgumentException("Invalid Size");
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, buf[0]);
@@ -410,54 +410,54 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         }
 
         // OnMessage [0..2]
-        Method onMessages[] = ReflectUtils.findAnnotatedMethods(endpointClass, OnMessage.class);
+        Method[] onMessages = ReflectUtils.findAnnotatedMethods(endpointClass, OnMessage.class);
         if (onMessages != null && onMessages.length > 0)
         {
             // The different kind of @OnMessage method parameter signatures expected
-            InvokerUtils.Arg textCallingArgs[] = new InvokerUtils.Arg[]{
+            InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(String.class).required()
             };
 
-            InvokerUtils.Arg textPartialCallingArgs[] = new InvokerUtils.Arg[]{
+            InvokerUtils.Arg[] textPartialCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(String.class).required(),
                 new InvokerUtils.Arg(boolean.class).required()
             };
 
-            InvokerUtils.Arg binaryBufferCallingArgs[] = new InvokerUtils.Arg[]{
+            InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(ByteBuffer.class).required()
             };
 
-            InvokerUtils.Arg binaryPartialBufferCallingArgs[] = new InvokerUtils.Arg[]{
+            InvokerUtils.Arg[] binaryPartialBufferCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(ByteBuffer.class).required(),
                 new InvokerUtils.Arg(boolean.class).required()
             };
 
-            InvokerUtils.Arg binaryArrayCallingArgs[] = new InvokerUtils.Arg[]{
+            InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(byte[].class).required()
             };
 
-            InvokerUtils.Arg binaryPartialArrayCallingArgs[] = new InvokerUtils.Arg[]{
+            InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(byte[].class).required(),
                 new InvokerUtils.Arg(boolean.class).required()
             };
 
-            InvokerUtils.Arg inputStreamCallingArgs[] = new InvokerUtils.Arg[]{
+            InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(InputStream.class).required()
             };
 
-            InvokerUtils.Arg readerCallingArgs[] = new InvokerUtils.Arg[]{
+            InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(Reader.class).required()
             };
 
-            InvokerUtils.Arg pongCallingArgs[] = new InvokerUtils.Arg[]{
+            InvokerUtils.Arg[] pongCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(PongMessage.class).required()
             };

@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.io.Writer;
 
 
-/* ================================================================ */
-
 /**
  * Handle a multipart MIME response.
  */

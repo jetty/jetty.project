@@ -224,7 +224,7 @@ public class StartArgs
     private String mavenBaseUri;
 
     private boolean exec = false;
-    private String exec_properties;
+    private String execProperties;
     private boolean approveAllLicenses = false;
 
     public StartArgs(BaseHome baseHome)
@@ -777,7 +777,7 @@ public class StartArgs
         }
 
         // pass properties as args or as a file
-        if (dryRun && exec_properties == null)
+        if (dryRun && execProperties == null)
         {
             for (Prop p : properties)
             {
@@ -786,20 +786,20 @@ public class StartArgs
         }
         else if (properties.size() > 0)
         {
-            Path prop_path;
-            if (exec_properties == null)
+            Path propPath;
+            if (execProperties == null)
             {
-                prop_path = Files.createTempFile("start_", ".properties");
-                prop_path.toFile().deleteOnExit();
+                propPath = Files.createTempFile("start_", ".properties");
+                propPath.toFile().deleteOnExit();
             }
             else
-                prop_path = new File(exec_properties).toPath();
+                propPath = new File(execProperties).toPath();
 
-            try (OutputStream out = Files.newOutputStream(prop_path))
+            try (OutputStream out = Files.newOutputStream(propPath))
             {
                 properties.store(out, "start.jar properties");
             }
-            cmd.addRawArg(prop_path.toAbsolutePath().toString());
+            cmd.addRawArg(propPath.toAbsolutePath().toString());
         }
 
         for (Path xml : xmls)
@@ -843,9 +843,9 @@ public class StartArgs
         {
             // Try generic env variable
             String home = System.getenv("HOME");
-            Path home_m2_repository = new File(new File(home, ".m2"), "repository").toPath();
-            if (Files.exists(home_m2_repository))
-                localRepo = home_m2_repository.toString();
+            Path localMavenRepository = new File(new File(home, ".m2"), "repository").toPath();
+            if (Files.exists(localMavenRepository))
+                localRepo = localMavenRepository.toString();
         }
 
         // TODO: possibly use Eclipse Aether to manage it ?
@@ -1163,9 +1163,9 @@ public class StartArgs
         // Assign a fixed name to the property file for exec
         if (arg.startsWith("--exec-properties="))
         {
-            exec_properties = Props.getValue(arg);
-            if (!exec_properties.endsWith(".properties"))
-                throw new UsageException(UsageException.ERR_BAD_ARG, "--exec-properties filename must have .properties suffix: %s", exec_properties);
+            execProperties = Props.getValue(arg);
+            if (!execProperties.endsWith(".properties"))
+                throw new UsageException(UsageException.ERR_BAD_ARG, "--exec-properties filename must have .properties suffix: %s", execProperties);
             return;
         }
 

@@ -70,9 +70,9 @@ public class XmlParser
     public XmlParser()
     {
         SAXParserFactory factory = SAXParserFactory.newInstance();
-        boolean validating_dft = factory.getClass().toString().startsWith("org.apache.xerces.");
-        String validating_prop = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validating_dft ? "true" : "false");
-        boolean validating = Boolean.valueOf(validating_prop).booleanValue();
+        boolean validatingDefault = factory.getClass().toString().startsWith("org.apache.xerces.");
+        String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
+        boolean validating = Boolean.valueOf(validatingProp).booleanValue();
         setValidating(validating);
     }
 
@@ -402,7 +402,7 @@ public class XmlParser
         }
 
         @Override
-        public void ignorableWhitespace(char buf[], int offset, int len) throws SAXException
+        public void ignorableWhitespace(char[] buf, int offset, int len) throws SAXException
         {
             for (int i = 0; i < _observers.size(); i++)
             {
@@ -412,7 +412,7 @@ public class XmlParser
         }
 
         @Override
-        public void characters(char buf[], int offset, int len) throws SAXException
+        public void characters(char[] buf, int offset, int len) throws SAXException
         {
             _context.add(new String(buf, offset, len));
             for (int i = 0; i < _observers.size(); i++)

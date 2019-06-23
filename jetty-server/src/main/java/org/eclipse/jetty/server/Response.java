@@ -443,9 +443,9 @@ public class Response implements HttpServletResponse
             request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
             request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
             request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, request.getServletName());
-            ErrorHandler error_handler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
-            if (error_handler != null)
-                error_handler.handle(null, request, request, this);
+            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
+            if (errorHandler != null)
+                errorHandler.handle(null, request, request, this);
         }
         if (!request.isAsyncStarted())
             closeOutput();

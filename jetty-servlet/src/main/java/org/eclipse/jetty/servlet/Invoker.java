@@ -117,17 +117,17 @@ public class Invoker extends HttpServlet
     {
         // Get the requested path and info
         boolean included = false;
-        String servlet_path = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
-        if (servlet_path == null)
-            servlet_path = request.getServletPath();
+        String servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
+        if (servletPath == null)
+            servletPath = request.getServletPath();
         else
             included = true;
-        String path_info = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
-        if (path_info == null)
-            path_info = request.getPathInfo();
+        String pathInfo = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
+        if (pathInfo == null)
+            pathInfo = request.getPathInfo();
 
         // Get the servlet class
-        String servlet = path_info;
+        String servlet = pathInfo;
         if (servlet == null || servlet.length() <= 1)
         {
             response.sendError(404);
@@ -147,10 +147,10 @@ public class Invoker extends HttpServlet
             // Found a named servlet (from a user's web.xml file) so
             // now we add a mapping for it
             if (LOG.isDebugEnabled())
-                LOG.debug("Adding servlet mapping for named servlet:" + servlet + ":" + URIUtil.addPaths(servlet_path, servlet) + "/*");
+                LOG.debug("Adding servlet mapping for named servlet:" + servlet + ":" + URIUtil.addPaths(servletPath, servlet) + "/*");
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet);
-            mapping.setPathSpec(URIUtil.addPaths(servlet_path, servlet) + "/*");
+            mapping.setPathSpec(URIUtil.addPaths(servletPath, servlet) + "/*");
             _servletHandler.setServletMappings(ArrayUtil.addToArray(_servletHandler.getServletMappings(), mapping, ServletMapping.class));
         }
         else
@@ -167,10 +167,10 @@ public class Invoker extends HttpServlet
             synchronized (_servletHandler)
             {
                 // find the entry for the invoker (me)
-                _invokerEntry = _servletHandler.getMappedServlet(servlet_path);
+                _invokerEntry = _servletHandler.getMappedServlet(servletPath);
 
                 // Check for existing mapping (avoid threaded race).
-                String path = URIUtil.addPaths(servlet_path, servlet);
+                String path = URIUtil.addPaths(servletPath, servlet);
                 MappedResource<ServletHolder> entry = _servletHandler.getMappedServlet(path);
 
                 if (entry != null && !entry.equals(_invokerEntry))
@@ -232,7 +232,7 @@ public class Invoker extends HttpServlet
         {
             final Request baseRequest = Request.getBaseRequest(request);
             holder.handle(baseRequest,
-                new InvokedRequest(request, included, servlet, servlet_path, path_info),
+                new InvokedRequest(request, included, servlet, servletPath, pathInfo),
                 response);
         }
         else

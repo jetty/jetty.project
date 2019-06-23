@@ -80,7 +80,10 @@ public interface Dumpable
      *
      * @return the representation of self
      */
-    default String dumpSelf() { return toString(); }
+    default String dumpSelf()
+    {
+        return toString();
+    }
 
     /**
      * Dump just an Object (but not it's contained items) to an Appendable.

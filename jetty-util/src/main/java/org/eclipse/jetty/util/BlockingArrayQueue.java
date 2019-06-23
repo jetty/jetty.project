@@ -342,10 +342,10 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                     _notEmpty.await();
                 }
             }
-            catch (InterruptedException ie)
+            catch (InterruptedException ex)
             {
                 _notEmpty.signal();
-                throw ie;
+                throw ex;
             }
 
             final int head = _indexes[HEAD_OFFSET];

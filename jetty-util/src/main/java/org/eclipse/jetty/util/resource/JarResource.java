@@ -113,7 +113,10 @@ public class JarResource extends URLResource
             return new FilterInputStream(getInputStream(false))
             {
                 @Override
-                public void close() throws IOException {this.in = IO.getClosedStream();}
+                public void close()
+                {
+                    this.in = IO.getClosedStream();
+                }
             };
 
         URL url = new URL(_urlString.substring(4, _urlString.length() - 2));

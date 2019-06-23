@@ -187,14 +187,14 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         if (ssl)
         {
             // HTTP Configuration
-            HttpConfiguration http_config = new HttpConfiguration();
-            http_config.setSecureScheme("https");
-            http_config.setSecurePort(0);
-            http_config.setOutputBufferSize(32768);
-            http_config.setRequestHeaderSize(8192);
-            http_config.setResponseHeaderSize(8192);
-            http_config.setSendServerVersion(true);
-            http_config.setSendDateHeader(false);
+            HttpConfiguration httpConfig = new HttpConfiguration();
+            httpConfig.setSecureScheme("https");
+            httpConfig.setSecurePort(0);
+            httpConfig.setOutputBufferSize(32768);
+            httpConfig.setRequestHeaderSize(8192);
+            httpConfig.setResponseHeaderSize(8192);
+            httpConfig.setSendServerVersion(true);
+            httpConfig.setSendDateHeader(false);
 
             sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
@@ -205,12 +205,12 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
 
             // SSL HTTP Configuration
-            HttpConfiguration https_config = new HttpConfiguration(http_config);
-            https_config.addCustomizer(new SecureRequestCustomizer());
+            HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+            httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
             // SSL Connector
             connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(https_config));
+                new HttpConnectionFactory(httpsConfig));
         }
         else
         {

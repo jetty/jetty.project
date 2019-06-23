@@ -158,12 +158,12 @@ public class InvokerUtils
 
     private static MethodHandle mutatedInvoker(Class<?> targetClass, boolean throwOnFailure, Method method, ParamIdentifier paramIdentifier, Arg... callingArgs)
     {
-        Class<?> parameterTypes[] = method.getParameterTypes();
+        Class<?>[] parameterTypes = method.getParameterTypes();
 
         // Build up Arg list representing the MethodHandle parameters
         // ParamIdentifier is used to find named parameters (like javax.websocket's @PathParam declaration)
         boolean hasNamedParamArgs = false;
-        Arg parameterArgs[] = new Arg[parameterTypes.length + 1];
+        Arg[] parameterArgs = new Arg[parameterTypes.length + 1];
         parameterArgs[0] = new Arg(targetClass); // first type is always the calling object instance type
         for (int i = 0; i < parameterTypes.length; i++)
         {
@@ -231,13 +231,13 @@ public class InvokerUtils
             // match, so we have to drop and/or permute(reorder) the arguments
 
             // Mapping will be same size as callingType (to compensate for targetClass at index 0)
-            int reorderMap[] = new int[callingType.parameterCount()];
+            int[] reorderMap = new int[callingType.parameterCount()];
             Arrays.fill(reorderMap, -1);
             reorderMap[0] = 0; // always references targetClass
 
             // To track which callingArgs have been used.
             // If a callingArg is used, it is used only once.
-            boolean usedCallingArgs[] = new boolean[callingArgs.length];
+            boolean[] usedCallingArgs = new boolean[callingArgs.length];
             Arrays.fill(usedCallingArgs, false);
 
             // Iterate through each parameterArg and attempt to find an associated callingArg

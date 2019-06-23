@@ -51,12 +51,12 @@ public class X509
 
     public static boolean isCertSign(X509Certificate x509)
     {
-        boolean[] key_usage = x509.getKeyUsage();
-        if ((key_usage == null) || (key_usage.length <= KEY_USAGE__KEY_CERT_SIGN))
+        boolean[] keyUsage = x509.getKeyUsage();
+        if ((keyUsage == null) || (keyUsage.length <= KEY_USAGE__KEY_CERT_SIGN))
         {
             return false;
         }
-        return key_usage[KEY_USAGE__KEY_CERT_SIGN];
+        return keyUsage[KEY_USAGE__KEY_CERT_SIGN];
     }
 
     private final X509Certificate _x509;

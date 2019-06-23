@@ -144,7 +144,9 @@ public class Request implements HttpServletRequest
 
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
-    private static final int __NONE = 0, _STREAM = 1, __READER = 2;
+    private static final int INPUT_NONE = 0;
+    private static final int INPUT_STREAM = 1;
+    private static final int INPUT_READER = 2;
 
     private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
 
@@ -157,8 +159,8 @@ public class Request implements HttpServletRequest
     private static boolean isNoParams(MultiMap<String> inputParameters)
     {
         @SuppressWarnings("ReferenceEquality")
-        boolean is_no_params = (inputParameters == NO_PARAMS);
-        return is_no_params;
+        boolean isNoParams = (inputParameters == NO_PARAMS);
+        return isNoParams;
     }
 
     /**
@@ -211,7 +213,7 @@ public class Request implements HttpServletRequest
     private ContextHandler.Context _context;
     private Cookies _cookies;
     private DispatcherType _dispatcherType;
-    private int _inputState = __NONE;
+    private int _inputState = INPUT_NONE;
     private MultiMap<String> _queryParameters;
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
@@ -444,7 +446,7 @@ public class Request implements HttpServletRequest
         {
             _contentParameters = new MultiMap<>();
             int contentLength = getContentLength();
-            if (contentLength != 0 && _inputState == __NONE)
+            if (contentLength != 0 && _inputState == INPUT_NONE)
             {
                 String baseType = HttpFields.valueParameters(contentType, null);
                 if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
@@ -613,8 +615,6 @@ public class Request implements HttpServletRequest
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
 
-    /*
-     */
     public Attributes getAttributes()
     {
         if (_attributes == null)
@@ -837,9 +837,9 @@ public class Request implements HttpServletRequest
     @Override
     public ServletInputStream getInputStream() throws IOException
     {
-        if (_inputState != __NONE && _inputState != _STREAM)
+        if (_inputState != INPUT_NONE && _inputState != INPUT_STREAM)
             throw new IllegalStateException("READER");
-        _inputState = _STREAM;
+        _inputState = INPUT_STREAM;
 
         if (_channel.isExpecting100Continue())
             _channel.continue100(_input.available());
@@ -1122,10 +1122,10 @@ public class Request implements HttpServletRequest
     @Override
     public BufferedReader getReader() throws IOException
     {
-        if (_inputState != __NONE && _inputState != __READER)
+        if (_inputState != INPUT_NONE && _inputState != INPUT_READER)
             throw new IllegalStateException("STREAMED");
 
-        if (_inputState == __READER)
+        if (_inputState == INPUT_READER)
             return _reader;
 
         String encoding = getCharacterEncoding();
@@ -1145,7 +1145,7 @@ public class Request implements HttpServletRequest
                 }
             };
         }
-        _inputState = __READER;
+        _inputState = INPUT_READER;
         return _reader;
     }
 
@@ -1393,8 +1393,6 @@ public class Request implements HttpServletRequest
         return _context;
     }
 
-    /*
-     */
     public String getServletName()
     {
         if (_scope != null)
@@ -1723,7 +1721,7 @@ public class Request implements HttpServletRequest
         if (_context != null)
             throw new IllegalStateException("Request in context!");
 
-        if (_inputState == __READER)
+        if (_inputState == INPUT_READER)
         {
             try
             {
@@ -1773,7 +1771,7 @@ public class Request implements HttpServletRequest
         _parameters = null;
         _pathSpec = null;
         _contentParamsExtracted = false;
-        _inputState = __NONE;
+        _inputState = INPUT_NONE;
         _multiParts = null;
         _remote = null;
         _input.recycle();
@@ -1785,14 +1783,14 @@ public class Request implements HttpServletRequest
     @Override
     public void removeAttribute(String name)
     {
-        Object old_value = _attributes == null ? null : _attributes.getAttribute(name);
+        Object oldValue = _attributes == null ? null : _attributes.getAttribute(name);
 
         if (_attributes != null)
             _attributes.removeAttribute(name);
 
-        if (old_value != null && !_requestAttributeListeners.isEmpty())
+        if (oldValue != null && !_requestAttributeListeners.isEmpty())
         {
-            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context, this, name, old_value);
+            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context, this, name, oldValue);
             for (ServletRequestAttributeListener listener : _requestAttributeListeners)
             {
                 listener.attributeRemoved(event);
@@ -1819,7 +1817,7 @@ public class Request implements HttpServletRequest
     @Override
     public void setAttribute(String name, Object value)
     {
-        Object old_value = _attributes == null ? null : _attributes.getAttribute(name);
+        Object oldValue = _attributes == null ? null : _attributes.getAttribute(name);
 
         if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
             setQueryEncoding(value == null ? null : value.toString());
@@ -1832,10 +1830,10 @@ public class Request implements HttpServletRequest
 
         if (!_requestAttributeListeners.isEmpty())
         {
-            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context, this, name, old_value == null ? value : old_value);
+            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context, this, name, oldValue == null ? value : oldValue);
             for (ServletRequestAttributeListener l : _requestAttributeListeners)
             {
-                if (old_value == null)
+                if (oldValue == null)
                     l.attributeAdded(event);
                 else if (value == null)
                     l.attributeRemoved(event);
@@ -1845,8 +1843,6 @@ public class Request implements HttpServletRequest
         }
     }
 
-    /*
-     */
     public void setAttributes(Attributes attributes)
     {
         _attributes = attributes;
@@ -1868,7 +1864,7 @@ public class Request implements HttpServletRequest
     @Override
     public void setCharacterEncoding(String encoding) throws UnsupportedEncodingException
     {
-        if (_inputState != __NONE)
+        if (_inputState != INPUT_NONE)
             return;
 
         _characterEncoding = encoding;
@@ -2191,7 +2187,7 @@ public class Request implements HttpServletRequest
             setAttribute(__MULTIPARTS, _multiParts);
             Collection<Part> parts = _multiParts.getParts();
 
-            String _charset_ = null;
+            String formCharset = null;
             Part charsetPart = _multiParts.getPart("_charset_");
             if (charsetPart != null)
             {
@@ -2199,7 +2195,7 @@ public class Request implements HttpServletRequest
                 {
                     ByteArrayOutputStream os = new ByteArrayOutputStream();
                     IO.copy(is, os);
-                    _charset_ = new String(os.toByteArray(), StandardCharsets.UTF_8);
+                    formCharset = new String(os.toByteArray(), StandardCharsets.UTF_8);
                 }
             }
 
@@ -2214,8 +2210,8 @@ public class Request implements HttpServletRequest
                     c. use utf-8.
              */
             Charset defaultCharset;
-            if (_charset_ != null)
-                defaultCharset = Charset.forName(_charset_);
+            if (formCharset != null)
+                defaultCharset = Charset.forName(formCharset);
             else if (getCharacterEncoding() != null)
                 defaultCharset = Charset.forName(getCharacterEncoding());
             else

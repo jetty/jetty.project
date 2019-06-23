@@ -412,7 +412,8 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (LOG.isDebugEnabled())
             LOG.debug("ConnectionState: Transition to CONNECTED");
 
-        Callback openCallback = Callback.from(() ->
+        Callback openCallback = Callback.from(
+            () ->
             {
                 sessionState.onOpen();
                 if (!demanding)
@@ -663,7 +664,8 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 }
                 else
                 {
-                    closeCallback = Callback.from(() ->
+                    closeCallback = Callback.from(
+                        () ->
                         {
                             if (sessionState.isOutputOpen())
                             {

@@ -82,10 +82,10 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
             ex = ioe.toString();
             throw ioe;
         }
-        catch (ServletException se)
+        catch (ServletException servletEx)
         {
-            ex = se.toString() + ":" + se.getCause();
-            throw se;
+            ex = servletEx.toString() + ":" + servletEx.getCause();
+            throw servletEx;
         }
         catch (RuntimeException rte)
         {

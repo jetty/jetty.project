@@ -33,7 +33,7 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
     @Override
     public InvokerUtils.Arg getParamArg(Method method, Class<?> paramType, int idx)
     {
-        Annotation annos[] = method.getParameterAnnotations()[idx];
+        Annotation[] annos = method.getParameterAnnotations()[idx];
         if (annos != null || (annos.length > 0))
         {
             for (Annotation anno : annos)

@@ -104,8 +104,8 @@ public class DataRateLimitedServlet extends HttpServlet
         }
 
         // Set the mime type of the response
-        String content_type = getServletContext().getMimeType(info);
-        response.setContentType(content_type == null ? "application/x-data" : content_type);
+        String contentType = getServletContext().getMimeType(info);
+        response.setContentType(contentType == null ? "application/x-data" : contentType);
 
         // Look for a matching file path
         String path = request.getPathTranslated();

@@ -171,7 +171,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
             ssp = ssp.substring(2);
         }
 
-        String parts[] = ssp.split("/");
+        String[] parts = ssp.split("/");
 
         if (StartLog.isDebugEnabled())
         {

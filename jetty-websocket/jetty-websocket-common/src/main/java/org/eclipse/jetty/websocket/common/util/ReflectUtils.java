@@ -206,7 +206,7 @@ public class ReflectUtils
 
     public static Method findAnnotatedMethod(Class<?> pojo, Class<? extends Annotation> anno)
     {
-        Method methods[] = findAnnotatedMethods(pojo, anno);
+        Method[] methods = findAnnotatedMethods(pojo, anno);
         if (methods == null)
         {
             return null;
@@ -268,7 +268,7 @@ public class ReflectUtils
     private static int findTypeParameterIndex(Class<?> clazz, TypeVariable<?> needVar)
     {
         // debug("findTypeParameterIndex(%s, [%s])",toShortName(clazz),toShortName(needVar));
-        TypeVariable<?> params[] = clazz.getTypeParameters();
+        TypeVariable<?>[] params = clazz.getTypeParameters();
         for (int i = 0; i < params.length; i++)
         {
             if (params[i].getName().equals(needVar.getName()))
@@ -379,7 +379,7 @@ public class ReflectUtils
                 return false;
             }
 
-            Type ifaces[] = clazz.getGenericInterfaces();
+            Type[] ifaces = clazz.getGenericInterfaces();
             for (Type iface : ifaces)
             {
                 // debug("resolve %s interface[]: %s",toShortName(clazz),toShortName(iface));
@@ -399,7 +399,7 @@ public class ReflectUtils
                         {
                             // found a type parameter, use it
                             // debug("unwrap from class [%s] - typeParameters[%d]",toShortName(clazz),typeParamIdx);
-                            TypeVariable<?> params[] = clazz.getTypeParameters();
+                            TypeVariable<?>[] params = clazz.getTypeParameters();
                             if (params.length >= typeParamIdx)
                             {
                                 ref.setGenericFromType(params[typeParamIdx], typeParamIdx);
@@ -463,7 +463,7 @@ public class ReflectUtils
             StringBuilder str = new StringBuilder();
             str.append(trimClassName(((Class<?>)ptype.getRawType()).getName()));
             str.append("<");
-            Type args[] = ptype.getActualTypeArguments();
+            Type[] args = ptype.getActualTypeArguments();
             for (int i = 0; i < args.length; i++)
             {
                 if (i > 0)

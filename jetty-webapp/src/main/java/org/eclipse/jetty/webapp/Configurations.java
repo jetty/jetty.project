@@ -354,34 +354,34 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     public static void sort(List<Configuration> configurations)
     {
         // Sort the configurations
-        Map<String, Configuration> by_name = new HashMap<>();
-        Map<String, List<Configuration>> replaced_by = new HashMap<>();
+        Map<String, Configuration> byName = new HashMap<>();
+        Map<String, List<Configuration>> replacedBy = new HashMap<>();
         TopologicalSort<Configuration> sort = new TopologicalSort<>();
 
         for (Configuration c : configurations)
         {
-            by_name.put(c.getClass().getName(), c);
+            byName.put(c.getClass().getName(), c);
             if (c.replaces() != null)
-                replaced_by.computeIfAbsent(c.replaces().getName(), key -> new ArrayList<>()).add(c);
+                replacedBy.computeIfAbsent(c.replaces().getName(), key -> new ArrayList<>()).add(c);
         }
 
         for (Configuration c : configurations)
         {
             for (String b : c.getDependencies())
             {
-                Configuration before = by_name.get(b);
+                Configuration before = byName.get(b);
                 if (before != null)
                     sort.addBeforeAfter(before, c);
-                if (replaced_by.containsKey(b))
-                    replaced_by.get(b).forEach(bc -> sort.addBeforeAfter(bc, c));
+                if (replacedBy.containsKey(b))
+                    replacedBy.get(b).forEach(bc -> sort.addBeforeAfter(bc, c));
             }
             for (String a : c.getDependents())
             {
-                Configuration after = by_name.get(a);
+                Configuration after = byName.get(a);
                 if (after != null)
                     sort.addBeforeAfter(c, after);
-                if (replaced_by.containsKey(a))
-                    replaced_by.get(a).forEach(ac -> sort.addBeforeAfter(c, ac));
+                if (replacedBy.containsKey(a))
+                    replacedBy.get(a).forEach(ac -> sort.addBeforeAfter(c, ac));
             }
         }
         sort.sort(configurations);
@@ -421,8 +421,8 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
             for (ListIterator<Configuration> i = _configurations.listIterator(); i.hasNext(); )
             {
                 Configuration c = i.next();
-                if (c.getClass().getName().equals(replaces.getName())
-                        || c.replaces() != null && c.replaces().getName().equals(replaces.getName()))
+                if (c.getClass().getName().equals(replaces.getName()) ||
+                        c.replaces() != null && c.replaces().getName().equals(replaces.getName()))
                 {
                     i.remove();
                     break;

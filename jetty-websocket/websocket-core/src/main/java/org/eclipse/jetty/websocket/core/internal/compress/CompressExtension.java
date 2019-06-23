@@ -296,7 +296,7 @@ public abstract class CompressExtension extends AbstractExtension
             return false;
         }
 
-        byte input[];
+        byte[] input;
         int inputOffset;
         int len;
 
@@ -336,7 +336,7 @@ public abstract class CompressExtension extends AbstractExtension
             return false;
         }
 
-        byte input[];
+        byte[] input;
         int inputOffset;
         int len;
 

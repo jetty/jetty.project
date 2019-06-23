@@ -59,19 +59,19 @@ public class Modules implements Iterable<Module>
         // Allow override mostly for testing
         if (!args.getProperties().containsKey("java.version"))
         {
-            String java_version = System.getProperty("java.version");
-            if (java_version != null)
+            String javaVersion = System.getProperty("java.version");
+            if (javaVersion != null)
             {
-                args.setProperty("java.version", java_version, "<internal>");
+                args.setProperty("java.version", javaVersion, "<internal>");
             }
         }
 
         try
         {
-            Path deprecated_path = _baseHome.getPath("modules/deprecated.properties");
-            if (deprecated_path != null && FS.exists(deprecated_path))
+            Path deprecatedPath = _baseHome.getPath("modules/deprecated.properties");
+            if (deprecatedPath != null && FS.exists(deprecatedPath))
             {
-                _deprecated.load(new FileInputStream(deprecated_path.toFile()));
+                _deprecated.load(new FileInputStream(deprecatedPath.toFile()));
             }
         }
         catch (IOException e)
@@ -252,8 +252,7 @@ public class Modules implements Iterable<Module>
 
     public List<Module> getEnabled()
     {
-        List<Module> enabled = _modules.stream().filter(m ->
-        {return m.isEnabled();}).collect(Collectors.toList());
+        List<Module> enabled = _modules.stream().filter(m -> m.isEnabled()).collect(Collectors.toList());
 
         TopologicalSort<Module> sort = new TopologicalSort<>();
         for (Module module : enabled)

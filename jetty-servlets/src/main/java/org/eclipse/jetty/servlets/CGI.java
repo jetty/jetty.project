@@ -434,7 +434,7 @@ public class CGI extends HttpServlet
             // terminate and clean up...
             LOG.debug("CGI: Client closed connection!", e);
         }
-        catch (InterruptedException ie)
+        catch (InterruptedException ex)
         {
             LOG.debug("CGI: interrupted!");
         }

@@ -61,17 +61,18 @@ public class ArrayTrie<V> extends AbstractTrie<V>
      * The index lookup table, this maps a character as a byte
      * (ISO-8859-1 or UTF8) to an index within a Trie row
      */
-    private static final int[] __lookup =
-        { // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-          /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-          /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-          /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
-          /*3*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 28, 29, -1, -1, -1, -1,
-          /*4*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-          /*5*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-          /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-          /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-          };
+    private static final int[] LOOKUP =
+        {
+            // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+            /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
+            /*3*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 28, 29, -1, -1, -1, -1,
+            /*4*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+            /*5*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
+            /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+            /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1
+        };
 
     /**
      * The Trie rows in a single array which allows a lookup of row,character
@@ -152,7 +153,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         {
             char c = s.charAt(k);
 
-            int index = __lookup[c & 0x7f];
+            int index = LOOKUP[c & 0x7f];
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -203,7 +204,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(offset + i);
-            int index = __lookup[c & 0x7f];
+            int index = LOOKUP[c & 0x7f];
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -231,7 +232,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(offset + i);
-            int index = __lookup[c & 0x7f];
+            int index = LOOKUP[c & 0x7f];
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -278,7 +279,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(pos++);
-            int index = __lookup[c & 0x7f];
+            int index = LOOKUP[c & 0x7f];
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -316,7 +317,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b[offset + i];
-            int index = __lookup[c & 0x7f];
+            int index = LOOKUP[c & 0x7f];
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -355,7 +356,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(pos++);
-            int index = __lookup[c & 0x7f];
+            int index = LOOKUP[c & 0x7f];
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;

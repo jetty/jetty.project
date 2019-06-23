@@ -54,8 +54,7 @@ public class Generator
      * The overhead (maximum) for a framing header. Assuming a maximum sized payload with masking key.
      */
     public static final int MAX_HEADER_LENGTH = 28;
-    private static byte[] mask = new byte[]
-                                     {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
+    private static byte[] mask = {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
 
     public static void putMask(ByteBuffer buffer)
     {

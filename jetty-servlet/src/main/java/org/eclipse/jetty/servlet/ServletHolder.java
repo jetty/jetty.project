@@ -362,16 +362,16 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             super.doStart();
         }
-        catch (UnavailableException ue)
+        catch (UnavailableException ex)
         {
-            makeUnavailable(ue);
+            makeUnavailable(ex);
             if (_servletHandler.isStartWithUnavailable())
             {
-                LOG.ignore(ue);
+                LOG.ignore(ex);
                 return;
             }
             else
-                throw ue;
+                throw ex;
         }
 
         //servlet is not an instance of javax.servlet.Servlet
@@ -379,16 +379,16 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             checkServletType();
         }
-        catch (UnavailableException ue)
+        catch (UnavailableException ex)
         {
-            makeUnavailable(ue);
+            makeUnavailable(ex);
             if (_servletHandler.isStartWithUnavailable())
             {
-                LOG.ignore(ue);
+                LOG.ignore(ex);
                 return;
             }
             else
-                throw ue;
+                throw ex;
         }
 
         //check if we need to forcibly set load-on-startup
@@ -437,13 +437,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public void doStop()
         throws Exception
     {
-        Object old_run_as = null;
+        Object oldRunAs = null;
         if (_servlet != null)
         {
             try
             {
                 if (_identityService != null)
-                    old_run_as = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
+                    oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
 
                 destroyInstance(_servlet);
             }
@@ -454,7 +454,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             finally
             {
                 if (_identityService != null)
-                    _identityService.unsetRunAs(old_run_as);
+                    _identityService.unsetRunAs(oldRunAs);
             }
         }
 
@@ -627,7 +627,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private synchronized void initServlet()
         throws ServletException
     {
-        Object old_run_as = null;
+        Object oldRunAs = null;
         try
         {
             if (_servlet == null)
@@ -638,7 +638,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             // Handle run as
             if (_identityService != null)
             {
-                old_run_as = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
+                oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
             }
 
             // Handle configuring servlets that implement org.apache.jasper.servlet.JspServlet
@@ -681,7 +681,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             // pop run-as role
             if (_identityService != null)
-                _identityService.unsetRunAs(old_run_as);
+                _identityService.unsetRunAs(oldRunAs);
         }
     }
 
@@ -818,7 +818,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         Servlet servlet = getServlet();
 
         // Service the request
-        Object old_run_as = null;
+        Object oldRunAs = null;
         boolean suspendable = baseRequest.isAsyncSupported();
         try
         {
@@ -828,7 +828,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
             // Handle run as
             if (_identityService != null)
-                old_run_as = _identityService.setRunAs(baseRequest.getResolvedUserIdentity(), _runAsToken);
+                oldRunAs = _identityService.setRunAs(baseRequest.getResolvedUserIdentity(), _runAsToken);
 
             if (baseRequest.isAsyncSupported() && !isAsyncSupported())
             {
@@ -854,7 +854,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             // Pop run-as role.
             if (_identityService != null)
-                _identityService.unsetRunAs(old_run_as);
+                _identityService.unsetRunAs(oldRunAs);
         }
     }
 
@@ -1263,9 +1263,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 return getHeldClass().getDeclaredConstructor().newInstance();
             return ctx.createServlet(getHeldClass());
         }
-        catch (ServletException se)
+        catch (ServletException ex)
         {
-            Throwable cause = se.getRootCause();
+            Throwable cause = ex.getRootCause();
             if (cause instanceof InstantiationException)
                 throw (InstantiationException)cause;
             if (cause instanceof IllegalAccessException)
@@ -1274,7 +1274,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 throw (NoSuchMethodException)cause;
             if (cause instanceof InvocationTargetException)
                 throw (InvocationTargetException)cause;
-            throw se;
+            throw ex;
         }
     }
 

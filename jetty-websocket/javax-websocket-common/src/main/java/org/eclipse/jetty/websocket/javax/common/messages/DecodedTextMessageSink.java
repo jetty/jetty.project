@@ -58,7 +58,7 @@ public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T
     {
         if (!getDecoder().willDecode(wholeMessage))
         {
-            LOG.warn("Message lost, decoder " + getDecoder().getClass().getName() + "#willDecode() has rejected it.");
+            logger.warn("Message lost, decoder " + getDecoder().getClass().getName() + "#willDecode() has rejected it.");
             return;
         }
 

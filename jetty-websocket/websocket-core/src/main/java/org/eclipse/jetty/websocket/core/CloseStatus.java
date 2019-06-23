@@ -136,7 +136,7 @@ public class CloseStatus
             {
                 // Reason (trimmed to max reason size)
                 int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
-                byte reasonBytes[] = new byte[len];
+                byte[] reasonBytes = new byte[len];
                 data.get(reasonBytes, 0, len);
 
                 // Spec Requirement : throw BadPayloadException on invalid UTF8

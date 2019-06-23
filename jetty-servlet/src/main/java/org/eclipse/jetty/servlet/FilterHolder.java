@@ -116,14 +116,14 @@ public class FilterHolder extends Holder<Filter>
                                   ? context.createFilter(getHeldClass())
                                   : getHeldClass().getDeclaredConstructor().newInstance();
                 }
-                catch (ServletException se)
+                catch (ServletException ex)
                 {
-                    Throwable cause = se.getRootCause();
+                    Throwable cause = ex.getRootCause();
                     if (cause instanceof InstantiationException)
                         throw (InstantiationException)cause;
                     if (cause instanceof IllegalAccessException)
                         throw (IllegalAccessException)cause;
-                    throw se;
+                    throw ex;
                 }
             }
 

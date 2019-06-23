@@ -413,10 +413,10 @@ public class Server extends HandlerWrapper implements Attributes
                 {
                     nc.close();
                 }
-                catch (Throwable t2)
+                catch (Throwable th2)
                 {
-                    if (th != t2)
-                        th.addSuppressed(t2);
+                    if (th != th2)
+                        th.addSuppressed(th2);
                 }
             });
             throw th;

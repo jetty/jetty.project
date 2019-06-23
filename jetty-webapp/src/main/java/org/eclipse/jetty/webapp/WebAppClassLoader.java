@@ -114,9 +114,9 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         String getExtraClasspath();
 
-        boolean isServerResource(String name, URL parent_url);
+        boolean isServerResource(String name, URL parentUrl);
 
-        boolean isSystemResource(String name, URL webapp_url);
+        boolean isSystemResource(String name, URL webappUrl);
     }
 
     /**
@@ -359,36 +359,36 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     @Override
     public Enumeration<URL> getResources(String name) throws IOException
     {
-        List<URL> from_parent = new ArrayList<>();
-        List<URL> from_webapp = new ArrayList<>();
+        List<URL> fromParent = new ArrayList<>();
+        List<URL> fromWebapp = new ArrayList<>();
 
         Enumeration<URL> urls = _parent.getResources(name);
         while (urls != null && urls.hasMoreElements())
         {
             URL url = urls.nextElement();
             if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerResource(name, url))
-                from_parent.add(url);
+                fromParent.add(url);
         }
 
         urls = this.findResources(name);
         while (urls != null && urls.hasMoreElements())
         {
             URL url = urls.nextElement();
-            if (!_context.isSystemResource(name, url) || from_parent.isEmpty())
-                from_webapp.add(url);
+            if (!_context.isSystemResource(name, url) || fromParent.isEmpty())
+                fromWebapp.add(url);
         }
 
         List<URL> resources;
 
         if (_context.isParentLoaderPriority())
         {
-            from_parent.addAll(from_webapp);
-            resources = from_parent;
+            fromParent.addAll(fromWebapp);
+            resources = fromParent;
         }
         else
         {
-            from_webapp.addAll(from_parent);
-            resources = from_webapp;
+            fromWebapp.addAll(fromParent);
+            resources = fromWebapp;
         }
 
         if (LOG.isDebugEnabled())
@@ -410,45 +410,45 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         URL resource = null;
         if (_context.isParentLoaderPriority())
         {
-            URL parent_url = _parent.getResource(name);
+            URL parentUrl = _parent.getResource(name);
 
             // return if we have a url the webapp is allowed to see
-            if (parent_url != null
-                    && (Boolean.TRUE.equals(__loadServerClasses.get())
-                            || !_context.isServerResource(name, parent_url)))
-                resource = parent_url;
+            if (parentUrl != null &&
+                    (Boolean.TRUE.equals(__loadServerClasses.get()) ||
+                         !_context.isServerResource(name, parentUrl)))
+                resource = parentUrl;
             else
             {
-                URL webapp_url = this.findResource(name);
+                URL webappUrl = this.findResource(name);
 
                 // If found here then OK to use regardless of system or server classes
                 // If it is a system resource, we've already tried to load from parent, so
                 // would have returned it.
                 // If it is a server resource, doesn't matter as we have loaded it from the 
                 // webapp
-                if (webapp_url != null)
-                    resource = webapp_url;
+                if (webappUrl != null)
+                    resource = webappUrl;
             }
         }
         else
         {
-            URL webapp_url = this.findResource(name);
+            URL webappUrl = this.findResource(name);
 
-            if (webapp_url != null && !_context.isSystemResource(name, webapp_url))
-                resource = webapp_url;
+            if (webappUrl != null && !_context.isSystemResource(name, webappUrl))
+                resource = webappUrl;
             else
             {
 
                 // Couldn't find or see a webapp resource, so try a parent
-                URL parent_url = _parent.getResource(name);
-                if (parent_url != null
-                        && (Boolean.TRUE.equals(__loadServerClasses.get())
-                                || !_context.isServerResource(name, parent_url)))
-                    resource = parent_url;
+                URL parentUrl = _parent.getResource(name);
+                if (parentUrl != null &&
+                        (Boolean.TRUE.equals(__loadServerClasses.get()) ||
+                             !_context.isServerResource(name, parentUrl)))
+                    resource = parentUrl;
                     // We couldn't find a parent resource, so OK to return a webapp one if it exists
                     // and we just couldn't see it before
-                else if (webapp_url != null)
-                    resource = webapp_url;
+                else if (webappUrl != null)
+                    resource = webappUrl;
             }
         }
 
@@ -468,16 +468,16 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         synchronized (getClassLoadingLock(name))
         {
             ClassNotFoundException ex = null;
-            Class<?> parent_class = null;
-            Class<?> webapp_class = null;
+            Class<?> parentClass = null;
+            Class<?> webappClass = null;
 
             // Has this loader loaded the class already?
-            webapp_class = findLoadedClass(name);
-            if (webapp_class != null)
+            webappClass = findLoadedClass(name);
+            if (webappClass != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("found webapp loaded {}", webapp_class);
-                return webapp_class;
+                    LOG.debug("found webapp loaded {}", webappClass);
+                return webappClass;
             }
 
             // Should we try the parent loader first?
@@ -486,16 +486,16 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 // Try the parent loader
                 try
                 {
-                    parent_class = _parent.loadClass(name);
-                    if (parent_class == null)
+                    parentClass = _parent.loadClass(name);
+                    if (parentClass == null)
                         throw new ClassNotFoundException("Bad ClassLoader: returned null for loadClass(" + name + ")");
 
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parent_class))
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("PLP parent loaded {}", parent_class);
-                        return parent_class;
+                            LOG.debug("PLP parent loaded {}", parentClass);
+                        return parentClass;
                     }
                 }
                 catch (ClassNotFoundException e)
@@ -512,12 +512,12 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     // would have returned it.
                     // If it is a server class, doesn't matter as we have loaded it from the 
                     // webapp
-                    webapp_class = this.findClass(name);
+                    webappClass = this.findClass(name);
                     if (resolve)
-                        resolveClass(webapp_class);
+                        resolveClass(webappClass);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("PLP webapp loaded {}", webapp_class);
-                    return webapp_class;
+                        LOG.debug("PLP webapp loaded {}", webappClass);
+                    return webappClass;
                 }
                 catch (ClassNotFoundException e)
                 {
@@ -532,22 +532,22 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             else
             {
                 // Not parent loader priority, so...
-                webapp_class = loadAsResource(name, true);
-                if (webapp_class != null)
+                webappClass = loadAsResource(name, true);
+                if (webappClass != null)
                 {
-                    return webapp_class;
+                    return webappClass;
                 }
 
                 // Try the parent loader
                 try
                 {
-                    parent_class = _parent.loadClass(name);
+                    parentClass = _parent.loadClass(name);
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parent_class))
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("WAP parent loaded {}", parent_class);
-                        return parent_class;
+                            LOG.debug("WAP parent loaded {}", parentClass);
+                        return parentClass;
                     }
                 }
                 catch (ClassNotFoundException e)
@@ -557,10 +557,10 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
                 // We couldn't find a parent class, so OK to return a webapp one if it exists 
                 // and we just couldn't see it before 
-                webapp_class = loadAsResource(name, false);
-                if (webapp_class != null)
+                webappClass = loadAsResource(name, false);
+                if (webappClass != null)
                 {
-                    return webapp_class;
+                    return webappClass;
                 }
 
                 throw ex == null ? new ClassNotFoundException(name) : ex;
@@ -591,20 +591,20 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         // Try the webapp classloader first
         // Look in the webapp classloader as a resource, to avoid 
         // loading a system class.
-        Class<?> webapp_class = null;
+        Class<?> webappClass = null;
         String path = TypeUtil.toClassReference(name);
-        URL webapp_url = findResource(path);
+        URL webappUrl = findResource(path);
 
-        if (webapp_url != null && (!checkSystemResource || !_context.isSystemResource(name, webapp_url)))
+        if (webappUrl != null && (!checkSystemResource || !_context.isSystemResource(name, webappUrl)))
         {
 
-            webapp_class = this.foundClass(name, webapp_url);
-            resolveClass(webapp_class);
+            webappClass = this.foundClass(name, webappUrl);
+            resolveClass(webappClass);
             if (LOG.isDebugEnabled())
-                LOG.debug("WAP webapp loaded {}", webapp_class);
+                LOG.debug("WAP webapp loaded {}", webappClass);
         }
 
-        return webapp_class;
+        return webappClass;
     }
 
     @Override

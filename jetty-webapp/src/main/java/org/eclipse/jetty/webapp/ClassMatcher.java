@@ -110,8 +110,7 @@ public class ClassMatcher extends AbstractSet<String>
         @Override
         public boolean equals(Object o)
         {
-            return (o instanceof Entry)
-                       && _pattern.equals(((Entry)o)._pattern);
+            return (o instanceof Entry) && _pattern.equals(((Entry)o)._pattern);
         }
 
         public boolean isInclusive()
@@ -289,8 +288,7 @@ public class ClassMatcher extends AbstractSet<String>
         @Override
         public boolean test(String name)
         {
-            return _byPackage.test(name)
-                       || _byClass.test(name);
+            return _byPackage.test(name) || _byClass.test(name);
         }
 
         @Override
@@ -766,9 +764,7 @@ public class ClassMatcher extends AbstractSet<String>
             if (Boolean.FALSE == byLocation)
                 return false;
 
-            return Boolean.TRUE.equals(byName)
-                       || Boolean.TRUE.equals(byLocation)
-                       || !(names.hasIncludes() || locations.hasIncludes());
+            return Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation) || !(names.hasIncludes() || locations.hasIncludes());
         }
         return false;
     }

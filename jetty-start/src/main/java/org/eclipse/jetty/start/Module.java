@@ -225,8 +225,7 @@ public class Module implements Comparable<Module>
 
     public void expandDependencies(Props props)
     {
-        Function<String, String> expander = d ->
-        {return props.expand(d);};
+        Function<String, String> expander = d -> props.expand(d);
 
         List<String> tmp = _depends.stream().map(expander).collect(Collectors.toList());
         _depends.clear();
@@ -604,9 +603,9 @@ public class Module implements Comparable<Module>
     @Override
     public int compareTo(Module m)
     {
-        int by_tag = getPrimaryTag().compareTo(m.getPrimaryTag());
-        if (by_tag != 0)
-            return by_tag;
+        int byTag = getPrimaryTag().compareTo(m.getPrimaryTag());
+        if (byTag != 0)
+            return byTag;
         return getName().compareTo(m.getName());
     }
 }

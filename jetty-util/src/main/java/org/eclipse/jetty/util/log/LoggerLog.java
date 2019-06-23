@@ -49,12 +49,12 @@ public class LoggerLog extends AbstractLogger
             _infoMAA = lc.getMethod("info", new Class[]{String.class, Object[].class});
             _warnMT = lc.getMethod("warn", new Class[]{String.class, Throwable.class});
             _warnMAA = lc.getMethod("warn", new Class[]{String.class, Object[].class});
-            Method _isDebugEnabled = lc.getMethod("isDebugEnabled");
+            Method isDebugEnabled = lc.getMethod("isDebugEnabled");
             _setDebugEnabledE = lc.getMethod("setDebugEnabled", new Class[]{Boolean.TYPE});
             _getLoggerN = lc.getMethod("getLogger", new Class[]{String.class});
             _getName = lc.getMethod("getName");
 
-            _debug = (Boolean)_isDebugEnabled.invoke(_logger);
+            _debug = (Boolean)isDebugEnabled.invoke(_logger);
         }
         catch (Exception x)
         {

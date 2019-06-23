@@ -228,7 +228,7 @@ public abstract class IteratingCallback implements Callback
         // This should only ever be called when in processing state, however a failed or close call
         // may happen concurrently, so state is not assumed.
 
-        boolean on_complete_success = false;
+        boolean onCompleteSuccess = false;
 
         // While we are processing
         processing:
@@ -283,7 +283,7 @@ public abstract class IteratingCallback implements Callback
                                 // we lost the race against the callback,
                                 _iterate = false;
                                 _state = State.SUCCEEDED;
-                                on_complete_success = true;
+                                onCompleteSuccess = true;
                                 break processing;
                             }
 
@@ -321,7 +321,7 @@ public abstract class IteratingCallback implements Callback
             }
         }
 
-        if (on_complete_success)
+        if (onCompleteSuccess)
             onCompleteSuccess();
     }
 

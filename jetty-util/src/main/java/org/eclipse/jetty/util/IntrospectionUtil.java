@@ -174,8 +174,7 @@ public class IntrospectionUtil
         List<Class<?>> parameterTypesA = Arrays.asList(methodA.getParameterTypes());
         List<Class<?>> parameterTypesB = Arrays.asList(methodB.getParameterTypes());
 
-        if (methodA.getName().equals(methodB.getName())
-                &&
+        if (methodA.getName().equals(methodB.getName()) &&
                 parameterTypesA.containsAll(parameterTypesB))
             return true;
 
@@ -243,9 +242,9 @@ public class IntrospectionUtil
         Method[] methods = clazz.getDeclaredMethods();
         for (int i = 0; i < methods.length && method == null; i++)
         {
-            if (methods[i].getName().equals(methodName)
-                    && isInheritable(pack, methods[i])
-                    && checkParams(methods[i].getParameterTypes(), args, strictArgs))
+            if (methods[i].getName().equals(methodName) &&
+                    isInheritable(pack, methods[i]) &&
+                    checkParams(methods[i].getParameterTypes(), args, strictArgs))
                 method = methods[i];
         }
         if (method != null)

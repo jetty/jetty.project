@@ -189,12 +189,12 @@ public class Main
 
     public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, IOException
     {
-        Class<?> invoked_class = null;
+        Class<?> invokedClass = null;
         String mainclass = args.getMainClassname();
 
         try
         {
-            invoked_class = classloader.loadClass(mainclass);
+            invokedClass = classloader.loadClass(mainclass);
         }
         catch (ClassNotFoundException e)
         {
@@ -204,19 +204,18 @@ public class Main
             return;
         }
 
-        StartLog.debug("%s - %s", invoked_class, invoked_class.getPackage().getImplementationVersion());
+        StartLog.debug("%s - %s", invokedClass, invokedClass.getPackage().getImplementationVersion());
 
         CommandLineBuilder cmd = args.getMainArgs(false);
-        String argArray[] = cmd.getArgs().toArray(new String[0]);
+        String[] argArray = cmd.getArgs().toArray(new String[0]);
         StartLog.debug("Command Line Args: %s", cmd.toString());
 
-        Class<?>[] method_param_types = new Class[]
-                                            {argArray.getClass()};
+        Class<?>[] methodParamTypes = {argArray.getClass()};
 
-        Method main = invoked_class.getDeclaredMethod("main", method_param_types);
-        Object[] method_params = new Object[]{argArray};
+        Method main = invokedClass.getDeclaredMethod("main", methodParamTypes);
+        Object[] methodParams = new Object[]{argArray};
         StartLog.endStartLog();
-        main.invoke(null, method_params);
+        main.invoke(null, methodParams);
     }
 
     public void listConfig(StartArgs args)
@@ -333,8 +332,8 @@ public class Main
         {
             if (enabled.getVersion().isNewerThan(START_VERSION))
             {
-                throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion()
-                                                                           + "] which is newer than this version of jetty [" + START_VERSION + "]");
+                throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion() +
+                                                                           "] which is newer than this version of jetty [" + START_VERSION + "]");
             }
         }
 

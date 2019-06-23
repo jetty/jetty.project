@@ -172,13 +172,13 @@ public class Log
 
             try
             {
-                Class<?> log_class = __logClass == null ? null : Loader.loadClass(Log.class, __logClass);
-                if (LOG == null || (log_class != null && !LOG.getClass().equals(log_class)))
+                Class<?> logClass = __logClass == null ? null : Loader.loadClass(Log.class, __logClass);
+                if (LOG == null || (logClass != null && !LOG.getClass().equals(logClass)))
                 {
-                    LOG = (Logger)log_class.getDeclaredConstructor().newInstance();
+                    LOG = (Logger)logClass.getDeclaredConstructor().newInstance();
                     if (announce)
                     {
-                        LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                        LOG.debug("Logging to {} via {}", LOG, logClass.getName());
                     }
                 }
             }
@@ -197,7 +197,7 @@ public class Log
 
     private static void initStandardLogging(Throwable e)
     {
-        Class<?> log_class;
+        Class<?> logClass;
         if (e != null && __ignored)
         {
             e.printStackTrace(System.err);
@@ -205,13 +205,13 @@ public class Log
 
         if (LOG == null)
         {
-            log_class = StdErrLog.class;
+            logClass = StdErrLog.class;
             LOG = new StdErrLog();
 
             boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
             if (announce)
             {
-                LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                LOG.debug("Logging to {} via {}", LOG, logClass.getName());
             }
         }
     }

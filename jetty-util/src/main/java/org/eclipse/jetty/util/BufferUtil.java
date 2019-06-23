@@ -266,8 +266,8 @@ public class BufferUtil
     public static boolean isTheEmptyBuffer(ByteBuffer buf)
     {
         @SuppressWarnings("ReferenceEquality")
-        boolean isTheEmptyBuffer_ = (buf == EMPTY_BUFFER);
-        return isTheEmptyBuffer_;
+        boolean isTheEmptyBuffer = (buf == EMPTY_BUFFER);
+        return isTheEmptyBuffer;
     }
 
     /**
@@ -957,7 +957,7 @@ public class BufferUtil
      * @param length the length in bytes of the array to use
      * @return ByteBuffer with provided byte array, in flush mode
      */
-    public static ByteBuffer toBuffer(byte array[], int offset, int length)
+    public static ByteBuffer toBuffer(byte[] array, int offset, int length)
     {
         if (array == null)
             return EMPTY_BUFFER;

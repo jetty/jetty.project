@@ -87,36 +87,36 @@ public class ErrorHandler extends AbstractHandler
 
         if (this instanceof ErrorPageMapper)
         {
-            String error_page = ((ErrorPageMapper)this).getErrorPage(request);
-            if (error_page != null)
+            String errorPage = ((ErrorPageMapper)this).getErrorPage(request);
+            if (errorPage != null)
             {
-                String old_error_page = (String)request.getAttribute(ERROR_PAGE);
-                ServletContext servlet_context = request.getServletContext();
-                if (servlet_context == null)
-                    servlet_context = ContextHandler.getCurrentContext();
-                if (servlet_context == null)
+                String oldErrorPage = (String)request.getAttribute(ERROR_PAGE);
+                ServletContext servletContext = request.getServletContext();
+                if (servletContext == null)
+                    servletContext = ContextHandler.getCurrentContext();
+                if (servletContext == null)
                 {
-                    LOG.warn("No ServletContext for error page {}", error_page);
+                    LOG.warn("No ServletContext for error page {}", errorPage);
                 }
-                else if (old_error_page != null && old_error_page.equals(error_page))
+                else if (oldErrorPage != null && oldErrorPage.equals(errorPage))
                 {
-                    LOG.warn("Error page loop {}", error_page);
+                    LOG.warn("Error page loop {}", errorPage);
                 }
                 else
                 {
-                    request.setAttribute(ERROR_PAGE, error_page);
+                    request.setAttribute(ERROR_PAGE, errorPage);
 
-                    Dispatcher dispatcher = (Dispatcher)servlet_context.getRequestDispatcher(error_page);
+                    Dispatcher dispatcher = (Dispatcher)servletContext.getRequestDispatcher(errorPage);
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("error page dispatch {}->{}", error_page, dispatcher);
+                            LOG.debug("error page dispatch {}->{}", errorPage, dispatcher);
                         if (dispatcher != null)
                         {
                             dispatcher.error(request, response);
                             return;
                         }
-                        LOG.warn("No error page found " + error_page);
+                        LOG.warn("No error page found " + errorPage);
                     }
                     catch (ServletException e)
                     {
@@ -426,11 +426,11 @@ public class ErrorHandler extends AbstractHandler
 
     public static ErrorHandler getErrorHandler(Server server, ContextHandler context)
     {
-        ErrorHandler error_handler = null;
+        ErrorHandler errorHandler = null;
         if (context != null)
-            error_handler = context.getErrorHandler();
-        if (error_handler == null && server != null)
-            error_handler = server.getBean(ErrorHandler.class);
-        return error_handler;
+            errorHandler = context.getErrorHandler();
+        if (errorHandler == null && server != null)
+            errorHandler = server.getBean(ErrorHandler.class);
+        return errorHandler;
     }
 }

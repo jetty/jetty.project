@@ -296,18 +296,18 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             // Is this an empty factory?
             if (keyStore == null && _keyStoreResource == null && trustStore == null && _trustStoreResource == null)
             {
-                TrustManager[] trust_managers = null;
+                TrustManager[] trustManagers = null;
 
                 if (isTrustAll())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
                     // Create a trust manager that does not validate certificate chains
-                    trust_managers = TRUST_ALL_CERTS;
+                    trustManagers = TRUST_ALL_CERTS;
                 }
 
                 context = getSSLContextInstance();
-                context.init(null, trust_managers, getSecureRandomInstance());
+                context.init(null, trustManagers, getSecureRandomInstance());
             }
             else
             {
@@ -1255,7 +1255,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     public void selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
     {
-        Set<String> selected_protocols = new LinkedHashSet<>();
+        Set<String> selectedProtocols = new LinkedHashSet<>();
 
         // Set the starting protocols - either from the included or enabled list
         if (!_includeProtocols.isEmpty())
@@ -1264,21 +1264,21 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             for (String protocol : _includeProtocols)
             {
                 if (Arrays.asList(supportedProtocols).contains(protocol))
-                    selected_protocols.add(protocol);
+                    selectedProtocols.add(protocol);
                 else
                     LOG.info("Protocol {} not supported in {}", protocol, Arrays.asList(supportedProtocols));
             }
         }
         else
-            selected_protocols.addAll(Arrays.asList(enabledProtocols));
+            selectedProtocols.addAll(Arrays.asList(enabledProtocols));
 
         // Remove any excluded protocols
-        selected_protocols.removeAll(_excludeProtocols);
+        selectedProtocols.removeAll(_excludeProtocols);
 
-        if (selected_protocols.isEmpty())
+        if (selectedProtocols.isEmpty())
             LOG.warn("No selected protocols from {}", Arrays.asList(supportedProtocols));
 
-        _selectedProtocols = selected_protocols.toArray(new String[0]);
+        _selectedProtocols = selectedProtocols.toArray(new String[0]);
     }
 
     /**
@@ -1291,17 +1291,17 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     protected void selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
     {
-        List<String> selected_ciphers = new ArrayList<>();
+        List<String> selectedCiphers = new ArrayList<>();
 
         // Set the starting ciphers - either from the included or enabled list
         if (_includeCipherSuites.isEmpty())
-            selected_ciphers.addAll(Arrays.asList(enabledCipherSuites));
+            selectedCiphers.addAll(Arrays.asList(enabledCipherSuites));
         else
-            processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
+            processIncludeCipherSuites(supportedCipherSuites, selectedCiphers);
 
-        removeExcludedCipherSuites(selected_ciphers);
+        removeExcludedCipherSuites(selectedCiphers);
 
-        if (selected_ciphers.isEmpty())
+        if (selectedCiphers.isEmpty())
             LOG.warn("No supported ciphers from {}", Arrays.asList(supportedCipherSuites));
 
         Comparator<String> comparator = getCipherComparator();
@@ -1309,13 +1309,13 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Sorting selected ciphers with {}", comparator);
-            selected_ciphers.sort(comparator);
+            selectedCiphers.sort(comparator);
         }
 
-        _selectedCipherSuites = selected_ciphers.toArray(new String[0]);
+        _selectedCipherSuites = selectedCiphers.toArray(new String[0]);
     }
 
-    protected void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selected_ciphers)
+    protected void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selectedCiphers)
     {
         for (String cipherSuite : _includeCipherSuites)
         {
@@ -1327,7 +1327,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                 if (m.matches())
                 {
                     added = true;
-                    selected_ciphers.add(supportedCipherSuite);
+                    selectedCiphers.add(supportedCipherSuite);
                 }
             }
             if (!added)
@@ -1335,12 +1335,12 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
     }
 
-    protected void removeExcludedCipherSuites(List<String> selected_ciphers)
+    protected void removeExcludedCipherSuites(List<String> selectedCiphers)
     {
         for (String excludeCipherSuite : _excludeCipherSuites)
         {
             Pattern excludeCipherPattern = Pattern.compile(excludeCipherSuite);
-            for (Iterator<String> i = selected_ciphers.iterator(); i.hasNext(); )
+            for (Iterator<String> i = selectedCiphers.iterator(); i.hasNext(); )
             {
                 String selectedCipherSuite = i.next();
                 Matcher m = excludeCipherPattern.matcher(selectedCipherSuite);
@@ -1616,9 +1616,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         SSLContext context = getSslContext();
         SSLServerSocketFactory factory = context.getServerSocketFactory();
         SSLServerSocket socket =
-            (SSLServerSocket)(host == null ?
-                                  factory.createServerSocket(port, backlog) :
-                                  factory.createServerSocket(port, backlog, InetAddress.getByName(host)));
+            (SSLServerSocket)(host == null
+                                  ? factory.createServerSocket(port, backlog)
+                                  : factory.createServerSocket(port, backlog, InetAddress.getByName(host)));
         socket.setSSLParameters(customize(socket.getSSLParameters()));
 
         return socket;
@@ -1808,9 +1808,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         checkIsStarted();
 
         SSLContext context = getSslContext();
-        SSLEngine sslEngine = isSessionCachingEnabled() ?
-                                  context.createSSLEngine(host, port) :
-                                  context.createSSLEngine();
+        SSLEngine sslEngine = isSessionCachingEnabled()
+                                  ? context.createSSLEngine(host, port)
+                                  : context.createSSLEngine();
         customize(sslEngine);
 
         return sslEngine;

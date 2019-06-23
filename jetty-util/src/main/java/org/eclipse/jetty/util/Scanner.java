@@ -332,7 +332,10 @@ public class Scanner extends AbstractLifeCycle
         return new TimerTask()
         {
             @Override
-            public void run() { scan(); }
+            public void run()
+            {
+                scan();
+            }
         };
     }
 

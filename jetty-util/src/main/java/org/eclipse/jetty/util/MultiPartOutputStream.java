@@ -89,7 +89,10 @@ public class MultiPartOutputStream extends FilterOutputStream
         return boundary;
     }
 
-    public OutputStream getOut() {return out;}
+    public OutputStream getOut()
+    {
+        return out;
+    }
 
     /**
      * Start creation of the next Content.

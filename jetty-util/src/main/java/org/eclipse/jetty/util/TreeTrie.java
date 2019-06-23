@@ -44,17 +44,18 @@ import java.util.Set;
  */
 public class TreeTrie<V> extends AbstractTrie<V>
 {
-    private static final int[] __lookup =
-        { // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-          /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-          /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-          /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
-          /*3*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 28, 29, -1, -1, -1, -1,
-          /*4*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-          /*5*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-          /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-          /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-          };
+    private static final int[] LOOKUP =
+        {
+            // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+            /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
+            /*3*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 28, 29, -1, -1, -1, -1,
+            /*4*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+            /*5*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
+            /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+            /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1
+        };
     private static final int INDEX = 32;
     private final TreeTrie<V>[] _nextIndex;
     private final List<TreeTrie<V>> _nextOther = new ArrayList<>();
@@ -94,7 +95,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
         {
             char c = s.charAt(k);
 
-            int index = c >= 0 && c < 0x7f ? __lookup[c] : -1;
+            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -131,7 +132,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(offset + i);
-            int index = c >= 0 && c < 0x7f ? __lookup[c] : -1;
+            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -163,7 +164,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(offset + i);
-            int index = c >= 0 && c < 0x7f ? __lookup[c] : -1;
+            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -195,7 +196,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b[offset + i];
-            int index = c >= 0 && c < 0x7f ? __lookup[c] : -1;
+            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -237,7 +238,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = (byte)(0xff & s.charAt(offset + i));
-            int index = c >= 0 && c < 0x7f ? __lookup[c] : -1;
+            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -287,7 +288,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(pos++);
-            int index = c >= 0 && c < 0x7f ? __lookup[c] : -1;
+            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)

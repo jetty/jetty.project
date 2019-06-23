@@ -408,7 +408,7 @@ public class HttpChannelState
      */
     protected Action unhandle()
     {
-        boolean read_interested = false;
+        boolean readInterested = false;
 
         try (Locker.Lock lock = _locker.lock())
         {
@@ -464,7 +464,7 @@ public class HttpChannelState
                         case REGISTER:
                         case PRODUCING:
                             _asyncRead = AsyncRead.REGISTERED;
-                            read_interested = true;
+                            readInterested = true;
                             break;
 
                         case IDLE:
@@ -517,7 +517,7 @@ public class HttpChannelState
         }
         finally
         {
-            if (read_interested)
+            if (readInterested)
                 _channel.onAsyncWaitForContent();
         }
     }

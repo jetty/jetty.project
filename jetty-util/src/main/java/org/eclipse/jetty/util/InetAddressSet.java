@@ -164,12 +164,12 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
         {
             super(pattern);
 
-            byte[] raw_min = min.getAddress();
-            byte[] raw_max = max.getAddress();
-            if (raw_min.length != raw_max.length)
+            byte[] rawMin = min.getAddress();
+            byte[] rawMax = max.getAddress();
+            if (rawMin.length != rawMax.length)
                 throw new IllegalArgumentException("Cannot mix IPv4 and IPv6: " + pattern);
 
-            if (raw_min.length == 4)
+            if (rawMin.length == 4)
             {
                 // there must be 6 '.' or this is likely to be a legacy pattern
                 int count = 0;
@@ -182,13 +182,13 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
                     throw new IllegalArgumentException("Legacy pattern: " + pattern);
             }
 
-            _min = new int[raw_min.length];
-            _max = new int[raw_min.length];
+            _min = new int[rawMin.length];
+            _max = new int[rawMin.length];
 
             for (int i = 0; i < _min.length; i++)
             {
-                _min[i] = 0xff & raw_min[i];
-                _max[i] = 0xff & raw_max[i];
+                _min[i] = 0xff & rawMin[i];
+                _max[i] = 0xff & rawMax[i];
             }
 
             for (int i = 0; i < _min.length; i++)
@@ -206,28 +206,28 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
             if (raw.length != _min.length)
                 return false;
 
-            boolean min_ok = false;
-            boolean max_ok = false;
+            boolean minOk = false;
+            boolean maxOk = false;
 
             for (int i = 0; i < _min.length; i++)
             {
                 int r = 0xff & raw[i];
-                if (!min_ok)
+                if (!minOk)
                 {
                     if (r < _min[i])
                         return false;
                     if (r > _min[i])
-                        min_ok = true;
+                        minOk = true;
                 }
-                if (!max_ok)
+                if (!maxOk)
                 {
                     if (r > _max[i])
                         return false;
                     if (r < _max[i])
-                        max_ok = true;
+                        maxOk = true;
                 }
 
-                if (min_ok && max_ok)
+                if (minOk && maxOk)
                     break;
             }
 

@@ -48,7 +48,7 @@ public class CommandLineConfigSource implements ConfigSource
     private final Path homePath;
     private final Path basePath;
 
-    public CommandLineConfigSource(String rawargs[])
+    public CommandLineConfigSource(String[] rawargs)
     {
         this.args = new RawArgs();
         this.props = new Props();

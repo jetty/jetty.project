@@ -71,7 +71,10 @@ public interface Configuration
      *
      * @return The class this Configuration replaces/extends or null if it replaces no other configuration
      */
-    default Class<? extends Configuration> replaces() { return null; }
+    default Class<? extends Configuration> replaces()
+    {
+        return null;
+    }
 
     /**
      * Get known Configuration Dependencies.
@@ -79,7 +82,10 @@ public interface Configuration
      * @return The names of Configurations that {@link TopologicalSort} must order
      * before this configuration.
      */
-    default Collection<String> getDependencies() { return Collections.emptyList(); }
+    default Collection<String> getDependencies()
+    {
+        return Collections.emptyList();
+    }
 
     /**
      * Get known Configuration Dependents.
@@ -87,21 +93,30 @@ public interface Configuration
      * @return The names of Configurations that {@link TopologicalSort} must order
      * after this configuration.
      */
-    default Collection<String> getDependents() { return Collections.emptyList(); }
+    default Collection<String> getDependents()
+    {
+        return Collections.emptyList();
+    }
 
     /**
      * Get the system classes associated with this Configuration.
      *
      * @return ClassMatcher of system classes.
      */
-    default ClassMatcher getSystemClasses() { return new ClassMatcher(); }
+    default ClassMatcher getSystemClasses()
+    {
+        return new ClassMatcher();
+    }
 
     /**
      * Get the system classes associated with this Configuration.
      *
      * @return ClassMatcher of server classes.
      */
-    default ClassMatcher getServerClasses() { return new ClassMatcher(); }
+    default ClassMatcher getServerClasses()
+    {
+        return new ClassMatcher();
+    }
 
     /**
      * Set up for configuration.

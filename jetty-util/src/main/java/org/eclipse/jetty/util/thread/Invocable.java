@@ -62,7 +62,7 @@ public interface Invocable
      */
     public static void invokeNonBlocking(Runnable task)
     {
-        Boolean was_non_blocking = __nonBlocking.get();
+        Boolean wasNonBlocking = __nonBlocking.get();
         try
         {
             __nonBlocking.set(Boolean.TRUE);
@@ -70,7 +70,7 @@ public interface Invocable
         }
         finally
         {
-            __nonBlocking.set(was_non_blocking);
+            __nonBlocking.set(wasNonBlocking);
         }
     }
 

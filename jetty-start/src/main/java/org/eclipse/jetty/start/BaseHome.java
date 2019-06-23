@@ -123,7 +123,7 @@ public class BaseHome
         this(new String[0]);
     }
 
-    public BaseHome(String cmdLine[]) throws IOException
+    public BaseHome(String[] cmdLine) throws IOException
     {
         this(new CommandLineConfigSource(cmdLine));
     }

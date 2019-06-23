@@ -53,7 +53,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     @Override
     public String getErrorPage(HttpServletRequest request)
     {
-        String error_page = null;
+        String errorPage = null;
 
         PageLookupTechnique pageSource = null;
 
@@ -61,23 +61,23 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         Throwable th = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
 
         // Walk the cause hierarchy
-        while (error_page == null && th != null)
+        while (errorPage == null && th != null)
         {
             pageSource = PageLookupTechnique.THROWABLE;
 
             Class<?> exClass = th.getClass();
-            error_page = _errorPages.get(exClass.getName());
+            errorPage = _errorPages.get(exClass.getName());
 
             // walk the inheritance hierarchy
-            while (error_page == null)
+            while (errorPage == null)
             {
                 exClass = exClass.getSuperclass();
                 if (exClass == null)
                     break;
-                error_page = _errorPages.get(exClass.getName());
+                errorPage = _errorPages.get(exClass.getName());
             }
 
-            if (error_page != null)
+            if (errorPage != null)
                 matchedThrowable = exClass;
 
             th = (th instanceof ServletException) ? ((ServletException)th).getRootCause() : null;
@@ -85,7 +85,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
         Integer errorStatusCode = null;
 
-        if (error_page == null)
+        if (errorPage == null)
         {
             pageSource = PageLookupTechnique.STATUS_CODE;
 
@@ -93,17 +93,17 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             errorStatusCode = (Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
             if (errorStatusCode != null)
             {
-                error_page = _errorPages.get(Integer.toString(errorStatusCode));
+                errorPage = _errorPages.get(Integer.toString(errorStatusCode));
 
                 // if still not found
-                if (error_page == null)
+                if (errorPage == null)
                 {
                     // look for an error code range match.
                     for (ErrorCodeRange errCode : _errorPageList)
                     {
                         if (errCode.isInRange(errorStatusCode))
                         {
-                            error_page = errCode.getUri();
+                            errorPage = errCode.getUri();
                             break;
                         }
                     }
@@ -112,10 +112,10 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         }
 
         // Try servlet 3.x global error page.
-        if (error_page == null)
+        if (errorPage == null)
         {
             pageSource = PageLookupTechnique.GLOBAL;
-            error_page = _errorPages.get(GLOBAL_ERROR_PAGE);
+            errorPage = _errorPages.get(GLOBAL_ERROR_PAGE);
         }
 
         if (LOG.isDebugEnabled())
@@ -124,7 +124,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             dbg.append("getErrorPage(");
             dbg.append(request.getMethod()).append(' ');
             dbg.append(request.getRequestURI());
-            dbg.append(") => error_page=").append(error_page);
+            dbg.append(") => error_page=").append(errorPage);
             switch (pageSource)
             {
                 case THROWABLE:
@@ -149,7 +149,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             }
         }
 
-        return error_page;
+        return errorPage;
     }
 
     public Map<String, String> getErrorPages()

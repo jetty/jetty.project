@@ -338,7 +338,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         HttpField subProtocolField = response.getHeaders().getField(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         if (subProtocolField != null)
         {
-            String values[] = subProtocolField.getValues();
+            String[] values = subProtocolField.getValues();
             if (values != null)
             {
                 if (values.length > 1)

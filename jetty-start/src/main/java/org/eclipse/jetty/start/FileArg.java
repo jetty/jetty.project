@@ -37,7 +37,7 @@ public class FileArg
     private FileArg(final String moduleName, final String uriLocation)
     {
         this.moduleName = moduleName;
-        String parts[] = uriLocation.split("\\|", 3);
+        String[] parts = uriLocation.split("\\|", 3);
         if (parts.length > 2)
         {
             StringBuilder err = new StringBuilder();

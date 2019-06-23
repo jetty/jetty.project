@@ -204,7 +204,7 @@ public class InvokerUtils
      * @return the MethodHandle for this set of CallingArgs
      * @throws RuntimeException when unable to fit Calling Args to Parameter Types
      */
-    public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String namedVariables[], Arg... callingArgs)
+    public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String[] namedVariables, Arg... callingArgs)
     {
         return mutatedInvoker(targetClass, true, method, paramIdentifier, namedVariables, callingArgs);
     }
@@ -228,7 +228,7 @@ public class InvokerUtils
      * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      * @return the MethodHandle for this set of CallingArgs, or null if not possible to create MethodHandle with CallingArgs to provided method
      */
-    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String namedVariables[],
+    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String[] namedVariables,
                                                       Arg... callingArgs)
     {
         return mutatedInvoker(targetClass, false, method, paramIdentifier, namedVariables, callingArgs);
@@ -236,14 +236,14 @@ public class InvokerUtils
 
     @SuppressWarnings("Duplicates")
     private static MethodHandle mutatedInvoker(Class<?> targetClass, boolean throwOnFailure, Method method, ParamIdentifier paramIdentifier,
-                                               String namedVariables[], Arg... rawCallingArgs)
+                                               String[] namedVariables, Arg... rawCallingArgs)
     {
-        Class<?> parameterTypes[] = method.getParameterTypes();
+        Class<?>[] parameterTypes = method.getParameterTypes();
 
         // Construct Actual Calling Args.
         // This is the array of args, arriving as all of the named variables (usually static in nature),
         // then the raw calling arguments (very dynamic in nature)
-        Arg callingArgs[] = new Arg[rawCallingArgs.length + (namedVariables == null ? 0 : namedVariables.length)];
+        Arg[] callingArgs = new Arg[rawCallingArgs.length + (namedVariables == null ? 0 : namedVariables.length)];
         {
             int callingArgIdx = 0;
             if (namedVariables != null)
@@ -263,7 +263,7 @@ public class InvokerUtils
         // Build up Arg list representing the MethodHandle parameters
         // ParamIdentifier is used to find named parameters (like javax.websocket's @PathParam declaration)
         boolean hasNamedParamArgs = false;
-        Arg parameterArgs[] = new Arg[parameterTypes.length + 1];
+        Arg[] parameterArgs = new Arg[parameterTypes.length + 1];
         {
             parameterArgs[0] = new Arg(targetClass); // first type is always the calling object instance type
             for (int i = 0; i < parameterTypes.length; i++)
@@ -340,13 +340,13 @@ public class InvokerUtils
             // match, so we have to drop and/or permute(reorder) the arguments
 
             // Mapping will be same size as callingType (to compensate for targetClass at index 0)
-            int reorderMap[] = new int[callingType.parameterCount()];
+            int[] reorderMap = new int[callingType.parameterCount()];
             Arrays.fill(reorderMap, -1);
             reorderMap[0] = 0; // always references targetClass
 
             // To track which callingArgs have been used.
             // If a callingArg is used, it is used only once.
-            boolean usedCallingArgs[] = new boolean[callingArgs.length];
+            boolean[] usedCallingArgs = new boolean[callingArgs.length];
             Arrays.fill(usedCallingArgs, false);
 
             // Iterate through each parameterArg and attempt to find an associated callingArg

@@ -241,12 +241,12 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc));
 
         String resourceCache = getInitParameter("resourceCache");
-        int max_cache_size = getInitInt("maxCacheSize", -2);
-        int max_cached_file_size = getInitInt("maxCachedFileSize", -2);
-        int max_cached_files = getInitInt("maxCachedFiles", -2);
+        int maxCacheSize = getInitInt("maxCacheSize", -2);
+        int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+        int maxCachedFiles = getInitInt("maxCachedFiles", -2);
         if (resourceCache != null)
         {
-            if (max_cache_size != -1 || max_cached_file_size != -2 || max_cached_files != -2)
+            if (maxCacheSize != -1 || maxCachedFileSize != -2 || maxCachedFiles != -2)
                 LOG.debug("ignoring resource cache configuration, using resourceCache attribute");
             if (_relativeResourceBase != null || _resourceBase != null)
                 throw new UnavailableException("resourceCache specified with resource bases");
@@ -255,15 +255,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
         try
         {
-            if (_cache == null && (max_cached_files != -2 || max_cache_size != -2 || max_cached_file_size != -2))
+            if (_cache == null && (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2))
             {
                 _cache = new CachedContentFactory(null, this, _mimeTypes, _useFileMappedBuffer, _resourceService.isEtags(), _resourceService.getPrecompressedFormats());
-                if (max_cache_size >= 0)
-                    _cache.setMaxCacheSize(max_cache_size);
-                if (max_cached_file_size >= -1)
-                    _cache.setMaxCachedFileSize(max_cached_file_size);
-                if (max_cached_files >= -1)
-                    _cache.setMaxCachedFiles(max_cached_files);
+                if (maxCacheSize >= 0)
+                    _cache.setMaxCacheSize(maxCacheSize);
+                if (maxCachedFileSize >= -1)
+                    _cache.setMaxCachedFileSize(maxCachedFileSize);
+                if (maxCachedFiles >= -1)
+                    _cache.setMaxCachedFiles(maxCachedFiles);
                 _servletContext.setAttribute(resourceCache == null ? "resourceCache" : resourceCache, _cache);
             }
         }
@@ -283,7 +283,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(this);
 
-        List<String> gzip_equivalent_file_extensions = new ArrayList<String>();
+        List<String> gzipEquivalentFileExtensions = new ArrayList<String>();
         String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
         if (otherGzipExtensions != null)
         {
@@ -292,15 +292,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             while (tok.hasMoreTokens())
             {
                 String s = tok.nextToken().trim();
-                gzip_equivalent_file_extensions.add((s.charAt(0) == '.' ? s : "." + s));
+                gzipEquivalentFileExtensions.add((s.charAt(0) == '.' ? s : "." + s));
             }
         }
         else
         {
             //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
-            gzip_equivalent_file_extensions.add(".svgz");
+            gzipEquivalentFileExtensions.add(".svgz");
         }
-        _resourceService.setGzipEquivalentFileExtensions(gzip_equivalent_file_extensions);
+        _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
 
         _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
         for (ServletHolder h : _servletHandler.getServlets())
@@ -495,24 +495,24 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (_welcomes == null)
             return null;
 
-        String welcome_servlet = null;
+        String welcomeServlet = null;
         for (int i = 0; i < _welcomes.length; i++)
         {
-            String welcome_in_context = URIUtil.addPaths(pathInContext, _welcomes[i]);
-            Resource welcome = getResource(welcome_in_context);
+            String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
+            Resource welcome = getResource(welcomeInContext);
             if (welcome != null && welcome.exists())
-                return welcome_in_context;
+                return welcomeInContext;
 
-            if ((_welcomeServlets || _welcomeExactServlets) && welcome_servlet == null)
+            if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)
             {
-                MappedResource<ServletHolder> entry = _servletHandler.getMappedServlet(welcome_in_context);
+                MappedResource<ServletHolder> entry = _servletHandler.getMappedServlet(welcomeInContext);
                 @SuppressWarnings("ReferenceEquality")
                 boolean isDefaultHolder = (entry.getResource() != _defaultHolder);
                 if (entry != null && isDefaultHolder &&
-                        (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcome_in_context))))
-                    welcome_servlet = welcome_in_context;
+                        (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
+                    welcomeServlet = welcomeInContext;
             }
         }
-        return welcome_servlet;
+        return welcomeServlet;
     }
 }

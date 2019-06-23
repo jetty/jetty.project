@@ -170,7 +170,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     @Override
     public int read() throws IOException
     {
-        byte buf[] = new byte[1];
+        byte[] buf = new byte[1];
         while (true)
         {
             int len = read(buf, 0, 1);

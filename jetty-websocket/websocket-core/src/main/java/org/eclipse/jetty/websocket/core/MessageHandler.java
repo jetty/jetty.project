@@ -86,7 +86,7 @@ public class MessageHandler implements FrameHandler
         };
     }
 
-    private Logger LOG = Log.getLogger(MessageHandler.class);
+    private static final Logger LOG = Log.getLogger(MessageHandler.class);
 
     private final int factor;
 

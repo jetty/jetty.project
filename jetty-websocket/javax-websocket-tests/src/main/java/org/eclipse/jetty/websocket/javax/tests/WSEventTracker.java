@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @SuppressWarnings("unused")
 public abstract class WSEventTracker
 {
-    public final Logger LOG;
+    public final Logger logger;
 
     public abstract static class Basic extends WSEventTracker
     {
@@ -90,8 +90,8 @@ public abstract class WSEventTracker
 
     public WSEventTracker(String id)
     {
-        LOG = Log.getLogger(this.getClass().getName() + "." + id);
-        LOG.debug("init");
+        logger = Log.getLogger(this.getClass().getName() + "." + id);
+        logger.debug("init");
     }
 
     public void addEvent(String format, Object... args)
@@ -141,9 +141,9 @@ public abstract class WSEventTracker
     public void onWsOpen(Session session)
     {
         this.session = session;
-        if (LOG.isDebugEnabled())
+        if (logger.isDebugEnabled())
         {
-            LOG.debug("onOpen({})", session);
+            logger.debug("onOpen({})", session);
         }
         this.openLatch.countDown();
     }
@@ -152,9 +152,9 @@ public abstract class WSEventTracker
     {
         this.session = session;
         this.config = config;
-        if (LOG.isDebugEnabled())
+        if (logger.isDebugEnabled())
         {
-            LOG.debug("onOpen({}, {})", session, config);
+            logger.debug("onOpen({}, {})", session, config);
         }
         this.openLatch.countDown();
     }
@@ -182,8 +182,8 @@ public abstract class WSEventTracker
         assertThat("Error must have value", cause, notNullValue());
         if (error.compareAndSet(null, cause) == false)
         {
-            LOG.warn("onError should only happen once - Original Cause", error.get());
-            LOG.warn("onError should only happen once - Extra/Excess Cause", cause);
+            logger.warn("onError should only happen once - Original Cause", error.get());
+            logger.warn("onError should only happen once - Extra/Excess Cause", cause);
             fail("onError should only happen once!");
         }
     }

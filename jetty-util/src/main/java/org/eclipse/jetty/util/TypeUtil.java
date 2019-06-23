@@ -662,7 +662,7 @@ public class TypeUtil
                 }
             }
         }
-        catch (URISyntaxException ignore)
+        catch (URISyntaxException ignored)
         {
         }
         return null;
@@ -687,7 +687,7 @@ public class TypeUtil
                 }
             }
         }
-        catch (URISyntaxException ignore)
+        catch (URISyntaxException ignored)
         {
         }
         return null;

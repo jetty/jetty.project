@@ -192,8 +192,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
     /**
      * Create a new session id if necessary.
-     *
-     * @see org.eclipse.jetty.server.SessionIdManager#newSessionId(javax.servlet.http.HttpServletRequest, long)
      */
     @Override
     public String newSessionId(HttpServletRequest request, long created)
@@ -202,18 +200,18 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
             return newSessionId(created);
 
         // A requested session ID can only be used if it is in use already.
-        String requested_id = request.getRequestedSessionId();
-        if (requested_id != null)
+        String requestedId = request.getRequestedSessionId();
+        if (requestedId != null)
         {
-            String cluster_id = getId(requested_id);
-            if (isIdInUse(cluster_id))
-                return cluster_id;
+            String clusterId = getId(requestedId);
+            if (isIdInUse(clusterId))
+                return clusterId;
         }
 
         // Else reuse any new session ID already defined for this request.
-        String new_id = (String)request.getAttribute(__NEW_SESSION_ID);
-        if (new_id != null && isIdInUse(new_id))
-            return new_id;
+        String newId = (String)request.getAttribute(__NEW_SESSION_ID);
+        if (newId != null && isIdInUse(newId))
+            return newId;
 
         // pick a new unique ID!
         String id = newSessionId(request.hashCode());
@@ -450,8 +448,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     /**
      * Generate a new id for a session and update across
      * all SessionManagers.
-     *
-     * @see org.eclipse.jetty.server.SessionIdManager#renewSessionId(java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest)
      */
     @Override
     public String renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)

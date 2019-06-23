@@ -160,7 +160,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
     private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
 
-    private int POOL_CAPACITY = -1;
+    private int poolCapacity = -1;
     private DeflaterPool _deflaterPool = null;
 
     private int _minGzipSize = DEFAULT_MIN_GZIP_SIZE;
@@ -413,13 +413,13 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     protected void doStart() throws Exception
     {
-        _deflaterPool = newDeflaterPool(POOL_CAPACITY);
+        _deflaterPool = newDeflaterPool(poolCapacity);
         _vary = (_agentPatterns.size() > 0) ? GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT : GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
         super.doStart();
     }
 
     @Override
-    public Deflater getDeflater(Request request, long content_length)
+    public Deflater getDeflater(Request request, long contentLength)
     {
         String ua = request.getHttpFields().get(HttpHeader.USER_AGENT);
         if (ua != null && !isAgentGzipable(ua))
@@ -428,7 +428,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             return null;
         }
 
-        if (content_length >= 0 && content_length < _minGzipSize)
+        if (contentLength >= 0 && contentLength < _minGzipSize)
         {
             LOG.debug("{} excluded minGzipSize {}", this, request);
             return null;
@@ -713,11 +713,11 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             }
         }
 
-        HttpOutput.Interceptor orig_interceptor = out.getInterceptor();
+        HttpOutput.Interceptor origInterceptor = out.getInterceptor();
         try
         {
             // install interceptor and handle
-            out.setInterceptor(new GzipHttpOutputInterceptor(this, getVaryField(), baseRequest.getHttpChannel(), orig_interceptor, isSyncFlush()));
+            out.setInterceptor(new GzipHttpOutputInterceptor(this, getVaryField(), baseRequest.getHttpChannel(), origInterceptor, isSyncFlush()));
 
             if (_handler != null)
                 _handler.handle(target, baseRequest, request, response);
@@ -726,7 +726,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         {
             // reset interceptor if request not handled
             if (!baseRequest.isHandled() && !baseRequest.isAsyncStarted())
-                out.setInterceptor(orig_interceptor);
+                out.setInterceptor(origInterceptor);
         }
     }
 
@@ -940,7 +940,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public int getDeflaterPoolCapacity()
     {
-        return POOL_CAPACITY;
+        return poolCapacity;
     }
 
     /**
@@ -951,7 +951,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (isStarted())
             throw new IllegalStateException(getState());
 
-        POOL_CAPACITY = capacity;
+        poolCapacity = capacity;
     }
 
     protected DeflaterPool newDeflaterPool(int capacity)

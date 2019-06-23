@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.StringUtil;
 
 public class XmlAppendable
 {
-    private final String SPACES = "                                                                 ";
+    private static final String SPACES = "                                                                 ";
     private final Appendable _out;
     private final int _indent;
     private final Stack<String> _tags = new Stack<>();
@@ -117,6 +117,7 @@ public class XmlAppendable
         return this;
     }
 
+    // @checkstyle-disable-check : AbbreviationAsWordInNameCheck
     public XmlAppendable tagCDATA(String tag, String data) throws IOException
     {
         _out.append(_space).append('<').append(tag).append('>');
@@ -124,6 +125,7 @@ public class XmlAppendable
         _out.append("</").append(tag).append(">\n");
         return this;
     }
+    // @checkstyle-enable-check : AbbreviationAsWordInNameCheck
 
     public XmlAppendable tag(String tag, Map<String, String> attributes, String content) throws IOException
     {

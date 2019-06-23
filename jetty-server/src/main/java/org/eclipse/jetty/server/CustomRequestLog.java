@@ -1167,10 +1167,10 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         long currentTime = System.currentTimeMillis();
         long requestTime = request.getTimeStamp();
 
-        long latency_ms = currentTime - requestTime;
-        long latency_us = TimeUnit.MILLISECONDS.toMicros(latency_ms);
+        long latencyMs = currentTime - requestTime;
+        long latencyUs = TimeUnit.MILLISECONDS.toMicros(latencyMs);
 
-        b.append(latency_us);
+        b.append(latencyUs);
     }
 
     private static void logLatencyMilliseconds(StringBuilder b, Request request, Response response)

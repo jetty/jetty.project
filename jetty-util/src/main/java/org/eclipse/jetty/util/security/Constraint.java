@@ -48,16 +48,20 @@ public class Constraint implements Cloneable, Serializable
         if (method == null)
             return false;
         method = method.trim();
-        return (method.equals(__FORM_AUTH)
-                    || method.equals(__BASIC_AUTH)
-                    || method.equals(__DIGEST_AUTH)
-                    || method.equals(__CERT_AUTH)
-                    || method.equals(__CERT_AUTH2)
-                    || method.equals(__SPNEGO_AUTH)
-                    || method.equals(__NEGOTIATE_AUTH));
+        return (method.equals(__FORM_AUTH) ||
+                    method.equals(__BASIC_AUTH) ||
+                    method.equals(__DIGEST_AUTH) ||
+                    method.equals(__CERT_AUTH) ||
+                    method.equals(__CERT_AUTH2) ||
+                    method.equals(__SPNEGO_AUTH) ||
+                    method.equals(__NEGOTIATE_AUTH));
     }
 
-    public static final int DC_UNSET = -1, DC_NONE = 0, DC_INTEGRAL = 1, DC_CONFIDENTIAL = 2, DC_FORBIDDEN = 3;
+    public static final int DC_UNSET = -1;
+    public static final int DC_NONE = 0;
+    public static final int DC_INTEGRAL = 1;
+    public static final int DC_CONFIDENTIAL = 2;
+    public static final int DC_FORBIDDEN = 3;
 
     public static final String NONE = "NONE";
 
@@ -228,10 +232,8 @@ public class Constraint implements Cloneable, Serializable
     @Override
     public String toString()
     {
-        return "SC{" + _name
-                   + ","
-                   + (_anyRole ? "*" : (_roles == null ? "-" : Arrays.asList(_roles).toString()))
-                   + ","
-                   + (_dataConstraint == DC_UNSET ? "DC_UNSET}" : (_dataConstraint == DC_NONE ? "NONE}" : (_dataConstraint == DC_INTEGRAL ? "INTEGRAL}" : "CONFIDENTIAL}")));
+        return "SC{" + _name +
+                   "," + (_anyRole ? "*" : (_roles == null ? "-" : Arrays.asList(_roles).toString())) +
+                   "," + (_dataConstraint == DC_UNSET ? "DC_UNSET}" : (_dataConstraint == DC_NONE ? "NONE}" : (_dataConstraint == DC_INTEGRAL ? "INTEGRAL}" : "CONFIDENTIAL}")));
     }
 }

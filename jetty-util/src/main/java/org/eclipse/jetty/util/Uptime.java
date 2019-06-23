@@ -45,8 +45,8 @@ public class Uptime
             {
                 Class<?> mgmtFactory = Class.forName("java.lang.management.ManagementFactory", true, cl);
                 Class<?> runtimeClass = Class.forName("java.lang.management.RuntimeMXBean", true, cl);
-                Class<?> noparams[] = new Class<?>[0];
-                Method mxBeanMethod = mgmtFactory.getMethod("getRuntimeMXBean", noparams);
+                Class<?>[] noParams = new Class<?>[0];
+                Method mxBeanMethod = mgmtFactory.getMethod("getRuntimeMXBean", noParams);
                 if (mxBeanMethod == null)
                 {
                     throw new UnsupportedOperationException("method getRuntimeMXBean() not found");
@@ -56,7 +56,7 @@ public class Uptime
                 {
                     throw new UnsupportedOperationException("getRuntimeMXBean() method returned null");
                 }
-                uptimeMethod = runtimeClass.getMethod("getUptime", noparams);
+                uptimeMethod = runtimeClass.getMethod("getUptime", noParams);
                 if (mxBean == null)
                 {
                     throw new UnsupportedOperationException("method getUptime() not found");

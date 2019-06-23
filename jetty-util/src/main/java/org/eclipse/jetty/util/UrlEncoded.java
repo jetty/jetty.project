@@ -242,8 +242,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                 {
                     case '&':
                         int l = i - mark - 1;
-                        value = l == 0 ? "" :
-                                    (encoded ? decodeString(content, mark + 1, l, charset) : content.substring(mark + 1, i));
+                        value = l == 0 ? "" : (encoded ? decodeString(content, mark + 1, l, charset) : content.substring(mark + 1, i));
                         mark = i;
                         encoded = false;
                         if (key != null)

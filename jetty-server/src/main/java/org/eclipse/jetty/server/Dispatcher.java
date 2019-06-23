@@ -145,8 +145,8 @@ public class Dispatcher implements RequestDispatcher
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
         Request baseRequest = Request.getBaseRequest(request);
-        Response base_response = baseRequest.getResponse();
-        base_response.resetForForward();
+        Response baseResponse = baseRequest.getResponse();
+        baseResponse.resetForForward();
 
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
@@ -262,7 +262,7 @@ public class Dispatcher implements RequestDispatcher
                 // Try closing Writer first (based on knowledge in Response obj)
                 response.getWriter().close();
             }
-            catch (IllegalStateException e1)
+            catch (IllegalStateException ex1)
             {
                 try
                 {
@@ -270,10 +270,10 @@ public class Dispatcher implements RequestDispatcher
                     // This path is possible due to badly behaving Response wrappers
                     response.getOutputStream().close();
                 }
-                catch (IllegalStateException e2)
+                catch (IllegalStateException ex2)
                 {
-                    ServletException servletException = new ServletException("Unable to commit the response", e2);
-                    servletException.addSuppressed(e1);
+                    ServletException servletException = new ServletException("Unable to commit the response", ex2);
+                    servletException.addSuppressed(ex1);
                     throw servletException;
                 }
             }
@@ -285,7 +285,7 @@ public class Dispatcher implements RequestDispatcher
                 // Try closing OutputStream first (based on knowledge in Response obj)
                 response.getOutputStream().close();
             }
-            catch (IllegalStateException e1)
+            catch (IllegalStateException ex1)
             {
                 try
                 {
@@ -293,10 +293,10 @@ public class Dispatcher implements RequestDispatcher
                     // This path is possible due to badly behaving Response wrappers
                     response.getWriter().close();
                 }
-                catch (IllegalStateException e2)
+                catch (IllegalStateException ex2)
                 {
-                    ServletException servletException = new ServletException("Unable to commit the response", e2);
-                    servletException.addSuppressed(e1);
+                    ServletException servletException = new ServletException("Unable to commit the response", ex2);
+                    servletException.addSuppressed(ex1);
                     throw servletException;
                 }
             }

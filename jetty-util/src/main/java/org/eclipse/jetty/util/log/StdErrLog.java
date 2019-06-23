@@ -104,7 +104,7 @@ public class StdErrLog extends AbstractLogger
 
     static
     {
-        String deprecatedProperties[] =
+        String[] deprecatedProperties =
             {"DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG"};
 
         // Toss a message to users about deprecated system properties

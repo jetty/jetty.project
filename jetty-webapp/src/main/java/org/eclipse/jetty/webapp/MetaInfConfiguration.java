@@ -761,15 +761,15 @@ public class MetaInfConfiguration extends AbstractConfiguration
     protected List<Resource> findWebInfLibJars(WebAppContext context)
         throws Exception
     {
-        Resource web_inf = context.getWebInf();
-        if (web_inf == null || !web_inf.exists())
+        Resource webInf = context.getWebInf();
+        if (webInf == null || !webInf.exists())
             return null;
 
         List<Resource> jarResources = new ArrayList<Resource>();
-        Resource web_inf_lib = web_inf.addPath("/lib");
-        if (web_inf_lib.exists() && web_inf_lib.isDirectory())
+        Resource webInfLib = webInf.addPath("/lib");
+        if (webInfLib.exists() && webInfLib.isDirectory())
         {
-            String[] files = web_inf_lib.list();
+            String[] files = webInfLib.list();
             if (files != null)
             {
                 Arrays.sort(files);
@@ -778,7 +778,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 try
                 {
-                    Resource file = web_inf_lib.addPath(files[f]);
+                    Resource file = webInfLib.addPath(files[f]);
                     String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
                     int dot = fnlc.lastIndexOf('.');
                     String extension = (dot < 0 ? null : fnlc.substring(dot));
@@ -839,13 +839,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (context == null)
             return null;
 
-        Resource web_inf = context.getWebInf();
+        Resource webInf = context.getWebInf();
 
         // Find WEB-INF/classes
-        if (web_inf != null && web_inf.isDirectory())
+        if (webInf != null && webInf.isDirectory())
         {
             // Look for classes directory
-            Resource classes = web_inf.addPath("classes/");
+            Resource classes = webInf.addPath("classes/");
             if (classes.exists())
                 return classes;
         }

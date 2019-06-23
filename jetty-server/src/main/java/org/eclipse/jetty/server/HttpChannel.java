@@ -580,20 +580,20 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         // Unwrap wrapping Jetty and Servlet exceptions.
         Throwable quiet = unwrap(failure, QuietException.class);
-        Throwable no_stack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
+        Throwable noStack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
 
         if (quiet != null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
         }
-        else if (no_stack != null)
+        else if (noStack != null)
         {
             // No stack trace unless there is debug turned on
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
             else
-                LOG.warn("{} {}", _request.getRequestURI(), no_stack.toString());
+                LOG.warn("{} {}", _request.getRequestURI(), noStack.toString());
         }
         else
         {

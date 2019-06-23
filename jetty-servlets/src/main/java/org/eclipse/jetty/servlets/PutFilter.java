@@ -303,10 +303,10 @@ public class PutFilter implements Filter
         if (contextPath != null)
             newInfo = newInfo.substring(contextPath.length());
 
-        String new_resource = URIUtil.addEncodedPaths(_baseURI, newInfo);
-        File new_file = new File(new URI(new_resource));
+        String newResource = URIUtil.addEncodedPaths(_baseURI, newInfo);
+        File newFile = new File(new URI(newResource));
 
-        file.renameTo(new_file);
+        file.renameTo(newFile);
 
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         response.flushBuffer();

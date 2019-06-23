@@ -386,11 +386,11 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         // Should we delay dispatch until we have some content?
         // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
-        _delayedForContent = (getHttpConfiguration().isDelayDispatchUntilContent()
-                                  && (_httpConnection.getParser().getContentLength() > 0 || _httpConnection.getParser().isChunking())
-                                  && !isExpecting100Continue()
-                                  && !isCommitted()
-                                  && _httpConnection.isRequestBufferEmpty());
+        _delayedForContent = (getHttpConfiguration().isDelayDispatchUntilContent() &&
+                                  (_httpConnection.getParser().getContentLength() > 0 || _httpConnection.getParser().isChunking()) &&
+                                  !isExpecting100Continue() &&
+                                  !isCommitted() &&
+                                  _httpConnection.isRequestBufferEmpty());
 
         return !_delayedForContent;
     }
@@ -423,9 +423,9 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             LOG.debug("upgrade {} {}", this, _upgrade);
 
         @SuppressWarnings("ReferenceEquality")
-        boolean isUpgraded_H2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
+        boolean isUpgradedH2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
 
-        if (!isUpgraded_H2C && (_connection == null || !_connection.contains("upgrade")))
+        if (!isUpgradedH2C && (_connection == null || !_connection.contains("upgrade")))
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
         // Find the upgrade factory
@@ -451,8 +451,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         // Create new connection
         HttpFields response101 = new HttpFields();
-        Connection upgrade_connection = factory.upgradeConnection(getConnector(), getEndPoint(), _metadata, response101);
-        if (upgrade_connection == null)
+        Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _metadata, response101);
+        if (upgradeConnection == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrade ignored for {} by {}", _upgrade, factory);
@@ -462,7 +462,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         // Send 101 if needed
         try
         {
-            if (!isUpgraded_H2C)
+            if (!isUpgradedH2C)
                 sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), null, true);
         }
         catch (IOException e)
@@ -471,8 +471,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgrade_connection);
-        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, upgrade_connection);
+            LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
+        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection);
         getResponse().setStatus(101);
         getHttpTransport().onCompleted();
         return true;

@@ -83,8 +83,8 @@ public class QuotesEncoderTest
 
         public void write(Quotes quotes) throws IOException, EncodeException
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Writing Quotes: {}", quotes);
+            if (logger.isDebugEnabled())
+                logger.debug("Writing Quotes: {}", quotes);
             this.session.getBasicRemote().sendObject(quotes);
         }
     }

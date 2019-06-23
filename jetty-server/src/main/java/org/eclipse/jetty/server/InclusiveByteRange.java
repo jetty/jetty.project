@@ -81,10 +81,8 @@ public class InclusiveByteRange
 
     private boolean overlaps(InclusiveByteRange range)
     {
-        return (range.first >= this.first && range.first <= this.last)
-                   ||
-                   (range.last >= this.first && range.last <= this.last)
-                   ||
+        return (range.first >= this.first && range.first <= this.last) ||
+                   (range.last >= this.first && range.last <= this.last) ||
                    (range.first < this.first && range.last > this.last);
     }
 

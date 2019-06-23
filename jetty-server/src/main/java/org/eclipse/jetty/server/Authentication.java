@@ -171,11 +171,15 @@ public interface Authentication
      * This convenience instance is for non mandatory authentication where credentials
      * have been presented and checked, but failed authentication.
      */
-    public static final Authentication UNAUTHENTICATED = new Authentication()
-    {
-        @Override
-        public String toString() {return "UNAUTHENTICATED";}
-    };
+    public static final Authentication UNAUTHENTICATED =
+        new Authentication()
+        {
+            @Override
+            public String toString()
+            {
+                return "UNAUTHENTICATED";
+            }
+        };
 
     /**
      * Authentication not checked
@@ -186,7 +190,10 @@ public interface Authentication
     public static final Authentication NOT_CHECKED = new Authentication()
     {
         @Override
-        public String toString() {return "NOT CHECKED";}
+        public String toString()
+        {
+            return "NOT CHECKED";
+        }
     };
 
     /**
@@ -197,7 +204,10 @@ public interface Authentication
     public static final Authentication SEND_CONTINUE = new Authentication.Challenge()
     {
         @Override
-        public String toString() {return "CHALLENGE";}
+        public String toString()
+        {
+            return "CHALLENGE";
+        }
     };
 
     /**
@@ -208,11 +218,17 @@ public interface Authentication
     public static final Authentication SEND_FAILURE = new Authentication.Failure()
     {
         @Override
-        public String toString() {return "FAILURE";}
+        public String toString()
+        {
+            return "FAILURE";
+        }
     };
     public static final Authentication SEND_SUCCESS = new SendSuccess()
     {
         @Override
-        public String toString() {return "SEND_SUCCESS";}
+        public String toString()
+        {
+            return "SEND_SUCCESS";
+        }
     };
 }

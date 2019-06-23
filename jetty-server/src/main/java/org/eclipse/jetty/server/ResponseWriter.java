@@ -191,7 +191,7 @@ public class ResponseWriter extends PrintWriter
     }
 
     @Override
-    public void write(char buf[], int off, int len)
+    public void write(char[] buf, int off, int len)
     {
         try
         {
@@ -213,7 +213,7 @@ public class ResponseWriter extends PrintWriter
     }
 
     @Override
-    public void write(char buf[])
+    public void write(char[] buf)
     {
         this.write(buf, 0, buf.length);
     }
@@ -283,7 +283,7 @@ public class ResponseWriter extends PrintWriter
     }
 
     @Override
-    public void print(char s[])
+    public void print(char[] s)
     {
         this.write(s);
     }
@@ -377,7 +377,7 @@ public class ResponseWriter extends PrintWriter
     }
 
     @Override
-    public void println(char s[])
+    public void println(char[] s)
     {
         try
         {

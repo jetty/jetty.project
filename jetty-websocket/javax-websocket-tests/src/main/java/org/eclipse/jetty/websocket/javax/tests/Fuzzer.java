@@ -116,11 +116,11 @@ public interface Fuzzer extends AutoCloseable
 
     abstract class Adapter
     {
-        protected final Logger LOG;
+        protected final Logger logger;
 
         public Adapter()
         {
-            LOG = Log.getLogger(this.getClass());
+            logger = Log.getLogger(this.getClass());
         }
 
         public void expectMessage(BlockingQueue<Frame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException
@@ -155,12 +155,12 @@ public interface Fuzzer extends AutoCloseable
                 Frame actual = framesQueue.poll(3, TimeUnit.SECONDS);
                 assertThat(prefix + ".poll", actual, notNullValue());
 
-                if (LOG.isDebugEnabled())
+                if (logger.isDebugEnabled())
                 {
                     if (actual.getOpCode() == OpCode.CLOSE)
-                        LOG.debug("{} CloseFrame: {}", prefix, new CloseStatus(actual.getPayload()));
+                        logger.debug("{} CloseFrame: {}", prefix, new CloseStatus(actual.getPayload()));
                     else
-                        LOG.debug("{} {}", prefix, actual);
+                        logger.debug("{} {}", prefix, actual);
                 }
 
                 assertThat(prefix + ".opcode", OpCode.name(actual.getOpCode()), is(OpCode.name(expected.getOpCode())));

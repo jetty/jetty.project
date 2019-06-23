@@ -61,7 +61,7 @@ public class QuotesSocket extends WSEventTracker
     @OnMessage
     public void onMessage(Quotes quote)
     {
-        LOG.debug("onMessage({})", quote);
+        logger.debug("onMessage({})", quote);
         messageQueue.offer(quote);
     }
 }

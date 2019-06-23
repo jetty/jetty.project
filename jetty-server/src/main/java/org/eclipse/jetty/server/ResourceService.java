@@ -227,7 +227,7 @@ public class ResourceService
         boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges == null;
 
         HttpContent content = null;
-        boolean release_content = true;
+        boolean releaseContent = true;
         try
         {
             // Find the content
@@ -290,7 +290,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
 
             // Send the data
-            release_content = sendData(request, response, included, content, reqRanges);
+            releaseContent = sendData(request, response, included, content, reqRanges);
         }
         catch (IllegalArgumentException e)
         {
@@ -300,7 +300,7 @@ public class ResourceService
         }
         finally
         {
-            if (release_content)
+            if (releaseContent)
             {
                 if (content != null)
                     content.release();

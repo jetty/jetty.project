@@ -499,12 +499,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                             colResult = metaData.getColumns(null, schemaName, tableName,
                                 _dbAdaptor.convertIdentifier(getMaxIntervalColumn()));
                         }
-                        catch (SQLException s)
+                        catch (SQLException sqlEx)
                         {
                             LOG.warn("Problem checking if " + getTableName() +
-                                         " table contains " + getMaxIntervalColumn() + " column. Ensure table contains column definition: \""
-                                         + getMaxIntervalColumn() + " long not null default -999\"");
-                            throw s;
+                                         " table contains " + getMaxIntervalColumn() + " column. Ensure table contains column definition: \"" +
+                                         getMaxIntervalColumn() + " long not null default -999\"");
+                            throw sqlEx;
                         }
                         try
                         {
@@ -515,12 +515,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                                     //add the maxinterval column
                                     statement.executeUpdate(getAlterTableForMaxIntervalAsString());
                                 }
-                                catch (SQLException s)
+                                catch (SQLException sqlEx)
                                 {
                                     LOG.warn("Problem adding " + getMaxIntervalColumn() +
                                                  " column. Ensure table contains column definition: \"" + getMaxIntervalColumn() +
                                                  " long not null default -999\"");
-                                    throw s;
+                                    throw sqlEx;
                                 }
                             }
                         }

@@ -55,9 +55,9 @@ public class StatisticsServlet extends HttpServlet
     {
         ServletContext context = getServletContext();
         ContextHandler.Context scontext = (ContextHandler.Context)context;
-        Server _server = scontext.getContextHandler().getServer();
+        Server server = scontext.getContextHandler().getServer();
 
-        Handler handler = _server.getChildHandlerByClass(StatisticsHandler.class);
+        Handler handler = server.getChildHandlerByClass(StatisticsHandler.class);
 
         if (handler != null)
         {
@@ -70,7 +70,7 @@ public class StatisticsServlet extends HttpServlet
         }
 
         _memoryBean = ManagementFactory.getMemoryMXBean();
-        _connectors = _server.getConnectors();
+        _connectors = server.getConnectors();
 
         if (getInitParameter("restrictToLocalhost") != null)
         {

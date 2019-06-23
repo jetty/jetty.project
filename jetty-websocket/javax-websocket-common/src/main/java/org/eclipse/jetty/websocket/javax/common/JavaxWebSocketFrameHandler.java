@@ -56,7 +56,7 @@ import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
 
 public class JavaxWebSocketFrameHandler implements FrameHandler
 {
-    private final Logger LOG;
+    private final Logger logger;
     private final JavaxWebSocketContainer container;
     private final Object endpointInstance;
     /**
@@ -115,13 +115,13 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                                       MethodHandle pongHandle,
                                       EndpointConfig endpointConfig)
     {
-        this.LOG = Log.getLogger(endpointInstance.getClass());
+        this.logger = Log.getLogger(endpointInstance.getClass());
 
         this.container = container;
         if (endpointInstance instanceof ConfiguredEndpoint)
         {
             RuntimeException oops = new RuntimeException("ConfiguredEndpoint needs to be unwrapped");
-            LOG.warn(oops);
+            logger.warn(oops);
             throw oops;
         }
         this.endpointInstance = endpointInstance;
@@ -265,7 +265,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             if (errorHandle != null)
                 errorHandle.invoke(cause);
             else
-                LOG.warn("Unhandled Error: " + endpointInstance, cause);
+                logger.warn("Unhandled Error: " + endpointInstance, cause);
             callback.succeeded();
         }
         catch (Throwable t)
@@ -356,8 +356,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             else
             {
                 throw new RuntimeException(
-                    "Unable to add " + handler.getClass().getName() + " with type " + clazz + ": only supported types byte[], " + ByteBuffer.class.getName()
-                        + ", " + String.class.getName());
+                    "Unable to add " + handler.getClass().getName() + " with type " + clazz + ": only supported types byte[], " + ByteBuffer.class.getName() +
+                        ", " + String.class.getName());
             }
         }
         catch (NoSuchMethodException e)

@@ -732,11 +732,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         return (WatchEvent<T>)event;
     }
 
-    private static final WatchEvent.Kind<?> WATCH_EVENT_KINDS[] = {ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY};
-    private static final WatchEvent.Kind<?> WATCH_DIR_KINDS[] = {ENTRY_CREATE, ENTRY_DELETE};
+    private static final WatchEvent.Kind<?>[] WATCH_EVENT_KINDS = {ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY};
+    private static final WatchEvent.Kind<?>[] WATCH_DIR_KINDS = {ENTRY_CREATE, ENTRY_DELETE};
 
     private WatchService watchService;
-    private WatchEvent.Modifier watchModifiers[];
+    private WatchEvent.Modifier[] watchModifiers;
     private boolean nativeWatchService;
 
     private final List<Config> configs = new ArrayList<>();
@@ -933,7 +933,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         //create a watch service
         this.watchService = FileSystems.getDefault().newWatchService();
 
-        WatchEvent.Modifier modifiers[] = null;
+        WatchEvent.Modifier[] modifiers = null;
         boolean nativeService = true;
         // Try to determine native behavior
         // See http://stackoverflow.com/questions/9588737/is-java-7-watchservice-slow-for-anyone-else
@@ -947,10 +947,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 LOG.info("Using Non-Native Java {}", pollingWatchServiceClass.getName());
                 Class<?> c = Class.forName("com.sun.nio.file.SensitivityWatchEventModifier");
                 Field f = c.getField("HIGH");
-                modifiers = new WatchEvent.Modifier[]
-                                {
-                                    (WatchEvent.Modifier)f.get(c)
-                                };
+                modifiers = new WatchEvent.Modifier[]{(WatchEvent.Modifier)f.get(c)};
             }
         }
         catch (Throwable t)
@@ -1123,7 +1120,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             LOG.debug("Starting java.nio file watching with {}", watchService);
         }
 
-        long wait_time = getUpdateQuietTimeMillis();
+        long waitTime = getUpdateQuietTimeMillis();
 
         WatchService watch = watchService;
 
@@ -1152,8 +1149,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Waiting for poll({})", wait_time);
-                key = wait_time < 0 ? watch.take() : wait_time > 0 ? watch.poll(wait_time, updateQuietTimeUnit) : watch.poll();
+                    LOG.debug("Waiting for poll({})", waitTime);
+                key = waitTime < 0 ? watch.take() : waitTime > 0 ? watch.poll(waitTime, updateQuietTimeUnit) : watch.poll();
 
                 // handle all active keys
                 while (key != null)
@@ -1162,7 +1159,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                     key = watch.poll();
                 }
 
-                wait_time = processPending();
+                waitTime = processPending();
 
                 notifyEvents();
             }
@@ -1308,11 +1305,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             }
             else
             {
-                long ms_to_check = event.toQuietCheck(now, getUpdateQuietTimeMillis());
+                long msToCheck = event.toQuietCheck(now, getUpdateQuietTimeMillis());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("pending {} {}", event, ms_to_check);
-                if (ms_to_check < wait)
-                    wait = ms_to_check;
+                    LOG.debug("pending {} {}", event, msToCheck);
+                if (msToCheck < wait)
+                    wait = msToCheck;
             }
         }
         if (LOG.isDebugEnabled())
@@ -1328,7 +1325,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         if (events.isEmpty())
             return;
 
-        boolean event_listeners = false;
+        boolean eventListeners = false;
         for (EventListener listener : listeners)
         {
             if (listener instanceof EventListListener)
@@ -1345,10 +1342,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 }
             }
             else
-                event_listeners = true;
+                eventListeners = true;
         }
 
-        if (event_listeners)
+        if (eventListeners)
         {
             for (PathWatchEvent event : events)
             {

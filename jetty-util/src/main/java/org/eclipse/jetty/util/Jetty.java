@@ -55,10 +55,10 @@ public class Jetty
             LOG.ignore(e);
         }
 
-        String git_hash = __buildProperties.getProperty("buildNumber", "unknown");
-        if (git_hash.startsWith("${"))
-            git_hash = "unknown";
-        GIT_HASH = git_hash;
+        String gitHash = __buildProperties.getProperty("buildNumber", "unknown");
+        if (gitHash.startsWith("${"))
+            gitHash = "unknown";
+        GIT_HASH = gitHash;
         System.setProperty("jetty.git.hash", GIT_HASH);
         BUILD_TIMESTAMP = formatTimestamp(__buildProperties.getProperty("timestamp", "unknown"));
 

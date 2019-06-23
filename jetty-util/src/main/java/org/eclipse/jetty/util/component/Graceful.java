@@ -43,8 +43,7 @@ public interface Graceful
         @Override
         public Future<Void> shutdown()
         {
-            return _shutdown.updateAndGet(fcb ->
-            {return fcb == null ? newShutdownCallback() : fcb;});
+            return _shutdown.updateAndGet(fcb -> fcb == null ? newShutdownCallback() : fcb);
         }
 
         @Override

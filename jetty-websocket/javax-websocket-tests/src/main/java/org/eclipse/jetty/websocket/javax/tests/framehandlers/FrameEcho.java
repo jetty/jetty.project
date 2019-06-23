@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 
 public class FrameEcho implements FrameHandler
 {
-    private Logger LOG = Log.getLogger(FrameEcho.class);
+    private static final Logger LOG = Log.getLogger(FrameEcho.class);
 
     private CoreSession coreSession;
 
