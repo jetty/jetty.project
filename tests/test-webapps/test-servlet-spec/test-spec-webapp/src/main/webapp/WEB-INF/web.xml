@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app 
-   xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
-   metadata-complete="false"
-   version="3.1"> 
+<web-app
+  xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+  metadata-complete="false"
+  version="3.1">
 
   <display-name>Test Annotations WebApp</display-name>
-  
+
   <listener>
     <listener-class>com.acme.test.TestListener</listener-class>
   </listener>
-
 
   <servlet>
     <servlet-name>AnnotationTest</servlet-name>
@@ -22,7 +21,7 @@
     <servlet-name>AnnotationTest</servlet-name>
     <url-pattern>/test/*</url-pattern>
   </servlet-mapping>
-  
+
   <servlet>
     <servlet-name>RoleAnnotationTest</servlet-name>
     <servlet-class>com.acme.test.RoleAnnotationTest</servlet-class>
@@ -32,12 +31,12 @@
       <role-link>server-administrator</role-link>
     </security-role-ref>
   </servlet>
-  
+
   <servlet-mapping>
     <servlet-name>RoleAnnotationTest</servlet-name>
     <url-pattern>/role/*</url-pattern>
   </servlet-mapping>
-  
+
   <servlet>
     <servlet-name>Multi</servlet-name>
     <servlet-class>com.acme.test.MultiPartTest</servlet-class>
@@ -79,13 +78,12 @@
     <role-name>server-administrator</role-name>
   </security-role>
 
-
-<!--
-  <login-config>
-    <auth-method>BASIC</auth-method>
-    <realm-name>Test Realm</realm-name>
-  </login-config>
--->
+  <!--
+    <login-config>
+      <auth-method>BASIC</auth-method>
+      <realm-name>Test Realm</realm-name>
+    </login-config>
+  -->
 
   <login-config>
     <auth-method>FORM</auth-method>
@@ -99,6 +97,5 @@
       </form-error-page>
     </form-login-config>
   </login-config>
-
 
 </web-app>

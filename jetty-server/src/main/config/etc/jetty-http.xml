@@ -21,26 +21,52 @@
   <Call name="addConnector">
     <Arg>
       <New id="httpConnector" class="org.eclipse.jetty.server.ServerConnector">
-        <Arg name="server"><Ref refid="Server" /></Arg>
-        <Arg name="acceptors" type="int"><Property name="jetty.http.acceptors" deprecated="http.acceptors" default="-1"/></Arg>
-        <Arg name="selectors" type="int"><Property name="jetty.http.selectors" deprecated="http.selectors" default="-1"/></Arg>
+        <Arg name="server">
+          <Ref refid="Server" />
+        </Arg>
+        <Arg name="acceptors" type="int">
+          <Property name="jetty.http.acceptors" deprecated="http.acceptors" default="-1" />
+        </Arg>
+        <Arg name="selectors" type="int">
+          <Property name="jetty.http.selectors" deprecated="http.selectors" default="-1" />
+        </Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
             <Item>
               <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-                <Arg name="config"><Ref refid="httpConfig" /></Arg>
-                <Arg name="compliance"><Call class="org.eclipse.jetty.http.HttpCompliance" name="valueOf"><Arg><Property name="jetty.http.compliance" default="RFC7230_LEGACY"/></Arg></Call></Arg>
+                <Arg name="config">
+                  <Ref refid="httpConfig" />
+                </Arg>
+                <Arg name="compliance">
+                  <Call class="org.eclipse.jetty.http.HttpCompliance" name="valueOf">
+                    <Arg>
+                      <Property name="jetty.http.compliance" default="RFC7230_LEGACY" />
+                    </Arg>
+                  </Call>
+                </Arg>
               </New>
             </Item>
           </Array>
         </Arg>
-        <Set name="host"><Property name="jetty.http.host" deprecated="jetty.host" /></Set>
-        <Set name="port"><Property name="jetty.http.port" deprecated="jetty.port" default="8080" /></Set>
-        <Set name="idleTimeout"><Property name="jetty.http.idleTimeout" deprecated="http.timeout" default="30000"/></Set>
-        <Set name="acceptorPriorityDelta"><Property name="jetty.http.acceptorPriorityDelta" deprecated="http.acceptorPriorityDelta" default="0"/></Set>
-        <Set name="acceptQueueSize"><Property name="jetty.http.acceptQueueSize" deprecated="http.acceptQueueSize" default="0"/></Set>
+        <Set name="host">
+          <Property name="jetty.http.host" deprecated="jetty.host" />
+        </Set>
+        <Set name="port">
+          <Property name="jetty.http.port" deprecated="jetty.port" default="8080" />
+        </Set>
+        <Set name="idleTimeout">
+          <Property name="jetty.http.idleTimeout" deprecated="http.timeout" default="30000" />
+        </Set>
+        <Set name="acceptorPriorityDelta">
+          <Property name="jetty.http.acceptorPriorityDelta" deprecated="http.acceptorPriorityDelta" default="0" />
+        </Set>
+        <Set name="acceptQueueSize">
+          <Property name="jetty.http.acceptQueueSize" deprecated="http.acceptQueueSize" default="0" />
+        </Set>
         <Get name="SelectorManager">
-          <Set name="connectTimeout"><Property name="jetty.http.connectTimeout" default="15000"/></Set>
+          <Set name="connectTimeout">
+            <Property name="jetty.http.connectTimeout" default="15000" />
+          </Set>
         </Get>
       </New>
     </Arg>

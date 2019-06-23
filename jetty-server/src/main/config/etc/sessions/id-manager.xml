@@ -3,24 +3,24 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-
   <!-- ===================================================================== -->
   <!-- Configure a SessionIdManager                                          -->
   <!-- ===================================================================== -->
   <Set name="sessionIdManager">
     <New id="idMgr" class="org.eclipse.jetty.server.session.DefaultSessionIdManager">
       <Arg>
-        <Ref refid="Server"/>
+        <Ref refid="Server" />
       </Arg>
       <Set name="workerName">
         <Property name="jetty.sessionIdManager.workerName">
-          <Default>node<Env name="JETTY_WORKER_INSTANCE">
-                         <Default>
-                           <Env name="GAE_MODULE_INSTANCE">
-                             <Default>0</Default>
-                           </Env>
-                         </Default>
-                       </Env>
+          <Default>node
+            <Env name="JETTY_WORKER_INSTANCE">
+              <Default>
+                <Env name="GAE_MODULE_INSTANCE">
+                  <Default>0</Default>
+                </Env>
+              </Default>
+            </Env>
           </Default>
         </Property>
       </Set>
@@ -28,11 +28,13 @@
       <!-- ===================================================================== -->
       <!-- Configure a session housekeeper to help with scavenging               -->
       <!-- ===================================================================== -->
-      <Set name="sessionHouseKeeper"> 
-       <New class="org.eclipse.jetty.server.session.HouseKeeper">
-           <Set name="intervalSec"><Property name="jetty.sessionScavengeInterval.seconds" default="600"/></Set>
-       </New>
+      <Set name="sessionHouseKeeper">
+        <New class="org.eclipse.jetty.server.session.HouseKeeper">
+          <Set name="intervalSec">
+            <Property name="jetty.sessionScavengeInterval.seconds" default="600" />
+          </Set>
+        </New>
       </Set>
-   </New>
+    </New>
   </Set>
 </Configure>

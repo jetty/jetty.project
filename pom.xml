@@ -907,14 +907,14 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-         <groupId>javax.servlet</groupId>
-         <artifactId>javax.servlet-api</artifactId>
-         <version>${javax.servlet.api.version}</version>
+        <groupId>javax.servlet</groupId>
+        <artifactId>javax.servlet-api</artifactId>
+        <version>${javax.servlet.api.version}</version>
       </dependency>
       <dependency>
-         <groupId>javax.websocket</groupId>
-         <artifactId>javax.websocket-api</artifactId>
-         <version>1.0</version>
+        <groupId>javax.websocket</groupId>
+        <artifactId>javax.websocket-api</artifactId>
+        <version>1.0</version>
       </dependency>
       <dependency>
         <groupId>javax.websocket</groupId>
@@ -1409,7 +1409,7 @@
           <plugin>
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
             <artifactId>eclipse-jarsigner-plugin</artifactId>
-	          <version>${cbi-plugins.version}</version>
+            <version>${cbi-plugins.version}</version>
             <executions>
               <execution>
                 <id>sign</id>

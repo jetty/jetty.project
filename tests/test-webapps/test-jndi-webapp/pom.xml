@@ -44,7 +44,7 @@
           </execution>
         </executions>
       </plugin>
-       <plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
@@ -65,10 +65,10 @@
                   <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
                 </artifactItem>
               </artifactItems>
-          </configuration>
+            </configuration>
           </execution>
         </executions>
-       </plugin>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -114,7 +114,7 @@
       </plugin>
     </plugins>
   </build>
- <dependencies>
+  <dependencies>
     <dependency>
       <groupId>javax.transaction</groupId>
       <artifactId>javax.transaction-api</artifactId>

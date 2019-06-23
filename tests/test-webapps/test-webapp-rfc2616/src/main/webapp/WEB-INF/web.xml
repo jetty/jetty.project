@@ -10,11 +10,11 @@
     <param-name>org.eclipse.jetty.handler.GzipHandler.includePaths</param-name>
     <param-value>/*</param-value>
   </context-param>
-  
+
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
   </welcome-file-list>
-  
+
   <servlet>
     <servlet-name>HttpMethodsServlet</servlet-name>
     <servlet-class>org.eclipse.jetty.tests.webapp.HttpMethodsServlet</servlet-class>

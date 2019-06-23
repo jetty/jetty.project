@@ -43,7 +43,8 @@
                 <Property>
                   <Name>jetty.deploy.monitoredPath</Name>
                   <Default>
-                    <Property name="jetty.base" default="." />/<Property name="jetty.deploy.monitoredDir" deprecated="jetty.deploy.monitoredDirName" default="webapps"/>
+                    <Property name="jetty.base" default="." />/
+                    <Property name="jetty.deploy.monitoredDir" deprecated="jetty.deploy.monitoredDirName" default="webapps" />
                   </Default>
                 </Property>
               </Set>
@@ -55,8 +56,12 @@
                   </Default>
                 </Property>
               </Set>
-              <Set name="scanInterval"><Property name="jetty.deploy.scanInterval" default="1"/></Set>
-              <Set name="extractWars"><Property name="jetty.deploy.extractWars" default="true"/></Set>
+              <Set name="scanInterval">
+                <Property name="jetty.deploy.scanInterval" default="1" />
+              </Set>
+              <Set name="extractWars">
+                <Property name="jetty.deploy.extractWars" default="true" />
+              </Set>
               <Set name="configurationManager">
                 <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
                   <!-- file of context configuration properties

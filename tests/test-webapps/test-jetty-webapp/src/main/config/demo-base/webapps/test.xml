@@ -19,28 +19,31 @@ detected.
   <!--  + war OR resourceBase                                          -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="contextPath">/test</Set>
-  <Set name="war"><Property name="jetty.webapps" default="."/>/test.war</Set>
+  <Set name="war"><Property name="jetty.webapps" default="." />/test.war
+  </Set>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Optional context configuration                                  -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
-  <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
-  <Set name="overrideDescriptor"><Property name="jetty.webapps" default="."/>/test.d/override-web.xml</Set>
-  
+  <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml
+  </Set>
+  <Set name="overrideDescriptor"><Property name="jetty.webapps" default="." />/test.d/override-web.xml
+  </Set>
+
   <!-- Enable WebSocket container -->
   <Call name="setAttribute">
     <Arg>org.eclipse.jetty.websocket.jsr356</Arg>
     <Arg type="Boolean">true</Arg>
   </Call>
-  
+
   <Set name="gzipHandler">
     <New class="org.eclipse.jetty.server.handler.gzip.GzipHandler">
-      <Set name="minGzipSize">2048</Set>      
+      <Set name="minGzipSize">2048</Set>
     </New>
   </Set>
-  
+
   <!-- Set Caching Classloader that improves performance on resource searching webapps -->
   <!--
   <Set name="classLoader">
@@ -55,7 +58,7 @@ detected.
     <Arg><New class="org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker"/></Arg>
   </Call>
   -->
-  
+
   <!-- virtual hosts
   <Set name="virtualHosts">
     <Array type="String">
@@ -79,12 +82,13 @@ detected.
     <Set name="loginService">
       <New class="org.eclipse.jetty.security.HashLoginService">
         <Set name="name">Test Realm</Set>
-        <Set name="config"><SystemProperty name="jetty.base" default="."/>/etc/realm.properties</Set>
-            <!-- To enable reload of realm when properties change, uncomment the following lines -->
-            <!--
-            <Set name="hotReload">true</Set>
-            <Call name="start"></Call>
-            -->
+        <Set name="config"><SystemProperty name="jetty.base" default="." />/etc/realm.properties
+        </Set>
+        <!-- To enable reload of realm when properties change, uncomment the following lines -->
+        <!--
+        <Set name="hotReload">true</Set>
+        <Call name="start"></Call>
+        -->
       </New>
     </Set>
     <Set name="authenticator">

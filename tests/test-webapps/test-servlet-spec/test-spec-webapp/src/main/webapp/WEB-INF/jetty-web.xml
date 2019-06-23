@@ -3,6 +3,8 @@
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
-    <Call name="warn"><Arg>test-spec webapp is deployed. DO NOT USE IN PRODUCTION!</Arg></Call>
+    <Call name="warn">
+      <Arg>test-spec webapp is deployed. DO NOT USE IN PRODUCTION!</Arg>
+    </Call>
   </Get>
 </Configure>

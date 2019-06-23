@@ -5,7 +5,7 @@
 
   <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
     <Arg>
-      <New class="com.acme.MockUserTransaction"/>
+      <New class="com.acme.MockUserTransaction" />
     </Arg>
   </New>
 
@@ -13,27 +13,30 @@
     <Set name="loginService">
       <New class="org.eclipse.jetty.security.HashLoginService">
         <Set name="name">Test Realm</Set>
-        <Set name="config"><SystemProperty name="jetty.home" default="."/>/test-spec-realm.properties</Set>
+        <Set name="config"><SystemProperty name="jetty.home" default="." />/test-spec-realm.properties
+        </Set>
       </New>
     </Set>
   </Get>
 
-
-  <New id="maxAmount"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
-    <Arg><Ref refid='wac'/></Arg>
+  <New id="maxAmount" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+    <Arg>
+      <Ref refid='wac' />
+    </Arg>
     <Arg>maxAmount</Arg>
     <Arg type="java.lang.Double">100</Arg>
     <Arg type="boolean">true</Arg>
   </New>
 
-
   <New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
-    <Arg><Ref refid='wac'/></Arg>
+    <Arg>
+      <Ref refid='wac' />
+    </Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>
-     <New class="com.acme.MockDataSource">
-     </New>
+      <New class="com.acme.MockDataSource">
+      </New>
     </Arg>
-   </New>
+  </New>
 
 </Configure>

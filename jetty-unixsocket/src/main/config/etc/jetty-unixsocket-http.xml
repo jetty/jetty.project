@@ -5,7 +5,9 @@
   <Call name="addConnectionFactory">
     <Arg>
       <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-        <Arg name="config"><Ref refid="unixSocketHttpConfig" /></Arg>
+        <Arg name="config">
+          <Ref refid="unixSocketHttpConfig" />
+        </Arg>
       </New>
     </Arg>
   </Call>

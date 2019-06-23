@@ -18,8 +18,9 @@ detected.
   <Get name="securityHandler">
     <Set name="loginService">
       <New class="org.eclipse.jetty.security.HashLoginService">
-        <Set name="name">Test Realm</Set>        
-        <Set name="config"><SystemProperty name="jetty.home" default="."/>/test-standard-realm.properties</Set>
+        <Set name="name">Test Realm</Set>
+        <Set name="config"><SystemProperty name="jetty.home" default="." />/test-standard-realm.properties
+        </Set>
       </New>
     </Set>
     <Set name="authenticator">
@@ -42,6 +43,5 @@ detected.
     </Call>
   </Get>
   -->
-
 
 </Configure>

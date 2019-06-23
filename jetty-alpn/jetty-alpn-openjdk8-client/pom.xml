@@ -53,21 +53,21 @@
           </execution>
         </executions>
       </plugin>
-       <plugin>
-         <groupId>org.apache.felix</groupId>
-         <artifactId>maven-bundle-plugin</artifactId>
-         <extensions>true</extensions>
-             <configuration>
-               <instructions>
-                 <Bundle-Description>OpenJDK8 Client ALPN</Bundle-Description>
-                 <Import-Package>org.eclipse.jetty.alpn;version="${alpn.majorVersion}.${alpn.minorVersion}.${alpn.incrementalVersion}",*</Import-Package>
-                 <Export-Package>*</Export-Package>
-                 <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                 <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Client</Provide-Capability>
-                 <_nouses>true</_nouses>
-               </instructions>
-             </configuration>
-       </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Description>OpenJDK8 Client ALPN</Bundle-Description>
+            <Import-Package>org.eclipse.jetty.alpn;version="${alpn.majorVersion}.${alpn.minorVersion}.${alpn.incrementalVersion}",*</Import-Package>
+            <Export-Package>*</Export-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Client</Provide-Capability>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>

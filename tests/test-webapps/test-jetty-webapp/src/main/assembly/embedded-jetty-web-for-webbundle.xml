@@ -19,15 +19,18 @@ detected.
   <!--  + war OR resourceBase                                          -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="contextPath">/</Set>
-  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test.war</Set>
+  <Set name="war"><SystemProperty name="jetty.home" default="." />/webapps/test.war
+  </Set>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Optional context configuration                                  -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
-  <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
-  <Set name="overrideDescriptor"><SystemProperty name="jetty.base" default="."/>/etc/override-web.xml</Set>
+  <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="." />/etc/webdefault.xml
+  </Set>
+  <Set name="overrideDescriptor"><SystemProperty name="jetty.base" default="." />/etc/override-web.xml
+  </Set>
 
   <!-- virtual hosts
   <Set name="virtualHosts">
@@ -50,15 +53,15 @@ detected.
   <Get name="securityHandler">
     <Set name="loginService">
       <New class="org.eclipse.jetty.security.HashLoginService">
-	    <Set name="name">Test Realm</Set>
-	    <Set name="config">
-	       <Property name="web-inf.uri">/realm.properties</Property>      
-	    </Set>
-            <!-- To enable reload of realm when properties change, uncomment the following lines -->
-            <!--
-            <Set name="hotReload">false</Set>
-            <Call name="start"></Call>
-            -->
+        <Set name="name">Test Realm</Set>
+        <Set name="config">
+          <Property name="web-inf.uri">/realm.properties</Property>
+        </Set>
+        <!-- To enable reload of realm when properties change, uncomment the following lines -->
+        <!--
+        <Set name="hotReload">false</Set>
+        <Call name="start"></Call>
+        -->
       </New>
     </Set>
     <Set name="checkWelcomeFiles">true</Set>

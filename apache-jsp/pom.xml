@@ -19,17 +19,17 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-            <configuration>
-              <instructions>
-                <Bundle-Description>Jetty-specific ServletContainerInitializer for Jasper</Bundle-Description>
-                <Export-Package>org.eclipse.jetty.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",
-                                org.eclipse.jetty.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
-                </Export-Package>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=org.apache.juli.logging.Log</Provide-Capability>
-                <_nouses>true</_nouses>
-              </instructions>
-            </configuration>
+        <configuration>
+          <instructions>
+            <Bundle-Description>Jetty-specific ServletContainerInitializer for Jasper</Bundle-Description>
+            <Export-Package>org.eclipse.jetty.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",
+              org.eclipse.jetty.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+            </Export-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Provide-Capability>osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=org.apache.juli.logging.Log</Provide-Capability>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -61,9 +61,9 @@
 
   <dependencies>
     <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-util</artifactId>
-        <version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- Schemas -->
@@ -74,8 +74,8 @@
 
     <!-- servlet api -->
     <dependency>
-       <groupId>javax.servlet</groupId>
-       <artifactId>javax.servlet-api</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
     </dependency>
 
     <!-- JSP Impl -->
@@ -90,7 +90,6 @@
       <artifactId>jetty-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
-
 
     <!-- tests -->
     <dependency>

@@ -10,7 +10,7 @@
             <Property>
               <Name>jetty.deploy.webappCommonConfig</Name>
               <Default>
-                <Property name="jetty.base"/>/etc/webapp-common.xml
+                <Property name="jetty.base" />/etc/webapp-common.xml
               </Default>
             </Property>
           </Set>

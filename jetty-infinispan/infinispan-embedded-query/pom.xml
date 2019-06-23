@@ -68,8 +68,8 @@
             <configuration>
               <tasks>
                 <concat destfile="${project.build.directory}/infinispan-embedded-query-libs.mod">
-                    <fileset file="src/main/config-template/modules/sessions/infinispan/embedded/infinispan-embedded-query-libs.mod"/>
-                  <fileset file="${project.build.directory}/deps.txt"/>
+                  <fileset file="src/main/config-template/modules/sessions/infinispan/embedded/infinispan-embedded-query-libs.mod" />
+                  <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
               </tasks>
             </configuration>
@@ -86,7 +86,7 @@
               <goal>single</goal>
             </goals>
             <configuration>
-            <descriptors>
+              <descriptors>
                 <descriptor>src/main/assembly/config.xml</descriptor>
               </descriptors>
             </configuration>
@@ -97,25 +97,25 @@
   </build>
   <dependencies>
     <dependency>
-         <groupId>org.eclipse.jetty</groupId>
-         <artifactId>infinispan-common</artifactId>
-         <version>${project.version}</version>
-         <exclusions>
-           <exclusion>
-             <groupId>org.infinispan</groupId>
-             <artifactId>infinispan-core</artifactId>
-           </exclusion>
-           <exclusion>
-             <groupId>org.infinispan</groupId>
-             <artifactId>infinispan-commons</artifactId>
-           </exclusion>
-         </exclusions>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-common</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.infinispan</groupId>
+          <artifactId>infinispan-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.infinispan</groupId>
+          <artifactId>infinispan-commons</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-query</artifactId>
       <version>${infinispan.version}</version>
-    </dependency>    
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
