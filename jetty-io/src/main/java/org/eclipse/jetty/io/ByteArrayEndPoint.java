@@ -209,7 +209,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         {
             if (isEOF(_inQ.peek()))
                 throw new RuntimeIOException(new EOFException());
-            boolean was_empty = _inQ.isEmpty();
+            boolean wasEmpty = _inQ.isEmpty();
             if (in == null)
             {
                 _inQ.add(EOF);
@@ -218,7 +218,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             if (BufferUtil.hasContent(in))
             {
                 _inQ.add(in);
-                fillable = was_empty;
+                fillable = wasEmpty;
             }
         }
         if (fillable)
@@ -232,7 +232,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         {
             if (isEOF(_inQ.peek()))
                 throw new RuntimeIOException(new EOFException());
-            boolean was_empty = _inQ.isEmpty();
+            boolean wasEmpty = _inQ.isEmpty();
             if (in == null)
             {
                 _inQ.add(EOF);
@@ -241,7 +241,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             if (BufferUtil.hasContent(in))
             {
                 _inQ.add(in);
-                fillable = was_empty;
+                fillable = wasEmpty;
             }
         }
         if (fillable)
@@ -525,7 +525,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private static boolean isEOF(ByteBuffer buffer)
     {
         @SuppressWarnings("ReferenceEquality")
-        boolean is_EOF = (buffer == EOF);
-        return is_EOF;
+        boolean isEof = (buffer == EOF);
+        return isEof;
     }
 }

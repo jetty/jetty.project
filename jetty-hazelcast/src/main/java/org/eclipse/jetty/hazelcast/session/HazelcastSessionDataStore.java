@@ -46,7 +46,7 @@ public class HazelcastSessionDataStore
     implements SessionDataStore
 {
 
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     private IMap<String, SessionData> sessionDataMap;
 

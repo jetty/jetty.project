@@ -38,14 +38,14 @@ public class StringUtil
 {
     private static final Logger LOG = Log.getLogger(StringUtil.class);
 
-    private final static Trie<String> CHARSETS = new ArrayTrie<>(256);
+    private static final Trie<String> CHARSETS = new ArrayTrie<>(256);
 
     public static final String ALL_INTERFACES = "0.0.0.0";
-    public static final String CRLF = "\015\012";
+    public static final String CRLF = "\r\n";
 
     public static final String __ISO_8859_1 = "iso-8859-1";
-    public final static String __UTF8 = "utf-8";
-    public final static String __UTF16 = "utf-16";
+    public static final String __UTF8 = "utf-8";
+    public static final String __UTF16 = "utf-16";
 
     static
     {
@@ -87,7 +87,7 @@ public class StringUtil
 
     public static final char[] lowercases = {
         '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
-        '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
+        '\010', '\011', '\n', '\013', '\014', '\r', '\016', '\017',
         '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
         '\030', '\031', '\032', '\033', '\034', '\035', '\036', '\037',
         '\040', '\041', '\042', '\043', '\044', '\045', '\046', '\047',

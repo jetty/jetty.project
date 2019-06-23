@@ -100,18 +100,21 @@ public class ServletCallbackHandler implements CallbackHandler
                 }
             }
             // server to jaspi communication
-            // TODO implement these
             else if (callback instanceof CertStoreCallback)
             {
+                // TODO implement this
             }
             else if (callback instanceof PrivateKeyCallback)
             {
+                // TODO implement this
             }
             else if (callback instanceof SecretKeyCallback)
             {
+                // TODO implement this
             }
             else if (callback instanceof TrustStoreCallback)
             {
+                // TODO implement this
             }
             else
             {

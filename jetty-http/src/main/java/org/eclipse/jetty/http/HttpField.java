@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpField
 {
-    private final static String __zeroquality = "q=0";
+    private static final String __zeroquality = "q=0";
     private final HttpHeader _header;
     private final String _name;
     private final String _value;

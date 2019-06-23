@@ -73,6 +73,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     private static final String CLIENT_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
     private static final String SERVER_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".serverTransformer";
     private static final String CONTINUE_ACTION_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".continueAction";
+    private static final String WRITE_LISTENER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".writeListener";
 
     @Override
     protected void service(HttpServletRequest clientRequest, HttpServletResponse proxyResponse) throws ServletException, IOException
@@ -410,8 +411,6 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     protected class ProxyResponseListener extends Response.Listener.Adapter implements Callback
     {
-        private final String WRITE_LISTENER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".writeListener";
-
         private final Callback complete = new CountingCallback(this, 2);
         private final List<ByteBuffer> buffers = new ArrayList<>();
         private final HttpServletRequest clientRequest;

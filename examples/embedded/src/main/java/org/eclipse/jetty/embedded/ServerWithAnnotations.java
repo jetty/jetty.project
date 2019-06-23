@@ -36,7 +36,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithAnnotations
 {
-    public static final void main(String args[]) throws Exception
+    public static final void main(String[] args) throws Exception
     {
         // Create the server
         Server server = new Server(8080);

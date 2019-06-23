@@ -154,7 +154,7 @@ public class RuleContainer extends Rule implements Dumpable
      */
     protected String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        boolean original_set = _originalPathAttribute == null;
+        boolean originalSet = _originalPathAttribute == null;
 
         if (_rules == null)
             return target;
@@ -166,9 +166,9 @@ public class RuleContainer extends Rule implements Dumpable
             {
                 LOG.debug("applied {}", rule);
                 LOG.debug("rewrote {} to {}", target, applied);
-                if (!original_set)
+                if (!originalSet)
                 {
-                    original_set = true;
+                    originalSet = true;
                     request.setAttribute(_originalPathAttribute, target);
 
                     String query = request.getQueryString();

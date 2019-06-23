@@ -106,7 +106,7 @@ public class CoreServer extends ContainerLifeCycle
         return wsUri;
     }
 
-    public static abstract class BaseNegotiator implements WebSocketNegotiator
+    public abstract static class BaseNegotiator implements WebSocketNegotiator
     {
         protected final WebSocketExtensionRegistry extensionRegistry;
         protected final DecoratedObjectFactory objectFactory;

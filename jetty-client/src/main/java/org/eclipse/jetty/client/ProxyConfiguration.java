@@ -57,7 +57,7 @@ public class ProxyConfiguration
         return null;
     }
 
-    public static abstract class Proxy
+    public abstract static class Proxy
     {
         // TO use IPAddress Map
         private final Set<String> included = new HashSet<>();

@@ -31,7 +31,7 @@ public enum HttpVersion
     HTTP_1_1("HTTP/1.1", 11),
     HTTP_2("HTTP/2.0", 20);
 
-    public final static Trie<HttpVersion> CACHE = new ArrayTrie<HttpVersion>();
+    public static final Trie<HttpVersion> CACHE = new ArrayTrie<HttpVersion>();
 
     static
     {

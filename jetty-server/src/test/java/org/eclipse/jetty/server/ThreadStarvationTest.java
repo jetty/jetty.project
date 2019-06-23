@@ -61,10 +61,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ThreadStarvationTest
 {
-    final static int BUFFER_SIZE = 1024 * 1024;
-    final static int BUFFERS = 64;
-    final static int THREADS = 5;
-    final static int CLIENTS = THREADS + 2;
+    static final int BUFFER_SIZE = 1024 * 1024;
+    static final int BUFFERS = 64;
+    static final int THREADS = 5;
+    static final int CLIENTS = THREADS + 2;
 
     interface ConnectorProvider
     {

@@ -63,8 +63,8 @@ import org.eclipse.jetty.util.Loader;
  */
 public class JavaUtilLog extends AbstractLogger
 {
-    private final static String THIS_CLASS = JavaUtilLog.class.getName();
-    private final static boolean __source =
+    private static final String THIS_CLASS = JavaUtilLog.class.getName();
+    private static final boolean __source =
         Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.javautil.SOURCE", "true")));
 

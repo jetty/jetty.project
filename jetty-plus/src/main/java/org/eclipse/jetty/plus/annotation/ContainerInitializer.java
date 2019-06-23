@@ -40,10 +40,10 @@ public class ContainerInitializer
 {
     private static final Logger LOG = Log.getLogger(ContainerInitializer.class);
 
-    final protected ServletContainerInitializer _target;
-    final protected Class<?>[] _interestedTypes;
-    final protected Set<String> _applicableTypeNames = ConcurrentHashMap.newKeySet();
-    final protected Set<String> _annotatedTypeNames = ConcurrentHashMap.newKeySet();
+    protected final ServletContainerInitializer _target;
+    protected final Class<?>[] _interestedTypes;
+    protected final Set<String> _applicableTypeNames = ConcurrentHashMap.newKeySet();
+    protected final Set<String> _annotatedTypeNames = ConcurrentHashMap.newKeySet();
 
     public ContainerInitializer(ServletContainerInitializer target, Class<?>[] classes)
     {

@@ -70,7 +70,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpTester
 {
-    private final static Logger LOG = Log.getLogger(HttpTester.class);
+    private static final Logger LOG = Log.getLogger(HttpTester.class);
 
     private HttpTester()
     {

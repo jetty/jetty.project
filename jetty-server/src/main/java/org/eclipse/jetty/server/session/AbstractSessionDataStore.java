@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public abstract class AbstractSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
-    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     protected SessionContext _context; //context associated with this session data store
     protected int _gracePeriodSec = 60 * 60; //default of 1hr 

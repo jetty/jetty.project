@@ -37,12 +37,12 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
  */
 public class StartLog
 {
-    private final static PrintStream stdout = System.out;
-    private final static PrintStream stderr = System.err;
+    private static final PrintStream stdout = System.out;
+    private static final PrintStream stderr = System.err;
     private static volatile PrintStream out = System.out;
     private static volatile PrintStream err = System.err;
     private static volatile PrintStream logStream = System.err;
-    private final static StartLog INSTANCE = new StartLog();
+    private static final StartLog INSTANCE = new StartLog();
 
     public static void debug(String format, Object... args)
     {

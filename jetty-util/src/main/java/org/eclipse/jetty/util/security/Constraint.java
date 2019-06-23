@@ -29,19 +29,19 @@ import java.util.Arrays;
 public class Constraint implements Cloneable, Serializable
 {
 
-    public final static String __BASIC_AUTH = "BASIC";
+    public static final String __BASIC_AUTH = "BASIC";
 
-    public final static String __FORM_AUTH = "FORM";
+    public static final String __FORM_AUTH = "FORM";
 
-    public final static String __DIGEST_AUTH = "DIGEST";
+    public static final String __DIGEST_AUTH = "DIGEST";
 
-    public final static String __CERT_AUTH = "CLIENT_CERT";
+    public static final String __CERT_AUTH = "CLIENT_CERT";
 
-    public final static String __CERT_AUTH2 = "CLIENT-CERT";
+    public static final String __CERT_AUTH2 = "CLIENT-CERT";
 
-    public final static String __SPNEGO_AUTH = "SPNEGO";
+    public static final String __SPNEGO_AUTH = "SPNEGO";
 
-    public final static String __NEGOTIATE_AUTH = "NEGOTIATE";
+    public static final String __NEGOTIATE_AUTH = "NEGOTIATE";
 
     public static boolean validateMethod(String method)
     {
@@ -57,13 +57,13 @@ public class Constraint implements Cloneable, Serializable
                     || method.equals(__NEGOTIATE_AUTH));
     }
 
-    public final static int DC_UNSET = -1, DC_NONE = 0, DC_INTEGRAL = 1, DC_CONFIDENTIAL = 2, DC_FORBIDDEN = 3;
+    public static final int DC_UNSET = -1, DC_NONE = 0, DC_INTEGRAL = 1, DC_CONFIDENTIAL = 2, DC_FORBIDDEN = 3;
 
-    public final static String NONE = "NONE";
+    public static final String NONE = "NONE";
 
-    public final static String ANY_ROLE = "*";
+    public static final String ANY_ROLE = "*";
 
-    public final static String ANY_AUTH = "**"; //Servlet Spec 3.1 pg 140
+    public static final String ANY_AUTH = "**"; //Servlet Spec 3.1 pg 140
 
     private String _name;
 

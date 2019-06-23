@@ -110,9 +110,9 @@ public class BaseHome
 
     public static final String JETTY_BASE = "jetty.base";
     public static final String JETTY_HOME = "jetty.home";
-    private final static EnumSet<FileVisitOption> SEARCH_VISIT_OPTIONS = EnumSet.of(FileVisitOption.FOLLOW_LINKS);
+    private static final EnumSet<FileVisitOption> SEARCH_VISIT_OPTIONS = EnumSet.of(FileVisitOption.FOLLOW_LINKS);
 
-    private final static int MAX_SEARCH_DEPTH = Integer.getInteger("org.eclipse.jetty.start.searchDepth", 10);
+    private static final int MAX_SEARCH_DEPTH = Integer.getInteger("org.eclipse.jetty.start.searchDepth", 10);
 
     private final ConfigSources sources;
     private final Path homeDir;

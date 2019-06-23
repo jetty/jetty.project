@@ -367,8 +367,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             {
                 getLog().debug("Checking " + pluginArtifact);
             }
-            if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) //
-                    && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
+            if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) &&
+                    pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
                 return true;
         }
 

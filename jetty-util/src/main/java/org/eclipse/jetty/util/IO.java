@@ -49,11 +49,11 @@ public class IO
 {
     private static final Logger LOG = Log.getLogger(IO.class);
 
-    public final static String
-        CRLF = "\015\012";
+    public static final String
+        CRLF = "\r\n";
 
-    public final static byte[]
-        CRLF_BYTES = {(byte)'\015', (byte)'\012'};
+    public static final byte[]
+        CRLF_BYTES = {(byte)'\r', (byte)'\n'};
 
     public static final int bufferSize = 64 * 1024;
 

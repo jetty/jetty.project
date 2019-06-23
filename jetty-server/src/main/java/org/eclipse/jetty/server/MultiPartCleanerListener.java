@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 
 public class MultiPartCleanerListener implements ServletRequestListener
 {
-    public final static MultiPartCleanerListener INSTANCE = new MultiPartCleanerListener();
+    public static final MultiPartCleanerListener INSTANCE = new MultiPartCleanerListener();
 
     protected MultiPartCleanerListener()
     {

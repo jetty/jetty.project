@@ -434,21 +434,21 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             OutputStream os = client.getOutputStream();
 
-            os.write(("GET /R2 HTTP/1.1\015\012" +
-                          "Host: localhost\015\012" +
-                          "Transfer-Encoding: chunked\015\012" +
-                          "Content-Type: text/plain\015\012" +
-                          "Connection: close\015\012" +
-                          "\015\012").getBytes());
+            os.write(("GET /R2 HTTP/1.1\r\n" +
+                          "Host: localhost\r\n" +
+                          "Transfer-Encoding: chunked\r\n" +
+                          "Content-Type: text/plain\r\n" +
+                          "Connection: close\r\n" +
+                          "\r\n").getBytes());
             os.flush();
             Thread.sleep(1000);
             os.write(("5").getBytes());
             Thread.sleep(1000);
-            os.write(("\015\012").getBytes());
+            os.write(("\r\n").getBytes());
             os.flush();
             Thread.sleep(1000);
-            os.write(("ABCDE\015\012" +
-                          "0;\015\012\015\012").getBytes());
+            os.write(("ABCDE\r\n" +
+                          "0;\r\n\r\n").getBytes());
             os.flush();
 
             // Read the response.
@@ -466,14 +466,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             OutputStream os = client.getOutputStream();
 
-            os.write(("GET /R2 HTTP/1.1\015\012" +
-                          "Host: localhost\015\012" +
-                          "Content-Length: 5\015\012" +
-                          "Content-Type: text/plain\015\012" +
-                          "Connection: close\015\012" +
-                          "\015\012" +
-                          "ABCDE\015\012" +
-                          "\015\012"
+            os.write(("GET /R2 HTTP/1.1\r\n" +
+                          "Host: localhost\r\n" +
+                          "Content-Length: 5\r\n" +
+                          "Content-Type: text/plain\r\n" +
+                          "Connection: close\r\n" +
+                          "\r\n" +
+                          "ABCDE\r\n" +
+                          "\r\n"
             ).getBytes());
             os.flush();
 
@@ -1128,26 +1128,26 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             InputStream is = client.getInputStream();
 
             os.write((
-                "POST /R1 HTTP/1.1\015\012" +
+                "POST /R1 HTTP/1.1\r\n" +
                     "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                     "content-type: text/plain; charset=utf-8\r\n" +
                     "content-length: 10\r\n" +
-                    "\015\012" +
+                    "\r\n" +
                     "123456789\n" +
 
-                    "HEAD /R2 HTTP/1.1\015\012" +
-                    "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
+                    "HEAD /R2 HTTP/1.1\r\n" +
+                    "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                     "content-type: text/plain; charset=utf-8\r\n" +
                     "content-length: 10\r\n" +
-                    "\015\012" +
+                    "\r\n" +
                     "ABCDEFGHI\n" +
 
-                    "POST /R3 HTTP/1.1\015\012" +
-                    "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
+                    "POST /R3 HTTP/1.1\r\n" +
+                    "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                     "content-type: text/plain; charset=utf-8\r\n" +
                     "content-length: 10\r\n" +
-                    "Connection: close\015\012" +
-                    "\015\012" +
+                    "Connection: close\r\n" +
+                    "\r\n" +
                     "abcdefghi\n"
 
             ).getBytes(StandardCharsets.ISO_8859_1));

@@ -66,9 +66,9 @@ public class ServerConfigTest
     private ConnectionListener listener = new ConnectionListener();
 
     private static String message = "this message is over 20 characters long";
-    private final static int inputBufferSize = 200;
-    private final static int maxMessageSize = 20;
-    private final static int idleTimeout = 500;
+    private static final int inputBufferSize = 200;
+    private static final int maxMessageSize = 20;
+    private static final int idleTimeout = 500;
 
     private EventSocket annotatedEndpoint = new AnnotatedConfigEndpoint();
     private EventSocket sessionConfigEndpoint = new SessionConfigEndpoint();

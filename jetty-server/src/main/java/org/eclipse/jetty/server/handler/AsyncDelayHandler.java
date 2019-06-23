@@ -36,7 +36,7 @@ import org.eclipse.jetty.server.Request;
  */
 public class AsyncDelayHandler extends HandlerWrapper
 {
-    public final static String AHW_ATTR = "o.e.j.s.h.AsyncHandlerWrapper";
+    public static final String AHW_ATTR = "o.e.j.s.h.AsyncHandlerWrapper";
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

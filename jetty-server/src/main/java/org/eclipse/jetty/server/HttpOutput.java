@@ -127,7 +127,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     private static Logger LOG = Log.getLogger(HttpOutput.class);
-    private final static ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
+    private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
     private final HttpChannel _channel;
     private final SharedBlockingCallback _writeBlocker;

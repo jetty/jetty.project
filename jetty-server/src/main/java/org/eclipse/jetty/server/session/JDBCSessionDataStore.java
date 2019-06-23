@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class JDBCSessionDataStore extends AbstractSessionDataStore
 {
-    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     /**
      * Used for Oracle and other databases where "" is treated as NULL
@@ -63,7 +63,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
      */
     public static class SessionTableSchema
     {
-        public final static int MAX_INTERVAL_NOT_SET = -999;
+        public static final int MAX_INTERVAL_NOT_SET = -999;
 
         protected DatabaseAdaptor _dbAdaptor;
         protected String _schemaName = null;

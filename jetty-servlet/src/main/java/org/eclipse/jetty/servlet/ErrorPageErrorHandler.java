@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
 {
-    public final static String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
+    public static final String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
     private static final Logger LOG = Log.getLogger(ErrorPageErrorHandler.class);
 
     private enum PageLookupTechnique

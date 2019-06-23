@@ -50,9 +50,9 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class DefaultSessionIdManager extends ContainerLifeCycle implements SessionIdManager
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
-    public final static String __NEW_SESSION_ID = "org.eclipse.jetty.server.newSessionId";
+    public static final String __NEW_SESSION_ID = "org.eclipse.jetty.server.newSessionId";
 
     protected static final AtomicLong COUNTER = new AtomicLong();
 

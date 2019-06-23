@@ -1533,7 +1533,7 @@ public class AsyncMiddleManServletTest
         return out.toByteArray();
     }
 
-    private static abstract class HrefTransformer implements AsyncMiddleManServlet.ContentTransformer
+    private abstract static class HrefTransformer implements AsyncMiddleManServlet.ContentTransformer
     {
         private static final String PREFIX = "http://localhost/q=";
         private final HrefParser parser = new HrefParser();

@@ -118,7 +118,7 @@ public class HttpTokens
         }
     }
 
-    public final static Token[] TOKENS = new Token[256];
+    public static final Token[] TOKENS = new Token[256];
 
     static
     {

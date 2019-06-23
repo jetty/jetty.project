@@ -82,7 +82,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         return container;
     }
 
-    private final static Logger LOG = Log.getLogger(JettyWebSocketServerContainer.class);
+    private static final Logger LOG = Log.getLogger(JettyWebSocketServerContainer.class);
 
     private final WebSocketMapping webSocketMapping;
     private final WebSocketComponents webSocketComponents;

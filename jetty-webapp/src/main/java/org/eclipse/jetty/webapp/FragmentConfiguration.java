@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class FragmentConfiguration extends AbstractConfiguration
 {
-    public final static String FRAGMENT_RESOURCES = "org.eclipse.jetty.webFragments";
+    public static final String FRAGMENT_RESOURCES = "org.eclipse.jetty.webFragments";
 
     public FragmentConfiguration()
     {

@@ -60,10 +60,10 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class PutFilter implements Filter
 {
-    public final static String __PUT = "PUT";
-    public final static String __DELETE = "DELETE";
-    public final static String __MOVE = "MOVE";
-    public final static String __OPTIONS = "OPTIONS";
+    public static final String __PUT = "PUT";
+    public static final String __DELETE = "DELETE";
+    public static final String __MOVE = "MOVE";
+    public static final String __OPTIONS = "OPTIONS";
 
     Set<String> _operations = new HashSet<String>();
     private ConcurrentMap<String, String> _hidden = new ConcurrentHashMap<String, String>();

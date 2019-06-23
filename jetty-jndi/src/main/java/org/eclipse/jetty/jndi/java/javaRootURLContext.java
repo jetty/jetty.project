@@ -32,6 +32,9 @@ import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+// This is a required name for JNDI
+// @checkstyle-disable-check : TypeNameCheck
+
 /**
  * javaRootURLContext
  * <p>

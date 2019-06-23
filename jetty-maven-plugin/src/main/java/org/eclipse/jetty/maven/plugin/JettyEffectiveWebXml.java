@@ -29,6 +29,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -138,20 +139,18 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             {
                 webApp.stop();
             }
-            catch (Exception x)
+            catch (Exception ignored)
             {
             }
-            ;
 
             try
             {
                 if (tpool != null)
                     tpool.stop();
             }
-            catch (Exception x)
+            catch (Exception ignored)
             {
             }
-            ;
         }
 
         if (deleteOnExit)

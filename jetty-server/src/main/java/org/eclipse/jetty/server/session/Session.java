@@ -56,12 +56,12 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
  */
 public class Session implements SessionHandler.SessionIf
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     /**
      *
      */
-    public final static String SESSION_CREATED_SECURE = "org.eclipse.jetty.security.sessionCreatedSecure";
+    public static final String SESSION_CREATED_SECURE = "org.eclipse.jetty.security.sessionCreatedSecure";
 
     /**
      * State

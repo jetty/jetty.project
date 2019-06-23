@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class MongoTestHelper
 {
-    private final static Logger LOG = Log.getLogger(MongoTestHelper.class);
+    private static final Logger LOG = Log.getLogger(MongoTestHelper.class);
     public static final String DB_NAME = "HttpSessions";
     public static final String COLLECTION_NAME = "testsessions";
 

@@ -221,9 +221,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
             if (url == null)
             {
-                throw new IllegalArgumentException("Unable to locate " + _webAppPath
-                                                       + " in "
-                                                       + (bundleInstallLocation != null ? bundleInstallLocation.getAbsolutePath() : "unlocated bundle '" + _bundle.getSymbolicName() + "'"));
+                throw new IllegalArgumentException("Unable to locate " + _webAppPath + " in " +
+                                                       (bundleInstallLocation != null ? bundleInstallLocation.getAbsolutePath() : "unlocated bundle '" + _bundle.getSymbolicName() + "'"));
             }
 
             //Sets the location of the war file
@@ -332,11 +331,9 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 Bundle[] bs = packageAdmin.getBundles(symbName, null);
                 if (bs == null || bs.length == 0)
                 {
-                    throw new IllegalArgumentException("Unable to locate the bundle '" + symbName
-                                                           + "' specified by "
-                                                           + OSGiWebappConstants.REQUIRE_TLD_BUNDLE
-                                                           + " in manifest of "
-                                                           + (_bundle == null ? "unknown" : _bundle.getSymbolicName()));
+                    throw new IllegalArgumentException("Unable to locate the bundle '" + symbName + "' specified by " +
+                                                           OSGiWebappConstants.REQUIRE_TLD_BUNDLE + " in manifest of " +
+                                                           (_bundle == null ? "unknown" : _bundle.getSymbolicName()));
                 }
 
                 File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bs[0]);

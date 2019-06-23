@@ -378,7 +378,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             pendingEntries.size());
     }
 
-    public static abstract class Entry extends Callback.Nested
+    public abstract static class Entry extends Callback.Nested
     {
         protected final Frame frame;
         protected final IStream stream;

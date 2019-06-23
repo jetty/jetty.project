@@ -50,7 +50,7 @@ public class AsyncRequestReadTest
 {
     private static Server server;
     private static ServerConnector connector;
-    private final static BlockingQueue<Long> __total = new BlockingArrayQueue<>();
+    private static final BlockingQueue<Long> __total = new BlockingArrayQueue<>();
 
     @BeforeEach
     public void startServer() throws Exception

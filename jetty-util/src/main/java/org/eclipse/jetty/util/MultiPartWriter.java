@@ -31,8 +31,8 @@ import java.io.Writer;
 public class MultiPartWriter extends FilterWriter
 {
 
-    private final static String __CRLF = "\015\012";
-    private final static String __DASHDASH = "--";
+    private static final String __CRLF = "\r\n";
+    private static final String __DASHDASH = "--";
 
     public static final String MULTIPART_MIXED = MultiPartOutputStream.MULTIPART_MIXED;
     public static final String MULTIPART_X_MIXED_REPLACE = MultiPartOutputStream.MULTIPART_X_MIXED_REPLACE;

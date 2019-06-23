@@ -158,17 +158,17 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static final String TEMPDIR = "javax.servlet.context.tempdir";
     public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
-    public final static String WEB_DEFAULTS_XML = "org/eclipse/jetty/webapp/webdefault.xml";
-    public final static String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
-    public final static String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
-    public final static String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
+    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/webapp/webdefault.xml";
+    public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
+    public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
+    public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
 
     private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
 
     // System classes are classes that cannot be replaced by
     // the web application, and they are *always* loaded via
     // system classloader.
-    public final static ClassMatcher __dftSystemClasses = new ClassMatcher
+    public static final ClassMatcher __dftSystemClasses = new ClassMatcher
                                                               (
                                                                   "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
                                                                   "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
@@ -180,7 +180,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // loaded by the web application using system classloader,
     // so if web application needs to load any of such classes,
     // it has to include them in its distribution.
-    public final static ClassMatcher __dftServerClasses = new ClassMatcher
+    public static final ClassMatcher __dftServerClasses = new ClassMatcher
                                                               (
                                                                   "org.eclipse.jetty."                // hide jetty classes
                                                               );

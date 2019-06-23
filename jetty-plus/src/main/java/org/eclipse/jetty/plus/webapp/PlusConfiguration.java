@@ -106,7 +106,7 @@ public class PlusConfiguration extends AbstractConfiguration
     protected void lockCompEnv(WebAppContext wac)
         throws Exception
     {
-        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
         try
         {
@@ -118,7 +118,7 @@ public class PlusConfiguration extends AbstractConfiguration
         }
         finally
         {
-            Thread.currentThread().setContextClassLoader(old_loader);
+            Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
 
@@ -127,7 +127,7 @@ public class PlusConfiguration extends AbstractConfiguration
     {
         if (_key != null)
         {
-            ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+            ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(wac.getClassLoader());
 
             try
@@ -138,7 +138,7 @@ public class PlusConfiguration extends AbstractConfiguration
             }
             finally
             {
-                Thread.currentThread().setContextClassLoader(old_loader);
+                Thread.currentThread().setContextClassLoader(oldLoader);
             }
         }
     }

@@ -314,7 +314,7 @@ public class LdapLoginModule extends AbstractLoginModule
             {
                 rdnValue = (String)attribute.get();        // switch to the value stored in the _userRdnAttribute if we can
             }
-            catch (NamingException e)
+            catch (NamingException ignored)
             {
             }
         }
@@ -569,9 +569,9 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
         }
-        catch (NamingException ne)
+        catch (NamingException ex)
         {
-            throw new FailedLoginException(ne.getMessage());
+            throw new FailedLoginException(ex.getMessage());
         }
 
         if (LOG.isDebugEnabled())

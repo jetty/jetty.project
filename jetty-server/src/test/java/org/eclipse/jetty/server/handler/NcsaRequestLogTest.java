@@ -622,7 +622,7 @@ public class NcsaRequestLogTest
         }
     }
 
-    private static abstract class AbstractTestHandler extends AbstractHandler
+    private abstract static class AbstractTestHandler extends AbstractHandler
     {
         @Override
         public String toString()

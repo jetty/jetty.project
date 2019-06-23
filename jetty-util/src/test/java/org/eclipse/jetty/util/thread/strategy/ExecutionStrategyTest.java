@@ -78,7 +78,7 @@ public class ExecutionStrategyTest
         _threads.stop();
     }
 
-    public static abstract class TestProducer implements Producer
+    public abstract static class TestProducer implements Producer
     {
         @Override
         public String toString()

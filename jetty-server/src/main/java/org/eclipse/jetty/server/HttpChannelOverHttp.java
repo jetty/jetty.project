@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, ComplianceViolation.Listener
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
-    private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
+    private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
     private final HttpFields _fields = new HttpFields();
     private final MetaData.Request _metadata = new MetaData.Request(_fields);
     private final HttpConnection _httpConnection;

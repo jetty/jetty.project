@@ -69,7 +69,7 @@ public class CustomRequestLogTest
     ServerConnector _serverConnector;
     URI _serverURI;
 
-    private final static long DELAY = 2000;
+    private static final long DELAY = 2000;
 
     @BeforeEach
     public void before() throws Exception

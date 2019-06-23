@@ -42,8 +42,8 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class AbstractRestServlet extends HttpServlet
 {
-    protected final static String __DEFAULT_APPID = "Webtide81-adf4-4f0a-ad58-d91e41bbe85";
-    protected final static String STYLE =
+    protected static final String __DEFAULT_APPID = "Webtide81-adf4-4f0a-ad58-d91e41bbe85";
+    protected static final String STYLE =
         "<style type='text/css'>" +
             "  img.thumb:hover {height:50px}" +
             "  img.thumb {vertical-align:text-top}" +
@@ -52,8 +52,8 @@ public class AbstractRestServlet extends HttpServlet
             "  iframe {border: 0px}" +
             "</style>";
 
-    protected final static String ITEMS_PARAM = "items";
-    protected final static String APPID_PARAM = "appid";
+    protected static final String ITEMS_PARAM = "items";
+    protected static final String APPID_PARAM = "appid";
 
     protected String _appid;
 

@@ -74,8 +74,8 @@ public class ThreadLimitHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(ThreadLimitHandler.class);
 
-    private final static String REMOTE = "o.e.j.s.h.TLH.REMOTE";
-    private final static String PERMIT = "o.e.j.s.h.TLH.PASS";
+    private static final String REMOTE = "o.e.j.s.h.TLH.REMOTE";
+    private static final String PERMIT = "o.e.j.s.h.TLH.PASS";
     private final boolean _rfc7239;
     private final String _forwardedHeader;
     private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);

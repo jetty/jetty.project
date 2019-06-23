@@ -39,7 +39,7 @@ import org.infinispan.commons.api.BasicCache;
 @ManagedObject
 public class InfinispanSessionDataStore extends AbstractSessionDataStore
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     /**
      * Clustered cache of sessions

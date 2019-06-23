@@ -115,10 +115,10 @@ public class PartialRFC2616Test
                 "Host: localhost\n" +
                 "Transfer-Encoding: chunked,identity\n" +
                 "Content-Type: text/plain\n" +
-                "\015\012" +
-                "5;\015\012" +
-                "123\015\012\015\012" +
-                "0;\015\012\015\012");
+                "\r\n" +
+                "5;\r\n" +
+                "123\r\n\r\n" +
+                "0;\r\n\r\n");
         checkContains(response, offset, "HTTP/1.1 400 Bad", "Chunked last");
     }
 
@@ -315,7 +315,7 @@ public class PartialRFC2616Test
                 "Content-Type: text/plain\n" +
                 "Content-Length: 5\n" +
                 "\n" +
-                "123\015\012" +
+                "123\r\n" +
 
                 "GET /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
@@ -447,7 +447,7 @@ public class PartialRFC2616Test
     {
         int offset = 0;
         String response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
-        offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "8.1.2 default") + 10;
+        offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "8.1.2 default") + 10;
         checkContains(response, offset, "Content-Length: ", "8.1.2 default");
 
         LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n" +
@@ -456,12 +456,12 @@ public class PartialRFC2616Test
 
         offset = 0;
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "8.1.2 default") + 1;
+        offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "8.1.2 default") + 1;
         offset = checkContains(response, offset, "/R1", "8.1.2 default") + 1;
 
         offset = 0;
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "8.1.2.2 pipeline") + 11;
+        offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "8.1.2.2 pipeline") + 11;
         offset = checkContains(response, offset, "Connection: close", "8.1.2.2 pipeline") + 1;
         offset = checkContains(response, offset, "/R2", "8.1.2.1 close") + 3;
 
@@ -498,7 +498,7 @@ public class PartialRFC2616Test
                 "Content-Length: 8\n" +
                 "Connection: close\n" +
                 "\n" +
-                "123456\015\012");
+                "123456\r\n");
         checkNotContained(response, offset, "HTTP/1.1 100 ", "8.2.3 expect 100");
         offset = checkContains(response, offset, "HTTP/1.1 200 OK", "8.2.3 expect with body") + 1;
     }
@@ -519,7 +519,7 @@ public class PartialRFC2616Test
         offset = checkContains(infomational, offset, "HTTP/1.1 100 ", "8.2.3 expect 100") + 1;
         checkNotContained(infomational, offset, "HTTP/1.1 200", "8.2.3 expect 100");
 
-        endp.addInput("654321\015\012");
+        endp.addInput("654321\r\n");
 
         String response = endp.getResponse();
         offset = 0;
@@ -615,7 +615,7 @@ public class PartialRFC2616Test
         {
             int offset = 0;
             String response = connector.getResponse("GET /R1 HTTP/1.0\n" + "\n");
-            offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "19.6.2 default close") + 10;
+            offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 default close") + 10;
             checkNotContained(response, offset, "Connection: close", "19.6.2 not assumed");
 
             LocalEndPoint endp = connector.executeRequest(
@@ -625,7 +625,7 @@ public class PartialRFC2616Test
 
             offset = 0;
             response = endp.getResponse();
-            offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "19.6.2 Keep-alive 1") + 1;
+            offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 Keep-alive 1") + 1;
             offset = checkContains(response, offset, "Connection: keep-alive", "19.6.2 Keep-alive 1") + 1;
 
             offset = checkContains(response, offset, "<html>", "19.6.2 Keep-alive 1") + 1;
@@ -634,7 +634,7 @@ public class PartialRFC2616Test
 
             offset = 0;
             response = endp.getResponse();
-            offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "19.6.2 Keep-alive 2") + 11;
+            offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 Keep-alive 2") + 11;
             offset = checkContains(response, offset, "/R2", "19.6.2 Keep-alive close") + 3;
 
             offset = 0;
@@ -650,21 +650,21 @@ public class PartialRFC2616Test
 
             offset = 0;
             response = endp.getResponse();
-            offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "19.6.2 Keep-alive 1") + 1;
+            offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 Keep-alive 1") + 1;
             offset = checkContains(response, offset, "Connection: keep-alive", "19.6.2 Keep-alive 1") + 1;
             offset = checkContains(response, offset, "<html>", "19.6.2 Keep-alive 1") + 1;
             offset = checkContains(response, offset, "1234567890", "19.6.2 Keep-alive 1") + 1;
 
             offset = 0;
             response = endp.getResponse();
-            offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "19.6.2 Keep-alive 1") + 1;
+            offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 Keep-alive 1") + 1;
             offset = checkContains(response, offset, "Connection: keep-alive", "19.6.2 Keep-alive 1") + 1;
             offset = checkContains(response, offset, "<html>", "19.6.2 Keep-alive 1") + 1;
             offset = checkContains(response, offset, "ABCDEFGHIJ", "19.6.2 Keep-alive 1") + 1;
 
             offset = 0;
             response = endp.getResponse();
-            offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "19.6.2 Keep-alive 2") + 11;
+            offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 Keep-alive 2") + 11;
             offset = checkContains(response, offset, "/R2", "19.6.2 Keep-alive close") + 3;
 
             offset = 0;

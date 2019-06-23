@@ -125,7 +125,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return holder;
     }
 
-    public final static String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
+    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
 
     private final FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
     private WebSocketMapping mapping;

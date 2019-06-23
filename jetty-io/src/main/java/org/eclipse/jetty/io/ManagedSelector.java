@@ -138,14 +138,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         if (_started.compareAndSet(true, false))
         {
             // Close connections, but only wait a single selector cycle for it to take effect
-            CloseConnections close_connections = new CloseConnections();
-            submit(close_connections);
-            close_connections._complete.await();
+            CloseConnections closeConnections = new CloseConnections();
+            submit(closeConnections);
+            closeConnections._complete.await();
 
             // Wait for any remaining endpoints to be closed and the selector to be stopped
-            StopSelector stop_selector = new StopSelector();
-            submit(stop_selector);
-            stop_selector._stopped.await();
+            StopSelector stopSelector = new StopSelector();
+            submit(stopSelector);
+            stopSelector._stopped.await();
         }
 
         super.doStop();
@@ -611,9 +611,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         @Override
         public void update(Selector selector)
         {
-            Set<SelectionKey> selector_keys = selector.keys();
-            List<String> list = new ArrayList<>(selector_keys.size());
-            for (SelectionKey key : selector_keys)
+            Set<SelectionKey> selectorKeys = selector.keys();
+            List<String> list = new ArrayList<>(selectorKeys.size());
+            for (SelectionKey key : selectorKeys)
             {
                 if (key != null)
                     list.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), safeInterestOps(key), key.attachment()));

@@ -38,8 +38,8 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class PreEncodedHttpField extends HttpField
 {
-    private final static Logger LOG = Log.getLogger(PreEncodedHttpField.class);
-    private final static HttpFieldPreEncoder[] __encoders;
+    private static final Logger LOG = Log.getLogger(PreEncodedHttpField.class);
+    private static final HttpFieldPreEncoder[] __encoders;
 
     static
     {

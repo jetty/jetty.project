@@ -63,10 +63,10 @@ public class MultiPartParser
         END
     }
 
-    private final static EnumSet<State> __delimiterStates = EnumSet.of(State.DELIMITER, State.DELIMITER_CLOSE, State.DELIMITER_PADDING);
-    private final static int MAX_HEADER_LINE_LENGTH = 998;
+    private static final EnumSet<State> __delimiterStates = EnumSet.of(State.DELIMITER, State.DELIMITER_CLOSE, State.DELIMITER_PADDING);
+    private static final int MAX_HEADER_LINE_LENGTH = 998;
 
-    private final boolean DEBUG = LOG.isDebugEnabled();
+    private final boolean debugEnabled = LOG.isDebugEnabled();
     private final Handler _handler;
     private final SearchPattern _delimiterSearch;
 
@@ -647,14 +647,14 @@ public class MultiPartParser
 
     private void setState(State state)
     {
-        if (DEBUG)
+        if (debugEnabled)
             LOG.debug("{} --> {}", _state, state);
         _state = state;
     }
 
     private void setState(FieldState state)
     {
-        if (DEBUG)
+        if (debugEnabled)
             LOG.debug("{}:{} --> {}", _state, _fieldState, state);
         _fieldState = state;
     }

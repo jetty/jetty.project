@@ -43,9 +43,9 @@ import org.eclipse.jetty.util.log.Logger;
 public class ResponseWriter extends PrintWriter
 {
     private static final Logger LOG = Log.getLogger(ResponseWriter.class);
-    private final static String __lineSeparator = System.getProperty("line.separator");
-    private final static String __trueln = "true" + __lineSeparator;
-    private final static String __falseln = "false" + __lineSeparator;
+    private static final String __lineSeparator = System.getProperty("line.separator");
+    private static final String __trueln = "true" + __lineSeparator;
+    private static final String __falseln = "false" + __lineSeparator;
 
     private final HttpWriter _httpWriter;
     private final Locale _locale;

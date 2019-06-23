@@ -201,7 +201,7 @@ public class HttpURI
         boolean encoded = false;
         int end = uri.length();
         int mark = 0;
-        int path_mark = 0;
+        int pathMark = 0;
         char last = '/';
         for (int i = 0; i < end; i++)
         {
@@ -237,7 +237,7 @@ public class HttpURI
                             break;
 
                         case '.':
-                            path_mark = i;
+                            pathMark = i;
                             state = State.PATH;
                             encoded = true;
                             break;
@@ -248,7 +248,7 @@ public class HttpURI
                                 state = State.SCHEME_OR_PATH;
                             else
                             {
-                                path_mark = i;
+                                pathMark = i;
                                 state = State.PATH;
                             }
                             break;
@@ -317,20 +317,20 @@ public class HttpURI
                         case '#':
                             // was a path, look again
                             i--;
-                            path_mark = mark;
+                            pathMark = mark;
                             state = State.PATH;
                             break;
 
                         case '.':
                             // it is a path
                             encoded = true;
-                            path_mark = mark;
+                            pathMark = mark;
                             state = State.PATH;
                             break;
 
                         default:
                             // it is a path
-                            path_mark = mark;
+                            pathMark = mark;
                             state = State.PATH;
                     }
                     continue;
@@ -342,7 +342,7 @@ public class HttpURI
                     {
                         case '/':
                             _host = uri.substring(mark, i);
-                            path_mark = mark = i;
+                            pathMark = mark = i;
                             state = State.PATH;
                             break;
                         case ':':
@@ -381,7 +381,7 @@ public class HttpURI
                             }
                             else
                             {
-                                path_mark = mark = i;
+                                pathMark = mark = i;
                                 state = State.PATH;
                             }
                             break;
@@ -404,7 +404,7 @@ public class HttpURI
                     else if (c == '/')
                     {
                         _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
-                        path_mark = mark = i;
+                        pathMark = mark = i;
                         state = State.PATH;
                     }
                     break;
@@ -419,12 +419,12 @@ public class HttpURI
                             state = State.PARAM;
                             break;
                         case '?':
-                            _path = uri.substring(path_mark, i);
+                            _path = uri.substring(pathMark, i);
                             mark = i + 1;
                             state = State.QUERY;
                             break;
                         case '#':
-                            _path = uri.substring(path_mark, i);
+                            _path = uri.substring(pathMark, i);
                             mark = i + 1;
                             state = State.FRAGMENT;
                             break;
@@ -443,13 +443,13 @@ public class HttpURI
                     switch (c)
                     {
                         case '?':
-                            _path = uri.substring(path_mark, i);
+                            _path = uri.substring(pathMark, i);
                             _param = uri.substring(mark, i);
                             mark = i + 1;
                             state = State.QUERY;
                             break;
                         case '#':
-                            _path = uri.substring(path_mark, i);
+                            _path = uri.substring(pathMark, i);
                             _param = uri.substring(mark, i);
                             mark = i + 1;
                             state = State.FRAGMENT;
@@ -525,12 +525,12 @@ public class HttpURI
                 break;
 
             case PARAM:
-                _path = uri.substring(path_mark, end);
+                _path = uri.substring(pathMark, end);
                 _param = uri.substring(mark, end);
                 break;
 
             case PATH:
-                _path = uri.substring(path_mark, end);
+                _path = uri.substring(pathMark, end);
                 break;
 
             case QUERY:

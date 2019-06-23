@@ -87,18 +87,18 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     private static final Logger LOG = Log.getLogger(HttpParser.class);
     public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
 
-    public final static HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
-    public final static HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE));
-    public final static HttpCompliance LEGACY = new HttpCompliance("LEGACY", complementOf(of(Violation.CASE_INSENSITIVE_METHOD)));
-    public final static HttpCompliance RFC2616_LEGACY = RFC2616.with("RFC2616_LEGACY",
+    public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
+    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE));
+    public static final HttpCompliance LEGACY = new HttpCompliance("LEGACY", complementOf(of(Violation.CASE_INSENSITIVE_METHOD)));
+    public static final HttpCompliance RFC2616_LEGACY = RFC2616.with("RFC2616_LEGACY",
         Violation.CASE_INSENSITIVE_METHOD,
         Violation.NO_COLON_AFTER_FIELD_NAME,
         Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH,
         Violation.MULTIPLE_CONTENT_LENGTHS);
-    public final static HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
+    public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
 
-    private final static List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
-    private final static AtomicInteger __custom = new AtomicInteger();
+    private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
+    private static final AtomicInteger __custom = new AtomicInteger();
 
     public static HttpCompliance valueOf(String name)
     {

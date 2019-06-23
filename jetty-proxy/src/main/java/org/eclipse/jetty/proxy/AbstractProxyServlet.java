@@ -572,9 +572,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected int clientRequestStatus(Throwable failure)
     {
-        return failure instanceof TimeoutException ?
-                   HttpStatus.REQUEST_TIMEOUT_408 :
-                   HttpStatus.INTERNAL_SERVER_ERROR_500;
+        return failure instanceof TimeoutException
+                   ? HttpStatus.REQUEST_TIMEOUT_408
+                   : HttpStatus.INTERNAL_SERVER_ERROR_500;
     }
 
     protected void onServerResponseHeaders(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
@@ -650,9 +650,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected int proxyResponseStatus(Throwable failure)
     {
-        return failure instanceof TimeoutException ?
-                   HttpStatus.GATEWAY_TIMEOUT_504 :
-                   HttpStatus.BAD_GATEWAY_502;
+        return failure instanceof TimeoutException
+                   ? HttpStatus.GATEWAY_TIMEOUT_504
+                   : HttpStatus.BAD_GATEWAY_502;
     }
 
     protected int getRequestId(HttpServletRequest clientRequest)

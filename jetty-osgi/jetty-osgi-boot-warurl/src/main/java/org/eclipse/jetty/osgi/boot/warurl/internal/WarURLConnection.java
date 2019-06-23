@@ -232,15 +232,15 @@ public class WarURLConnection extends URLConnection
     }
 
     @Override
-    public long getHeaderFieldDate(String name, long Default)
+    public long getHeaderFieldDate(String name, long defaultVal)
     {
-        return _conn.getHeaderFieldDate(name, Default);
+        return _conn.getHeaderFieldDate(name, defaultVal);
     }
 
     @Override
-    public int getHeaderFieldInt(String name, int Default)
+    public int getHeaderFieldInt(String name, int defaultVal)
     {
-        return _conn.getHeaderFieldInt(name, Default);
+        return _conn.getHeaderFieldInt(name, defaultVal);
     }
 
     @Override

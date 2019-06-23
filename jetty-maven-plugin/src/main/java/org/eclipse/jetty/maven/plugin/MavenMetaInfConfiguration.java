@@ -67,8 +67,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
         {
             files.forEach(file ->
             {
-                if (file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar")
-                        || file.isDirectory())
+                if (file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar") || file.isDirectory())
                 {
                     try
                     {

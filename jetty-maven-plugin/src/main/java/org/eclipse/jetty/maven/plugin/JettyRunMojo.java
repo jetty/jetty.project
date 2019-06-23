@@ -713,8 +713,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      */
     protected String getJavaBin()
     {
-        String javaexes[] = new String[]
-                                {"java", "java.exe"};
+        String[] javaexes = {"java", "java.exe"};
 
         File javaHomeDir = new File(System.getProperty("java.home"));
         for (String javaexe : javaexes)

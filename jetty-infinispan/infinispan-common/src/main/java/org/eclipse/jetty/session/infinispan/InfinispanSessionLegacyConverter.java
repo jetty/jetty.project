@@ -178,12 +178,11 @@ public class InfinispanSessionLegacyConverter
 
         for (String s : keys)
         {
-            InfinispanSessionData converted = (InfinispanSessionData)_protoCache.get(s);
+            InfinispanSessionData converted = _protoCache.get(s);
             if (converted != null)
             {
                 System.err.println("OK: " + converted);
-                converted.getKeys().stream().forEach((ss) ->
-                {System.err.println(ss + ":" + converted.getAttribute(ss));});
+                converted.getKeys().stream().forEach((ss) -> System.err.println(ss + ":" + converted.getAttribute(ss)));
             }
             else
                 System.err.println("Failed: " + s);

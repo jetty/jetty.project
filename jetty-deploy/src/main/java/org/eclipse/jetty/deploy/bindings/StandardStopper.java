@@ -28,8 +28,7 @@ public class StandardStopper implements AppLifeCycle.Binding
     @Override
     public String[] getBindingTargets()
     {
-        return new String[]
-                   {"stopping"};
+        return new String[]{"stopping"};
     }
 
     @Override

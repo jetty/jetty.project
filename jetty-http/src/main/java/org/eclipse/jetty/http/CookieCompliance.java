@@ -70,7 +70,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
     public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", noneOf(Violation.class));
     public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", allOf(Violation.class));
 
-    private final static List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC2965);
+    private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC2965);
 
     public static CookieCompliance valueOf(String name)
     {

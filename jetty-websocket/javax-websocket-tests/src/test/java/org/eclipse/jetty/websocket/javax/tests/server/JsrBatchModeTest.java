@@ -180,7 +180,7 @@ public class JsrBatchModeTest
         }
     }
 
-    public static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
+    public abstract static class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
     {
         @Override
         public void onOpen(Session session, EndpointConfig config)

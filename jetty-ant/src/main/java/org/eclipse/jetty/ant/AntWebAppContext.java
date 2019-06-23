@@ -66,7 +66,7 @@ public class AntWebAppContext extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(WebAppContext.class);
 
-    public final static String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN =
+    public static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN =
         ".*/.*jsp-api-[^/]*\\.jar$|.*/.*jsp-[^/]*\\.jar$|.*/.*taglibs[^/]*\\.jar$|.*/.*jstl[^/]*\\.jar$|.*/.*jsf-impl-[^/]*\\.jar$|.*/.*javax.faces-[^/]*\\.jar$|.*/.*myfaces-impl-[^/]*\\.jar$";
 
     /**

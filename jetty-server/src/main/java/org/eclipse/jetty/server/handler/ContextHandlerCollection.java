@@ -304,7 +304,7 @@ public class ContextHandlerCollection extends HandlerCollection
         });
     }
 
-    private final static class Branch
+    private static final class Branch
     {
         private final Handler _handler;
         private final ContextHandler[] _contexts;

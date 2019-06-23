@@ -55,7 +55,7 @@ import static org.hamcrest.Matchers.not;
 
 public class DebugHandlerTest
 {
-    public final static HostnameVerifier __hostnameverifier = (hostname, session) -> true;
+    public static final HostnameVerifier __hostnameverifier = (hostname, session) -> true;
 
     private SSLContext sslContext;
     private Server server;

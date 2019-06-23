@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class FileSessionDataStore extends AbstractSessionDataStore
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     protected File _storeDir;
     protected boolean _deleteUnrestorableFiles = false;
     protected Map<String, String> _sessionFileMap = new ConcurrentHashMap<>();

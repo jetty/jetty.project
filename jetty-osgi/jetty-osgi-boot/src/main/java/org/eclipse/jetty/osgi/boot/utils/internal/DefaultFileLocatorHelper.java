@@ -149,7 +149,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 con.setDefaultUseCaches(Resource.getDefaultUseCaches());
 
                 if (BUNDLE_ENTRY_FIELD == null)
-                {// this one will be a DirZipBundleEntry
+                {
+                    // this one will be a DirZipBundleEntry
                     BUNDLE_ENTRY_FIELD = con.getClass().getDeclaredField("bundleEntry");
                     BUNDLE_ENTRY_FIELD.setAccessible(true);
                 }
@@ -235,12 +236,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         File webapp = path != null && path.length() != 0 ? new File(bundleInstall, path) : bundleInstall;
         if (!webapp.exists())
         {
-            throw new IllegalArgumentException("Unable to locate " + path
-                                                   + " inside "
-                                                   + bundle.getSymbolicName()
-                                                   + " ("
-                                                   + (bundleInstall != null ? bundleInstall.getAbsolutePath() : " no_bundle_location ")
-                                                   + ")");
+            throw new IllegalArgumentException("Unable to locate " + path + " inside " + bundle.getSymbolicName() +
+                                                   " (" + (bundleInstall != null ? bundleInstall.getAbsolutePath() : " no_bundle_location ") + ")");
         }
         return webapp;
     }
@@ -378,9 +375,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
             URLConnection conn = url.openConnection();
             conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-            if (BUNDLE_URL_CONNECTION_getFileURL == null
-                    &&
-                    match(conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
+            if (BUNDLE_URL_CONNECTION_getFileURL == null && match(conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
             {
                 BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL");
                 BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);

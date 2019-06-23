@@ -48,7 +48,7 @@ public class SessionAuthentication extends AbstractUserAuthentication
 
     private static final long serialVersionUID = -4643200685888258706L;
 
-    public final static String __J_AUTHENTICATED = "org.eclipse.jetty.security.UserIdentity";
+    public static final String __J_AUTHENTICATED = "org.eclipse.jetty.security.UserIdentity";
 
     private final String _name;
     private final Object _credentials;
@@ -82,15 +82,15 @@ public class SessionAuthentication extends AbstractUserAuthentication
             return;
         }
 
-        LoginService login_service = security.getLoginService();
-        if (login_service == null)
+        LoginService loginService = security.getLoginService();
+        if (loginService == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("!LoginService");
             return;
         }
 
-        _userIdentity = login_service.login(_name, _credentials, null);
+        _userIdentity = loginService.login(_name, _credentials, null);
         LOG.debug("Deserialized and relogged in {}", this);
     }
 

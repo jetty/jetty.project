@@ -97,7 +97,7 @@ import org.eclipse.jetty.util.security.Password;
 @ManagedObject
 public abstract class SslContextFactory extends AbstractLifeCycle implements Dumpable
 {
-    public final static TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{
+    public static final TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{
         new X509TrustManager()
         {
             @Override

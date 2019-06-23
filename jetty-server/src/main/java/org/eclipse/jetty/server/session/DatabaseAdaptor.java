@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class DatabaseAdaptor
 {
-    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     String _dbName;
     boolean _isLower;

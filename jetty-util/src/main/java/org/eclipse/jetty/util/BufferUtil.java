@@ -1205,13 +1205,13 @@ public class BufferUtil
         return TypeUtil.toHexString(toArray(buffer));
     }
 
-    private final static int[] decDivisors =
+    private static final int[] decDivisors =
         {1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1};
 
-    private final static int[] hexDivisors =
+    private static final int[] hexDivisors =
         {0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1};
 
-    private final static long[] decDivisorsL =
+    private static final long[] decDivisorsL =
         {
             1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L,
             1000000000000L, 100000000000L,

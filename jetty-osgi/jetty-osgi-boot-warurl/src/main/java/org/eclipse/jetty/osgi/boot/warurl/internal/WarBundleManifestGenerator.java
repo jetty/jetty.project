@@ -92,9 +92,8 @@ public class WarBundleManifestGenerator
                     manv = Integer.parseInt(versionInManifest.trim());
                 }
             }
-            catch (NumberFormatException nfe)
+            catch (NumberFormatException ignored)
             {
-
             }
             res.put(Constants.BUNDLE_MANIFESTVERSION, String.valueOf(manv < 2 ? 2 : manv));
         }
@@ -168,7 +167,8 @@ public class WarBundleManifestGenerator
         String extraImportPackage = params.getString(Constants.IMPORT_PACKAGE);
         String alreadyImportPackage = res.get(Constants.IMPORT_PACKAGE);
         if (alreadyImportPackage == null)
-        {//The spec does not specify that the jsp imports are optional
+        {
+            //The spec does not specify that the jsp imports are optional
             //kind of nice to have them optional so we can run simple wars in
             //simple environments.
             alreadyImportPackage = "javax.servlet; version=\"2.5\"," +

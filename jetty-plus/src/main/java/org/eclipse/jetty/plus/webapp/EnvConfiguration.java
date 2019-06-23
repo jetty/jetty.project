@@ -95,10 +95,10 @@ public class EnvConfiguration extends AbstractConfiguration
         {
             //look for a file called WEB-INF/jetty-env.xml
             //and process it if it exists
-            org.eclipse.jetty.util.resource.Resource web_inf = context.getWebInf();
-            if (web_inf != null && web_inf.isDirectory())
+            org.eclipse.jetty.util.resource.Resource webInf = context.getWebInf();
+            if (webInf != null && webInf.isDirectory())
             {
-                org.eclipse.jetty.util.resource.Resource jettyEnv = web_inf.addPath("jetty-env.xml");
+                org.eclipse.jetty.util.resource.Resource jettyEnv = webInf.addPath("jetty-env.xml");
                 if (jettyEnv.exists())
                 {
                     jettyEnvXmlResource = jettyEnv;
@@ -261,7 +261,7 @@ public class EnvConfiguration extends AbstractConfiguration
     protected void createEnvContext(WebAppContext wac)
         throws NamingException
     {
-        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
         ContextFactory.associateClassLoader(wac.getClassLoader());
         try
@@ -273,7 +273,7 @@ public class EnvConfiguration extends AbstractConfiguration
         finally
         {
             ContextFactory.disassociateClassLoader();
-            Thread.currentThread().setContextClassLoader(old_loader);
+            Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
 

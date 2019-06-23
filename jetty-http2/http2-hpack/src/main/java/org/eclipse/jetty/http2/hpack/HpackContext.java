@@ -110,8 +110,8 @@ public class HpackContext
             /* 58 */ {"user-agent", EMPTY},
             /* 59 */ {"vary", EMPTY},
             /* 60 */ {"via", EMPTY},
-            /* 61 */ {"www-authenticate", EMPTY},
-            };
+            /* 61 */ {"www-authenticate", EMPTY}
+        };
 
     private static final Map<HttpField, Entry> __staticFieldMap = new HashMap<>();
     private static final Trie<StaticEntry> __staticNameMap = new ArrayTernaryTrie<>(true, 512);

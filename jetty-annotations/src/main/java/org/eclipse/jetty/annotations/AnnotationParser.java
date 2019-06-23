@@ -365,7 +365,7 @@ public class AnnotationParser
     /**
      * Convenience base class to provide no-ops for all Handler methods.
      */
-    public static abstract class AbstractHandler implements Handler
+    public abstract static class AbstractHandler implements Handler
     {
         @Override
         public void handle(ClassInfo classInfo)

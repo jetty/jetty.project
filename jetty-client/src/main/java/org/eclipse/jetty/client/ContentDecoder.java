@@ -53,7 +53,7 @@ public interface ContentDecoder
      * {@link Factory} instances are configured in {@link HttpClient} via
      * {@link HttpClient#getContentDecoderFactories()}.
      */
-    public static abstract class Factory
+    public abstract static class Factory
     {
         private final String encoding;
 

@@ -863,8 +863,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
             //check containerInitializerOrdering doesn't exclude it
             String name = sci.getClass().getName();
-            if (initializerOrdering != null
-                    && (!initializerOrdering.hasWildcard() && initializerOrdering.getIndexOf(name) < 0))
+            if (initializerOrdering != null && (!initializerOrdering.hasWildcard() && initializerOrdering.getIndexOf(name) < 0))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} is excluded by ordering", sci);

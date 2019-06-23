@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 public class TestIntrospectionUtil
 {
-    public final static Class<?>[] __INTEGER_ARG = new Class[]{Integer.class};
+    public static final Class<?>[] __INTEGER_ARG = new Class[]{Integer.class};
     static Field privateAField;
     static Field protectedAField;
     static Field publicAField;

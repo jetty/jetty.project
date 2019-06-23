@@ -73,19 +73,20 @@ public class Runner
 {
     private static final Logger LOG = Log.getLogger(Runner.class);
 
-    public static final String[] __plusConfigurationClasses = new String[]{
-        org.eclipse.jetty.webapp.WebInfConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.webapp.WebXmlConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.webapp.MetaInfConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.webapp.FragmentConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName()
-    };
-    public static final String __containerIncludeJarPattern = ".*/jetty-runner-[^/]*\\.jar$";
-    public static final String __defaultContextPath = "/";
-    public static final int __defaultPort = 8080;
+    public static final String[] PLUS_CONFIGURATION_CLASSES =
+        {
+            org.eclipse.jetty.webapp.WebInfConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.WebXmlConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.MetaInfConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.FragmentConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName()
+        };
+    public static final String CONTAINER_INCLUDE_JAR_PATTERN = ".*/jetty-runner-[^/]*\\.jar$";
+    public static final String DEFAULT_CONTEXT_PATH = "/";
+    public static final int DEFAULT_PORT = 8080;
 
     protected Server _server;
     protected URLClassLoader _classLoader;
@@ -235,9 +236,9 @@ public class Runner
         LOG.info("Runner");
         LOG.debug("Runner classpath {}", _classpath);
 
-        String contextPath = __defaultContextPath;
+        String contextPath = DEFAULT_CONTEXT_PATH;
         boolean contextPathSet = false;
-        int port = __defaultPort;
+        int port = DEFAULT_PORT;
         String host = null;
         int stopPort = Integer.getInteger("STOP.PORT", 0);
         String stopKey = System.getProperty("STOP.KEY", null);
@@ -440,12 +441,12 @@ public class Runner
                             _contexts.addHandler(handler);
                             String containerIncludeJarPattern = (String)handler.getAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN);
                             if (containerIncludeJarPattern == null)
-                                containerIncludeJarPattern = __containerIncludeJarPattern;
+                                containerIncludeJarPattern = CONTAINER_INCLUDE_JAR_PATTERN;
                             else
                             {
-                                if (!containerIncludeJarPattern.contains(__containerIncludeJarPattern))
+                                if (!containerIncludeJarPattern.contains(CONTAINER_INCLUDE_JAR_PATTERN))
                                 {
-                                    containerIncludeJarPattern = containerIncludeJarPattern + (StringUtil.isBlank(containerIncludeJarPattern) ? "" : "|") + __containerIncludeJarPattern;
+                                    containerIncludeJarPattern = containerIncludeJarPattern + (StringUtil.isBlank(containerIncludeJarPattern) ? "" : "|") + CONTAINER_INCLUDE_JAR_PATTERN;
                                 }
                             }
 
@@ -456,21 +457,21 @@ public class Runner
                             {
                                 WebAppContext wac = (WebAppContext)handler;
                                 if (wac.getConfigurationClasses() == null || wac.getConfigurationClasses().length == 0)
-                                    wac.setConfigurationClasses(__plusConfigurationClasses);
+                                    wac.setConfigurationClasses(PLUS_CONFIGURATION_CLASSES);
                             }
                         }
                         else
                         {
                             // assume it is a WAR file
                             WebAppContext webapp = new WebAppContext(_contexts, ctx.toString(), contextPath);
-                            webapp.setConfigurationClasses(__plusConfigurationClasses);
+                            webapp.setConfigurationClasses(PLUS_CONFIGURATION_CLASSES);
                             webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
-                                __containerIncludeJarPattern);
+                                CONTAINER_INCLUDE_JAR_PATTERN);
                         }
                     }
                     //reset
                     contextPathSet = false;
-                    contextPath = __defaultContextPath;
+                    contextPath = DEFAULT_CONTEXT_PATH;
                     break;
             }
         }

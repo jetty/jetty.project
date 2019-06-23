@@ -61,7 +61,7 @@ public class OSGiClassLoader extends URLClassLoader
     public URL getResource(String name)
     {
         URL url = null;
-        boolean tried_parent = false;
+        boolean triedParent = false;
 
         if (url == null)
         {
@@ -76,7 +76,7 @@ public class OSGiClassLoader extends URLClassLoader
             }
         }
 
-        if (url == null && !tried_parent)
+        if (url == null && !triedParent)
         {
             if (_parent != null)
                 url = _parent.getResource(name);
@@ -100,7 +100,7 @@ public class OSGiClassLoader extends URLClassLoader
     {
         Class<?> c = findLoadedClass(name);
         ClassNotFoundException ex = null;
-        boolean tried_parent = false;
+        boolean triedParent = false;
 
         if (c == null)
         {
@@ -114,7 +114,7 @@ public class OSGiClassLoader extends URLClassLoader
             }
         }
 
-        if (c == null && _parent != null && !tried_parent)
+        if (c == null && _parent != null && !triedParent)
             c = _parent.loadClass(name);
 
         if (c == null)

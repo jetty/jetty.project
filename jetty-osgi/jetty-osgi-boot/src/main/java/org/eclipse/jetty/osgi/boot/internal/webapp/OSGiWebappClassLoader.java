@@ -257,7 +257,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
                         {
                             jar.close();
                         }
-                        catch (IOException ioe)
+                        catch (IOException ignored)
                         {
                         }
                 }

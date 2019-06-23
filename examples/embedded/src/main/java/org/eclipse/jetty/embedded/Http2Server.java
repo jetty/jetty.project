@@ -81,34 +81,34 @@ public class Http2Server
         server.setHandler(context);
 
         // HTTP Configuration
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(8443);
-        http_config.setSendXPoweredBy(true);
-        http_config.setSendServerVersion(true);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecureScheme("https");
+        httpConfig.setSecurePort(8443);
+        httpConfig.setSendXPoweredBy(true);
+        httpConfig.setSendServerVersion(true);
 
         // HTTP Connector
-        ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(http_config), new HTTP2CServerConnectionFactory(http_config));
+        ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfig), new HTTP2CServerConnectionFactory(httpConfig));
         http.setPort(8080);
         server.addConnector(http);
 
         // SSL Context Factory for HTTPS and HTTP/2
-        String jetty_distro = System.getProperty("jetty.distro", "../../jetty-distribution/target/distribution");
-        if (!new File(jetty_distro).exists())
-            jetty_distro = "jetty-distribution/target/distribution";
+        String jettyDistro = System.getProperty("jetty.distro", "../../jetty-distribution/target/distribution");
+        if (!new File(jettyDistro).exists())
+            jettyDistro = "jetty-distribution/target/distribution";
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(jetty_distro + "/demo-base/etc/keystore");
+        sslContextFactory.setKeyStorePath(jettyDistro + "/demo-base/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
         // sslContextFactory.setProvider("Conscrypt");
 
         // HTTPS Configuration
-        HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
         // HTTP/2 Connection Factory
-        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
 
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(http.getDefaultProtocol());
@@ -118,7 +118,7 @@ public class Http2Server
 
         // HTTP/2 Connector
         ServerConnector http2Connector =
-            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(https_config));
+            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(httpsConfig));
         http2Connector.setPort(8443);
         server.addConnector(http2Connector);
 

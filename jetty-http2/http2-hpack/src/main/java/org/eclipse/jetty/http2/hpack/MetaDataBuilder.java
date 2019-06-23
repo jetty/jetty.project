@@ -75,8 +75,8 @@ public class MetaDataBuilder
         HttpHeader header = field.getHeader();
         String name = field.getName();
         String value = field.getValue();
-        int field_size = name.length() + (value == null ? 0 : value.length());
-        _size += field_size + 32;
+        int fieldSize = name.length() + (value == null ? 0 : value.length());
+        _size += fieldSize + 32;
         if (_size > _maxSize)
             throw new HpackException.SessionException("Header Size %d > %d", _size, _maxSize);
 

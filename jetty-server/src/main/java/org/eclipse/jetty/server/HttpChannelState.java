@@ -49,7 +49,7 @@ public class HttpChannelState
 {
     private static final Logger LOG = Log.getLogger(HttpChannelState.class);
 
-    private final static long DEFAULT_TIMEOUT = Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
+    private static final long DEFAULT_TIMEOUT = Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
 
     /**
      * The state of the HttpChannel,used to control the overall lifecycle.

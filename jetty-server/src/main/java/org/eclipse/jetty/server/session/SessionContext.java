@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class SessionContext
 {
-    public final static String NULL_VHOST = "0.0.0.0";
+    public static final String NULL_VHOST = "0.0.0.0";
     private ContextHandler.Context _context;
     private SessionHandler _sessionHandler;
     private String _workerName;

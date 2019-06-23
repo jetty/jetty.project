@@ -41,17 +41,18 @@ import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+// This is a required name for JNDI
+// @checkstyle-disable-check : TypeNameCheck
+
 /**
  * localContext
  *
  * Implementation of the delegate for InitialContext for the local namespace.
- *
- * @version $Revision: 4780 $ $Date: 2009-03-17 16:36:08 +0100 (Tue, 17 Mar 2009) $
  */
 public class localContextRoot implements Context
 {
     private static final Logger LOG = Log.getLogger(localContextRoot.class);
-    protected final static NamingContext __root = new NamingRoot();
+    protected static final NamingContext __root = new NamingRoot();
     private final Hashtable<String, Object> _env;
 
     static class NamingRoot extends NamingContext

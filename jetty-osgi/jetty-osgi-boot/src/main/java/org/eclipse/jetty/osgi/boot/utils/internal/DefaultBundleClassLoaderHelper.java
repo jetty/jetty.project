@@ -311,7 +311,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                     Object[] moduleArray = (Object[])Felix_BundleImpl_m_Modules_Field.get(bundle);
                     currentModuleImpl = moduleArray[moduleArray.length - 1];
                 }
-                catch (Throwable t2)
+                catch (Throwable ex)
                 {
                     try
                     {

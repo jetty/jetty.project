@@ -318,6 +318,8 @@ public class HttpClient extends ContainerLifeCycle
         return decoderFactories;
     }
 
+    // @checkstyle-disable-check : MethodNameCheck
+
     /**
      * Performs a GET request to the specified URI.
      *
@@ -400,6 +402,8 @@ public class HttpClient extends ContainerLifeCycle
     {
         return newRequest(uri).method(HttpMethod.POST);
     }
+
+    // @checkstyle-enable-check : MethodNameCheck
 
     /**
      * Creates a new request with the "http" scheme and the specified host and port

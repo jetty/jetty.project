@@ -59,8 +59,8 @@ public class TypeUtil
 {
     private static final Logger LOG = Log.getLogger(TypeUtil.class);
     public static final Class<?>[] NO_ARGS = new Class[]{};
-    public static final int CR = '\015';
-    public static final int LF = '\012';
+    public static final int CR = '\r';
+    public static final int LF = '\n';
 
     private static final HashMap<String, Class<?>> name2Class = new HashMap<>();
 

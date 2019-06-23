@@ -63,7 +63,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
         FORBIDDEN_SEGMENTS.add("//");
     }
 
-    private String variables[];
+    private String[] variables;
 
     public UriTemplatePathSpec(String rawSpec)
     {
@@ -111,8 +111,8 @@ public class UriTemplatePathSpec extends RegexPathSpec
 
         List<String> varNames = new ArrayList<>();
         // split up into path segments (ignoring the first slash that will always be empty)
-        String segments[] = rawSpec.substring(1).split("/");
-        char segmentSignature[] = new char[segments.length];
+        String[] segments = rawSpec.substring(1).split("/");
+        char[] segmentSignature = new char[segments.length];
         this.pathDepth = segments.length;
         for (int i = 0; i < segments.length; i++)
         {

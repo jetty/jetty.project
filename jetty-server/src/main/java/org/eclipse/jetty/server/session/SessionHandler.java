@@ -72,17 +72,17 @@ import static java.lang.Math.round;
 @ManagedObject
 public class SessionHandler extends ScopedHandler
 {
-    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
-    public final static EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
+    public static final EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
 
     /**
      * Session cookie name.
      * Defaults to <code>JSESSIONID</code>, but can be set with the
      * <code>org.eclipse.jetty.servlet.SessionCookie</code> context init parameter.
      */
-    public final static String __SessionCookieProperty = "org.eclipse.jetty.servlet.SessionCookie";
-    public final static String __DefaultSessionCookie = "JSESSIONID";
+    public static final String __SessionCookieProperty = "org.eclipse.jetty.servlet.SessionCookie";
+    public static final String __DefaultSessionCookie = "JSESSIONID";
 
     /**
      * Session id path parameter name.
@@ -91,9 +91,9 @@ public class SessionHandler extends ScopedHandler
      * If context init param is "none", or setSessionIdPathParameterName is called with null or "none",
      * no URL rewriting will be done.
      */
-    public final static String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.servlet.SessionIdPathParameterName";
-    public final static String __DefaultSessionIdPathParameterName = "jsessionid";
-    public final static String __CheckRemoteSessionEncoding = "org.eclipse.jetty.servlet.CheckingRemoteSessionIdEncoding";
+    public static final String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.servlet.SessionIdPathParameterName";
+    public static final String __DefaultSessionIdPathParameterName = "jsessionid";
+    public static final String __CheckRemoteSessionEncoding = "org.eclipse.jetty.servlet.CheckingRemoteSessionIdEncoding";
 
     /**
      * Session Domain.
@@ -101,8 +101,8 @@ public class SessionHandler extends ScopedHandler
      * used as the domain for session cookies. If it is not set, then
      * no domain is specified for the session cookie.
      */
-    public final static String __SessionDomainProperty = "org.eclipse.jetty.servlet.SessionDomain";
-    public final static String __DefaultSessionDomain = null;
+    public static final String __SessionDomainProperty = "org.eclipse.jetty.servlet.SessionDomain";
+    public static final String __DefaultSessionDomain = null;
 
     /**
      * Session Path.
@@ -110,7 +110,7 @@ public class SessionHandler extends ScopedHandler
      * used as the path for the session cookie.  If it is not set, then
      * the context path is used as the path for the cookie.
      */
-    public final static String __SessionPathProperty = "org.eclipse.jetty.servlet.SessionPath";
+    public static final String __SessionPathProperty = "org.eclipse.jetty.servlet.SessionPath";
 
     /**
      * Session Max Age.
@@ -118,7 +118,7 @@ public class SessionHandler extends ScopedHandler
      * used as the max age for the session cookie.  If it is not set, then
      * a max age of -1 is used.
      */
-    public final static String __MaxAgeProperty = "org.eclipse.jetty.servlet.MaxAge";
+    public static final String __MaxAgeProperty = "org.eclipse.jetty.servlet.MaxAge";
 
     public Set<SessionTrackingMode> __defaultSessionTrackingModes =
         Collections.unmodifiableSet(
@@ -138,7 +138,7 @@ public class SessionHandler extends ScopedHandler
      * the sessionmanager. Thus MAX_INT is the max number of seconds that can be set, and MAX_INT/60 is the
      * max number of minutes that you can set.
      */
-    public final static java.math.BigDecimal MAX_INACTIVE_MINUTES = new java.math.BigDecimal(Integer.MAX_VALUE / 60);
+    public static final java.math.BigDecimal MAX_INACTIVE_MINUTES = new java.math.BigDecimal(Integer.MAX_VALUE / 60);
 
     /**
      * SessionAsyncListener

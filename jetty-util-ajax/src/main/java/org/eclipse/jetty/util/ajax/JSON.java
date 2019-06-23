@@ -87,7 +87,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class JSON
 {
     static final Logger LOG = Log.getLogger(JSON.class);
-    public final static JSON DEFAULT = new JSON();
+    public static final JSON DEFAULT = new JSON();
 
     private Map<String, Convertor> _convertors = new ConcurrentHashMap<String, Convertor>();
     private int _stringBufferSize = 1024;

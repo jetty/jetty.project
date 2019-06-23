@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ErrorHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(ErrorHandler.class);
-    public final static String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
+    public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
 
     boolean _showStacks = true;
     boolean _showMessageInTitle = true;

@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ClientEndpoint
 public class EventSocket
 {
-    private final static Logger LOG = Log.getLogger(EventSocket.class);
+    private static final Logger LOG = Log.getLogger(EventSocket.class);
 
     public Session session;
 

@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 
 public class WebSocketUpgradeHandler extends HandlerWrapper
 {
-    final static Logger LOG = Log.getLogger(WebSocketUpgradeHandler.class);
+    static final Logger LOG = Log.getLogger(WebSocketUpgradeHandler.class);
     final Handshaker handshaker = Handshaker.newInstance();
     final PathSpecSet paths = new PathSpecSet();
     final WebSocketNegotiator negotiator;

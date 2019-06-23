@@ -338,14 +338,14 @@ public class DataSourceLoginService extends AbstractLoginService
         }
 
         // set up the select statements based on the table and column names configured
-        _userSql = "select " + _userTableKey + "," + _userTablePasswordField
-                       + " from " + _userTableName
-                       + " where " + _userTableUserField + " = ?";
+        _userSql = "select " + _userTableKey + "," + _userTablePasswordField +
+                       " from " + _userTableName +
+                       " where " + _userTableUserField + " = ?";
 
-        _roleSql = "select r." + _roleTableRoleField
-                       + " from " + _roleTableName + " r, " + _userRoleTableName
-                       + " u where u." + _userRoleTableUserKey + " = ?"
-                       + " and r." + _roleTableKey + " = u." + _userRoleTableRoleKey;
+        _roleSql = "select r." + _roleTableRoleField +
+                       " from " + _roleTableName + " r, " + _userRoleTableName +
+                       " u where u." + _userRoleTableUserKey + " = ?" +
+                       " and r." + _roleTableKey + " = u." + _userRoleTableRoleKey;
 
         prepareTables();
     }

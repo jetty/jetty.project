@@ -34,7 +34,7 @@ public enum HttpScheme
     WS("ws"),
     WSS("wss");
 
-    public final static Trie<HttpScheme> CACHE = new ArrayTrie<HttpScheme>();
+    public static final Trie<HttpScheme> CACHE = new ArrayTrie<HttpScheme>();
 
     static
     {

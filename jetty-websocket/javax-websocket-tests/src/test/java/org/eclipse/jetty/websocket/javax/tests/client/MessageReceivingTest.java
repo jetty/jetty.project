@@ -413,7 +413,7 @@ public class MessageReceivingTest
     /**
      * Abstract message handler implementation, used for tests.
      */
-    private static abstract class AbstractHandler implements javax.websocket.MessageHandler
+    private abstract static class AbstractHandler implements javax.websocket.MessageHandler
     {
         public final BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     }

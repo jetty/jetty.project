@@ -441,8 +441,7 @@ public class JspcMojo extends AbstractMojo
                     // marker
                     boolean atInsertPoint = false;
                     boolean atEOF = false;
-                    String marker = (insertionMarker == null
-                                         || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker);
+                    String marker = (insertionMarker == null || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker);
                     while (!atInsertPoint && !atEOF)
                     {
                         String line = webXmlReader.readLine();

@@ -97,65 +97,65 @@ import org.eclipse.jetty.util.log.Logger;
 public class MongoSessionDataStore extends NoSqlSessionDataStore
 {
 
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     /**
      * Special attribute for a session that is context-specific
      */
-    public final static String __METADATA = "__metadata__";
+    public static final String __METADATA = "__metadata__";
 
     /**
      * Name of nested document field containing 1 sub document per context for which the session id is in use
      */
-    public final static String __CONTEXT = "context";
+    public static final String __CONTEXT = "context";
 
     /**
      * Special attribute per session per context, incremented each time attributes are modified
      */
-    public final static String __VERSION = __METADATA + ".version";
+    public static final String __VERSION = __METADATA + ".version";
 
-    public final static String __LASTSAVED = __METADATA + ".lastSaved";
+    public static final String __LASTSAVED = __METADATA + ".lastSaved";
 
-    public final static String __LASTNODE = __METADATA + ".lastNode";
+    public static final String __LASTNODE = __METADATA + ".lastNode";
 
     /**
      * Last access time of session
      */
-    public final static String __ACCESSED = "accessed";
+    public static final String __ACCESSED = "accessed";
 
-    public final static String __LAST_ACCESSED = "lastAccessed";
+    public static final String __LAST_ACCESSED = "lastAccessed";
 
-    public final static String __ATTRIBUTES = "attributes";
+    public static final String __ATTRIBUTES = "attributes";
 
     /**
      * Time this session will expire, based on last access time and maxIdle
      */
-    public final static String __EXPIRY = "expiry";
+    public static final String __EXPIRY = "expiry";
 
     /**
      * The max idle time of a session (smallest value across all contexts which has a session with the same id)
      */
-    public final static String __MAX_IDLE = "maxIdle";
+    public static final String __MAX_IDLE = "maxIdle";
 
     /**
      * Time of session creation
      */
-    public final static String __CREATED = "created";
+    public static final String __CREATED = "created";
 
     /**
      * Whether or not session is valid
      */
-    public final static String __VALID = "valid";
+    public static final String __VALID = "valid";
 
     /**
      * Session id
      */
-    public final static String __ID = "id";
+    public static final String __ID = "id";
 
     /**
      * Utility value of 1 for a session version for this context
      */
-    private DBObject _version_1;
+    private DBObject _version1;
 
     /**
      * Access to MongoDB
@@ -277,7 +277,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
          */
         BasicDBObject mongoKey = new BasicDBObject(__ID, id);
 
-        //DBObject sessionDocument = _dbSessions.findOne(mongoKey,_version_1);
+        //DBObject sessionDocument = _dbSessions.findOne(mongoKey,_version1);
         DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
 
         if (sessionDocument != null)
@@ -478,7 +478,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
             version = ((Number)version).longValue() + 1L;
             ((NoSqlSessionData)data).setVersion(version);
-            update.put("$inc", _version_1);
+            update.put("$inc", _version1);
             //if max idle time and/or expiry is smaller for this context, then choose that for the whole session doc
             BasicDBObject fields = new BasicDBObject();
             fields.append(__MAX_IDLE, true);
@@ -522,7 +522,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
     protected void ensureIndexes() throws MongoException
     {
-        _version_1 = new BasicDBObject(getContextSubfield(__VERSION), 1);
+        _version1 = new BasicDBObject(getContextSubfield(__VERSION), 1);
         DBObject idKey = BasicDBObjectBuilder.start().add("id", 1).get();
         _dbSessions.createIndex(idKey,
             BasicDBObjectBuilder.start()

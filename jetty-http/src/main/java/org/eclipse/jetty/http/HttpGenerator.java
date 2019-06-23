@@ -44,18 +44,20 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
  */
 public class HttpGenerator
 {
-    private final static Logger LOG = Log.getLogger(HttpGenerator.class);
+    private static final Logger LOG = Log.getLogger(HttpGenerator.class);
 
-    public final static boolean __STRICT = Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT");
+    public static final boolean __STRICT = Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT");
 
-    private final static byte[] __colon_space = new byte[]{':', ' '};
+    private static final byte[] __colon_space = new byte[]{':', ' '};
     public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 100, null, null, -1);
     public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 102, null, null, -1);
-    public final static MetaData.Response RESPONSE_500_INFO =
+    public static final MetaData.Response RESPONSE_500_INFO =
         new MetaData.Response(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR_500, null, new HttpFields()
-        {{
-            put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-        }}, 0);
+        {
+            {
+                put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+            }
+        }, 0);
 
     // states
     public enum State
@@ -91,22 +93,21 @@ public class HttpGenerator
     private Supplier<HttpFields> _trailers = null;
 
     private final int _send;
-    private final static int SEND_SERVER = 0x01;
-    private final static int SEND_XPOWEREDBY = 0x02;
-    private final static Trie<Boolean> __assumedContentMethods = new ArrayTrie<>(8);
+    private static final int SEND_SERVER = 0x01;
+    private static final int SEND_XPOWEREDBY = 0x02;
+    private static final Trie<Boolean> ASSUMED_CONTENT_METHODS = new ArrayTrie<>(8);
 
     static
     {
-        __assumedContentMethods.put(HttpMethod.POST.asString(), Boolean.TRUE);
-        __assumedContentMethods.put(HttpMethod.PUT.asString(), Boolean.TRUE);
+        ASSUMED_CONTENT_METHODS.put(HttpMethod.POST.asString(), Boolean.TRUE);
+        ASSUMED_CONTENT_METHODS.put(HttpMethod.PUT.asString(), Boolean.TRUE);
     }
 
     public static void setJettyVersion(String serverVersion)
     {
-        SEND[SEND_SERVER] = StringUtil.getBytes("Server: " + serverVersion + "\015\012");
-        SEND[SEND_XPOWEREDBY] = StringUtil.getBytes("X-Powered-By: " + serverVersion + "\015\012");
-        SEND[SEND_SERVER | SEND_XPOWEREDBY] = StringUtil.getBytes("Server: " + serverVersion + "\015\012X-Powered-By: " +
-                                                                      serverVersion + "\015\012");
+        SEND[SEND_SERVER] = StringUtil.getBytes("Server: " + serverVersion + "\r\n");
+        SEND[SEND_XPOWEREDBY] = StringUtil.getBytes("X-Powered-By: " + serverVersion + "\r\n");
+        SEND[SEND_SERVER | SEND_XPOWEREDBY] = StringUtil.getBytes("Server: " + serverVersion + "\r\nX-Powered-By: " + serverVersion + "\r\n");
     }
 
     // data
@@ -559,14 +560,14 @@ public class HttpGenerator
     {
         if (reason.length() > 1024)
             reason = reason.substring(0, 1024);
-        byte[] _bytes = StringUtil.getBytes(reason);
+        byte[] bytes = StringUtil.getBytes(reason);
 
-        for (int i = _bytes.length; i-- > 0; )
+        for (int i = bytes.length; i-- > 0; )
         {
-            if (_bytes[i] == '\r' || _bytes[i] == '\n')
-                _bytes[i] = '?';
+            if (bytes[i] == '\r' || bytes[i] == '\n')
+                bytes[i] = '?';
         }
-        return _bytes;
+        return bytes;
     }
 
     private void generateHeaders(MetaData info, ByteBuffer header, ByteBuffer content, boolean last)
@@ -582,14 +583,14 @@ public class HttpGenerator
 
         // default field values
         int send = _send;
-        HttpField transfer_encoding = null;
+        HttpField transferEncoding = null;
         boolean http11 = info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
         _trailers = http11 ? info.getTrailerSupplier() : null;
-        boolean chunked_hint = _trailers != null;
-        boolean content_type = false;
-        long content_length = info.getContentLength();
-        boolean content_length_field = false;
+        boolean chunkedHint = _trailers != null;
+        boolean contentType = false;
+        long contentLength = info.getContentLength();
+        boolean contentLengthField = false;
 
         // Generate fields
         HttpFields fields = info.getFields();
@@ -607,17 +608,17 @@ public class HttpGenerator
                     switch (h)
                     {
                         case CONTENT_LENGTH:
-                            if (content_length < 0)
-                                content_length = field.getLongValue();
-                            else if (content_length != field.getLongValue())
-                                throw new BadMessageException(INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", content_length, field.getLongValue()));
-                            content_length_field = true;
+                            if (contentLength < 0)
+                                contentLength = field.getLongValue();
+                            else if (contentLength != field.getLongValue())
+                                throw new BadMessageException(INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, field.getLongValue()));
+                            contentLengthField = true;
                             break;
 
                         case CONTENT_TYPE:
                         {
                             // write the field to the header
-                            content_type = true;
+                            contentType = true;
                             putTo(field, header);
                             break;
                         }
@@ -628,8 +629,8 @@ public class HttpGenerator
                             {
                                 // Don't add yet, treat this only as a hint that there is content
                                 // with a preference to chunk if we can
-                                transfer_encoding = field;
-                                chunked_hint = field.contains(HttpHeaderValue.CHUNKED.asString());
+                                transferEncoding = field;
+                                chunkedHint = field.contains(HttpHeaderValue.CHUNKED.asString());
                             }
                             break;
                         }
@@ -665,34 +666,34 @@ public class HttpGenerator
         }
 
         // Can we work out the content length?
-        if (last && content_length < 0 && _trailers == null)
-            content_length = _contentPrepared + BufferUtil.length(content);
+        if (last && contentLength < 0 && _trailers == null)
+            contentLength = _contentPrepared + BufferUtil.length(content);
 
         // Calculate how to end _content and connection, _content length and transfer encoding
         // settings from http://tools.ietf.org/html/rfc7230#section-3.3.3
 
-        boolean assumed_content_request = request != null && Boolean.TRUE.equals(__assumedContentMethods.get(request.getMethod()));
-        boolean assumed_content = assumed_content_request || content_type || chunked_hint;
-        boolean nocontent_request = request != null && content_length <= 0 && !assumed_content;
+        boolean assumedContentRequest = request != null && Boolean.TRUE.equals(ASSUMED_CONTENT_METHODS.get(request.getMethod()));
+        boolean assumedContent = assumedContentRequest || contentType || chunkedHint;
+        boolean nocontentRequest = request != null && contentLength <= 0 && !assumedContent;
 
         if (_persistent == null)
             _persistent = http11 || (request != null && HttpMethod.CONNECT.is(request.getMethod()));
 
         // If the message is known not to have content
-        if (_noContentResponse || nocontent_request)
+        if (_noContentResponse || nocontentRequest)
         {
             // We don't need to indicate a body length
             _endOfContent = EndOfContent.NO_CONTENT;
 
             // But it is an error if there actually is content
-            if (_contentPrepared > 0 || content_length > 0)
+            if (_contentPrepared > 0 || contentLength > 0)
             {
                 if (_contentPrepared == 0 && last)
                 {
                     // TODO discard content for backward compatibility with 9.3 releases
                     // TODO review if it is still needed in 9.4 or can we just throw.
                     content.clear();
-                    content_length = 0;
+                    contentLength = 0;
                 }
                 else
                     throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
@@ -700,33 +701,33 @@ public class HttpGenerator
         }
         // Else if we are HTTP/1.1 and the content length is unknown and we are either persistent
         // or it is a request with content (which cannot EOF) or the app has requested chunking
-        else if (http11 && (chunked_hint || content_length < 0 && (_persistent || assumed_content_request)))
+        else if (http11 && (chunkedHint || contentLength < 0 && (_persistent || assumedContentRequest)))
         {
             // we use chunking
             _endOfContent = EndOfContent.CHUNKED_CONTENT;
 
             // try to use user supplied encoding as it may have other values.
-            if (transfer_encoding == null)
+            if (transferEncoding == null)
                 header.put(TRANSFER_ENCODING_CHUNKED);
-            else if (transfer_encoding.toString().endsWith(HttpHeaderValue.CHUNKED.toString()))
+            else if (transferEncoding.toString().endsWith(HttpHeaderValue.CHUNKED.toString()))
             {
-                putTo(transfer_encoding, header);
-                transfer_encoding = null;
+                putTo(transferEncoding, header);
+                transferEncoding = null;
             }
-            else if (!chunked_hint)
+            else if (!chunkedHint)
             {
-                putTo(new HttpField(HttpHeader.TRANSFER_ENCODING, transfer_encoding.getValue() + ",chunked"), header);
-                transfer_encoding = null;
+                putTo(new HttpField(HttpHeader.TRANSFER_ENCODING, transferEncoding.getValue() + ",chunked"), header);
+                transferEncoding = null;
             }
             else
                 throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Bad Transfer-Encoding");
         }
         // Else if we known the content length and are a request or a persistent response, 
-        else if (content_length >= 0 && (request != null || _persistent))
+        else if (contentLength >= 0 && (request != null || _persistent))
         {
             // Use the content length 
             _endOfContent = EndOfContent.CONTENT_LENGTH;
-            putContentLength(header, content_length);
+            putContentLength(header, contentLength);
         }
         // Else if we are a response
         else if (response != null)
@@ -734,8 +735,8 @@ public class HttpGenerator
             // We must use EOF - even if we were trying to be persistent
             _endOfContent = EndOfContent.EOF_CONTENT;
             _persistent = false;
-            if (content_length >= 0 && (content_length > 0 || assumed_content || content_length_field))
-                putContentLength(header, content_length);
+            if (contentLength >= 0 && (contentLength > 0 || assumedContent || contentLengthField))
+                putContentLength(header, contentLength);
 
             if (http11 && !close)
                 header.put(CONNECTION_CLOSE);
@@ -751,18 +752,18 @@ public class HttpGenerator
             LOG.debug(_endOfContent.toString());
 
         // Add transfer encoding if it is not chunking
-        if (transfer_encoding != null)
+        if (transferEncoding != null)
         {
-            if (chunked_hint)
+            if (chunkedHint)
             {
-                String v = transfer_encoding.getValue();
+                String v = transferEncoding.getValue();
                 int c = v.lastIndexOf(',');
                 if (c > 0 && v.lastIndexOf(HttpHeaderValue.CHUNKED.toString(), c) > c)
                     putTo(new HttpField(HttpHeader.TRANSFER_ENCODING, v.substring(0, c).trim()), header);
             }
             else
             {
-                putTo(transfer_encoding, header);
+                putTo(transferEncoding, header);
             }
         }
 
@@ -805,17 +806,17 @@ public class HttpGenerator
     }
 
     // common _content
-    private static final byte[] ZERO_CHUNK = {(byte)'0', (byte)'\015', (byte)'\012'};
-    private static final byte[] LAST_CHUNK = {(byte)'0', (byte)'\015', (byte)'\012', (byte)'\015', (byte)'\012'};
-    private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\015\012");
-    private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\015\012");
+    private static final byte[] ZERO_CHUNK = {(byte)'0', (byte)'\r', (byte)'\n'};
+    private static final byte[] LAST_CHUNK = {(byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n'};
+    private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\r\n");
+    private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\r\n");
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1 + " ");
-    private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
+    private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\r\n");
     private static final byte[][] SEND = new byte[][]{
         new byte[0],
-        StringUtil.getBytes("Server: Jetty(10.x.x)\015\012"),
-        StringUtil.getBytes("X-Powered-By: Jetty(10.x.x)\015\012"),
-        StringUtil.getBytes("Server: Jetty(10.x.x)\015\012X-Powered-By: Jetty(10.x.x)\015\012")
+        StringUtil.getBytes("Server: Jetty(10.x.x)\r\n"),
+        StringUtil.getBytes("X-Powered-By: Jetty(10.x.x)\r\n"),
+        StringUtil.getBytes("Server: Jetty(10.x.x)\r\nX-Powered-By: Jetty(10.x.x)\r\n")
     };
 
     // Build cache of response lines for status

@@ -62,8 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class WebSocketCloseTest extends WebSocketTester
 {
     private static Logger LOG = Log.getLogger(WebSocketCloseTest.class);
-    private final static String WS_SCHEME = "ws";
-    private final static String WSS_SCHEME = "wss";
+    private static final String WS_SCHEME = "ws";
+    private static final String WSS_SCHEME = "wss";
 
     private WebSocketServer server;
     private Socket client;

@@ -88,7 +88,7 @@ public class NamingEntryUtil
             scopeName.addAll(namingEntryName);
             entry = (NamingEntry)ic.lookup(scopeName);
         }
-        catch (NameNotFoundException ee)
+        catch (NameNotFoundException ignored)
         {
         }
 

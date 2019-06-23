@@ -185,11 +185,11 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             lastSecondaryOrder = _secondaryOrdering.applyAsInt(v);
         }
 
-        int last_element = _quality.size();
-        while (last_element > 0 && _quality.get(--last_element).equals(0.0D))
+        int lastElement = _quality.size();
+        while (lastElement > 0 && _quality.get(--lastElement).equals(0.0D))
         {
-            _quality.remove(last_element);
-            _values.remove(last_element);
+            _quality.remove(lastElement);
+            _values.remove(lastElement);
         }
     }
 }

@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @WebSocket
 public class EventSocket
 {
-    private final static Logger LOG = Log.getLogger(EventSocket.class);
+    private static final Logger LOG = Log.getLogger(EventSocket.class);
 
     public Session session;
     private String behavior;

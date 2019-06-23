@@ -55,8 +55,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
  */
 public class Log
 {
-    public final static String EXCEPTION = "EXCEPTION ";
-    public final static String IGNORED = "IGNORED EXCEPTION ";
+    public static final String EXCEPTION = "EXCEPTION ";
+    public static final String IGNORED = "IGNORED EXCEPTION ";
 
     /**
      * Logging Configuration Properties
@@ -74,7 +74,7 @@ public class Log
     /**
      * Hold loggers only.
      */
-    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
 
     static
     {

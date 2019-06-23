@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 public class CachedContentFactory implements HttpContent.ContentFactory
 {
     private static final Logger LOG = Log.getLogger(CachedContentFactory.class);
-    private final static Map<CompressedContentFormat, CachedPrecompressedHttpContent> NO_PRECOMPRESSED = Collections.unmodifiableMap(Collections.emptyMap());
+    private static final Map<CompressedContentFormat, CachedPrecompressedHttpContent> NO_PRECOMPRESSED = Collections.unmodifiableMap(Collections.emptyMap());
 
     private final ConcurrentMap<String, CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;

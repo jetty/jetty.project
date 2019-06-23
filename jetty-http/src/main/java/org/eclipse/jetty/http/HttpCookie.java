@@ -245,24 +245,24 @@ public class HttpCookie
         StringBuilder buf = new StringBuilder();
 
         // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
-        boolean quote_name = isQuoteNeededForCookie(_name);
-        quoteOnlyOrAppend(buf, _name, quote_name);
+        boolean quoteName = isQuoteNeededForCookie(_name);
+        quoteOnlyOrAppend(buf, _name, quoteName);
 
         buf.append('=');
 
         // Append the value
-        boolean quote_value = isQuoteNeededForCookie(_value);
-        quoteOnlyOrAppend(buf, _value, quote_value);
+        boolean quoteValue = isQuoteNeededForCookie(_value);
+        quoteOnlyOrAppend(buf, _value, quoteValue);
 
         // Look for domain and path fields and check if they need to be quoted
-        boolean has_domain = _domain != null && _domain.length() > 0;
-        boolean quote_domain = has_domain && isQuoteNeededForCookie(_domain);
-        boolean has_path = _path != null && _path.length() > 0;
-        boolean quote_path = has_path && isQuoteNeededForCookie(_path);
+        boolean hasDomain = _domain != null && _domain.length() > 0;
+        boolean quoteDomain = hasDomain && isQuoteNeededForCookie(_domain);
+        boolean hasPath = _path != null && _path.length() > 0;
+        boolean quotePath = hasPath && isQuoteNeededForCookie(_path);
 
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
         int version = _version;
-        if (version == 0 && (_comment != null || quote_name || quote_value || quote_domain || quote_path ||
+        if (version == 0 && (_comment != null || quoteName || quoteValue || quoteDomain || quotePath ||
                                  QuotedStringTokenizer.isQuoted(_name) || QuotedStringTokenizer.isQuoted(_value) ||
                                  QuotedStringTokenizer.isQuoted(_path) || QuotedStringTokenizer.isQuoted(_domain)))
             version = 1;
@@ -274,17 +274,17 @@ public class HttpCookie
             buf.append(";Version=").append(version);
 
         // Append path
-        if (has_path)
+        if (hasPath)
         {
             buf.append(";Path=");
-            quoteOnlyOrAppend(buf, _path, quote_path);
+            quoteOnlyOrAppend(buf, _path, quotePath);
         }
 
         // Append domain
-        if (has_domain)
+        if (hasDomain)
         {
             buf.append(";Domain=");
-            quoteOnlyOrAppend(buf, _domain, quote_domain);
+            quoteOnlyOrAppend(buf, _domain, quoteDomain);
         }
 
         // Handle max-age and/or expires

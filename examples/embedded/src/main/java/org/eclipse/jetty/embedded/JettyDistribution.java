@@ -35,8 +35,8 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JettyDistribution
 {
-    private final static Logger LOG = Log.getLogger(JettyDistribution.class);
-    public final static Path DISTRIBUTION;
+    private static final Logger LOG = Log.getLogger(JettyDistribution.class);
+    public static final Path DISTRIBUTION;
 
     static
     {

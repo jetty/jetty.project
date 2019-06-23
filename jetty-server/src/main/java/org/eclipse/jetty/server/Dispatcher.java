@@ -42,17 +42,17 @@ public class Dispatcher implements RequestDispatcher
 {
     private static final Logger LOG = Log.getLogger(Dispatcher.class);
 
-    public final static String __ERROR_DISPATCH = "org.eclipse.jetty.server.Dispatcher.ERROR";
+    public static final String __ERROR_DISPATCH = "org.eclipse.jetty.server.Dispatcher.ERROR";
 
     /**
      * Dispatch include attribute names
      */
-    public final static String __INCLUDE_PREFIX = "javax.servlet.include.";
+    public static final String __INCLUDE_PREFIX = "javax.servlet.include.";
 
     /**
      * Dispatch include attribute names
      */
-    public final static String __FORWARD_PREFIX = "javax.servlet.forward.";
+    public static final String __FORWARD_PREFIX = "javax.servlet.forward.";
 
     private final ContextHandler _contextHandler;
     private final HttpURI _uri;

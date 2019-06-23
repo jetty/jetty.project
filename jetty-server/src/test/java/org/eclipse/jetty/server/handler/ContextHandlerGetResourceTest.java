@@ -53,8 +53,8 @@ public class ContextHandlerGetResourceTest
     private static ContextHandler context;
     private static File docroot;
     private static File otherroot;
-    private final static AtomicBoolean allowAliases = new AtomicBoolean(false);
-    private final static AtomicBoolean allowSymlinks = new AtomicBoolean(false);
+    private static final AtomicBoolean allowAliases = new AtomicBoolean(false);
+    private static final AtomicBoolean allowSymlinks = new AtomicBoolean(false);
 
     @BeforeAll
     public static void beforeClass() throws Exception

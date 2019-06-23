@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SessionData implements Serializable
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     private static final long serialVersionUID = 1L;
 

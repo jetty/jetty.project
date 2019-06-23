@@ -43,7 +43,7 @@ public class JspPropertyGroupServlet extends GenericServlet
 {
     private static final long serialVersionUID = 3681783214726776945L;
 
-    public final static String NAME = "__org.eclipse.jetty.servlet.JspPropertyGroupServlet__";
+    public static final String NAME = "__org.eclipse.jetty.servlet.JspPropertyGroupServlet__";
     private final ServletHandler _servletHandler;
     private final ContextHandler _contextHandler;
     private ServletHolder _dftServlet;

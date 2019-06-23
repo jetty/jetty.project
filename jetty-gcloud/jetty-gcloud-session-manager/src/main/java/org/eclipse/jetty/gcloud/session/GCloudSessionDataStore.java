@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class GCloudSessionDataStore extends AbstractSessionDataStore
 {
-    private final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
     public static final int DEFAULT_MAX_RETRIES = 5;
@@ -787,7 +787,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     {
                         Thread.currentThread().sleep(backoff);
                     }
-                    catch (InterruptedException x)
+                    catch (InterruptedException ignored)
                     {
                     }
                     backoff *= 2;
