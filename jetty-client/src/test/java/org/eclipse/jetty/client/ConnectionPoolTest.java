@@ -156,8 +156,8 @@ public class ConnectionPoolTest
         CountDownLatch latch = new CountDownLatch(parallelism * runs);
         List<Throwable> failures = new CopyOnWriteArrayList<>();
         IntStream.range(0, parallelism).parallel().forEach(i ->
-                                                               IntStream.range(0, runs).forEach(j ->
-                                                                                                    run(latch, iterations, failures)));
+            IntStream.range(0, runs).forEach(j ->
+                run(latch, iterations, failures)));
         assertTrue(latch.await(iterations, TimeUnit.SECONDS));
         assertTrue(failures.isEmpty(), failures.toString());
     }
@@ -198,8 +198,8 @@ public class ConnectionPoolTest
     private void test(HttpMethod method, boolean clientClose, boolean serverClose, int contentLength, List<Throwable> failures)
     {
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                              .path("/")
-                              .method(method);
+            .path("/")
+            .method(method);
 
         if (clientClose)
             request.header(HttpHeader.CONNECTION, "close");

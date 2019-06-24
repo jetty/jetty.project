@@ -136,8 +136,8 @@ public class ThreadPoolBudget
     public boolean check(int maxThreads) throws IllegalStateException
     {
         int required = leases.stream()
-                           .mapToInt(Lease::getThreads)
-                           .sum();
+            .mapToInt(Lease::getThreads)
+            .sum();
         int left = maxThreads - required;
         if (left <= 0)
         {

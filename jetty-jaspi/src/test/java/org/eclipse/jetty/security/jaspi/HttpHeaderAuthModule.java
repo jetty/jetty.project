@@ -42,7 +42,7 @@ public class HttpHeaderAuthModule implements ServerAuthModule
      * Supported message types. For our case we only need to deal with HTTP servlet request and responses. On Java EE 7 this will handle WebSockets as well.
      */
     private static final Class<?>[] SUPPORTED_MESSAGE_TYPES = new Class<?>[]
-                                                                  {HttpServletRequest.class, HttpServletResponse.class};
+        {HttpServletRequest.class, HttpServletResponse.class};
 
     /**
      * Callback handler that is passed in initialize by the container. This processes the callbacks which are objects that populate the "subject".
@@ -107,11 +107,11 @@ public class HttpHeaderAuthModule implements ServerAuthModule
 
             // Store the user name that was in the header and also set a group.
             handler.handle(new Callback[]
-                               {
-                                   new CallerPrincipalCallback(client, userName),
-                                   new GroupPrincipalCallback(client, new String[]
-                                                                          {"users"})
-                               });
+                {
+                    new CallerPrincipalCallback(client, userName),
+                    new GroupPrincipalCallback(client, new String[]
+                        {"users"})
+                });
             return AuthStatus.SUCCESS;
         }
         catch (final Exception e)

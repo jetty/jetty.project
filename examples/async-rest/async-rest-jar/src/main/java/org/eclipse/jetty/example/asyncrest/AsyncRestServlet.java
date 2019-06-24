@@ -153,8 +153,8 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.print("Async wait (<span class='green'>green</span>): " + ms(total - thread) + "ms<br/>");
 
         out.println("<img border='0px' src='asyncrest/red.png'   height='20px' width='" + width(initial) + "px'>" +
-                        "<img border='0px' src='asyncrest/green.png' height='20px' width='" + width(total - thread) + "px'>" +
-                        "<img border='0px' src='asyncrest/red.png'   height='20px' width='" + width(generate) + "px'>");
+            "<img border='0px' src='asyncrest/green.png' height='20px' width='" + width(total - thread) + "px'>" +
+            "<img border='0px' src='asyncrest/red.png'   height='20px' width='" + width(generate) + "px'>");
 
         out.println("<hr />");
         out.println(thumbs);

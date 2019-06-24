@@ -376,7 +376,7 @@ public class Parser
     public String toString()
     {
         return String
-                   .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null ? "-" : TypeUtil.toHexString(mask), payloadLength);
+            .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null ? "-" : TypeUtil.toHexString(mask), payloadLength);
     }
 
     public class ParsedFrame extends Frame implements Closeable, CloseStatus.Supplier

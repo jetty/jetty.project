@@ -868,8 +868,8 @@ public class ResponseTest
                     String location = response.getHeader("Location");
 
                     String expected = tests[i][1]
-                                          .replace("@HOST@", host == null ? request.getLocalAddr() : (host.contains(":") ? ("[" + host + "]") : host))
-                                          .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
+                        .replace("@HOST@", host == null ? request.getLocalAddr() : (host.contains(":") ? ("[" + host + "]") : host))
+                        .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
                     assertEquals(expected, location, "test-" + i + " " + host + ":" + port);
                 }
             }

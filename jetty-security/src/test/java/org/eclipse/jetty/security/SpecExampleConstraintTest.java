@@ -215,10 +215,10 @@ public class SpecExampleConstraintTest
         knownRoles.add("SALESCLERK");
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0, mapping1, mapping2, mapping3, mapping4, mapping5,
-                                                              mapping6, mapping7, mapping8
-                                                          }), knownRoles);
+            {
+                mapping0, mapping1, mapping2, mapping3, mapping4, mapping5,
+                mapping6, mapping7, mapping8
+            }), knownRoles);
     }
 
     @AfterEach
@@ -297,37 +297,37 @@ public class SpecExampleConstraintTest
         String encodedChris = authEncoder.encodeToString("chris:password".getBytes(ISO_8859_1));
 
         response = _connector.getResponse("HEAD /ctx/index.html HTTP/1.0\r\n" +
-                                              "Authorization: Basic " + encodedHarry + "\r\n" +
-                                              "\r\n");
+            "Authorization: Basic " + encodedHarry + "\r\n" +
+            "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
 
         response = _connector.getResponse("HEAD /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-                                              "Authorization: Basic " + encodedHarry + "\r\n" +
-                                              "\r\n");
+            "Authorization: Basic " + encodedHarry + "\r\n" +
+            "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
 
         response = _connector.getResponse("HEAD /ctx/acme/retail/index.html HTTP/1.0\r\n" +
-                                              "Authorization: Basic " + encodedHarry + "\r\n" +
-                                              "\r\n");
+            "Authorization: Basic " + encodedHarry + "\r\n" +
+            "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
 
         //a user in role CONTRACTOR can do a GET
         response = _connector.getResponse("GET /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-                                              "Authorization: Basic " + encodedChris + "\r\n" +
-                                              "\r\n");
+            "Authorization: Basic " + encodedChris + "\r\n" +
+            "\r\n");
 
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
         //a user in role CONTRACTOR can only do a post if confidential
         response = _connector.getResponse("POST /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-                                              "Authorization: Basic " + encodedChris + "\r\n" +
-                                              "\r\n");
+            "Authorization: Basic " + encodedChris + "\r\n" +
+            "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 "));
 
         //a user in role HOMEOWNER can do a GET
         response = _connector.getResponse("GET /ctx/acme/retail/index.html HTTP/1.0\r\n" +
-                                              "Authorization: Basic " + encodedHarry + "\r\n" +
-                                              "\r\n");
+            "Authorization: Basic " + encodedHarry + "\r\n" +
+            "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 

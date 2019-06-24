@@ -75,7 +75,7 @@ public class ManyHandlers
                            Request baseRequest,
                            HttpServletRequest request,
                            HttpServletResponse response) throws IOException,
-                                                                    ServletException
+            ServletException
         {
             Map<String, String[]> params = request.getParameterMap();
             if (!params.isEmpty())
@@ -97,7 +97,7 @@ public class ManyHandlers
                            Request baseRequest,
                            HttpServletRequest request,
                            HttpServletResponse response) throws IOException,
-                                                                    ServletException
+            ServletException
         {
             request.setAttribute("welcome", "Hello");
             super.handle(target, baseRequest, request, response);

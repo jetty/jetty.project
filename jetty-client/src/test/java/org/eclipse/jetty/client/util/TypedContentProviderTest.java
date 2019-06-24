@@ -105,11 +105,11 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .method(HttpMethod.POST)
-                                       .content(new FormContentProvider(fields))
-                                       .header(HttpHeader.CONTENT_TYPE, contentType)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(new FormContentProvider(fields))
+            .header(HttpHeader.CONTENT_TYPE, contentType)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -133,9 +133,9 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .content(new StringContentProvider(null, content, StandardCharsets.UTF_8))
-                                       .send();
+            .scheme(scenario.getScheme())
+            .content(new StringContentProvider(null, content, StandardCharsets.UTF_8))
+            .send();
 
         assertEquals(200, response.getStatus());
     }

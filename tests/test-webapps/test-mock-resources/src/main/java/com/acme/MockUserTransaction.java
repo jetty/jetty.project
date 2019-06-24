@@ -44,8 +44,8 @@ public class MockUserTransaction implements UserTransaction
      */
     @Override
     public void commit() throws HeuristicMixedException,
-                                    HeuristicRollbackException, IllegalStateException,
-                                    RollbackException, SecurityException, SystemException
+        HeuristicRollbackException, IllegalStateException,
+        RollbackException, SecurityException, SystemException
     {
     }
 
@@ -63,7 +63,7 @@ public class MockUserTransaction implements UserTransaction
      */
     @Override
     public void rollback() throws IllegalStateException, SecurityException,
-                                      SystemException
+        SystemException
     {
     }
 

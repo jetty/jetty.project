@@ -51,7 +51,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
         for (int i = 0; i < count; ++i)
         {
             Request request = client.newRequest("localhost", port)
-                                  .scheme(scenario.getScheme());
+                .scheme(scenario.getScheme());
 
             synchronized (this)
             {
@@ -84,7 +84,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
         for (int i = 0; i < count; ++i)
         {
             Request request = client.newRequest("localhost", connector.getLocalPort())
-                                  .scheme(scenario.getScheme());
+                .scheme(scenario.getScheme());
 
             synchronized (this)
             {

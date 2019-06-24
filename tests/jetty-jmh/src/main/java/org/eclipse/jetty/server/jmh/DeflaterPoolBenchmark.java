@@ -106,13 +106,13 @@ public class DeflaterPoolBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                          .include(DeflaterPoolBenchmark.class.getSimpleName())
-                          .warmupIterations(20)
-                          .measurementIterations(10)
-                          .addProfiler(GCProfiler.class)
-                          .forks(1)
-                          .threads(100)
-                          .build();
+            .include(DeflaterPoolBenchmark.class.getSimpleName())
+            .warmupIterations(20)
+            .measurementIterations(10)
+            .addProfiler(GCProfiler.class)
+            .forks(1)
+            .threads(100)
+            .build();
 
         new Runner(opt).run();
     }

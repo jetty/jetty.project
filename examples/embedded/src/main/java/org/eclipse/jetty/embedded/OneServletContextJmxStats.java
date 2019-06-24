@@ -33,7 +33,7 @@ public class OneServletContextJmxStats
         Server server = new Server(8080);
         // Add JMX tracking to Server
         server.addBean(new MBeanContainer(ManagementFactory
-                                              .getPlatformMBeanServer()));
+            .getPlatformMBeanServer()));
 
         ServletContextHandler context = new ServletContextHandler(
             ServletContextHandler.SESSIONS);

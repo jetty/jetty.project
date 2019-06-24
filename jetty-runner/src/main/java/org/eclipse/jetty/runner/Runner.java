@@ -126,7 +126,7 @@ public class Runner
                     {
                         String lowerCasePath = path.toLowerCase(Locale.ENGLISH);
                         if (lowerCasePath.endsWith(".jar") ||
-                                lowerCasePath.endsWith(".zip"))
+                            lowerCasePath.endsWith(".zip"))
                         {
                             _classpath.add(item.getURI());
                         }

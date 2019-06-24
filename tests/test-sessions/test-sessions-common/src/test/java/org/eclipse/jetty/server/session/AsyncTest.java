@@ -286,9 +286,9 @@ public class AsyncTest
                 testFoo.setInt(33);
                 FooInvocationHandler handler = new FooInvocationHandler(testFoo);
                 Foo foo = (Foo)Proxy
-                                   .newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[]{
-                                       Foo.class
-                                   }, handler);
+                    .newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[]{
+                        Foo.class
+                    }, handler);
                 session.setAttribute("foo", foo);
             }
             else if ("test".equals(action))

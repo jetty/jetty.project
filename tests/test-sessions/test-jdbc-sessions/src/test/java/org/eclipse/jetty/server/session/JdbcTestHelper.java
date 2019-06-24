@@ -141,8 +141,8 @@ public class JdbcTestHelper
         {
             con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
             PreparedStatement statement = con.prepareStatement("select * from " +
-                                                                   TABLE +
-                                                                   " where " + ID_COL + " = ?");
+                TABLE +
+                " where " + ID_COL + " = ?");
             statement.setString(1, id);
             ResultSet result = statement.executeQuery();
             if (verbose)
@@ -174,8 +174,8 @@ public class JdbcTestHelper
         try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
         {
             statement = con.prepareStatement("select * from " + TABLE +
-                                                 " where " + ID_COL + " = ? and " + CONTEXT_COL +
-                                                 " = ? and virtualHost = ?");
+                " where " + ID_COL + " = ? and " + CONTEXT_COL +
+                " = ? and virtualHost = ?");
             statement.setString(1, data.getId());
             statement.setString(2, data.getContextPath());
             statement.setString(3, data.getVhost());
@@ -237,10 +237,10 @@ public class JdbcTestHelper
         try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
         {
             PreparedStatement statement = con.prepareStatement("insert into " + TABLE +
-                                                                   " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
-                                                                   ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL +
-                                                                   ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + " " + ") " +
-                                                                   " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
+                ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL +
+                ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + " " + ") " +
+                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             statement.setString(1, id);
             statement.setString(2, contextPath);
@@ -270,10 +270,10 @@ public class JdbcTestHelper
         try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
         {
             PreparedStatement statement = con.prepareStatement("insert into " + TABLE +
-                                                                   " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
-                                                                   ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL +
-                                                                   ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + ", " + MAX_IDLE_COL + "," + MAP_COL + " ) " +
-                                                                   " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
+                ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL +
+                ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + ", " + MAX_IDLE_COL + "," + MAP_COL + " ) " +
+                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             statement.setString(1, id);
             statement.setString(2, contextPath);

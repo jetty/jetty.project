@@ -72,8 +72,8 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
 
             // Copy extensions
             setExtensions(request.getExtensions().stream()
-                              .map(c -> new ExtensionConfig(c.getName(), c.getParameters()))
-                              .collect(Collectors.toList()));
+                .map(c -> new ExtensionConfig(c.getName(), c.getParameters()))
+                .collect(Collectors.toList()));
 
             // Copy method from upgradeRequest object
             if (request.getMethod() != null)

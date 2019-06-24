@@ -204,7 +204,7 @@ public class Invoker extends HttpServlet
                         Object s = holder.getServlet();
 
                         if (_contextHandler.getClassLoader() !=
-                                s.getClass().getClassLoader())
+                            s.getClass().getClassLoader())
                         {
                             try
                             {
@@ -216,8 +216,8 @@ public class Invoker extends HttpServlet
                             }
 
                             LOG.warn("Dynamic servlet " + s +
-                                         " not loaded from context " +
-                                         request.getContextPath());
+                                " not loaded from context " +
+                                request.getContextPath());
                             throw new UnavailableException("Not in context");
                         }
                     }

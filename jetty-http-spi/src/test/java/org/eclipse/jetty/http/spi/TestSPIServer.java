@@ -139,7 +139,7 @@ public class TestSPIServer
             //jetty to pick a free port. Ensures test is not tied to specific port number
             //for test portability and concurrency.
             server = new JettyHttpServerProvider().createHttpServer(new
-                                                                        InetSocketAddress("localhost", 0), 10);
+                InetSocketAddress("localhost", 0), 10);
 
             final HttpContext httpContext = server.createContext("/",
                 exchange ->

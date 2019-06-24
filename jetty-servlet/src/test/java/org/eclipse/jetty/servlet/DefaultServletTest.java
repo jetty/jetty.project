@@ -184,7 +184,7 @@ public class DefaultServletTest
          * encoded characters '<', '>', and '"'.
          */
         String req1 = "GET /context/;<script>window.alert(\"hi\");</script> HTTP/1.0\r\n" +
-                          "\r\n";
+            "\r\n";
         String rawResponse = connector.getResponse(req1);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -192,7 +192,7 @@ public class DefaultServletTest
         assertThat(body, not(containsString("<script>")));
 
         req1 = "GET /context/one/;\"onmouseover='alert(document.location)' HTTP/1.0\r\n" +
-                   "\r\n";
+            "\r\n";
 
         rawResponse = connector.getResponse(req1);
         response = HttpTester.parseResponse(rawResponse);

@@ -68,11 +68,11 @@ class SslSelectionDump implements Dumpable
 
         List<String> jvmEnabled = Arrays.asList(enabledByJVM);
         List<Pattern> excludedPatterns = Arrays.stream(excludedByConfig)
-                                             .map((entry) -> Pattern.compile(entry))
-                                             .collect(Collectors.toList());
+            .map((entry) -> Pattern.compile(entry))
+            .collect(Collectors.toList());
         List<Pattern> includedPatterns = Arrays.stream(includedByConfig)
-                                             .map((entry) -> Pattern.compile(entry))
-                                             .collect(Collectors.toList());
+            .map((entry) -> Pattern.compile(entry))
+            .collect(Collectors.toList());
 
         Arrays.stream(supportedByJVM)
             .sorted(Comparator.naturalOrder())

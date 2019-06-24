@@ -534,11 +534,11 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
         DBObject versionKey = BasicDBObjectBuilder.start().add("id", 1).add("version", 1).get();
         _dbSessions.createIndex(versionKey, BasicDBObjectBuilder.start()
-                                                .add("name", "id_1_version_1")
-                                                .add("ns", _dbSessions.getFullName())
-                                                .add("sparse", false)
-                                                .add("unique", true)
-                                                .get());
+            .add("name", "id_1_version_1")
+            .add("ns", _dbSessions.getFullName())
+            .add("sparse", false)
+            .add("unique", true)
+            .get());
         LOG.debug("done ensure Mongodb indexes existing");
         //TODO perhaps index on expiry time?
     }

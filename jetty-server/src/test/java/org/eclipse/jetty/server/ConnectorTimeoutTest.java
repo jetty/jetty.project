@@ -164,7 +164,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                                                                                                                                        ServletException
+                ServletException
             {
                 try
                 {
@@ -223,7 +223,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                                                                                                                                        ServletException
+                ServletException
             {
                 try
                 {
@@ -293,14 +293,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         OutputStream os = client.getOutputStream();
         os.write(("GET / HTTP/1.1\r\n" +
-                      "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
-                      "Transfer-Encoding: chunked\r\n" +
-                      "Content-Type: text/plain\r\n" +
-                      "Connection: close\r\n" +
-                      "\r\n" +
-                      "5\r\n" +
-                      "LMNOP\r\n")
-                     .getBytes("utf-8"));
+            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+            "Transfer-Encoding: chunked\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            "5\r\n" +
+            "LMNOP\r\n")
+            .getBytes("utf-8"));
         os.flush();
 
         try

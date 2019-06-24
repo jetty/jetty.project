@@ -105,7 +105,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 else
                 {
                     throw new IOException("Cannot tunnel request, missing " +
-                                              SslContextFactory.class.getName() + " in " + HttpClient.class.getName());
+                        SslContextFactory.class.getName() + " in " + HttpClient.class.getName());
                 }
             }
             else
@@ -156,11 +156,11 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             HttpClient httpClient = destination.getHttpClient();
             long connectTimeout = httpClient.getConnectTimeout();
             Request connect = httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
-                                  .method(HttpMethod.CONNECT)
-                                  .path(target)
-                                  .header(HttpHeader.HOST, target)
-                                  .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS)
-                                  .timeout(connectTimeout, TimeUnit.MILLISECONDS);
+                .method(HttpMethod.CONNECT)
+                .path(target)
+                .header(HttpHeader.HOST, target)
+                .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS)
+                .timeout(connectTimeout, TimeUnit.MILLISECONDS);
             ProxyConfiguration.Proxy proxy = destination.getProxy();
             if (proxy != null && proxy.isSecure())
                 connect.scheme(HttpScheme.HTTPS.asString());
@@ -184,7 +184,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     else
                     {
                         HttpResponseException failure = new HttpResponseException("Unexpected " + response +
-                                                                                      " for " + result.getRequest(), response);
+                            " for " + result.getRequest(), response);
                         tunnelFailed(endPoint, failure);
                     }
                 }

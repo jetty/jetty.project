@@ -75,13 +75,13 @@ public class HazelcastTestHelper
         if (onlyClient)
         {
             ClientNetworkConfig clientNetworkConfig = new ClientNetworkConfig()
-                                                          .setAddresses(Collections.singletonList("localhost:" + _instance.getConfig().getNetworkConfig().getPort()));
+                .setAddresses(Collections.singletonList("localhost:" + _instance.getConfig().getNetworkConfig().getPort()));
             ClientConfig clientConfig = new ClientConfig()
-                                            .setNetworkConfig(clientNetworkConfig);
+                .setNetworkConfig(clientNetworkConfig);
 
             SerializerConfig sc = new SerializerConfig().
-                                                            setImplementation(new SessionDataSerializer()).
-                                                                                                              setTypeClass(SessionData.class);
+                setImplementation(new SessionDataSerializer()).
+                setTypeClass(SessionData.class);
             clientConfig.getSerializationConfig().addSerializerConfig(sc);
 
             factory.setHazelcastInstance(HazelcastClient.newHazelcastClient(clientConfig));

@@ -127,7 +127,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             }
 
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
-                                       !endStream && !_expect100Continue;
+                !endStream && !_expect100Continue;
 
             if (LOG.isDebugEnabled())
             {

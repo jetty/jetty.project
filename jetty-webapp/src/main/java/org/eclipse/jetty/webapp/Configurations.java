@@ -209,9 +209,9 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         if (configurations == null)
         {
             configurations = new Configurations(Configurations.getKnown().stream()
-                                                    .filter(c -> !c.isDisabledByDefault())
-                                                    .map(c -> c.getClass().getName())
-                                                    .toArray(String[]::new));
+                .filter(c -> !c.isDisabledByDefault())
+                .map(c -> c.getClass().getName())
+                .toArray(String[]::new));
         }
 
         if (LOG.isDebugEnabled())
@@ -259,8 +259,8 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     public Configurations(Configurations classlist)
     {
         this(classlist._configurations.stream()
-                 .map(c -> c.getClass().getName())
-                 .toArray(String[]::new));
+            .map(c -> c.getClass().getName())
+            .toArray(String[]::new));
     }
 
     public void add(Configuration... configurations)
@@ -422,7 +422,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
             {
                 Configuration c = i.next();
                 if (c.getClass().getName().equals(replaces.getName()) ||
-                        c.replaces() != null && c.replaces().getName().equals(replaces.getName()))
+                    c.replaces() != null && c.replaces().getName().equals(replaces.getName()))
                 {
                     i.remove();
                     break;

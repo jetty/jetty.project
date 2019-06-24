@@ -153,9 +153,9 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     public List<ExtensionConfig> getExtensions()
     {
         List<ExtensionConfig> extensions = getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true)
-                                               .stream()
-                                               .map(ExtensionConfig::parse)
-                                               .collect(Collectors.toList());
+            .stream()
+            .map(ExtensionConfig::parse)
+            .collect(Collectors.toList());
 
         return extensions;
     }
@@ -248,8 +248,8 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
             Throwable failure = result.getFailure();
             boolean wrapFailure = !((failure instanceof java.net.SocketException) ||
-                                        (failure instanceof java.io.InterruptedIOException) ||
-                                        (failure instanceof UpgradeException));
+                (failure instanceof java.io.InterruptedIOException) ||
+                (failure instanceof UpgradeException));
             if (wrapFailure)
                 failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
             handleException(failure);

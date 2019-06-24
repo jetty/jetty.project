@@ -106,8 +106,8 @@ public class HttpClientCustomProxyTest
         client.getProxyConfiguration().getProxies().add(new CAFEBABEProxy(new Origin.Address("localhost", proxyPort), false));
 
         ContentResponse response = client.newRequest(serverHost, serverPort)
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response.getStatus());
     }

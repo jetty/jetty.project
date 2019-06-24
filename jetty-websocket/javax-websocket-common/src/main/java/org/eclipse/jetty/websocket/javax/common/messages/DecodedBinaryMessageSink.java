@@ -45,7 +45,7 @@ public class DecodedBinaryMessageSink<T> extends DecodedMessageSink<Decoder.Bina
     {
         return MethodHandles.lookup().findVirtual(DecodedBinaryMessageSink.class,
             "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
-                   .bindTo(this);
+            .bindTo(this);
     }
 
     @Override

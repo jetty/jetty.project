@@ -267,9 +267,9 @@ public abstract class HttpReceiver
         List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
         notifier.notifyHeaders(responseListeners, response);
         contentListeners = responseListeners.stream()
-                               .filter(Response.AsyncContentListener.class::isInstance)
-                               .map(Response.AsyncContentListener.class::cast)
-                               .collect(Collectors.toList());
+            .filter(Response.AsyncContentListener.class::isInstance)
+            .map(Response.AsyncContentListener.class::cast)
+            .collect(Collectors.toList());
 
         List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
         if (contentEncodings != null && !contentEncodings.isEmpty())

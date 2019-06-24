@@ -263,14 +263,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         Throwable t = assertThrows(Throwable.class, () ->
-                                                        tester.parseIncomingHex(// 1 message, 3 frame
-                                                            "410C", // Header TEXT / fin=false / rsv1=true
-                                                            "F248CDC9C95700000000FFFF", // Payload
-                                                            "400B", // Header CONTINUATION / fin=false / rsv1=true
-                                                            "0ACF2FCA4901000000FFFF", // Payload
-                                                            "C003", // Header CONTINUATION / fin=true / rsv1=true
-                                                            "520400" // Payload
-                                                        ));
+            tester.parseIncomingHex(// 1 message, 3 frame
+                "410C", // Header TEXT / fin=false / rsv1=true
+                "F248CDC9C95700000000FFFF", // Payload
+                "400B", // Header CONTINUATION / fin=false / rsv1=true
+                "0ACF2FCA4901000000FFFF", // Payload
+                "C003", // Header CONTINUATION / fin=true / rsv1=true
+                "520400" // Payload
+            ));
 
         assertThat(t.getCause(), instanceOf(ProtocolException.class));
         assertThat(t.getCause().getMessage(), is("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));

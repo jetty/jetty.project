@@ -105,7 +105,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
@@ -135,7 +135,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -168,7 +168,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -200,7 +200,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
@@ -232,7 +232,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
@@ -264,7 +264,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
@@ -326,7 +326,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                         {(byte)0x88, (byte)0x00});
+            {(byte)0x88, (byte)0x00});
 
         expected.flip();
 
@@ -385,7 +385,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                         {(byte)0x88, (byte)0x02, 0x03, (byte)0xe8});
+            {(byte)0x88, (byte)0x02, 0x03, (byte)0xe8});
 
         expected.flip();
 
@@ -414,7 +414,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(132);
 
         expected.put(new byte[]
-                         {(byte)0x88});
+            {(byte)0x88});
         byte b = 0x00; // no masking
 
         b |= (messageBytes.length + 2) & 0x7F;
@@ -444,7 +444,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-                         {(byte)0x88});
+            {(byte)0x88});
         byte b = 0x00; // no masking
         b |= (messageBytes.length + 2) & 0x7F;
         expected.put(b);
@@ -629,7 +629,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
 
         expected.put(new byte[]
-                         {(byte)0x89});
+            {(byte)0x89});
 
         byte b = 0x00; // no masking
         b |= bytes.length & 0x7F;
@@ -653,7 +653,7 @@ public class ParserTest
         ByteBuffer buf = ByteBuffer.allocate(16);
         BufferUtil.clearToFill(buf);
         buf.put(new byte[]
-                    {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
+            {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
         BufferUtil.flipToFlush(buf, 0);
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -676,7 +676,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-                         {(byte)0x89});
+            {(byte)0x89});
 
         byte b = 0x00; // no masking
         b |= bytes.length & 0x7F;
@@ -703,7 +703,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                         {(byte)0x89, (byte)0x00});
+            {(byte)0x89, (byte)0x00});
 
         expected.flip();
 
@@ -728,7 +728,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-                         {(byte)0x89});
+            {(byte)0x89});
 
         byte b = 0x00; // no masking
         b |= messageBytes.length & 0x7F;
@@ -858,7 +858,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A fragmented unmasked text message (part 1 of 2 "Hel")
         buf.put(new byte[]
-                    {(byte)0x01, (byte)0x03, 0x48, (byte)0x65, 0x6c});
+            {(byte)0x01, (byte)0x03, 0x48, (byte)0x65, 0x6c});
 
         // Parse #1
         BufferUtil.flipToFlush(buf, 0);
@@ -867,7 +867,7 @@ public class ParserTest
         // part 2 of 2 "lo" (A continuation frame of the prior text message)
         BufferUtil.flipToFill(buf);
         buf.put(new byte[]
-                    {(byte)0x80, 0x02, 0x6c, 0x6f});
+            {(byte)0x80, 0x02, 0x6c, 0x6f});
 
         // Parse #2
         BufferUtil.flipToFlush(buf, 0);
@@ -897,7 +897,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Pong request
         buf.put(new byte[]
-                    {(byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
+            {(byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -922,7 +922,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame masked text message
         buf.put(new byte[]
-                    {(byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
+            {(byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -949,7 +949,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         buf.put(new byte[]
-                    {(byte)0x82, 0x7E});
+            {(byte)0x82, 0x7E});
         buf.putShort((short)0x01_00); // 16 bit size
         for (int i = 0; i < dataSize; i++)
         {
@@ -989,7 +989,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 64 KiloByte binary message in a single unmasked frame
         buf.put(new byte[]
-                    {(byte)0x82, 0x7F});
+            {(byte)0x82, 0x7F});
         buf.putLong(dataSize); // 64bit size
         for (int i = 0; i < dataSize; i++)
         {
@@ -1027,7 +1027,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Ping request
         buf.put(new byte[]
-                    {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
+            {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
         buf.flip();
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1052,7 +1052,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame unmasked text message
         buf.put(new byte[]
-                    {(byte)0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
+            {(byte)0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
         buf.flip();
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1075,7 +1075,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
@@ -1107,7 +1107,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -1140,7 +1140,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -1173,7 +1173,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
@@ -1206,12 +1206,12 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
         expected.put(new byte[]
-                         {(byte)0xff, (byte)0xff});
+            {(byte)0xff, (byte)0xff});
 
         for (int i = 0; i < length; ++i)
         {
@@ -1238,12 +1238,12 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
         expected.put(new byte[]
-                         {0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
+            {0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
 
         for (int i = 0; i < length; ++i)
         {
@@ -1269,7 +1269,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                         {(byte)0x81, (byte)0x00});
+            {(byte)0x81, (byte)0x00});
 
         expected.flip();
 

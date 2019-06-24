@@ -233,8 +233,8 @@ public abstract class WriteFlusher
     {
         State s = _state.get();
         return (s instanceof PendingState)
-                   ? ((PendingState)s).getCallbackInvocationType()
-                   : Invocable.InvocationType.BLOCKING;
+            ? ((PendingState)s).getCallbackInvocationType()
+            : Invocable.InvocationType.BLOCKING;
     }
 
     /**

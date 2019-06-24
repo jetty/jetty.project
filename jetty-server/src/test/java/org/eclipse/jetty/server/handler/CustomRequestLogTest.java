@@ -138,9 +138,9 @@ public class CustomRequestLogTest
     public void testLogAddress() throws Exception
     {
         testHandlerServerStart("%{local}a|%{local}p|" +
-                                   "%{remote}a|%{remote}p|" +
-                                   "%{server}a|%{server}p|" +
-                                   "%{client}a|%{client}p");
+            "%{remote}a|%{remote}p|" +
+            "%{server}a|%{server}p|" +
+            "%{client}a|%{client}p");
 
         Enumeration e = NetworkInterface.getNetworkInterfaces();
         while (e.hasMoreElements())
@@ -156,9 +156,9 @@ public class CustomRequestLogTest
                     {
                         OutputStream os = client.getOutputStream();
                         String request = "GET / HTTP/1.0\n" +
-                                             "Host: webtide.com:1234\n" +
-                                             "Forwarded: For=10.1.2.3:1337\n" +
-                                             "\n\n";
+                            "Host: webtide.com:1234\n" +
+                            "Forwarded: For=10.1.2.3:1337\n" +
+                            "\n\n";
                         os.write(request.getBytes(StandardCharsets.ISO_8859_1));
                         os.flush();
 
@@ -205,8 +205,8 @@ public class CustomRequestLogTest
         testHandlerServerStart("BytesReceived: %I");
 
         _connector.getResponse("GET / HTTP/1.0\n" +
-                                   "Content-Length: 11\n\n" +
-                                   "hello world");
+            "Content-Length: 11\n\n" +
+            "hello world");
 
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("BytesReceived: 11"));
@@ -218,9 +218,9 @@ public class CustomRequestLogTest
         testHandlerServerStart("BytesTransferred: %S");
 
         _connector.getResponse("GET / HTTP/1.0\n" +
-                                   "echo: hello world\n" +
-                                   "Content-Length: 11\n\n" +
-                                   "hello world");
+            "echo: hello world\n" +
+            "Content-Length: 11\n\n" +
+            "hello world");
 
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("BytesTransferred: 22"));
@@ -285,9 +285,9 @@ public class CustomRequestLogTest
 
         LocalConnector.LocalEndPoint connect = _connector.connect();
         connect.addInput("GET /a HTTP/1.0\n" +
-                             "Connection: keep-alive\n\n");
+            "Connection: keep-alive\n\n");
         connect.addInput("GET /a HTTP/1.1\n" +
-                             "Host: localhost\n\n");
+            "Host: localhost\n\n");
 
         assertThat(connect.getResponse(), containsString("200 OK"));
         assertThat(connect.getResponse(), containsString("200 OK"));
@@ -382,8 +382,8 @@ public class CustomRequestLogTest
     public void testLogRequestTimeCustomFormats() throws Exception
     {
         testHandlerServerStart("%{EEE MMM dd HH:mm:ss zzz yyyy}t\n" +
-                                   "%{EEE MMM dd HH:mm:ss zzz yyyy|EST}t\n" +
-                                   "%{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t");
+            "%{EEE MMM dd HH:mm:ss zzz yyyy|EST}t\n" +
+            "%{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
@@ -472,16 +472,16 @@ public class CustomRequestLogTest
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/one ConnectionStatus: 200 -"));
 
         _connector.getResponse("GET /two HTTP/1.1\n" +
-                                   "Host: localhost\n" +
-                                   "Connection: close\n" +
-                                   "\n");
+            "Host: localhost\n" +
+            "Connection: close\n" +
+            "\n");
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/two ConnectionStatus: 200 -"));
 
         LocalConnector.LocalEndPoint connect = _connector.connect();
         connect.addInput("GET /three HTTP/1.0\n" +
-                             "Connection: keep-alive\n\n");
+            "Connection: keep-alive\n\n");
         connect.addInput("GET /four HTTP/1.1\n" +
-                             "Host: localhost\n\n");
+            "Host: localhost\n\n");
         connect.addInput("GET /BAD HTTP/1.1\n\n");
         assertThat(connect.getResponse(), containsString("200 OK"));
         assertThat(connect.getResponse(), containsString("200 OK"));
@@ -492,8 +492,8 @@ public class CustomRequestLogTest
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/BAD ConnectionStatus: 400 -"));
 
         _connector.getResponse("GET /abort HTTP/1.1\n" +
-                                   "Host: localhost\n" +
-                                   "\n");
+            "Host: localhost\n" +
+            "\n");
         connect.getResponse();
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/abort ConnectionStatus: 200 X"));
     }

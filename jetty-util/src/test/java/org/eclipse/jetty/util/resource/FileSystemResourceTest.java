@@ -1175,8 +1175,8 @@ public class FileSystemResourceTest
 
         // show that simple URI.equals() doesn't work
         String msg = "URI[a].equals(URI[b])" + System.lineSeparator() +
-                         "URI[a] = " + refA + System.lineSeparator() +
-                         "URI[b] = " + refB;
+            "URI[a] = " + refA + System.lineSeparator() +
+            "URI[b] = " + refB;
         assertThat(msg, refA.equals(refB), is(false));
 
         // now show that Resource.equals() does work

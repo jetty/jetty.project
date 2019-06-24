@@ -81,7 +81,7 @@ public class HostPortTest
             "host:-80",
             "127.0.0.1:-80",
             "[0::0::0::0::1]:-80")
-                   .map(Arguments::of);
+            .map(Arguments::of);
     }
 
     @ParameterizedTest

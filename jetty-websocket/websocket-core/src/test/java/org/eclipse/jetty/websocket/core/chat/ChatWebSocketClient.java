@@ -88,7 +88,7 @@ public class ChatWebSocketClient
 
                     case "exit":
                         handler.sendText("[" + name + ": has left the " +
-                                             ("elvis".equalsIgnoreCase(name) ? "building!]" : "room]"), Callback.NOOP, false);
+                            ("elvis".equalsIgnoreCase(name) ? "building!]" : "room]"), Callback.NOOP, false);
                         handler.getCoreSession().close(Callback.from(() -> System.exit(0), x ->
                         {
                             x.printStackTrace();

@@ -201,8 +201,8 @@ public class ContextFactory implements ObjectFactory
         String parserClassName = (parserAddr == null ? null : (String)parserAddr.getContent());
         NameParser parser =
             (NameParser)(parserClassName == null
-                             ? null
-                             : loader.loadClass(parserClassName).getDeclaredConstructor().newInstance());
+                ? null
+                : loader.loadClass(parserClassName).getDeclaredConstructor().newInstance());
 
         return new NamingContext(env,
             name.get(0),

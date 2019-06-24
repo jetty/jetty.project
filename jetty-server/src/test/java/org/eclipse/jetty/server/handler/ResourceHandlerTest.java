@@ -333,8 +333,8 @@ public class ResourceHandlerTest
         _resourceHandler.setEtags(true);
 
         HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
-                                                                                       "If-Match: \"NO_MATCH\"\r\n" +
-                                                                                       "\r\n"));
+            "If-Match: \"NO_MATCH\"\r\n" +
+            "\r\n"));
 
         assertThat(response.getStatus(), equalTo(HttpStatus.PRECONDITION_FAILED_412));
     }
@@ -346,8 +346,8 @@ public class ResourceHandlerTest
         _resourceHandler.setEtags(true);
 
         HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("HEAD /resource/big.txt HTTP/1.0\r\n" +
-                                                                                       "If-Match: \"NO_MATCH\"\r\n" +
-                                                                                       "\r\n"));
+            "If-Match: \"NO_MATCH\"\r\n" +
+            "\r\n"));
 
         assertThat(response.getStatus(), equalTo(HttpStatus.PRECONDITION_FAILED_412));
     }

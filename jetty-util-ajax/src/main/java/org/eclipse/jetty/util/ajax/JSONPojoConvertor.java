@@ -206,7 +206,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                 {
                     // TODO throw exception?
                     LOG.warn(_pojoClass.getName() + "#" + setter.getPropertyName() + " not set from " +
-                                 (entry.getValue().getClass().getName()) + "=" + entry.getValue().toString());
+                        (entry.getValue().getClass().getName()) + "=" + entry.getValue().toString());
                     log(e);
                 }
             }
@@ -292,7 +292,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         }
 
         public void invoke(Object obj, Object value) throws IllegalArgumentException,
-                                                                IllegalAccessException, InvocationTargetException
+            IllegalAccessException, InvocationTargetException
         {
             if (value == null)
                 _setter.invoke(obj, NULL_ARG);
@@ -301,7 +301,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         }
 
         protected void invokeObject(Object obj, Object value) throws IllegalArgumentException,
-                                                                         IllegalAccessException, InvocationTargetException
+            IllegalAccessException, InvocationTargetException
         {
 
             if (_type.isEnum())

@@ -74,7 +74,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
     public void testInvokeMessage() throws Exception
     {
         assertThrows(InvalidSignatureException.class, () ->
-                                                          assertOnMessageInvocation(new MessageSocket(), containsString("onMessage()"))
+            assertOnMessageInvocation(new MessageSocket(), containsString("onMessage()"))
         );
     }
 
@@ -109,11 +109,11 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
     public void testInvokeMessageSession() throws Exception
     {
         assertThrows(InvalidSignatureException.class, () ->
-                                                          assertOnMessageInvocation(new MessageSessionSocket(),
-                                                              allOf(
-                                                                  containsString("onMessage(JavaxWebSocketSession@"),
-                                                                  containsString(MessageSessionSocket.class.getName())
-                                                              ))
+            assertOnMessageInvocation(new MessageSessionSocket(),
+                allOf(
+                    containsString("onMessage(JavaxWebSocketSession@"),
+                    containsString(MessageSessionSocket.class.getName())
+                ))
         );
     }
 

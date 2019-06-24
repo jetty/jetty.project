@@ -165,14 +165,14 @@ public class StreamResetTest extends AbstractTest
                     {
                         callback.succeeded();
                         completable.thenRun(() ->
-                                                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback()
-                                                {
-                                                    @Override
-                                                    public void succeeded()
-                                                    {
-                                                        serverDataLatch.countDown();
-                                                    }
-                                                }));
+                            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback()
+                            {
+                                @Override
+                                public void succeeded()
+                                {
+                                    serverDataLatch.countDown();
+                                }
+                            }));
                     }
 
                     @Override

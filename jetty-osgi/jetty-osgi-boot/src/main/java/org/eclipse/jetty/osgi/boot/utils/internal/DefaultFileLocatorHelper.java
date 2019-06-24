@@ -237,7 +237,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         if (!webapp.exists())
         {
             throw new IllegalArgumentException("Unable to locate " + path + " inside " + bundle.getSymbolicName() +
-                                                   " (" + (bundleInstall != null ? bundleInstall.getAbsolutePath() : " no_bundle_location ") + ")");
+                " (" + (bundleInstall != null ? bundleInstall.getAbsolutePath() : " no_bundle_location ") + ")");
         }
         return webapp;
     }

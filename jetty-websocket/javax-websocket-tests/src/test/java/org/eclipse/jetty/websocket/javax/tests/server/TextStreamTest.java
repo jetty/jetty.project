@@ -132,7 +132,7 @@ public class TextStreamTest
         // Frames expected are influenced by container.getDefaultMaxTextMessageBufferSize setting
         ByteBuffer frame1 = ByteBuffer.wrap(expectedData, 0, container.getDefaultMaxTextMessageBufferSize());
         ByteBuffer frame2 = ByteBuffer
-                                .wrap(expectedData, container.getDefaultMaxTextMessageBufferSize(), size - container.getDefaultMaxTextMessageBufferSize());
+            .wrap(expectedData, container.getDefaultMaxTextMessageBufferSize(), size - container.getDefaultMaxTextMessageBufferSize());
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(frame1).setFin(false));
         expect.add(new Frame(OpCode.CONTINUATION).setPayload(frame2).setFin(true));

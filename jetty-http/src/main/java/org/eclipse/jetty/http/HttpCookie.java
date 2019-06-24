@@ -263,8 +263,8 @@ public class HttpCookie
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
         int version = _version;
         if (version == 0 && (_comment != null || quoteName || quoteValue || quoteDomain || quotePath ||
-                                 QuotedStringTokenizer.isQuoted(_name) || QuotedStringTokenizer.isQuoted(_value) ||
-                                 QuotedStringTokenizer.isQuoted(_path) || QuotedStringTokenizer.isQuoted(_domain)))
+            QuotedStringTokenizer.isQuoted(_name) || QuotedStringTokenizer.isQuoted(_value) ||
+            QuotedStringTokenizer.isQuoted(_path) || QuotedStringTokenizer.isQuoted(_domain)))
             version = 1;
 
         // Append version

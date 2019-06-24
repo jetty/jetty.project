@@ -58,7 +58,7 @@ public class RolloverFileOutputStreamTest
     private static ZonedDateTime toDateTime(String timendate, ZoneId zone)
     {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
-                                          .withZone(zone);
+            .withZone(zone);
         return ZonedDateTime.parse(timendate, formatter);
     }
 

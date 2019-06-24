@@ -112,8 +112,8 @@ public class NeedWantClientAuthTest
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                                       .timeout(10, TimeUnit.SECONDS)
-                                       .send();
+            .timeout(10, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -151,8 +151,8 @@ public class NeedWantClientAuthTest
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                                       .timeout(10, TimeUnit.SECONDS)
-                                       .send();
+            .timeout(10, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
@@ -242,8 +242,8 @@ public class NeedWantClientAuthTest
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                                       .timeout(10, TimeUnit.SECONDS)
-                                       .send();
+            .timeout(10, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));

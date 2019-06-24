@@ -56,9 +56,9 @@ public class LogCondensePackageStringBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                          .include(LogCondensePackageStringBenchmark.class.getSimpleName())
-                          .addProfiler(GCProfiler.class)
-                          .build();
+            .include(LogCondensePackageStringBenchmark.class.getSimpleName())
+            .addProfiler(GCProfiler.class)
+            .build();
 
         new Runner(opt).run();
     }

@@ -169,8 +169,8 @@ public abstract class Resource implements ResourceFactory, Closeable
         catch (MalformedURLException e)
         {
             if (!resource.startsWith("ftp:") &&
-                    !resource.startsWith("file:") &&
-                    !resource.startsWith("jar:"))
+                !resource.startsWith("file:") &&
+                !resource.startsWith("jar:"))
             {
                 try
                 {

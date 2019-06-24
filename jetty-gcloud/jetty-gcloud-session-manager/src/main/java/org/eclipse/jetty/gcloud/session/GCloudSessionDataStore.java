@@ -585,9 +585,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     try
                     {
                         Query<Key> q = Query.newKeyQueryBuilder()
-                                           .setKind(_model.getKind())
-                                           .setFilter(PropertyFilter.eq(_model.getId(), s))
-                                           .build();
+                            .setKind(_model.getKind())
+                            .setFilter(PropertyFilter.eq(_model.getId(), s))
+                            .build();
                         QueryResults<Key> res = _datastore.run(q);
                         if (!res.hasNext())
                             expired.add(s); //not in db, can be expired
@@ -622,10 +622,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
         //get up to maxResult number of sessions that have expired
         Query<Entity> query = Query.newEntityQueryBuilder()
-                                  .setKind(_model.getKind())
-                                  .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), System.currentTimeMillis())))
-                                  .setLimit(_maxResults)
-                                  .build();
+            .setKind(_model.getKind())
+            .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), System.currentTimeMillis())))
+            .setLimit(_maxResults)
+            .build();
 
         QueryResults<Entity> results;
         if (LOG.isDebugEnabled())
@@ -657,11 +657,11 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         long now = System.currentTimeMillis();
         Set<ExpiryInfo> info = new HashSet<>();
         Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
-                                            .setKind(_model.getKind())
-                                            .setProjection(_model.getId(), _model.getLastNode(), _model.getExpiry())
-                                            .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), now)))
-                                            .setLimit(_maxResults)
-                                            .build();
+            .setKind(_model.getKind())
+            .setProjection(_model.getId(), _model.getLastNode(), _model.getExpiry())
+            .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), now)))
+            .setLimit(_maxResults)
+            .build();
 
         QueryResults<ProjectionEntity> presults;
 
@@ -689,13 +689,13 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         if (_indexesPresent)
         {
             Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
-                                                .setKind(_model.getKind())
-                                                .setProjection(_model.getExpiry())
-                                                .setFilter(CompositeFilter.and(PropertyFilter.eq(_model.getId(), id),
-                                                    PropertyFilter.eq(_model.getContextPath(), _context.getCanonicalContextPath()),
-                                                    PropertyFilter.eq(_model.getVhost(), _context.getVhost())))
-                                                //.setFilter(PropertyFilter.eq(_model.getId(), id))
-                                                .build();
+                .setKind(_model.getKind())
+                .setProjection(_model.getExpiry())
+                .setFilter(CompositeFilter.and(PropertyFilter.eq(_model.getId(), id),
+                    PropertyFilter.eq(_model.getContextPath(), _context.getCanonicalContextPath()),
+                    PropertyFilter.eq(_model.getVhost(), _context.getVhost())))
+                //.setFilter(PropertyFilter.eq(_model.getId(), id))
+                .build();
 
             QueryResults<ProjectionEntity> presults;
             if (LOG.isDebugEnabled())
@@ -718,12 +718,12 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         else
         {
             Query<Entity> query = Query.newEntityQueryBuilder()
-                                      .setKind(_model.getKind())
-                                      .setFilter(CompositeFilter.and(PropertyFilter.eq(_model.getId(), id),
-                                          PropertyFilter.eq(_model.getContextPath(), _context.getCanonicalContextPath()),
-                                          PropertyFilter.eq(_model.getVhost(), _context.getVhost())))
-                                      //.setFilter(PropertyFilter.eq(_model.getId(), id))
-                                      .build();
+                .setKind(_model.getKind())
+                .setFilter(CompositeFilter.and(PropertyFilter.eq(_model.getId(), id),
+                    PropertyFilter.eq(_model.getContextPath(), _context.getCanonicalContextPath()),
+                    PropertyFilter.eq(_model.getVhost(), _context.getVhost())))
+                //.setFilter(PropertyFilter.eq(_model.getId(), id))
+                .build();
 
             QueryResults<Entity> results;
             if (LOG.isDebugEnabled())
@@ -834,10 +834,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         try
         {
             Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
-                                                .setKind(_model.getKind())
-                                                .setProjection(_model.getExpiry())
-                                                .setFilter(PropertyFilter.eq(_model.getId(), "-"))
-                                                .build();
+                .setKind(_model.getKind())
+                .setProjection(_model.getExpiry())
+                .setFilter(PropertyFilter.eq(_model.getId(), "-"))
+                .build();
             _datastore.run(query);
             return true;
         }
@@ -875,18 +875,18 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
             //turn a session into an entity         
             entity = Entity.newBuilder(key)
-                         .set(_model.getId(), session.getId())
-                         .set(_model.getContextPath(), session.getContextPath())
-                         .set(_model.getVhost(), session.getVhost())
-                         .set(_model.getAccessed(), session.getAccessed())
-                         .set(_model.getLastAccessed(), session.getLastAccessed())
-                         .set(_model.getCreateTime(), session.getCreated())
-                         .set(_model.getCookieSetTime(), session.getCookieSet())
-                         .set(_model.getLastNode(), session.getLastNode())
-                         .set(_model.getExpiry(), session.getExpiry())
-                         .set(_model.getMaxInactive(), session.getMaxInactiveMs())
-                         .set(_model.getLastSaved(), session.getLastSaved())
-                         .set(_model.getAttributes(), BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build()).build();
+                .set(_model.getId(), session.getId())
+                .set(_model.getContextPath(), session.getContextPath())
+                .set(_model.getVhost(), session.getVhost())
+                .set(_model.getAccessed(), session.getAccessed())
+                .set(_model.getLastAccessed(), session.getLastAccessed())
+                .set(_model.getCreateTime(), session.getCreated())
+                .set(_model.getCookieSetTime(), session.getCookieSet())
+                .set(_model.getLastNode(), session.getLastNode())
+                .set(_model.getExpiry(), session.getExpiry())
+                .set(_model.getMaxInactive(), session.getMaxInactiveMs())
+                .set(_model.getLastSaved(), session.getLastSaved())
+                .set(_model.getAttributes(), BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build()).build();
             return entity;
         }
     }

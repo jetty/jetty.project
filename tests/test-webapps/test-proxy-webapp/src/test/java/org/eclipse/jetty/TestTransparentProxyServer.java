@@ -118,7 +118,7 @@ public class TestTransparentProxyServer
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         handlers.setHandlers(new Handler[]
-                                 {contexts, new DefaultHandler()});
+            {contexts, new DefaultHandler()});
 
         server.setHandler(handlers);
 

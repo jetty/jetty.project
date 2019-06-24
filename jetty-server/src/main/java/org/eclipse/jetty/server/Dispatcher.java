@@ -350,7 +350,7 @@ public class Dispatcher implements RequestDispatcher
             {
                 String name = e.nextElement();
                 if (!name.startsWith(__INCLUDE_PREFIX) &&
-                        !name.startsWith(__FORWARD_PREFIX))
+                    !name.startsWith(__FORWARD_PREFIX))
                     set.add(name);
             }
 

@@ -86,7 +86,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= length & 0x7F;
@@ -129,7 +129,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -174,7 +174,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -218,7 +218,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= 0x7E;
@@ -264,7 +264,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= 0x7E;
@@ -308,7 +308,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                         {(byte)0x82});
+            {(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= 0x7F;
@@ -338,7 +338,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                         {(byte)0x82, (byte)0x00});
+            {(byte)0x82, (byte)0x00});
 
         BufferUtil.flipToFlush(expected, 0);
 
@@ -420,7 +420,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                         {(byte)0x88, (byte)0x02, 0x03, (byte)0xe8});
+            {(byte)0x88, (byte)0x02, 0x03, (byte)0xe8});
 
         expected.flip();
 
@@ -447,7 +447,7 @@ public class GeneratorTest
         byte messageBytes[] = message.toString().getBytes(StandardCharsets.UTF_8);
 
         expected.put(new byte[]
-                         {(byte)0x88});
+            {(byte)0x88});
 
         byte b = 0x00; // no masking
         b |= (messageBytes.length + 2) & 0x7F;
@@ -477,7 +477,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-                         {(byte)0x88});
+            {(byte)0x88});
 
         byte b = 0x00; // no masking
         b |= (message.length() + 2) & 0x7F;
@@ -547,7 +547,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
 
         expected.put(new byte[]
-                         {(byte)0x89});
+            {(byte)0x89});
 
         byte b = 0x00; // no masking
         b |= bytes.length & 0x7F;
@@ -574,7 +574,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-                         {(byte)0x89});
+            {(byte)0x89});
 
         byte b = 0x00; // no masking
         b |= bytes.length & 0x7F;
@@ -599,7 +599,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                         {(byte)0x89, (byte)0x00});
+            {(byte)0x89, (byte)0x00});
 
         expected.flip();
 
@@ -622,7 +622,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-                         {(byte)0x89});
+            {(byte)0x89});
 
         byte b = 0x00; // no masking
         b |= messageBytes.length & 0x7F;
@@ -680,12 +680,12 @@ public class GeneratorTest
         ByteBuffer expected1 = ByteBuffer.allocate(5);
 
         expected1.put(new byte[]
-                          {(byte)0x01, (byte)0x03, (byte)0x48, (byte)0x65, (byte)0x6c});
+            {(byte)0x01, (byte)0x03, (byte)0x48, (byte)0x65, (byte)0x6c});
 
         ByteBuffer expected2 = ByteBuffer.allocate(4);
 
         expected2.put(new byte[]
-                          {(byte)0x80, (byte)0x02, (byte)0x6c, (byte)0x6f});
+            {(byte)0x80, (byte)0x02, (byte)0x6c, (byte)0x6f});
 
         expected1.flip();
         expected2.flip();
@@ -705,7 +705,7 @@ public class GeneratorTest
     {
         Frame pong = new Frame(OpCode.PONG).setPayload("Hello");
         pong.setMask(new byte[]
-                         {0x37, (byte)0xfa, 0x21, 0x3d});
+            {0x37, (byte)0xfa, 0x21, 0x3d});
 
         ByteBuffer actual = generate(pong);
 
@@ -713,7 +713,7 @@ public class GeneratorTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Pong request
         expected.put(new byte[]
-                         {(byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
+            {(byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
         expected.flip(); // make readable
 
         ByteBufferAssert.assertEquals("pong buffers are not equal", expected, actual);
@@ -730,7 +730,7 @@ public class GeneratorTest
     {
         Frame text = new Frame(OpCode.TEXT).setPayload("Hello");
         text.setMask(new byte[]
-                         {0x37, (byte)0xfa, 0x21, 0x3d});
+            {0x37, (byte)0xfa, 0x21, 0x3d});
 
         ByteBuffer actual = generate(text);
 
@@ -738,7 +738,7 @@ public class GeneratorTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame masked text message
         expected.put(new byte[]
-                         {(byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
+            {(byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
         expected.flip(); // make readable
 
         ByteBufferAssert.assertEquals("masked text buffers are not equal", expected, actual);
@@ -766,7 +766,7 @@ public class GeneratorTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         expected.put(new byte[]
-                         {(byte)0x82, (byte)0x7E});
+            {(byte)0x82, (byte)0x7E});
         expected.putShort((short)0x01_00);
 
         for (int i = 0; i < dataSize; i++)
@@ -801,7 +801,7 @@ public class GeneratorTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 64k bytes binary message in a single unmasked frame
         expected.put(new byte[]
-                         {(byte)0x82, (byte)0x7F});
+            {(byte)0x82, (byte)0x7F});
         expected.putInt(0x00_00_00_00);
         expected.putInt(0x00_01_00_00);
 
@@ -830,7 +830,7 @@ public class GeneratorTest
 
         ByteBuffer expected = ByteBuffer.allocate(10);
         expected.put(new byte[]
-                         {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
+            {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
         expected.flip(); // make readable
 
         ByteBufferAssert.assertEquals("Ping buffers", expected, actual);
@@ -852,7 +852,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(10);
 
         expected.put(new byte[]
-                         {(byte)0x81, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f});
+            {(byte)0x81, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f});
 
         expected.flip();
 
@@ -877,7 +877,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= length & 0x7F;
@@ -915,7 +915,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -955,7 +955,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -995,7 +995,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= 0x7E;
@@ -1037,13 +1037,13 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
         expected.put(new byte[]
-                         {(byte)0xff, (byte)0xff});
+            {(byte)0xff, (byte)0xff});
 
         for (int i = 0; i < length; ++i)
         {
@@ -1077,13 +1077,13 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                         {(byte)0x81});
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
         expected.put(new byte[]
-                         {0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
+            {0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
 
         for (int i = 0; i < length; ++i)
         {
@@ -1108,7 +1108,7 @@ public class GeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                         {(byte)0x81, (byte)0x00});
+            {(byte)0x81, (byte)0x00});
 
         expected.flip();
 
@@ -1204,7 +1204,7 @@ public class GeneratorTest
         Arrays.fill(payload, (byte)0x55);
 
         byte mask[] = new byte[]
-                          {0x2A, (byte)0xF0, 0x0F, 0x00};
+            {0x2A, (byte)0xF0, 0x0F, 0x00};
 
         Frame frame = new Frame(OpCode.BINARY).setPayload(payload);
         frame.setMask(mask); // masking!

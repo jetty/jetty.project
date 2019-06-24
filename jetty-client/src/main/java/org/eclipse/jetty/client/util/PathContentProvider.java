@@ -127,8 +127,8 @@ public class PathContentProvider extends AbstractTypedContentProvider
                 if (channel == null)
                 {
                     buffer = bufferPool == null
-                                 ? ByteBuffer.allocateDirect(bufferSize)
-                                 : bufferPool.acquire(bufferSize, true);
+                        ? ByteBuffer.allocateDirect(bufferSize)
+                        : bufferPool.acquire(bufferSize, true);
                     channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Opened file {}", filePath);

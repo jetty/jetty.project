@@ -163,12 +163,12 @@ public class JSONPojoConvertorTest
         public String toString()
         {
             return new StringBuffer()
-                       .append("\n=== ").append(getClass().getSimpleName()).append(" ===")
-                       .append("\ntitle: ").append(getTitle())
-                       .append("\nboolean1: ").append(isBoolean1())
-                       .append("\nnullTest: ").append(getNullTest())
-                       .append("\nbaz: ").append(getBaz())
-                       .append("\ncolor: ").append(_color).toString();
+                .append("\n=== ").append(getClass().getSimpleName()).append(" ===")
+                .append("\ntitle: ").append(getTitle())
+                .append("\nboolean1: ").append(isBoolean1())
+                .append("\nnullTest: ").append(getNullTest())
+                .append("\nbaz: ").append(getBaz())
+                .append("\ncolor: ").append(_color).toString();
         }
 
         public void setTitle(String title)
@@ -255,9 +255,9 @@ public class JSONPojoConvertorTest
         public String toString()
         {
             return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
-                       .append("\nmessage: ").append(getMessage())
-                       .append("\nboolean2: ").append(isBoolean2())
-                       .append("\nfoo: ").append(getFoo()).toString();
+                .append("\nmessage: ").append(getMessage())
+                .append("\nboolean2: ").append(isBoolean2())
+                .append("\nfoo: ").append(getFoo()).toString();
         }
 
         public void setMessage(String message)
@@ -314,18 +314,18 @@ public class JSONPojoConvertorTest
         public String toString()
         {
             return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
-                       .append("\nname: ").append(_name)
-                       .append("\nint1: ").append(_int1)
-                       .append("\nint2: ").append(_int2)
-                       .append("\nlong1: ").append(_long1)
-                       .append("\nlong2: ").append(_long2)
-                       .append("\nfloat1: ").append(_float1)
-                       .append("\nfloat2: ").append(_float2)
-                       .append("\ndouble1: ").append(_double1)
-                       .append("\ndouble2: ").append(_double2)
-                       .append("\nchar1: ").append(_char1)
-                       .append("\nchar2: ").append(_char2)
-                       .toString();
+                .append("\nname: ").append(_name)
+                .append("\nint1: ").append(_int1)
+                .append("\nint2: ").append(_int2)
+                .append("\nlong1: ").append(_long1)
+                .append("\nlong2: ").append(_long2)
+                .append("\nfloat1: ").append(_float1)
+                .append("\nfloat2: ").append(_float2)
+                .append("\ndouble1: ").append(_double1)
+                .append("\ndouble2: ").append(_double2)
+                .append("\nchar1: ").append(_char1)
+                .append("\nchar2: ").append(_char2)
+                .toString();
         }
 
         @Override
@@ -335,16 +335,16 @@ public class JSONPojoConvertorTest
             {
                 Foo foo = (Foo)another;
                 return getName().equals(foo.getName())
-                           && getInt1() == foo.getInt1()
-                           && getInt2().equals(foo.getInt2())
-                           && getLong1() == foo.getLong1()
-                           && getLong2().equals(foo.getLong2())
-                           && getFloat1() == foo.getFloat1()
-                           && getFloat2().equals(foo.getFloat2())
-                           && getDouble1() == foo.getDouble1()
-                           && getDouble2().equals(foo.getDouble2())
-                           && getChar1() == foo.getChar1()
-                           && getChar2().equals(foo.getChar2());
+                    && getInt1() == foo.getInt1()
+                    && getInt2().equals(foo.getInt2())
+                    && getLong1() == foo.getLong1()
+                    && getLong2().equals(foo.getLong2())
+                    && getFloat1() == foo.getFloat1()
+                    && getFloat2().equals(foo.getFloat2())
+                    && getDouble1() == foo.getDouble1()
+                    && getDouble2().equals(foo.getDouble2())
+                    && getChar1() == foo.getChar1()
+                    && getChar2().equals(foo.getChar2());
             }
 
             return false;

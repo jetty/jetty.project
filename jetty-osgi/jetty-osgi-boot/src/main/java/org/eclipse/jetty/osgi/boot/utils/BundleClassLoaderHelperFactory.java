@@ -49,7 +49,7 @@ public class BundleClassLoaderHelperFactory
         {
             //if a fragment has not provided their own impl
             helper = (BundleClassLoaderHelper)Class.forName(BundleClassLoaderHelper.CLASS_NAME)
-                                                  .getDeclaredConstructor().newInstance();
+                .getDeclaredConstructor().newInstance();
         }
         catch (Throwable t)
         {

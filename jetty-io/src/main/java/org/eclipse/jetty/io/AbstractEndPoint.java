@@ -433,8 +433,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         Connection oldConnection = getConnection();
 
         ByteBuffer prefilled = (oldConnection instanceof Connection.UpgradeFrom)
-                                   ? ((Connection.UpgradeFrom)oldConnection).onUpgradeFrom()
-                                   : null;
+            ? ((Connection.UpgradeFrom)oldConnection).onUpgradeFrom()
+            : null;
         oldConnection.onClose(null);
         oldConnection.getEndPoint().setConnection(newConnection);
 

@@ -77,24 +77,24 @@ public class AnnotatedAsyncListenerTest
         try (BufferedWriter writer = Files.newBufferedWriter(webInf.resolve("web.xml"), StandardCharsets.UTF_8, StandardOpenOption.CREATE))
         {
             writer.write("<web-app xmlns=\"http://xmlns.jcp.org/xml/ns/javaee\" " +
-                             "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
-                             "xsi:schemaLocation=\"http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd\" " +
-                             "version=\"3.1\">" +
-                             "</web-app>");
+                "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+                "xsi:schemaLocation=\"http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd\" " +
+                "version=\"3.1\">" +
+                "</web-app>");
         }
 
         WebAppContext context = new WebAppContext(webAppDir.toString(), "/");
         context.setConfigurations(new Configuration[]
-                                      {
-                                          new AnnotationConfiguration(),
-                                          new WebXmlConfiguration(),
-                                          new WebInfConfiguration(),
-                                          new MetaInfConfiguration(),
-                                          new FragmentConfiguration(),
-                                          new EnvConfiguration(),
-                                          new PlusConfiguration(),
-                                          new WebAppConfiguration()
-                                      });
+            {
+                new AnnotationConfiguration(),
+                new WebXmlConfiguration(),
+                new WebInfConfiguration(),
+                new MetaInfConfiguration(),
+                new FragmentConfiguration(),
+                new EnvConfiguration(),
+                new PlusConfiguration(),
+                new WebAppConfiguration()
+            });
         context.addServlet(new ServletHolder(servlet), "/*");
         new EnvEntry(context, "value", 1307D, false);
         server.setHandler(context);

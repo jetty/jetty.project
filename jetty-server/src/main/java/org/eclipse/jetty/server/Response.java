@@ -344,7 +344,7 @@ public class Response implements HttpServletResponse
             if (suffix <= prefix)
                 return url.substring(0, prefix + sessionURLPrefix.length()) + id;
             return url.substring(0, prefix + sessionURLPrefix.length()) + id +
-                       url.substring(suffix);
+                url.substring(suffix);
         }
 
         // edit the session
@@ -354,13 +354,13 @@ public class Response implements HttpServletResponse
         if (suffix < 0)
         {
             return url +
-                       ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
-                       sessionURLPrefix + id;
+                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
+                sessionURLPrefix + id;
         }
 
         return url.substring(0, suffix) +
-                   ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
-                   sessionURLPrefix + id + url.substring(suffix);
+            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
+            sessionURLPrefix + id + url.substring(suffix);
     }
 
     @Override
@@ -435,7 +435,7 @@ public class Response implements HttpServletResponse
 
         // If we are allowed to have a body, then produce the error page.
         if (code != SC_NO_CONTENT && code != SC_NOT_MODIFIED &&
-                code != SC_PARTIAL_CONTENT && code >= SC_OK)
+            code != SC_PARTIAL_CONTENT && code >= SC_OK)
         {
             ContextHandler.Context context = request.getContext();
             ContextHandler contextHandler = context == null ? _channel.getState().getContextHandler() : context.getContextHandler();
@@ -1225,9 +1225,9 @@ public class Response implements HttpServletResponse
         if (ct != null)
         {
             if (_characterEncoding != null &&
-                    content.getCharacterEncoding() == null &&
-                    content.getContentTypeValue() != null &&
-                    __explicitCharset.contains(_encodingFrom))
+                content.getCharacterEncoding() == null &&
+                content.getContentTypeValue() != null &&
+                __explicitCharset.contains(_encodingFrom))
             {
                 setContentType(MimeTypes.getContentTypeWithoutCharset(content.getContentTypeValue()));
             }

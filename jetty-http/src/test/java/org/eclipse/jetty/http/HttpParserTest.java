@@ -369,26 +369,26 @@ public class HttpParserTest
     public void testWhiteSpaceBeforeRequest()
     {
         HttpCompliance[] compliances = new HttpCompliance[]
-                                           {
-                                               HttpCompliance.RFC7230, HttpCompliance.RFC2616
-                                           };
+            {
+                HttpCompliance.RFC7230, HttpCompliance.RFC2616
+            };
 
         String whitespaces[][] = new String[][]
-                                     {
-                                         {" ", "Illegal character SPACE"},
-                                         {"\t", "Illegal character HTAB"},
-                                         {"\n", null},
-                                         {"\r", "Bad EOL"},
-                                         {"\r\n", null},
-                                         {"\r\n\r\n", null},
-                                         {"\r\n \r\n", "Illegal character SPACE"},
-                                         {"\r\n\t\r\n", "Illegal character HTAB"},
-                                         {"\r\t\n", "Bad EOL"},
-                                         {"\r\r\n", "Bad EOL"},
-                                         {"\t\r\t\r\n", "Illegal character HTAB"},
-                                         {" \t \r \t \n\n", "Illegal character SPACE"},
-                                         {" \r \t \r\n\r\n\r\n", "Illegal character SPACE"}
-                                     };
+            {
+                {" ", "Illegal character SPACE"},
+                {"\t", "Illegal character HTAB"},
+                {"\n", null},
+                {"\r", "Bad EOL"},
+                {"\r\n", null},
+                {"\r\n\r\n", null},
+                {"\r\n \r\n", "Illegal character SPACE"},
+                {"\r\n\t\r\n", "Illegal character HTAB"},
+                {"\r\t\n", "Bad EOL"},
+                {"\r\r\n", "Bad EOL"},
+                {"\t\r\t\r\n", "Illegal character HTAB"},
+                {" \t \r \t \n\n", "Illegal character SPACE"},
+                {" \r \t \r\n\r\n\r\n", "Illegal character SPACE"}
+            };
 
         for (int i = 0; i < compliances.length; i++)
         {
@@ -745,23 +745,23 @@ public class HttpParserTest
     public void testBadHeaderNames() throws Exception
     {
         String[] bad = new String[]
-                           {
-                               "Foo\\Bar: value\r\n",
-                               "Foo@Bar: value\r\n",
-                               "Foo,Bar: value\r\n",
-                               "Foo}Bar: value\r\n",
-                               "Foo{Bar: value\r\n",
-                               "Foo=Bar: value\r\n",
-                               "Foo>Bar: value\r\n",
-                               "Foo<Bar: value\r\n",
-                               "Foo)Bar: value\r\n",
-                               "Foo(Bar: value\r\n",
-                               "Foo?Bar: value\r\n",
-                               "Foo\"Bar: value\r\n",
-                               "Foo/Bar: value\r\n",
-                               "Foo]Bar: value\r\n",
-                               "Foo[Bar: value\r\n",
-                               };
+            {
+                "Foo\\Bar: value\r\n",
+                "Foo@Bar: value\r\n",
+                "Foo,Bar: value\r\n",
+                "Foo}Bar: value\r\n",
+                "Foo{Bar: value\r\n",
+                "Foo=Bar: value\r\n",
+                "Foo>Bar: value\r\n",
+                "Foo<Bar: value\r\n",
+                "Foo)Bar: value\r\n",
+                "Foo(Bar: value\r\n",
+                "Foo?Bar: value\r\n",
+                "Foo\"Bar: value\r\n",
+                "Foo/Bar: value\r\n",
+                "Foo]Bar: value\r\n",
+                "Foo[Bar: value\r\n",
+                };
 
         for (int i = 0; i < bad.length; i++)
         {
@@ -1250,28 +1250,28 @@ public class HttpParserTest
                 + "Connection: Keep-Alive\r\n");
 
         ByteBuffer buffer1 = BufferUtil.toBuffer("Header1: value1\r\n"
-                                                     + "Transfer-Encoding: chunked\r\n"
-                                                     + "\r\n"
-                                                     + "a;\r\n"
-                                                     + "0123456789\r\n"
-                                                     + "1a\r\n"
-                                                     + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-                                                     + "0\r\n"
+            + "Transfer-Encoding: chunked\r\n"
+            + "\r\n"
+            + "a;\r\n"
+            + "0123456789\r\n"
+            + "1a\r\n"
+            + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
+            + "0\r\n"
 
-                                                     + "\r\n"
+            + "\r\n"
 
-                                                     + "POST /foo HTTP/1.0\r\n"
-                                                     + "Connection: Keep-Alive\r\n"
-                                                     + "Header2: value2\r\n"
-                                                     + "Content-Length: 0\r\n"
-                                                     + "\r\n"
+            + "POST /foo HTTP/1.0\r\n"
+            + "Connection: Keep-Alive\r\n"
+            + "Header2: value2\r\n"
+            + "Content-Length: 0\r\n"
+            + "\r\n"
 
-                                                     + "PUT /doodle HTTP/1.0\r\n"
-                                                     + "Connection: close\r\n"
-                                                     + "Header3: value3\r\n"
-                                                     + "Content-Length: 10\r\n"
-                                                     + "\r\n"
-                                                     + "0123456789\r\n");
+            + "PUT /doodle HTTP/1.0\r\n"
+            + "Connection: close\r\n"
+            + "Header3: value3\r\n"
+            + "Content-Length: 10\r\n"
+            + "\r\n"
+            + "0123456789\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);

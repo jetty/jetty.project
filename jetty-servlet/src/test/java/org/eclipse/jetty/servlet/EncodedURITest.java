@@ -160,8 +160,8 @@ public class EncodedURITest
         public void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             AsyncContext async = Boolean.parseBoolean(request.getParameter("wrap"))
-                                     ? request.startAsync(request, response)
-                                     : request.startAsync();
+                ? request.startAsync(request, response)
+                : request.startAsync();
 
             if (Boolean.parseBoolean(request.getParameter("encode")))
                 async.dispatch("/test%20servlet" + URIUtil.encodePath(request.getPathInfo()));
@@ -185,8 +185,8 @@ public class EncodedURITest
             {
                 request.setAttribute("async", "true");
                 AsyncContext async = Boolean.parseBoolean(request.getParameter("wrap"))
-                                         ? request.startAsync(request, response)
-                                         : request.startAsync();
+                    ? request.startAsync(request, response)
+                    : request.startAsync();
                 async.dispatch();
                 return;
             }

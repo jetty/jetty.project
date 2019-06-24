@@ -100,7 +100,7 @@ public class HttpChannelOverHTTP extends HttpChannel
         HttpResponse response = exchange.getResponse();
 
         if ((response.getVersion() == HttpVersion.HTTP_1_1) &&
-                (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101))
+            (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101))
         {
             String nextConnection = response.getHeaders().get(HttpHeader.CONNECTION);
             if ((nextConnection == null) || !nextConnection.toLowerCase(Locale.US).contains("upgrade"))

@@ -44,9 +44,9 @@ public class ExternalFastCGIServerTest
         client.start();
 
         ContentResponse response = client.newRequest("localhost", 9000)
-                                       .path("/index.php")
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .path("/index.php")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
 

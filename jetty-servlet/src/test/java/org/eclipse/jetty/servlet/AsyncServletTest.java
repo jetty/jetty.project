@@ -638,10 +638,10 @@ public class AsyncServletTest
     public void testAsyncRead() throws Exception
     {
         String header = "GET /ctx/path/info?start=2000&dispatch=1500 HTTP/1.1\r\n" +
-                            "Host: localhost\r\n" +
-                            "Content-Length: 10\r\n" +
-                            "Connection: close\r\n" +
-                            "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Length: 10\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
         String body = "12345678\r\n";
 
         try (Socket socket = new Socket("localhost", _port))
@@ -679,8 +679,8 @@ public class AsyncServletTest
         if (query != null)
             request += "?" + query;
         request += " HTTP/1.1\r\n" +
-                       "Host: localhost\r\n" +
-                       "Connection: close\r\n";
+            "Host: localhost\r\n" +
+            "Connection: close\r\n";
         if (content == null)
             request += "\r\n";
         else
@@ -880,8 +880,8 @@ public class AsyncServletTest
                                 {
                                     int q = path.indexOf('?');
                                     String uriInContext = (q >= 0)
-                                                              ? URIUtil.encodePath(path.substring(0, q)) + path.substring(q)
-                                                              : URIUtil.encodePath(path);
+                                        ? URIUtil.encodePath(path.substring(0, q)) + path.substring(q)
+                                        : URIUtil.encodePath(path);
                                     async.dispatch(uriInContext);
                                 }
                                 else

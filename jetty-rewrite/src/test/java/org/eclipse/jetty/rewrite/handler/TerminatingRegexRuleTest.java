@@ -46,7 +46,7 @@ public class TerminatingRegexRuleTest extends AbstractRuleTestCase
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                                                                                                                                        ServletException
+                ServletException
             {
                 response.setStatus(HttpStatus.CREATED_201);
                 request.setAttribute("target", target);

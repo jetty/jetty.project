@@ -119,8 +119,8 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         {
             LOG.debug("KDC started on port {}", kdc.getKdcTcpPort());
             String krb5 = Files.readAllLines(testDirPath.resolve("krb5.conf")).stream()
-                              .filter(line -> !line.startsWith("#"))
-                              .collect(Collectors.joining(System.lineSeparator()));
+                .filter(line -> !line.startsWith("#"))
+                .collect(Collectors.joining(System.lineSeparator()));
             LOG.debug("krb5.conf{}{}", System.lineSeparator(), krb5);
         }
     }

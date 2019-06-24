@@ -218,7 +218,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     {
         // What pywebsocket produces for "time:", "time:", "time:"
         String expected[] = new String[]
-                                {"2AC9CC4DB50200", "2A01110000", "02130000"};
+            {"2AC9CC4DB50200", "2A01110000", "02130000"};
 
         // Lets see what we produce
         CapturedHexPayloads capture = new CapturedHexPayloads();
@@ -334,7 +334,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     {
         // Captured from PyWebSocket - Long Text (echo from server)
         byte rawbuf[] = TypeUtil.fromHexString("c1421cca410a80300c44d1abccce9df7" + "f018298634d05631138ab7b7b8fdef1f" + "dc0282e2061d575a45f6f2686bab25e1"
-                                                   + "3fb7296fa02b5885eb3b0379c394f461" + "98cafd03");
+            + "3fb7296fa02b5885eb3b0379c394f461" + "98cafd03");
         assertIncoming(rawbuf, "It's a big enough umbrella but it's always me that ends up getting wet.");
     }
 

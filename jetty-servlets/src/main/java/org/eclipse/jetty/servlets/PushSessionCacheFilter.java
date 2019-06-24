@@ -150,7 +150,7 @@ public class PushSessionCacheFilter implements Filter
         if (builder != null && !target._associated.isEmpty())
         {
             boolean conditional = request.getHeader(HttpHeader.IF_NONE_MATCH.asString()) != null ||
-                                      request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString()) != null;
+                request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString()) != null;
             // Breadth-first push of associated resources.
             Queue<Target> queue = new ArrayDeque<>();
             queue.offer(target);

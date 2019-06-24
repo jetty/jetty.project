@@ -132,9 +132,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         assertThrows(ExecutionException.class, () ->
-                                                   client.newRequest("localhost", connector.getLocalPort())
-                                                       .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
-                                                       .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
+                .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -170,9 +170,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         assertThrows(ExecutionException.class, () ->
-                                                   client.newRequest("localhost", connector.getLocalPort())
-                                                       .onResponseContent((response, buffer) -> response.abort(new Exception("explicitly_aborted_by_test")))
-                                                       .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .onResponseContent((response, buffer) -> response.abort(new Exception("explicitly_aborted_by_test")))
+                .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -191,12 +191,12 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .onRequestBegin(request ->
-                                       {
-                                           if (request.getVersion() != HttpVersion.HTTP_2)
-                                               request.abort(new Exception("Not a HTTP/2 request"));
-                                       })
-                                       .send();
+            .onRequestBegin(request ->
+            {
+                if (request.getVersion() != HttpVersion.HTTP_2)
+                    request.abort(new Exception("Not a HTTP/2 request"));
+            })
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -278,14 +278,14 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         // Prime the connection to allow client and server prefaces to be exchanged.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .path("/zero")
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .path("/zero")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         org.eclipse.jetty.client.api.Request request = client.newRequest("localhost", connector.getLocalPort())
-                                                           .method(HttpMethod.HEAD)
-                                                           .path("/one");
+            .method(HttpMethod.HEAD)
+            .path("/one");
         request.send(result ->
         {
             if (result.isFailed())
@@ -317,9 +317,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .path("http://localhost:" + connector.getLocalPort() + path + "?" + query)
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .path("http://localhost:" + connector.getLocalPort() + path + "?" + query)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -345,9 +345,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         int serverPort = proxyPort + 1; // Any port will do, just not the same as the proxy.
         ContentResponse response = client.newRequest("localhost", serverPort)
-                                       .path(path + "?" + query)
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .path(path + "?" + query)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -378,10 +378,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         client.start();
 
         assertThrows(TimeoutException.class, () ->
-                                                 client.newRequest("localhost", connector.getLocalPort())
-                                                     // Make sure the connection idle times out, not the stream.
-                                                     .idleTimeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
-                                                     .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                // Make sure the connection idle times out, not the stream.
+                .idleTimeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
+                .send());
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
@@ -551,8 +551,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
         // No logic on the client to discard content for no-content status codes.

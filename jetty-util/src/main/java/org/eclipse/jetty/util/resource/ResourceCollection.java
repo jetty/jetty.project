@@ -195,7 +195,7 @@ public class ResourceCollection extends Resource
         if (len == 0)
         {
             throw new IllegalArgumentException("ResourceCollection@setResourcesAsCSV(String) " +
-                                                   " argument must be a string containing one or more comma-separated resource strings.");
+                " argument must be a string containing one or more comma-separated resource strings.");
         }
 
         List<Resource> res = new ArrayList<>();

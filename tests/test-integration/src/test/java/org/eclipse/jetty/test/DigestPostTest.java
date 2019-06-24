@@ -149,7 +149,7 @@ public class DigestPostTest
 
             HandlerCollection handlers = new HandlerCollection();
             handlers.setHandlers(new Handler[]
-                                     {context, new DefaultHandler()});
+                {context, new DefaultHandler()});
             _server.setHandler(handlers);
 
             _server.start();
@@ -175,9 +175,9 @@ public class DigestPostTest
         _received = null;
         socket.getOutputStream().write(
             ("POST /test/ HTTP/1.0\r\n" +
-                 "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                 "Content-Length: " + bytes.length + "\r\n" +
-                 "\r\n").getBytes(StandardCharsets.UTF_8));
+                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
+                "Content-Length: " + bytes.length + "\r\n" +
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -192,18 +192,18 @@ public class DigestPostTest
         byte[] b = md.digest(String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(org.eclipse.jetty.util.StringUtil.__ISO_8859_1));
         String cnonce = encode(b);
         String digest = "Digest username=\"testuser\" realm=\"test\" nonce=\"" + nonce + "\" uri=\"/test/\" algorithm=MD5 response=\"" +
-                            newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") +
-                            "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
+            newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") +
+            "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
 
         socket = new Socket("127.0.0.1", ((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
 
         _received = null;
         socket.getOutputStream().write(
             ("POST /test/ HTTP/1.0\r\n" +
-                 "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                 "Content-Length: " + bytes.length + "\r\n" +
-                 "Authorization: " + digest + "\r\n" +
-                 "\r\n").getBytes(StandardCharsets.UTF_8));
+                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
+                "Content-Length: " + bytes.length + "\r\n" +
+                "Authorization: " + digest + "\r\n" +
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -222,9 +222,9 @@ public class DigestPostTest
         _received = null;
         socket.getOutputStream().write(
             ("POST /test/ HTTP/1.1\r\n" +
-                 "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                 "Content-Length: " + bytes.length + "\r\n" +
-                 "\r\n").getBytes("UTF-8"));
+                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
+                "Content-Length: " + bytes.length + "\r\n" +
+                "\r\n").getBytes("UTF-8"));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -243,16 +243,16 @@ public class DigestPostTest
         byte[] b = md.digest(String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(StringUtil.__ISO_8859_1));
         String cnonce = encode(b);
         String digest = "Digest username=\"testuser\" realm=\"test\" nonce=\"" + nonce + "\" uri=\"/test/\" algorithm=MD5 response=\"" +
-                            newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") +
-                            "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
+            newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") +
+            "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
 
         _received = null;
         socket.getOutputStream().write(
             ("POST /test/ HTTP/1.0\r\n" +
-                 "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                 "Content-Length: " + bytes.length + "\r\n" +
-                 "Authorization: " + digest + "\r\n" +
-                 "\r\n").getBytes("UTF-8"));
+                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
+                "Content-Length: " + bytes.length + "\r\n" +
+                "Authorization: " + digest + "\r\n" +
+                "\r\n").getBytes("UTF-8"));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 

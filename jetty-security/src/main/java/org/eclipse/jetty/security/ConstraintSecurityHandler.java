@@ -217,8 +217,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         ConstraintMapping httpConstraintMapping = null;
 
         if (securityElement.getEmptyRoleSemantic() != EmptyRoleSemantic.PERMIT ||
-                securityElement.getRolesAllowed().length != 0 ||
-                securityElement.getTransportGuarantee() != TransportGuarantee.NONE)
+            securityElement.getRolesAllowed().length != 0 ||
+            securityElement.getTransportGuarantee() != TransportGuarantee.NONE)
         {
             httpConstraint = ConstraintSecurityHandler.createConstraint(name, securityElement);
 

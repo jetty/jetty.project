@@ -55,9 +55,9 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(content, response.getContent());
@@ -83,9 +83,9 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(content, response.getContentAsString());
@@ -113,9 +113,9 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(content, response.getContentAsString());
@@ -143,9 +143,9 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(content, response.getContentAsString());

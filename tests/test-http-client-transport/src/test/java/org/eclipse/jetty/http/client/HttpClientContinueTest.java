@@ -103,10 +103,10 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-                                       .content(new BytesContentProvider(contents))
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+            .content(new BytesContentProvider(contents))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -144,17 +144,17 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         byte[] content1 = new byte[10240];
         byte[] content2 = new byte[16384];
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-                                       .content(new BytesContentProvider(content1, content2)
-                                       {
-                                           @Override
-                                           public long getLength()
-                                           {
-                                               return -1;
-                                           }
-                                       })
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+            .content(new BytesContentProvider(content1, content2)
+            {
+                @Override
+                public long getLength()
+                {
+                    return -1;
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -756,9 +756,9 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .content(new BytesContentProvider(bytes))
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .content(new BytesContentProvider(bytes))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());

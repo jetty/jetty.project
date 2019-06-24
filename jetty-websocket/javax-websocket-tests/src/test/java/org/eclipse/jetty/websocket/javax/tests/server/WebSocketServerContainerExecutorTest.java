@@ -167,7 +167,7 @@ public class WebSocketServerContainerExecutorTest
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
         JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-                                                                                container.addEndpoint(EchoSocket.class));
+            container.addEndpoint(EchoSocket.class));
 
         try
         {
@@ -197,7 +197,7 @@ public class WebSocketServerContainerExecutorTest
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
         JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-                                                                                container.addEndpoint(EchoSocket.class));
+            container.addEndpoint(EchoSocket.class));
         try
         {
             server.start();

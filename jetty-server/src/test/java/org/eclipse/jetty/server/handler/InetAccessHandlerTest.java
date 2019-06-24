@@ -55,7 +55,7 @@ public class InetAccessHandlerTest
         _connector = new ServerConnector(_server);
         _connector.setName("http");
         _server.setConnectors(new Connector[]
-                                  {_connector});
+            {_connector});
 
         _handler = new InetAccessHandler();
         _handler.setHandler(new AbstractHandler()
@@ -128,10 +128,10 @@ public class InetAccessHandlerTest
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
             Object[] params = new Object[]
-                                  {
-                                      "Request WBHUC", include, exclude, includeConnectors, excludeConnectors, code, "Response",
-                                      response.getStatus()
-                                  };
+                {
+                    "Request WBHUC", include, exclude, includeConnectors, excludeConnectors, code, "Response",
+                    response.getStatus()
+                };
             assertEquals(Integer.parseInt(code), response.getStatus(), Arrays.deepToString(params));
         }
     }
@@ -139,37 +139,37 @@ public class InetAccessHandlerTest
     public static Stream<Arguments> data()
     {
         Object[][] data = new Object[][]
-                              {
-                                  // Empty lists
-                                  {"", "", "", "", "200"},
+            {
+                // Empty lists
+                {"", "", "", "", "200"},
 
-                                  // test simple filters
-                                  {"127.0.0.1", "", "", "", "200"},
-                                  {"127.0.0.1-127.0.0.254", "", "", "", "200"},
-                                  {"192.0.0.1", "", "", "", "403"},
-                                  {"192.0.0.1-192.0.0.254", "", "", "", "403"},
+                // test simple filters
+                {"127.0.0.1", "", "", "", "200"},
+                {"127.0.0.1-127.0.0.254", "", "", "", "200"},
+                {"192.0.0.1", "", "", "", "403"},
+                {"192.0.0.1-192.0.0.254", "", "", "", "403"},
 
-                                  // test connector name filters
-                                  {"127.0.0.1", "", "http", "", "200"},
-                                  {"127.0.0.1-127.0.0.254", "", "http", "", "200"},
-                                  {"192.0.0.1", "", "http", "", "403"},
-                                  {"192.0.0.1-192.0.0.254", "", "http", "", "403"},
+                // test connector name filters
+                {"127.0.0.1", "", "http", "", "200"},
+                {"127.0.0.1-127.0.0.254", "", "http", "", "200"},
+                {"192.0.0.1", "", "http", "", "403"},
+                {"192.0.0.1-192.0.0.254", "", "http", "", "403"},
 
-                                  {"127.0.0.1", "", "nothttp", "", "403"},
-                                  {"127.0.0.1-127.0.0.254", "", "nothttp", "", "403"},
-                                  {"192.0.0.1", "", "nothttp", "", "403"},
-                                  {"192.0.0.1-192.0.0.254", "", "nothttp", "", "403"},
+                {"127.0.0.1", "", "nothttp", "", "403"},
+                {"127.0.0.1-127.0.0.254", "", "nothttp", "", "403"},
+                {"192.0.0.1", "", "nothttp", "", "403"},
+                {"192.0.0.1-192.0.0.254", "", "nothttp", "", "403"},
 
-                                  {"127.0.0.1", "", "", "http", "403"},
-                                  {"127.0.0.1-127.0.0.254", "", "", "http", "403"},
-                                  {"192.0.0.1", "", "", "http", "403"},
-                                  {"192.0.0.1-192.0.0.254", "", "", "http", "403"},
+                {"127.0.0.1", "", "", "http", "403"},
+                {"127.0.0.1-127.0.0.254", "", "", "http", "403"},
+                {"192.0.0.1", "", "", "http", "403"},
+                {"192.0.0.1-192.0.0.254", "", "", "http", "403"},
 
-                                  {"127.0.0.1", "", "", "nothttp", "200"},
-                                  {"127.0.0.1-127.0.0.254", "", "", "nothttp", "200"},
-                                  {"192.0.0.1", "", "", "nothttp", "403"},
-                                  {"192.0.0.1-192.0.0.254", "", "", "nothttp", "403"},
-                                  };
+                {"127.0.0.1", "", "", "nothttp", "200"},
+                {"127.0.0.1-127.0.0.254", "", "", "nothttp", "200"},
+                {"192.0.0.1", "", "", "nothttp", "403"},
+                {"192.0.0.1-192.0.0.254", "", "", "nothttp", "403"},
+                };
         return Arrays.asList(data).stream().map(Arguments::of);
     }
 }

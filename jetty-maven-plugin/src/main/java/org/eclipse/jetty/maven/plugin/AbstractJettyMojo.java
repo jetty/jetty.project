@@ -302,7 +302,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             if (isExcluded(execution.getMojoDescriptor().getGoal()))
             {
                 getLog().info("The goal \"" + execution.getMojoDescriptor().getFullGoalName() +
-                                  "\" has been made unavailable for this web application by an <excludedGoal> configuration.");
+                    "\" has been made unavailable for this web application by an <excludedGoal> configuration.");
                 return;
             }
 
@@ -368,7 +368,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                 getLog().debug("Checking " + pluginArtifact);
             }
             if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) &&
-                    pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
+                pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
                 return true;
         }
 

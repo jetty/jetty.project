@@ -502,10 +502,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 // RFC 7230, section 3.3.
                                 int status = _response.getStatus();
                                 boolean hasContent = !(_request.isHead() ||
-                                                           HttpMethod.CONNECT.is(_request.getMethod()) && status == HttpStatus.OK_200 ||
-                                                           HttpStatus.isInformational(status) ||
-                                                           status == HttpStatus.NO_CONTENT_204 ||
-                                                           status == HttpStatus.NOT_MODIFIED_304);
+                                    HttpMethod.CONNECT.is(_request.getMethod()) && status == HttpStatus.OK_200 ||
+                                    HttpStatus.isInformational(status) ||
+                                    status == HttpStatus.NO_CONTENT_204 ||
+                                    status == HttpStatus.NOT_MODIFIED_304);
                                 if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
                                 {
                                     if (isCommitted())

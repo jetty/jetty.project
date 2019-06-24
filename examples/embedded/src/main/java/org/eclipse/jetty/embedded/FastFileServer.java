@@ -88,7 +88,7 @@ public class FastFileServer
                            Request baseRequest,
                            HttpServletRequest request,
                            HttpServletResponse response) throws IOException,
-                                                                    ServletException
+            ServletException
         {
             // define small medium and large.
             // This should be turned for your content, JVM and OS, but we will

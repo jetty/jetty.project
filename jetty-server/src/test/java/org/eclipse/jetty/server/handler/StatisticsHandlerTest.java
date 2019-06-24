@@ -105,8 +105,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         barrier[0].await();
@@ -198,8 +198,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
 
         _connector.executeRequest(request);
         _connector.executeRequest(request);
@@ -274,8 +274,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         barrier[0].await();
@@ -408,8 +408,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         barrier[0].await();
@@ -523,8 +523,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         barrier[0].await();
@@ -629,8 +629,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));

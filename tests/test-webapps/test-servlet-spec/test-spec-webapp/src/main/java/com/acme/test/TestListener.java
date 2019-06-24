@@ -59,7 +59,8 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     public static class InvalidListener implements EventListener
     {
         public InvalidListener()
-        {}
+        {
+        }
     }
 
     public static class ValidListener implements HttpSessionIdListener
@@ -68,7 +69,8 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
         private Double maxAmount;
 
         public ValidListener()
-        {}
+        {
+        }
 
         @Override
         public void sessionIdChanged(HttpSessionEvent event, String oldSessionId)

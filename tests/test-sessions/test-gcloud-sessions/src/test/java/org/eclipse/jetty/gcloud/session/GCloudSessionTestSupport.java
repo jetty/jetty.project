@@ -134,17 +134,17 @@ public class GCloudSessionTestSupport
 
             //turn a session into an entity         
             Entity.Builder builder = Entity.newBuilder(_keyFactory.newKey(contextPath + "_" + vhost + "_" + id))
-                                         .set(EntityDataModel.ID, id)
-                                         .set(EntityDataModel.CONTEXTPATH, contextPath)
-                                         .set(EntityDataModel.VHOST, vhost)
-                                         .set(EntityDataModel.ACCESSED, accessed)
-                                         .set(EntityDataModel.LASTACCESSED, lastAccessed)
-                                         .set(EntityDataModel.CREATETIME, created)
-                                         .set(EntityDataModel.COOKIESETTIME, cookieset)
-                                         .set(EntityDataModel.LASTNODE, lastNode)
-                                         .set(EntityDataModel.EXPIRY, expiry)
-                                         .set(EntityDataModel.MAXINACTIVE, maxIdle)
-                                         .set(EntityDataModel.LASTSAVED, lastSaved);
+                .set(EntityDataModel.ID, id)
+                .set(EntityDataModel.CONTEXTPATH, contextPath)
+                .set(EntityDataModel.VHOST, vhost)
+                .set(EntityDataModel.ACCESSED, accessed)
+                .set(EntityDataModel.LASTACCESSED, lastAccessed)
+                .set(EntityDataModel.CREATETIME, created)
+                .set(EntityDataModel.COOKIESETTIME, cookieset)
+                .set(EntityDataModel.LASTNODE, lastNode)
+                .set(EntityDataModel.EXPIRY, expiry)
+                .set(EntityDataModel.MAXINACTIVE, maxIdle)
+                .set(EntityDataModel.LASTSAVED, lastSaved);
             if (attributes != null)
                 builder.set(EntityDataModel.ATTRIBUTES, BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build());
             Entity entity = builder.build();
@@ -203,9 +203,9 @@ public class GCloudSessionTestSupport
         throws Exception
     {
         Query<Entity> query = Query.newEntityQueryBuilder()
-                                  .setKind(EntityDataModel.KIND)
-                                  .setFilter(PropertyFilter.eq(EntityDataModel.ID, id))
-                                  .build();
+            .setKind(EntityDataModel.KIND)
+            .setFilter(PropertyFilter.eq(EntityDataModel.ID, id))
+            .build();
 
         QueryResults<Entity> results = _ds.run(query);
 

@@ -71,12 +71,12 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
         try
         {
             if (ServletContextListener.class.isAssignableFrom(clazz) ||
-                    ServletContextAttributeListener.class.isAssignableFrom(clazz) ||
-                    ServletRequestListener.class.isAssignableFrom(clazz) ||
-                    ServletRequestAttributeListener.class.isAssignableFrom(clazz) ||
-                    HttpSessionListener.class.isAssignableFrom(clazz) ||
-                    HttpSessionAttributeListener.class.isAssignableFrom(clazz) ||
-                    HttpSessionIdListener.class.isAssignableFrom(clazz))
+                ServletContextAttributeListener.class.isAssignableFrom(clazz) ||
+                ServletRequestListener.class.isAssignableFrom(clazz) ||
+                ServletRequestAttributeListener.class.isAssignableFrom(clazz) ||
+                HttpSessionListener.class.isAssignableFrom(clazz) ||
+                HttpSessionAttributeListener.class.isAssignableFrom(clazz) ||
+                HttpSessionIdListener.class.isAssignableFrom(clazz))
             {
                 MetaData metaData = _context.getMetaData();
                 if (metaData.getOrigin(clazz.getName() + ".listener") == Origin.NotSet)

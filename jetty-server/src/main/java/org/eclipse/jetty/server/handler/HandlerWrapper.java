@@ -78,7 +78,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
 
         // check for loops
         if (handler == this || (handler instanceof HandlerContainer &&
-                                    Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
+            Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
             throw new IllegalStateException("setHandler loop");
 
         if (handler != null)

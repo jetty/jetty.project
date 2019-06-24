@@ -90,7 +90,7 @@ public class EndpointViaConfigTest
         public void contextInitialized(ServletContextEvent sce)
         {
             javax.websocket.server.ServerContainer container = (javax.websocket.server.ServerContainer)sce.getServletContext()
-                                                                                                           .getAttribute(javax.websocket.server.ServerContainer.class.getName());
+                .getAttribute(javax.websocket.server.ServerContainer.class.getName());
             if (container == null)
                 throw new IllegalStateException("No Websocket ServerContainer in " + sce.getServletContext());
 

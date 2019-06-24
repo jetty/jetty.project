@@ -177,10 +177,10 @@ public class Http2Server
             content += "date=" + new Date() + "\n";
 
             content += Optional.ofNullable(request.getCookies())
-                           .stream()
-                           .flatMap(Arrays::stream)
-                           .map(cookie -> String.format("cookie %s=%s", cookie.getName(), cookie.getValue()))
-                           .collect(Collectors.joining(System.lineSeparator()));
+                .stream()
+                .flatMap(Arrays::stream)
+                .map(cookie -> String.format("cookie %s=%s", cookie.getName(), cookie.getValue()))
+                .collect(Collectors.joining(System.lineSeparator()));
 
             response.setContentLength(content.length());
             response.getOutputStream().print(content);

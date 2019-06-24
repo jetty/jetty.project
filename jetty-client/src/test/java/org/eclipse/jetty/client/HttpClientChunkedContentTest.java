@@ -181,7 +181,7 @@ public class HttpClientChunkedContentTest
 
                 // Issue another request to be sure the connection is sane.
                 Request request = client.newRequest("localhost", server.getLocalPort())
-                                      .timeout(5, TimeUnit.SECONDS);
+                    .timeout(5, TimeUnit.SECONDS);
                 FutureResponseListener listener = new FutureResponseListener(request);
                 request.send(listener);
 

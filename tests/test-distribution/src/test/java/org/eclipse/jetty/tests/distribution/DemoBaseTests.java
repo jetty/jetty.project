@@ -39,10 +39,10 @@ public class DemoBaseTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .jettyBase(Paths.get("demo-base"))
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .jettyBase(Paths.get("demo-base"))
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         int httpPort = distribution.freePort();
         int httpsPort = distribution.freePort();
@@ -71,10 +71,10 @@ public class DemoBaseTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .jettyBase(Paths.get("demo-base"))
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .jettyBase(Paths.get("demo-base"))
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         int httpPort = distribution.freePort();
         int httpsPort = distribution.freePort();
@@ -116,10 +116,10 @@ public class DemoBaseTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .jettyBase(Paths.get("demo-base"))
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .jettyBase(Paths.get("demo-base"))
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         int httpPort = distribution.freePort();
         int httpsPort = distribution.freePort();

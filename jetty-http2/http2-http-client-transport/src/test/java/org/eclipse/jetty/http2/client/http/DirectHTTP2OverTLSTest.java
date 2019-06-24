@@ -133,9 +133,9 @@ public class DirectHTTP2OverTLSTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(HttpScheme.HTTPS.asString())
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }

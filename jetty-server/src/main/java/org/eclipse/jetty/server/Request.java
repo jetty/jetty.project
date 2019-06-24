@@ -450,7 +450,7 @@ public class Request implements HttpServletRequest
             {
                 String baseType = HttpFields.valueParameters(contentType, null);
                 if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
-                        _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
+                    _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
                     if (_metaData != null)
                     {
@@ -461,8 +461,8 @@ public class Request implements HttpServletRequest
                     extractFormParameters(_contentParameters);
                 }
                 else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
-                             getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
-                             _multiParts == null)
+                    getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
+                    _multiParts == null)
                 {
                     try
                     {
@@ -597,7 +597,7 @@ public class Request implements HttpServletRequest
             if (HttpChannel.class.getName().equals(name))
                 return _channel;
             if (HttpConnection.class.getName().equals(name) &&
-                    _channel.getHttpTransport() instanceof HttpConnection)
+                _channel.getHttpTransport() instanceof HttpConnection)
                 return _channel.getHttpTransport();
         }
         return (_attributes == null) ? null : _attributes.getAttribute(name);
@@ -1659,8 +1659,8 @@ public class Request implements HttpServletRequest
         _metaData = request;
         HttpURI uri = request.getURI();
         _originalUri = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2
-                           ? uri.toString()
-                           : uri.getPathQuery();
+            ? uri.toString()
+            : uri.getPathQuery();
 
         if (uri.getScheme() == null)
             uri.setScheme("http");

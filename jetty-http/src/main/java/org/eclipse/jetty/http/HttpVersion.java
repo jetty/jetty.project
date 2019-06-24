@@ -56,8 +56,8 @@ public enum HttpVersion
             return null;
 
         if (bytes[position + 4] == '/' && bytes[position + 6] == '.' && Character.isWhitespace((char)bytes[position + 8]) &&
-                ((bytes[position] == 'H' && bytes[position + 1] == 'T' && bytes[position + 2] == 'T' && bytes[position + 3] == 'P') ||
-                     (bytes[position] == 'h' && bytes[position + 1] == 't' && bytes[position + 2] == 't' && bytes[position + 3] == 'p')))
+            ((bytes[position] == 'H' && bytes[position + 1] == 'T' && bytes[position + 2] == 'T' && bytes[position + 3] == 'P') ||
+                (bytes[position] == 'h' && bytes[position + 1] == 't' && bytes[position + 2] == 't' && bytes[position + 3] == 'p')))
         {
             switch (bytes[position + 5])
             {

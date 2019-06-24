@@ -121,7 +121,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
 
         if (context.getErrorHandler() instanceof ErrorPageErrorHandler)
             ((ErrorPageErrorHandler)
-                 context.getErrorHandler()).setErrorPages(null);
+                context.getErrorHandler()).setErrorPages(null);
 
         // TODO remove classpaths from classloader
     }

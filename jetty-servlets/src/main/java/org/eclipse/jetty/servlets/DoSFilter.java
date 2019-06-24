@@ -587,7 +587,7 @@ public class DoSFilter implements Filter
             boolean allowed = checkWhitelist(request.getRemoteAddr());
             int maxRequestsPerSec = getMaxRequestsPerSec();
             tracker = allowed ? new FixedRateTracker(_context, _name, loadId, type, maxRequestsPerSec)
-                          : new RateTracker(_context, _name, loadId, type, maxRequestsPerSec);
+                : new RateTracker(_context, _name, loadId, type, maxRequestsPerSec);
             tracker.setContext(_context);
             RateTracker existing = _rateTrackers.putIfAbsent(loadId, tracker);
             if (existing != null)

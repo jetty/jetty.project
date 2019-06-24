@@ -114,9 +114,9 @@ public class BalancerServletTest
     protected byte[] sendRequestToBalancer(String path) throws Exception
     {
         ContentResponse response = client.newRequest("localhost", getServerPort(balancer))
-                                       .path(CONTEXT_PATH + SERVLET_PATH + path)
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .path(CONTEXT_PATH + SERVLET_PATH + path)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         return response.getContent();
     }
 

@@ -80,8 +80,8 @@ public class SslContextFactoryTest
         List<SslSelectionDump> dumps = cf.selectionDump();
 
         SslSelectionDump cipherDump = dumps.stream()
-                                          .filter((dump) -> dump.type.contains("Cipher Suite"))
-                                          .findFirst().get();
+            .filter((dump) -> dump.type.contains("Cipher Suite"))
+            .findFirst().get();
 
         for (String enabledCipher : cipherDump.enabled)
         {
@@ -105,13 +105,13 @@ public class SslContextFactoryTest
         SSLEngine ssl = SSLContext.getDefault().createSSLEngine();
 
         List<String> tlsRsaSuites = Stream.of(ssl.getSupportedCipherSuites())
-                                        .filter((suite) -> suite.startsWith("TLS_RSA_"))
-                                        .collect(Collectors.toList());
+            .filter((suite) -> suite.startsWith("TLS_RSA_"))
+            .collect(Collectors.toList());
 
         List<String> selectedSuites = Arrays.asList(cf.getSelectedCipherSuites());
         SslSelectionDump cipherDump = dumps.stream()
-                                          .filter((dump) -> dump.type.contains("Cipher Suite"))
-                                          .findFirst().get();
+            .filter((dump) -> dump.type.contains("Cipher Suite"))
+            .findFirst().get();
         assertThat("Dump Enabled List size is equal to selected list size", cipherDump.enabled.size(), is(selectedSuites.size()));
 
         for (String expectedCipherSuite : tlsRsaSuites)

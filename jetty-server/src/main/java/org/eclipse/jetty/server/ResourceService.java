@@ -651,8 +651,8 @@ public class ResourceService
 
             // has something already written to the response?
             written = out instanceof HttpOutput
-                          ? ((HttpOutput)out).isWritten()
-                          : true;
+                ? ((HttpOutput)out).isWritten()
+                : true;
         }
         catch (IllegalStateException e)
         {

@@ -819,18 +819,18 @@ public class AsyncServletIOTest
 
             // Stop any dispatches until we want them
             UnaryOperator<Runnable> old = _wQTP.wrapper.getAndSet(r ->
-                                                                      () ->
-                                                                      {
-                                                                          try
-                                                                          {
-                                                                              wait.await();
-                                                                              r.run();
-                                                                          }
-                                                                          catch (InterruptedException e)
-                                                                          {
-                                                                              e.printStackTrace();
-                                                                          }
-                                                                      }
+                () ->
+                {
+                    try
+                    {
+                        wait.await();
+                        r.run();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
             );
 
             // We are an unrelated thread, let's mess with the input stream

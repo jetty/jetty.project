@@ -74,12 +74,12 @@ public class MultiPartFormInputStreamTest
     {
         String boundary = "X0Y0";
         String str = "--" + boundary + "\r\n" +
-                         "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-                         "Content-Type: application/octet-stream\r\n\r\n" +
-                         "How now brown cow." +
-                         "\r\n--" + boundary + "-\r\n"
-                         + "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"
-                         + "\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "How now brown cow." +
+            "\r\n--" + boundary + "-\r\n"
+            + "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"
+            + "\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(str.getBytes()),
@@ -143,30 +143,30 @@ public class MultiPartFormInputStreamTest
         throws Exception
     {
         String str = "--\r\n" +
-                         "Content-Disposition: form-data; name=\"fileName\"\r\n" +
-                         "Content-Type: text/plain; charset=US-ASCII\r\n" +
-                         "Content-Transfer-Encoding: 8bit\r\n" +
-                         "\r\n" +
-                         "abc\r\n" +
-                         "--\r\n" +
-                         "Content-Disposition: form-data; name=\"desc\"\r\n" +
-                         "Content-Type: text/plain; charset=US-ASCII\r\n" +
-                         "Content-Transfer-Encoding: 8bit\r\n" +
-                         "\r\n" +
-                         "123\r\n" +
-                         "--\r\n" +
-                         "Content-Disposition: form-data; name=\"title\"\r\n" +
-                         "Content-Type: text/plain; charset=US-ASCII\r\n" +
-                         "Content-Transfer-Encoding: 8bit\r\n" +
-                         "\r\n" +
-                         "ttt\r\n" +
-                         "--\r\n" +
-                         "Content-Disposition: form-data; name=\"datafile5239138112980980385.txt\"; filename=\"datafile5239138112980980385.txt\"\r\n" +
-                         "Content-Type: application/octet-stream; charset=ISO-8859-1\r\n" +
-                         "Content-Transfer-Encoding: binary\r\n" +
-                         "\r\n" +
-                         "000\r\n" +
-                         "----\r\n";
+            "Content-Disposition: form-data; name=\"fileName\"\r\n" +
+            "Content-Type: text/plain; charset=US-ASCII\r\n" +
+            "Content-Transfer-Encoding: 8bit\r\n" +
+            "\r\n" +
+            "abc\r\n" +
+            "--\r\n" +
+            "Content-Disposition: form-data; name=\"desc\"\r\n" +
+            "Content-Type: text/plain; charset=US-ASCII\r\n" +
+            "Content-Transfer-Encoding: 8bit\r\n" +
+            "\r\n" +
+            "123\r\n" +
+            "--\r\n" +
+            "Content-Disposition: form-data; name=\"title\"\r\n" +
+            "Content-Type: text/plain; charset=US-ASCII\r\n" +
+            "Content-Transfer-Encoding: 8bit\r\n" +
+            "\r\n" +
+            "ttt\r\n" +
+            "--\r\n" +
+            "Content-Disposition: form-data; name=\"datafile5239138112980980385.txt\"; filename=\"datafile5239138112980980385.txt\"\r\n" +
+            "Content-Type: application/octet-stream; charset=ISO-8859-1\r\n" +
+            "Content-Transfer-Encoding: binary\r\n" +
+            "\r\n" +
+            "000\r\n" +
+            "----\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(str.getBytes()),
@@ -307,16 +307,16 @@ public class MultiPartFormInputStreamTest
         throws Exception
     {
         String body = "              \n\n\n\r\n\r\n\r\n\r\n" +
-                          "--AaB03x\r\n" +
-                          "content-disposition: form-data; name=\"field1\"\r\n" +
-                          "\r\n" +
-                          "Joe Blow\r\n" +
-                          "--AaB03x\r\n" +
-                          "content-disposition: form-data; name=\"stuff\"; filename=\"" + "foo.txt" + "\"\r\n" +
-                          "Content-Type: text/plain\r\n" +
-                          "\r\n" + "aaaa" +
-                          "bbbbb" + "\r\n" +
-                          "--AaB03x--\r\n";
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"field1\"\r\n" +
+            "\r\n" +
+            "Joe Blow\r\n" +
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"stuff\"; filename=\"" + "foo.txt" + "\"\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "\r\n" + "aaaa" +
+            "bbbbb" + "\r\n" +
+            "--AaB03x--\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(body.getBytes()),
@@ -350,16 +350,16 @@ public class MultiPartFormInputStreamTest
     public void testLeadingWhitespaceBodyWithoutCRLF() throws Exception
     {
         String body = "            " +
-                          "--AaB03x\r\n" +
-                          "content-disposition: form-data; name=\"field1\"\r\n" +
-                          "\r\n" +
-                          "Joe Blow\r\n" +
-                          "--AaB03x\r\n" +
-                          "content-disposition: form-data; name=\"stuff\"; filename=\"" + "foo.txt" + "\"\r\n" +
-                          "Content-Type: text/plain\r\n" +
-                          "\r\n" + "aaaa" +
-                          "bbbbb" + "\r\n" +
-                          "--AaB03x--\r\n";
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"field1\"\r\n" +
+            "\r\n" +
+            "Joe Blow\r\n" +
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"stuff\"; filename=\"" + "foo.txt" + "\"\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "\r\n" + "aaaa" +
+            "bbbbb" + "\r\n" +
+            "--AaB03x--\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(body.getBytes()),
@@ -514,14 +514,14 @@ public class MultiPartFormInputStreamTest
         throws Exception
     {
         String str = "--AaB03x\n" +
-                         "content-disposition: form-data; name=\"field1\"\n" +
-                         "\n" +
-                         "Joe Blow" +
-                         "\r\n--AaB03x\n" +
-                         "content-disposition: form-data; name=\"field2\"\n" +
-                         "\n" +
-                         "Other" +
-                         "\r\n--AaB03x--\n";
+            "content-disposition: form-data; name=\"field1\"\n" +
+            "\n" +
+            "Joe Blow" +
+            "\r\n--AaB03x\n" +
+            "content-disposition: form-data; name=\"field2\"\n" +
+            "\n" +
+            "Other" +
+            "\r\n--AaB03x--\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(str.getBytes()),
@@ -549,14 +549,14 @@ public class MultiPartFormInputStreamTest
         throws Exception
     {
         String str = "--AaB03x\r" +
-                         "content-disposition: form-data; name=\"field1\"\r" +
-                         "\r" +
-                         "Joe Blow\r" +
-                         "--AaB03x\r" +
-                         "content-disposition: form-data; name=\"field2\"\r" +
-                         "\r" +
-                         "Other\r" +
-                         "--AaB03x--\r";
+            "content-disposition: form-data; name=\"field1\"\r" +
+            "\r" +
+            "Joe Blow\r" +
+            "--AaB03x\r" +
+            "content-disposition: form-data; name=\"field2\"\r" +
+            "\r" +
+            "Other\r" +
+            "--AaB03x--\r";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(str.getBytes()),
@@ -576,15 +576,15 @@ public class MultiPartFormInputStreamTest
         throws Exception
     {
         String str = "--AaB03x\r" +
-                         "content-disposition: form-data; name=\"field1\"\r" +
-                         "\r" +
-                         "\nJoe Blow\n" +
-                         "\r" +
-                         "--AaB03x\r" +
-                         "content-disposition: form-data; name=\"field2\"\r" +
-                         "\r" +
-                         "Other\r" +
-                         "--AaB03x--\r";
+            "content-disposition: form-data; name=\"field1\"\r" +
+            "\r" +
+            "\nJoe Blow\n" +
+            "\r" +
+            "--AaB03x\r" +
+            "content-disposition: form-data; name=\"field2\"\r" +
+            "\r" +
+            "Other\r" +
+            "--AaB03x--\r";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(str.getBytes()),
@@ -626,11 +626,11 @@ public class MultiPartFormInputStreamTest
     {
         String contentType = "multipart/form-data; boundary=TheBoundary; charset=ISO-8859-1";
         String str = "--TheBoundary\r\n" +
-                         "content-disposition: form-data; name=\"field1\"\r\n" +
-                         "\r\n" +
-                         "\nJoe Blow\n" +
-                         "\r\n" +
-                         "--TheBoundary--\r\n";
+            "content-disposition: form-data; name=\"field1\"\r\n" +
+            "\r\n" +
+            "\nJoe Blow\n" +
+            "\r\n" +
+            "--TheBoundary--\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(str.getBytes()),
@@ -647,11 +647,11 @@ public class MultiPartFormInputStreamTest
     {
 
         String contents = "--AaB03x\r\n" +
-                              "content-disposition: form-data; name=\"stuff\"; filename=\"" + "Taken on Aug 22 \\ 2012.jpg" + "\"\r\n" +
-                              "Content-Type: text/plain\r\n" +
-                              "\r\n" + "stuff" +
-                              "aaa" + "\r\n" +
-                              "--AaB03x--\r\n";
+            "content-disposition: form-data; name=\"stuff\"; filename=\"" + "Taken on Aug 22 \\ 2012.jpg" + "\"\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "\r\n" + "stuff" +
+            "aaa" + "\r\n" +
+            "--AaB03x--\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(contents.getBytes()),
@@ -669,11 +669,11 @@ public class MultiPartFormInputStreamTest
     {
 
         String contents = "--AaB03x\r\n" +
-                              "content-disposition: form-data; name=\"stuff\"; filename=\"" + "c:\\this\\really\\is\\some\\path\\to\\a\\file.txt" + "\"\r\n" +
-                              "Content-Type: text/plain\r\n" +
-                              "\r\n" + "stuff" +
-                              "aaa" + "\r\n" +
-                              "--AaB03x--\r\n";
+            "content-disposition: form-data; name=\"stuff\"; filename=\"" + "c:\\this\\really\\is\\some\\path\\to\\a\\file.txt" + "\"\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "\r\n" + "stuff" +
+            "aaa" + "\r\n" +
+            "--AaB03x--\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(contents.getBytes()),
@@ -690,11 +690,11 @@ public class MultiPartFormInputStreamTest
     public void testCorrectlyEncodedMSFilename() throws Exception
     {
         String contents = "--AaB03x\r\n" +
-                              "content-disposition: form-data; name=\"stuff\"; filename=\"" + "c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt" + "\"\r\n" +
-                              "Content-Type: text/plain\r\n" +
-                              "\r\n" + "stuff" +
-                              "aaa" + "\r\n" +
-                              "--AaB03x--\r\n";
+            "content-disposition: form-data; name=\"stuff\"; filename=\"" + "c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt" + "\"\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "\r\n" + "stuff" +
+            "aaa" + "\r\n" +
+            "--AaB03x--\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(contents.getBytes()),
@@ -718,15 +718,15 @@ public class MultiPartFormInputStreamTest
         throws Exception
     {
         String s = "--AaB03x\r\n" +
-                       "content-disposition: form-data; name=\"field1\"; filename=\"frooble.txt\"\r\n" +
-                       "\r\n" +
-                       "Joe Blow\r\n" +
-                       "--AaB03x\r\n" +
-                       "content-disposition: form-data; name=\"stuff\"\r\n" +
-                       "Content-Type: text/plain\r\n" +
-                       "\r\n" + "sss" +
-                       "aaa" + "\r\n" +
-                       "--AaB03x--\r\n";
+            "content-disposition: form-data; name=\"field1\"; filename=\"frooble.txt\"\r\n" +
+            "\r\n" +
+            "Joe Blow\r\n" +
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"stuff\"\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "\r\n" + "sss" +
+            "aaa" + "\r\n" +
+            "--AaB03x--\r\n";
         //all default values for multipartconfig, ie file size threshold 0
         MultipartConfigElement config = new MultipartConfigElement(_dirname);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(s.getBytes()),
@@ -815,16 +815,16 @@ public class MultiPartFormInputStreamTest
         throws Exception
     {
         String sameNames = "--AaB03x\r\n" +
-                               "content-disposition: form-data; name=\"stuff\"; filename=\"stuff1.txt\"\r\n" +
-                               "Content-Type: text/plain\r\n" +
-                               "\r\n" +
-                               "00000\r\n" +
-                               "--AaB03x\r\n" +
-                               "content-disposition: form-data; name=\"stuff\"; filename=\"stuff2.txt\"\r\n" +
-                               "Content-Type: text/plain\r\n" +
-                               "\r\n" +
-                               "110000000000000000000000000000000000000000000000000\r\n" +
-                               "--AaB03x--\r\n";
+            "content-disposition: form-data; name=\"stuff\"; filename=\"stuff1.txt\"\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "\r\n" +
+            "00000\r\n" +
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"stuff\"; filename=\"stuff2.txt\"\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "\r\n" +
+            "110000000000000000000000000000000000000000000000000\r\n" +
+            "--AaB03x--\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(sameNames.getBytes()),
@@ -939,16 +939,16 @@ public class MultiPartFormInputStreamTest
     {
         String contentType = "multipart/form-data, boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW";
         String body = "Content-Type: multipart/form-data; boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" +
-                          "\r\n" +
-                          "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" +
-                          "Content-Disposition: form-data; name=\"part1\"\r\n" +
-                          "\n" +
-                          "wNfﾐxVam﾿t\r\n" +
-                          "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\n" +
-                          "Content-Disposition: form-data; name=\"part2\"\r\n" +
-                          "\r\n" +
-                          "&ﾳﾺ￙￹ￖￃO\r\n" +
-                          "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW--";
+            "\r\n" +
+            "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" +
+            "Content-Disposition: form-data; name=\"part1\"\r\n" +
+            "\n" +
+            "wNfﾐxVam﾿t\r\n" +
+            "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\n" +
+            "Content-Disposition: form-data; name=\"part2\"\r\n" +
+            "\r\n" +
+            "&ﾳﾺ￙￹ￖￃO\r\n" +
+            "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW--";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(body.getBytes()),
@@ -982,14 +982,14 @@ public class MultiPartFormInputStreamTest
         }
 
         return "--AaB03x\r\n" +
-                   "content-disposition: form-data; name=\"field1\"; filename=\"frooble.txt\"\r\n" +
-                   "\r\n" +
-                   "Joe Blow\r\n" +
-                   "--AaB03x\r\n" +
-                   "content-disposition: form-data; name=\"stuff\"; filename=\"" + filename + "\"\r\n" +
-                   "Content-Type: text/plain\r\n" +
-                   "\r\n" + name +
-                   filler.toString() + "\r\n" +
-                   "--AaB03x--\r\n";
+            "content-disposition: form-data; name=\"field1\"; filename=\"frooble.txt\"\r\n" +
+            "\r\n" +
+            "Joe Blow\r\n" +
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"stuff\"; filename=\"" + filename + "\"\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "\r\n" + name +
+            filler.toString() + "\r\n" +
+            "--AaB03x--\r\n";
     }
 }

@@ -102,7 +102,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = scenario.client.newRequest(scenario.newURI())
-                              .timeout(timeout, TimeUnit.MILLISECONDS);
+            .timeout(timeout, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
             assertTrue(result.isFailed());
@@ -125,7 +125,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         // The first request has a long timeout
         final CountDownLatch firstLatch = new CountDownLatch(1);
         Request request = scenario.client.newRequest(scenario.newURI())
-                              .timeout(4 * timeout, TimeUnit.MILLISECONDS);
+            .timeout(4 * timeout, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
             assertFalse(result.isFailed());
@@ -135,7 +135,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         // Second request has a short timeout and should fail in the queue
         final CountDownLatch secondLatch = new CountDownLatch(1);
         request = scenario.client.newRequest(scenario.newURI())
-                      .timeout(timeout, TimeUnit.MILLISECONDS);
+            .timeout(timeout, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
             assertTrue(result.isFailed());
@@ -159,8 +159,8 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         final CountDownLatch latch = new CountDownLatch(1);
         final byte[] content = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         Request request = scenario.client.newRequest(scenario.newURI())
-                              .content(new InputStreamContentProvider(new ByteArrayInputStream(content)))
-                              .timeout(2 * timeout, TimeUnit.MILLISECONDS);
+            .content(new InputStreamContentProvider(new ByteArrayInputStream(content)))
+            .timeout(2 * timeout, TimeUnit.MILLISECONDS);
         request.send(new BufferingResponseListener()
         {
             @Override
@@ -196,7 +196,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
             Request request = scenario.client.newRequest(scenario.newURI())
-                                  .timeout(timeout, TimeUnit.MILLISECONDS);
+                .timeout(timeout, TimeUnit.MILLISECONDS);
             connection.send(request, result ->
             {
                 assertTrue(result.isFailed());
@@ -224,7 +224,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
             Request request = scenario.client.newRequest(scenario.newURI())
-                                  .timeout(2 * timeout, TimeUnit.MILLISECONDS);
+                .timeout(2 * timeout, TimeUnit.MILLISECONDS);
             connection.send(request, result ->
             {
                 Response response = result.getResponse();
@@ -490,9 +490,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
             });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .path("/two")
-                                       .timeout(timeout, TimeUnit.MILLISECONDS)
-                                       .send();
+            .path("/two")
+            .timeout(timeout, TimeUnit.MILLISECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));

@@ -127,7 +127,7 @@ public class URLEncodedTest
             url_encoded.decode("Name5=aaa&Name6=bbb");
             assertEquals(2, url_encoded.size(), "multi param size");
             assertTrue(url_encoded.encode().equals("Name5=aaa&Name6=bbb") ||
-                           url_encoded.encode().equals("Name6=bbb&Name5=aaa"),
+                    url_encoded.encode().equals("Name6=bbb&Name5=aaa"),
                 "multi encode " + url_encoded.encode());
             assertEquals("aaa", url_encoded.getString("Name5"), "multi get");
             assertEquals("bbb", url_encoded.getString("Name6"), "multi get");
@@ -162,12 +162,12 @@ public class URLEncodedTest
     public Iterator<DynamicTest> testUrlEncodedStream()
     {
         String[][] charsets = new String[][]
-                                  {
-                                      {StringUtil.__UTF8, null, "%30"},
-                                      {StringUtil.__ISO_8859_1, StringUtil.__ISO_8859_1, "%30"},
-                                      {StringUtil.__UTF8, StringUtil.__UTF8, "%30"},
-                                      {StringUtil.__UTF16, StringUtil.__UTF16, "%00%30"},
-                                      };
+            {
+                {StringUtil.__UTF8, null, "%30"},
+                {StringUtil.__ISO_8859_1, StringUtil.__ISO_8859_1, "%30"},
+                {StringUtil.__UTF8, StringUtil.__UTF8, "%30"},
+                {StringUtil.__UTF16, StringUtil.__UTF16, "%00%30"},
+                };
 
         // Note: "%30" -> decode -> "0"
 

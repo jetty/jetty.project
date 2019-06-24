@@ -105,7 +105,7 @@ public class TestServer
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         handlers.setHandlers(new Handler[]
-                                 {contexts, new DefaultHandler()});
+            {contexts, new DefaultHandler()});
 
         // Add restart handler to test the ability to save sessions and restart
         RestartHandler restart = new RestartHandler();

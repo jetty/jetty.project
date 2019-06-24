@@ -70,20 +70,20 @@ public class DateCacheNoTickBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                          .include(DateCacheNoTickBenchmark.class.getSimpleName())
-                          .warmupIterations(2)
-                          .measurementIterations(3)
-                          .forks(1)
-                          .threads(400)
-                          // .syncIterations(true) // Don't start all threads at same time
-                          .warmupTime(new TimeValue(10000, TimeUnit.MILLISECONDS))
-                          .measurementTime(new TimeValue(10000, TimeUnit.MILLISECONDS))
-                          // .addProfiler(CompilerProfiler.class)
-                          // .addProfiler(LinuxPerfProfiler.class)
-                          // .addProfiler(LinuxPerfNormProfiler.class)
-                          // .addProfiler(LinuxPerfAsmProfiler.class)
-                          // .resultFormat(ResultFormatType.CSV)
-                          .build();
+            .include(DateCacheNoTickBenchmark.class.getSimpleName())
+            .warmupIterations(2)
+            .measurementIterations(3)
+            .forks(1)
+            .threads(400)
+            // .syncIterations(true) // Don't start all threads at same time
+            .warmupTime(new TimeValue(10000, TimeUnit.MILLISECONDS))
+            .measurementTime(new TimeValue(10000, TimeUnit.MILLISECONDS))
+            // .addProfiler(CompilerProfiler.class)
+            // .addProfiler(LinuxPerfProfiler.class)
+            // .addProfiler(LinuxPerfNormProfiler.class)
+            // .addProfiler(LinuxPerfAsmProfiler.class)
+            // .resultFormat(ResultFormatType.CSV)
+            .build();
 
         new Runner(opt).run();
     }

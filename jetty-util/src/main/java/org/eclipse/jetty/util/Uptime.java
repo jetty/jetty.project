@@ -63,12 +63,12 @@ public class Uptime
                 }
             }
             catch (ClassNotFoundException |
-                       NoClassDefFoundError |
-                       NoSuchMethodException |
-                       SecurityException |
-                       IllegalAccessException |
-                       IllegalArgumentException |
-                       InvocationTargetException e)
+                NoClassDefFoundError |
+                NoSuchMethodException |
+                SecurityException |
+                IllegalAccessException |
+                IllegalArgumentException |
+                InvocationTargetException e)
             {
                 throw new UnsupportedOperationException("Implementation not available in this environment", e);
             }

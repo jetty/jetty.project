@@ -122,9 +122,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0
-                                                          }));
+            {
+                mapping0
+            }));
 
         _server.start();
 
@@ -153,9 +153,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0
-                                                          }));
+            {
+                mapping0
+            }));
 
         _server.start();
 
@@ -183,9 +183,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0
-                                                          }));
+            {
+                mapping0
+            }));
 
         _server.start();
 
@@ -210,9 +210,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0
-                                                          }));
+            {
+                mapping0
+            }));
 
         _server.start();
 
@@ -244,9 +244,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0
-                                                          }));
+            {
+                mapping0
+            }));
 
         _server.start();
 
@@ -279,9 +279,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0
-                                                          }));
+            {
+                mapping0
+            }));
         DefaultIdentityService identityService = new DefaultIdentityService();
         _security.setLoginService(new CustomLoginService(identityService));
         _security.setIdentityService(identityService);
@@ -324,9 +324,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0
-                                                          }));
+            {
+                mapping0
+            }));
         _server.start();
 
         String response;
@@ -357,9 +357,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0
-                                                          }));
+            {
+                mapping0
+            }));
         _server.start();
 
         String response;
@@ -390,9 +390,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                          {
-                                                              mapping0
-                                                          }));
+            {
+                mapping0
+            }));
         DefaultIdentityService identityService = new DefaultIdentityService();
         _security.setLoginService(new CustomLoginService(identityService));
         _security.setIdentityService(identityService);

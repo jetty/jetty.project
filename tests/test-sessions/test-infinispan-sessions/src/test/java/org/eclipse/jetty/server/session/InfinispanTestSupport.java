@@ -107,24 +107,24 @@ public class InfinispanTestSupport
             _tmpdir.mkdir();
 
             Configuration config = _builder.indexing()
-                                       .index(Index.ALL)
-                                       .addIndexedEntity(SessionData.class)
-                                       .withProperties(properties)
-                                       .persistence()
-                                       .addSingleFileStore()
-                                       .location(_tmpdir.getAbsolutePath())
-                                       .storeAsBinary()
-                                       .build();
+                .index(Index.ALL)
+                .addIndexedEntity(SessionData.class)
+                .withProperties(properties)
+                .persistence()
+                .addSingleFileStore()
+                .location(_tmpdir.getAbsolutePath())
+                .storeAsBinary()
+                .build();
 
             _manager.defineConfiguration(_name, config);
         }
         else
         {
             _manager.defineConfiguration(_name, _builder.indexing()
-                                                    .withProperties(properties)
-                                                    .index(Index.ALL)
-                                                    .addIndexedEntity(SessionData.class)
-                                                    .build());
+                .withProperties(properties)
+                .index(Index.ALL)
+                .addIndexedEntity(SessionData.class)
+                .build());
         }
         _cache = _manager.getCache(_name);
     }

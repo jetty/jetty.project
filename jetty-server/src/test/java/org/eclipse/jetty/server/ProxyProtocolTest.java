@@ -67,7 +67,7 @@ public class ProxyProtocolTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 if (remoteAddr.equals(request.getRemoteAddr()) &&
-                        remotePort == request.getRemotePort())
+                    remotePort == request.getRemotePort())
                     baseRequest.setHandled(true);
             }
         });

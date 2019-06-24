@@ -108,7 +108,7 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
             final ThreadPoolExecutor tpe = (ThreadPoolExecutor)executor;
             // getActiveCount() locks the thread pool, so execute it last
             return tpe.getPoolSize() == tpe.getMaximumPoolSize() &&
-                       tpe.getQueue().size() >= tpe.getPoolSize() - tpe.getActiveCount();
+                tpe.getQueue().size() >= tpe.getPoolSize() - tpe.getActiveCount();
         }
         return false;
     }

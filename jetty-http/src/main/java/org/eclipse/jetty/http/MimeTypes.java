@@ -205,7 +205,7 @@ public class MimeTypes
                     props.stringPropertyNames().stream()
                         .filter(x -> x != null)
                         .forEach(x ->
-                                     __dftMimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x))));
+                            __dftMimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x))));
 
                     if (__dftMimeMap.isEmpty())
                     {
@@ -507,7 +507,7 @@ public class MimeTypes
 
                 case 10:
                     if (!quote && (';' == b || ' ' == b) ||
-                            (quote && '"' == b))
+                        (quote && '"' == b))
                         return StringUtil.normalizeCharset(value, start, i - start);
             }
         }

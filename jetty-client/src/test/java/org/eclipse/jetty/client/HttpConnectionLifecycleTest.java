@@ -456,9 +456,9 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         assertEquals(0, activeConnections.size());
 
         ContentResponse response = client.newRequest(host, port)
-                                       .scheme(scenario.getScheme())
-                                       .timeout(30, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .timeout(30, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
 
@@ -490,13 +490,13 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         client.setStrictEventOrdering(false);
         ContentResponse response = client.newRequest(host, port)
-                                       .scheme(scenario.getScheme())
-                                       .onResponseBegin(response1 ->
-                                       {
-                                           // Simulate a HTTP 1.0 response has been received.
-                                           ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
-                                       })
-                                       .send();
+            .scheme(scenario.getScheme())
+            .onResponseBegin(response1 ->
+            {
+                // Simulate a HTTP 1.0 response has been received.
+                ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
+            })
+            .send();
 
         assertEquals(200, response.getStatus());
 

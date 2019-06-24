@@ -29,12 +29,14 @@ import javax.servlet.http.HttpSession;
 @SuppressWarnings("serial")
 public class HelloSessionServlet extends HttpServlet
 {
-    public HelloSessionServlet() {}
+    public HelloSessionServlet()
+    {
+    }
 
     @Override
     protected void doGet(HttpServletRequest request,
                          HttpServletResponse response) throws ServletException,
-                                                                  IOException
+        IOException
     {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);

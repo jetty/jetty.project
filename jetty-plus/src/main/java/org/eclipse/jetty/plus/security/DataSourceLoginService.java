@@ -339,13 +339,13 @@ public class DataSourceLoginService extends AbstractLoginService
 
         // set up the select statements based on the table and column names configured
         _userSql = "select " + _userTableKey + "," + _userTablePasswordField +
-                       " from " + _userTableName +
-                       " where " + _userTableUserField + " = ?";
+            " from " + _userTableName +
+            " where " + _userTableUserField + " = ?";
 
         _roleSql = "select r." + _roleTableRoleField +
-                       " from " + _roleTableName + " r, " + _userRoleTableName +
-                       " u where u." + _userRoleTableUserKey + " = ?" +
-                       " and r." + _roleTableKey + " = u." + _userRoleTableRoleKey;
+            " from " + _roleTableName + " r, " + _userRoleTableName +
+            " u where u." + _userRoleTableUserKey + " = ?" +
+            " and r." + _roleTableKey + " = u." + _userRoleTableRoleKey;
 
         prepareTables();
     }
@@ -379,8 +379,8 @@ public class DataSourceLoginService extends AbstractLoginService
                          * _userTablePasswordField varchar(20) not null, primary key(_userTableKey));
                          */
                         stmt.executeUpdate("create table " + _userTableName + "(" + _userTableKey + " integer," +
-                                               _userTableUserField + " varchar(100) not null unique," +
-                                               _userTablePasswordField + " varchar(20) not null, primary key(" + _userTableKey + "))");
+                            _userTableUserField + " varchar(100) not null unique," +
+                            _userTablePasswordField + " varchar(20) not null, primary key(" + _userTableKey + "))");
                         if (LOG.isDebugEnabled())
                             LOG.debug("Created table " + _userTableName);
                     }
@@ -397,7 +397,7 @@ public class DataSourceLoginService extends AbstractLoginService
                          * _roleTableRoleField varchar(100) not null unique, primary key(_roleTableKey));
                          */
                         String str = "create table " + _roleTableName + " (" + _roleTableKey + " integer, " +
-                                         _roleTableRoleField + " varchar(100) not null unique, primary key(" + _roleTableKey + "))";
+                            _roleTableRoleField + " varchar(100) not null unique, primary key(" + _roleTableKey + "))";
                         stmt.executeUpdate(str);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Created table " + _roleTableName);
@@ -418,8 +418,8 @@ public class DataSourceLoginService extends AbstractLoginService
                          * create index idx_user_role on _userRoleTableName (_userRoleTableUserKey);
                          */
                         stmt.executeUpdate("create table " + _userRoleTableName + " (" + _userRoleTableUserKey + " integer, " +
-                                               _userRoleTableRoleKey + " integer, " +
-                                               "primary key (" + _userRoleTableUserKey + ", " + _userRoleTableRoleKey + "))");
+                            _userRoleTableRoleKey + " integer, " +
+                            "primary key (" + _userRoleTableUserKey + ", " + _userRoleTableRoleKey + "))");
                         stmt.executeUpdate("create index indx_user_role on " + _userRoleTableName + "(" + _userRoleTableUserKey + ")");
                         if (LOG.isDebugEnabled())
                             LOG.debug("Created table " + _userRoleTableName + " and index");

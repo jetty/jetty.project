@@ -49,12 +49,12 @@ public class Constraint implements Cloneable, Serializable
             return false;
         method = method.trim();
         return (method.equals(__FORM_AUTH) ||
-                    method.equals(__BASIC_AUTH) ||
-                    method.equals(__DIGEST_AUTH) ||
-                    method.equals(__CERT_AUTH) ||
-                    method.equals(__CERT_AUTH2) ||
-                    method.equals(__SPNEGO_AUTH) ||
-                    method.equals(__NEGOTIATE_AUTH));
+            method.equals(__BASIC_AUTH) ||
+            method.equals(__DIGEST_AUTH) ||
+            method.equals(__CERT_AUTH) ||
+            method.equals(__CERT_AUTH2) ||
+            method.equals(__SPNEGO_AUTH) ||
+            method.equals(__NEGOTIATE_AUTH));
     }
 
     public static final int DC_UNSET = -1;
@@ -233,7 +233,7 @@ public class Constraint implements Cloneable, Serializable
     public String toString()
     {
         return "SC{" + _name +
-                   "," + (_anyRole ? "*" : (_roles == null ? "-" : Arrays.asList(_roles).toString())) +
-                   "," + (_dataConstraint == DC_UNSET ? "DC_UNSET}" : (_dataConstraint == DC_NONE ? "NONE}" : (_dataConstraint == DC_INTEGRAL ? "INTEGRAL}" : "CONFIDENTIAL}")));
+            "," + (_anyRole ? "*" : (_roles == null ? "-" : Arrays.asList(_roles).toString())) +
+            "," + (_dataConstraint == DC_UNSET ? "DC_UNSET}" : (_dataConstraint == DC_NONE ? "NONE}" : (_dataConstraint == DC_INTEGRAL ? "INTEGRAL}" : "CONFIDENTIAL}")));
     }
 }

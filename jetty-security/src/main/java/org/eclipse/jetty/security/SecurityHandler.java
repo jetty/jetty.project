@@ -293,7 +293,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             {
                 String name = names.nextElement();
                 if (name.startsWith("org.eclipse.jetty.security.") &&
-                        getInitParameter(name) == null)
+                    getInitParameter(name) == null)
                     setInitParameter(name, context.getInitParameter(name));
             }
         }

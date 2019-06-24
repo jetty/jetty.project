@@ -223,14 +223,14 @@ public class CrossOriginFilter implements Filter
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Cross-origin filter configuration: " +
-                          ALLOWED_ORIGINS_PARAM + " = " + allowedOriginsConfig + ", " +
-                          ALLOWED_TIMING_ORIGINS_PARAM + " = " + allowedTimingOriginsConfig + ", " +
-                          ALLOWED_METHODS_PARAM + " = " + allowedMethodsConfig + ", " +
-                          ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
-                          PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
-                          ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig + "," +
-                          EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig + "," +
-                          CHAIN_PREFLIGHT_PARAM + " = " + chainPreflightConfig
+                ALLOWED_ORIGINS_PARAM + " = " + allowedOriginsConfig + ", " +
+                ALLOWED_TIMING_ORIGINS_PARAM + " = " + allowedTimingOriginsConfig + ", " +
+                ALLOWED_METHODS_PARAM + " = " + allowedMethodsConfig + ", " +
+                ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
+                PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
+                ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig + "," +
+                EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig + "," +
+                CHAIN_PREFLIGHT_PARAM + " = " + chainPreflightConfig
             );
         }
     }

@@ -109,21 +109,21 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         context.getServletContext().setExtendedListenerTypes(true);
 
         context.addEventListener(ContainerInitializer.asContextListener(new JavaxWebSocketServletContainerInitializer())
-                                     .afterStartup((servletContext) ->
-                                     {
-                                         JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(servletContext);
-                                         if (configurator != null)
-                                         {
-                                             try
-                                             {
-                                                 configurator.accept(servletContext, serverContainer);
-                                             }
-                                             catch (DeploymentException e)
-                                             {
-                                                 throw new RuntimeException("Failed to deploy WebSocket Endpoint", e);
-                                             }
-                                         }
-                                     }));
+            .afterStartup((servletContext) ->
+            {
+                JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(servletContext);
+                if (configurator != null)
+                {
+                    try
+                    {
+                        configurator.accept(servletContext, serverContainer);
+                    }
+                    catch (DeploymentException e)
+                    {
+                        throw new RuntimeException("Failed to deploy WebSocket Endpoint", e);
+                    }
+                }
+            }));
     }
 
     /**

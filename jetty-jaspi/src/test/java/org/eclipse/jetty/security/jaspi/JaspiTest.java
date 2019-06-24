@@ -162,8 +162,8 @@ public class JaspiTest
     public void testConstraintWrongAuth() throws Exception
     {
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" +
-                                                     "Authorization: Basic " + Base64.getEncoder().encodeToString("user:wrong".getBytes(ISO_8859_1)) +
-                                                     "\n\n");
+            "Authorization: Basic " + Base64.getEncoder().encodeToString("user:wrong".getBytes(ISO_8859_1)) +
+            "\n\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
         assertThat(response, Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
     }
@@ -172,8 +172,8 @@ public class JaspiTest
     public void testConstraintAuth() throws Exception
     {
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" +
-                                                     "Authorization: Basic " + Base64.getEncoder().encodeToString("user:password".getBytes(ISO_8859_1)) +
-                                                     "\n\n");
+            "Authorization: Basic " + Base64.getEncoder().encodeToString("user:password".getBytes(ISO_8859_1)) +
+            "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
@@ -188,7 +188,7 @@ public class JaspiTest
     public void testOtherAuth() throws Exception
     {
         String response = _connector.getResponse("GET /other/test HTTP/1.0\n" +
-                                                     "X-Forwarded-User: user\n\n");
+            "X-Forwarded-User: user\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 

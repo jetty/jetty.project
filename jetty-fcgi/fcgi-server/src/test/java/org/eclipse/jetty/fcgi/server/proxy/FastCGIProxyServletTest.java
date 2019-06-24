@@ -154,20 +154,20 @@ public class FastCGIProxyServletTest
         });
 
         Request request = client.newRequest("localhost", httpConnector.getLocalPort())
-                              .onResponseContentAsync((response, content, callback) ->
-                              {
-                                  try
-                                  {
-                                      if (delay > 0)
-                                          TimeUnit.MILLISECONDS.sleep(delay);
-                                      callback.succeeded();
-                                  }
-                                  catch (InterruptedException x)
-                                  {
-                                      callback.failed(x);
-                                  }
-                              })
-                              .path(path);
+            .onResponseContentAsync((response, content, callback) ->
+            {
+                try
+                {
+                    if (delay > 0)
+                        TimeUnit.MILLISECONDS.sleep(delay);
+                    callback.succeeded();
+                }
+                catch (InterruptedException x)
+                {
+                    callback.failed(x);
+                }
+            })
+            .path(path);
         FutureResponseListener listener = new FutureResponseListener(request, length);
         request.send(listener);
 
@@ -216,8 +216,8 @@ public class FastCGIProxyServletTest
         context.start();
 
         ContentResponse response = client.newRequest("localhost", httpConnector.getLocalPort())
-                                       .path(remotePath)
-                                       .send();
+            .path(remotePath)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }

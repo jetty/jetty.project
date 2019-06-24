@@ -46,8 +46,8 @@ public class MessageWriter extends Writer
     private static final Logger LOG = Log.getLogger(MessageWriter.class);
 
     private final CharsetEncoder utf8Encoder = UTF_8.newEncoder()
-                                                   .onUnmappableCharacter(CodingErrorAction.REPORT)
-                                                   .onMalformedInput(CodingErrorAction.REPORT);
+        .onUnmappableCharacter(CodingErrorAction.REPORT)
+        .onMalformedInput(CodingErrorAction.REPORT);
 
     private final FrameHandler.CoreSession coreSession;
     private final SharedBlockingCallback blocker;

@@ -44,7 +44,7 @@ public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T
     {
         return MethodHandles.lookup().findVirtual(DecodedTextMessageSink.class,
             "onWholeMessage", MethodType.methodType(void.class, String.class))
-                   .bindTo(this);
+            .bindTo(this);
     }
 
     @Override

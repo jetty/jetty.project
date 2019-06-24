@@ -164,7 +164,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
 
         if (frame.hasPayload())
             utf8.append(frame
-                            .getPayload()); // TODO: this should trigger a bad UTF8 exception if sequence is bad which we wrap in a ProtocolException (but not on unfinished sequences)
+                .getPayload()); // TODO: this should trigger a bad UTF8 exception if sequence is bad which we wrap in a ProtocolException (but not on unfinished sequences)
 
         if (frame.isFin())
             utf8.checkState(); // TODO: this should not be necessary, checkState() shouldn't be necessary to use (the utf8.toString() should trigger on bad utf8 in final octets)
@@ -279,7 +279,7 @@ public class AbstractTestFrameHandler implements SynchronousFrameHandler
                     BufferUtil.compact(byteBuffer);
                     if (BufferUtil.space(byteBuffer) < frame.getPayloadLength())
                         byteBuffer = BufferUtil
-                                         .ensureCapacity(byteBuffer, byteBuffer.capacity() + Math.max(byteBuffer.capacity(), frame.getPayloadLength() * factor));
+                            .ensureCapacity(byteBuffer, byteBuffer.capacity() + Math.max(byteBuffer.capacity(), frame.getPayloadLength() * factor));
                     BufferUtil.append(byteBuffer, frame.getPayload());
                 }
 

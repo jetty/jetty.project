@@ -149,10 +149,10 @@ public class ExternalSiteTest
         assumeCanConnectTo(host, port);
 
         ContentResponse response = client.newRequest(host, port)
-                                       .scheme(HttpScheme.HTTPS.asString())
-                                       .path("/twitter")
-                                       .timeout(15, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(HttpScheme.HTTPS.asString())
+            .path("/twitter")
+            .timeout(15, TimeUnit.SECONDS)
+            .send();
         assertEquals(200, response.getStatus());
     }
 

@@ -45,14 +45,14 @@ public class App implements EntryPoint
      * returns an error.
      */
     private static final String SERVER_ERROR = "An error occurred while "
-                                                   + "attempting to contact the server. Please check your network "
-                                                   + "connection and try again.";
+        + "attempting to contact the server. Please check your network "
+        + "connection and try again.";
 
     /**
      * Create a remote service proxy to talk to the server-side Greeting service.
      */
     private final GreetingServiceAsync greetingService = GWT
-                                                             .create(GreetingService.class);
+        .create(GreetingService.class);
 
     /**
      * This is the entry point method.
@@ -168,12 +168,12 @@ public class App implements EntryPoint
                             serverResponseLabel
                                 .removeStyleName("serverResponseLabelError");
                             serverResponseLabel.setHTML(new SafeHtmlBuilder()
-                                                            .appendEscaped(result.getGreeting())
-                                                            .appendHtmlConstant("<br><br>I am running ")
-                                                            .appendEscaped(result.getServerInfo())
-                                                            .appendHtmlConstant(".<br><br>It looks like you are using:<br>")
-                                                            .appendEscaped(result.getUserAgent())
-                                                            .toSafeHtml());
+                                .appendEscaped(result.getGreeting())
+                                .appendHtmlConstant("<br><br>I am running ")
+                                .appendEscaped(result.getServerInfo())
+                                .appendHtmlConstant(".<br><br>It looks like you are using:<br>")
+                                .appendEscaped(result.getUserAgent())
+                                .toSafeHtml());
                             dialogBox.center();
                             closeButton.setFocus(true);
                         }

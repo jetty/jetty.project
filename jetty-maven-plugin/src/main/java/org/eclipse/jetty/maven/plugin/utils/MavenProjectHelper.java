@@ -39,7 +39,7 @@ public class MavenProjectHelper
     {
         Set<MavenProject> mavenProjects = resolveProjectDependencies(project, new HashSet<>());
         artifactToLocalProjectMap = mavenProjects.stream()
-                                        .collect(Collectors.toMap(MavenProject::getId, Function.identity()));
+            .collect(Collectors.toMap(MavenProject::getId, Function.identity()));
         artifactToLocalProjectMap.put(project.getArtifact().getId(), project);
     }
 

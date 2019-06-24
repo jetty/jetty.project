@@ -73,7 +73,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         try
         {
             FILTER_RETURN_TYPE_METHOD = MethodHandles.lookup()
-                                            .findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(Void.TYPE, Object.class));
+                .findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(Void.TYPE, Object.class));
         }
         catch (Throwable e)
         {
@@ -382,7 +382,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg ENDPOINT_CONFIG = new InvokerUtils.Arg(EndpointConfig.class);
             MethodHandle methodHandle = InvokerUtils
-                                            .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, ENDPOINT_CONFIG);
+                .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, ENDPOINT_CONFIG);
             metadata.setOpenHandler(methodHandle, onmethod);
         }
 
@@ -394,7 +394,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg CLOSE_REASON = new InvokerUtils.Arg(CloseReason.class);
             MethodHandle methodHandle = InvokerUtils
-                                            .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
+                .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
             metadata.setCloseHandler(methodHandle, onmethod);
         }
         // OnError [0..1]
@@ -405,7 +405,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg CAUSE = new InvokerUtils.Arg(Throwable.class).required();
             MethodHandle methodHandle = InvokerUtils
-                                            .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CAUSE);
+                .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CAUSE);
             metadata.setErrorHandler(methodHandle, onmethod);
         }
 
@@ -522,7 +522,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 msgMetadata.maxMessageSize = (int)onMessageAnno.maxMessageSize();
 
                 MethodHandle methodHandle = InvokerUtils
-                                                .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), textCallingArgs);
+                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), textCallingArgs);
                 if (methodHandle != null)
                 {
                     // Whole Text Message
@@ -534,7 +534,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 }
 
                 methodHandle = InvokerUtils
-                                   .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), textPartialCallingArgs);
+                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), textPartialCallingArgs);
                 if (methodHandle != null)
                 {
                     // Partial Text Message
@@ -546,7 +546,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 }
 
                 methodHandle = InvokerUtils
-                                   .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryBufferCallingArgs);
+                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryBufferCallingArgs);
                 if (methodHandle != null)
                 {
                     // Whole ByteBuffer Binary Message
@@ -558,7 +558,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 }
 
                 methodHandle = InvokerUtils
-                                   .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryPartialBufferCallingArgs);
+                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryPartialBufferCallingArgs);
                 if (methodHandle != null)
                 {
                     // Partial ByteBuffer Binary Message
@@ -570,7 +570,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 }
 
                 methodHandle = InvokerUtils
-                                   .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryArrayCallingArgs);
+                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryArrayCallingArgs);
                 if (methodHandle != null)
                 {
                     // Whole byte[] Binary Message
@@ -582,7 +582,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 }
 
                 methodHandle = InvokerUtils
-                                   .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryPartialArrayCallingArgs);
+                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryPartialArrayCallingArgs);
                 if (methodHandle != null)
                 {
                     // Partial byte[] Binary Message
@@ -594,7 +594,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 }
 
                 methodHandle = InvokerUtils
-                                   .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), inputStreamCallingArgs);
+                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
                     // InputStream Binary Message
@@ -606,7 +606,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 }
 
                 methodHandle = InvokerUtils
-                                   .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), readerCallingArgs);
+                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), readerCallingArgs);
                 if (methodHandle != null)
                 {
                     // Reader Text Message
@@ -623,7 +623,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 for (DecodedArgs decodedArgs : decodedTextCallingArgs)
                 {
                     methodHandle = InvokerUtils
-                                       .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
+                        .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Text Message
@@ -640,7 +640,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 for (DecodedArgs decodedArgs : decodedBinaryCallingArgs)
                 {
                     methodHandle = InvokerUtils
-                                       .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
+                        .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Binary Message
@@ -657,7 +657,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 for (DecodedArgs decodedArgs : decodedTextStreamCallingArgs)
                 {
                     methodHandle = InvokerUtils
-                                       .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
+                        .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Text Stream
@@ -674,7 +674,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 for (DecodedArgs decodedArgs : decodedBinaryStreamCallingArgs)
                 {
                     methodHandle = InvokerUtils
-                                       .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
+                        .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Binary Stream
@@ -690,7 +690,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 // == Pong ==
 
                 methodHandle = InvokerUtils
-                                   .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), pongCallingArgs);
+                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), pongCallingArgs);
                 if (methodHandle != null)
                 {
                     // Pong Message

@@ -236,7 +236,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                         compressedContent = null;
                         Resource compressedResource = _factory.getResource(compressedPathInContext);
                         if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
-                                compressedResource.length() < resource.length())
+                            compressedResource.length() < resource.length())
                         {
                             compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);
                             CachedHttpContent added = _cache.putIfAbsent(compressedPathInContext, compressedContent);
@@ -282,7 +282,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 // Is there a precompressed resource?
                 Resource compressedResource = _factory.getResource(compressedPathInContext);
                 if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
-                        compressedResource.length() < resource.length())
+                    compressedResource.length() < resource.length())
                     compressedContents.put(format,
                         new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
             }
@@ -407,7 +407,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             boolean exists = resource.exists();
             _lastModifiedValue = exists ? resource.lastModified() : -1L;
             _lastModified = _lastModifiedValue == -1 ? null
-                                : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
+                : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
 
             _contentLengthValue = exists ? (int)resource.length() : 0;
             _contentLength = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, Long.toString(_contentLengthValue));

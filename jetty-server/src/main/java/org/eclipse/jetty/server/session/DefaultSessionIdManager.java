@@ -234,8 +234,8 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
             while (id == null || id.length() == 0)
             {
                 long r0 = _weakRandom
-                              ? (hashCode() ^ Runtime.getRuntime().freeMemory() ^ _random.nextInt() ^ ((seedTerm) << 32))
-                              : _random.nextLong();
+                    ? (hashCode() ^ Runtime.getRuntime().freeMemory() ^ _random.nextInt() ^ ((seedTerm) << 32))
+                    : _random.nextLong();
                 if (r0 < 0)
                     r0 = -r0;
 
@@ -256,8 +256,8 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
                 }
 
                 long r1 = _weakRandom
-                              ? (hashCode() ^ Runtime.getRuntime().freeMemory() ^ _random.nextInt() ^ ((seedTerm) << 32))
-                              : _random.nextLong();
+                    ? (hashCode() ^ Runtime.getRuntime().freeMemory() ^ _random.nextInt() ^ ((seedTerm) << 32))
+                    : _random.nextLong();
                 if (r1 < 0)
                     r1 = -r1;
 

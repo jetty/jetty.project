@@ -175,19 +175,19 @@ public class StringUtil
         {
             char c = chars[i];
             if ((c <= 0x1F) || // control characters
-                    (c >= 0x7F) || // over 7-bit printable ASCII
-                    // piping : special meaning on unix / osx / windows
-                    (c == '|') || (c == '>') || (c == '<') || (c == '/') || (c == '&') ||
-                    // special characters on windows
-                    (c == '\\') || (c == '.') || (c == ':') ||
-                    // special characters on osx
-                    (c == '=') || (c == '"') || (c == ',') ||
-                    // glob / selection characters on most OS's
-                    (c == '*') || (c == '?') ||
-                    // bang execution on unix / osx
-                    (c == '!') ||
-                    // spaces are just generally difficult to work with
-                    (c == ' '))
+                (c >= 0x7F) || // over 7-bit printable ASCII
+                // piping : special meaning on unix / osx / windows
+                (c == '|') || (c == '>') || (c == '<') || (c == '/') || (c == '&') ||
+                // special characters on windows
+                (c == '\\') || (c == '.') || (c == ':') ||
+                // special characters on osx
+                (c == '=') || (c == '"') || (c == ',') ||
+                // glob / selection characters on most OS's
+                (c == '*') || (c == '?') ||
+                // bang execution on unix / osx
+                (c == '!') ||
+                // spaces are just generally difficult to work with
+                (c == ' '))
             {
                 chars[i] = '_';
             }

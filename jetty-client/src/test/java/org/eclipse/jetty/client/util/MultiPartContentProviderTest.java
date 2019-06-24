@@ -78,10 +78,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .method(HttpMethod.POST)
-                                       .content(multiPart)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -109,10 +109,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFieldPart(name, new StringContentProvider(value), null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .method(HttpMethod.POST)
-                                       .content(multiPart)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -149,10 +149,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFieldPart(name, content, fields);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .method(HttpMethod.POST)
-                                       .content(multiPart)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -244,10 +244,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFilePart(name, fileName, content, fields);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .method(HttpMethod.POST)
-                                       .content(multiPart)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
         assertEquals(200, response.getStatus());
@@ -291,10 +291,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFilePart(name, tmpPath.getFileName().toString(), content, null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .method(HttpMethod.POST)
-                                       .content(multiPart)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
 
@@ -358,10 +358,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFilePart(fileField, tmpPath.getFileName().toString(), new PathContentProvider(tmpPath), null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .method(HttpMethod.POST)
-                                       .content(multiPart)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
 

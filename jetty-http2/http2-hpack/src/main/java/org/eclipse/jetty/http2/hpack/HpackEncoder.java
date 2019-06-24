@@ -185,9 +185,9 @@ public class HpackEncoder
         if (fields != null)
         {
             Set<String> hopHeaders = fields.getCSV(HttpHeader.CONNECTION, false).stream()
-                                         .filter(v -> specialHopHeaders.get(v) == Boolean.TRUE)
-                                         .map(StringUtil::asciiToLowerCase)
-                                         .collect(Collectors.toSet());
+                .filter(v -> specialHopHeaders.get(v) == Boolean.TRUE)
+                .map(StringUtil::asciiToLowerCase)
+                .collect(Collectors.toSet());
             for (HttpField field : fields)
             {
                 if (field.getHeader() == HttpHeader.CONNECTION)
@@ -330,9 +330,9 @@ public class HpackEncoder
 
                     if (_debug)
                         encoding = "Lit" +
-                                       ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(4, _context.index(name))))) +
-                                       (huffman ? "HuffV" : "LitV") +
-                                       (neverIndex ? "!!Idx" : "!Idx");
+                            ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(4, _context.index(name))))) +
+                            (huffman ? "HuffV" : "LitV") +
+                            (neverIndex ? "!!Idx" : "!Idx");
                 }
                 else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && field.getValue().length() > 2)
                 {
@@ -352,7 +352,7 @@ public class HpackEncoder
                     encodeValue(buffer, huffman, field.getValue());
                     if (_debug)
                         encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(6, _context.index(name))))) +
-                                       (huffman ? "HuffVIdx" : "LitVIdx");
+                            (huffman ? "HuffVIdx" : "LitVIdx");
                 }
             }
 

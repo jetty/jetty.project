@@ -53,7 +53,7 @@ public class HelloHandler extends AbstractHandler
                        Request baseRequest,
                        HttpServletRequest request,
                        HttpServletResponse response) throws IOException,
-                                                                ServletException
+        ServletException
     {
         response.setContentType("text/html; charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);

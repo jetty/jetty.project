@@ -115,7 +115,7 @@ public class DeploymentErrorTest
         // Server handlers
         HandlerCollection handlers = new HandlerCollection();
         handlers.setHandlers(new Handler[]
-                                 {contexts, new DefaultHandler()});
+            {contexts, new DefaultHandler()});
         server.setHandler(handlers);
 
         // Setup Configurations

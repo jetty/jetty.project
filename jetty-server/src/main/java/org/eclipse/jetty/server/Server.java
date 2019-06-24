@@ -222,7 +222,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         if (connector.getServer() != this)
             throw new IllegalArgumentException("Connector " + connector +
-                                                   " cannot be shared among server " + connector.getServer() + " and server " + this);
+                " cannot be shared among server " + connector.getServer() + " and server " + this);
         if (_connectors.add(connector))
             addBean(connector);
     }
@@ -253,7 +253,7 @@ public class Server extends HandlerWrapper implements Attributes
             {
                 if (connector.getServer() != this)
                     throw new IllegalArgumentException("Connector " + connector +
-                                                           " cannot be shared among server " + connector.getServer() + " and server " + this);
+                        " cannot be shared among server " + connector.getServer() + " and server " + this);
             }
         }
 

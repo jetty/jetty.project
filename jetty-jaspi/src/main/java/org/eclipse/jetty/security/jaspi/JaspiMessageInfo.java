@@ -101,8 +101,8 @@ public class JaspiMessageInfo implements MessageInfo
         public int size()
         {
             return (isMandatory ? 1 : 0) +
-                       (authMethod == null ? 0 : 1) +
-                       (delegate == null ? 0 : delegate.size());
+                (authMethod == null ? 0 : 1) +
+                (delegate == null ? 0 : delegate.size());
         }
 
         @Override

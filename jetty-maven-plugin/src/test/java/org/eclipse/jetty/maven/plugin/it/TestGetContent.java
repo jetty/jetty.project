@@ -74,7 +74,7 @@ public class TestGetContent
                 }
                 String response = httpClient.GET(url).getContentAsString();
                 assertTrue(response.contains(contentCheck), "it test " + System.getProperty("maven.it.name")
-                                                                + ", response not contentCheck: " + contentCheck + ", response:" + response);
+                    + ", response not contentCheck: " + contentCheck + ", response:" + response);
                 System.out.println("contentCheck");
             }
             if (Boolean.getBoolean("helloTestServlet"))

@@ -75,15 +75,15 @@ public class Usage
 
         // Address must be provided, it's the only thing non defaultable
         Request request = client.newRequest("localhost", 8080)
-                              .scheme("https")
-                              .method(HttpMethod.GET)
-                              .path("/uri")
-                              .version(HttpVersion.HTTP_1_1)
-                              .param("a", "b")
-                              .header("X-Header", "Y-value")
-                              .agent("Jetty HTTP Client")
-                              .idleTimeout(5000, TimeUnit.MILLISECONDS)
-                              .timeout(20, TimeUnit.SECONDS);
+            .scheme("https")
+            .method(HttpMethod.GET)
+            .path("/uri")
+            .version(HttpVersion.HTTP_1_1)
+            .param("a", "b")
+            .header("X-Header", "Y-value")
+            .agent("Jetty HTTP Client")
+            .idleTimeout(5000, TimeUnit.MILLISECONDS)
+            .timeout(20, TimeUnit.SECONDS);
 
         ContentResponse response = request.send();
         assertEquals(200, response.getStatus());
@@ -136,14 +136,14 @@ public class Usage
         client.start();
 
         Response response = client.newRequest("localhost", 8080)
-                                // Add a request listener
-                                .listener(new Request.Listener.Adapter()
-                                {
-                                    @Override
-                                    public void onSuccess(Request request)
-                                    {
-                                    }
-                                }).send();
+            // Add a request listener
+            .listener(new Request.Listener.Adapter()
+            {
+                @Override
+                public void onSuccess(Request request)
+                {
+                }
+            }).send();
         assertEquals(200, response.getStatus());
     }
 
@@ -225,10 +225,10 @@ public class Usage
         client.setFollowRedirects(false);
 
         ContentResponse response = client.newRequest("localhost", 8080)
-                                       // Follow redirects for this request only
-                                       .followRedirects(true)
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            // Follow redirects for this request only
+            .followRedirects(true)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -276,9 +276,9 @@ public class Usage
         InputStream input = new ByteArrayInputStream("content".getBytes(StandardCharsets.UTF_8));
 
         ContentResponse response = client.newRequest("localhost", 8080)
-                                       // Provide the content as InputStream
-                                       .content(new InputStreamContentProvider(input))
-                                       .send();
+            // Provide the content as InputStream
+            .content(new InputStreamContentProvider(input))
+            .send();
 
         assertEquals(200, response.getStatus());
     }

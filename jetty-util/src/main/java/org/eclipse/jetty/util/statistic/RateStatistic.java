@@ -179,9 +179,9 @@ public class RateStatistic
         synchronized (this)
         {
             String samples = _samples.stream()
-                                 .mapToLong(t -> units.convert(now - t, TimeUnit.NANOSECONDS))
-                                 .mapToObj(Long::toString)
-                                 .collect(Collectors.joining(System.lineSeparator()));
+                .mapToLong(t -> units.convert(now - t, TimeUnit.NANOSECONDS))
+                .mapToObj(Long::toString)
+                .collect(Collectors.joining(System.lineSeparator()));
             return String.format("%s%n%s", toString(now), samples);
         }
     }

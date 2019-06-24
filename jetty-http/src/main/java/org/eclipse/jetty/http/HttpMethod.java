@@ -77,22 +77,22 @@ public enum HttpMethod
                 break;
             case 'O':
                 if (bytes[position + 1] == 'P' && bytes[position + 2] == 'T' && bytes[position + 3] == 'I' && length >= 8 &&
-                        bytes[position + 4] == 'O' && bytes[position + 5] == 'N' && bytes[position + 6] == 'S' && bytes[position + 7] == ' ')
+                    bytes[position + 4] == 'O' && bytes[position + 5] == 'N' && bytes[position + 6] == 'S' && bytes[position + 7] == ' ')
                     return OPTIONS;
                 break;
             case 'D':
                 if (bytes[position + 1] == 'E' && bytes[position + 2] == 'L' && bytes[position + 3] == 'E' && length >= 7 &&
-                        bytes[position + 4] == 'T' && bytes[position + 5] == 'E' && bytes[position + 6] == ' ')
+                    bytes[position + 4] == 'T' && bytes[position + 5] == 'E' && bytes[position + 6] == ' ')
                     return DELETE;
                 break;
             case 'T':
                 if (bytes[position + 1] == 'R' && bytes[position + 2] == 'A' && bytes[position + 3] == 'C' && length >= 6 &&
-                        bytes[position + 4] == 'E' && bytes[position + 5] == ' ')
+                    bytes[position + 4] == 'E' && bytes[position + 5] == ' ')
                     return TRACE;
                 break;
             case 'C':
                 if (bytes[position + 1] == 'O' && bytes[position + 2] == 'N' && bytes[position + 3] == 'N' && length >= 8 &&
-                        bytes[position + 4] == 'E' && bytes[position + 5] == 'C' && bytes[position + 6] == 'T' && bytes[position + 7] == ' ')
+                    bytes[position + 4] == 'E' && bytes[position + 5] == 'C' && bytes[position + 6] == 'T' && bytes[position + 7] == ' ')
                     return CONNECT;
                 break;
             case 'M':

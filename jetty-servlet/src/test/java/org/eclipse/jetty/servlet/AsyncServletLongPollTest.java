@@ -115,8 +115,8 @@ public class AsyncServletLongPollTest
         {
             int wait = 1000;
             String request1 = "GET " + uri + "?suspend=" + wait + " HTTP/1.1\r\n" +
-                                  "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                                  "\r\n";
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "\r\n";
             OutputStream output1 = socket1.getOutputStream();
             output1.write(request1.getBytes(StandardCharsets.UTF_8));
             output1.flush();
@@ -127,8 +127,8 @@ public class AsyncServletLongPollTest
             try (Socket socket2 = new Socket("localhost", connector.getLocalPort()))
             {
                 String request2 = "DELETE " + uri + "?error=" + error + " HTTP/1.1\r\n" +
-                                      "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                                      "\r\n";
+                    "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                    "\r\n";
                 OutputStream output2 = socket2.getOutputStream();
                 output2.write(request2.getBytes(StandardCharsets.UTF_8));
                 output2.flush();
@@ -147,8 +147,8 @@ public class AsyncServletLongPollTest
             // Now try to make another request on the first connection
             // to verify that we set correctly the read interest (#409842)
             String request3 = "GET " + uri + " HTTP/1.1\r\n" +
-                                  "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                                  "\r\n";
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "\r\n";
             output1.write(request3.getBytes(StandardCharsets.UTF_8));
             output1.flush();
 

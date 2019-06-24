@@ -287,9 +287,9 @@ public class SessionHandler extends ScopedHandler
         {
             // Do we need to refresh the cookie?
             if (isUsingCookies() &&
-                    (s.isIdChanged() ||
-                         (getSessionCookieConfig().getMaxAge() > 0 && getRefreshCookieAge() > 0 && ((now - s.getCookieSetTime()) / 1000 > getRefreshCookieAge()))
-                    )
+                (s.isIdChanged() ||
+                    (getSessionCookieConfig().getMaxAge() > 0 && getRefreshCookieAge() > 0 && ((now - s.getCookieSetTime()) / 1000 > getRefreshCookieAge()))
+                )
             )
             {
                 HttpCookie cookie = getSessionCookie(session, _context == null ? "/" : (_context.getContextPath()), secure);

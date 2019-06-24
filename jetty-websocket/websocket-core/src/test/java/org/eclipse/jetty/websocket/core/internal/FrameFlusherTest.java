@@ -204,14 +204,16 @@ public class FrameFlusherTest
         Frame frame1 = new Frame(OpCode.TEXT).setPayload("message before close").setFin(true);
         CountDownLatch failedFrame1 = new CountDownLatch(1);
         Callback callbackFrame1 = Callback.from(() ->
-        {}, t -> failedFrame1.countDown());
+        {
+        }, t -> failedFrame1.countDown());
         assertTrue(frameFlusher.enqueue(frame1, callbackFrame1, false));
 
         // Enqueue the close frame which should fail the previous frame as it is still in the queue.
         Frame closeFrame = new CloseStatus(CloseStatus.MESSAGE_TOO_LARGE).toFrame();
         CountDownLatch succeededCloseFrame = new CountDownLatch(1);
         Callback closeFrameCallback = Callback.from(succeededCloseFrame::countDown, t ->
-        {});
+        {
+        });
         assertTrue(frameFlusher.enqueue(closeFrame, closeFrameCallback, false));
         assertTrue(failedFrame1.await(1, TimeUnit.SECONDS));
 
@@ -219,7 +221,8 @@ public class FrameFlusherTest
         Frame frame2 = new Frame(OpCode.TEXT).setPayload("message after close").setFin(true);
         CountDownLatch failedFrame2 = new CountDownLatch(1);
         Callback callbackFrame2 = Callback.from(() ->
-        {}, t -> failedFrame2.countDown());
+        {
+        }, t -> failedFrame2.countDown());
         assertFalse(frameFlusher.enqueue(frame2, callbackFrame2, false));
         assertTrue(failedFrame2.await(1, TimeUnit.SECONDS));
 

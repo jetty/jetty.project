@@ -32,7 +32,9 @@ public class BundleFileLocatorHelperFactory
 
     private static BundleFileLocatorHelperFactory _instance = new BundleFileLocatorHelperFactory();
 
-    private BundleFileLocatorHelperFactory() {}
+    private BundleFileLocatorHelperFactory()
+    {
+    }
 
     public static BundleFileLocatorHelperFactory getFactory()
     {
@@ -46,7 +48,7 @@ public class BundleFileLocatorHelperFactory
         {
             //see if a fragment has supplied an alternative
             helper = (BundleFileLocatorHelper)Class.forName(BundleFileLocatorHelper.CLASS_NAME)
-                                                  .getDeclaredConstructor().newInstance();
+                .getDeclaredConstructor().newInstance();
         }
         catch (Throwable t)
         {

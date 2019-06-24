@@ -46,7 +46,7 @@ public class AppLifeCyclePathCollector implements AppLifeCycle.Binding
     public String[] getBindingTargets()
     {
         return new String[]
-                   {"*"};
+            {"*"};
     }
 
     @Override

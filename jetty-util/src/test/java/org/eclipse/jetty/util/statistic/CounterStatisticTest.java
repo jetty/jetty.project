@@ -89,7 +89,7 @@ public class CounterStatisticTest
         for (int i = N; i-- > 0; )
         {
             threads[i] = (i >= N / 2)
-                             ? new Thread()
+                ? new Thread()
             {
                 @Override
                 public void run()
@@ -112,7 +112,7 @@ public class CounterStatisticTest
                     }
                 }
             }
-                             : new Thread()
+                : new Thread()
             {
                 @Override
                 public void run()

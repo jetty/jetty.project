@@ -330,8 +330,8 @@ public class FormAuthenticator extends LoginAuthenticator
             {
                 // Has authentication been revoked?
                 if (authentication instanceof Authentication.User &&
-                        _loginService != null &&
-                        !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                    _loginService != null &&
+                    !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
                 {
                     LOG.debug("auth revoked {}", authentication);
                     session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
@@ -521,11 +521,11 @@ public class FormAuthenticator extends LoginAuthenticator
         private boolean notIgnored(String name)
         {
             if (HttpHeader.CACHE_CONTROL.is(name) ||
-                    HttpHeader.PRAGMA.is(name) ||
-                    HttpHeader.ETAG.is(name) ||
-                    HttpHeader.EXPIRES.is(name) ||
-                    HttpHeader.LAST_MODIFIED.is(name) ||
-                    HttpHeader.AGE.is(name))
+                HttpHeader.PRAGMA.is(name) ||
+                HttpHeader.ETAG.is(name) ||
+                HttpHeader.EXPIRES.is(name) ||
+                HttpHeader.LAST_MODIFIED.is(name) ||
+                HttpHeader.AGE.is(name))
                 return false;
             return true;
         }

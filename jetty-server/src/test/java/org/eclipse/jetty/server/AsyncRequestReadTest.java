@@ -240,11 +240,11 @@ public class AsyncRequestReadTest
             out.write(content);
 
             header = "POST /?read=10 HTTP/1.1\r\n" +
-                         "Host: localhost\r\n" +
-                         "Content-Length: " + content.length + "\r\n" +
-                         "Content-Type: bytes\r\n" +
-                         "Connection: close\r\n" +
-                         "\r\n";
+                "Host: localhost\r\n" +
+                "Content-Length: " + content.length + "\r\n" +
+                "Content-Type: bytes\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
             h = header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);

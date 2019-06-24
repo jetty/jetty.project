@@ -340,10 +340,10 @@ public class ListVsMapBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                          .include(ListVsMapBenchmark.class.getSimpleName())
-                          // .addProfiler(GCProfiler.class)
-                          .forks(1)
-                          .build();
+            .include(ListVsMapBenchmark.class.getSimpleName())
+            // .addProfiler(GCProfiler.class)
+            .forks(1)
+            .build();
 
         new Runner(opt).run();
     }

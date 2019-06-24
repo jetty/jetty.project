@@ -951,7 +951,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     if (isEmpty)
                                     {
                                         if (wrapResult.getHandshakeStatus() != HandshakeStatus.NEED_WRAP ||
-                                                wrapResult.bytesProduced() == 0)
+                                            wrapResult.bytesProduced() == 0)
                                             return result = true;
                                     }
                                     break;
@@ -1117,7 +1117,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         // the encrypted buffer will contain the entire close handshake
                         // and that a call to flush(EMPTY_BUFFER) is not needed.
                         endp.write(Callback.from(() ->
-                        {}, t -> endp.close()), _encryptedOutput);
+                        {
+                        }, t -> endp.close()), _encryptedOutput);
                     }
                 }
 

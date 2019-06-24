@@ -138,12 +138,12 @@ public class ConfigurationAssert
         {
             String name = prop.key;
             if ("jetty.home".equals(name) ||
-                    "jetty.base".equals(name) ||
-                    "jetty.home.uri".equals(name) ||
-                    "jetty.base.uri".equals(name) ||
-                    "user.dir".equals(name) ||
-                    prop.source.equals(Props.ORIGIN_SYSPROP) ||
-                    name.startsWith("java."))
+                "jetty.base".equals(name) ||
+                "jetty.home.uri".equals(name) ||
+                "jetty.base.uri".equals(name) ||
+                "user.dir".equals(name) ||
+                prop.source.equals(Props.ORIGIN_SYSPROP) ||
+                name.startsWith("java."))
             {
                 // strip these out from assertion, to make assertions easier.
                 continue;
@@ -257,7 +257,7 @@ public class ConfigurationAssert
     private static Stream<String> streamOf(TextFile textFile, String key)
     {
         return textFile.stream()
-                   .filter(s -> s.startsWith(key + "|")).map(f -> getValue(f));
+            .filter(s -> s.startsWith(key + "|")).map(f -> getValue(f));
     }
 
     private static String getValue(String arg)

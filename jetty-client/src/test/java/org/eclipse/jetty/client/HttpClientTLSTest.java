@@ -156,10 +156,10 @@ public class HttpClientTLSTest
         });
 
         assertThrows(ExecutionException.class, () ->
-                                                   client.newRequest("localhost", connector.getLocalPort())
-                                                       .scheme(HttpScheme.HTTPS.asString())
-                                                       .timeout(5, TimeUnit.SECONDS)
-                                                       .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -197,10 +197,10 @@ public class HttpClientTLSTest
         });
 
         assertThrows(ExecutionException.class, () ->
-                                                   client.newRequest("localhost", connector.getLocalPort())
-                                                       .scheme(HttpScheme.HTTPS.asString())
-                                                       .timeout(5, TimeUnit.SECONDS)
-                                                       .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -239,10 +239,10 @@ public class HttpClientTLSTest
         });
 
         assertThrows(ExecutionException.class, () ->
-                                                   client.newRequest("localhost", connector.getLocalPort())
-                                                       .scheme(HttpScheme.HTTPS.asString())
-                                                       .timeout(5, TimeUnit.SECONDS)
-                                                       .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -284,10 +284,10 @@ public class HttpClientTLSTest
         });
 
         assertThrows(ExecutionException.class, () ->
-                                                   client.newRequest("localhost", connector.getLocalPort())
-                                                       .scheme(HttpScheme.HTTPS.asString())
-                                                       .timeout(5, TimeUnit.SECONDS)
-                                                       .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -363,10 +363,10 @@ public class HttpClientTLSTest
 
         // First request primes the TLS session.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(HttpScheme.HTTPS.asString())
-                                       .header(HttpHeader.CONNECTION, "close")
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(HttpScheme.HTTPS.asString())
+            .header(HttpHeader.CONNECTION, "close")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         assertNotNull(serverSession.get());
@@ -399,10 +399,10 @@ public class HttpClientTLSTest
 
         // Second request should have the same session ID.
         response = client.newRequest("localhost", connector.getLocalPort())
-                       .scheme(HttpScheme.HTTPS.asString())
-                       .header(HttpHeader.CONNECTION, "close")
-                       .timeout(5, TimeUnit.SECONDS)
-                       .send();
+            .scheme(HttpScheme.HTTPS.asString())
+            .header(HttpHeader.CONNECTION, "close")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
@@ -526,8 +526,8 @@ public class HttpClientTLSTest
                 byte[] half = new byte[8];
                 String response = "HTTP/1.1 200 OK\r\n" +
 //                        "Content-Length: " + (half.length * 2) + "\r\n" +
-                                      "Connection: close\r\n" +
-                                      "\r\n";
+                    "Connection: close\r\n" +
+                    "\r\n";
                 OutputStream output = sslSocket.getOutputStream();
                 output.write(response.getBytes(StandardCharsets.UTF_8));
                 output.write(half);

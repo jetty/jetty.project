@@ -58,8 +58,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
             Request request = client.newRequest("localhost", connector.getLocalPort())
-                                  .scheme(scenario.getScheme())
-                                  .timeout(5, TimeUnit.SECONDS);
+                .scheme(scenario.getScheme())
+                .timeout(5, TimeUnit.SECONDS);
             request.abort(failure);
             request.send();
         });
@@ -389,8 +389,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                              .timeout(3 * delay, TimeUnit.MILLISECONDS)
-                              .scheme(scenario.getScheme());
+            .timeout(3 * delay, TimeUnit.MILLISECONDS)
+            .scheme(scenario.getScheme());
 
         final Thread thread = Thread.currentThread();
         new Thread(() ->
@@ -433,8 +433,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         });
 
         final Request request = client.newRequest("localhost", connector.getLocalPort())
-                                    .timeout(3 * delay, TimeUnit.MILLISECONDS)
-                                    .scheme(scenario.getScheme());
+            .timeout(3 * delay, TimeUnit.MILLISECONDS)
+            .scheme(scenario.getScheme());
 
         final Throwable cause = new Exception();
         final AtomicBoolean aborted = new AtomicBoolean();
@@ -497,8 +497,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final Throwable cause = new Exception();
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                              .scheme(scenario.getScheme())
-                              .timeout(3 * delay, TimeUnit.MILLISECONDS);
+            .scheme(scenario.getScheme())
+            .timeout(3 * delay, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
             assertTrue(result.isFailed());

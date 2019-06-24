@@ -291,7 +291,7 @@ public class MessageHandler implements FrameHandler
         {
             if (BufferUtil.space(binaryMessage) < frame.getPayloadLength())
                 binaryMessage = BufferUtil
-                                    .ensureCapacity(binaryMessage, binaryMessage.capacity() + Math.max(binaryMessage.capacity(), frame.getPayloadLength() * factor));
+                    .ensureCapacity(binaryMessage, binaryMessage.capacity() + Math.max(binaryMessage.capacity(), frame.getPayloadLength() * factor));
 
             BufferUtil.append(binaryMessage, frame.getPayload());
         }

@@ -97,7 +97,8 @@ public class ExtensionTool
                     if (frame == null)
                         break;
                     ext.onFrame(frame, Callback.from(() ->
-                    {}, Assertions::fail));
+                    {
+                    }, Assertions::fail));
                 }
             }
         }

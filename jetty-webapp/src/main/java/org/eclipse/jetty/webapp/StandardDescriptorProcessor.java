@@ -593,7 +593,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (cfg.getFileSizeThreshold() != element.getFileSizeThreshold())
                         throw new IllegalStateException("Conflicting multipart-config file-size-threshold for servlet " + name + " in " + descriptor.getResource());
                     if ((cfg.getLocation() != null && (element.getLocation() == null || element.getLocation().length() == 0)) ||
-                            (cfg.getLocation() == null && (element.getLocation() != null || element.getLocation().length() > 0)))
+                        (cfg.getLocation() == null && (element.getLocation() != null || element.getLocation().length() > 0)))
                         throw new IllegalStateException("Conflicting multipart-config location for servlet " + name + " in " + descriptor.getResource());
                     break;
                 }

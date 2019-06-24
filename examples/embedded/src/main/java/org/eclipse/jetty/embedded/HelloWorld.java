@@ -34,7 +34,7 @@ public class HelloWorld extends AbstractHandler
                        Request baseRequest,
                        HttpServletRequest request,
                        HttpServletResponse response) throws IOException,
-                                                                ServletException
+        ServletException
     {
         // Declare response encoding and types
         response.setContentType("text/html; charset=utf-8");

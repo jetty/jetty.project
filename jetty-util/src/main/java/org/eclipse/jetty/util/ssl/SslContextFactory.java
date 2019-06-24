@@ -1617,8 +1617,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         SSLServerSocketFactory factory = context.getServerSocketFactory();
         SSLServerSocket socket =
             (SSLServerSocket)(host == null
-                                  ? factory.createServerSocket(port, backlog)
-                                  : factory.createServerSocket(port, backlog, InetAddress.getByName(host)));
+                ? factory.createServerSocket(port, backlog)
+                : factory.createServerSocket(port, backlog, InetAddress.getByName(host)));
         socket.setSSLParameters(customize(socket.getSSLParameters()));
 
         return socket;
@@ -1809,8 +1809,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
         SSLContext context = getSslContext();
         SSLEngine sslEngine = isSessionCachingEnabled()
-                                  ? context.createSSLEngine(host, port)
-                                  : context.createSSLEngine();
+            ? context.createSSLEngine(host, port)
+            : context.createSSLEngine();
         customize(sslEngine);
 
         return sslEngine;

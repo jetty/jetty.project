@@ -143,10 +143,10 @@ public class RequestTest
         //Send a request with query string with illegal hex code to cause
         //an exception parsing the params
         String request = "GET /?param=aaa%ZZbbb&other=value HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: text/html;charset=utf8\n" +
-                             "Connection: close\n" +
-                             "\n";
+            "Host: whatever\r\n" +
+            "Content-Type: text/html;charset=utf8\n" +
+            "Connection: close\n" +
+            "\n";
 
         String responses = _connector.getResponse(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
@@ -169,10 +169,10 @@ public class RequestTest
         //Send a request with query string with illegal hex code to cause
         //an exception parsing the params
         String request = "GET /?test_%e0%x8%81=missing HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: text/html;charset=utf8\n" +
-                             "Connection: close\n" +
-                             "\n";
+            "Host: whatever\r\n" +
+            "Content-Type: text/html;charset=utf8\n" +
+            "Connection: close\n" +
+            "\n";
 
         String responses = _connector.getResponse(request);
         assertThat("Responses", responses, startsWith("HTTP/1.1 400"));
@@ -195,12 +195,12 @@ public class RequestTest
         //Send a request with query string with illegal hex code to cause
         //an exception parsing the params
         String request = "POST / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\n" +
-                             "Connection: close\n" +
-                             "Content-Length: 100\n" +
-                             "\n" +
-                             "name=value";
+            "Host: whatever\r\n" +
+            "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\n" +
+            "Connection: close\n" +
+            "Content-Length: 100\n" +
+            "\n" +
+            "name=value";
 
         LocalEndPoint endp = _connector.connect();
         endp.addInput(request);
@@ -241,13 +241,13 @@ public class RequestTest
         };
 
         String request = "GET /? HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Connection: close\n" +
-                             "Content-Type: \n" +
-                             "Accept-Language: \n" +
-                             "Cookie: \n" +
-                             "Name: \n" +
-                             "\n";
+            "Host: whatever\r\n" +
+            "Connection: close\n" +
+            "Content-Type: \n" +
+            "Accept-Language: \n" +
+            "Cookie: \n" +
+            "Name: \n" +
+            "\n";
 
         String responses = _connector.getResponse(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
@@ -280,23 +280,23 @@ public class RequestTest
         };
 
         String multipart = "--AaB03x\r\n" +
-                               "content-disposition: form-data; name=\"field1\"\r\n" +
-                               "\r\n" +
-                               "Joe Blow\r\n" +
-                               "--AaB03x\r\n" +
-                               "content-disposition: form-data; name=\"stuff\"\r\n" +
-                               "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
-                               "\r\n" +
-                               "000000000000000000000000000000000000000000000000000\r\n" +
-                               "--AaB03x--\r\n";
+            "content-disposition: form-data; name=\"field1\"\r\n" +
+            "\r\n" +
+            "Joe Blow\r\n" +
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"stuff\"\r\n" +
+            "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
+            "\r\n" +
+            "000000000000000000000000000000000000000000000000000\r\n" +
+            "--AaB03x--\r\n";
 
         String request = "GET / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
-                             "Content-Length: " + multipart.getBytes().length + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             multipart;
+            "Host: whatever\r\n" +
+            "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
+            "Content-Length: " + multipart.getBytes().length + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            multipart;
 
         String responses = _connector.getResponse(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
@@ -330,11 +330,11 @@ public class RequestTest
         };
 
         String request = "GET / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Connection: close\r\n" +
-                             "Accept-Language: da, en-gb;q=0.8, en;q=0.7\r\n" +
-                             "Accept-Language: XX;q=0, en-au;q=0.9\r\n" +
-                             "\r\n";
+            "Host: whatever\r\n" +
+            "Connection: close\r\n" +
+            "Accept-Language: da, en-gb;q=0.8, en;q=0.7\r\n" +
+            "Accept-Language: XX;q=0, en-au;q=0.9\r\n" +
+            "\r\n";
         String response = _connector.getResponse(request);
         assertThat(response, containsString(" 200 OK"));
     }
@@ -376,23 +376,23 @@ public class RequestTest
         _server.start();
 
         String multipart = "--AaB03x\r\n" +
-                               "content-disposition: form-data; name=\"field1\"\r\n" +
-                               "\r\n" +
-                               "Joe Blow\r\n" +
-                               "--AaB03x\r\n" +
-                               "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r\n" +
-                               "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
-                               "\r\n" +
-                               "000000000000000000000000000000000000000000000000000\r\n" +
-                               "--AaB03x--\r\n";
+            "content-disposition: form-data; name=\"field1\"\r\n" +
+            "\r\n" +
+            "Joe Blow\r\n" +
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r\n" +
+            "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
+            "\r\n" +
+            "000000000000000000000000000000000000000000000000000\r\n" +
+            "--AaB03x--\r\n";
 
         String request = "GET /foo/x.html HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
-                             "Content-Length: " + multipart.getBytes().length + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             multipart;
+            "Host: whatever\r\n" +
+            "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
+            "Content-Length: " + multipart.getBytes().length + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            multipart;
 
         String responses = _connector.getResponse(request);
         //System.err.println(responses);
@@ -419,23 +419,23 @@ public class RequestTest
         _server.start();
 
         String multipart = "      --AaB03x\r" +
-                               "content-disposition: form-data; name=\"field1\"\r" +
-                               "\r" +
-                               "Joe Blow\r" +
-                               "--AaB03x\r" +
-                               "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r" +
-                               "Content-Type: text/plain;charset=ISO-8859-1\r" +
-                               "\r" +
-                               "000000000000000000000000000000000000000000000000000\r" +
-                               "--AaB03x--\r";
+            "content-disposition: form-data; name=\"field1\"\r" +
+            "\r" +
+            "Joe Blow\r" +
+            "--AaB03x\r" +
+            "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r" +
+            "Content-Type: text/plain;charset=ISO-8859-1\r" +
+            "\r" +
+            "000000000000000000000000000000000000000000000000000\r" +
+            "--AaB03x--\r";
 
         String request = "GET /foo/x.html HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
-                             "Content-Length: " + multipart.getBytes().length + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             multipart;
+            "Host: whatever\r\n" +
+            "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
+            "Content-Length: " + multipart.getBytes().length + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            multipart;
 
         String responses = _connector.getResponse(request);
         //System.err.println(responses);
@@ -478,23 +478,23 @@ public class RequestTest
         _server.start();
 
         String multipart = "--AaB03x\r\n" +
-                               "content-disposition: form-data; name=\"xxx\"\r\n" +
-                               "\r\n" +
-                               "Joe Blow\r\n" +
-                               "--AaB03x\r\n" +
-                               "content-disposition: form-data;  filename=\"foo.upload\"\r\n" +
-                               "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
-                               "\r\n" +
-                               "000000000000000000000000000000000000000000000000000\r\n" +
-                               "--AaB03x--\r\n";
+            "content-disposition: form-data; name=\"xxx\"\r\n" +
+            "\r\n" +
+            "Joe Blow\r\n" +
+            "--AaB03x\r\n" +
+            "content-disposition: form-data;  filename=\"foo.upload\"\r\n" +
+            "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
+            "\r\n" +
+            "000000000000000000000000000000000000000000000000000\r\n" +
+            "--AaB03x--\r\n";
 
         String request = "GET /foo/x.html HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
-                             "Content-Length: " + multipart.getBytes().length + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             multipart;
+            "Host: whatever\r\n" +
+            "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
+            "Content-Length: " + multipart.getBytes().length + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            multipart;
 
         try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
@@ -530,10 +530,10 @@ public class RequestTest
         //Send a request with query string with illegal hex code to cause
         //an exception parsing the params
         String request = "GET /?param=aaa%E7bbb HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: text/html;charset=utf8\n" +
-                             "Connection: close\n" +
-                             "\n";
+            "Host: whatever\r\n" +
+            "Content-Type: text/html;charset=utf8\n" +
+            "Connection: close\n" +
+            "\n";
 
         LOG.info("Expecting NotUtf8Exception in state 36...");
         String responses = _connector.getResponse(request);
@@ -563,13 +563,13 @@ public class RequestTest
 
         //Send a request with encoded form content
         String request = "POST / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: application/x-www-form-urlencoded; charset=utf-8\n" +
-                             "Content-Length: 10\n" +
-                             "Content-Encoding: gzip\n" +
-                             "Connection: close\n" +
-                             "\n" +
-                             "0123456789\n";
+            "Host: whatever\r\n" +
+            "Content-Type: application/x-www-form-urlencoded; charset=utf-8\n" +
+            "Content-Length: 10\n" +
+            "Content-Encoding: gzip\n" +
+            "Connection: close\n" +
+            "\n" +
+            "0123456789\n";
 
         String responses = _connector.getResponse(request);
         assertThat(responses, startsWith("HTTP/1.1 200"));
@@ -582,13 +582,13 @@ public class RequestTest
 
         //Send a request with encoded form content
         String request = "POST / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: application/x-www-form-urlencoded; charset=utf-8\n" +
-                             "Content-Length: 7\n" +
-                             "Content-Encoding: identity\n" +
-                             "Connection: close\n" +
-                             "\n" +
-                             "foo=bar\n";
+            "Host: whatever\r\n" +
+            "Content-Type: application/x-www-form-urlencoded; charset=utf-8\n" +
+            "Content-Length: 7\n" +
+            "Content-Encoding: identity\n" +
+            "Connection: close\n" +
+            "\n" +
+            "foo=bar\n";
 
         String responses = _connector.getResponse(request);
         assertThat(responses, startsWith("HTTP/1.1 200"));
@@ -601,13 +601,13 @@ public class RequestTest
 
         //Send a request with encoded form content
         String request = "POST / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: application/octet-stream\n" +
-                             "Content-Length: 10\n" +
-                             "Content-Encoding: gzip\n" +
-                             "Connection: close\n" +
-                             "\n" +
-                             "0123456789\n";
+            "Host: whatever\r\n" +
+            "Content-Type: application/octet-stream\n" +
+            "Content-Length: 10\n" +
+            "Content-Encoding: gzip\n" +
+            "Connection: close\n" +
+            "\n" +
+            "0123456789\n";
 
         String responses = _connector.getResponse(request);
         assertThat(responses, startsWith("HTTP/1.1 200"));
@@ -625,10 +625,10 @@ public class RequestTest
 
         // Request with illegal Host header
         String request = "GET / HTTP/1.1\n" +
-                             "Host: whatever.com:xxxx\n" +
-                             "Content-Type: text/html;charset=utf8\n" +
-                             "Connection: close\n" +
-                             "\n";
+            "Host: whatever.com:xxxx\n" +
+            "Content-Type: text/html;charset=utf8\n" +
+            "Connection: close\n" +
+            "\n";
 
         String responses = _connector.getResponse(request);
         assertThat(responses, Matchers.startsWith("HTTP/1.1 400"));
@@ -873,12 +873,12 @@ public class RequestTest
         for (int l = 0; l < 1024; l++)
         {
             String request = "POST / HTTP/1.1\r\n" +
-                                 "Host: whatever\r\n" +
-                                 "Content-Type: multipart/form-data-test\r\n" +
-                                 "Content-Length: " + l + "\r\n" +
-                                 "Connection: close\r\n" +
-                                 "\r\n" +
-                                 content;
+                "Host: whatever\r\n" +
+                "Content-Type: multipart/form-data-test\r\n" +
+                "Content-Length: " + l + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                content;
             Log.getRootLogger().debug("test l={}", l);
             String response = _connector.getResponse(request);
             Log.getRootLogger().debug(response);
@@ -903,12 +903,12 @@ public class RequestTest
 
         String content = "name1=test&name2=test2&name3=&name4=test";
         String request = "POST / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
-                             "Content-Length: " + content.length() + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             content;
+            "Host: whatever\r\n" +
+            "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Length: " + content.length() + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            content;
         String response = _connector.getResponse(request);
         assertThat(response, containsString(" 200 OK"));
     }
@@ -927,12 +927,12 @@ public class RequestTest
 
         String content = "name1=test&name2=test2&name3=&name4=test";
         String request = "UNKNOWN / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
-                             "Content-Length: " + content.length() + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             content;
+            "Host: whatever\r\n" +
+            "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Length: " + content.length() + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            content;
         String response = _connector.getResponse(request);
         assertThat(response, containsString(" 200 OK"));
     }
@@ -953,12 +953,12 @@ public class RequestTest
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addFormEncodedMethod("Extra");
         String content = "name1=test&name2=test2&name3=&name4=test";
         String request = "EXTRA / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
-                             "Content-Length: " + content.length() + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             content;
+            "Host: whatever\r\n" +
+            "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Length: " + content.length() + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            content;
         String response = _connector.getResponse(request);
         assertThat(response, containsString(" 200 OK"));
     }
@@ -981,12 +981,12 @@ public class RequestTest
 
         String content = "name1=test&name2=test%E4&name3=&name4=test";
         String request = "POST / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
-                             "Content-Length: " + content.length() + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             content;
+            "Host: whatever\r\n" +
+            "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Length: " + content.length() + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            content;
         String response = _connector.getResponse(request);
         assertThat(response, containsString(" 200 OK"));
     }
@@ -1009,12 +1009,12 @@ public class RequestTest
 
         String content = "name1=test&name2=test%C3%A4&name3=&name4=test";
         String request = "POST / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
-                             "Content-Length: " + content.length() + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             content;
+            "Host: whatever\r\n" +
+            "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Length: " + content.length() + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            content;
         String response = _connector.getResponse(request);
         assertThat(response, containsString(" 200 OK"));
     }
@@ -1030,7 +1030,7 @@ public class RequestTest
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                                                                                                                                        ServletException
+                ServletException
             {
                 if (baseRequest.getDispatcherType() != DispatcherType.REQUEST)
                     return;
@@ -1063,23 +1063,23 @@ public class RequestTest
         _server.start();
 
         String multipart = "--AaBbCc\r\n" +
-                               "content-disposition: form-data; name=\"bar\"\r\n" +
-                               "\r\n" +
-                               "BarContent\r\n" +
-                               "--AaBbCc\r\n" +
-                               "content-disposition: form-data; name=\"stuff\"\r\n" +
-                               "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
-                               "\r\n" +
-                               "000000000000000000000000000000000000000000000000000\r\n" +
-                               "--AaBbCc--\r\n";
+            "content-disposition: form-data; name=\"bar\"\r\n" +
+            "\r\n" +
+            "BarContent\r\n" +
+            "--AaBbCc\r\n" +
+            "content-disposition: form-data; name=\"stuff\"\r\n" +
+            "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
+            "\r\n" +
+            "000000000000000000000000000000000000000000000000000\r\n" +
+            "--AaBbCc--\r\n";
 
         String request = "POST /?foo=FooUri HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: multipart/form-data; boundary=\"AaBbCc\"\r\n" +
-                             "Content-Length: " + multipart.getBytes().length + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             multipart;
+            "Host: whatever\r\n" +
+            "Content-Type: multipart/form-data; boundary=\"AaBbCc\"\r\n" +
+            "Content-Length: " + multipart.getBytes().length + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            multipart;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
 
@@ -1096,7 +1096,7 @@ public class RequestTest
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                                                                                                                                        ServletException
+                ServletException
             {
                 baseRequest.setHandled(true);
                 Reader reader = request.getReader();
@@ -1111,18 +1111,18 @@ public class RequestTest
         _server.start();
 
         String requests = "GET / HTTP/1.1\r\n" +
-                              "Host: whatever\r\n" +
-                              "Content-Type: text/plane\r\n" +
-                              "Content-Length: " + 10 + "\r\n" +
-                              "\r\n" +
-                              "0123456789\r\n" +
-                              "GET / HTTP/1.1\r\n" +
-                              "Host: whatever\r\n" +
-                              "Content-Type: text/plane\r\n" +
-                              "Content-Length: " + 10 + "\r\n" +
-                              "Connection: close\r\n" +
-                              "\r\n" +
-                              "ABCDEFGHIJ\r\n";
+            "Host: whatever\r\n" +
+            "Content-Type: text/plane\r\n" +
+            "Content-Length: " + 10 + "\r\n" +
+            "\r\n" +
+            "0123456789\r\n" +
+            "GET / HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: text/plane\r\n" +
+            "Content-Length: " + 10 + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            "ABCDEFGHIJ\r\n";
 
         LocalEndPoint endp = _connector.executeRequest(requests);
         String responses = endp.getResponse() + endp.getResponse();
@@ -1142,7 +1142,7 @@ public class RequestTest
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                                                                                                                                        ServletException
+                ServletException
             {
                 baseRequest.setHandled(true);
                 Reader reader = request.getReader();
@@ -1160,12 +1160,12 @@ public class RequestTest
         _server.start();
 
         String request = "POST /?param=right HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Content-Type: application/x-www-form-urlencoded\r\n" +
-                             "Content-Length: " + 11 + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n" +
-                             "param=wrong\r\n";
+            "Host: whatever\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Content-Length: " + 11 + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            "param=wrong\r\n";
 
         String responses = _connector.getResponse(request);
 
@@ -1179,7 +1179,7 @@ public class RequestTest
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                                                                                                                                        ServletException
+                ServletException
             {
                 baseRequest.setHandled(true);
                 response.sendRedirect("/foo");
@@ -1202,9 +1202,9 @@ public class RequestTest
         _server.setHandler(handler);
         _server.start();
         String response = _connector.getResponse("GET / HTTP/1.1\n" +
-                                                     "Host: myhost\n" +
-                                                     "Connection: close\n" +
-                                                     "\n");
+            "Host: myhost\n" +
+            "Connection: close\n" +
+            "\n");
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("Location: http://myhost/foo"));
     }
@@ -1216,7 +1216,7 @@ public class RequestTest
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                                                                                                                                        ServletException
+                ServletException
             {
                 baseRequest.setHandled(true);
                 InputStream in = request.getInputStream();
@@ -1231,18 +1231,18 @@ public class RequestTest
         _server.start();
 
         String requests = "GET / HTTP/1.1\r\n" +
-                              "Host: whatever\r\n" +
-                              "Content-Type: text/plane\r\n" +
-                              "Content-Length: " + 10 + "\r\n" +
-                              "\r\n" +
-                              "0123456789\r\n" +
-                              "GET / HTTP/1.1\r\n" +
-                              "Host: whatever\r\n" +
-                              "Content-Type: text/plane\r\n" +
-                              "Content-Length: " + 10 + "\r\n" +
-                              "Connection: close\r\n" +
-                              "\r\n" +
-                              "ABCDEFGHIJ\r\n";
+            "Host: whatever\r\n" +
+            "Content-Type: text/plane\r\n" +
+            "Content-Length: " + 10 + "\r\n" +
+            "\r\n" +
+            "0123456789\r\n" +
+            "GET / HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: text/plane\r\n" +
+            "Content-Length: " + 10 + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            "ABCDEFGHIJ\r\n";
 
         LocalEndPoint endp = _connector.executeRequest(requests);
         String responses = endp.getResponse() + endp.getResponse();
@@ -1551,15 +1551,15 @@ public class RequestTest
         };
 
         String request = "POST / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Cookie: other=cookie\r\n" +
-                             "\r\n"
-                             +
-                             "POST / HTTP/1.1\r\n" +
-                             "Host: whatever\r\n" +
-                             "Cookie: name=value\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n";
+            "Host: whatever\r\n" +
+            "Cookie: other=cookie\r\n" +
+            "\r\n"
+            +
+            "POST / HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Cookie: name=value\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
 
         _connector.getResponse(request);
 
@@ -1567,32 +1567,32 @@ public class RequestTest
         assertEquals(null, cookie[1]);
 
         request = "POST / HTTP/1.1\r\n" +
-                      "Host: whatever\r\n" +
-                      "Cookie: name=value\r\n" +
-                      "\r\n"
-                      +
-                      "POST / HTTP/1.1\r\n" +
-                      "Host: whatever\r\n" +
-                      "Cookie: \r\n" +
-                      "Connection: close\r\n" +
-                      "\r\n";
+            "Host: whatever\r\n" +
+            "Cookie: name=value\r\n" +
+            "\r\n"
+            +
+            "POST / HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Cookie: \r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
 
         _connector.getResponse(request);
         assertEquals(null, cookie[0]);
         assertEquals(null, cookie[1]);
 
         request = "POST / HTTP/1.1\r\n" +
-                      "Host: whatever\r\n" +
-                      "Cookie: name=value\r\n" +
-                      "Cookie: other=cookie\r\n" +
-                      "\r\n"
-                      +
-                      "POST / HTTP/1.1\r\n" +
-                      "Host: whatever\r\n" +
-                      "Cookie: name=value\r\n" +
-                      "Cookie:\r\n" +
-                      "Connection: close\r\n" +
-                      "\r\n";
+            "Host: whatever\r\n" +
+            "Cookie: name=value\r\n" +
+            "Cookie: other=cookie\r\n" +
+            "\r\n"
+            +
+            "POST / HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Cookie: name=value\r\n" +
+            "Cookie:\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
 
         _connector.getResponse(request);
 
@@ -1646,12 +1646,12 @@ public class RequestTest
             };
 
             String request = "POST / HTTP/1.1\r\n" +
-                                 "Host: whatever\r\n" +
-                                 "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
-                                 "Content-Length: " + buf.length() + "\r\n" +
-                                 "Connection: close\r\n" +
-                                 "\r\n" +
-                                 buf;
+                "Host: whatever\r\n" +
+                "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
+                "Content-Length: " + buf.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                buf;
 
             long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             String rawResponse = _connector.getResponse(request);
@@ -1692,12 +1692,12 @@ public class RequestTest
             };
 
             String request = "POST / HTTP/1.1\r\n" +
-                                 "Host: whatever\r\n" +
-                                 "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
-                                 "Content-Length: " + buf.length() + "\r\n" +
-                                 "Connection: close\r\n" +
-                                 "\r\n" +
-                                 buf;
+                "Host: whatever\r\n" +
+                "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\r\n" +
+                "Content-Length: " + buf.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                buf;
 
             long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             String rawResponse = _connector.getResponse(request);
@@ -1766,8 +1766,8 @@ public class RequestTest
             ((Request)request).setHandled(true);
 
             if (request.getContentLength() > 0
-                    && !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString())
-                    && !request.getContentType().startsWith("multipart/form-data"))
+                && !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString())
+                && !request.getContentType().startsWith("multipart/form-data"))
                 _content = IO.toString(request.getInputStream());
 
             if (_checker != null && _checker.check(request, response))

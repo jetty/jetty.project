@@ -67,10 +67,10 @@ public class StartArgs
         if (ver == null)
         {
             ver = ManifestUtils.getManifest(StartArgs.class)
-                      .map(Manifest::getMainAttributes)
-                      .filter(attributes -> "Eclipse Jetty Project".equals(attributes.getValue("Implementation-Vendor")))
-                      .map(attributes -> attributes.getValue("Implementation-Version"))
-                      .orElse(null);
+                .map(Manifest::getMainAttributes)
+                .filter(attributes -> "Eclipse Jetty Project".equals(attributes.getValue("Implementation-Vendor")))
+                .map(attributes -> attributes.getValue("Implementation-Version"))
+                .orElse(null);
         }
 
         // Use jetty-version.properties values
@@ -719,14 +719,14 @@ public class StartArgs
             if (isJPMS())
             {
                 Map<Boolean, List<File>> dirsAndFiles = StreamSupport.stream(classpath.spliterator(), false)
-                                                            .collect(Collectors.groupingBy(File::isDirectory));
+                    .collect(Collectors.groupingBy(File::isDirectory));
                 List<File> files = dirsAndFiles.get(false);
                 if (files != null && !files.isEmpty())
                 {
                     cmd.addRawArg("--module-path");
                     String modules = files.stream()
-                                         .map(File::getAbsolutePath)
-                                         .collect(Collectors.joining(File.pathSeparator));
+                        .map(File::getAbsolutePath)
+                        .collect(Collectors.joining(File.pathSeparator));
                     cmd.addRawArg(modules);
                 }
                 List<File> dirs = dirsAndFiles.get(true);
@@ -734,8 +734,8 @@ public class StartArgs
                 {
                     cmd.addRawArg("--class-path");
                     String directories = dirs.stream()
-                                             .map(File::getAbsolutePath)
-                                             .collect(Collectors.joining(File.pathSeparator));
+                        .map(File::getAbsolutePath)
+                        .collect(Collectors.joining(File.pathSeparator));
                     cmd.addRawArg(directories);
                 }
 

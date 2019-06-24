@@ -70,9 +70,9 @@ public final class Syntax
             if ((c <= 0x1F) || (c == 0x7F))
                 throw new IllegalArgumentException(msg + ": RFC2616 tokens may not contain control characters");
             if (c == '(' || c == ')' || c == '<' || c == '>' || c == '@' ||
-                    c == ',' || c == ';' || c == ':' || c == '\\' || c == '"' ||
-                    c == '/' || c == '[' || c == ']' || c == '?' || c == '=' ||
-                    c == '{' || c == '}' || c == ' ')
+                c == ',' || c == ';' || c == ':' || c == '\\' || c == '"' ||
+                c == '/' || c == '[' || c == ']' || c == '?' || c == '=' ||
+                c == '{' || c == '}' || c == ' ')
             {
                 throw new IllegalArgumentException(msg + ": RFC2616 tokens may not contain separator character: [" + c + "]");
             }
@@ -129,9 +129,9 @@ public final class Syntax
             if ((c <= 0x1F) || (c == 0x7F))
                 throw new IllegalArgumentException("RFC6265 Cookie values may not contain control characters");
             if ((c == ' ' /* 0x20 */) ||
-                    (c == '"' /* 0x2C */) ||
-                    (c == ';' /* 0x3B */) ||
-                    (c == '\\' /* 0x5C */))
+                (c == '"' /* 0x2C */) ||
+                (c == ';' /* 0x3B */) ||
+                (c == '\\' /* 0x5C */))
             {
                 throw new IllegalArgumentException("RFC6265 Cookie values may not contain character: [" + c + "]");
             }

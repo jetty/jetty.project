@@ -684,7 +684,9 @@ public class HttpOutputTest
 
     interface ChainedInterceptor extends HttpOutput.Interceptor
     {
-        default void init(Request baseRequest) {}
+        default void init(Request baseRequest)
+        {
+        }
 
         ;
 

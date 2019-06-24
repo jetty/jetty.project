@@ -754,7 +754,7 @@ public class JettyDistro
     private String getJavaBin()
     {
         String javaexes[] = new String[]
-                                {"java", "java.exe"};
+            {"java", "java.exe"};
 
         File javaHomeDir = new File(System.getProperty("java.home"));
         for (String javaexe : javaexes)

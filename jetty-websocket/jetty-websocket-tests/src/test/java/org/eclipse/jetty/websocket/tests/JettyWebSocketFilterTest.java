@@ -54,7 +54,7 @@ public class JettyWebSocketFilterTest
         server.setHandler(contextHandler);
 
         JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-                                                                                container.addMapping("/", (req, resp) -> new EchoSocket()));
+            container.addMapping("/", (req, resp) -> new EchoSocket()));
         server.start();
 
         client = new WebSocketClient();

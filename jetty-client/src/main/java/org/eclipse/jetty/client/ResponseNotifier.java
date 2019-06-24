@@ -106,9 +106,9 @@ public class ResponseNotifier
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
     {
         List<Response.AsyncContentListener> contentListeners = listeners.stream()
-                                                                   .filter(Response.AsyncContentListener.class::isInstance)
-                                                                   .map(Response.AsyncContentListener.class::cast)
-                                                                   .collect(Collectors.toList());
+            .filter(Response.AsyncContentListener.class::isInstance)
+            .map(Response.AsyncContentListener.class::cast)
+            .collect(Collectors.toList());
         notifyContent(response, buffer, callback, contentListeners);
     }
 

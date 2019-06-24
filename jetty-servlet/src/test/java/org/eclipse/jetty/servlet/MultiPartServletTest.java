@@ -136,10 +136,10 @@ public class MultiPartServletTest
         try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
         {
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                           .scheme(HttpScheme.HTTP.asString())
-                                           .method(HttpMethod.POST)
-                                           .content(multiPart)
-                                           .send();
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .content(multiPart)
+                .send();
 
             assertEquals(500, response.getStatus());
             assertThat(response.getContentAsString(),

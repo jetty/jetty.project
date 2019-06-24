@@ -62,7 +62,7 @@ public class QuotedStringTokenizer
         _returnQuotes = returnQuotes;
 
         if (_delim.indexOf('\'') >= 0 ||
-                _delim.indexOf('"') >= 0)
+            _delim.indexOf('"') >= 0)
             throw new Error("Can't use quotes as delimiters: " + _delim);
 
         _token = new StringBuffer(_string.length() > 1024 ? 512 : _string.length() / 2);
@@ -583,8 +583,8 @@ public class QuotedStringTokenizer
     private static boolean isValidEscaping(char c)
     {
         return ((c == 'n') || (c == 'r') || (c == 't') ||
-                    (c == 'f') || (c == 'b') || (c == '\\') ||
-                    (c == '/') || (c == '"') || (c == 'u'));
+            (c == 'f') || (c == 'b') || (c == '\\') ||
+            (c == '/') || (c == '"') || (c == 'u'));
     }
 
     public static boolean isQuoted(String s)

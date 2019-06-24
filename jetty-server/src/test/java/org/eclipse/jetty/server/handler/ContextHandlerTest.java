@@ -69,11 +69,11 @@ public class ContextHandlerTest
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[]
-                                 {connector});
+            {connector});
 
         ContextHandler contextA = new ContextHandler("/");
         contextA.setVirtualHosts(new String[]
-                                     {"www.example.com"});
+            {"www.example.com"});
         IsHandledHandler handlerA = new IsHandledHandler();
         contextA.setHandler(handlerA);
 
@@ -81,7 +81,7 @@ public class ContextHandlerTest
         IsHandledHandler handlerB = new IsHandledHandler();
         contextB.setHandler(handlerB);
         contextB.setVirtualHosts(new String[]
-                                     {"www.example2.com."});
+            {"www.example2.com."});
 
         ContextHandler contextC = new ContextHandler("/");
         IsHandledHandler handlerC = new IsHandledHandler();

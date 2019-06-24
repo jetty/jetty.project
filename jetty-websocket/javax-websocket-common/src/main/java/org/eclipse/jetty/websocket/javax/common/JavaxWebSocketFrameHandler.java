@@ -284,8 +284,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         }
 
         return Collections.unmodifiableSet(messageHandlerMap.values().stream()
-                                               .map((rh) -> rh.getMessageHandler())
-                                               .collect(Collectors.toSet()));
+            .map((rh) -> rh.getMessageHandler())
+            .collect(Collectors.toSet()));
     }
 
     public Map<Byte, RegisteredMessageHandler> getMessageHandlerMap()
@@ -319,7 +319,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             // TODO: move methodhandle lookup to container?
             MethodHandles.Lookup lookup = MethodHandles.publicLookup();
             MethodHandle partialMessageHandler = lookup
-                                                     .findVirtual(MessageHandler.Partial.class, "onMessage", MethodType.methodType(Void.TYPE, Object.class, Boolean.TYPE));
+                .findVirtual(MessageHandler.Partial.class, "onMessage", MethodType.methodType(Void.TYPE, Object.class, Boolean.TYPE));
             partialMessageHandler = partialMessageHandler.bindTo(handler);
 
             // MessageHandler.Partial has no decoder support!
@@ -476,8 +476,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         synchronized (messageHandlerMap)
         {
             Optional<Map.Entry<Byte, RegisteredMessageHandler>> optionalEntry = messageHandlerMap.entrySet().stream()
-                                                                                    .filter((entry) -> entry.getValue().getMessageHandler().equals(handler))
-                                                                                    .findFirst();
+                .filter((entry) -> entry.getValue().getMessageHandler().equals(handler))
+                .findFirst();
 
             if (optionalEntry.isPresent())
             {

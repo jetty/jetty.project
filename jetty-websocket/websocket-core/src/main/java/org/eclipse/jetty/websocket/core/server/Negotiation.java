@@ -133,21 +133,21 @@ public class Negotiation
 
             Set<String> available = registry.getAvailableExtensionNames();
             offeredExtensions = extensions == null
-                                    ? Collections.emptyList()
-                                    : extensions.getValues().stream()
-                                          .map(ExtensionConfig::parse)
-                                          .filter(ec -> available.contains(ec.getName().toLowerCase()) && !ec.getName().startsWith("@"))
-                                          .collect(Collectors.toList());
+                ? Collections.emptyList()
+                : extensions.getValues().stream()
+                .map(ExtensionConfig::parse)
+                .filter(ec -> available.contains(ec.getName().toLowerCase()) && !ec.getName().startsWith("@"))
+                .collect(Collectors.toList());
 
             offeredSubprotocols = subprotocols == null
-                                      ? Collections.emptyList()
-                                      : subprotocols.getValues();
+                ? Collections.emptyList()
+                : subprotocols.getValues();
 
             negotiatedExtensions = new ArrayList<>();
             for (ExtensionConfig config : offeredExtensions)
             {
                 long matches = negotiatedExtensions.stream()
-                                   .filter(negotiatedConfig -> negotiatedConfig.getName().equals(config.getName())).count();
+                    .filter(negotiatedConfig -> negotiatedConfig.getName().equals(config.getName())).count();
                 if (matches == 0)
                     negotiatedExtensions.add(config);
             }

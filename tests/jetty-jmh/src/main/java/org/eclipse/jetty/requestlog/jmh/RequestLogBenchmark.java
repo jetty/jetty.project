@@ -94,14 +94,14 @@ public class RequestLogBenchmark
 
             // setup iteration
             iteratedLog = new Object[]
-                              {
-                                  logURI,
-                                  " - ",
-                                  logAddr,
-                                  " ",
-                                  logLength,
-                                  "\n"
-                              };
+                {
+                    logURI,
+                    " - ",
+                    logAddr,
+                    " ",
+                    logLength,
+                    "\n"
+                };
 
             // setup methodHandle
             logHandle = dropArguments(append.bindTo("\n"), 1, String.class);
@@ -198,13 +198,13 @@ public class RequestLogBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                          .include(RequestLogBenchmark.class.getSimpleName())
-                          .warmupIterations(20)
-                          .measurementIterations(10)
-                          .addProfiler(GCProfiler.class)
-                          .forks(1)
-                          .threads(100)
-                          .build();
+            .include(RequestLogBenchmark.class.getSimpleName())
+            .warmupIterations(20)
+            .measurementIterations(10)
+            .addProfiler(GCProfiler.class)
+            .forks(1)
+            .threads(100)
+            .build();
 
         new Runner(opt).run();
     }

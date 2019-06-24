@@ -233,11 +233,11 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         ISession session = getSession();
         // Compute whether all requests are idle.
         boolean result = session.getStreams().stream()
-                             .map(stream -> (IStream)stream)
-                             .map(stream -> (HttpChannelOverHTTP2)stream.getAttachment())
-                             .filter(Objects::nonNull)
-                             .map(HttpChannelOverHTTP2::isRequestIdle)
-                             .reduce(true, Boolean::logicalAnd);
+            .map(stream -> (IStream)stream)
+            .map(stream -> (HttpChannelOverHTTP2)stream.getAttachment())
+            .filter(Objects::nonNull)
+            .map(HttpChannelOverHTTP2::isRequestIdle)
+            .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
         return result;

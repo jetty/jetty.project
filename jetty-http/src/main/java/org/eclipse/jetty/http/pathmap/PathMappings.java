@@ -208,9 +208,9 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     public E get(PathSpec spec)
     {
         Optional<E> optionalResource = _mappings.stream()
-                                           .filter(mappedResource -> mappedResource.getPathSpec().equals(spec))
-                                           .map(mappedResource -> mappedResource.getResource())
-                                           .findFirst();
+            .filter(mappedResource -> mappedResource.getPathSpec().equals(spec))
+            .map(mappedResource -> mappedResource.getResource())
+            .findFirst();
         if (!optionalResource.isPresent())
             return null;
 

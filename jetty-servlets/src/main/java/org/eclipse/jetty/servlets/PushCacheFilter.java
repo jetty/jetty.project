@@ -123,8 +123,8 @@ public class PushCacheFilter implements Filter
 
         PushBuilder pushBuilder = request.newPushBuilder();
         if (HttpVersion.fromString(request.getProtocol()).getVersion() < 20 ||
-                !HttpMethod.GET.is(request.getMethod()) ||
-                pushBuilder == null)
+            !HttpMethod.GET.is(request.getMethod()) ||
+            pushBuilder == null)
         {
             chain.doFilter(req, resp);
             return;
@@ -138,9 +138,9 @@ public class PushCacheFilter implements Filter
         for (String headerName : headerNames)
         {
             if (HttpHeader.IF_MATCH.is(headerName) ||
-                    HttpHeader.IF_MODIFIED_SINCE.is(headerName) ||
-                    HttpHeader.IF_NONE_MATCH.is(headerName) ||
-                    HttpHeader.IF_UNMODIFIED_SINCE.is(headerName))
+                HttpHeader.IF_MODIFIED_SINCE.is(headerName) ||
+                HttpHeader.IF_NONE_MATCH.is(headerName) ||
+                HttpHeader.IF_UNMODIFIED_SINCE.is(headerName))
             {
                 conditional = true;
                 break;

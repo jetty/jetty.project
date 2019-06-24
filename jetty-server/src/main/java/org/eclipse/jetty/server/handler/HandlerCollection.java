@@ -106,7 +106,7 @@ public class HandlerCollection extends AbstractHandlerContainer
             for (Handler handler : handlers._handlers)
             {
                 if (handler == this || (handler instanceof HandlerContainer &&
-                                            Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
+                    Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
                     throw new IllegalStateException("setHandler loop");
             }
 

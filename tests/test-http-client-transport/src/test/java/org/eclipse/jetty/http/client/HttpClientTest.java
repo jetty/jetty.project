@@ -87,8 +87,8 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -226,10 +226,10 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .method(HttpMethod.POST)
-                                       .content(new BytesContentProvider(bytes))
-                                       .timeout(15, TimeUnit.SECONDS)
-                                       .send();
+            .method(HttpMethod.POST)
+            .content(new BytesContentProvider(bytes))
+            .timeout(15, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -273,10 +273,10 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         byte[][] bytes = IntStream.range(0, chunks).mapToObj(x -> new byte[chunkSize]).toArray(byte[][]::new);
         BytesContentProvider contentProvider = new BytesContentProvider("application/octet-stream", bytes);
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .method(HttpMethod.POST)
-                                       .content(contentProvider)
-                                       .timeout(15, TimeUnit.SECONDS)
-                                       .send();
+            .method(HttpMethod.POST)
+            .content(contentProvider)
+            .timeout(15, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(chunks * chunkSize, Integer.parseInt(response.getContentAsString()));
@@ -378,11 +378,11 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .scheme(scenario.getScheme())
-                                       .method(HttpMethod.OPTIONS)
-                                       .path("*")
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.OPTIONS)
+            .path("*")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -409,11 +409,11 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .scheme(scenario.getScheme())
-                                       .method(HttpMethod.OPTIONS)
-                                       .path("*")
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.OPTIONS)
+            .path("*")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -479,9 +479,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .scheme(scenario.getScheme())
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(openLatch.await(1, TimeUnit.SECONDS));
@@ -588,9 +588,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .method(HttpMethod.HEAD)
-                                       .path(path)
-                                       .send();
+            .method(HttpMethod.HEAD)
+            .path(path)
+            .send();
 
         assertEquals(status, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -612,10 +612,10 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .method(HttpMethod.HEAD)
-                                       .path(scenario.servletPath)
-                                       .header(HttpHeader.ACCEPT, "*/*")
-                                       .send();
+            .method(HttpMethod.HEAD)
+            .path(scenario.servletPath)
+            .header(HttpHeader.ACCEPT, "*/*")
+            .send();
 
         assertEquals(status, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -638,9 +638,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         org.eclipse.jetty.client.api.Request request = scenario.client
-                                                           .newRequest(scenario.newURI())
-                                                           .method(HttpMethod.HEAD)
-                                                           .path(scenario.servletPath);
+            .newRequest(scenario.newURI())
+            .method(HttpMethod.HEAD)
+            .path(scenario.servletPath);
         FutureResponseListener listener = new FutureResponseListener(request, length / 2);
         request.send(listener);
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);

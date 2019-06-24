@@ -127,11 +127,11 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         final AtomicLong requestTime = new AtomicLong();
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .scheme(scenario.getScheme())
-                                       .file(upload)
-                                       .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
-                                       .timeout(30, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .file(upload)
+            .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
+            .timeout(30, TimeUnit.SECONDS)
+            .send();
         long responseTime = System.nanoTime();
 
         assertEquals(200, response.getStatus());
@@ -509,21 +509,21 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         final byte[] data = new byte[]{0, 1, 2, 3};
         ExecutionException e = assertThrows(ExecutionException.class, () ->
-                                                                          scenario.client.newRequest(scenario.newURI())
-                                                                              .scheme(scenario.getScheme())
-                                                                              .content(new InputStreamContentProvider(new InputStream()
-                                                                              {
-                                                                                  private int index = 0;
+            scenario.client.newRequest(scenario.newURI())
+                .scheme(scenario.getScheme())
+                .content(new InputStreamContentProvider(new InputStream()
+                {
+                    private int index = 0;
 
-                                                                                  @Override
-                                                                                  public int read()
-                                                                                  {
-                                                                                      // Will eventually throw ArrayIndexOutOfBounds
-                                                                                      return data[index++];
-                                                                                  }
-                                                                              }, data.length / 2))
-                                                                              .timeout(5, TimeUnit.SECONDS)
-                                                                              .send());
+                    @Override
+                    public int read()
+                    {
+                        // Will eventually throw ArrayIndexOutOfBounds
+                        return data[index++];
+                    }
+                }, data.length / 2))
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
         assertThat(e.getCause(), instanceOf(NoSuchElementException.class));
     }
 
@@ -793,8 +793,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 public void onComplete(Result result)
                 {
                     if (result.isSucceeded() &&
-                            result.getResponse().getStatus() == 200 &&
-                            Arrays.equals(data, getContent()))
+                        result.getResponse().getStatus() == 200 &&
+                        Arrays.equals(data, getContent()))
                         latch.countDown();
                 }
             });
@@ -877,8 +877,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 public void onComplete(Result result)
                 {
                     if (result.isSucceeded() &&
-                            result.getResponse().getStatus() == 200 &&
-                            Arrays.equals(data, getContent()))
+                        result.getResponse().getStatus() == 200 &&
+                        Arrays.equals(data, getContent()))
                         latch.countDown();
                 }
             });
@@ -913,8 +913,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 public void onComplete(Result result)
                 {
                     if (result.isSucceeded() &&
-                            result.getResponse().getStatus() == 200 &&
-                            Arrays.equals(data, getContent()))
+                        result.getResponse().getStatus() == 200 &&
+                        Arrays.equals(data, getContent()))
                         latch.countDown();
                 }
             });

@@ -209,10 +209,10 @@ public class AvailableEncoders implements Predicate<Class<?>>
         try
         {
             RegisteredEncoder conflicts = registeredEncoders.stream()
-                                              .filter(registered -> registered.isType(objectType))
-                                              .filter(registered -> !registered.primitive)
-                                              .findFirst()
-                                              .get();
+                .filter(registered -> registered.isType(objectType))
+                .filter(registered -> !registered.primitive)
+                .findFirst()
+                .get();
 
             if (conflicts.encoder.equals(encoder) && conflicts.implementsInterface(interfaceClass))
             {
@@ -238,16 +238,16 @@ public class AvailableEncoders implements Predicate<Class<?>>
     public List<RegisteredEncoder> supporting(Class<? extends Encoder> interfaceType)
     {
         return registeredEncoders.stream()
-                   .filter(registered -> registered.implementsInterface(interfaceType))
-                   .collect(Collectors.toList());
+            .filter(registered -> registered.implementsInterface(interfaceType))
+            .collect(Collectors.toList());
     }
 
     public RegisteredEncoder getRegisteredEncoderFor(Class<?> type)
     {
         return registeredEncoders.stream()
-                   .filter(registered -> registered.isType(type))
-                   .findFirst()
-                   .get();
+            .filter(registered -> registered.isType(type))
+            .findFirst()
+            .get();
     }
 
     public Class<? extends Encoder> getEncoderFor(Class<?> type)
@@ -290,8 +290,8 @@ public class AvailableEncoders implements Predicate<Class<?>>
     public boolean test(Class<?> type)
     {
         return registeredEncoders.stream()
-                   .filter(registered -> registered.isType(type))
-                   .findFirst()
-                   .isPresent();
+            .filter(registered -> registered.isType(type))
+            .findFirst()
+            .isPresent();
     }
 }

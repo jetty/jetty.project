@@ -362,7 +362,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                 return ((ContextHandler.Context)servletContext).getContextHandler();
             else
                 throw new IllegalArgumentException("The servletContext " + servletContext + " " +
-                                                       servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
+                    servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
         }
         else
             return ContextHandler.getCurrentContext().getContextHandler();
@@ -383,10 +383,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (value == null || value.length() == 0)
             return dft;
         return (value.startsWith("t") ||
-                    value.startsWith("T") ||
-                    value.startsWith("y") ||
-                    value.startsWith("Y") ||
-                    value.startsWith("1"));
+            value.startsWith("T") ||
+            value.startsWith("y") ||
+            value.startsWith("Y") ||
+            value.startsWith("1"));
     }
 
     private int getInitInt(String name, int dft)
@@ -509,7 +509,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                 @SuppressWarnings("ReferenceEquality")
                 boolean isDefaultHolder = (entry.getResource() != _defaultHolder);
                 if (entry != null && isDefaultHolder &&
-                        (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
+                    (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
                     welcomeServlet = welcomeInContext;
             }
         }

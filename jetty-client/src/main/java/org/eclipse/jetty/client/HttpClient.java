@@ -465,7 +465,7 @@ public class HttpClient extends ContainerLifeCycle
 
             // Remove authorization headers.
             if (HttpHeader.AUTHORIZATION == header ||
-                    HttpHeader.PROXY_AUTHORIZATION == header)
+                HttpHeader.PROXY_AUTHORIZATION == header)
                 continue;
 
             String name = field.getName();
@@ -519,7 +519,7 @@ public class HttpClient extends ContainerLifeCycle
     private Origin createOrigin(String scheme, String host, int port)
     {
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) &&
-                !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
+            !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
         scheme = scheme.toLowerCase(Locale.ENGLISH);

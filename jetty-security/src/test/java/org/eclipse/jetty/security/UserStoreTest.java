@@ -52,8 +52,8 @@ public class UserStoreTest
         Set<AbstractLoginService.RolePrincipal>
             roles = userIdentity.getSubject().getPrincipals(AbstractLoginService.RolePrincipal.class);
         List<String> list = roles.stream()
-                                .map(rolePrincipal -> rolePrincipal.getName())
-                                .collect(Collectors.toList());
+            .map(rolePrincipal -> rolePrincipal.getName())
+            .collect(Collectors.toList());
         assertEquals(1, list.size());
         assertEquals("pub", list.get(0));
     }

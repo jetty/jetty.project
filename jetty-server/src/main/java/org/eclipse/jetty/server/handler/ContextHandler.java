@@ -1123,7 +1123,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             // check the target.
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) ||
-                    DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
+                DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
             {
                 if (_compactPath)
                     target = URIUtil.compactPath(target);
@@ -2020,8 +2020,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 String contextPath = ch.getContextPath();
 
                 if (uripath.equals(contextPath) ||
-                        (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
-                        "/".equals(contextPath))
+                    (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
+                    "/".equals(contextPath))
                 {
                     // look first for vhost matching context only
                     if (getVirtualHosts() != null && getVirtualHosts().length > 0)

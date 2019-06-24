@@ -543,13 +543,21 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
             tp.execute(() ->
-            { throw new IllegalStateException(); });
+            {
+                throw new IllegalStateException();
+            });
             tp.execute(() ->
-            { throw new Error(); });
+            {
+                throw new Error();
+            });
             tp.execute(() ->
-            { throw new RuntimeException(); });
+            {
+                throw new RuntimeException();
+            });
             tp.execute(() ->
-            { throw new ThreadDeath(); });
+            {
+                throw new ThreadDeath();
+            });
 
             Thread.sleep(100);
             assertThat(tp.getThreads(), greaterThanOrEqualTo(5));
@@ -645,7 +653,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
 
         assertFalse(pool.tryExecute(() ->
-        {}));
+        {
+        }));
         waitForReserved(pool, 1);
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();

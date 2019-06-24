@@ -51,9 +51,9 @@ public class DistributionTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         try (DistributionTester.Run run1 = distribution.start("--add-to-start=http"))
         {
@@ -80,9 +80,9 @@ public class DistributionTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         String[] args1 = {
             "--create-startd",
@@ -117,9 +117,9 @@ public class DistributionTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         String[] args1 = {
             "--create-startd",
@@ -158,9 +158,9 @@ public class DistributionTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         String[] args1 = {
             "--create-startd",
@@ -209,9 +209,9 @@ public class DistributionTests extends AbstractDistributionTest
 
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         String[] args1 = {
             "--create-startd",
@@ -250,10 +250,10 @@ public class DistributionTests extends AbstractDistributionTest
         Path jettyBase = Files.createTempDirectory("jetty_base");
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .jettyBase(jettyBase)
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         String[] args1 = {
             "--create-startd",

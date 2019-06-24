@@ -100,17 +100,17 @@ public class WebAppContextTest
     {
         Configurations.cleanKnown();
         String[] known_and_enabled = Configurations.getKnown().stream()
-                                         .filter(c -> !c.isDisabledByDefault())
-                                         .map(c -> c.getClass().getName())
-                                         .toArray(String[]::new);
+            .filter(c -> !c.isDisabledByDefault())
+            .map(c -> c.getClass().getName())
+            .toArray(String[]::new);
 
         Server server = new Server();
 
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
         assertThat(wac.getWebAppConfigurations().stream()
-                       .map(c -> c.getClass().getName())
-                       .collect(Collectors.toList()),
+                .map(c -> c.getClass().getName())
+                .collect(Collectors.toList()),
             Matchers.containsInAnyOrder(known_and_enabled));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);

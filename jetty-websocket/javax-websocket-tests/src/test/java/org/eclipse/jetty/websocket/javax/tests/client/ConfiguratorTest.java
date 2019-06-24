@@ -121,8 +121,8 @@ public class ConfiguratorTest
         // Build Config
         TrackingConfigurator configurator = new TrackingConfigurator();
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                                          .configurator(configurator)
-                                          .build();
+            .configurator(configurator)
+            .build();
 
         // Connect
         Session session = container.connectToServer(clientSocket, config, server.getWsUri().resolve("/echo"));

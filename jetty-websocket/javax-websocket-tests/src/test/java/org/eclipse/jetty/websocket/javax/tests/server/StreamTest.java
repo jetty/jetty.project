@@ -85,7 +85,7 @@ public class StreamTest
 
         // Create Server Endpoint with output directory configuration
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(UploadSocket.class, "/upload/{filename}")
-                                          .configurator(new ServerUploadConfigurator(outputDir)).build();
+            .configurator(new ServerUploadConfigurator(outputDir)).build();
         container.addEndpoint(config);
     }
 

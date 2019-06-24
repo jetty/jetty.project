@@ -115,8 +115,8 @@ public class ConfiguratorTest
             else
             {
                 return "negotiatedExtensions=" + negotiatedExtensions.stream()
-                                                     .map((ext) -> ext.getName())
-                                                     .collect(Collectors.joining(",", "[", "]"));
+                    .map((ext) -> ext.getName())
+                    .collect(Collectors.joining(",", "[", "]"));
             }
         }
     }

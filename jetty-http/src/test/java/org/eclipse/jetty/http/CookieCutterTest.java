@@ -72,8 +72,8 @@ public class CookieCutterTest
     public void testRFC_Double()
     {
         String rawCookie = "$Version=\"1\"; " +
-                               "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-                               "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
 
         Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
@@ -89,9 +89,9 @@ public class CookieCutterTest
     public void testRFC_Triple()
     {
         String rawCookie = "$Version=\"1\"; " +
-                               "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-                               "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
-                               "Shipping=\"FedEx\"; $Path=\"/acme\"";
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
+            "Shipping=\"FedEx\"; $Path=\"/acme\"";
 
         Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
@@ -108,8 +108,8 @@ public class CookieCutterTest
     public void testRFC_PathExample()
     {
         String rawCookie = "$Version=\"1\"; " +
-                               "Part_Number=\"Riding_Rocket_0023\"; $Path=\"/acme/ammo\"; " +
-                               "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+            "Part_Number=\"Riding_Rocket_0023\"; $Path=\"/acme/ammo\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
 
         Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
@@ -125,8 +125,8 @@ public class CookieCutterTest
     public void testRFC2109_CookieSpoofingExample()
     {
         String rawCookie = "$Version=\"1\"; " +
-                               "session_id=\"1234\"; " +
-                               "session_id=\"1111\"; $Domain=\".cracker.edu\"";
+            "session_id=\"1234\"; " +
+            "session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
         Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
@@ -142,7 +142,7 @@ public class CookieCutterTest
     public void testRFC2965_CookieSpoofingExample()
     {
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
-                               "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
+            "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
         Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 

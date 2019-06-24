@@ -61,7 +61,7 @@ public class WebSocketJsrServer
 
         // Enable javax.websocket configuration for the context
         JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-                                                                                container.addEndpoint(EchoJsrSocket.class));
+            container.addEndpoint(EchoJsrSocket.class));
 
         server.start();
         contextHandler.dumpStdErr();

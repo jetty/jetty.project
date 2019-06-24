@@ -132,8 +132,8 @@ public class HashLoginService extends AbstractLoginService
             return null;
 
         List<String> list = roles.stream()
-                                .map(rolePrincipal -> rolePrincipal.getName())
-                                .collect(Collectors.toList());
+            .map(rolePrincipal -> rolePrincipal.getName())
+            .collect(Collectors.toList());
 
         return list.toArray(new String[roles.size()]);
     }

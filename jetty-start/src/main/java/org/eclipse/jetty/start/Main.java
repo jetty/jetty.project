@@ -333,7 +333,7 @@ public class Main
             if (enabled.getVersion().isNewerThan(START_VERSION))
             {
                 throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion() +
-                                                                           "] which is newer than this version of jetty [" + START_VERSION + "]");
+                    "] which is newer than this version of jetty [" + START_VERSION + "]");
             }
         }
 

@@ -345,12 +345,12 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 
         // return task to complete the job
         Runnable task = fillable
-                            ? (flushable
-                                   ? _runCompleteWriteFillable
-                                   : _runFillable)
-                            : (flushable
-                                   ? _runCompleteWrite
-                                   : null);
+            ? (flushable
+            ? _runCompleteWriteFillable
+            : _runFillable)
+            : (flushable
+            ? _runCompleteWrite
+            : null);
 
         if (LOG.isDebugEnabled())
             LOG.debug("task {}", task);

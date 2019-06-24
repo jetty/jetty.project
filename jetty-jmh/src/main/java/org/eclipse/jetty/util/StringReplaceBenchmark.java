@@ -109,10 +109,10 @@ public class StringReplaceBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                          .include(StringReplaceBenchmark.class.getSimpleName())
+            .include(StringReplaceBenchmark.class.getSimpleName())
 //            .addProfiler(GCProfiler.class)
-                          .forks(1)
-                          .build();
+            .forks(1)
+            .build();
 
         new Runner(opt).run();
     }

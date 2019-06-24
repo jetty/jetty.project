@@ -146,8 +146,8 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         int runs = 1;
         int iterations = 256;
         IntStream.range(0, 16).parallel().forEach(i ->
-                                                      IntStream.range(0, runs).forEach(j ->
-                                                                                           run(iterations)));
+            IntStream.range(0, runs).forEach(j ->
+                run(iterations)));
     }
 
     private void run(int iterations)
@@ -219,9 +219,9 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     {
         long requestId = requestCount.incrementAndGet();
         Request request = scenario.client.newRequest(host, scenario.getNetworkConnectorLocalPortInt().orElse(0))
-                              .scheme(scheme)
-                              .path("/" + requestId)
-                              .method(method);
+            .scheme(scheme)
+            .path("/" + requestId)
+            .method(method);
 
         if (clientClose)
             request.header(HttpHeader.CONNECTION, "close");

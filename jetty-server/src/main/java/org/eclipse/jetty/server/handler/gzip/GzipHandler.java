@@ -185,8 +185,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             if ("image/svg+xml".equals(type))
                 _paths.exclude("*.svgz");
             else if (type.startsWith("image/") ||
-                         type.startsWith("audio/") ||
-                         type.startsWith("video/"))
+                type.startsWith("audio/") ||
+                type.startsWith("video/"))
                 _mimeTypes.exclude(type);
         }
         _mimeTypes.exclude("application/compress");

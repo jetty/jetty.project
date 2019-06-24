@@ -22,7 +22,6 @@ import java.io.FilterWriter;
 import java.io.IOException;
 import java.io.Writer;
 
-
 /**
  * Handle a multipart MIME response.
  */
@@ -44,7 +43,7 @@ public class MultiPartWriter extends FilterWriter
     {
         super(out);
         boundary = "jetty" + System.identityHashCode(this) +
-                       Long.toString(System.currentTimeMillis(), 36);
+            Long.toString(System.currentTimeMillis(), 36);
 
         inPart = false;
     }

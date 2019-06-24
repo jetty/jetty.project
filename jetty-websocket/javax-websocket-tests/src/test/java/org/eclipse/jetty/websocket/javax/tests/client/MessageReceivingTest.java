@@ -106,8 +106,8 @@ public class MessageReceivingTest
         assertThat(clientEndpoint, instanceOf(javax.websocket.Endpoint.class));
 
         ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create()
-                                                .preferredSubprotocols(Collections.singletonList("partial-binary"))
-                                                .build();
+            .preferredSubprotocols(Collections.singletonList("partial-binary"))
+            .build();
 
         try (final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
@@ -149,8 +149,8 @@ public class MessageReceivingTest
         assertThat(clientEndpoint, instanceOf(javax.websocket.Endpoint.class));
 
         ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create()
-                                                .preferredSubprotocols(Collections.singletonList("partial-text"))
-                                                .build();
+            .preferredSubprotocols(Collections.singletonList("partial-text"))
+            .build();
 
         try (final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
@@ -181,8 +181,8 @@ public class MessageReceivingTest
         assertThat(clientEndpoint, instanceOf(javax.websocket.Endpoint.class));
 
         ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create()
-                                                .preferredSubprotocols(Collections.singletonList("echo"))
-                                                .build();
+            .preferredSubprotocols(Collections.singletonList("echo"))
+            .build();
 
         try (final Session session = container.connectToServer(clientEndpoint, clientConfig, server.getWsUri()))
         {
@@ -211,8 +211,8 @@ public class MessageReceivingTest
         assertThat(clientEndpoint, instanceOf(javax.websocket.Endpoint.class));
 
         ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create()
-                                                .preferredSubprotocols(Collections.singletonList("echo"))
-                                                .build();
+            .preferredSubprotocols(Collections.singletonList("echo"))
+            .build();
 
         byte raw[] = new byte[1024 * 1024];
         Arrays.fill(raw, (byte)'x');

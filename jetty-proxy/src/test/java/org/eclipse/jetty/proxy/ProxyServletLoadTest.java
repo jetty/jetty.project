@@ -61,7 +61,7 @@ public class ProxyServletLoadTest
             ProxyServlet.class,
             AsyncProxyServlet.class,
             AsyncMiddleManServlet.class)
-                   .stream().map(Arguments::of);
+            .stream().map(Arguments::of);
     }
 
     private static final Logger LOG = Log.getLogger(ProxyServletLoadTest.class);
@@ -206,7 +206,7 @@ public class ProxyServletLoadTest
                     byte[] content = new byte[1024];
                     new Random().nextBytes(content);
                     ContentResponse response = client.newRequest(host, port).method(HttpMethod.POST).content(new BytesContentProvider(content))
-                                                   .timeout(5, TimeUnit.SECONDS).send();
+                        .timeout(5, TimeUnit.SECONDS).send();
 
                     if (response.getStatus() != 200)
                     {

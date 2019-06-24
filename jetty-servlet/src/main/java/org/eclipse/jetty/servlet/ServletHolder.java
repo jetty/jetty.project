@@ -809,8 +809,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                        ServletRequest request,
                        ServletResponse response)
         throws ServletException,
-                   UnavailableException,
-                   IOException
+        UnavailableException,
+        IOException
     {
         if (_class == null)
             throw new UnavailableException("Servlet Not Initialized");
@@ -1254,7 +1254,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      * @throws InvocationTargetException If creating new instance throws an exception
      */
     protected Servlet newInstance() throws ServletException, IllegalAccessException, InstantiationException,
-                                               NoSuchMethodException, InvocationTargetException
+        NoSuchMethodException, InvocationTargetException
     {
         try
         {

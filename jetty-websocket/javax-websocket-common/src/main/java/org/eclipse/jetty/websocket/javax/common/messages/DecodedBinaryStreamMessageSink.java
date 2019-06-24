@@ -45,7 +45,7 @@ public class DecodedBinaryStreamMessageSink<T> extends DecodedMessageSink<Decode
     {
         return MethodHandles.lookup().findVirtual(DecodedBinaryStreamMessageSink.class,
             "onStreamStart", MethodType.methodType(void.class, InputStream.class))
-                   .bindTo(this);
+            .bindTo(this);
     }
 
     @Override

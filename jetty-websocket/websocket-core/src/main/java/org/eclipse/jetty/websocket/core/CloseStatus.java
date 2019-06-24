@@ -262,16 +262,16 @@ public class CloseStatus
 
         // Specifically called out as not-transmittable?
         if ((statusCode == NO_CODE) ||
-                (statusCode == NO_CLOSE) ||
-                (statusCode == FAILED_TLS_HANDSHAKE))
+            (statusCode == NO_CLOSE) ||
+            (statusCode == FAILED_TLS_HANDSHAKE))
         {
             return false;
         }
 
         // Reserved / not yet allocated
         if ((statusCode == 1004) || // Reserved in RFC6455 (might be defined in the future)
-                ((statusCode >= 1016) && (statusCode <= 2999)) || // Reserved in RFC6455 (for future revisions, and extensions)
-                (statusCode >= 5000)) // RFC6455 Not allowed to be used for any purpose
+            ((statusCode >= 1016) && (statusCode <= 2999)) || // Reserved in RFC6455 (for future revisions, and extensions)
+            (statusCode >= 5000)) // RFC6455 Not allowed to be used for any purpose
         {
             return false;
         }

@@ -60,7 +60,7 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
     }
 
     public <T> T createInstance(Class<T> clazz) throws InstantiationException, IllegalAccessException,
-                                                           NoSuchMethodException, InvocationTargetException
+        NoSuchMethodException, InvocationTargetException
     {
         if (LOG.isDebugEnabled())
         {

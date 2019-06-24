@@ -90,17 +90,17 @@ public class SSLEngineTest
      * The expected response.
      */
     private static final String RESPONSE0 = "HTTP/1.1 200 OK\n" +
-                                                "Content-Length: " + HELLO_WORLD.length() + "\n" +
-                                                "Server: Jetty(" + JETTY_VERSION + ")\n" +
-                                                '\n' +
-                                                HELLO_WORLD;
+        "Content-Length: " + HELLO_WORLD.length() + "\n" +
+        "Server: Jetty(" + JETTY_VERSION + ")\n" +
+        '\n' +
+        HELLO_WORLD;
 
     private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" +
-                                                "Connection: close\n" +
-                                                "Content-Length: " + HELLO_WORLD.length() + "\n" +
-                                                "Server: Jetty(" + JETTY_VERSION + ")\n" +
-                                                '\n' +
-                                                HELLO_WORLD;
+        "Connection: close\n" +
+        "Content-Length: " + HELLO_WORLD.length() + "\n" +
+        "Server: Jetty(" + JETTY_VERSION + ")\n" +
+        '\n' +
+        HELLO_WORLD;
 
     private static final int BODY_SIZE = 300;
 

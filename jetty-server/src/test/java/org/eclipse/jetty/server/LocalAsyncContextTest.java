@@ -234,8 +234,8 @@ public class LocalAsyncContextTest
     {
         reset();
         String request = "GET / HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "Connection: close\r\n";
+            "Host: localhost\r\n" +
+            "Connection: close\r\n";
 
         if (content == null)
             request += "\r\n";
@@ -506,7 +506,7 @@ public class LocalAsyncContextTest
         {
             actual = actualSupplier.get();
             if (actual == null && expected == null ||
-                    actual != null && actual.equals(expected))
+                actual != null && actual.equals(expected))
                 break;
             try
             {

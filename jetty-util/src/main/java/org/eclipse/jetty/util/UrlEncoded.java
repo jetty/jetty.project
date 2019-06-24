@@ -281,8 +281,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             else if (mark < content.length())
             {
                 key = encoded
-                          ? decodeString(content, mark + 1, content.length() - mark - 1, charset)
-                          : content.substring(mark + 1);
+                    ? decodeString(content, mark + 1, content.length() - mark - 1, charset)
+                    : content.substring(mark + 1);
                 if (key != null && key.length() > 0)
                 {
                     map.add(key, "");
@@ -934,8 +934,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                 encoded[n++] = (byte)'+';
             }
             else if (b >= 'a' && b <= 'z' ||
-                         b >= 'A' && b <= 'Z' ||
-                         b >= '0' && b <= '9')
+                b >= 'A' && b <= 'Z' ||
+                b >= '0' && b <= '9')
             {
                 encoded[n++] = b;
             }

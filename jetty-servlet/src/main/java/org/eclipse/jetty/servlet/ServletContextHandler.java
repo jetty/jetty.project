@@ -196,10 +196,10 @@ public class ServletContextHandler extends ContextHandler
     {
         super.addEventListener(listener);
         if ((listener instanceof HttpSessionActivationListener) ||
-                (listener instanceof HttpSessionAttributeListener) ||
-                (listener instanceof HttpSessionBindingListener) ||
-                (listener instanceof HttpSessionListener) ||
-                (listener instanceof HttpSessionIdListener))
+            (listener instanceof HttpSessionAttributeListener) ||
+            (listener instanceof HttpSessionBindingListener) ||
+            (listener instanceof HttpSessionListener) ||
+            (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler != null)
                 _sessionHandler.addEventListener(listener);
@@ -231,10 +231,10 @@ public class ServletContextHandler extends ContextHandler
         {
 
             while (!(handler.getHandler() instanceof SessionHandler) &&
-                       !(handler.getHandler() instanceof SecurityHandler) &&
-                       !(handler.getHandler() instanceof GzipHandler) &&
-                       !(handler.getHandler() instanceof ServletHandler) &&
-                       handler.getHandler() instanceof HandlerWrapper)
+                !(handler.getHandler() instanceof SecurityHandler) &&
+                !(handler.getHandler() instanceof GzipHandler) &&
+                !(handler.getHandler() instanceof ServletHandler) &&
+                handler.getHandler() instanceof HandlerWrapper)
             {
                 handler = (HandlerWrapper)handler.getHandler();
             }
@@ -248,9 +248,9 @@ public class ServletContextHandler extends ContextHandler
         if (getSecurityHandler() != null)
         {
             while (!(handler.getHandler() instanceof SecurityHandler) &&
-                       !(handler.getHandler() instanceof GzipHandler) &&
-                       !(handler.getHandler() instanceof ServletHandler) &&
-                       handler.getHandler() instanceof HandlerWrapper)
+                !(handler.getHandler() instanceof GzipHandler) &&
+                !(handler.getHandler() instanceof ServletHandler) &&
+                handler.getHandler() instanceof HandlerWrapper)
             {
                 handler = (HandlerWrapper)handler.getHandler();
             }
@@ -264,8 +264,8 @@ public class ServletContextHandler extends ContextHandler
         if (getGzipHandler() != null)
         {
             while (!(handler.getHandler() instanceof GzipHandler) &&
-                       !(handler.getHandler() instanceof ServletHandler) &&
-                       handler.getHandler() instanceof HandlerWrapper)
+                !(handler.getHandler() instanceof ServletHandler) &&
+                handler.getHandler() instanceof HandlerWrapper)
             {
                 handler = (HandlerWrapper)handler.getHandler();
             }
@@ -279,7 +279,7 @@ public class ServletContextHandler extends ContextHandler
         if (getServletHandler() != null)
         {
             while (!(handler.getHandler() instanceof ServletHandler) &&
-                       handler.getHandler() instanceof HandlerWrapper)
+                handler.getHandler() instanceof HandlerWrapper)
             {
                 handler = (HandlerWrapper)handler.getHandler();
             }
@@ -688,8 +688,8 @@ public class ServletContextHandler extends ContextHandler
             {
                 HandlerWrapper wrapper = (HandlerWrapper)h.getHandler();
                 if (wrapper instanceof SessionHandler ||
-                        wrapper instanceof SecurityHandler ||
-                        wrapper instanceof ServletHandler)
+                    wrapper instanceof SecurityHandler ||
+                    wrapper instanceof ServletHandler)
                     break;
                 h = wrapper;
             }
@@ -988,7 +988,9 @@ public class ServletContextHandler extends ContextHandler
         private List<TaglibDescriptor> _taglibs = new ArrayList<TaglibDescriptor>();
         private List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<JspPropertyGroupDescriptor>();
 
-        public JspConfig() {}
+        public JspConfig()
+        {
+        }
 
         /**
          * @see javax.servlet.descriptor.JspConfigDescriptor#getTaglibs()

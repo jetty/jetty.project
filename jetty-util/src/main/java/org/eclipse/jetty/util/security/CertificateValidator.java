@@ -141,7 +141,7 @@ public class CertificateValidator
             {
                 LOG.debug(kse);
                 throw new CertificateException("Unable to validate certificate" +
-                                                   " for alias [" + keyAlias + "]: " + kse.getMessage(), kse);
+                    " for alias [" + keyAlias + "]: " + kse.getMessage(), kse);
             }
             result = keyAlias;
         }
@@ -189,7 +189,7 @@ public class CertificateValidator
             {
                 LOG.debug(kse);
                 throw new CertificateException("Unable to validate certificate" +
-                                                   (certAlias == null ? "" : " for alias [" + certAlias + "]") + ": " + kse.getMessage(), kse);
+                    (certAlias == null ? "" : " for alias [" + certAlias + "]") + ": " + kse.getMessage(), kse);
             }
 
             validate(certChain);

@@ -266,12 +266,12 @@ public class JettyRunMojo extends AbstractJettyMojo
 
         MavenProjectHelper mavenProjectHelper = new MavenProjectHelper(project);
         List<File> webInfLibs = getWebInfLibArtifacts(project).stream()
-                                    .map(a ->
-                                    {
-                                        Path p = mavenProjectHelper.getArtifactPath(a);
-                                        getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
-                                        return p.toFile();
-                                    }).collect(Collectors.toList());
+            .map(a ->
+            {
+                Path p = mavenProjectHelper.getArtifactPath(a);
+                getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
+                return p.toFile();
+            }).collect(Collectors.toList());
         getLog().debug("WEB-INF/lib initialized (at root)");
         webApp.setWebInfLib(webInfLibs);
 
@@ -518,8 +518,8 @@ public class JettyRunMojo extends AbstractJettyMojo
     private Collection<Artifact> getWebInfLibArtifacts(Set<Artifact> artifacts)
     {
         return artifacts.stream()
-                   .filter(this::canPutArtifactInWebInfLib)
-                   .collect(Collectors.toList());
+            .filter(this::canPutArtifactInWebInfLib)
+            .collect(Collectors.toList());
     }
 
     private Collection<Artifact> getWebInfLibArtifacts(MavenProject mavenProject)

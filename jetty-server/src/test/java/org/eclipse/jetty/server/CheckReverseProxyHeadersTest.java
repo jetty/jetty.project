@@ -40,8 +40,8 @@ public class CheckReverseProxyHeadersTest
     {
         // Classic ProxyPass from example.com:80 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                        "X-Forwarded-For: 10.20.30.40\n" +
-                        "X-Forwarded-Host: example.com", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40\n" +
+            "X-Forwarded-Host: example.com", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)
@@ -58,8 +58,8 @@ public class CheckReverseProxyHeadersTest
 
         // IPv6 ProxyPass from example.com:80 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                        "X-Forwarded-For: 10.20.30.40\n" +
-                        "X-Forwarded-Host: [::1]", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40\n" +
+            "X-Forwarded-Host: [::1]", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)
@@ -76,8 +76,8 @@ public class CheckReverseProxyHeadersTest
 
         // IPv6 ProxyPass from example.com:80 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                        "X-Forwarded-For: 10.20.30.40\n" +
-                        "X-Forwarded-Host: [::1]:8888", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40\n" +
+            "X-Forwarded-Host: [::1]:8888", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)
@@ -94,10 +94,10 @@ public class CheckReverseProxyHeadersTest
 
         // ProxyPass from example.com:81 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                        "X-Forwarded-For: 10.20.30.40\n" +
-                        "X-Forwarded-Host: example.com:81\n" +
-                        "X-Forwarded-Server: example.com\n" +
-                        "X-Forwarded-Proto: https", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40\n" +
+            "X-Forwarded-Host: example.com:81\n" +
+            "X-Forwarded-Server: example.com\n" +
+            "X-Forwarded-Proto: https", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)
@@ -114,10 +114,10 @@ public class CheckReverseProxyHeadersTest
 
         // Multiple ProxyPass from example.com:80 to rp.example.com:82 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                        "X-Forwarded-For: 10.20.30.40, 10.0.0.1\n" +
-                        "X-Forwarded-Host: example.com, rp.example.com:82\n" +
-                        "X-Forwarded-Server: example.com, rp.example.com\n" +
-                        "X-Forwarded-Proto: https, http", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40, 10.0.0.1\n" +
+            "X-Forwarded-Host: example.com, rp.example.com:82\n" +
+            "X-Forwarded-Server: example.com, rp.example.com\n" +
+            "X-Forwarded-Proto: https, http", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)

@@ -75,14 +75,14 @@ public class InetAddressSetTest
     public void testBadSingleton() throws Exception
     {
         String[] tests = new String[]
-                             {
-                                 "unknown",
-                                 "1.2.3.4.5.6.7.8.9.10.11.12.13.14.15.16",
-                                 "a.b.c.d",
-                                 "[::1",
-                                 "[xxx]",
-                                 "[:::1]",
-                                 };
+            {
+                "unknown",
+                "1.2.3.4.5.6.7.8.9.10.11.12.13.14.15.16",
+                "a.b.c.d",
+                "[::1",
+                "[xxx]",
+                "[:::1]",
+                };
 
         InetAddressSet set = new InetAddressSet();
 
@@ -151,15 +151,15 @@ public class InetAddressSetTest
     public void testBadCIDR() throws Exception
     {
         String[] tests = new String[]
-                             {
-                                 "unknown/8",
-                                 "1.2.3.4/-1",
-                                 "1.2.3.4/xxx",
-                                 "1.2.3.4/33",
-                                 "255.255.8.0/16",
-                                 "255.255.8.1/17",
-                                 "[::1]/129",
-                                 };
+            {
+                "unknown/8",
+                "1.2.3.4/-1",
+                "1.2.3.4/xxx",
+                "1.2.3.4/33",
+                "255.255.8.0/16",
+                "255.255.8.1/17",
+                "[::1]/129",
+                };
 
         InetAddressSet set = new InetAddressSet();
 
@@ -211,10 +211,10 @@ public class InetAddressSetTest
     public void testBadMinMax() throws Exception
     {
         String[] tests = new String[]
-                             {
-                                 "10.0.0.0-9.0.0.0",
-                                 "9.0.0.0-[::10.0.0.0]",
-                                 };
+            {
+                "10.0.0.0-9.0.0.0",
+                "9.0.0.0-[::10.0.0.0]",
+                };
 
         InetAddressSet set = new InetAddressSet();
 
@@ -262,11 +262,11 @@ public class InetAddressSetTest
     public void testBadLegacy() throws Exception
     {
         String[] tests = new String[]
-                             {
-                                 "9.0-10.0",
-                                 "10.0.0--1.1",
-                                 "10.0.0-256.1",
-                                 };
+            {
+                "9.0-10.0",
+                "10.0.0--1.1",
+                "10.0.0-256.1",
+                };
 
         InetAddressSet set = new InetAddressSet();
 

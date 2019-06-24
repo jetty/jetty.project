@@ -66,8 +66,8 @@ public class Jetty
 
         Package pkg = Jetty.class.getPackage();
         if (pkg != null &&
-                "Eclipse Jetty Project".equals(pkg.getImplementationVendor()) &&
-                pkg.getImplementationVersion() != null)
+            "Eclipse Jetty Project".equals(pkg.getImplementationVendor()) &&
+            pkg.getImplementationVersion() != null)
             VERSION = pkg.getImplementationVersion();
         else
             VERSION = System.getProperty("jetty.version", "10.0.z-SNAPSHOT");

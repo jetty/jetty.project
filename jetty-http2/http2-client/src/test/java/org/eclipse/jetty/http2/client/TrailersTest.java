@@ -251,7 +251,7 @@ public class TrailersTest extends AbstractTest
                 Response jettyResponse = jettyRequest.getResponse();
                 HttpFields trailers = new HttpFields();
                 jettyResponse.setTrailerFields(() ->
-                                                   trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
+                    trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
 
                 jettyResponse.getOutputStream().write("hello_trailers".getBytes(StandardCharsets.UTF_8));
                 jettyResponse.flushBuffer();

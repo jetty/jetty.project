@@ -166,8 +166,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
     {
         _quickStart = true;
         context.setConfigurations(context.getWebAppConfigurations().stream()
-                                      .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
-                                      .collect(Collectors.toList()).toArray(new Configuration[]{}));
+            .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
+            .collect(Collectors.toList()).toArray(new Configuration[]{}));
         context.getMetaData().setWebXml(quickStartWebXml);
         context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebXml().getMajorVersion());
         context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebXml().getMinorVersion());

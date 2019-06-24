@@ -261,8 +261,8 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
                 }
                 String eol = System.lineSeparator();
                 _log.debug("FastCGI variables{}{}", eol, fcgi.entrySet().stream()
-                                                             .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
-                                                             .collect(Collectors.joining(eol)));
+                    .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
+                    .collect(Collectors.joining(eol)));
             }
         }
     }

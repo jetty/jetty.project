@@ -111,7 +111,7 @@ public class TestAnnotationParser
     public void testSampleAnnotation() throws Exception
     {
         String[] classNames = new String[]
-                                  {"org.eclipse.jetty.annotations.ClassA"};
+            {"org.eclipse.jetty.annotations.ClassA"};
         AnnotationParser parser = new AnnotationParser();
 
         class SampleAnnotationHandler extends AnnotationParser.AbstractHandler
@@ -158,7 +158,7 @@ public class TestAnnotationParser
     public void testMultiAnnotation() throws Exception
     {
         String[] classNames = new String[]
-                                  {"org.eclipse.jetty.annotations.ClassB"};
+            {"org.eclipse.jetty.annotations.ClassB"};
         AnnotationParser parser = new AnnotationParser();
 
         class MultiAnnotationHandler extends AnnotationParser.AbstractHandler

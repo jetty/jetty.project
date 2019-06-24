@@ -107,9 +107,9 @@ public class SlowClientsTest
                             OutputStream output = socket.getOutputStream();
                             String target = "/" + k;
                             String request = "GET " + target + " HTTP/1.1\r\n" +
-                                                 "Host: localhost\r\n" +
-                                                 "Connection: close\r\n" +
-                                                 "\r\n";
+                                "Host: localhost\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n";
                             output.write(request.getBytes(StandardCharsets.UTF_8));
                             output.flush();
 

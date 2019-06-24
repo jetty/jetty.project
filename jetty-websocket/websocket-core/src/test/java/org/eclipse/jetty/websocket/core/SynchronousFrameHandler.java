@@ -36,7 +36,9 @@ public interface SynchronousFrameHandler extends FrameHandler
         }
     }
 
-    default void onOpen(CoreSession coreSession) throws Exception {}
+    default void onOpen(CoreSession coreSession) throws Exception
+    {
+    }
 
     @Override
     default void onFrame(Frame frame, Callback callback)
@@ -52,7 +54,9 @@ public interface SynchronousFrameHandler extends FrameHandler
         }
     }
 
-    default void onFrame(Frame frame) throws Exception {}
+    default void onFrame(Frame frame) throws Exception
+    {
+    }
 
     @Override
     default void onClosed(CloseStatus closeStatus, Callback callback)
@@ -68,7 +72,9 @@ public interface SynchronousFrameHandler extends FrameHandler
         }
     }
 
-    default void onClosed(CloseStatus closeStatus) throws Exception {}
+    default void onClosed(CloseStatus closeStatus) throws Exception
+    {
+    }
 
     @Override
     default void onError(Throwable cause, Callback callback)
@@ -84,5 +90,7 @@ public interface SynchronousFrameHandler extends FrameHandler
         }
     }
 
-    default void onError(Throwable cause) throws Exception {}
+    default void onError(Throwable cause) throws Exception
+    {
+    }
 }

@@ -43,21 +43,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class JSONTest
 {
     String test = "\n\n\n\t\t    " +
-                      "// ignore this ,a [ \" \n" +
-                      "/* and this \n" +
-                      "/* and * // this \n" +
-                      "*/" +
-                      "{ " +
-                      "\"onehundred\" : 100  ," +
-                      "\"small\":-0.2," +
-                      "\"name\" : \"fred\"  ," +
-                      "\"empty\" : {}  ," +
-                      "\"map\" : {\"a\":-1.0e2}  ," +
-                      "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
-                      "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}," +
-                      "\"NaN\": NaN," +
-                      "\"undefined\": undefined," +
-                      "}";
+        "// ignore this ,a [ \" \n" +
+        "/* and this \n" +
+        "/* and * // this \n" +
+        "*/" +
+        "{ " +
+        "\"onehundred\" : 100  ," +
+        "\"small\":-0.2," +
+        "\"name\" : \"fred\"  ," +
+        "\"empty\" : {}  ," +
+        "\"map\" : {\"a\":-1.0e2}  ," +
+        "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
+        "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}," +
+        "\"NaN\": NaN," +
+        "\"undefined\": undefined," +
+        "}";
 
     @BeforeEach
     public void resetJSON()
@@ -238,15 +238,15 @@ public class JSONTest
     public void testStripComment()
     {
         String test = "\n\n\n\t\t    " +
-                          "// ignore this ,a [ \" \n" +
-                          "/* " +
-                          "{ " +
-                          "\"onehundred\" : 100  ," +
-                          "\"name\" : \"fred\"  ," +
-                          "\"empty\" : {}  ," +
-                          "\"map\" : {\"a\":-1.0e2}  ," +
-                          "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
-                          "} */";
+            "// ignore this ,a [ \" \n" +
+            "/* " +
+            "{ " +
+            "\"onehundred\" : 100  ," +
+            "\"name\" : \"fred\"  ," +
+            "\"empty\" : {}  ," +
+            "\"map\" : {\"a\":-1.0e2}  ," +
+            "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
+            "} */";
 
         Object o = JSON.parse(test, false);
         assertTrue(o == null);

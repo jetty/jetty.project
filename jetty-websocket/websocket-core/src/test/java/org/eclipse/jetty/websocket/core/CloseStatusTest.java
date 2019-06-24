@@ -168,7 +168,7 @@ public class CloseStatusTest
     {
         int code = CloseStatus.NORMAL;
         String reason = "___The WebSocket Connection Close Reason_ is defined as" +
-                            "   the UTF-8-encoded data following the status code (Section 7.4)";
+            "   the UTF-8-encoded data following the status code (Section 7.4)";
 
         String utf4Bytes = "\uD801\uDC00";
 

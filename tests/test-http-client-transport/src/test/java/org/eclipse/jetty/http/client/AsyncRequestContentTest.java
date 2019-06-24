@@ -62,7 +62,7 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
             .send(result ->
             {
                 if (result.isSucceeded() &&
-                        result.getResponse().getStatus() == HttpStatus.OK_200)
+                    result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
         contentProvider.close();
@@ -84,7 +84,7 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
             .send(result ->
             {
                 if (result.isSucceeded() &&
-                        result.getResponse().getStatus() == HttpStatus.OK_200)
+                    result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
         contentProvider.offer(ByteBuffer.wrap(new byte[1]));
@@ -108,7 +108,7 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
             .send(result ->
             {
                 if (result.isSucceeded() &&
-                        result.getResponse().getStatus() == HttpStatus.OK_200)
+                    result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
         contentProvider.close();
@@ -131,7 +131,7 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
             .send(result ->
             {
                 if (result.isSucceeded() &&
-                        result.getResponse().getStatus() == HttpStatus.OK_200)
+                    result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
         contentProvider.close();
@@ -153,7 +153,7 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
             .send(result ->
             {
                 if (result.isSucceeded() &&
-                        result.getResponse().getStatus() == HttpStatus.OK_200)
+                    result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
         contentProvider.close();
@@ -175,7 +175,7 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
             .send(result ->
             {
                 if (result.isSucceeded() &&
-                        result.getResponse().getStatus() == HttpStatus.OK_200)
+                    result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
         OutputStream output = contentProvider.getOutputStream();

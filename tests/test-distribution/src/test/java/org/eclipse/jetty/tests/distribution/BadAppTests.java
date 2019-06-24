@@ -48,9 +48,9 @@ public class BadAppTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         try (DistributionTester.Run run1 = distribution.start("--add-to-start=http,deploy"))
         {
@@ -85,9 +85,9 @@ public class BadAppTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         try (DistributionTester.Run run1 = distribution.start("--add-to-start=http,deploy"))
         {
@@ -127,9 +127,9 @@ public class BadAppTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                                              .jettyVersion(jettyVersion)
-                                              .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                                              .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         try (DistributionTester.Run run1 = distribution.start("--add-to-start=http,deploy"))
         {

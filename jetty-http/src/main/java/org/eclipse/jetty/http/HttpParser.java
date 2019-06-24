@@ -1049,8 +1049,8 @@ public class HttpParser
                 boolean header = _state == State.HEADER;
                 LOG.warn("{} is too large {}>{}", header ? "Header" : "Trailer", _headerBytes, _maxHeaderBytes);
                 throw new BadMessageException(header
-                                                  ? HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431
-                                                  : HttpStatus.PAYLOAD_TOO_LARGE_413);
+                    ? HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431
+                    : HttpStatus.PAYLOAD_TOO_LARGE_413);
             }
 
             switch (_fieldState)
@@ -1106,18 +1106,18 @@ public class HttpParser
 
                             // is it a response that cannot have a body?
                             if (_responseHandler != null && // response
-                                    (_responseStatus == 304 || // not-modified response
-                                         _responseStatus == 204 || // no-content response
-                                         _responseStatus < 200)) // 1xx response
+                                (_responseStatus == 304 || // not-modified response
+                                    _responseStatus == 204 || // no-content response
+                                    _responseStatus < 200)) // 1xx response
                                 _endOfContent = EndOfContent.NO_CONTENT; // ignore any other headers set
 
                                 // else if we don't know framing
                             else if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
                             {
                                 if (_responseStatus == 0 || // request
-                                        _responseStatus == 304 || // not-modified response
-                                        _responseStatus == 204 || // no-content response
-                                        _responseStatus < 200) // 1xx response
+                                    _responseStatus == 304 || // not-modified response
+                                    _responseStatus == 204 || // no-content response
+                                    _responseStatus < 200) // 1xx response
                                     _endOfContent = EndOfContent.NO_CONTENT;
                                 else
                                     _endOfContent = EndOfContent.EOF_CONTENT;
@@ -1845,7 +1845,9 @@ public class HttpParser
          *
          * @param field The field parsed
          */
-        default void parsedTrailer(HttpField field) {}
+        default void parsedTrailer(HttpField field)
+        {
+        }
 
         /**
          * Called to signal that an EOF was received unexpectedly

@@ -176,11 +176,11 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .method(HttpMethod.POST)
-                                       .path(scenario.servletPath)
-                                       .content(new StringContentProvider("0123456789"))
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .content(new StringContentProvider("0123456789"))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
@@ -321,10 +321,10 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
             ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                           .path(scenario.servletPath)
-                                           .content(new StringContentProvider("0123456789"))
-                                           .timeout(5, TimeUnit.SECONDS)
-                                           .send();
+                .path(scenario.servletPath)
+                .content(new StringContentProvider("0123456789"))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
             assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
             assertEquals(1, errors.get());
@@ -384,9 +384,9 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .path(scenario.servletPath)
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .path(scenario.servletPath)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
@@ -633,12 +633,12 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .method(HttpMethod.POST)
-                                       .path(scenario.servletPath)
-                                       .header(HttpHeader.CONNECTION, "close")
-                                       .content(new StringContentProvider(text))
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .header(HttpHeader.CONNECTION, "close")
+            .content(new StringContentProvider(text))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         String responseContent = response.getContentAsString();
         assertThat(responseContent, containsString("i=" + data.length + " eof=true finished=true"));
@@ -899,12 +899,12 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .method(HttpMethod.POST)
-                                       .path(scenario.servletPath)
-                                       .header(HttpHeader.CONNECTION, "close")
-                                       .content(new StringContentProvider("XYZ"))
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .header(HttpHeader.CONNECTION, "close")
+            .content(new StringContentProvider("XYZ"))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), Matchers.equalTo(success));
@@ -956,10 +956,10 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                       .path(scenario.servletPath)
-                                       .header(HttpHeader.CONNECTION, "close")
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .path(scenario.servletPath)
+            .header(HttpHeader.CONNECTION, "close")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -1119,10 +1119,10 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         DeferredContentProvider contentProvider = new DeferredContentProvider();
         contentProvider.offer(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)));
         org.eclipse.jetty.client.api.Request request = scenario.client.newRequest(scenario.newURI())
-                                                           .method(HttpMethod.POST)
-                                                           .path(scenario.servletPath)
-                                                           .content(contentProvider)
-                                                           .onResponseSuccess(response -> responseLatch.countDown());
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .content(contentProvider)
+            .onResponseSuccess(response -> responseLatch.countDown());
 
         if (scenario.connector instanceof UnixSocketConnector)
         {
@@ -1368,18 +1368,18 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                     try
                     {
                         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                                                       .method(HttpMethod.POST)
-                                                       .path(scenario.servletPath)
-                                                       .content(new InputStreamContentProvider(new ByteArrayInputStream(new byte[16 * 1024])
-                                                       {
-                                                           @Override
-                                                           public int read(byte[] b, int off, int len)
-                                                           {
-                                                               sleep(5);
-                                                               return super.read(b, off, Math.min(len, 4242));
-                                                           }
-                                                       }))
-                                                       .send();
+                            .method(HttpMethod.POST)
+                            .path(scenario.servletPath)
+                            .content(new InputStreamContentProvider(new ByteArrayInputStream(new byte[16 * 1024])
+                            {
+                                @Override
+                                public int read(byte[] b, int off, int len)
+                                {
+                                    sleep(5);
+                                    return super.read(b, off, Math.min(len, 4242));
+                                }
+                            }))
+                            .send();
                         assertEquals(HttpStatus.OK_200, response.getStatus());
                         latch.countDown();
                     }

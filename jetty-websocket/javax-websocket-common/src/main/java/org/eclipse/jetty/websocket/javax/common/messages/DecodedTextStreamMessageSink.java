@@ -45,7 +45,7 @@ public class DecodedTextStreamMessageSink<T> extends DecodedMessageSink<Decoder.
     {
         return MethodHandles.lookup().findVirtual(DecodedTextStreamMessageSink.class,
             "onStreamStart", MethodType.methodType(void.class, Reader.class))
-                   .bindTo(this);
+            .bindTo(this);
     }
 
     @Override

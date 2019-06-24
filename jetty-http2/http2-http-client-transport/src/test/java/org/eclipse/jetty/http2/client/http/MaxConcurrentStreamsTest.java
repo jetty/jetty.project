@@ -128,21 +128,21 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         int iterations = 50;
         IntStream.range(0, concurrency).parallel().forEach(i ->
-                                                               IntStream.range(0, iterations).forEach(j ->
-                                                               {
-                                                                   try
-                                                                   {
-                                                                       ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                                                                                      .path("/" + i + "_" + j)
-                                                                                                      .timeout(5, TimeUnit.SECONDS)
-                                                                                                      .send();
-                                                                       assertEquals(HttpStatus.OK_200, response.getStatus());
-                                                                   }
-                                                                   catch (Throwable x)
-                                                                   {
-                                                                       throw new RuntimeException(x);
-                                                                   }
-                                                               })
+            IntStream.range(0, iterations).forEach(j ->
+            {
+                try
+                {
+                    ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                        .path("/" + i + "_" + j)
+                        .timeout(5, TimeUnit.SECONDS)
+                        .send();
+                    assertEquals(HttpStatus.OK_200, response.getStatus());
+                }
+                catch (Throwable x)
+                {
+                    throw new RuntimeException(x);
+                }
+            })
         );
     }
 
@@ -213,9 +213,9 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         // This request will be queued and establish the connection,
         // which will trigger the send of the second request.
         ContentResponse response1 = client.newRequest(host, port)
-                                        .path("/1")
-                                        .timeout(5, TimeUnit.SECONDS)
-                                        .send();
+            .path("/1")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response1.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS), failures.toString());
@@ -349,20 +349,20 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         Queue<Result> failures = new ConcurrentLinkedQueue<>();
         ForkJoinPool pool = new ForkJoinPool(parallelism);
         pool.submit(() -> IntStream.range(0, parallelism).parallel().forEach(i ->
-                                                                                 IntStream.range(0, runs).forEach(j ->
-                                                                                 {
-                                                                                     for (int k = 0; k < iterations; ++k)
-                                                                                     {
-                                                                                         client.newRequest("localhost", connector.getLocalPort())
-                                                                                             .path("/" + i + "_" + j + "_" + k)
-                                                                                             .send(result ->
-                                                                                             {
-                                                                                                 if (result.isFailed())
-                                                                                                     failures.offer(result);
-                                                                                                 latch.countDown();
-                                                                                             });
-                                                                                     }
-                                                                                 })));
+            IntStream.range(0, runs).forEach(j ->
+            {
+                for (int k = 0; k < iterations; ++k)
+                {
+                    client.newRequest("localhost", connector.getLocalPort())
+                        .path("/" + i + "_" + j + "_" + k)
+                        .send(result ->
+                        {
+                            if (result.isFailed())
+                                failures.offer(result);
+                            latch.countDown();
+                        });
+                }
+            })));
 
         assertTrue(latch.await(total * 10, TimeUnit.MILLISECONDS));
         assertTrue(failures.isEmpty(), failures.toString());
@@ -394,8 +394,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             });
 
         ContentResponse response2 = client.newRequest("localhost", connector.getLocalPort())
-                                        .path("/2")
-                                        .send();
+            .path("/2")
+            .send();
 
         assertEquals(HttpStatus.OK_200, response2.getStatus());
         assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));

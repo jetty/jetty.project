@@ -103,7 +103,7 @@ public class TestOSGiUtil
     public static Option optionalRemoteDebug()
     {
         return CoreOptions.when(Boolean.getBoolean("pax.exam.debug.remote"))
-                   .useOptions(CoreOptions.vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"));
+            .useOptions(CoreOptions.vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"));
     }
 
     public static List<Option> coreJettyDependencies()
@@ -187,10 +187,10 @@ public class TestOSGiUtil
         {
             Bundle prevBundle = _bundles.put(b.getSymbolicName(), b);
             String err = prevBundle != null ? "2 versions of the bundle " + b.getSymbolicName()
-                                                  + " "
-                                                  + b.getHeaders().get("Bundle-Version")
-                                                  + " and "
-                                                  + prevBundle.getHeaders().get("Bundle-Version") : "";
+                + " "
+                + b.getHeaders().get("Bundle-Version")
+                + " and "
+                + prevBundle.getHeaders().get("Bundle-Version") : "";
             assertNull(err, prevBundle);
         }
         return _bundles.get(symbolicName);
@@ -222,15 +222,15 @@ public class TestOSGiUtil
                 diagnoseNonActiveOrNonResolvedBundle(b);
             }
             assertTrue("Bundle: " + b
-                           + " (state should be "
-                           + "ACTIVE["
-                           + Bundle.ACTIVE
-                           + "] or RESOLVED["
-                           + Bundle.RESOLVED
-                           + "]"
-                           + ", but was ["
-                           + b.getState()
-                           + "])", (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
+                + " (state should be "
+                + "ACTIVE["
+                + Bundle.ACTIVE
+                + "] or RESOLVED["
+                + Bundle.RESOLVED
+                + "]"
+                + ", but was ["
+                + b.getState()
+                + "])", (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
         }
     }
 

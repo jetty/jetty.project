@@ -81,9 +81,9 @@ public class JSONObjectConvertor implements JSON.Convertor
             {
                 Method m = methods[i];
                 if (!Modifier.isStatic(m.getModifiers()) &&
-                        m.getParameterCount() == 0 &&
-                        m.getReturnType() != null &&
-                        m.getDeclaringClass() != Object.class)
+                    m.getParameterCount() == 0 &&
+                    m.getReturnType() != null &&
+                    m.getDeclaringClass() != Object.class)
                 {
                     String name = m.getName();
                     if (name.startsWith("is"))

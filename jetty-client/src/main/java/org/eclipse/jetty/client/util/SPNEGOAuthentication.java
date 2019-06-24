@@ -331,11 +331,11 @@ public class SPNEGOAuthentication extends AbstractAuthentication
         public void handle(Callback[] callbacks) throws IOException
         {
             PasswordCallback callback = Arrays.stream(callbacks)
-                                            .filter(PasswordCallback.class::isInstance)
-                                            .map(PasswordCallback.class::cast)
-                                            .findAny()
-                                            .filter(c -> c.getPrompt().contains(getUserName()))
-                                            .orElseThrow(IOException::new);
+                .filter(PasswordCallback.class::isInstance)
+                .map(PasswordCallback.class::cast)
+                .findAny()
+                .filter(c -> c.getPrompt().contains(getUserName()))
+                .orElseThrow(IOException::new);
             callback.setPassword(getUserPassword().toCharArray());
         }
     }

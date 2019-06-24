@@ -117,15 +117,15 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
                 buffer.setLength(buffer.length() - 1);
         }
         else if (paramValue >= 0 &&
-                     buffer.charAt(paramName) == 'q' && paramValue > paramName &&
-                     buffer.length() >= paramName && buffer.charAt(paramName + 1) == '=')
+            buffer.charAt(paramName) == 'q' && paramValue > paramName &&
+            buffer.length() >= paramName && buffer.charAt(paramName + 1) == '=')
         {
             Double q;
             try
             {
                 q = (_keepQuotes && buffer.charAt(paramValue) == '"')
-                        ? Double.valueOf(buffer.substring(paramValue + 1, buffer.length() - 1))
-                        : Double.valueOf(buffer.substring(paramValue));
+                    ? Double.valueOf(buffer.substring(paramValue + 1, buffer.length() - 1))
+                    : Double.valueOf(buffer.substring(paramValue));
             }
             catch (Exception e)
             {

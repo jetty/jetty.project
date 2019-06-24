@@ -219,8 +219,8 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         // Make one request to open the connection and be sure everything is setup properly
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scheme)
-                                       .send();
+            .scheme(scheme)
+            .send();
         assertEquals(200, response.getStatus());
 
         // Send another request that is sent immediately
@@ -263,9 +263,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         Destination destinationBefore = client.getDestination(scenario.getScheme(), host, port);
 
         ContentResponse response = client.newRequest(host, port)
-                                       .scheme(scenario.getScheme())
-                                       .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-                                       .send();
+            .scheme(scenario.getScheme())
+            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .send();
 
         assertEquals(200, response.getStatus());
 
@@ -275,9 +275,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         client.setRemoveIdleDestinations(true);
 
         response = client.newRequest(host, port)
-                       .scheme(scenario.getScheme())
-                       .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-                       .send();
+            .scheme(scenario.getScheme())
+            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .send();
 
         assertEquals(200, response.getStatus());
 

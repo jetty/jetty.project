@@ -36,5 +36,4 @@ public enum Transport
     {
         return this == HTTPS || this == H2;
     }
-
 }

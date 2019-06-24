@@ -259,10 +259,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .path("/secure")
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .path("/secure")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertTrue(requests.await(5, TimeUnit.SECONDS));
@@ -298,10 +298,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .path("/redirect")
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .path("/redirect")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertTrue(requests.await(5, TimeUnit.SECONDS));
@@ -438,10 +438,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .path("/secure")
-                                       .timeout(5, TimeUnit.SECONDS)
-                                       .send();
+            .scheme(scenario.getScheme())
+            .path("/secure")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(1, requests.get());
@@ -469,8 +469,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         };
         Request request = client.newRequest(uri)
-                              .path("/secure")
-                              .content(content);
+            .path("/secure")
+            .content(content);
         request.send(result ->
         {
             if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.UNAUTHORIZED_401)
@@ -621,8 +621,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .send();
+            .scheme(scenario.getScheme())
+            .send();
 
         assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
     }
@@ -658,9 +658,9 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         // test multiple authentications
         List<HeaderInfo> headerInfoList = aph.getHeaderInfo("Digest qop=\"auth\", realm=\"thermostat\", nonce=\"1523430383\", "
-                                                                + "Digest realm=\"thermostat2\", qop=\"auth2\", nonce=\"4522530354\", "
-                                                                + "Digest qop=\"auth3\", nonce=\"9523570528\", realm=\"thermostat3\", "
-                                                                + "Digest qop=\"auth4\", nonce=\"3526435321\"");
+            + "Digest realm=\"thermostat2\", qop=\"auth2\", nonce=\"4522530354\", "
+            + "Digest qop=\"auth3\", nonce=\"9523570528\", realm=\"thermostat3\", "
+            + "Digest qop=\"auth4\", nonce=\"3526435321\"");
 
         assertTrue(headerInfoList.get(0).getType().equalsIgnoreCase("Digest"));
         assertEquals("auth", headerInfoList.get(0).getParameter("qop"));
@@ -745,7 +745,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals("TlRMTVNTUAABAAAAB4IIogAAAAAAAAAAAAAAAAAAAAAFAs4OAAAADw==", headerInfo.getBase64());
 
         headerInfos = aph.getHeaderInfo("Negotiate TlRMTVNTUAABAAAAAAAAAFAs4OAAAADw==, "
-                                            + "Negotiate YIIJvwYGKwYBBQUCoIIJszCCCa+gJDAi=");
+            + "Negotiate YIIJvwYGKwYBBQUCoIIJszCCCa+gJDAi=");
         assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Negotiate"));
         assertEquals("TlRMTVNTUAABAAAAAAAAAFAs4OAAAADw==", headerInfos.get(0).getBase64());
 
@@ -767,8 +767,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         // test multiple authentications
         List<HeaderInfo> headerInfoList = aph.getHeaderInfo("Digest qop=\"=au=th=\", realm=\"=ther=mostat=\", nonce=\"=152343=0383=\", "
-                                                                + "Digest realm=\"=thermostat2\", qop=\"=auth2\", nonce=\"=4522530354\", "
-                                                                + "Digest qop=\"auth3=\", nonce=\"9523570528=\", realm=\"thermostat3=\", ");
+            + "Digest realm=\"=thermostat2\", qop=\"=auth2\", nonce=\"=4522530354\", "
+            + "Digest qop=\"auth3=\", nonce=\"9523570528=\", realm=\"thermostat3=\", ");
 
         assertTrue(headerInfoList.get(0).getType().equalsIgnoreCase("Digest"));
         assertEquals("=au=th=", headerInfoList.get(0).getParameter("qop"));

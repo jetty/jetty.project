@@ -301,7 +301,7 @@ public class TypeUtil
                 return m.invoke(null, value);
 
             if (type.equals(java.lang.Character.TYPE) ||
-                    type.equals(java.lang.Character.class))
+                type.equals(java.lang.Character.class))
                 return value.charAt(0);
 
             Constructor<?> c = type.getConstructor(java.lang.String.class);

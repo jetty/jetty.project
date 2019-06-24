@@ -93,8 +93,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
 
         final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-                                         .method(clientRequest.getMethod())
-                                         .version(HttpVersion.fromString(clientRequest.getProtocol()));
+            .method(clientRequest.getMethod())
+            .version(HttpVersion.fromString(clientRequest.getProtocol()));
 
         copyRequestHeaders(clientRequest, proxyRequest);
 

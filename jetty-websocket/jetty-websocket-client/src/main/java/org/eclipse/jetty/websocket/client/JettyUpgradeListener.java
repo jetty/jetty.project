@@ -29,7 +29,8 @@ public interface JettyUpgradeListener
      * @param request the request
      */
     default void onHandshakeRequest(HttpRequest request)
-    {}
+    {
+    }
 
     /**
      * Event that triggers after the Handshake response has been received.
@@ -38,5 +39,6 @@ public interface JettyUpgradeListener
      * @param response the response that was received
      */
     default void onHandshakeResponse(HttpRequest request, HttpResponse response)
-    {}
+    {
+    }
 }

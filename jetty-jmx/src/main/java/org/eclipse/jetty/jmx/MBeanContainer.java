@@ -200,8 +200,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             return new MetaData(klass, null, null, Collections.emptyList());
 
         List<MetaData> interfaces = Arrays.stream(klass.getInterfaces())
-                                        .map(intf -> findMetaData(container, intf))
-                                        .collect(Collectors.toList());
+            .map(intf -> findMetaData(container, intf))
+            .collect(Collectors.toList());
         MetaData metaData = new MetaData(klass, findConstructor(klass), findMetaData(container, klass.getSuperclass()), interfaces);
 
         if (container != null)
@@ -231,8 +231,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         {
             Class<?> mbeanClass = Loader.loadClass(klass, mName);
             Constructor<?> constructor = ModelMBean.class.isAssignableFrom(mbeanClass)
-                                             ? mbeanClass.getConstructor()
-                                             : mbeanClass.getConstructor(Object.class);
+                ? mbeanClass.getConstructor()
+                : mbeanClass.getConstructor(Object.class);
             if (LOG.isDebugEnabled())
                 LOG.debug("Found MBean wrapper: {} for {}", mName, klass.getName());
             return constructor;

@@ -589,8 +589,8 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
                 return false;
             Key that = (Key)obj;
             return origin.equals(that.origin) &&
-                       Objects.equals(protocol, that.protocol) &&
-                       Objects.equals(kind, that.kind);
+                Objects.equals(protocol, that.protocol) &&
+                Objects.equals(kind, that.kind);
         }
 
         @Override

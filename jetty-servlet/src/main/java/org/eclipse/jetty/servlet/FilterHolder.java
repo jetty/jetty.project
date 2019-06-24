@@ -92,7 +92,7 @@ public class FilterHolder extends Holder<Filter>
         super.doStart();
 
         if (!javax.servlet.Filter.class
-                 .isAssignableFrom(_class))
+            .isAssignableFrom(_class))
         {
             String msg = _class + " is not a javax.servlet.Filter";
             super.stop();
@@ -113,8 +113,8 @@ public class FilterHolder extends Holder<Filter>
                 {
                     ServletContext context = _servletHandler.getServletContext();
                     _filter = (context instanceof ServletContextHandler.Context)
-                                  ? context.createFilter(getHeldClass())
-                                  : getHeldClass().getDeclaredConstructor().newInstance();
+                        ? context.createFilter(getHeldClass())
+                        : getHeldClass().getDeclaredConstructor().newInstance();
                 }
                 catch (ServletException ex)
                 {

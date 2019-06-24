@@ -147,16 +147,16 @@ public class ThreadPoolBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                          .include(ThreadPoolBenchmark.class.getSimpleName())
-                          .forks(1)
-                          // .threads(400)
-                          // .syncIterations(true) // Don't start all threads at same time
-                          // .addProfiler(CompilerProfiler.class)
-                          // .addProfiler(LinuxPerfProfiler.class)
-                          // .addProfiler(LinuxPerfNormProfiler.class)
-                          // .addProfiler(LinuxPerfAsmProfiler.class)
-                          // .resultFormat(ResultFormatType.CSV)
-                          .build();
+            .include(ThreadPoolBenchmark.class.getSimpleName())
+            .forks(1)
+            // .threads(400)
+            // .syncIterations(true) // Don't start all threads at same time
+            // .addProfiler(CompilerProfiler.class)
+            // .addProfiler(LinuxPerfProfiler.class)
+            // .addProfiler(LinuxPerfNormProfiler.class)
+            // .addProfiler(LinuxPerfAsmProfiler.class)
+            // .resultFormat(ResultFormatType.CSV)
+            .build();
 
         new Runner(opt).run();
     }

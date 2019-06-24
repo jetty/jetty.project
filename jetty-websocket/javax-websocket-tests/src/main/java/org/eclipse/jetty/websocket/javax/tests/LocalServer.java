@@ -166,7 +166,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
         servletContextHandler.setContextPath("/");
         JavaxWebSocketServletContainerInitializer.configure(servletContextHandler, (context, container) ->
-                                                                                       ((JavaxWebSocketServerContainer)container).addSessionListener(trackingListener));
+            ((JavaxWebSocketServerContainer)container).addSessionListener(trackingListener));
         configureServletContextHandler(servletContextHandler);
         return servletContextHandler;
     }

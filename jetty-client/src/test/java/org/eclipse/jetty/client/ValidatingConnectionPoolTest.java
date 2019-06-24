@@ -45,7 +45,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
     {
         long timeout = 1000;
         transport.setConnectionPoolFactory(destination ->
-                                               new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
+            new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
 
         return super.newHttpClient(transport);
     }
@@ -59,14 +59,14 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         client.setMaxConnectionsPerDestination(1);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .send();
+            .scheme(scenario.getScheme())
+            .send();
         assertEquals(200, response.getStatus());
 
         // The second request should be sent after the validating timeout.
         response = client.newRequest("localhost", connector.getLocalPort())
-                       .scheme(scenario.getScheme())
-                       .send();
+            .scheme(scenario.getScheme())
+            .send();
         assertEquals(200, response.getStatus());
     }
 
@@ -98,9 +98,9 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                       .scheme(scenario.getScheme())
-                                       .path("/redirect")
-                                       .send();
+            .scheme(scenario.getScheme())
+            .path("/redirect")
+            .send();
         assertEquals(200, response.getStatus());
     }
 
@@ -146,25 +146,25 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request1 = client.newRequest("localhost", connector.getLocalPort())
-                               .scheme(scenario.getScheme())
-                               .path("/one")
-                               .onRequestBegin(r ->
-                               {
-                                   try
-                                   {
-                                       latch.await();
-                                   }
-                                   catch (InterruptedException x)
-                                   {
-                                       r.abort(x);
-                                   }
-                               });
+            .scheme(scenario.getScheme())
+            .path("/one")
+            .onRequestBegin(r ->
+            {
+                try
+                {
+                    latch.await();
+                }
+                catch (InterruptedException x)
+                {
+                    r.abort(x);
+                }
+            });
         FutureResponseListener listener1 = new FutureResponseListener(request1);
         request1.send(listener1);
 
         Request request2 = client.newRequest("localhost", connector.getLocalPort())
-                               .scheme(scenario.getScheme())
-                               .path("/two");
+            .scheme(scenario.getScheme())
+            .path("/two");
         FutureResponseListener listener2 = new FutureResponseListener(request2);
         request2.send(listener2);
 

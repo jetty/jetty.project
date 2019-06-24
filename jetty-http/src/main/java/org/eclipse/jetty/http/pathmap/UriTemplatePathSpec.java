@@ -48,7 +48,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
      * Reserved Symbols in URI Template variable
      */
     private static final String VARIABLE_RESERVED = ":/?#[]@" + // gen-delims
-                                                        "!$&'()*+,;="; // sub-delims
+        "!$&'()*+,;="; // sub-delims
     /**
      * Allowed Symbols in a URI Template variable
      */
@@ -290,8 +290,8 @@ public class UriTemplatePathSpec extends RegexPathSpec
     {
         // basic letters or digits
         if ((codepoint >= 'a' && codepoint <= 'z') ||
-                (codepoint >= 'A' && codepoint <= 'Z') ||
-                (codepoint >= '0' && codepoint <= '9'))
+            (codepoint >= 'A' && codepoint <= 'Z') ||
+            (codepoint >= '0' && codepoint <= '9'))
         {
             return true;
         }

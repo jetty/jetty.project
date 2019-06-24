@@ -105,9 +105,9 @@ public class TryFilesFilterTest
         });
 
         ContentResponse response = client.newRequest("localhost", sslConnector.getLocalPort())
-                                       .scheme("https")
-                                       .path(path)
-                                       .send();
+            .scheme("https")
+            .path(path)
+            .send();
 
         assertEquals(200, response.getStatus());
     }

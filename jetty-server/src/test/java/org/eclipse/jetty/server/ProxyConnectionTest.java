@@ -70,10 +70,10 @@ public class ProxyConnectionTest
     public void testSimple() throws Exception
     {
         String response = _connector.getResponse("PROXY TCP 1.2.3.4 5.6.7.8 111 222\r\n" +
-                                                     "GET /path HTTP/1.1\n" +
-                                                     "Host: server:80\n" +
-                                                     "Connection: close\n" +
-                                                     "\n");
+            "GET /path HTTP/1.1\n" +
+            "Host: server:80\n" +
+            "Connection: close\n" +
+            "\n");
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInfo=/path"));
@@ -86,10 +86,10 @@ public class ProxyConnectionTest
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         String response = _connector.getResponse("PROXY UNKNOWN eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\n" +
-                                                     "GET /path HTTP/1.1\n" +
-                                                     "Host: server:80\n" +
-                                                     "Connection: close\n" +
-                                                     "\n");
+            "GET /path HTTP/1.1\n" +
+            "Host: server:80\n" +
+            "Connection: close\n" +
+            "\n");
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInfo=/path"));
@@ -101,10 +101,10 @@ public class ProxyConnectionTest
     public void testTooLong() throws Exception
     {
         String response = _connector.getResponse("PROXY TOOLONG!!! eeee:eeee:eeee:eeee:0000:0000:0000:0000 ffff:ffff:ffff:ffff:0000:0000:0000:0000 65535 65535\r\n" +
-                                                     "GET /path HTTP/1.1\n" +
-                                                     "Host: server:80\n" +
-                                                     "Connection: close\n" +
-                                                     "\n");
+            "GET /path HTTP/1.1\n" +
+            "Host: server:80\n" +
+            "Connection: close\n" +
+            "\n");
 
         assertNull(response);
     }
@@ -121,10 +121,10 @@ public class ProxyConnectionTest
     public void testBadChar() throws Exception
     {
         String response = _connector.getResponse("PROXY\tTCP 1.2.3.4 5.6.7.8 111 222\r\n" +
-                                                     "GET /path HTTP/1.1\n" +
-                                                     "Host: server:80\n" +
-                                                     "Connection: close\n" +
-                                                     "\n");
+            "GET /path HTTP/1.1\n" +
+            "Host: server:80\n" +
+            "Connection: close\n" +
+            "\n");
         assertNull(response);
     }
 
@@ -132,10 +132,10 @@ public class ProxyConnectionTest
     public void testBadCRLF() throws Exception
     {
         String response = _connector.getResponse("PROXY TCP 1.2.3.4 5.6.7.8 111 222\r \n" +
-                                                     "GET /path HTTP/1.1\n" +
-                                                     "Host: server:80\n" +
-                                                     "Connection: close\n" +
-                                                     "\n");
+            "GET /path HTTP/1.1\n" +
+            "Host: server:80\n" +
+            "Connection: close\n" +
+            "\n");
         assertNull(response);
     }
 
@@ -145,10 +145,10 @@ public class ProxyConnectionTest
         try (StacklessLogging stackless = new StacklessLogging(ProxyConnectionFactory.class))
         {
             String response = _connector.getResponse("PROXY TCP 1.2.3.4 5.6.7.8 9999999999999 222\r\n" +
-                                                         "GET /path HTTP/1.1\n" +
-                                                         "Host: server:80\n" +
-                                                         "Connection: close\n" +
-                                                         "\n");
+                "GET /path HTTP/1.1\n" +
+                "Host: server:80\n" +
+                "Connection: close\n" +
+                "\n");
             assertNull(response);
         }
     }
@@ -157,10 +157,10 @@ public class ProxyConnectionTest
     public void testMissingField() throws Exception
     {
         String response = _connector.getResponse("PROXY TCP 1.2.3.4 5.6.7.8 222\r\n" +
-                                                     "GET /path HTTP/1.1\n" +
-                                                     "Host: server:80\n" +
-                                                     "Connection: close\n" +
-                                                     "\n");
+            "GET /path HTTP/1.1\n" +
+            "Host: server:80\n" +
+            "Connection: close\n" +
+            "\n");
         assertNull(response);
     }
 

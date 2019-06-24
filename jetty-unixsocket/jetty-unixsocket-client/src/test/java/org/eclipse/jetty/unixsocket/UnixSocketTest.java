@@ -138,8 +138,8 @@ public class UnixSocketTest
         httpClient.start();
 
         ContentResponse contentResponse = httpClient
-                                              .newRequest("http://localhost")
-                                              .send();
+            .newRequest("http://localhost")
+            .send();
 
         log.debug("response from server: {}", contentResponse.getContentAsString());
 

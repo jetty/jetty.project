@@ -23,6 +23,9 @@
  *
  * modified April 2001
  * by Iris Van den Broeke, Daniel Deville
+ *
+ * modified April 2001
+ * by Iris Van den Broeke, Daniel Deville
  */
 
 /**
@@ -298,10 +301,10 @@ public class UnixCrypt
             for (int j = 0; j < 64; j++)
             {
                 int k = (((j >> 0) & 0x01) << 5) | (((j >> 1) & 0x01) << 3) |
-                            (((j >> 2) & 0x01) << 2) |
-                            (((j >> 3) & 0x01) << 1) |
-                            (((j >> 4) & 0x01) << 0) |
-                            (((j >> 5) & 0x01) << 4);
+                    (((j >> 2) & 0x01) << 2) |
+                    (((j >> 3) & 0x01) << 1) |
+                    (((j >> 4) & 0x01) << 0) |
+                    (((j >> 5) & 0x01) << 4);
                 k = S[t][k];
                 k = (((k >> 3) & 0x01) << 0) | (((k >> 2) & 0x01) << 1) | (((k >> 1) & 0x01) << 2) | (((k >> 0) & 0x01) << 3);
                 for (int i = 0; i < 32; i++)
@@ -435,11 +438,11 @@ public class UnixCrypt
                 B = (k ^ R ^ kp);
 
                 L ^= (SPE[0][(int)((B >> 58) & 0x3f)] ^ SPE[1][(int)((B >> 50) & 0x3f)]
-                          ^ SPE[2][(int)((B >> 42) & 0x3f)]
-                          ^ SPE[3][(int)((B >> 34) & 0x3f)]
-                          ^ SPE[4][(int)((B >> 26) & 0x3f)]
-                          ^ SPE[5][(int)((B >> 18) & 0x3f)]
-                          ^ SPE[6][(int)((B >> 10) & 0x3f)] ^ SPE[7][(int)((B >> 2) & 0x3f)]);
+                    ^ SPE[2][(int)((B >> 42) & 0x3f)]
+                    ^ SPE[3][(int)((B >> 34) & 0x3f)]
+                    ^ SPE[4][(int)((B >> 26) & 0x3f)]
+                    ^ SPE[5][(int)((B >> 18) & 0x3f)]
+                    ^ SPE[6][(int)((B >> 10) & 0x3f)] ^ SPE[7][(int)((B >> 2) & 0x3f)]);
 
                 kp = KS[(loop_count << 1) + 1];
                 k = ((L >> 32) ^ L) & salt & 0xffffffffL;
@@ -447,11 +450,11 @@ public class UnixCrypt
                 B = (k ^ L ^ kp);
 
                 R ^= (SPE[0][(int)((B >> 58) & 0x3f)] ^ SPE[1][(int)((B >> 50) & 0x3f)]
-                          ^ SPE[2][(int)((B >> 42) & 0x3f)]
-                          ^ SPE[3][(int)((B >> 34) & 0x3f)]
-                          ^ SPE[4][(int)((B >> 26) & 0x3f)]
-                          ^ SPE[5][(int)((B >> 18) & 0x3f)]
-                          ^ SPE[6][(int)((B >> 10) & 0x3f)] ^ SPE[7][(int)((B >> 2) & 0x3f)]);
+                    ^ SPE[2][(int)((B >> 42) & 0x3f)]
+                    ^ SPE[3][(int)((B >> 34) & 0x3f)]
+                    ^ SPE[4][(int)((B >> 26) & 0x3f)]
+                    ^ SPE[5][(int)((B >> 18) & 0x3f)]
+                    ^ SPE[6][(int)((B >> 10) & 0x3f)] ^ SPE[7][(int)((B >> 2) & 0x3f)]);
             }
             // swap L and R
             L ^= R;

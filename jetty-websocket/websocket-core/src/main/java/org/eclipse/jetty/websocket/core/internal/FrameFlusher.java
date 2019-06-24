@@ -220,9 +220,9 @@ public class FrameFlusher extends IteratingCallback
                 int batchSpace = batchBuffer == null ? bufferSize : BufferUtil.space(batchBuffer);
 
                 boolean batch = entry.batch &&
-                                    !entry.frame.isControlFrame() &&
-                                    entry.frame.getPayloadLength() < bufferSize / 4 &&
-                                    (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
+                    !entry.frame.isControlFrame() &&
+                    entry.frame.getPayloadLength() < bufferSize / 4 &&
+                    (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
 
                 if (batch)
                 {

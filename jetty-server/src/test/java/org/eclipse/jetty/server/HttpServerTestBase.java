@@ -66,8 +66,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
     private static final String REQUEST1_HEADER = "POST / HTTP/1.0\n" + "Host: localhost\n" + "Content-Type: text/xml; charset=utf-8\n" + "Connection: close\n" + "Content-Length: ";
     private static final String REQUEST1_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                                                       + "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n"
-                                                       + "</nimbus>";
+        + "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n"
+        + "</nimbus>";
     private static final String REQUEST1 = REQUEST1_HEADER + REQUEST1_CONTENT.getBytes().length + "\n\n" + REQUEST1_CONTENT;
 
     private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" + "Content-Length: 13\n" + "Server: Jetty(" + Server.getVersion() + ")\n" + "\n" + "Hello world\n";
@@ -142,9 +142,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             os.write(("OPTIONS * HTTP/1.1\r\n"
-                          + "Host: " + _serverURI.getHost() + "\r\n"
-                          + "Connection: close\r\n"
-                          + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                + "Host: " + _serverURI.getHost() + "\r\n"
+                + "Connection: close\r\n"
+                + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
             // Read the response.
@@ -159,9 +159,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             os.write(("GET * HTTP/1.1\r\n"
-                          + "Host: " + _serverURI.getHost() + "\r\n"
-                          + "Connection: close\r\n"
-                          + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                + "Host: " + _serverURI.getHost() + "\r\n"
+                + "Connection: close\r\n"
+                + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
             // Read the response.
@@ -435,11 +435,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             os.write(("GET /R2 HTTP/1.1\r\n" +
-                          "Host: localhost\r\n" +
-                          "Transfer-Encoding: chunked\r\n" +
-                          "Content-Type: text/plain\r\n" +
-                          "Connection: close\r\n" +
-                          "\r\n").getBytes());
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Connection: close\r\n" +
+                "\r\n").getBytes());
             os.flush();
             Thread.sleep(1000);
             os.write(("5").getBytes());
@@ -448,7 +448,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
             Thread.sleep(1000);
             os.write(("ABCDE\r\n" +
-                          "0;\r\n\r\n").getBytes());
+                "0;\r\n\r\n").getBytes());
             os.flush();
 
             // Read the response.
@@ -467,13 +467,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             os.write(("GET /R2 HTTP/1.1\r\n" +
-                          "Host: localhost\r\n" +
-                          "Content-Length: 5\r\n" +
-                          "Content-Type: text/plain\r\n" +
-                          "Connection: close\r\n" +
-                          "\r\n" +
-                          "ABCDE\r\n" +
-                          "\r\n"
+                "Host: localhost\r\n" +
+                "Content-Length: 5\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                "ABCDE\r\n" +
+                "\r\n"
             ).getBytes());
             os.flush();
 
@@ -833,10 +833,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             InputStream is = client.getInputStream();
 
             os.write(("GET /data?writes=1&block=1024 HTTP/1.1\r\n" +
-                          "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
-                          "connection: close\r\n" +
-                          "content-type: unknown\r\n" +
-                          "\r\n"
+                "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+                "connection: close\r\n" +
+                "content-type: unknown\r\n" +
+                "\r\n"
             ).getBytes());
             os.flush();
 
@@ -1263,8 +1263,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // Send a request
             os.write(("GET / HTTP/1.1\r\n" +
-                          "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
-                          "\r\n"
+                "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+                "\r\n"
             ).getBytes());
             os.flush();
 
@@ -1524,15 +1524,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new NoopHandler());
         final int REQS = 2;
         final String content = "This is a coooooooooooooooooooooooooooooooooo" +
-                                   "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                                   "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                                   "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                                   "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                                   "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                                   "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                                   "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                                   "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                                   "oooooooooooonnnnnnnnnnnnnnnntent";
+            "ooooooooooooooooooooooooooooooooooooooooooooo" +
+            "ooooooooooooooooooooooooooooooooooooooooooooo" +
+            "ooooooooooooooooooooooooooooooooooooooooooooo" +
+            "ooooooooooooooooooooooooooooooooooooooooooooo" +
+            "ooooooooooooooooooooooooooooooooooooooooooooo" +
+            "ooooooooooooooooooooooooooooooooooooooooooooo" +
+            "ooooooooooooooooooooooooooooooooooooooooooooo" +
+            "ooooooooooooooooooooooooooooooooooooooooooooo" +
+            "oooooooooooonnnnnnnnnnnnnnnntent";
         final int cl = content.getBytes().length;
 
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -1644,7 +1644,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         @Override
         public void handle(String target, Request baseRequest,
                            HttpServletRequest request, HttpServletResponse response) throws IOException,
-                                                                                                ServletException
+            ServletException
         {
             //don't read the input, just send something back
             ((Request)request).setHandled(true);
@@ -1712,14 +1712,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // Send two persistent pipelined requests and then shutdown output
             os.write(("GET / HTTP/1.1\r\n" +
-                          "Host: localhost\r\n" +
-                          "Content-Length: " + content.length + "\r\n" +
-                          "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                "Host: localhost\r\n" +
+                "Content-Length: " + content.length + "\r\n" +
+                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.write(content);
             os.write(("GET / HTTP/1.1\r\n" +
-                          "Host: localhost\r\n" +
-                          "Content-Length: " + content.length + "\r\n" +
-                          "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                "Host: localhost\r\n" +
+                "Content-Length: " + content.length + "\r\n" +
+                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.write(content);
             os.flush();
             // Thread.sleep(50);
@@ -1753,17 +1753,17 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // Send two persistent pipelined requests and then shutdown output
             os.write(("GET / HTTP/1.1\r\n" +
-                          "Host: localhost\r\n" +
-                          "Transfer-Encoding: chunked\r\n" +
-                          "\r\n" +
-                          "1000\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "1000\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.write(content);
             os.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.write(("GET / HTTP/1.1\r\n" +
-                          "Host: localhost\r\n" +
-                          "Transfer-Encoding: chunked\r\n" +
-                          "\r\n" +
-                          "1000\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "1000\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.write(content);
             os.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();

@@ -31,7 +31,8 @@ public class RunAs
     private String _roleName;
 
     public RunAs()
-    {}
+    {
+    }
 
     public void setTargetClassName(String className)
     {

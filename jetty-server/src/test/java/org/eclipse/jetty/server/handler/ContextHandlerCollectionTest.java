@@ -53,11 +53,11 @@ public class ContextHandlerCollectionTest
         connector1.setName("connector1");
 
         server.setConnectors(new Connector[]
-                                 {connector0, connector1});
+            {connector0, connector1});
 
         ContextHandler contextA = new ContextHandler("/ctx");
         contextA.setVirtualHosts(new String[]
-                                     {"www.example.com", "alias.example.com"});
+            {"www.example.com", "alias.example.com"});
         IsHandledHandler handlerA = new IsHandledHandler("A");
         contextA.setHandler(handlerA);
         contextA.setAllowNullPathInfo(true);
@@ -66,7 +66,7 @@ public class ContextHandlerCollectionTest
         IsHandledHandler handlerB = new IsHandledHandler("B");
         contextB.setHandler(handlerB);
         contextB.setVirtualHosts(new String[]
-                                     {"*.other.com", "@connector1"});
+            {"*.other.com", "@connector1"});
 
         ContextHandler contextC = new ContextHandler("/ctx");
         IsHandledHandler handlerC = new IsHandledHandler("C");

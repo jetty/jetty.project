@@ -77,8 +77,8 @@ public class ProxyServlet extends AbstractProxyServlet
         }
 
         final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-                                         .method(request.getMethod())
-                                         .version(HttpVersion.fromString(request.getProtocol()));
+            .method(request.getMethod())
+            .version(HttpVersion.fromString(request.getProtocol()));
 
         copyRequestHeaders(request, proxyRequest);
 

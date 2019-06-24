@@ -268,8 +268,8 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
         try
         {
             toSweep = activeConnections.stream()
-                          .filter(connection -> connection instanceof Sweeper.Sweepable)
-                          .collect(Collectors.toList());
+                .filter(connection -> connection instanceof Sweeper.Sweepable)
+                .collect(Collectors.toList());
         }
         finally
         {

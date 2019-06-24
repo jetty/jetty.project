@@ -246,7 +246,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
             //set up the login context
             Subject subject = new Subject();
             LoginContext loginContext = (_configuration == null ? new LoginContext(_loginModuleName, subject, callbackHandler)
-                                             : new LoginContext(_loginModuleName, subject, callbackHandler, _configuration));
+                : new LoginContext(_loginModuleName, subject, callbackHandler, _configuration));
 
             loginContext.login();
 

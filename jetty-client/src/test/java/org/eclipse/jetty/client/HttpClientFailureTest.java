@@ -87,10 +87,10 @@ public class HttpClientFailureTest
         client.start();
 
         assertThrows(ExecutionException.class, () ->
-                                                   client.newRequest("localhost", connector.getLocalPort())
-                                                       .onRequestHeaders(request -> connectionRef.get().getEndPoint().close())
-                                                       .timeout(5, TimeUnit.SECONDS)
-                                                       .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .onRequestHeaders(request -> connectionRef.get().getEndPoint().close())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
