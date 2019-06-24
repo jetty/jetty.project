@@ -36,7 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ExecuteProduceConsumeTest
 {
     private static final Runnable NULLTASK = () ->
-    {};
+    {
+    };
 
     private final BlockingQueue<Runnable> _produce = new LinkedBlockingQueue<>();
     private final Queue<Runnable> _executions = new LinkedBlockingQueue<>();

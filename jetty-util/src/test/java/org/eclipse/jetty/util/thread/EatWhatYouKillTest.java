@@ -43,7 +43,8 @@ public class EatWhatYouKillTest
         ReservedThreadExecutor tryExecutor = executor.getBean(ReservedThreadExecutor.class);
         // Prime the executor so that there is a reserved thread.
         executor.tryExecute(() ->
-        {});
+        {
+        });
         while (tryExecutor.getAvailable() == 0)
         {
             Thread.sleep(10);

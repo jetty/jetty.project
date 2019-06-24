@@ -228,8 +228,8 @@ public class IntrospectionUtil
         for (int i = 0; i < methods.length && method == null; i++)
         {
             if (methods[i].getName().equals(methodName) &&
-                    isInheritable(pack, methods[i]) &&
-                    checkParams(methods[i].getParameterTypes(), args, strictArgs))
+                isInheritable(pack, methods[i]) &&
+                checkParams(methods[i].getParameterTypes(), args, strictArgs))
                 method = methods[i];
         }
         if (method != null)

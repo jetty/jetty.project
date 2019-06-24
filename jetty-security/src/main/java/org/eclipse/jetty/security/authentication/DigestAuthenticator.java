@@ -194,11 +194,11 @@ public class DigestAuthenticator extends LoginAuthenticator
                 if (domain == null)
                     domain = "/";
                 response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
-                                                                               "\", domain=\"" + domain +
-                                                                               "\", nonce=\"" + newNonce((Request)request) +
-                                                                               "\", algorithm=MD5" +
-                                                                               ", qop=\"auth\"" +
-                                                                               ", stale=" + stale);
+                    "\", domain=\"" + domain +
+                    "\", nonce=\"" + newNonce((Request)request) +
+                    "\", algorithm=MD5" +
+                    ", qop=\"auth\"" +
+                    ", stale=" + stale);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 
                 return Authentication.SEND_CONTINUE;

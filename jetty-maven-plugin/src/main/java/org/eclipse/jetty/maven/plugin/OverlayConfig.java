@@ -269,8 +269,8 @@ public class OverlayConfig
     public boolean matchesArtifact(String gid, String aid, String cls)
     {
         return ((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) &&
-                   ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))) &&
-                   ((getClassifier() == null) || (getClassifier().equals(cls)));
+            ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))) &&
+            ((getClassifier() == null) || (getClassifier().equals(cls)));
     }
 
     /**
@@ -283,7 +283,7 @@ public class OverlayConfig
     public boolean matchesArtifact(String gid, String aid)
     {
         return ((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) &&
-                   ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid)));
+            ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid)));
     }
 
     @Override

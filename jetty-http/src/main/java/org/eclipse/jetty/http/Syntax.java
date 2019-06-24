@@ -70,9 +70,9 @@ public final class Syntax
             if ((c <= 0x1F) || (c == 0x7F))
                 throw new IllegalArgumentException(msg + ": RFC2616 tokens may not contain control characters");
             if (c == '(' || c == ')' || c == '<' || c == '>' || c == '@' ||
-                    c == ',' || c == ';' || c == ':' || c == '\\' || c == '"' ||
-                    c == '/' || c == '[' || c == ']' || c == '?' || c == '=' ||
-                    c == '{' || c == '}' || c == ' ')
+                c == ',' || c == ';' || c == ':' || c == '\\' || c == '"' ||
+                c == '/' || c == '[' || c == ']' || c == '?' || c == '=' ||
+                c == '{' || c == '}' || c == ' ')
             {
                 throw new IllegalArgumentException(msg + ": RFC2616 tokens may not contain separator character: [" + c + "]");
             }
