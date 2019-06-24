@@ -1088,9 +1088,9 @@ public class HttpParser
             {
                 boolean header = _state == State.HEADER;
                 LOG.warn("{} is too large {}>{}", header ? "Header" : "Trailer", _headerBytes, _maxHeaderBytes);
-                throw new BadMessageException(header ?
-                    HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431 :
-                    HttpStatus.PAYLOAD_TOO_LARGE_413);
+                throw new BadMessageException(header
+                    ? HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431
+                    : HttpStatus.PAYLOAD_TOO_LARGE_413);
             }
 
             switch (_fieldState)
