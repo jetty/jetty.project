@@ -14,6 +14,18 @@
 
   <property name="fileExtensions" value="java"/>
 
+  <!-- reference to suppressions filter for both eclipse and intellij checkstyle plugins -->
+  <module name="SuppressionFilter">
+    <property name="file" value="${config_loc}/jetty-suppressions.xml"/>
+    <property name="optional" value="true"/>
+  </module>
+
+  <!-- reference to suppressions filter for maven plugins -->
+  <module name="SuppressionFilter">
+    <property name="file" value="/jetty-suppressions.xml"/>
+    <property name="optional" value="true"/>
+  </module>
+
   <!-- Excludes all 'module-info.java' files              -->
   <!-- See https://checkstyle.org/config_filefilters.html -->
   <module name="BeforeExecutionExclusionFileFilter">
@@ -31,11 +43,6 @@
       <property name="offCommentFormat" value="@checkstyle-disable-check : ([\w\|]+)"/>
       <property name="onCommentFormat" value="@checkstyle-enable-check : ([\w\|]+)"/>
       <property name="checkFormat" value="$1"/>
-    </module>
-
-    <module name="SuppressionFilter">
-      <property name="file" value="jetty-suppressions.xml"/>
-      <property name="optional" value="false"/>
     </module>
 
     <!--
