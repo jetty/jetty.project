@@ -1,4 +1,4 @@
-<code_scheme name="Jetty-StyleChecked" version="173">
+<code_scheme name="Jetty" version="173">
   <option name="AUTODETECT_INDENTS" value="false" />
   <option name="LINE_SEPARATOR" value="&#xA;" />
   <option name="RIGHT_MARGIN" value="128" />
@@ -9,7 +9,6 @@
     <option name="HTML_ATTRIBUTE_WRAP" value="0" />
   </HTMLCodeStyleSettings>
   <JavaCodeStyleSettings>
-    <option name="FIELD_NAME_PREFIX" value="_" />
     <option name="USE_EXTERNAL_ANNOTATIONS" value="true" />
     <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
     <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
@@ -82,6 +81,7 @@
     <option name="FOR_BRACE_FORCE" value="3" />
     <indentOptions>
       <option name="CONTINUATION_INDENT_SIZE" value="4" />
+      <option name="USE_RELATIVE_INDENTS" value="false" />
     </indentOptions>
     <arrangement>
       <rules>
