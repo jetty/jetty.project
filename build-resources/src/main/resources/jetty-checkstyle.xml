@@ -33,6 +33,11 @@
       <property name="checkFormat" value="$1"/>
     </module>
 
+    <module name="SuppressionFilter">
+      <property name="file" value="jetty-suppressions.xml"/>
+      <property name="optional" value="false"/>
+    </module>
+
     <!--
       Eclipse Jetty Specific.
       ===========================================================================================
