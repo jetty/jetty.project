@@ -67,6 +67,7 @@
     <option name="WHILE_ON_NEW_LINE" value="true" />
     <option name="CATCH_ON_NEW_LINE" value="true" />
     <option name="FINALLY_ON_NEW_LINE" value="true" />
+    <option name="ALIGN_MULTILINE_PARAMETERS" value="true" />
     <option name="ALIGN_MULTILINE_ARRAY_INITIALIZER_EXPRESSION" value="true" />
     <option name="SPACE_AFTER_TYPE_CAST" value="false" />
     <option name="RESOURCE_LIST_WRAP" value="2" />
