@@ -493,7 +493,9 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
          *
          * @param channel the accepted channel
          */
-        default void onAccepting(SelectableChannel channel) {}
+        default void onAccepting(SelectableChannel channel)
+        {
+        }
 
         /**
          * Called if the processing of the accepted channel fails prior to calling
@@ -502,7 +504,9 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
          * @param channel the accepted channel
          * @param cause the cause of the failure
          */
-        default void onAcceptFailed(SelectableChannel channel, Throwable cause) {}
+        default void onAcceptFailed(SelectableChannel channel, Throwable cause)
+        {
+        }
 
         /**
          * Called after the accepted channel has been allocated an {@link EndPoint}
@@ -511,6 +515,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
          *
          * @param channel the accepted channel
          */
-        default void onAccepted(SelectableChannel channel) {}
+        default void onAccepted(SelectableChannel channel)
+        {
+        }
     }
 }

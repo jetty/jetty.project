@@ -1000,7 +1000,9 @@ public class ServletContextHandler extends ContextHandler
         private List<TaglibDescriptor> _taglibs = new ArrayList<TaglibDescriptor>();
         private List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<JspPropertyGroupDescriptor>();
 
-        public JspConfig() {}
+        public JspConfig()
+        {
+        }
 
         /**
          * @see javax.servlet.descriptor.JspConfigDescriptor#getTaglibs()

@@ -120,7 +120,8 @@ public class FilterMapping implements Dumpable
     private String[] _servletNames;
 
     public FilterMapping()
-    {}
+    {
+    }
 
     /**
      * Check if this filter applies to a path.

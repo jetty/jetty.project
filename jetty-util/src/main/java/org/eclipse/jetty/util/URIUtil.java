@@ -50,7 +50,8 @@ public class URIUtil
     public static final Charset __CHARSET = StandardCharsets.UTF_8;
 
     private URIUtil()
-    {}
+    {
+    }
 
     /**
      * Encode a URI path.

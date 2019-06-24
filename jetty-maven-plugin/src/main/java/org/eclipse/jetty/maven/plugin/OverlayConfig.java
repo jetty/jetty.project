@@ -40,7 +40,9 @@ public class OverlayConfig
     private boolean skip;
     private boolean filtered;
 
-    public OverlayConfig() {}
+    public OverlayConfig()
+    {
+    }
 
     public OverlayConfig(String fmt, List<String> defaultIncludes, List<String> defaultExcludes)
     {

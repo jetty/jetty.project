@@ -103,7 +103,8 @@ public class HttpServerTestFixture
         boolean _musthavecontent = true;
 
         public EchoHandler()
-        {}
+        {
+        }
 
         public EchoHandler(boolean content)
         {

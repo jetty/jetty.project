@@ -1884,7 +1884,9 @@ public class HttpParser
          *
          * @param field The field parsed
          */
-        default void parsedTrailer(HttpField field) {}
+        default void parsedTrailer(HttpField field)
+        {
+        }
 
         /**
          * Called to signal that an EOF was received unexpectedly
@@ -1945,7 +1947,9 @@ public class HttpParser
     public interface ComplianceHandler extends HttpHandler
     {
         @Deprecated
-        default void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason) {}
+        default void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason)
+        {
+        }
 
         default void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String details)
         {

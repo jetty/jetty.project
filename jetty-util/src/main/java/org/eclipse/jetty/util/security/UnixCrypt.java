@@ -56,6 +56,9 @@
  *
  * modified April 2001
  * by Iris Van den Broeke, Daniel Deville
+ *
+ * modified April 2001
+ * by Iris Van den Broeke, Daniel Deville
  */
 
 /**
