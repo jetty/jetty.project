@@ -292,7 +292,7 @@ public class Dump extends HttpServlet
             try
             {
                 throw (Throwable)Thread.currentThread().getContextClassLoader()
-                                     .loadClass(info.substring(1)).getDeclaredConstructor().newInstance();
+                    .loadClass(info.substring(1)).getDeclaredConstructor().newInstance();
             }
             catch (Throwable th)
             {
@@ -617,8 +617,8 @@ public class Dump extends HttpServlet
 
             String content_type = request.getContentType();
             if (content_type != null &&
-                    !content_type.startsWith("application/x-www-form-urlencoded") &&
-                    !content_type.startsWith("multipart/form-data"))
+                !content_type.startsWith("application/x-www-form-urlencoded") &&
+                !content_type.startsWith("multipart/form-data"))
             {
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"left\" valign=\"top\" colspan=\"2\"><big><br/>Content:</big></th>");

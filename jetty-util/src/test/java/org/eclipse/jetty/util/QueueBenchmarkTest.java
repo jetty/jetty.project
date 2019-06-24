@@ -43,9 +43,11 @@ public class QueueBenchmarkTest
 {
     private static final Logger logger = Log.getLogger(QueueBenchmarkTest.class);
     private static final Runnable ELEMENT = () ->
-    {};
+    {
+    };
     private static final Runnable END = () ->
-    {};
+    {
+    };
 
     @Test
     public void testQueues() throws Exception

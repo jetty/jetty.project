@@ -716,7 +716,9 @@ public class HttpInputAsyncStateTest
         check("onReadPossible true", "onReadPossible false");
 
         handle(() ->
-        {__history.add(_state.getState().toString());});
+        {
+            __history.add(_state.getState().toString());
+        });
         System.err.println(__history);
         check(
             "onDataAvailable",

@@ -218,10 +218,10 @@ public class ForwardProxyServerTest
         try
         {
             ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
-                                           .scheme(serverSslContextFactory == null ? "http" : "https")
-                                           .method(HttpMethod.GET)
-                                           .path("/test")
-                                           .send();
+                .scheme(serverSslContextFactory == null ? "http" : "https")
+                .method(HttpMethod.GET)
+                .path("/test")
+                .send();
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }

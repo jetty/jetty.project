@@ -48,7 +48,7 @@ public class ClientCertAuthModule extends BaseAuthModule
 
     @Override
     public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject,
-        Subject serviceSubject)
+                                      Subject serviceSubject)
         throws AuthException
     {
         HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();

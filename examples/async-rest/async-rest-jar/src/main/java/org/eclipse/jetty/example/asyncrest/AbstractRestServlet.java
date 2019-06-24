@@ -44,12 +44,12 @@ public class AbstractRestServlet extends HttpServlet
 {
     protected static final String __DEFAULT_APPID = "Webtide81-adf4-4f0a-ad58-d91e41bbe85";
     protected static final String STYLE = "<style type='text/css'>" +
-                                              "  img.thumb:hover {height:50px}" +
-                                              "  img.thumb {vertical-align:text-top}" +
-                                              "  span.red {color: #ff0000}" +
-                                              "  span.green {color: #00ff00}" +
-                                              "  iframe {border: 0px}" +
-                                              "</style>";
+        "  img.thumb:hover {height:50px}" +
+        "  img.thumb {vertical-align:text-top}" +
+        "  span.red {color: #ff0000}" +
+        "  span.green {color: #00ff00}" +
+        "  iframe {border: 0px}" +
+        "</style>";
 
     protected static final String ITEMS_PARAM = "items";
     protected static final String APPID_PARAM = "appid";
@@ -78,7 +78,7 @@ public class AbstractRestServlet extends HttpServlet
         {
             char c = chars[i];
             if ((c <= 0x1F) || // control characters
-                    (c == '<') || (c == '&'))
+                (c == '<') || (c == '&'))
             {
                 chars[i] = '?';
             }
@@ -91,8 +91,8 @@ public class AbstractRestServlet extends HttpServlet
         try
         {
             return ("http://open.api.ebay.com/shopping?MaxEntries=3&appid=" + _appid +
-                        "&version=573&siteid=0&callname=FindItems&responseencoding=JSON&QueryKeywords=" +
-                        URLEncoder.encode(item, "UTF-8"));
+                "&version=573&siteid=0&callname=FindItems&responseencoding=JSON&QueryKeywords=" +
+                URLEncoder.encode(item, "UTF-8"));
         }
         catch (Exception e)
         {
@@ -110,9 +110,9 @@ public class AbstractRestServlet extends HttpServlet
 
             thumbs.append("<a href=\"" + m.get("ViewItemURLForNaturalSearch") + "\">");
             thumbs.append("<img class='thumb' border='1px' height='25px'" +
-                              " src='" + m.get("GalleryURL") + "'" +
-                              " title='" + m.get("Title") + "'" +
-                              "/>");
+                " src='" + m.get("GalleryURL") + "'" +
+                " title='" + m.get("Title") + "'" +
+                "/>");
             thumbs.append("</a>&nbsp;");
         }
         return thumbs.toString();

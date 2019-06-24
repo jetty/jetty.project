@@ -1117,7 +1117,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         // the encrypted buffer will contain the entire close handshake
                         // and that a call to flush(EMPTY_BUFFER) is not needed.
                         endp.write(Callback.from(() ->
-                        {}, t -> endp.close()), _encryptedOutput);
+                        {
+                        }, t -> endp.close()), _encryptedOutput);
                     }
                 }
 

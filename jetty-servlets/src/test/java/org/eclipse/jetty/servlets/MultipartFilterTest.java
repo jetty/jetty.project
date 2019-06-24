@@ -260,10 +260,10 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
         String content = "--" + boundary + "\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-                             "Content-Type: application/octet-stream\r\n\r\n" +
-                             "How now brown cow." +
-                             "\r\n--" + boundary + "-\r\n\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "How now brown cow." +
+            "\r\n--" + boundary + "-\r\n\r\n";
 
         request.setContent(content);
 
@@ -291,10 +291,10 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=\"" + boundary + "\"");
 
         String content = "--" + boundary + "\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-                             "Content-Type: application/octet-stream\r\n\r\n" +
-                             "How now brown cow." +
-                             "\r\n--" + boundary + "--\r\n\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "How now brown cow." +
+            "\r\n--" + boundary + "--\r\n\r\n";
 
         request.setContent(content);
 
@@ -320,10 +320,10 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
         String content = "--" + boundary + "\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"Diplomsko Delo Lektorirano KON&#268;NA.doc\"\r\n" +
-                             "Content-Type: application/octet-stream\r\n\r\n" +
-                             "How now brown cow." +
-                             "\r\n--" + boundary + "--\r\n\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"Diplomsko Delo Lektorirano KON&#268;NA.doc\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "How now brown cow." +
+            "\r\n--" + boundary + "--\r\n\r\n";
 
         request.setContent(content);
 
@@ -348,10 +348,10 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
         String content = "--" + boundary + "\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"Taken on Aug 22 \\ 2012.jpg\"\r\n" +
-                             "Content-Type: application/octet-stream\r\n\r\n" +
-                             "How now brown cow." +
-                             "\r\n--" + boundary + "--\r\n\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"Taken on Aug 22 \\ 2012.jpg\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "How now brown cow." +
+            "\r\n--" + boundary + "--\r\n\r\n";
 
         request.setContent(content);
 
@@ -379,10 +379,10 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
         String content = "--" + boundary + "\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"c:\\this\\really\\is\\some\\path\\to\\a\\file.txt\"\r\n" +
-                             "Content-Type: application/octet-stream\r\n\r\n" +
-                             "How now brown cow." +
-                             "\r\n--" + boundary + "--\r\n\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"c:\\this\\really\\is\\some\\path\\to\\a\\file.txt\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "How now brown cow." +
+            "\r\n--" + boundary + "--\r\n\r\n";
 
         request.setContent(content);
 
@@ -411,10 +411,10 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
         String content = "--" + boundary + "\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt\"\r\n" +
-                             "Content-Type: application/octet-stream\r\n\r\n" +
-                             "How now brown cow." +
-                             "\r\n--" + boundary + "--\r\n\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "How now brown cow." +
+            "\r\n--" + boundary + "--\r\n\r\n";
 
         request.setContent(content);
 
@@ -447,11 +447,11 @@ public class MultipartFilterTest
 
         // part content is "How now brown cow." run through a base64 encoder
         String content = "--" + boundary + "\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-                             "Content-Transfer-Encoding: base64\r\n" +
-                             "Content-Type: application/octet-stream\r\n\r\n" +
-                             "SG93IG5vdyBicm93biBjb3cuCg==" +
-                             "\r\n--" + boundary + "--\r\n\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "Content-Transfer-Encoding: base64\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "SG93IG5vdyBicm93biBjb3cuCg==" +
+            "\r\n--" + boundary + "--\r\n\r\n";
 
         request.setContent(content);
 
@@ -484,11 +484,11 @@ public class MultipartFilterTest
          * quoted printable encoding.
          */
         String content = "--" + boundary + "\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-                             "Content-Transfer-Encoding: quoted-printable\r\n" +
-                             "Content-Type: application/octet-stream\r\n\r\n" +
-                             "=48=6F=77=20=6E=6F=77=20=62=72=6F=77=6E=20=63=6F=77=2E" +
-                             "\r\n--" + boundary + "--\r\n\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "Content-Transfer-Encoding: quoted-printable\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "=48=6F=77=20=6E=6F=77=20=62=72=6F=77=6E=20=63=6F=77=2E" +
+            "\r\n--" + boundary + "--\r\n\r\n";
 
         request.setContent(content);
 
@@ -516,30 +516,30 @@ public class MultipartFilterTest
 
         // generated and parsed test
         String content = "--\r\n" +
-                             "Content-Disposition: form-data; name=\"fileName\"\r\n" +
-                             "Content-Type: text/plain; charset=US-ASCII\r\n" +
-                             "Content-Transfer-Encoding: 8bit\r\n" +
-                             "\r\n" +
-                             "abc\r\n" +
-                             "--\r\n" +
-                             "Content-Disposition: form-data; name=\"desc\"\r\n" +
-                             "Content-Type: text/plain; charset=US-ASCII\r\n" +
-                             "Content-Transfer-Encoding: 8bit\r\n" +
-                             "\r\n" +
-                             "123\r\n" +
-                             "--\r\n" +
-                             "Content-Disposition: form-data; name=\"title\"\r\n" +
-                             "Content-Type: text/plain; charset=US-ASCII\r\n" +
-                             "Content-Transfer-Encoding: 8bit\r\n" +
-                             "\r\n" +
-                             "ttt\r\n" +
-                             "--\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-                             "Content-Type: application/octet-stream\r\n" +
-                             "Content-Transfer-Encoding: binary\r\n" +
-                             "\r\n" +
-                             "000\r\n" +
-                             "----\r\n";
+            "Content-Disposition: form-data; name=\"fileName\"\r\n" +
+            "Content-Type: text/plain; charset=US-ASCII\r\n" +
+            "Content-Transfer-Encoding: 8bit\r\n" +
+            "\r\n" +
+            "abc\r\n" +
+            "--\r\n" +
+            "Content-Disposition: form-data; name=\"desc\"\r\n" +
+            "Content-Type: text/plain; charset=US-ASCII\r\n" +
+            "Content-Transfer-Encoding: 8bit\r\n" +
+            "\r\n" +
+            "123\r\n" +
+            "--\r\n" +
+            "Content-Disposition: form-data; name=\"title\"\r\n" +
+            "Content-Type: text/plain; charset=US-ASCII\r\n" +
+            "Content-Transfer-Encoding: 8bit\r\n" +
+            "\r\n" +
+            "ttt\r\n" +
+            "--\r\n" +
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "Content-Type: application/octet-stream\r\n" +
+            "Content-Transfer-Encoding: binary\r\n" +
+            "\r\n" +
+            "000\r\n" +
+            "----\r\n";
         request.setContent(content);
 
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
@@ -565,30 +565,30 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
         String content = "--XyXyXy\n" +
-                             "Content-Disposition: form-data; name=\"fileName\"\n" +
-                             "Content-Type: text/plain; charset=US-ASCII\n" +
-                             "Content-Transfer-Encoding: 8bit\n" +
-                             "\n" +
-                             "abc\n" +
-                             "--XyXyXy\n" +
-                             "Content-Disposition: form-data; name=\"desc\"\n" +
-                             "Content-Type: text/plain; charset=US-ASCII\n" +
-                             "Content-Transfer-Encoding: 8bit\n" +
-                             "\n" +
-                             "123\n" +
-                             "--XyXyXy\n" +
-                             "Content-Disposition: form-data; name=\"title\"\n" +
-                             "Content-Type: text/plain; charset=US-ASCII\n" +
-                             "Content-Transfer-Encoding: 8bit\n" +
-                             "\n" +
-                             "ttt\n" +
-                             "--XyXyXy\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\n" +
-                             "Content-Type: application/octet-stream\n" +
-                             "Content-Transfer-Encoding: binary\n" +
-                             "\n" +
-                             "000\n" +
-                             "--XyXyXy--\n";
+            "Content-Disposition: form-data; name=\"fileName\"\n" +
+            "Content-Type: text/plain; charset=US-ASCII\n" +
+            "Content-Transfer-Encoding: 8bit\n" +
+            "\n" +
+            "abc\n" +
+            "--XyXyXy\n" +
+            "Content-Disposition: form-data; name=\"desc\"\n" +
+            "Content-Type: text/plain; charset=US-ASCII\n" +
+            "Content-Transfer-Encoding: 8bit\n" +
+            "\n" +
+            "123\n" +
+            "--XyXyXy\n" +
+            "Content-Disposition: form-data; name=\"title\"\n" +
+            "Content-Type: text/plain; charset=US-ASCII\n" +
+            "Content-Transfer-Encoding: 8bit\n" +
+            "\n" +
+            "ttt\n" +
+            "--XyXyXy\n" +
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\n" +
+            "Content-Type: application/octet-stream\n" +
+            "Content-Transfer-Encoding: binary\n" +
+            "\n" +
+            "000\n" +
+            "--XyXyXy--\n";
         request.setContent(content);
 
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
@@ -613,30 +613,30 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
         String content = "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"fileName\"\r" +
-                             "Content-Type: text/plain; charset=US-ASCII\r" +
-                             "Content-Transfer-Encoding: 8bit\r" +
-                             "\r" +
-                             "abc\r" +
-                             "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"desc\"\r" +
-                             "Content-Type: text/plain; charset=US-ASCII\r" +
-                             "Content-Transfer-Encoding: 8bit\r" +
-                             "\r" +
-                             "123\r" +
-                             "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"title\"\r" +
-                             "Content-Type: text/plain; charset=US-ASCII\r" +
-                             "Content-Transfer-Encoding: 8bit\r" +
-                             "\r" +
-                             "ttt\r" +
-                             "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r" +
-                             "Content-Type: application/octet-stream\r" +
-                             "Content-Transfer-Encoding: binary\r" +
-                             "\r" +
-                             "000\r" +
-                             "--XyXyXy--\r";
+            "Content-Disposition: form-data; name=\"fileName\"\r" +
+            "Content-Type: text/plain; charset=US-ASCII\r" +
+            "Content-Transfer-Encoding: 8bit\r" +
+            "\r" +
+            "abc\r" +
+            "--XyXyXy\r" +
+            "Content-Disposition: form-data; name=\"desc\"\r" +
+            "Content-Type: text/plain; charset=US-ASCII\r" +
+            "Content-Transfer-Encoding: 8bit\r" +
+            "\r" +
+            "123\r" +
+            "--XyXyXy\r" +
+            "Content-Disposition: form-data; name=\"title\"\r" +
+            "Content-Type: text/plain; charset=US-ASCII\r" +
+            "Content-Transfer-Encoding: 8bit\r" +
+            "\r" +
+            "ttt\r" +
+            "--XyXyXy\r" +
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r" +
+            "Content-Type: application/octet-stream\r" +
+            "Content-Transfer-Encoding: binary\r" +
+            "\r" +
+            "000\r" +
+            "--XyXyXy--\r";
         request.setContent(content);
 
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
@@ -661,33 +661,33 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
         String content = "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"fileName\"\r" +
-                             "Content-Type: text/plain; charset=US-ASCII\r" +
-                             "Content-Transfer-Encoding: 8bit\r" +
-                             "\r" +
-                             "\nabc\n" +
-                             "\r" +
-                             "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"desc\"\r" +
-                             "Content-Type: text/plain; charset=US-ASCII\r" +
-                             "Content-Transfer-Encoding: 8bit\r" +
-                             "\r" +
-                             "\n123\n" +
-                             "\r" +
-                             "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"title\"\r" +
-                             "Content-Type: text/plain; charset=US-ASCII\r" +
-                             "Content-Transfer-Encoding: 8bit\r" +
-                             "\r" +
-                             "\nttt\n" +
-                             "\r" +
-                             "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r" +
-                             "Content-Type: application/octet-stream\r" +
-                             "Content-Transfer-Encoding: binary\r" +
-                             "\r" +
-                             "000\r" +
-                             "--XyXyXy--\r";
+            "Content-Disposition: form-data; name=\"fileName\"\r" +
+            "Content-Type: text/plain; charset=US-ASCII\r" +
+            "Content-Transfer-Encoding: 8bit\r" +
+            "\r" +
+            "\nabc\n" +
+            "\r" +
+            "--XyXyXy\r" +
+            "Content-Disposition: form-data; name=\"desc\"\r" +
+            "Content-Type: text/plain; charset=US-ASCII\r" +
+            "Content-Transfer-Encoding: 8bit\r" +
+            "\r" +
+            "\n123\n" +
+            "\r" +
+            "--XyXyXy\r" +
+            "Content-Disposition: form-data; name=\"title\"\r" +
+            "Content-Type: text/plain; charset=US-ASCII\r" +
+            "Content-Transfer-Encoding: 8bit\r" +
+            "\r" +
+            "\nttt\n" +
+            "\r" +
+            "--XyXyXy\r" +
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r" +
+            "Content-Type: application/octet-stream\r" +
+            "Content-Transfer-Encoding: binary\r" +
+            "\r" +
+            "000\r" +
+            "--XyXyXy--\r";
         request.setContent(content);
 
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
@@ -807,16 +807,16 @@ public class MultipartFilterTest
         String boundary = "AaB03x";
 
         String body = "              \n\n\n\r\n\r\n\r\n\r\n" +
-                          "--AaB03x\r\n" +
-                          "content-disposition: form-data; name=\"field1\"\r\n" +
-                          "\r\n" +
-                          "Joe Blow\r\n" +
-                          "--AaB03x\r\n" +
-                          "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-                          "Content-Type: application/octet-stream\r\n" +
-                          "\r\n" +
-                          "aaaa,bbbbb" + "\r\n" +
-                          "--AaB03x--\r\n";
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"field1\"\r\n" +
+            "\r\n" +
+            "Joe Blow\r\n" +
+            "--AaB03x\r\n" +
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "Content-Type: application/octet-stream\r\n" +
+            "\r\n" +
+            "aaaa,bbbbb" + "\r\n" +
+            "--AaB03x--\r\n";
 
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
@@ -840,16 +840,16 @@ public class MultipartFilterTest
         String boundary = "AaB03x";
 
         String body = "              " +
-                          "--AaB03x\r\n" +
-                          "content-disposition: form-data; name=\"field1\"\r\n" +
-                          "\r\n" +
-                          "Joe Blow\r\n" +
-                          "--AaB03x\r\n" +
-                          "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-                          "Content-Type: application/octet-stream\r\n" +
-                          "\r\n" +
-                          "aaaa,bbbbb" + "\r\n" +
-                          "--AaB03x--\r\n";
+            "--AaB03x\r\n" +
+            "content-disposition: form-data; name=\"field1\"\r\n" +
+            "\r\n" +
+            "Joe Blow\r\n" +
+            "--AaB03x\r\n" +
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "Content-Type: application/octet-stream\r\n" +
+            "\r\n" +
+            "aaaa,bbbbb" + "\r\n" +
+            "--AaB03x--\r\n";
 
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
@@ -882,10 +882,10 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=\"" + boundary + "\"; charset=ISO-8859-1");
 
         String content = "--" + boundary + "\r\n" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-                             "Content-Type: application/octet-stream\r\n\r\n" +
-                             "How now brown cow." +
-                             "\r\n--" + boundary + "--\r\n\r\n";
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n" +
+            "How now brown cow." +
+            "\r\n--" + boundary + "--\r\n\r\n";
 
         request.setContent(content);
 
@@ -1026,8 +1026,8 @@ public class MultipartFilterTest
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         baos.write(("--" + boundary + "\r\n" +
-                        "Content-Disposition: form-data; name=\"ttt\"; filename=\"ttt.txt\"\r\n" +
-                        "Content-Type: application/octet-stream; charset=UTF-8\r\n\r\n").getBytes());
+            "Content-Disposition: form-data; name=\"ttt\"; filename=\"ttt.txt\"\r\n" +
+            "Content-Type: application/octet-stream; charset=UTF-8\r\n\r\n").getBytes());
         baos.write("ttt\u01FCzzz".getBytes(StandardCharsets.UTF_8));
         baos.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
 
@@ -1057,30 +1057,30 @@ public class MultipartFilterTest
         request.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
         String content = "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"fileName\"\r" +
-                             "Content-Type: text/plain; charset=US-ASCII\r" +
-                             "Content-Transfer-Encoding: 8bit\r" +
-                             "\r" +
-                             "abc\r" +
-                             "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"desc\"\r" +
-                             "Content-Type: text/plain; charset=US-ASCII\r" +
-                             "Content-Transfer-Encoding: 8bit\r" +
-                             "\r" +
-                             "123\r" +
-                             "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"title\"\r" +
-                             "Content-Type: text/plain; charset=US-ASCII\r" +
-                             "Content-Transfer-Encoding: 8bit\r" +
-                             "\r" +
-                             "ttt\r" +
-                             "--XyXyXy\r" +
-                             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r" +
-                             "Content-Type: application/octet-stream\r" +
-                             "Content-Transfer-Encoding: binary\r" +
-                             "\r" +
-                             "000\r" +
-                             "--XyXyXy--\r";
+            "Content-Disposition: form-data; name=\"fileName\"\r" +
+            "Content-Type: text/plain; charset=US-ASCII\r" +
+            "Content-Transfer-Encoding: 8bit\r" +
+            "\r" +
+            "abc\r" +
+            "--XyXyXy\r" +
+            "Content-Disposition: form-data; name=\"desc\"\r" +
+            "Content-Type: text/plain; charset=US-ASCII\r" +
+            "Content-Transfer-Encoding: 8bit\r" +
+            "\r" +
+            "123\r" +
+            "--XyXyXy\r" +
+            "Content-Disposition: form-data; name=\"title\"\r" +
+            "Content-Type: text/plain; charset=US-ASCII\r" +
+            "Content-Transfer-Encoding: 8bit\r" +
+            "\r" +
+            "ttt\r" +
+            "--XyXyXy\r" +
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r" +
+            "Content-Type: application/octet-stream\r" +
+            "Content-Transfer-Encoding: binary\r" +
+            "\r" +
+            "000\r" +
+            "--XyXyXy--\r";
         request.setContent(content);
 
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));

@@ -73,5 +73,4 @@ public enum HttpScheme
     {
         return _string;
     }
-
 }

@@ -228,8 +228,8 @@ public class XmlConfiguration
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
         configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://www.eclipse.org/jetty/configure_9_3.dtd\">" +
-                            configuration;
+            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://www.eclipse.org/jetty/configure_9_3.dtd\">" +
+            configuration;
         try (StringReader reader = new StringReader(configuration))
         {
             InputSource source = new InputSource(reader);

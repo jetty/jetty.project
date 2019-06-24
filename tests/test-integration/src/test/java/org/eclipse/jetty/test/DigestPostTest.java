@@ -149,7 +149,7 @@ public class DigestPostTest
 
             HandlerCollection handlers = new HandlerCollection();
             handlers.setHandlers(new Handler[]
-                                     {context, new DefaultHandler()});
+                {context, new DefaultHandler()});
             _server.setHandler(handlers);
 
             _server.start();
@@ -175,9 +175,9 @@ public class DigestPostTest
         _received = null;
         socket.getOutputStream().write(
             ("POST /test/ HTTP/1.0\r\n" +
-                 "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                 "Content-Length: " + bytes.length + "\r\n" +
-                 "\r\n").getBytes(StandardCharsets.UTF_8));
+                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
+                "Content-Length: " + bytes.length + "\r\n" +
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -200,10 +200,10 @@ public class DigestPostTest
         _received = null;
         socket.getOutputStream().write(
             ("POST /test/ HTTP/1.0\r\n" +
-                 "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                 "Content-Length: " + bytes.length + "\r\n" +
-                 "Authorization: " + digest + "\r\n" +
-                 "\r\n").getBytes(StandardCharsets.UTF_8));
+                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
+                "Content-Length: " + bytes.length + "\r\n" +
+                "Authorization: " + digest + "\r\n" +
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -222,9 +222,9 @@ public class DigestPostTest
         _received = null;
         socket.getOutputStream().write(
             ("POST /test/ HTTP/1.1\r\n" +
-                 "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                 "Content-Length: " + bytes.length + "\r\n" +
-                 "\r\n").getBytes("UTF-8"));
+                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
+                "Content-Length: " + bytes.length + "\r\n" +
+                "\r\n").getBytes("UTF-8"));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -249,10 +249,10 @@ public class DigestPostTest
         _received = null;
         socket.getOutputStream().write(
             ("POST /test/ HTTP/1.0\r\n" +
-                 "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                 "Content-Length: " + bytes.length + "\r\n" +
-                 "Authorization: " + digest + "\r\n" +
-                 "\r\n").getBytes("UTF-8"));
+                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
+                "Content-Length: " + bytes.length + "\r\n" +
+                "Authorization: " + digest + "\r\n" +
+                "\r\n").getBytes("UTF-8"));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 

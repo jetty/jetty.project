@@ -82,8 +82,8 @@ public class InclusiveByteRange
     private boolean overlaps(InclusiveByteRange range)
     {
         return (range.first >= this.first && range.first <= this.last) ||
-                   (range.last >= this.first && range.last <= this.last) ||
-                   (range.first < this.first && range.last > this.last);
+            (range.last >= this.first && range.last <= this.last) ||
+            (range.first < this.first && range.last > this.last);
     }
 
     public long getSize()
@@ -119,7 +119,7 @@ public class InclusiveByteRange
             return false;
 
         return ((InclusiveByteRange)obj).first == this.first &&
-                   ((InclusiveByteRange)obj).last == this.last;
+            ((InclusiveByteRange)obj).last == this.last;
     }
 
     @Override
