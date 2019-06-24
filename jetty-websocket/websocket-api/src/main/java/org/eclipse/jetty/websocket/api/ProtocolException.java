@@ -26,16 +26,16 @@ public class ProtocolException extends CloseException
 {
     public ProtocolException(String message)
     {
-        super(StatusCode.PROTOCOL,message);
+        super(StatusCode.PROTOCOL, message);
     }
 
     public ProtocolException(String message, Throwable t)
     {
-        super(StatusCode.PROTOCOL,message,t);
+        super(StatusCode.PROTOCOL, message, t);
     }
 
     public ProtocolException(Throwable t)
     {
-        super(StatusCode.PROTOCOL,t);
+        super(StatusCode.PROTOCOL, t);
     }
 }

@@ -24,29 +24,21 @@ import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.EventSender;
 
-
-
-
 /**
  * OSGiUndeployer
  *
  * Extension of the Jetty Undeployer which emits OSGi EventAdmin events
  * whenever a webapp is undeployed from Jetty.
- * 
  */
 public class OSGiUndeployer extends StandardUndeployer
 {
     private ServerInstanceWrapper _server;
 
-    
-    /* ------------------------------------------------------------ */
-    public OSGiUndeployer (ServerInstanceWrapper server)
+    public OSGiUndeployer(ServerInstanceWrapper server)
     {
         _server = server;
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public void processBinding(Node node, App app) throws Exception
     {
@@ -55,9 +47,9 @@ public class OSGiUndeployer extends StandardUndeployer
         Thread.currentThread().setContextClassLoader(_server.getParentClassLoaderForWebapps());
         try
         {
-            super.processBinding(node,app);
+            super.processBinding(node, app);
         }
-        finally 
+        finally
         {
             Thread.currentThread().setContextClassLoader(old);
         }

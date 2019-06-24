@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URI;
@@ -34,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +38,13 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpCookieTest extends AbstractHttpClientServerTest
 {
@@ -126,8 +125,8 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send();
+            .scheme(scenario.getScheme())
+            .send();
         assertEquals(200, response.getStatus());
         assertTrue(client.getCookieStore().getCookies().isEmpty());
     }
@@ -153,10 +152,10 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .cookie(new HttpCookie(name, value))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .cookie(new HttpCookie(name, value))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(200, response.getStatus());
     }
 
@@ -199,19 +198,19 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/foo")
-                .header(headerName, "0")
-                .timeout(5, TimeUnit.SECONDS));
+            .scheme(scenario.getScheme())
+            .path("/foo")
+            .header(headerName, "0")
+            .timeout(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path(path)
-                    .header(headerName, "1")
-                    .timeout(5, TimeUnit.SECONDS));
+                .scheme(scenario.getScheme())
+                .path(path)
+                .header(headerName, "1")
+                .timeout(5, TimeUnit.SECONDS));
             assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
@@ -260,19 +259,19 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/foo/bar")
-                .header(headerName, "0")
-                .timeout(5, TimeUnit.SECONDS));
+            .scheme(scenario.getScheme())
+            .path("/foo/bar")
+            .header(headerName, "0")
+            .timeout(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar", "/foo/bar/baz").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path(path)
-                    .header(headerName, "1")
-                    .timeout(5, TimeUnit.SECONDS));
+                .scheme(scenario.getScheme())
+                .path(path)
+                .header(headerName, "1")
+                .timeout(5, TimeUnit.SECONDS));
             assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
@@ -321,19 +320,19 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/foo")
-                .header(headerName, "0")
-                .timeout(5, TimeUnit.SECONDS));
+            .scheme(scenario.getScheme())
+            .path("/foo")
+            .header(headerName, "0")
+            .timeout(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar", "/foo/bar/", "/foo/barbaz").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path(path)
-                    .header(headerName, "1")
-                    .timeout(5, TimeUnit.SECONDS));
+                .scheme(scenario.getScheme())
+                .path(path)
+                .header(headerName, "1")
+                .timeout(5, TimeUnit.SECONDS));
             assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
@@ -382,19 +381,19 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/foo/bar")
-                .header(headerName, "0")
-                .timeout(5, TimeUnit.SECONDS));
+            .scheme(scenario.getScheme())
+            .path("/foo/bar")
+            .header(headerName, "0")
+            .timeout(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path(path)
-                    .header(headerName, "1")
-                    .timeout(5, TimeUnit.SECONDS));
+                .scheme(scenario.getScheme())
+                .path(path)
+                .header(headerName, "1")
+                .timeout(5, TimeUnit.SECONDS));
             assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
@@ -445,19 +444,19 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/foo")
-                .header(headerName, "0")
-                .timeout(5, TimeUnit.SECONDS));
+            .scheme(scenario.getScheme())
+            .path("/foo")
+            .header(headerName, "0")
+            .timeout(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path(path)
-                    .header(headerName, "1")
-                    .timeout(5, TimeUnit.SECONDS));
+                .scheme(scenario.getScheme())
+                .path(path)
+                .header(headerName, "1")
+                .timeout(5, TimeUnit.SECONDS));
             assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
@@ -515,19 +514,19 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/foo")
-                .header(headerName, "0")
-                .timeout(5, TimeUnit.SECONDS));
+            .scheme(scenario.getScheme())
+            .path("/foo")
+            .header(headerName, "0")
+            .timeout(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar", "/bar", "/bar/foo").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path(path)
-                    .header(headerName, "1")
-                    .timeout(5, TimeUnit.SECONDS));
+                .scheme(scenario.getScheme())
+                .path(path)
+                .header(headerName, "1")
+                .timeout(5, TimeUnit.SECONDS));
             assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
@@ -588,19 +587,19 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/foo")
-                .header(headerName, "0")
-                .timeout(5, TimeUnit.SECONDS));
+            .scheme(scenario.getScheme())
+            .path("/foo")
+            .header(headerName, "0")
+            .timeout(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path(path)
-                    .header(headerName, "1")
-                    .timeout(5, TimeUnit.SECONDS));
+                .scheme(scenario.getScheme())
+                .path(path)
+                .header(headerName, "1")
+                .timeout(5, TimeUnit.SECONDS));
             assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
@@ -649,19 +648,19 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/foo/bar")
-                .header(headerName, "0")
-                .timeout(5, TimeUnit.SECONDS));
+            .scheme(scenario.getScheme())
+            .path("/foo/bar")
+            .header(headerName, "0")
+            .timeout(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path(path)
-                    .header(headerName, "1")
-                    .timeout(5, TimeUnit.SECONDS));
+                .scheme(scenario.getScheme())
+                .path(path)
+                .header(headerName, "1")
+                .timeout(5, TimeUnit.SECONDS));
             assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }

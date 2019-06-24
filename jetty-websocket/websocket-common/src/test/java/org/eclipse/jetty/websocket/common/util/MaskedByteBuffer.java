@@ -23,11 +23,11 @@ import java.nio.ByteBuffer;
 public class MaskedByteBuffer
 {
     private static byte[] mask = new byte[]
-            { 0x00, (byte)0xF0, 0x0F, (byte)0xFF };
+        {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
 
     public static void putMask(ByteBuffer buffer)
     {
-        buffer.put(mask,0,mask.length);
+        buffer.put(mask, 0, mask.length);
     }
 
     public static void putPayload(ByteBuffer buffer, byte[] payload)

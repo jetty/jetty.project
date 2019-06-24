@@ -45,46 +45,46 @@ public class HttpConversation extends AttributesMap
      * This list changes as the conversation proceeds, as follows:
      * <ol>
      * <li>
-     *     request R1 send =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1</li>
-     *         <li>listeners to be notified: E1.listeners</li>
-     *     </ul>
+     * request R1 send =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1</li>
+     * <li>listeners to be notified: E1.listeners</li>
+     * </ul>
      * </li>
      * <li>
-     *     response R1 arrived, 401 =&gt; conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
-     *     <ul>
-     *         <li>exchanges in conversation: E1</li>
-     *         <li>listeners to be notified: AuthenticationProtocolHandler.listener</li>
-     *     </ul>
+     * response R1 arrived, 401 =&gt; conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
+     * <ul>
+     * <li>exchanges in conversation: E1</li>
+     * <li>listeners to be notified: AuthenticationProtocolHandler.listener</li>
+     * </ul>
      * </li>
      * <li>
-     *     request R2 send =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2</li>
-     *         <li>listeners to be notified: E2.listeners + E1.listeners</li>
-     *     </ul>
+     * request R2 send =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2</li>
+     * <li>listeners to be notified: E2.listeners + E1.listeners</li>
+     * </ul>
      * </li>
      * <li>
-     *     response R2 arrived, 302 =&gt; conversation.updateResponseListeners(RedirectProtocolHandler.listener)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2</li>
-     *         <li>listeners to be notified: E2.listeners + RedirectProtocolHandler.listener</li>
-     *     </ul>
+     * response R2 arrived, 302 =&gt; conversation.updateResponseListeners(RedirectProtocolHandler.listener)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2</li>
+     * <li>listeners to be notified: E2.listeners + RedirectProtocolHandler.listener</li>
+     * </ul>
      * </li>
      * <li>
-     *     request R3 send =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2 + E3</li>
-     *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
-     *     </ul>
+     * request R3 send =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2 + E3</li>
+     * <li>listeners to be notified: E3.listeners + E1.listeners</li>
+     * </ul>
      * </li>
      * <li>
-     *     response R3 arrived, 200 =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2 + E3</li>
-     *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
-     *     </ul>
+     * response R3 arrived, 200 =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2 + E3</li>
+     * <li>listeners to be notified: E3.listeners + E1.listeners</li>
+     * </ul>
      * </li>
      * </ol>
      * Basically the override conversation listener replaces the first exchange response listener,

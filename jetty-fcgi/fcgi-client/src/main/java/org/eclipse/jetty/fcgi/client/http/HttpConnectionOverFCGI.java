@@ -129,7 +129,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     {
         @SuppressWarnings("ReferenceEquality")
         boolean isCurrentBuffer = (this.buffer == buffer);
-        assert(isCurrentBuffer);
+        assert (isCurrentBuffer);
         HttpClient client = destination.getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
         bufferPool.release(buffer);
@@ -275,9 +275,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             channel.destroy();
         }
         activeChannels.clear();
-        
+
         HttpChannel channel = idleChannels.poll();
-        while (channel!=null)
+        while (channel != null)
         {
             channel.destroy();
             channel = idleChannels.poll();
@@ -292,7 +292,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             result |= channel.responseFailure(failure);
             channel.destroy();
         }
-        
+
         if (result)
             close(failure);
     }
@@ -339,7 +339,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             getEndPoint().getLocalAddress(),
             getEndPoint().getRemoteAddress());
     }
-    
+
     private class Delegate extends HttpConnection
     {
         private Delegate(HttpDestination destination)

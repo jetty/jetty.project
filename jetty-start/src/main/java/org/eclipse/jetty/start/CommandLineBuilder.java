@@ -26,8 +26,8 @@ public class CommandLineBuilder
 {
     public static File findExecutable(File root, String path)
     {
-        String npath = path.replace('/',File.separatorChar);
-        File exe = new File(root,npath);
+        String npath = path.replace('/', File.separatorChar);
+        File exe = new File(root, npath);
         if (!exe.exists())
         {
             return null;
@@ -43,13 +43,13 @@ public class CommandLineBuilder
             return null;
         }
 
-        File javabin = findExecutable(javaHome,"bin/java");
+        File javabin = findExecutable(javaHome, "bin/java");
         if (javabin != null)
         {
             return javabin.getAbsolutePath();
         }
 
-        javabin = findExecutable(javaHome,"bin/java.exe");
+        javabin = findExecutable(javaHome, "bin/java.exe");
         if (javabin != null)
         {
             return javabin.getAbsolutePath();
@@ -61,7 +61,7 @@ public class CommandLineBuilder
     /**
      * Perform an optional quoting of the argument, being intelligent with spaces and quotes as needed. If a subString is set in quotes it won't the subString
      * won't be escaped.
-     * 
+     *
      * @param arg the argument to quote
      * @return the quoted and escaped argument
      */
@@ -111,9 +111,8 @@ public class CommandLineBuilder
      * Add a simple argument to the command line.
      * <p>
      * Will quote arguments that have a space in them.
-     * 
-     * @param arg
-     *            the simple argument to add
+     *
+     * @param arg the simple argument to add
      */
     public void addArg(String arg)
     {
@@ -126,7 +125,7 @@ public class CommandLineBuilder
     /**
      * Similar to {@link #addArg(String)} but concats both name + value with an "=" sign, quoting were needed, and excluding the "=" portion if the value is
      * undefined or empty.
-     * 
+     *
      * <pre>
      *   addEqualsArg("-Dname", "value") = "-Dname=value"
      *   addEqualsArg("-Djetty.home", "/opt/company inc/jetty (7)/") = "-Djetty.home=/opt/company\ inc/jetty\ (7)/"
@@ -134,11 +133,9 @@ public class CommandLineBuilder
      *   addEqualsArg("-Dstress", null) = "-Dstress"
      *   addEqualsArg("-Dstress", "") = "-Dstress"
      * </pre>
-     * 
-     * @param name
-     *            the name
-     * @param value
-     *            the value
+     *
+     * @param name the name
+     * @param value the value
      */
     public void addEqualsArg(String name, String value)
     {
@@ -156,9 +153,8 @@ public class CommandLineBuilder
      * Add a simple argument to the command line.
      * <p>
      * Will <b>NOT</b> quote/escape arguments that have a space in them.
-     * 
-     * @param arg
-     *            the simple argument to add
+     *
+     * @param arg the simple argument to add
      */
     public void addRawArg(String arg)
     {
@@ -178,14 +174,14 @@ public class CommandLineBuilder
     {
         return toString(" ");
     }
-  
+
     public String toString(String delim)
     {
         StringBuilder buf = new StringBuilder();
 
         for (String arg : args)
         {
-            if (buf.length()>0)
+            if (buf.length() > 0)
             {
                 buf.append(delim);
             }
@@ -203,10 +199,10 @@ public class CommandLineBuilder
         }
 
         int len = args.size();
-        StartLog.debug("Command Line: %,d entries",args.size());
+        StartLog.debug("Command Line: %,d entries", args.size());
         for (int i = 0; i < len; i++)
         {
-            StartLog.debug(" [%d]: \"%s\"",i,args.get(i));
+            StartLog.debug(" [%d]: \"%s\"", i, args.get(i));
         }
     }
 }

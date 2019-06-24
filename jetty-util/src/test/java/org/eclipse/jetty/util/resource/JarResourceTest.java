@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;
@@ -36,15 +30,21 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class JarResourceTest
 {
     private String testResURI = MavenTestingUtils.getTestResourcesPath().toUri().toASCIIString();
 
     @Test
     public void testJarFile()
-    throws Exception
+        throws Exception
     {
-        String s = "jar:"+testResURI+"TestData/test.zip!/subdir/";
+        String s = "jar:" + testResURI + "TestData/test.zip!/subdir/";
         Resource r = Resource.newResource(s);
 
         Set<String> entries = new HashSet<>(Arrays.asList(r.list()));
@@ -65,7 +65,7 @@ public class JarResourceTest
 
         IO.delete(extract);
 
-        s = "jar:"+testResURI+"TestData/test.zip!/subdir/subsubdir/";
+        s = "jar:" + testResURI + "TestData/test.zip!/subdir/subsubdir/";
         r = Resource.newResource(s);
 
         entries = new HashSet<>(Arrays.asList(r.list()));
@@ -86,56 +86,53 @@ public class JarResourceTest
         IO.delete(extract);
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testJarFileGetAllResoures()
-    throws Exception
+        throws Exception
     {
-        String s = "jar:"+testResURI+"TestData/test.zip!/subdir/";
+        String s = "jar:" + testResURI + "TestData/test.zip!/subdir/";
         Resource r = Resource.newResource(s);
-        Collection<Resource> deep=r.getAllResources();
-        
+        Collection<Resource> deep = r.getAllResources();
+
         assertEquals(4, deep.size());
     }
-    
+
     @Test
-    public void testJarFileIsContainedIn ()
-    throws Exception
+    public void testJarFileIsContainedIn()
+        throws Exception
     {
-        String s = "jar:"+testResURI+"TestData/test.zip!/subdir/";
+        String s = "jar:" + testResURI + "TestData/test.zip!/subdir/";
         Resource r = Resource.newResource(s);
-        Resource container = Resource.newResource(testResURI+"TestData/test.zip");
+        Resource container = Resource.newResource(testResURI + "TestData/test.zip");
 
         assertTrue(r instanceof JarFileResource);
         JarFileResource jarFileResource = (JarFileResource)r;
 
         assertTrue(jarFileResource.isContainedIn(container));
 
-        container = Resource.newResource(testResURI+"TestData");
+        container = Resource.newResource(testResURI + "TestData");
         assertFalse(jarFileResource.isContainedIn(container));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
-    public void testJarFileLastModified ()
-    throws Exception
+    public void testJarFileLastModified()
+        throws Exception
     {
-        String s = "jar:"+testResURI+"TestData/test.zip!/subdir/numbers";
+        String s = "jar:" + testResURI + "TestData/test.zip!/subdir/numbers";
 
-        try(ZipFile zf = new ZipFile(MavenTestingUtils.getTestResourceFile("TestData/test.zip")))
+        try (ZipFile zf = new ZipFile(MavenTestingUtils.getTestResourceFile("TestData/test.zip")))
         {
             long last = zf.getEntry("subdir/numbers").getTime();
 
             Resource r = Resource.newResource(s);
-            assertEquals(last,r.lastModified());
+            assertEquals(last, r.lastModified());
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Test
-    public void testJarFileCopyToDirectoryTraversal () throws Exception
+    public void testJarFileCopyToDirectoryTraversal() throws Exception
     {
-        String s = "jar:"+testResURI+"TestData/extract.zip!/";
+        String s = "jar:" + testResURI + "TestData/extract.zip!/";
         Resource r = Resource.newResource(s);
 
         assertTrue(r instanceof JarResource);
@@ -147,8 +144,8 @@ public class JarResourceTest
         destParent.mkdir();
         destParent.deleteOnExit();
 
-        File dest = new File(destParent.getCanonicalPath()+"/extract");
-        if(dest.exists())
+        File dest = new File(destParent.getCanonicalPath() + "/extract");
+        if (dest.exists())
             dest.delete();
         dest.mkdir();
         dest.deleteOnExit();
@@ -159,7 +156,8 @@ public class JarResourceTest
         assertEquals(1, dest.listFiles().length);
         assertEquals(1, dest.getParentFile().listFiles().length);
 
-        FilenameFilter dotdotFilenameFilter = new FilenameFilter() {
+        FilenameFilter dotdotFilenameFilter = new FilenameFilter()
+        {
             @Override
             public boolean accept(File directory, String name)
             {
@@ -169,7 +167,8 @@ public class JarResourceTest
         assertEquals(0, dest.listFiles(dotdotFilenameFilter).length);
         assertEquals(0, dest.getParentFile().listFiles(dotdotFilenameFilter).length);
 
-        FilenameFilter extractfileFilenameFilter = new FilenameFilter() {
+        FilenameFilter extractfileFilenameFilter = new FilenameFilter()
+        {
             @Override
             public boolean accept(File directory, String name)
             {
@@ -179,7 +178,8 @@ public class JarResourceTest
         assertEquals(0, dest.listFiles(extractfileFilenameFilter).length);
         assertEquals(0, dest.getParentFile().listFiles(extractfileFilenameFilter).length);
 
-        FilenameFilter currentDirectoryFilenameFilter = new FilenameFilter() {
+        FilenameFilter currentDirectoryFilenameFilter = new FilenameFilter()
+        {
             @Override
             public boolean accept(File directory, String name)
             {
@@ -195,11 +195,10 @@ public class JarResourceTest
 
     @Test
     public void testEncodedFileName()
-    throws Exception
+        throws Exception
     {
-        String s = "jar:"+testResURI+"TestData/test.zip!/file%20name.txt";
+        String s = "jar:" + testResURI + "TestData/test.zip!/file%20name.txt";
         Resource r = Resource.newResource(s);
         assertTrue(r.exists());
     }
-
 }

@@ -28,13 +28,13 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class InfoSocket
 {
     private Session session;
-    
+
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
         this.session = session;
     }
-    
+
     @OnWebSocketMessage
     public void onMessage(String msg)
     {

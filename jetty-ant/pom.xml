@@ -8,7 +8,7 @@
   <artifactId>jetty-ant</artifactId>
   <packaging>jar</packaging>
   <name>Jetty :: Ant Plugin</name>
- 
+
   <properties>
     <bundle-symbolic-name>${project.groupId}.ant</bundle-symbolic-name>
   </properties>

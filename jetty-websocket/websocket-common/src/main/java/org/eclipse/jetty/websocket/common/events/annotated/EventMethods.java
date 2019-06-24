@@ -54,16 +54,10 @@ public class EventMethods
         EventMethods other = (EventMethods)obj;
         if (pojoClass == null)
         {
-            if (other.pojoClass != null)
-            {
-                return false;
-            }
+            return other.pojoClass == null;
         }
-        else if (!pojoClass.getName().equals(other.pojoClass.getName()))
-        {
-            return false;
-        }
-        return true;
+        else
+            return pojoClass.getName().equals(other.pojoClass.getName());
     }
 
     public Class<?> getPojoClass()
@@ -76,7 +70,7 @@ public class EventMethods
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((pojoClass == null)?0:pojoClass.getName().hashCode());
+        result = (prime * result) + ((pojoClass == null) ? 0 : pojoClass.getName().hashCode());
         return result;
     }
 
@@ -101,5 +95,4 @@ public class EventMethods
         builder.append("]");
         return builder.toString();
     }
-
 }

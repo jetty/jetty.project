@@ -560,8 +560,6 @@ public class ForwardedRequestCustomizerTest
         assertThat("requestURL", _requestURL.get(), is("http://myhost:4444/"));
     }
 
-
-
     /**
      * Resetting the server port via a forwarding header
      */
@@ -612,13 +610,13 @@ public class ForwardedRequestCustomizerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _connector.getResponse(
-            "GET / HTTP/1.1\n" +
-                "Host: myhost\n" +
-                "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222\n" +
-                "X-Forwarded-Port: 3333\n" +
-                "Forwarded: for=192.0.2.43,for=198.51.100.17;by=203.0.113.60;proto=http;host=example.com\n" +
-                "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222\n" +
-                "\n"));
+                "GET / HTTP/1.1\n" +
+                    "Host: myhost\n" +
+                    "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222\n" +
+                    "X-Forwarded-Port: 3333\n" +
+                    "Forwarded: for=192.0.2.43,for=198.51.100.17;by=203.0.113.60;proto=http;host=example.com\n" +
+                    "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222\n" +
+                    "\n"));
 
         assertThat("status", response.getStatus(), is(200));
         assertThat("scheme", _scheme.get(), is("http"));

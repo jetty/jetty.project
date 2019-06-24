@@ -29,6 +29,6 @@ public class DecoderMetadata extends CoderMetadata<Decoder>
 {
     public DecoderMetadata(Class<? extends Decoder> coderClass, Class<?> objType, MessageType messageType, boolean streamed)
     {
-        super(coderClass,objType,messageType,streamed);
+        super(coderClass, objType, messageType, streamed);
     }
 }

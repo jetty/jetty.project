@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Random;
@@ -29,7 +25,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -42,12 +37,14 @@ import org.eclipse.jetty.client.api.Request;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * SameNodeLoadTest
- * 
+ *
  * This test performs multiple concurrent requests for the same session on the same node.
- * 
  */
 public class SameNodeLoadTest
 {
@@ -58,13 +55,12 @@ public class SameNodeLoadTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        
+
         String contextPath = "";
         String servletMapping = "/server";
         TestServer server1 = new TestServer(0, 60, 5, cacheFactory, storeFactory);
 
-
-        server1.addContext( contextPath ).addServlet( TestServlet.class, servletMapping );
+        server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
         try
         {
@@ -77,23 +73,22 @@ public class SameNodeLoadTest
             {
                 String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
-
                 //create session via first server
                 ContentResponse response1 = client.GET(url + "?action=init");
-                assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //simulate 10 clients making 100 requests each
                 ExecutorService executor = Executors.newCachedThreadPool();
                 int clientsCount = 10;
-                CyclicBarrier barrier = new CyclicBarrier( clientsCount + 1 );
+                CyclicBarrier barrier = new CyclicBarrier(clientsCount + 1);
                 int requestsCount = 100;
                 Worker[] workers = new Worker[clientsCount];
-                for ( int i = 0; i < clientsCount; ++i )
+                for (int i = 0; i < clientsCount; ++i)
                 {
                     workers[i] = new Worker(barrier, client, requestsCount, sessionCookie, url);
-                    executor.execute( workers[i] );
+                    executor.execute(workers[i]);
                 }
                 // Wait for all workers to be ready
                 barrier.await();
@@ -102,16 +97,16 @@ public class SameNodeLoadTest
                 // Wait for all workers to be done
                 barrier.await();
                 long end = System.nanoTime();
-                long elapsed = TimeUnit.NANOSECONDS.toMillis( end - start );
-                System.err.println("Elapsed ms:"+elapsed);
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
+                System.err.println("Elapsed ms:" + elapsed);
                 executor.shutdownNow();
 
                 // Perform one request to get the result
-                Request request = client.newRequest( url + "?action=result" );
+                Request request = client.newRequest(url + "?action=result");
                 ContentResponse response2 = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
                 String response = response2.getContentAsString();
-                assertEquals(response.trim(), String.valueOf( clientsCount * requestsCount ) );
+                assertEquals(response.trim(), String.valueOf(clientsCount * requestsCount));
             }
             finally
             {
@@ -137,9 +132,8 @@ public class SameNodeLoadTest
         private final String sessionCookie;
 
         private final String url;
-        
-        private final String name;
 
+        private final String name;
 
         public Worker(CyclicBarrier barrier, HttpClient client, int requestsCount, String sessionCookie, String url)
         {
@@ -148,9 +142,8 @@ public class SameNodeLoadTest
             this.requestsCount = requestsCount;
             this.sessionCookie = sessionCookie;
             this.url = url;
-            this.name = ""+(COUNT++);
+            this.name = "" + (COUNT++);
         }
-
 
         @Override
         public void run()
@@ -160,9 +153,9 @@ public class SameNodeLoadTest
                 // Wait for all workers to be ready
                 barrier.await();
 
-                Random random = new Random( System.nanoTime() );
+                Random random = new Random(System.nanoTime());
 
-                for ( int i = 0; i < requestsCount; ++i )
+                for (int i = 0; i < requestsCount; ++i)
                 {
                     int pauseMsec = random.nextInt(1000);
 
@@ -173,15 +166,15 @@ public class SameNodeLoadTest
                     }
                     Request request = client.newRequest(url + "?action=increment");
                     ContentResponse response = request.send();
-                    assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                    assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 }
 
                 // Wait for all workers to be done
                 barrier.await();
             }
-            catch ( Exception x )
+            catch (Exception x)
             {
-                throw new RuntimeException( x );
+                throw new RuntimeException(x);
             }
         }
     }
@@ -190,38 +183,38 @@ public class SameNodeLoadTest
         extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
-        
+
         @Override
-        protected void doGet( HttpServletRequest request, HttpServletResponse response )
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException
         {
-            String action = request.getParameter( "action" );
-            if ( "init".equals( action ) )
+            String action = request.getParameter("action");
+            if ("init".equals(action))
             {
-                HttpSession session = request.getSession( true );
-                session.setAttribute( "value", 0 );
+                HttpSession session = request.getSession(true);
+                session.setAttribute("value", 0);
             }
-            else if ( "increment".equals( action ) )
+            else if ("increment".equals(action))
             {
-                HttpSession session = request.getSession( false );
+                HttpSession session = request.getSession(false);
                 assertNotNull(session);
-                synchronized(session)
+                synchronized (session)
                 {
-                    int value = (Integer) session.getAttribute( "value" );
-                    session.setAttribute( "value", value + 1 );
+                    int value = (Integer)session.getAttribute("value");
+                    session.setAttribute("value", value + 1);
                 }
             }
-            else if ( "result".equals( action ) )
+            else if ("result".equals(action))
             {
-                HttpSession session = request.getSession( false );
+                HttpSession session = request.getSession(false);
                 assertNotNull(session);
                 Integer value = null;
                 synchronized (session)
                 {
-                    value = (Integer) session.getAttribute( "value" );
+                    value = (Integer)session.getAttribute("value");
                 }
                 PrintWriter writer = response.getWriter();
-                writer.println( value );
+                writer.println(value);
                 writer.flush();
             }
         }

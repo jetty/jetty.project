@@ -36,7 +36,7 @@ public class FutureWriteCallback extends FutureCallback implements WriteCallback
     public void writeFailed(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(".writeFailed",cause);
+            LOG.debug(".writeFailed", cause);
         failed(cause);
     }
 

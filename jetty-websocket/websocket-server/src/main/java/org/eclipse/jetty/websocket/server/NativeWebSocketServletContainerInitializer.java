@@ -38,17 +38,17 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
      * Immediately initialize the {@link ServletContextHandler} with the default {@link NativeWebSocketConfiguration}.
      *
      * <p>
-     *     This method is typically called from {@link #onStartup(Set, ServletContext)} itself or from
-     *     another dependent {@link ServletContainerInitializer} that requires minimal setup to
-     *     be performed.
+     * This method is typically called from {@link #onStartup(Set, ServletContext)} itself or from
+     * another dependent {@link ServletContainerInitializer} that requires minimal setup to
+     * be performed.
      * </p>
      * <p>
-     *     This method SHOULD NOT BE CALLED by users of Jetty.
-     *     Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
+     * This method SHOULD NOT BE CALLED by users of Jetty.
+     * Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
      * </p>
      * <p>
-     *     This will return the default {@link NativeWebSocketConfiguration} if already initialized,
-     *     and not create a new {@link NativeWebSocketConfiguration} each time it is called.
+     * This will return the default {@link NativeWebSocketConfiguration} if already initialized,
+     * and not create a new {@link NativeWebSocketConfiguration} each time it is called.
      * </p>
      *
      * @param context the context to work with
@@ -56,7 +56,7 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
      */
     public static NativeWebSocketConfiguration initialize(ServletContextHandler context)
     {
-        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getAttribute(ATTR_KEY);
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration)context.getAttribute(ATTR_KEY);
         if (configuration == null)
         {
             // Not provided to us, create a new default one.
@@ -86,7 +86,7 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
                 {
                     if (configurator != null)
                     {
-                        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) servletContext.getAttribute(ATTR_KEY);
+                        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration)servletContext.getAttribute(ATTR_KEY);
                         configurator.accept(servletContext, configuration);
                     }
                 }));

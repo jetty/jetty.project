@@ -70,20 +70,15 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
      *
      * @param resource the resource that has been acquired
      * @return true whether the resource has been acquired normally, false if the resource has detected a leak (meaning
-     *         that another acquire occurred before a release of the same resource)
+     * that another acquire occurred before a release of the same resource)
      * @see #released(Object)
      */
     public boolean acquired(T resource)
     {
         String id = id(resource);
-        LeakInfo info = resources.putIfAbsent(id, new LeakInfo(resource,id));
-        if (info != null)
-        {
-            // Leak detected, prior acquire exists (not released) or id clash.
-            return false;
-        }
-        // Normal behavior.
-        return true;
+        LeakInfo info = resources.putIfAbsent(id, new LeakInfo(resource, id));
+        // Leak detected, prior acquire exists (not released) or id clash.
+        return info == null;// Normal behavior.
     }
 
     /**
@@ -91,21 +86,17 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
      *
      * @param resource the resource that has been released
      * @return true whether the resource has been released normally (based on a previous acquire). false if the resource
-     *         has been released without a prior acquire (such as a double release scenario)
+     * has been released without a prior acquire (such as a double release scenario)
      * @see #acquired(Object)
      */
     public boolean released(T resource)
     {
         String id = id(resource);
         LeakInfo info = resources.remove(id);
-        if (info != null)
-        {
-            // Normal behavior.
-            return true;
-        }
+        // Normal behavior.
+        return info != null;
 
         // Leak detected (released without acquire).
-        return false;
     }
 
     /**
@@ -123,7 +114,7 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
     protected void doStart() throws Exception
     {
         super.doStart();
-        thread = new Thread(this,getClass().getSimpleName());
+        thread = new Thread(this, getClass().getSimpleName());
         thread.setDaemon(true);
         thread.start();
     }
@@ -145,7 +136,7 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
                 @SuppressWarnings("unchecked")
                 LeakInfo leakInfo = (LeakInfo)queue.remove();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Resource GC'ed: {}",leakInfo);
+                    LOG.debug("Resource GC'ed: {}", leakInfo);
                 if (resources.remove(leakInfo.id) != null)
                     leaked(leakInfo);
             }
@@ -163,7 +154,7 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
      */
     protected void leaked(LeakInfo leakInfo)
     {
-        LOG.warn("Resource leaked: " + leakInfo.description,leakInfo.stackFrames);
+        LOG.warn("Resource leaked: " + leakInfo.description, leakInfo.stackFrames);
     }
 
     /**
@@ -177,7 +168,7 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
 
         private LeakInfo(T referent, String id)
         {
-            super(referent,queue);
+            super(referent, queue);
             this.id = id;
             this.description = referent.toString();
             this.stackFrames = new Throwable();

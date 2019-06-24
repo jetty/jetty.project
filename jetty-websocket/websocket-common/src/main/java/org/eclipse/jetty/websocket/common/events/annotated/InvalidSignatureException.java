@@ -73,6 +73,6 @@ public class InvalidSignatureException extends InvalidWebSocketException
 
     public InvalidSignatureException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 }

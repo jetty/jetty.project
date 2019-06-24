@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import org.eclipse.jetty.util.component.Dumpable;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +28,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.eclipse.jetty.util.component.Dumpable;
 
 public class AttributesMap implements Attributes, Dumpable
 {
@@ -102,7 +102,7 @@ public class AttributesMap implements Attributes, Dumpable
     public Set<Map.Entry<String, Object>> getAttributeEntrySet()
     {
         Map<String, Object> map = map();
-        return map == null ? Collections.<Map.Entry<String, Object>>emptySet() : map.entrySet();
+        return map == null ? Collections.emptySet() : map.entrySet();
     }
 
     public static Enumeration<String> getAttributeNamesCopy(Attributes attrs)
@@ -139,7 +139,7 @@ public class AttributesMap implements Attributes, Dumpable
     private Set<String> keySet()
     {
         Map<String, Object> map = map();
-        return map == null ? Collections.<String>emptySet() : map.keySet();
+        return map == null ? Collections.emptySet() : map.keySet();
     }
 
     public void addAll(Attributes attributes)
@@ -161,6 +161,6 @@ public class AttributesMap implements Attributes, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,String.format("%s@%x",this.getClass().getSimpleName(),hashCode()),map());
+        Dumpable.dumpObjects(out, indent, String.format("%s@%x", this.getClass().getSimpleName(), hashCode()), map());
     }
 }

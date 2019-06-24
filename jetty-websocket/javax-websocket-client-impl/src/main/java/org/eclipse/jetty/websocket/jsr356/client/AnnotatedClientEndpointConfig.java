@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Decoder;
@@ -60,7 +59,7 @@ public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
         {
             try
             {
-                this.configurator = anno.configurator().getDeclaredConstructor( ).newInstance();
+                this.configurator = anno.configurator().getDeclaredConstructor().newInstance();
             }
             catch (Exception e)
             {
@@ -69,7 +68,7 @@ public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
                 err.append(anno.configurator().getName());
                 err.append(" defined as annotation in ");
                 err.append(anno.getClass().getName());
-                throw new InvalidWebSocketException(err.toString(),e);
+                throw new InvalidWebSocketException(err.toString(), e);
             }
         }
     }

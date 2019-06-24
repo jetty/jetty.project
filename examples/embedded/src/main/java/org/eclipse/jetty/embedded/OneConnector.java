@@ -26,7 +26,7 @@ import org.eclipse.jetty.server.ServerConnector;
  */
 public class OneConnector
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         // The Server
         Server server = new Server();

@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.io.Reader;
 
-import javax.websocket.OnMessage;
-
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
@@ -45,7 +43,7 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (super.process(param,callable))
+        if (super.process(param, callable))
         {
             // Found common roles
             return true;
@@ -62,56 +60,56 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
         // Java primitive or class equivalent to receive the whole message converted to that type
         if (param.type.isAssignableFrom(Boolean.class))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_TEXT);
             callable.setDecodingType(Boolean.class);
             return true;
         }
         if (param.type.isAssignableFrom(Byte.class) || (param.type == Byte.TYPE))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_TEXT);
             callable.setDecodingType(Byte.class);
             return true;
         }
         if (param.type.isAssignableFrom(Character.class) || (param.type == Character.TYPE))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_TEXT);
             callable.setDecodingType(Character.class);
             return true;
         }
         if (param.type.isAssignableFrom(Double.class) || (param.type == Double.TYPE))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_TEXT);
             callable.setDecodingType(Double.class);
             return true;
         }
         if (param.type.isAssignableFrom(Float.class) || (param.type == Float.TYPE))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_TEXT);
             callable.setDecodingType(Float.class);
             return true;
         }
         if (param.type.isAssignableFrom(Integer.class) || (param.type == Integer.TYPE))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_TEXT);
             callable.setDecodingType(Integer.class);
             return true;
         }
         if (param.type.isAssignableFrom(Long.class) || (param.type == Long.TYPE))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_TEXT);
             callable.setDecodingType(Long.class);
             return true;
         }
         if (param.type.isAssignableFrom(Short.class) || (param.type == Short.TYPE))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_TEXT);
             callable.setDecodingType(Short.class);
             return true;
@@ -120,7 +118,7 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
         // Streaming
         if (param.type.isAssignableFrom(Reader.class))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_TEXT_STREAM);
             callable.setDecodingType(Reader.class);
             return true;
@@ -128,7 +126,7 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
 
         /*
          * boolean primitive.
-         * 
+         *
          * can be used for either: 1) a boolean message type 2) a partial message indicator flag
          */
         if (param.type == Boolean.TYPE)

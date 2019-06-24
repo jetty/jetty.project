@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.partial;
 
 import java.io.IOException;
-
 import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
 
@@ -31,6 +30,6 @@ public class PartialTrackingSocket extends TrackingSocket
     @OnMessage
     public void onPartial(String msg, boolean fin) throws IOException
     {
-        addEvent("onPartial(\"%s\",%b)",msg,fin);
+        addEvent("onPartial(\"%s\",%b)", msg, fin);
     }
 }

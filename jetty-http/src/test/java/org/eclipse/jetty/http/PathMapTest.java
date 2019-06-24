@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.http;
 
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -47,26 +47,26 @@ public class PathMapTest
         p.put("/\u20ACuro/*", "11");
 
         String[][] tests = {
-                { "/abs/path", "1"},
-                { "/abs/path/xxx", "8"},
-                { "/abs/pith", "8"},
-                { "/abs/path/longer", "2"},
-                { "/abs/path/", "8"},
-                { "/abs/path/xxx", "8"},
-                { "/animal/bird/eagle/bald", "3"},
-                { "/animal/fish/shark/grey", "4"},
-                { "/animal/insect/bug", "5"},
-                { "/animal", "5"},
-                { "/animal/", "5"},
-                { "/animal/x", "5"},
-                { "/animal/*", "5"},
-                { "/suffix/path.tar.gz", "6"},
-                { "/suffix/path.gz", "7"},
-                { "/animal/path.gz", "5"},
-                { "/Other/path", "8"},
-                { "/\u20ACuro/path", "11"},
-                { "/", "10"},
-                };
+            {"/abs/path", "1"},
+            {"/abs/path/xxx", "8"},
+            {"/abs/pith", "8"},
+            {"/abs/path/longer", "2"},
+            {"/abs/path/", "8"},
+            {"/abs/path/xxx", "8"},
+            {"/animal/bird/eagle/bald", "3"},
+            {"/animal/fish/shark/grey", "4"},
+            {"/animal/insect/bug", "5"},
+            {"/animal", "5"},
+            {"/animal/", "5"},
+            {"/animal/x", "5"},
+            {"/animal/*", "5"},
+            {"/suffix/path.tar.gz", "6"},
+            {"/suffix/path.gz", "7"},
+            {"/animal/path.gz", "5"},
+            {"/Other/path", "8"},
+            {"/\u20ACuro/path", "11"},
+            {"/", "10"},
+            };
 
         for (String[] test : tests)
         {
@@ -138,12 +138,13 @@ public class PathMapTest
         assertTrue(!PathMap.match("*.foo", "anything.bar"), "!match *.foo");
 
         assertEquals("10", p.getMatch("/").getValue(), "match / with ''");
-        
-        assertTrue(PathMap.match("", "/"),"match \"\"");
+
+        assertTrue(PathMap.match("", "/"), "match \"\"");
     }
 
     /**
      * See JIRA issue: JETTY-88.
+     *
      * @throws Exception failed test
      */
     @Test
@@ -169,35 +170,33 @@ public class PathMapTest
     public void testPrecidenceVsOrdering() throws Exception
     {
         PathMap<String> p = new PathMap<>();
-        p.put("/dump/gzip/*","prefix");
-        p.put("*.txt","suffix");
-       
-        assertEquals(null,p.getMatch("/foo/bar"));
-        assertEquals("prefix",p.getMatch("/dump/gzip/something").getValue());
-        assertEquals("suffix",p.getMatch("/foo/something.txt").getValue());
-        assertEquals("prefix",p.getMatch("/dump/gzip/something.txt").getValue());
-        
+        p.put("/dump/gzip/*", "prefix");
+        p.put("*.txt", "suffix");
+
+        assertEquals(null, p.getMatch("/foo/bar"));
+        assertEquals("prefix", p.getMatch("/dump/gzip/something").getValue());
+        assertEquals("suffix", p.getMatch("/foo/something.txt").getValue());
+        assertEquals("prefix", p.getMatch("/dump/gzip/something.txt").getValue());
+
         p = new PathMap<>();
-        p.put("*.txt","suffix");
-        p.put("/dump/gzip/*","prefix");
-       
-        assertEquals(null,p.getMatch("/foo/bar"));
-        assertEquals("prefix",p.getMatch("/dump/gzip/something").getValue());
-        assertEquals("suffix",p.getMatch("/foo/something.txt").getValue());
-        assertEquals("prefix",p.getMatch("/dump/gzip/something.txt").getValue());
+        p.put("*.txt", "suffix");
+        p.put("/dump/gzip/*", "prefix");
+
+        assertEquals(null, p.getMatch("/foo/bar"));
+        assertEquals("prefix", p.getMatch("/dump/gzip/something").getValue());
+        assertEquals("suffix", p.getMatch("/foo/something.txt").getValue());
+        assertEquals("prefix", p.getMatch("/dump/gzip/something.txt").getValue());
     }
-    
-    
-    
+
     private void assertMatch(String spec, String path)
     {
         boolean match = PathMap.match(spec, path);
-        assertTrue(match,"PathSpec '" + spec + "' should match path '" + path + "'");
+        assertTrue(match, "PathSpec '" + spec + "' should match path '" + path + "'");
     }
 
     private void assertNotMatch(String spec, String path)
     {
         boolean match = PathMap.match(spec, path);
-        assertFalse(match,"PathSpec '" + spec + "' should not match path '" + path + "'");
+        assertFalse(match, "PathSpec '" + spec + "' should not match path '" + path + "'");
     }
 }

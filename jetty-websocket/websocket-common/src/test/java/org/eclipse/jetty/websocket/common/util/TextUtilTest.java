@@ -53,5 +53,4 @@ public class TextUtilTest
     {
         assertEquals("\"\"", TextUtil.hint(""));
     }
-
 }

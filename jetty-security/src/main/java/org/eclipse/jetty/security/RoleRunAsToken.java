@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.security;
 
-
-
 /**
  * @version $Rev: 4701 $ $Date: 2009-03-03 13:01:26 +0100 (Tue, 03 Mar 2009) $
  */
@@ -40,6 +38,6 @@ public class RoleRunAsToken implements RunAsToken
     @Override
     public String toString()
     {
-        return "RoleRunAsToken("+_runAsRole+")";
+        return "RoleRunAsToken(" + _runAsRole + ")";
     }
 }

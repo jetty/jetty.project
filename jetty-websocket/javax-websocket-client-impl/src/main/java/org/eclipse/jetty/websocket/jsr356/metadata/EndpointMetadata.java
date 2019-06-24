@@ -23,10 +23,16 @@ public interface EndpointMetadata
     DecoderMetadataSet getDecoders();
 
     EncoderMetadataSet getEncoders();
-    
+
     Class<?> getEndpointClass();
-    
-    default long maxTextMessageSize() { return -1; }
-    
-    default long maxBinaryMessageSize() { return -1; }
+
+    default long maxTextMessageSize()
+    {
+        return -1;
+    }
+
+    default long maxBinaryMessageSize()
+    {
+        return -1;
+    }
 }

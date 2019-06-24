@@ -213,9 +213,9 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
     private long getByteBufferCount(boolean direct)
     {
         return Arrays.stream(bucketsFor(direct))
-                .filter(Objects::nonNull)
-                .mapToLong(Bucket::size)
-                .sum();
+            .filter(Objects::nonNull)
+            .mapToLong(Bucket::size)
+            .sum();
     }
 
     // Package local for testing

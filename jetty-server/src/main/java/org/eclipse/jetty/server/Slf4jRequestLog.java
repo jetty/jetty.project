@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
  * Implementation of NCSARequestLog where output is sent as a SLF4J INFO Log message on the named logger "org.eclipse.jetty.server.RequestLog"
+ *
  * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#EXTENDED_NCSA_FORMAT} with an {@link Slf4jRequestLogWriter}
  */
 @Deprecated

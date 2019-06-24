@@ -27,12 +27,10 @@ import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 
-
-/* ------------------------------------------------------------ */
-/** 
+/**
  * A Connection Lister for customization of SocketConnections.
  * <p>
- * Instances of this listener may be added to a {@link Connector} (or 
+ * Instances of this listener may be added to a {@link Connector} (or
  * {@link ConnectionFactory}) so that they are applied to all connections
  * for that connector (or protocol) and thus allow additional Socket
  * configuration to be applied by implementing {@link #customize(Socket, Class, boolean)}
@@ -40,7 +38,7 @@ import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 public class SocketCustomizationListener implements Listener
 {
     private final boolean _ssl;
-    
+
     /**
      * Construct with SSL unwrapping on.
      */
@@ -48,38 +46,39 @@ public class SocketCustomizationListener implements Listener
     {
         this(true);
     }
-    
+
     /**
      * @param ssl If True, then a Socket underlying an SSLConnection is unwrapped
      * and notified.
      */
     public SocketCustomizationListener(boolean ssl)
     {
-        _ssl=ssl;
+        _ssl = ssl;
     }
 
     @Override
     public void onOpened(Connection connection)
     {
         EndPoint endp = connection.getEndPoint();
-        boolean ssl=false;
-        
+        boolean ssl = false;
+
         if (_ssl && endp instanceof DecryptedEndPoint)
         {
             endp = ((DecryptedEndPoint)endp).getSslConnection().getEndPoint();
-            ssl=true;
+            ssl = true;
         }
-        
-        if (endp instanceof SocketChannelEndPoint) 
+
+        if (endp instanceof SocketChannelEndPoint)
         {
             Socket socket = ((SocketChannelEndPoint)endp).getSocket();
-            customize(socket,connection.getClass(),ssl);
+            customize(socket, connection.getClass(), ssl);
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** This method may be extended to configure a socket on open 
+    /**
+     * This method may be extended to configure a socket on open
      * events.
+     *
      * @param socket The Socket to configure
      * @param connection The class of the connection (The socket may be wrapped
      * by an {@link SslConnection} prior to this connection).
@@ -93,5 +92,4 @@ public class SocketCustomizationListener implements Listener
     public void onClosed(Connection connection)
     {
     }
-
 }

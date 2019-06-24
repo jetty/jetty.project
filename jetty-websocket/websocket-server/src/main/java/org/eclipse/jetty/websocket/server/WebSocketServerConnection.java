@@ -33,13 +33,13 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection imple
 {
     public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        super(endp,executor,scheduler,policy,bufferPool);
+        super(endp, executor, scheduler, policy, bufferPool);
         if (policy.getIdleTimeout() > 0)
         {
             endp.setIdleTimeout(policy.getIdleTimeout());
         }
     }
-    
+
     @Override
     public InetSocketAddress getLocalAddress()
     {
@@ -51,7 +51,7 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection imple
     {
         return getEndPoint().getRemoteAddress();
     }
-    
+
     @Override
     public void setNextIncomingFrames(IncomingFrames incoming)
     {

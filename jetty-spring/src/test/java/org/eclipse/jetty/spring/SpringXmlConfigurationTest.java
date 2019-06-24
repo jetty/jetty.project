@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.spring;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,9 +30,12 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 public class SpringXmlConfigurationTest
 {
-    protected String _configure="org/eclipse/jetty/spring/configure.xml";
+    protected String _configure = "org/eclipse/jetty/spring/configure.xml";
 
     @BeforeEach
     public void init() throws Exception
@@ -57,24 +57,24 @@ public class SpringXmlConfigurationTest
     @Test
     public void testPassedObject() throws Exception
     {
-        TestConfiguration.VALUE=77;
+        TestConfiguration.VALUE = 77;
 
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource(_configure);
         XmlConfiguration configuration = new XmlConfiguration(url);
 
-        Map<String,String> properties = new HashMap<>();
+        Map<String, String> properties = new HashMap<>();
         properties.put("test", "xxx");
 
         TestConfiguration nested = new TestConfiguration();
         nested.setTestString0("nested");
-        configuration.getIdMap().put("nested",nested);
+        configuration.getIdMap().put("nested", nested);
 
         TestConfiguration tc = new TestConfiguration();
         tc.setTestString0("preconfig");
         tc.setTestInt0(42);
         configuration.getProperties().putAll(properties);
 
-        tc=(TestConfiguration)configuration.configure(tc);
+        tc = (TestConfiguration)configuration.configure(tc);
 
         assertEquals("preconfig", tc.getTestString0());
         assertEquals(42, tc.getTestInt0());
@@ -96,7 +96,7 @@ public class SpringXmlConfigurationTest
     public void testNewObject() throws Exception
     {
         final String newDefaultValue = "NEW DEFAULT";
-        TestConfiguration.VALUE=71;
+        TestConfiguration.VALUE = 71;
 
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource(_configure);
         final AtomicInteger count = new AtomicInteger(0);
@@ -115,7 +115,7 @@ public class SpringXmlConfigurationTest
             }
         };
 
-        Map<String,String> properties = new HashMap<String,String>();
+        Map<String, String> properties = new HashMap<String, String>();
         properties.put("test", "xxx");
 
         TestConfiguration nested = new TestConfiguration();
@@ -125,7 +125,7 @@ public class SpringXmlConfigurationTest
         configuration.getProperties().putAll(properties);
         TestConfiguration tc = (TestConfiguration)configuration.configure();
 
-        assertEquals(3,count.get());
+        assertEquals(3, count.get());
 
         assertEquals(newDefaultValue, tc.getTestString0());
         assertEquals(-1, tc.getTestInt0());

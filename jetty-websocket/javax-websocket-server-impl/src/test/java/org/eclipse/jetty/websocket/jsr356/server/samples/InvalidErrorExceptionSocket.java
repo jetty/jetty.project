@@ -23,11 +23,12 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/invalid")
+@ServerEndpoint(value = "/invalid")
 public class InvalidErrorExceptionSocket extends TrackingSocket
 {
     /**
      * Invalid Error Method Declaration (parameter type Exception)
+     *
      * @param e the exception
      */
     @OnError

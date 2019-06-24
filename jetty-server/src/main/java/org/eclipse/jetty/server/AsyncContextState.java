@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -30,7 +29,6 @@ import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 
-
 public class AsyncContextState implements AsyncContext
 {
     private final HttpChannel _channel;
@@ -38,19 +36,19 @@ public class AsyncContextState implements AsyncContext
 
     public AsyncContextState(HttpChannelState state)
     {
-        _state=state;
-        _channel=_state.getHttpChannel();
+        _state = state;
+        _channel = _state.getHttpChannel();
     }
-    
+
     public HttpChannel getHttpChannel()
     {
         return _channel;
     }
-    
+
     HttpChannelState state()
     {
-        HttpChannelState state=_state;
-        if (state==null)
+        HttpChannelState state = _state;
+        if (state == null)
             throw new IllegalStateException("AsyncContext completed and/or Request lifecycle recycled");
         return state;
     }
@@ -76,7 +74,7 @@ public class AsyncContextState implements AsyncContext
 
     @Override
     public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException
-    {    
+    {
         ContextHandler contextHandler = state().getContextHandler();
         if (contextHandler != null)
             return contextHandler.getServletContext().createListener(clazz);
@@ -93,19 +91,19 @@ public class AsyncContextState implements AsyncContext
     @Override
     public void dispatch()
     {
-        state().dispatch(null,null);
+        state().dispatch(null, null);
     }
 
     @Override
     public void dispatch(String path)
     {
-        state().dispatch(null,path);
+        state().dispatch(null, path);
     }
-    
+
     @Override
     public void dispatch(ServletContext context, String path)
     {
-        state().dispatch(context,path);
+        state().dispatch(context, path);
     }
 
     @Override
@@ -129,8 +127,8 @@ public class AsyncContextState implements AsyncContext
     @Override
     public boolean hasOriginalRequestAndResponse()
     {
-        HttpChannel channel=state().getHttpChannel();
-        return channel.getRequest()==getRequest() && channel.getResponse()==getResponse();
+        HttpChannel channel = state().getHttpChannel();
+        return channel.getRequest() == getRequest() && channel.getResponse() == getResponse();
     }
 
     @Override
@@ -148,14 +146,14 @@ public class AsyncContextState implements AsyncContext
             @Override
             public void run()
             {
-                state().getAsyncContextEvent().getContext().getContextHandler().handle(channel.getRequest(),task);
+                state().getAsyncContextEvent().getContext().getContextHandler().handle(channel.getRequest(), task);
             }
         });
     }
 
     public void reset()
     {
-        _state=null;
+        _state = null;
     }
 
     public HttpChannelState getHttpChannelState()
@@ -184,25 +182,25 @@ public class AsyncContextState implements AsyncContext
         @Override
         public void onTimeout(AsyncEvent event) throws IOException
         {
-            _listener.onTimeout(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+            _listener.onTimeout(new AsyncEvent(event.getAsyncContext(), _request, _response, event.getThrowable()));
         }
 
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {
-            _listener.onStartAsync(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+            _listener.onStartAsync(new AsyncEvent(event.getAsyncContext(), _request, _response, event.getThrowable()));
         }
 
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            _listener.onError(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+            _listener.onError(new AsyncEvent(event.getAsyncContext(), _request, _response, event.getThrowable()));
         }
 
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            _listener.onComplete(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+            _listener.onComplete(new AsyncEvent(event.getAsyncContext(), _request, _response, event.getThrowable()));
         }
     }
 }

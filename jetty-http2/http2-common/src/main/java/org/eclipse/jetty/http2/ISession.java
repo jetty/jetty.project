@@ -37,45 +37,45 @@ import org.eclipse.jetty.util.Promise;
 public interface ISession extends Session
 {
     @Override
-    public IStream getStream(int streamId);
+    IStream getStream(int streamId);
 
     /**
      * <p>Removes the given {@code stream}.</p>
      *
      * @param stream the stream to remove
      */
-    public void removeStream(IStream stream);
+    void removeStream(IStream stream);
 
     /**
      * <p>Enqueues the given frames to be written to the connection.</p>
      *
-     * @param stream   the stream the frames belong to
+     * @param stream the stream the frames belong to
      * @param callback the callback that gets notified when the frames have been sent
-     * @param frame    the first frame to enqueue
-     * @param frames   additional frames to enqueue
+     * @param frame the first frame to enqueue
+     * @param frames additional frames to enqueue
      */
-    public void frames(IStream stream, Callback callback, Frame frame, Frame... frames);
+    void frames(IStream stream, Callback callback, Frame frame, Frame... frames);
 
     /**
      * <p>Enqueues the given PUSH_PROMISE frame to be written to the connection.</p>
      * <p>Differently from {@link #frames(IStream, Callback, Frame, Frame...)}, this method
      * generates atomically the stream id for the pushed stream.</p>
      *
-     * @param stream   the stream associated to the pushed stream
-     * @param promise  the promise that gets notified of the pushed stream creation
-     * @param frame    the PUSH_PROMISE frame to enqueue
+     * @param stream the stream associated to the pushed stream
+     * @param promise the promise that gets notified of the pushed stream creation
+     * @param frame the PUSH_PROMISE frame to enqueue
      * @param listener the listener that gets notified of pushed stream events
      */
-    public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener);
+    void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener);
 
     /**
      * <p>Enqueues the given DATA frame to be written to the connection.</p>
      *
-     * @param stream   the stream the data frame belongs to
+     * @param stream the stream the data frame belongs to
      * @param callback the callback that gets notified when the frame has been sent
-     * @param frame    the DATA frame to send
+     * @param frame the DATA frame to send
      */
-    public void data(IStream stream, Callback callback, DataFrame frame);
+    void data(IStream stream, Callback callback, DataFrame frame);
 
     /**
      * <p>Updates the session send window by the given {@code delta}.</p>
@@ -83,7 +83,7 @@ public interface ISession extends Session
      * @param delta the delta value (positive or negative) to add to the session send window
      * @return the previous value of the session send window
      */
-    public int updateSendWindow(int delta);
+    int updateSendWindow(int delta);
 
     /**
      * <p>Updates the session receive window by the given {@code delta}.</p>
@@ -91,20 +91,20 @@ public interface ISession extends Session
      * @param delta the delta value (positive or negative) to add to the session receive window
      * @return the previous value of the session receive window
      */
-    public int updateRecvWindow(int delta);
+    int updateRecvWindow(int delta);
 
     /**
      * <p>Callback method invoked when a WINDOW_UPDATE frame has been received.</p>
      *
      * @param stream the stream the window update belongs to, or null if the window update belongs to the session
-     * @param frame  the WINDOW_UPDATE frame received
+     * @param frame the WINDOW_UPDATE frame received
      */
-    public void onWindowUpdate(IStream stream, WindowUpdateFrame frame);
+    void onWindowUpdate(IStream stream, WindowUpdateFrame frame);
 
     /**
      * @return whether the push functionality is enabled
      */
-    public boolean isPushEnabled();
+    boolean isPushEnabled();
 
     /**
      * <p>Callback invoked when the connection reads -1.</p>
@@ -112,16 +112,16 @@ public interface ISession extends Session
      * @see #onIdleTimeout()
      * @see #close(int, String, Callback)
      */
-    public void onShutdown();
+    void onShutdown();
 
     /**
      * <p>Callback invoked when the idle timeout expires.</p>
      *
+     * @return {@code true} if the session has expired
      * @see #onShutdown()
      * @see #close(int, String, Callback)
-     * @return {@code true} if the session has expired
      */
-    public boolean onIdleTimeout();
+    boolean onIdleTimeout();
 
     /**
      * <p>Callback method invoked during an HTTP/1.1 to HTTP/2 upgrade requests
@@ -129,7 +129,7 @@ public interface ISession extends Session
      *
      * @param frame the synthetic frame to process
      */
-    public void onFrame(Frame frame);
+    void onFrame(Frame frame);
 
     /**
      * <p>Callback method invoked when bytes are flushed to the network.</p>
@@ -137,12 +137,12 @@ public interface ISession extends Session
      * @param bytes the number of bytes flushed to the network
      * @throws IOException if the flush should fail
      */
-    public void onFlushed(long bytes) throws IOException;
+    void onFlushed(long bytes) throws IOException;
 
     /**
      * @return the number of bytes written by this session
      */
-    public long getBytesWritten();
+    long getBytesWritten();
 
     /**
      * <p>Callback method invoked when a DATA frame is received.</p>
@@ -150,5 +150,5 @@ public interface ISession extends Session
      * @param frame the DATA frame received
      * @param callback the callback to notify when the frame has been processed
      */
-    public void onData(DataFrame frame, Callback callback);
+    void onData(DataFrame frame, Callback callback);
 }

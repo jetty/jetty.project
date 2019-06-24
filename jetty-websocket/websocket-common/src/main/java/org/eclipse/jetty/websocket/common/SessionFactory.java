@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
  */
 public interface SessionFactory
 {
-    public boolean supports(EventDriver websocket);
-    
-    public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection);
+    boolean supports(EventDriver websocket);
+
+    WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection);
 }

@@ -114,13 +114,13 @@ public class BrowserDebugTool implements WebSocketCreator
 
         resp.setExtensions(negotiated);
 
-        LOG.debug("User-Agent: {}",ua);
-        LOG.debug("Sec-WebSocket-Extensions (Request) : {}",rexts);
-        LOG.debug("Sec-WebSocket-Protocol (Request): {}",req.getHeader("Sec-WebSocket-Protocol"));
-        LOG.debug("Sec-WebSocket-Protocol (Response): {}",resp.getAcceptedSubProtocol());
+        LOG.debug("User-Agent: {}", ua);
+        LOG.debug("Sec-WebSocket-Extensions (Request) : {}", rexts);
+        LOG.debug("Sec-WebSocket-Protocol (Request): {}", req.getHeader("Sec-WebSocket-Protocol"));
+        LOG.debug("Sec-WebSocket-Protocol (Response): {}", resp.getAcceptedSubProtocol());
 
         req.getExtensions();
-        return new BrowserSocket(ua,rexts);
+        return new BrowserSocket(ua, rexts);
     }
 
     public int getPort()
@@ -128,7 +128,8 @@ public class BrowserDebugTool implements WebSocketCreator
         return connector.getLocalPort();
     }
 
-    public void prepare(int port) throws IOException, URISyntaxException {
+    public void prepare(int port) throws IOException, URISyntaxException
+    {
         server = new Server();
         connector = new ServerConnector(server);
         connector.setPort(port);
@@ -142,7 +143,7 @@ public class BrowserDebugTool implements WebSocketCreator
                 LOG.debug("Configuring WebSocketServerFactory ...");
 
                 // Registering Frame Debug
-                factory.getExtensionFactory().register("@frame-capture",FrameCaptureExtension.class);
+                factory.getExtensionFactory().register("@frame-capture", FrameCaptureExtension.class);
 
                 // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);
@@ -164,10 +165,11 @@ public class BrowserDebugTool implements WebSocketCreator
         rHandler.setBaseResource(staticResourceBase);
         wsHandler.setHandler(rHandler);
 
-        LOG.info("{} setup on port {}",this.getClass().getName(),port);
+        LOG.info("{} setup on port {}", this.getClass().getName(), port);
     }
 
-    private Resource findStaticResources() throws FileNotFoundException, URISyntaxException, MalformedURLException {
+    private Resource findStaticResources() throws FileNotFoundException, URISyntaxException, MalformedURLException
+    {
         Path path = MavenTestingUtils.getTestResourcePathDir("browser-debug-tool");
         LOG.info("Static Resources: {}", path);
         return new PathResource(path);
@@ -176,7 +178,7 @@ public class BrowserDebugTool implements WebSocketCreator
     public void start() throws Exception
     {
         server.start();
-        LOG.info("Server available on port {}",getPort());
+        LOG.info("Server available on port {}", getPort());
     }
 
     public void stop() throws Exception

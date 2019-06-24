@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security;
 
 import java.util.Set;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -40,22 +39,19 @@ import org.eclipse.jetty.server.Server;
  */
 public interface Authenticator
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * Configure the Authenticator
-     * 
+     *
      * @param configuration the configuration
      */
     void setConfiguration(AuthConfiguration configuration);
 
-    /* ------------------------------------------------------------ */
     /**
      * @return The name of the authentication method
      */
     String getAuthMethod();
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Called prior to validateRequest. The authenticator can
      * manipulate the request to update it with information that
@@ -65,16 +61,14 @@ public interface Authenticator
      * where the http method of the original request causing authentication
      * is not the same as the http method resulting from the redirect
      * after authentication.
-     * 
+     *
      * @param request the request to manipulate
      */
     void prepareRequest(ServletRequest request);
-    
 
-    /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Validate a request
-     * 
+     *
      * @param request The request
      * @param response The response
      * @param mandatory True if authentication is mandatory.
@@ -82,16 +76,14 @@ public interface Authenticator
      * been sent by the Authenticator (which can be done for both successful and unsuccessful authentications), then the result will
      * implement {@link org.eclipse.jetty.server.Authentication.ResponseSent}.  If Authentication is not mandatory, then a
      * {@link org.eclipse.jetty.server.Authentication.Deferred} may be returned.
-     *
      * @throws ServerAuthException if unable to validate request
      */
     Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException;
 
-    /* ------------------------------------------------------------ */
     /**
      * is response secure
-     * 
-     * @param request the request 
+     *
+     * @param request the request
      * @param response the response
      * @param mandatory if security is mandator
      * @param validatedUser the user that was validated
@@ -100,41 +92,39 @@ public interface Authenticator
      */
     boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser) throws ServerAuthException;
 
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
      * Authenticator Configuration
      */
     interface AuthConfiguration
     {
         String getAuthMethod();
+
         String getRealmName();
 
-        /** 
+        /**
          * Get a SecurityHandler init parameter
-         * @see SecurityHandler#getInitParameter(String)
+         *
          * @param param parameter name
          * @return Parameter value or null
+         * @see SecurityHandler#getInitParameter(String)
          */
         String getInitParameter(String param);
 
-        /* ------------------------------------------------------------ */
-        /** Get a SecurityHandler init parameter names
-         * @see SecurityHandler#getInitParameterNames()
+        /**
+         * Get a SecurityHandler init parameter names
+         *
          * @return Set of parameter names
+         * @see SecurityHandler#getInitParameterNames()
          */
         Set<String> getInitParameterNames();
 
         LoginService getLoginService();
+
         IdentityService getIdentityService();
+
         boolean isSessionRenewedOnAuthentication();
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
      * Authenticator Factory
      */

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +27,9 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class PathMatchersSearchRootTest
 {
@@ -56,7 +56,7 @@ public class PathMatchersSearchRootTest
         {
             // absolute declaration
             arguments.add(Arguments.of("D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs\\example.jar",
-                    "D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs"));
+                "D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs"));
             // escaped declaration
             // absolute patterns (complete with required windows slash escaping)
             arguments.add(Arguments.of("C:\\\\corp\\\\lib\\\\*.jar", "C:\\corp\\lib"));
@@ -70,7 +70,7 @@ public class PathMatchersSearchRootTest
         arguments.add(Arguments.of("start.d/", "start.d"));
 
         return Stream.of(
-                arguments.toArray(new Arguments[0])
+            arguments.toArray(new Arguments[0])
         );
     }
 

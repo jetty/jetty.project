@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -130,7 +129,7 @@ public class ClientCloseTest
             {
                 factory.getPolicy().setIdleTimeout(10000);
                 factory.getPolicy().setMaxTextMessageSize(1024 * 1024 * 2);
-                factory.setCreator((req,resp)->
+                factory.setCreator((req, resp) ->
                 {
                     ServerEndpoint endpoint = new ServerEndpoint();
                     serverEndpoints.offer(endpoint);
@@ -288,8 +287,8 @@ public class ClientCloseTest
 
             // client close should occur
             clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
-                    is(StatusCode.SHUTDOWN),
-                    containsString("timeout"));
+                is(StatusCode.SHUTDOWN),
+                containsString("timeout"));
 
             // client idle timeout triggers close event on client ws-endpoint
             assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
@@ -326,7 +325,8 @@ public class ClientCloseTest
             confirmConnection(clientSocket, clientConnectFuture);
         }
 
-        assertTimeoutPreemptively(ofSeconds(5), () -> {
+        assertTimeoutPreemptively(ofSeconds(5), () ->
+        {
             // client lifecycle stop (the meat of this test)
             client.stop();
         });
@@ -387,7 +387,9 @@ public class ClientCloseTest
         finally
         {
             for (ServerEndpoint endpoint : serverEndpoints)
+            {
                 endpoint.block.countDown();
+            }
         }
     }
 
@@ -411,7 +413,7 @@ public class ClientCloseTest
                 {
                     // send extra large message
                     byte[] buf = new byte[1024 * 1024];
-                    Arrays.fill(buf, (byte) 'x');
+                    Arrays.fill(buf, (byte)'x');
                     String bigmsg = new String(buf, UTF_8);
                     session.getRemote().sendString(bigmsg);
                 }

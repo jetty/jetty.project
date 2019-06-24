@@ -34,7 +34,7 @@ public class JsrParamIdOnOpen extends JsrParamIdBase implements IJsrParamId
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (super.process(param,callable))
+        if (super.process(param, callable))
         {
             // Found common roles
             return true;

@@ -26,26 +26,20 @@ import org.eclipse.jetty.util.IntrospectionUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 
-
-
 /**
  * LifeCycleCallback
- *
- *
  */
 public abstract class LifeCycleCallback
 {
-    public static final Object[] __EMPTY_ARGS = new Object[] {};
+    public static final Object[] __EMPTY_ARGS = new Object[]{};
     private Method _target;
     private Class<?> _targetClass;
     private String _className;
     private String _methodName;
 
-
     public LifeCycleCallback()
     {
     }
-
 
     /**
      * @return the _targetClass
@@ -73,14 +67,13 @@ public abstract class LifeCycleCallback
         return _target;
     }
 
-
-    public void setTarget (String className, String methodName)
+    public void setTarget(String className, String methodName)
     {
         _className = className;
         _methodName = methodName;
     }
 
-    public void setTarget (Class<?> clazz, String methodName)
+    public void setTarget(Class<?> clazz, String methodName)
     {
         try
         {
@@ -93,15 +86,12 @@ public abstract class LifeCycleCallback
         }
         catch (NoSuchMethodException e)
         {
-            throw new IllegalArgumentException ("Method "+methodName+" not found on class "+clazz.getName());
+            throw new IllegalArgumentException("Method " + methodName + " not found on class " + clazz.getName());
         }
     }
 
-
-
-
-    public void callback (Object instance)
-    throws SecurityException, NoSuchMethodException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException
+    public void callback(Object instance)
+        throws SecurityException, NoSuchMethodException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException
     {
         if (_target == null)
         {
@@ -119,8 +109,6 @@ public abstract class LifeCycleCallback
         }
     }
 
-
-
     /**
      * Find a method of the given name either directly in the given
      * class, or inherited.
@@ -131,7 +119,7 @@ public abstract class LifeCycleCallback
      * @param checkInheritance false on first entry, true if a superclass is being introspected
      * @return the method
      */
-    public Method findMethod (Package pack, Class<?> clazz, String methodName, boolean checkInheritance)
+    public Method findMethod(Package pack, Class<?> clazz, String methodName, boolean checkInheritance)
     {
         if (clazz == null)
             return null;
@@ -142,7 +130,7 @@ public abstract class LifeCycleCallback
             if (checkInheritance)
             {
                 int modifiers = method.getModifiers();
-                if (Modifier.isProtected(modifiers) || Modifier.isPublic(modifiers) || (!Modifier.isPrivate(modifiers)&&(pack.equals(clazz.getPackage()))))
+                if (Modifier.isProtected(modifiers) || Modifier.isPublic(modifiers) || (!Modifier.isPrivate(modifiers) && (pack.equals(clazz.getPackage()))))
                     return method;
                 else
                     return findMethod(clazz.getPackage(), clazz.getSuperclass(), methodName, true);
@@ -156,31 +144,28 @@ public abstract class LifeCycleCallback
     }
 
     @Override
-    public boolean equals (Object o)
+    public boolean equals(Object o)
     {
-        if (o==null)
+        if (o == null)
             return false;
         if (!(o instanceof LifeCycleCallback))
             return false;
         LifeCycleCallback callback = (LifeCycleCallback)o;
 
-        if (callback.getTargetClass()==null)
+        if (callback.getTargetClass() == null)
         {
             if (getTargetClass() != null)
                 return false;
         }
-        else if(!callback.getTargetClass().equals(getTargetClass()))
-           return false;
-        if (callback.getTarget()==null)
-        {
-            if (getTarget() != null)
-                return false;
-        }
-        else if (!callback.getTarget().equals(getTarget()))
+        else if (!callback.getTargetClass().equals(getTargetClass()))
             return false;
-
-        return true;
+        if (callback.getTarget() == null)
+        {
+            return getTarget() == null;
+        }
+        else
+            return callback.getTarget().equals(getTarget());
     }
 
-    public abstract void validate (Class<?> clazz, Method m);
+    public abstract void validate(Class<?> clazz, Method m);
 }

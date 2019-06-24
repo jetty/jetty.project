@@ -30,14 +30,15 @@ public interface AppProvider extends LifeCycle
 {
     /**
      * Set the Deployment Manager
-     * 
+     *
      * @param deploymentManager the deployment manager
-     * @throws IllegalStateException
-     *             if the provider {@link #isRunning()}.
+     * @throws IllegalStateException if the provider {@link #isRunning()}.
      */
     void setDeploymentManager(DeploymentManager deploymentManager);
 
-    /** Create a ContextHandler for an App
+    /**
+     * Create a ContextHandler for an App
+     *
      * @param app The App
      * @return A ContextHandler
      * @throws IOException if unable to create context

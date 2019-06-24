@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.nio.ByteBuffer;
 import java.util.Collections;
 
@@ -41,6 +37,9 @@ import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class ExtensionTool
 {
@@ -85,7 +84,7 @@ public class ExtensionTool
 
             for (int i = 0; i < parts; i++)
             {
-                String hex = rawhex[i].replaceAll("\\s*(0x)?","");
+                String hex = rawhex[i].replaceAll("\\s*(0x)?", "");
                 net = TypeUtil.fromHexString(hex);
                 parser.parse(ByteBuffer.wrap(net));
             }
@@ -110,16 +109,16 @@ public class ExtensionTool
             {
                 WebSocketFrame actual = capture.getFrames().poll();
 
-                String prefix = String.format("frame[%d]",i);
-                assertThat(prefix + ".opcode",actual.getOpCode(),is(expectedFrames[i].getOpCode()));
-                assertThat(prefix + ".fin",actual.isFin(),is(expectedFrames[i].isFin()));
-                assertThat(prefix + ".rsv1",actual.isRsv1(),is(false));
-                assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
-                assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
+                String prefix = String.format("frame[%d]", i);
+                assertThat(prefix + ".opcode", actual.getOpCode(), is(expectedFrames[i].getOpCode()));
+                assertThat(prefix + ".fin", actual.isFin(), is(expectedFrames[i].isFin()));
+                assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
+                assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
+                assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
 
                 ByteBuffer expected = expectedFrames[i].getPayload().slice();
-                assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
-                ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
+                assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+                ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
             }
         }
     }

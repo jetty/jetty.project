@@ -46,7 +46,7 @@ import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitial
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 
 @HandlesTypes(
-{ ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class })
+    {ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class})
 public class WebSocketServerContainerInitializer implements ServletContainerInitializer
 {
     /**
@@ -82,12 +82,12 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                 if (bean != null)
                     handler.removeBean(bean);
             }
-            
+
             //remove reference in attributes
             sce.getServletContext().removeAttribute(javax.websocket.server.ServerContainer.class.getName());
         }
     }
-    
+
     /**
      * Test a ServletContext for {@code init-param} or {@code attribute} at {@code keyName} for
      * true or false setting that determines if the specified feature is enabled (or not).
@@ -101,38 +101,38 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     {
         // Try context parameters first
         String cp = context.getInitParameter(keyName);
-    
-        if(cp != null)
+
+        if (cp != null)
         {
             if (TypeUtil.isTrue(cp))
             {
                 return true;
             }
-        
+
             if (TypeUtil.isFalse(cp))
             {
                 return false;
             }
-        
+
             return defValue;
         }
-    
+
         // Next, try attribute on context
         Object enable = context.getAttribute(keyName);
-    
-        if(enable != null)
+
+        if (enable != null)
         {
             if (TypeUtil.isTrue(enable))
             {
                 return true;
             }
-        
+
             if (TypeUtil.isFalse(enable))
             {
                 return false;
             }
         }
-    
+
         return defValue;
     }
 
@@ -170,18 +170,18 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * Immediately initialize the {@link ServletContext} with the default (and empty) {@link ServerContainer}.
      *
      * <p>
-     *     This method is typically called from {@link #onStartup(Set, ServletContext)} itself or from
-     *     another dependent {@link ServletContainerInitializer} that requires minimal setup to
-     *     be performed.
+     * This method is typically called from {@link #onStartup(Set, ServletContext)} itself or from
+     * another dependent {@link ServletContainerInitializer} that requires minimal setup to
+     * be performed.
      * </p>
      * <p>
-     *     This method SHOULD NOT BE CALLED by users of Jetty.
-     *     Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
+     * This method SHOULD NOT BE CALLED by users of Jetty.
+     * Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
      * </p>
      * <p>
-     *     There is no enablement check here, and no automatic deployment of endpoints at this point
-     *     in time.  It merely sets up the {@link ServletContext} so with the basics needed to start
-     *     configuring for `javax.websocket.server` based endpoints.
+     * There is no enablement check here, and no automatic deployment of endpoints at this point
+     * in time.  It merely sets up the {@link ServletContext} so with the basics needed to start
+     * configuring for `javax.websocket.server` based endpoints.
      * </p>
      *
      * @param context the context to work with
@@ -189,20 +189,20 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      */
     public static ServerContainer initialize(ServletContextHandler context) throws ServletException
     {
-        ServerContainer serverContainer = (ServerContainer) context.getAttribute(ATTR_JAVAX_SERVER_CONTAINER);
-        if(serverContainer == null)
+        ServerContainer serverContainer = (ServerContainer)context.getAttribute(ATTR_JAVAX_SERVER_CONTAINER);
+        if (serverContainer == null)
         {
             // Create Basic components
             NativeWebSocketConfiguration nativeWebSocketConfiguration = NativeWebSocketServletContainerInitializer.initialize(context);
 
             // Obtain HttpClient
-            HttpClient httpClient = (HttpClient) context.getAttribute(HTTPCLIENT_ATTRIBUTE);
+            HttpClient httpClient = (HttpClient)context.getAttribute(HTTPCLIENT_ATTRIBUTE);
             if (httpClient == null)
             {
                 Server server = context.getServer();
                 if (server != null)
                 {
-                    httpClient = (HttpClient) server.getAttribute(HTTPCLIENT_ATTRIBUTE);
+                    httpClient = (HttpClient)server.getAttribute(HTTPCLIENT_ATTRIBUTE);
                 }
             }
 
@@ -238,32 +238,32 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         context.getServletContext().setExtendedListenerTypes(true);
 
         context.addEventListener(ContainerInitializer.asContextListener(new WebSocketServerContainerInitializer())
-                .afterStartup((servletContext) ->
+            .afterStartup((servletContext) ->
+            {
+                ServerContainer serverContainer = (ServerContainer)servletContext.getAttribute(ATTR_JAVAX_SERVER_CONTAINER);
+                if (configurator != null)
                 {
-                    ServerContainer serverContainer = (ServerContainer)servletContext.getAttribute(ATTR_JAVAX_SERVER_CONTAINER);
-                    if (configurator != null)
+                    try
                     {
-                        try
-                        {
-                            configurator.accept(servletContext, serverContainer);
-                        }
-                        catch (DeploymentException e)
-                        {
-                            throw new RuntimeException("Failed to deploy WebSocket Endpoint", e);
-                        }
+                        configurator.accept(servletContext, serverContainer);
                     }
-                }));
+                    catch (DeploymentException e)
+                    {
+                        throw new RuntimeException("Failed to deploy WebSocket Endpoint", e);
+                    }
+                }
+            }));
     }
-    
+
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext context) throws ServletException
     {
-        if(!isEnabledViaContext(context, ENABLE_KEY, true))
+        if (!isEnabledViaContext(context, ENABLE_KEY, true))
         {
             LOG.info("JSR-356 is disabled by configuration for context {}", context.getContextPath());
             return;
         }
-        
+
         ServletContextHandler handler = ServletContextHandler.getServletContextHandler(context);
 
         if (handler == null)
@@ -271,12 +271,12 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             throw new ServletException("Not running on Jetty, JSR-356 support unavailable");
         }
 
-        try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
+        try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
         {
             // Initialize the Jetty ServerContainer implementation
             ServerContainer jettyContainer = initialize(handler);
             context.addListener(new ContextDestroyListener()); // make sure context is cleaned up when the context stops
-    
+
             if (c.isEmpty())
             {
                 if (LOG.isDebugEnabled())
@@ -285,24 +285,24 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                 }
                 return;
             }
-    
+
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Found {} classes",c.size());
+                LOG.debug("Found {} classes", c.size());
             }
-    
+
             // Now process the incoming classes
             Set<Class<? extends Endpoint>> discoveredExtendedEndpoints = new HashSet<>();
             Set<Class<?>> discoveredAnnotatedEndpoints = new HashSet<>();
             Set<Class<? extends ServerApplicationConfig>> serverAppConfigs = new HashSet<>();
 
-            filterClasses(c,discoveredExtendedEndpoints,discoveredAnnotatedEndpoints,serverAppConfigs);
+            filterClasses(c, discoveredExtendedEndpoints, discoveredAnnotatedEndpoints, serverAppConfigs);
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Discovered {} extends Endpoint classes",discoveredExtendedEndpoints.size());
-                LOG.debug("Discovered {} @ServerEndpoint classes",discoveredAnnotatedEndpoints.size());
-                LOG.debug("Discovered {} ServerApplicationConfig classes",serverAppConfigs.size());
+                LOG.debug("Discovered {} extends Endpoint classes", discoveredExtendedEndpoints.size());
+                LOG.debug("Discovered {} @ServerEndpoint classes", discoveredAnnotatedEndpoints.size());
+                LOG.debug("Discovered {} ServerApplicationConfig classes", serverAppConfigs.size());
             }
 
             // Process the server app configs to determine endpoint filtering
@@ -314,11 +314,11 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             {
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Found ServerApplicationConfig: {}",clazz);
+                    LOG.debug("Found ServerApplicationConfig: {}", clazz);
                 }
                 try
                 {
-                    ServerApplicationConfig config = clazz.getDeclaredConstructor( ).newInstance();
+                    ServerApplicationConfig config = clazz.getDeclaredConstructor().newInstance();
 
                     Set<ServerEndpointConfig> seconfigs = config.getEndpointConfigs(discoveredExtendedEndpoints);
                     if (seconfigs != null)
@@ -336,7 +336,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                 }
                 catch (Exception e)
                 {
-                    throw new ServletException("Unable to instantiate: " + clazz.getName(),e);
+                    throw new ServletException("Unable to instantiate: " + clazz.getName(), e);
                 }
             }
 
@@ -350,7 +350,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Deploying {} ServerEndpointConfig(s)",deployableExtendedEndpointConfigs.size());
+                LOG.debug("Deploying {} ServerEndpointConfig(s)", deployableExtendedEndpointConfigs.size());
             }
             // Deploy what should be deployed.
             for (ServerEndpointConfig config : deployableExtendedEndpointConfigs)
@@ -367,7 +367,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Deploying {} @ServerEndpoint(s)",deployableAnnotatedEndpoints.size());
+                LOG.debug("Deploying {} @ServerEndpoint(s)", deployableAnnotatedEndpoints.size());
             }
             for (Class<?> annotatedClass : deployableAnnotatedEndpoints)
             {
@@ -385,7 +385,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
     @SuppressWarnings("unchecked")
     private void filterClasses(Set<Class<?>> c, Set<Class<? extends Endpoint>> discoveredExtendedEndpoints, Set<Class<?>> discoveredAnnotatedEndpoints,
-            Set<Class<? extends ServerApplicationConfig>> serverAppConfigs)
+                               Set<Class<? extends ServerApplicationConfig>> serverAppConfigs)
     {
         for (Class<?> clazz : c)
         {
@@ -398,7 +398,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             {
                 discoveredExtendedEndpoints.add((Class<? extends Endpoint>)clazz);
             }
-            
+
             ServerEndpoint endpoint = clazz.getAnnotation(ServerEndpoint.class);
 
             if (endpoint != null)

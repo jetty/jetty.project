@@ -21,7 +21,6 @@ package examples;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
@@ -36,7 +35,7 @@ public class StreamingEchoSocket
     {
         try (Writer writer = session.getBasicRemote().getSendWriter())
         {
-            IO.copy(reader,writer);
+            IO.copy(reader, writer);
         }
         catch (IOException e)
         {

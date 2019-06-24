@@ -41,10 +41,10 @@ public class RFCSocket
     @OnWebSocketMessage
     public void onBinary(byte buf[], int offset, int len) throws IOException
     {
-        LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
+        LOG.debug("onBinary(byte[{}],{},{})", buf.length, offset, len);
 
         // echo the message back.
-        ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
+        ByteBuffer data = ByteBuffer.wrap(buf, offset, len);
         RemoteEndpoint remote = session.getRemote();
         remote.sendBytes(data, null);
         if (remote.getBatchMode() == BatchMode.ON)
@@ -60,7 +60,7 @@ public class RFCSocket
     @OnWebSocketMessage
     public void onText(String message) throws IOException
     {
-        LOG.debug("onText({})",message);
+        LOG.debug("onText({})", message);
         // Test the RFC 6455 close code 1011 that should close
         // trigger a WebSocket server terminated close.
         if (message.equals("CRASH"))

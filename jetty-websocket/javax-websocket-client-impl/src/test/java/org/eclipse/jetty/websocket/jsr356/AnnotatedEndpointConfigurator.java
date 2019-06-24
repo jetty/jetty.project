@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.Collections;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.HandshakeResponse;
 
@@ -28,7 +27,7 @@ public class AnnotatedEndpointConfigurator extends ClientEndpointConfig.Configur
     @Override
     public void afterResponse(HandshakeResponse hr)
     {
-        hr.getHeaders().put("X-Test",Collections.singletonList("Extra"));
+        hr.getHeaders().put("X-Test", Collections.singletonList("Extra"));
         super.afterResponse(hr);
     }
 }

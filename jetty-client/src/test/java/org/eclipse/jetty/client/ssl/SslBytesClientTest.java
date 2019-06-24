@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
@@ -163,13 +162,15 @@ public class SslBytesClientTest extends SslBytesTest
             String line = reader.readLine();
             assertTrue(line.startsWith("GET"));
             while (line.length() > 0)
+            {
                 line = reader.readLine();
+            }
 
             // Write response
             OutputStream output = server.getOutputStream();
             output.write(("HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "\r\n").getBytes(StandardCharsets.UTF_8));
+                "Content-Length: 0\r\n" +
+                "\r\n").getBytes(StandardCharsets.UTF_8));
             output.flush();
             assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -206,7 +207,9 @@ public class SslBytesClientTest extends SslBytesTest
             String line = reader.readLine();
             assertTrue(line.startsWith("GET"));
             while (line.length() > 0)
+            {
                 line = reader.readLine();
+            }
 
             OutputStream serverOutput = server.getOutputStream();
             byte[] data1 = new byte[1024];
@@ -217,10 +220,10 @@ public class SslBytesClientTest extends SslBytesTest
             final String content2 = new String(data2, StandardCharsets.UTF_8);
             // Write first part of the response
             serverOutput.write(("HTTP/1.1 200 OK\r\n" +
-                    "Content-Type: text/plain\r\n" +
-                    "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
-                    "\r\n" +
-                    content1).getBytes(StandardCharsets.UTF_8));
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1).getBytes(StandardCharsets.UTF_8));
             serverOutput.flush();
             assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -243,7 +246,7 @@ public class SslBytesClientTest extends SslBytesTest
 
             // Trigger a read to have the server write the final renegotiation steps
             server.setSoTimeout(100);
-            assertThrows(SocketTimeoutException.class, ()->serverInput.read());
+            assertThrows(SocketTimeoutException.class, () -> serverInput.read());
 
             // Renegotiation Handshake
             record = proxy.readFromServer();
@@ -314,7 +317,9 @@ public class SslBytesClientTest extends SslBytesTest
             String line = reader.readLine();
             assertTrue(line.startsWith("GET"));
             while (line.length() > 0)
+            {
                 line = reader.readLine();
+            }
 
             OutputStream serverOutput = server.getOutputStream();
             byte[] data1 = new byte[1024];
@@ -325,10 +330,10 @@ public class SslBytesClientTest extends SslBytesTest
             final String content2 = new String(data2, StandardCharsets.UTF_8);
             // Write first part of the response
             serverOutput.write(("HTTP/1.1 200 OK\r\n" +
-                    "Content-Type: text/plain\r\n" +
-                    "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
-                    "\r\n" +
-                    content1).getBytes(StandardCharsets.UTF_8));
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1).getBytes(StandardCharsets.UTF_8));
             serverOutput.flush();
             assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 

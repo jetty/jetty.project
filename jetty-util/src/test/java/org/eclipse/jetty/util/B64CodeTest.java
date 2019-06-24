@@ -32,7 +32,7 @@ public class B64CodeTest
         "from other animals, which is a lust of the mind, that by a perseverance of delight in " +
         "the continued and indefatigable generation of knowledge, exceeds the short vehemence " +
         "of any carnal pleasure.";
-    
+
     @Test
     public void testEncode_RFC1421()
     {
@@ -48,8 +48,8 @@ public class B64CodeTest
 
         // Specified RFC Encode
         byte[] rawInputBytes = text.getBytes(ISO_8859_1);
-        char[] chars = B64Code.encode(rawInputBytes,false);
-        b64 = new String(chars,0,chars.length);
+        char[] chars = B64Code.encode(rawInputBytes, false);
+        b64 = new String(chars, 0, chars.length);
         assertThat("B64Code.encode(byte[], false)", b64, is(expected));
 
         // Standard Java Encode
@@ -63,13 +63,13 @@ public class B64CodeTest
         byte[] rawInputBytes = text.getBytes(ISO_8859_1);
 
         // Old Jetty way
-        char[] chars = B64Code.encode(rawInputBytes,true);
-        String b64 = new String(chars,0,chars.length);
+        char[] chars = B64Code.encode(rawInputBytes, true);
+        String b64 = new String(chars, 0, chars.length);
 
-        String expected = "TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz\r\n"+
-            "IHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg\r\n"+
-            "dGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGlu\r\n"+
-            "dWVkIGFuZCBpbmRlZmF0aWdhYmxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRo\r\n"+
+        String expected = "TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz\r\n" +
+            "IHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg\r\n" +
+            "dGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGlu\r\n" +
+            "dWVkIGFuZCBpbmRlZmF0aWdhYmxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRo\r\n" +
             "ZSBzaG9ydCB2ZWhlbWVuY2Ugb2YgYW55IGNhcm5hbCBwbGVhc3VyZS4=\r\n";
 
         assertThat(b64, is(expected));
@@ -93,14 +93,14 @@ public class B64CodeTest
 
         // Old Jetty way
         StringBuilder b = new StringBuilder();
-        B64Code.encode(value,b);
+        B64Code.encode(value, b);
         assertThat("Old Jetty B64Code", b.toString(), is(expected));
 
         // Standard Java technique
         byte[] intBytes = new byte[Integer.BYTES];
         for (int i = Integer.BYTES - 1; i >= 0; i--)
         {
-            intBytes[i] = (byte) (value & 0xFF);
+            intBytes[i] = (byte)(value & 0xFF);
             value >>= 8;
         }
         assertThat("Standard Java Base64", Base64.getEncoder().withoutPadding().encodeToString(intBytes), is(expected));
@@ -123,14 +123,14 @@ public class B64CodeTest
 
         // Old Jetty way
         StringBuilder b = new StringBuilder();
-        B64Code.encode(value,b);
+        B64Code.encode(value, b);
         assertThat("Old Jetty B64Code", b.toString(), is(expected));
 
         // Standard Java technique
         byte[] longBytes = new byte[Long.BYTES];
         for (int i = Long.BYTES - 1; i >= 0; i--)
         {
-            longBytes[i] = (byte) (value & 0xFF);
+            longBytes[i] = (byte)(value & 0xFF);
             value >>= 8;
         }
         assertThat("Standard Java Base64", Base64.getEncoder().withoutPadding().encodeToString(longBytes), is(expected));

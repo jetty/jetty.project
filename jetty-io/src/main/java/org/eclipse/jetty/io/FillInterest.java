@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  */
 public abstract class FillInterest
 {
-    private final static Logger LOG = Log.getLogger(FillInterest.class);
+    private static final Logger LOG = Log.getLogger(FillInterest.class);
     private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
 
     protected FillInterest()
@@ -56,9 +56,9 @@ public abstract class FillInterest
         {
             LOG.warn("Read pending for {} prevented {}", _interested, callback);
             throw new ReadPendingException();
-        }   
+        }
     }
-    
+
     /**
      * Call to register interest in a callback when a read is possible.
      * The callback will be called either immediately if {@link #needsFillInterest()}
@@ -76,8 +76,8 @@ public abstract class FillInterest
             return false;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("interested {}",this);
-        
+            LOG.debug("interested {}", this);
+
         try
         {
             needsFillInterest();
@@ -86,7 +86,7 @@ public abstract class FillInterest
         {
             onFail(e);
         }
-        
+
         return true;
     }
 
@@ -96,7 +96,7 @@ public abstract class FillInterest
     public boolean fillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("fillable {}",this);
+            LOG.debug("fillable {}", this);
         Callback callback = _interested.get();
         if (callback != null && _interested.compareAndSet(callback, null))
         {
@@ -104,7 +104,7 @@ public abstract class FillInterest
             return true;
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("{} lost race {}",this,callback);
+            LOG.debug("{} lost race {}", this, callback);
         return false;
     }
 
@@ -115,7 +115,7 @@ public abstract class FillInterest
     {
         return _interested.get() != null;
     }
-    
+
     public InvocationType getCallbackInvocationType()
     {
         Callback callback = _interested.get();
@@ -144,7 +144,7 @@ public abstract class FillInterest
     public void onClose()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onClose {}",this);
+            LOG.debug("onClose {}", this);
         Callback callback = _interested.get();
         if (callback != null && _interested.compareAndSet(callback, null))
             callback.failed(new ClosedChannelException());
@@ -156,10 +156,9 @@ public abstract class FillInterest
         return String.format("FillInterest@%x{%s}", hashCode(), _interested.get());
     }
 
-    
     public String toStateString()
     {
-        return _interested.get()==null?"-":"FI";
+        return _interested.get() == null ? "-" : "FI";
     }
 
     /**
@@ -169,5 +168,5 @@ public abstract class FillInterest
      *
      * @throws IOException if unable to fulfill interest in fill
      */
-    abstract protected void needsFillInterest() throws IOException;
+    protected abstract void needsFillInterest() throws IOException;
 }

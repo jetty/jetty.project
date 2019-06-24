@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -38,6 +34,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 @ExtendWith(WorkDirExtension.class)
 public class MessageInputStreamTest
 {
@@ -50,7 +50,8 @@ public class MessageInputStreamTest
     {
         try (MessageInputStream stream = new MessageInputStream())
         {
-            Assertions.assertTimeoutPreemptively(ofSeconds(5), ()-> {
+            Assertions.assertTimeoutPreemptively(ofSeconds(5), () ->
+            {
                 // Append a single message (simple, short)
                 ByteBuffer payload = BufferUtil.toBuffer("Hello World", StandardCharsets.UTF_8);
                 boolean fin = true;
@@ -87,12 +88,12 @@ public class MessageInputStreamTest
                         startLatch.countDown();
                         boolean fin = false;
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.appendFrame(BufferUtil.toBuffer("Saved",StandardCharsets.UTF_8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer("Saved", StandardCharsets.UTF_8), fin);
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.appendFrame(BufferUtil.toBuffer(" by ",StandardCharsets.UTF_8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer(" by ", StandardCharsets.UTF_8), fin);
                         fin = true;
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.appendFrame(BufferUtil.toBuffer("Zero",StandardCharsets.UTF_8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer("Zero", StandardCharsets.UTF_8), fin);
                     }
                     catch (IOException | InterruptedException e)
                     {
@@ -102,7 +103,8 @@ public class MessageInputStreamTest
                 }
             }).start();
 
-            Assertions.assertTimeoutPreemptively(ofSeconds(5), ()-> {
+            Assertions.assertTimeoutPreemptively(ofSeconds(5), () ->
+            {
                 // wait for thread to start
                 startLatch.await();
 
@@ -135,7 +137,7 @@ public class MessageInputStreamTest
                         boolean fin = true;
                         // wait for a little bit before populating buffers
                         TimeUnit.MILLISECONDS.sleep(400);
-                        stream.appendFrame(BufferUtil.toBuffer("I will conquer",StandardCharsets.UTF_8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer("I will conquer", StandardCharsets.UTF_8), fin);
                     }
                     catch (IOException | InterruptedException e)
                     {
@@ -145,14 +147,15 @@ public class MessageInputStreamTest
                 }
             }).start();
 
-            Assertions.assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
+            {
                 // Read byte from stream.
                 int b = stream.read();
                 // Should be a byte, blocking till byte received.
 
                 // Test it
                 assertThat("Error when appending", hadError.get(), is(false));
-                assertThat("Initial byte", b, is((int) 'I'));
+                assertThat("Initial byte", b, is((int)'I'));
             });
         }
     }
@@ -183,7 +186,8 @@ public class MessageInputStreamTest
                 }
             }).start();
 
-            Assertions.assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
+            {
                 // Read byte from stream.
                 int b = stream.read();
                 // Should be a -1, indicating the end of the stream.
@@ -194,13 +198,14 @@ public class MessageInputStreamTest
             });
         }
     }
-    
+
     @Test
     public void testAppendEmptyPayloadRead() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
         {
-            Assertions.assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
+            {
                 // Append parts of message
                 ByteBuffer msg1 = BufferUtil.toBuffer("Hello ", StandardCharsets.UTF_8);
                 ByteBuffer msg2 = ByteBuffer.allocate(0); // what is being tested
@@ -220,13 +225,14 @@ public class MessageInputStreamTest
             });
         }
     }
-    
+
     @Test
     public void testAppendNullPayloadRead() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
         {
-            Assertions.assertTimeoutPreemptively(ofSeconds(10), ()-> {
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
+            {
                 // Append parts of message
                 ByteBuffer msg1 = BufferUtil.toBuffer("Hello ", StandardCharsets.UTF_8);
                 ByteBuffer msg2 = null; // what is being tested

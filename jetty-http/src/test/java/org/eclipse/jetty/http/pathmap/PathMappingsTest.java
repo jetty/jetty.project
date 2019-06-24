@@ -18,32 +18,32 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
 public class PathMappingsTest
 {
     private void assertMatch(PathMappings<String> pathmap, String path, String expectedValue)
     {
-        String msg = String.format(".getMatch(\"%s\")",path);
+        String msg = String.format(".getMatch(\"%s\")", path);
         MappedResource<String> match = pathmap.getMatch(path);
-        assertThat(msg,match,notNullValue());
+        assertThat(msg, match, notNullValue());
         String actualMatch = match.getResource();
-        assertEquals(expectedValue,actualMatch,msg);
+        assertEquals(expectedValue, actualMatch, msg);
     }
 
     public void dumpMappings(PathMappings<String> p)
     {
         for (MappedResource<String> res : p)
         {
-            System.out.printf("  %s%n",res);
+            System.out.printf("  %s%n", res);
         }
     }
 
@@ -61,26 +61,26 @@ public class PathMappingsTest
     {
         PathMappings<String> p = new PathMappings<>();
 
-        p.put(new ServletPathSpec("/"),"default");
-        p.put(new ServletPathSpec("/animal/bird/*"),"birds");
-        p.put(new ServletPathSpec("/animal/fish/*"),"fishes");
-        p.put(new ServletPathSpec("/animal/*"),"animals");
-        p.put(new RegexPathSpec("^/animal/.*/chat$"),"animalChat");
-        p.put(new RegexPathSpec("^/animal/.*/cam$"),"animalCam");
-        p.put(new RegexPathSpec("^/entrance/cam$"),"entranceCam");
+        p.put(new ServletPathSpec("/"), "default");
+        p.put(new ServletPathSpec("/animal/bird/*"), "birds");
+        p.put(new ServletPathSpec("/animal/fish/*"), "fishes");
+        p.put(new ServletPathSpec("/animal/*"), "animals");
+        p.put(new RegexPathSpec("^/animal/.*/chat$"), "animalChat");
+        p.put(new RegexPathSpec("^/animal/.*/cam$"), "animalCam");
+        p.put(new RegexPathSpec("^/entrance/cam$"), "entranceCam");
 
         // dumpMappings(p);
 
-        assertMatch(p,"/animal/bird/eagle","birds");
-        assertMatch(p,"/animal/fish/bass/sea","fishes");
-        assertMatch(p,"/animal/peccary/javalina/evolution","animals");
-        assertMatch(p,"/","default");
-        assertMatch(p,"/animal/bird/eagle/chat","animalChat");
-        assertMatch(p,"/animal/bird/penguin/chat","animalChat");
-        assertMatch(p,"/animal/fish/trout/cam","animalCam");
-        assertMatch(p,"/entrance/cam","entranceCam");
+        assertMatch(p, "/animal/bird/eagle", "birds");
+        assertMatch(p, "/animal/fish/bass/sea", "fishes");
+        assertMatch(p, "/animal/peccary/javalina/evolution", "animals");
+        assertMatch(p, "/", "default");
+        assertMatch(p, "/animal/bird/eagle/chat", "animalChat");
+        assertMatch(p, "/animal/bird/penguin/chat", "animalChat");
+        assertMatch(p, "/animal/fish/trout/cam", "animalCam");
+        assertMatch(p, "/entrance/cam", "entranceCam");
     }
-    
+
     /**
      * Test the match order rules imposed by the Servlet API (default vs any)
      */
@@ -89,15 +89,15 @@ public class PathMappingsTest
     {
         PathMappings<String> p = new PathMappings<>();
 
-        p.put(new ServletPathSpec("/"),"default");
-        p.put(new ServletPathSpec("/*"),"any"); 
+        p.put(new ServletPathSpec("/"), "default");
+        p.put(new ServletPathSpec("/*"), "any");
 
-        assertMatch(p,"/abs/path","any");
-        assertMatch(p,"/abs/path/xxx","any");
-        assertMatch(p,"/animal/bird/eagle/bald","any");
-        assertMatch(p,"/","any");
+        assertMatch(p, "/abs/path", "any");
+        assertMatch(p, "/abs/path/xxx", "any");
+        assertMatch(p, "/animal/bird/eagle/bald", "any");
+        assertMatch(p, "/", "any");
     }
-    
+
     /**
      * Test the match order rules with a mixed Servlet and URI Template path specs
      * <p>
@@ -112,24 +112,24 @@ public class PathMappingsTest
     {
         PathMappings<String> p = new PathMappings<>();
 
-        p.put(new ServletPathSpec("/"),"default");
-        p.put(new ServletPathSpec("/animal/bird/*"),"birds");
-        p.put(new ServletPathSpec("/animal/fish/*"),"fishes");
-        p.put(new ServletPathSpec("/animal/*"),"animals");
-        p.put(new UriTemplatePathSpec("/animal/{type}/{name}/chat"),"animalChat");
-        p.put(new UriTemplatePathSpec("/animal/{type}/{name}/cam"),"animalCam");
-        p.put(new UriTemplatePathSpec("/entrance/cam"),"entranceCam");
+        p.put(new ServletPathSpec("/"), "default");
+        p.put(new ServletPathSpec("/animal/bird/*"), "birds");
+        p.put(new ServletPathSpec("/animal/fish/*"), "fishes");
+        p.put(new ServletPathSpec("/animal/*"), "animals");
+        p.put(new UriTemplatePathSpec("/animal/{type}/{name}/chat"), "animalChat");
+        p.put(new UriTemplatePathSpec("/animal/{type}/{name}/cam"), "animalCam");
+        p.put(new UriTemplatePathSpec("/entrance/cam"), "entranceCam");
 
         // dumpMappings(p);
 
-        assertMatch(p,"/animal/bird/eagle","birds");
-        assertMatch(p,"/animal/fish/bass/sea","fishes");
-        assertMatch(p,"/animal/peccary/javalina/evolution","animals");
-        assertMatch(p,"/","default");
-        assertMatch(p,"/animal/bird/eagle/chat","animalChat");
-        assertMatch(p,"/animal/bird/penguin/chat","animalChat");
-        assertMatch(p,"/animal/fish/trout/cam","animalCam");
-        assertMatch(p,"/entrance/cam","entranceCam");
+        assertMatch(p, "/animal/bird/eagle", "birds");
+        assertMatch(p, "/animal/fish/bass/sea", "fishes");
+        assertMatch(p, "/animal/peccary/javalina/evolution", "animals");
+        assertMatch(p, "/", "default");
+        assertMatch(p, "/animal/bird/eagle/chat", "animalChat");
+        assertMatch(p, "/animal/bird/penguin/chat", "animalChat");
+        assertMatch(p, "/animal/fish/trout/cam", "animalCam");
+        assertMatch(p, "/entrance/cam", "entranceCam");
     }
 
     /**
@@ -146,19 +146,19 @@ public class PathMappingsTest
     {
         PathMappings<String> p = new PathMappings<>();
 
-        p.put(new UriTemplatePathSpec("/a/{var}/c"),"endpointA");
-        p.put(new UriTemplatePathSpec("/a/b/c"),"endpointB");
-        p.put(new UriTemplatePathSpec("/a/{var1}/{var2}"),"endpointC");
-        p.put(new UriTemplatePathSpec("/{var1}/d"),"endpointD");
-        p.put(new UriTemplatePathSpec("/b/{var2}"),"endpointE");
+        p.put(new UriTemplatePathSpec("/a/{var}/c"), "endpointA");
+        p.put(new UriTemplatePathSpec("/a/b/c"), "endpointB");
+        p.put(new UriTemplatePathSpec("/a/{var1}/{var2}"), "endpointC");
+        p.put(new UriTemplatePathSpec("/{var1}/d"), "endpointD");
+        p.put(new UriTemplatePathSpec("/b/{var2}"), "endpointE");
 
         // dumpMappings(p);
 
-        assertMatch(p,"/a/b/c","endpointB");
-        assertMatch(p,"/a/d/c","endpointA");
-        assertMatch(p,"/a/x/y","endpointC");
+        assertMatch(p, "/a/b/c", "endpointB");
+        assertMatch(p, "/a/d/c", "endpointA");
+        assertMatch(p, "/a/x/y", "endpointC");
 
-        assertMatch(p,"/b/d","endpointE");
+        assertMatch(p, "/b/d", "endpointE");
     }
 
     @Test
@@ -192,7 +192,7 @@ public class PathMappingsTest
         assertEquals(null, new ServletPathSpec("/Foo/*").getPathInfo("/Foo"), "pathInfo prefix");
         assertEquals(null, new ServletPathSpec("*.ext").getPathInfo("/Foo/bar.ext"), "pathInfo suffix");
         assertEquals(null, new ServletPathSpec("/").getPathInfo("/Foo/bar.ext"), "pathInfo default");
-        
+
         p.put(new ServletPathSpec("/*"), "0");
 
         // assertEquals("1", p.get("/abs/path"), "Get absolute path");
@@ -233,12 +233,13 @@ public class PathMappingsTest
         assertTrue(!new ServletPathSpec("*.foo").matches("anything.bar"), "!match *.foo");
 
         assertEquals("10", p.getMatch("/").getResource(), "match / with ''");
-        
-        assertTrue(new ServletPathSpec("").matches("/"),"match \"\"");
+
+        assertTrue(new ServletPathSpec("").matches("/"), "match \"\"");
     }
 
     /**
      * See JIRA issue: JETTY-88.
+     *
      * @throws Exception failed test
      */
     @Test
@@ -264,35 +265,36 @@ public class PathMappingsTest
     public void testPrecidenceVsOrdering() throws Exception
     {
         PathMappings<String> p = new PathMappings<>();
-        p.put(new ServletPathSpec("/dump/gzip/*"),"prefix");
-        p.put(new ServletPathSpec("*.txt"),"suffix");
-       
-        assertEquals(null,p.getMatch("/foo/bar"));
-        assertEquals("prefix",p.getMatch("/dump/gzip/something").getResource());
-        assertEquals("suffix",p.getMatch("/foo/something.txt").getResource());
-        assertEquals("prefix",p.getMatch("/dump/gzip/something.txt").getResource());
-        
+        p.put(new ServletPathSpec("/dump/gzip/*"), "prefix");
+        p.put(new ServletPathSpec("*.txt"), "suffix");
+
+        assertEquals(null, p.getMatch("/foo/bar"));
+        assertEquals("prefix", p.getMatch("/dump/gzip/something").getResource());
+        assertEquals("suffix", p.getMatch("/foo/something.txt").getResource());
+        assertEquals("prefix", p.getMatch("/dump/gzip/something.txt").getResource());
+
         p = new PathMappings<>();
-        p.put(new ServletPathSpec("*.txt"),"suffix");
-        p.put(new ServletPathSpec("/dump/gzip/*"),"prefix");
-       
-        assertEquals(null,p.getMatch("/foo/bar"));
-        assertEquals("prefix",p.getMatch("/dump/gzip/something").getResource());
-        assertEquals("suffix",p.getMatch("/foo/something.txt").getResource());
-        assertEquals("prefix",p.getMatch("/dump/gzip/something.txt").getResource());
+        p.put(new ServletPathSpec("*.txt"), "suffix");
+        p.put(new ServletPathSpec("/dump/gzip/*"), "prefix");
+
+        assertEquals(null, p.getMatch("/foo/bar"));
+        assertEquals("prefix", p.getMatch("/dump/gzip/something").getResource());
+        assertEquals("suffix", p.getMatch("/foo/something.txt").getResource());
+        assertEquals("prefix", p.getMatch("/dump/gzip/something.txt").getResource());
     }
-    
+
     @ParameterizedTest
     @ValueSource(strings = {
-            "*",
-            "/foo/*/bar",
-            "/foo*",
-            "*/foo",
-            "*.foo/*"
+        "*",
+        "/foo/*/bar",
+        "/foo*",
+        "*/foo",
+        "*.foo/*"
     })
     public void testBadPathSpecs(String str)
     {
-        assertThrows(IllegalArgumentException.class, ()->{
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             new ServletPathSpec(str);
         });
     }

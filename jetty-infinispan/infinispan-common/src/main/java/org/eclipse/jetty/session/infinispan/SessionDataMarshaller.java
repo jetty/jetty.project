@@ -62,7 +62,7 @@ public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessio
         long created = in.readLong("created"); // time created
         long cookieSet = in.readLong("cookieSet");// time cookie was set
         String lastNode = in.readString("lastNode"); // name of last node
-                                                     // managing
+        // managing
 
         long expiry = in.readLong("expiry");
         long maxInactiveMs = in.readLong("maxInactiveMs");
@@ -95,7 +95,7 @@ public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessio
         out.writeLong("created", sdata.getCreated()); // time created
         out.writeLong("cookieSet", sdata.getCookieSet());// time cookie was set
         out.writeString("lastNode", sdata.getLastNode()); // name of last node
-                                                          // managing
+        // managing
 
         out.writeLong("expiry", sdata.getExpiry());
         out.writeLong("maxInactiveMs", sdata.getMaxInactiveMs());

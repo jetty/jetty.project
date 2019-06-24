@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -40,7 +39,7 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
             super(true);
         }
     }
-    
+
     public static class Passed extends AsyncScheduledDispatchWrite
     {
         public Passed()
@@ -86,7 +85,7 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
         Boolean suspended = (Boolean)request.getAttribute("SUSPENDED");
         if (suspended == null || !suspended)
         {
-            request.setAttribute("SUSPENDED",Boolean.TRUE);
+            request.setAttribute("SUSPENDED", Boolean.TRUE);
             AsyncContext ctx;
             if (originalReqResp)
             {
@@ -96,10 +95,10 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
             else
             {
                 // Pass Request & Response
-                ctx = request.startAsync(request,response);
+                ctx = request.startAsync(request, response);
             }
             ctx.setTimeout(0);
-            scheduler.schedule(new DispatchBack(ctx),500,TimeUnit.MILLISECONDS);
+            scheduler.schedule(new DispatchBack(ctx), 500, TimeUnit.MILLISECONDS);
         }
         else
         {
@@ -114,7 +113,7 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
                 response.setContentType("text/plain");
             else if (fileName.endsWith("mp3"))
                 response.setContentType("audio/mpeg");
-            response.setHeader("ETag","W/etag-" + fileName);
+            response.setHeader("ETag", "W/etag-" + fileName);
 
             out.write(dataBytes);
         }

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,93 +35,92 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 
-
 /**
  * Debug Handler.
  * A lightweight debug handler that can be used in production code.
  * Details of the request and response are written to an output stream
  * and the current thread name is updated with information that will link
  * to the details in that output.
+ *
  * @deprecated Use {@link DebugListener}
  */
 public class DebugHandler extends HandlerWrapper implements Connection.Listener
 {
-    private DateCache _date=new DateCache("HH:mm:ss", Locale.US);
+    private DateCache _date = new DateCache("HH:mm:ss", Locale.US);
     private OutputStream _out;
     private PrintStream _print;
 
-    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException
+        throws IOException, ServletException
     {
         final Response base_response = baseRequest.getResponse();
-        final Thread thread=Thread.currentThread();
-        final String old_name=thread.getName();
+        final Thread thread = Thread.currentThread();
+        final String old_name = thread.getName();
 
-        boolean suspend=false;
-        boolean retry=false;
-        String name=(String)request.getAttribute("org.eclipse.jetty.thread.name");
+        boolean suspend = false;
+        boolean retry = false;
+        String name = (String)request.getAttribute("org.eclipse.jetty.thread.name");
         if (name == null)
             name = old_name + ":" + baseRequest.getHttpURI();
         else
-            retry=true;
+            retry = true;
 
-        String ex=null;
+        String ex = null;
         try
         {
             if (retry)
-                print(name,"RESUME");
+                print(name, "RESUME");
             else
-                print(name,"REQUEST "+baseRequest.getRemoteAddr()+" "+request.getMethod()+" "+baseRequest.getHeader("Cookie")+"; "+baseRequest.getHeader("User-Agent"));
+                print(name, "REQUEST " + baseRequest.getRemoteAddr() + " " + request.getMethod() + " " + baseRequest.getHeader("Cookie") + "; " + baseRequest.getHeader("User-Agent"));
             thread.setName(name);
 
-            getHandler().handle(target,baseRequest,request,response);
+            getHandler().handle(target, baseRequest, request, response);
         }
-        catch(IOException ioe)
+        catch (IOException ioe)
         {
-            ex=ioe.toString();
+            ex = ioe.toString();
             throw ioe;
         }
-        catch(ServletException se)
+        catch (ServletException cause)
         {
-            ex=se.toString()+":"+se.getCause();
-            throw se;
+            ex = cause.toString() + ":" + cause.getCause();
+            throw cause;
         }
-        catch(RuntimeException rte)
+        catch (RuntimeException rte)
         {
-            ex=rte.toString();
+            ex = rte.toString();
             throw rte;
         }
-        catch(Error e)
+        catch (Error e)
         {
-            ex=e.toString();
+            ex = e.toString();
             throw e;
         }
         finally
         {
             thread.setName(old_name);
-            suspend=baseRequest.getHttpChannelState().isSuspended();
+            suspend = baseRequest.getHttpChannelState().isSuspended();
             if (suspend)
             {
-                request.setAttribute("org.eclipse.jetty.thread.name",name);
-                print(name,"SUSPEND");
+                request.setAttribute("org.eclipse.jetty.thread.name", name);
+                print(name, "SUSPEND");
             }
             else
-                print(name,"RESPONSE "+base_response.getStatus()+(ex==null?"":("/"+ex))+" "+base_response.getContentType());
+                print(name, "RESPONSE " + base_response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + base_response.getContentType());
         }
     }
-    
-    private void print(String name,String message)
-    {
-        long now=System.currentTimeMillis();
-        final String d=_date.formatNow(now);
-        final int ms=(int)(now%1000);
 
-        _print.println(d+(ms>99?".":(ms>9?".0":".00"))+ms+":"+name+" "+message);
+    private void print(String name, String message)
+    {
+        long now = System.currentTimeMillis();
+        final String d = _date.formatNow(now);
+        final int ms = (int)(now % 1000);
+
+        _print.println(d + (ms > 99 ? "." : (ms > 9 ? ".0" : ".00")) + ms + ":" + name + " " + message);
     }
 
     /* (non-Javadoc)
@@ -131,14 +129,16 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
     @Override
     protected void doStart() throws Exception
     {
-        if (_out==null)
-            _out=new RolloverFileOutputStream("./logs/yyyy_mm_dd.debug.log",true);
-        _print=new PrintStream(_out);
-        
+        if (_out == null)
+            _out = new RolloverFileOutputStream("./logs/yyyy_mm_dd.debug.log", true);
+        _print = new PrintStream(_out);
+
         for (Connector connector : getServer().getConnectors())
+        {
             if (connector instanceof AbstractConnector)
-                ((AbstractConnector)connector).addBean(this,false);
-            
+                connector.addBean(this, false);
+        }
+
         super.doStart();
     }
 
@@ -151,8 +151,10 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         super.doStop();
         _print.close();
         for (Connector connector : getServer().getConnectors())
+        {
             if (connector instanceof AbstractConnector)
-                ((AbstractConnector)connector).removeBean(this);
+                connector.removeBean(this);
+        }
     }
 
     /**
@@ -170,17 +172,16 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
     {
         _out = out;
     }
-    
+
     @Override
     public void onOpened(Connection connection)
     {
-        print(Thread.currentThread().getName(),"OPENED "+connection.toString());
+        print(Thread.currentThread().getName(), "OPENED " + connection.toString());
     }
 
     @Override
     public void onClosed(Connection connection)
     {
-        print(Thread.currentThread().getName(),"CLOSED "+connection.toString());
+        print(Thread.currentThread().getName(), "CLOSED " + connection.toString());
     }
-
 }

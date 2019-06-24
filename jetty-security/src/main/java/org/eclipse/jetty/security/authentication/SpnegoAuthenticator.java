@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -50,9 +49,10 @@ public class SpnegoAuthenticator extends LoginAuthenticator
 
     /**
      * Allow for a custom authMethod value to be set for instances where SPNEGO may not be appropriate
+     *
      * @param authMethod the auth method
      */
-    public SpnegoAuthenticator( String authMethod )
+    public SpnegoAuthenticator(String authMethod)
     {
         _authMethod = authMethod;
     }
@@ -82,11 +82,11 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         {
             String spnegoToken = header.substring(10);
 
-            UserIdentity user = login(null,spnegoToken, request);
+            UserIdentity user = login(null, spnegoToken, request);
 
-            if ( user != null )
+            if (user != null)
             {
-                return new UserAuthentication(getAuthMethod(),user);
+                return new UserAuthentication(getAuthMethod(), user);
             }
         }
 
@@ -95,10 +95,10 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         //   2. There was an Authorization header for a type other than Negotiate
         try
         {
-             if (DeferredAuthentication.isDeferred(res))
-             {
-                 return Authentication.UNAUTHENTICATED;
-             }
+            if (DeferredAuthentication.isDeferred(res))
+            {
+                return Authentication.UNAUTHENTICATED;
+            }
 
             LOG.debug("Sending challenge");
             res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), HttpHeader.NEGOTIATE.asString());
@@ -125,14 +125,15 @@ public class SpnegoAuthenticator extends LoginAuthenticator
             return "";
         }
         // Trim any leading whitespace
-        String trimmed_header = header.trim();
+        String trimmedHeader = header.trim();
         // Find the first space, all characters prior should be the auth_scheme
-        int index = trimmed_header.indexOf(' ');
-        if (index > 0) {
-            return trimmed_header.substring(0, index);
+        int index = trimmedHeader.indexOf(' ');
+        if (index > 0)
+        {
+            return trimmedHeader.substring(0, index);
         }
         // If we don't find a space, this is likely malformed, just return the entire value
-        return trimmed_header;
+        return trimmedHeader;
     }
 
     /**
@@ -157,5 +158,4 @@ public class SpnegoAuthenticator extends LoginAuthenticator
     {
         return true;
     }
-
 }

@@ -96,12 +96,12 @@ public class ProxyProtocolTest
             {
                 try
                 {
-                    assertEquals("1.2.3.4",request.getRemoteAddr());
-                    assertEquals(1111,request.getRemotePort());
-                    assertEquals("5.6.7.8",request.getLocalAddr());
-                    assertEquals(2222,request.getLocalPort());
+                    assertEquals("1.2.3.4", request.getRemoteAddr());
+                    assertEquals(1111, request.getRemotePort());
+                    assertEquals("5.6.7.8", request.getLocalAddr());
+                    assertEquals(2222, request.getLocalPort());
                 }
-                catch(Throwable th)
+                catch (Throwable th)
                 {
                     th.printStackTrace();
                     response.setStatus(500);
@@ -137,7 +137,7 @@ public class ProxyProtocolTest
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void test_PROXY_GET_v2() throws Exception
     {
@@ -148,16 +148,16 @@ public class ProxyProtocolTest
             {
                 try
                 {
-                    assertEquals("10.0.0.4",request.getRemoteAddr());
-                    assertEquals(33824,request.getRemotePort());
-                    assertEquals("10.0.0.5",request.getLocalAddr());
-                    assertEquals(8888,request.getLocalPort());
+                    assertEquals("10.0.0.4", request.getRemoteAddr());
+                    assertEquals(33824, request.getRemotePort());
+                    assertEquals("10.0.0.5", request.getLocalAddr());
+                    assertEquals(8888, request.getLocalPort());
                     EndPoint endPoint = baseRequest.getHttpChannel().getEndPoint();
                     assertThat(endPoint, instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                     ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                     assertNotNull(proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 }
-                catch(Throwable th)
+                catch (Throwable th)
                 {
                     th.printStackTrace();
                     response.setStatus(500);

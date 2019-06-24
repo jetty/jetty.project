@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import javax.websocket.MessageHandler;
 import javax.websocket.MessageHandler.Partial;
 
@@ -52,7 +51,7 @@ public class TextPartialMessage implements MessageAppender
         String partialText = utf8Partial.toPartialString(payload);
 
         // No decoders for Partial messages per JSR-356 (PFD1 spec)
-        partialHandler.onMessage(partialText,isLast);
+        partialHandler.onMessage(partialText, isLast);
     }
 
     @Override

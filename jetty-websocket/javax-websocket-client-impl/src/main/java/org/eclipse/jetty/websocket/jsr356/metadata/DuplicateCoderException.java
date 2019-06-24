@@ -34,6 +34,6 @@ public class DuplicateCoderException extends InvalidWebSocketException
 
     public DuplicateCoderException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 }

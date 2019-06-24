@@ -33,7 +33,7 @@ public final class Hex
     {
         if ((hstr.length() < 0) || ((hstr.length() % 2) != 0))
         {
-            throw new IllegalArgumentException(String.format("Invalid string length of <%d>",hstr.length()));
+            throw new IllegalArgumentException(String.format("Invalid string length of <%d>", hstr.length()));
         }
 
         int size = hstr.length() / 2;
@@ -47,10 +47,10 @@ public final class Hex
             hex = 0;
             if (i >= 0)
             {
-                hex = (byte)(Character.digit(hstr.charAt(i),16) << 4);
+                hex = (byte)(Character.digit(hstr.charAt(i), 16) << 4);
             }
             i++;
-            hex += (byte)(Character.digit(hstr.charAt(i),16));
+            hex += (byte)(Character.digit(hstr.charAt(i), 16));
 
             buf[idx] = hex;
             idx++;

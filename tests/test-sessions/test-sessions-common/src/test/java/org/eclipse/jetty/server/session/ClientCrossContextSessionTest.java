@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -36,10 +32,12 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * ClientCrossContextSessionTest
- * 
+ *
  * Test that a client can create a session on one context and
  * then re-use that session id on a request to another context,
  * but the session contents are separate on each.
@@ -53,13 +51,13 @@ public class ClientCrossContextSessionTest
         String contextA = "/contextA";
         String contextB = "/contextB";
         String servletMapping = "/server";
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new NullSessionDataStoreFactory();
-        
-        TestServer server = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE,  TestServer.DEFAULT_SCAVENGE_SEC, 
-                                                           cacheFactory, storeFactory);
+
+        TestServer server = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+            cacheFactory, storeFactory);
         TestServletA servletA = new TestServletA();
         ServletHolder holderA = new ServletHolder(servletA);
         ServletContextHandler ctxA = server.addContext(contextA);
@@ -73,7 +71,7 @@ public class ClientCrossContextSessionTest
         {
             server.start();
             int port = server.getPort();
-            
+
             HttpClient client = new HttpClient();
             client.start();
             try
@@ -81,7 +79,7 @@ public class ClientCrossContextSessionTest
                 // Perform a request to contextA
                 ContentResponse response = client.GET("http://localhost:" + port + contextA + servletMapping);
 
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
@@ -91,7 +89,7 @@ public class ClientCrossContextSessionTest
                 Request request = client.newRequest("http://localhost:" + port + contextB + servletMapping);
                 request.header("Cookie", sessionCookie);
                 ContentResponse responseB = request.send();
-                assertEquals(HttpServletResponse.SC_OK,responseB.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, responseB.getStatus());
                 assertEquals(servletA.sessionId, servletB.sessionId);
             }
             finally

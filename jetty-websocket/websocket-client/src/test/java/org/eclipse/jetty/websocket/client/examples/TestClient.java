@@ -52,7 +52,7 @@ public class TestClient
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
-            super.onWebSocketClose(statusCode,reason);
+            super.onWebSocketClose(statusCode, reason);
         }
 
         @Override
@@ -60,7 +60,7 @@ public class TestClient
         {
             if (_verbose)
             {
-                System.err.printf("%s#onWebSocketConnect %s %s\n",this.getClass().getSimpleName(),session,session.getClass().getSimpleName());
+                System.err.printf("%s#onWebSocketConnect %s %s\n", this.getClass().getSimpleName(), session, session.getClass().getSimpleName());
             }
         }
 
@@ -90,7 +90,6 @@ public class TestClient
                 }
             }
         }
-
     }
 
     private static boolean _verbose = false;
@@ -181,15 +180,15 @@ public class TestClient
         {
             wsclient.start();
             __start = System.currentTimeMillis();
-            protocol = protocol == null?"echo":protocol;
+            protocol = protocol == null ? "echo" : protocol;
 
             for (int i = 0; i < clients; i++)
             {
-                client[i] = new TestClient(wsclient,host,port,protocol,60000);
+                client[i] = new TestClient(wsclient, host, port, protocol, 60000);
                 client[i].open();
             }
 
-            System.out.println("Jetty WebSocket PING " + host + ":" + port + " (" + new InetSocketAddress(host,port) + ") " + clients + " clients " + protocol);
+            System.out.println("Jetty WebSocket PING " + host + ":" + port + " (" + new InetSocketAddress(host, port) + ") " + clients + " clients " + protocol);
 
             for (int p = 0; p < count; p++)
             {
@@ -225,7 +224,7 @@ public class TestClient
 
                 for (int i = 0; i < clients; i++)
                 {
-                    client[i].send(op,data,fragment);
+                    client[i].send(op, data, fragment);
                 }
 
                 while (System.currentTimeMillis() < next)
@@ -245,12 +244,12 @@ public class TestClient
             }
 
             long duration = System.currentTimeMillis() - __start;
-            System.out.println("--- " + host + " websocket ping statistics using " + clients + " connection" + (clients > 1?"s":"") + " ---");
-            System.out.printf("%d/%d frames sent/recv, %d/%d mesg sent/recv, time %dms %dm/s %.2fbps%n",__framesSent,__framesReceived.get(),__messagesSent,
-                    __messagesReceived.get(),duration,((1000L * __messagesReceived.get()) / duration),(1000.0D * __messagesReceived.get() * 8 * size)
-                            / duration / 1024 / 1024);
-            System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",__minDuration.get() / 1000000.0,__messagesReceived.get() == 0?0.0:(__totalTime.get()
-                    / __messagesReceived.get() / 1000000.0),__maxDuration.get() / 1000000.0);
+            System.out.println("--- " + host + " websocket ping statistics using " + clients + " connection" + (clients > 1 ? "s" : "") + " ---");
+            System.out.printf("%d/%d frames sent/recv, %d/%d mesg sent/recv, time %dms %dm/s %.2fbps%n", __framesSent, __framesReceived.get(), __messagesSent,
+                __messagesReceived.get(), duration, ((1000L * __messagesReceived.get()) / duration), (1000.0D * __messagesReceived.get() * 8 * size)
+                    / duration / 1024 / 1024);
+            System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n", __minDuration.get() / 1000000.0, __messagesReceived.get() == 0 ? 0.0 : (__totalTime.get()
+                / __messagesReceived.get() / 1000000.0), __maxDuration.get() / 1000000.0);
 
             wsclient.stop();
         }
@@ -302,11 +301,11 @@ public class TestClient
         request.setSubProtocols(_protocol);
         socket = new TestSocket();
         URI wsUri = new URI("ws://" + _host + ":" + _port + "/");
-        client.connect(socket,wsUri,request).get(10,TimeUnit.SECONDS);
+        client.connect(socket, wsUri, request).get(10, TimeUnit.SECONDS);
     }
 
     private void send(byte op, byte[] data, int fragment)
     {
-        socket.send(op,data,fragment);
+        socket.send(op, data, fragment);
     }
 }

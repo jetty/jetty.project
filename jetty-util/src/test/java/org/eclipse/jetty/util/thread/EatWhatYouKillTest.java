@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -30,6 +28,8 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class EatWhatYouKillTest
 {
@@ -42,9 +42,13 @@ public class EatWhatYouKillTest
         ewyk.start();
         ReservedThreadExecutor tryExecutor = executor.getBean(ReservedThreadExecutor.class);
         // Prime the executor so that there is a reserved thread.
-        executor.tryExecute(() -> {});
+        executor.tryExecute(() ->
+        {
+        });
         while (tryExecutor.getAvailable() == 0)
+        {
             Thread.sleep(10);
+        }
     }
 
     @AfterEach
@@ -111,7 +115,9 @@ public class EatWhatYouKillTest
 
             // Wait until EWYK is idle.
             while (!ewyk.isIdle())
+            {
                 Thread.sleep(10);
+            }
 
             assertNull(detector.get());
         }

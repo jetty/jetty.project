@@ -28,6 +28,7 @@ public class InvalidErrorIntSocket extends TrackingSocket
 {
     /**
      * Invalid Error Method Declaration (parameter type int)
+     *
      * @param errorCount the error count
      */
     @OnError

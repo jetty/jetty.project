@@ -29,9 +29,8 @@ public class FileID
 {
     /**
      * Is the path a Web Archive?
-     * 
-     * @param path
-     *            the path to test.
+     *
+     * @param path the path to test.
      * @return True if a .war or .jar or exploded web directory
      * @see FileID#isWebArchiveFile(File)
      */
@@ -43,16 +42,15 @@ public class FileID
             return (name.endsWith(".war") || name.endsWith(".jar"));
         }
 
-        File webInf = new File(path,"WEB-INF");
-        File webXml = new File(webInf,"web.xml");
+        File webInf = new File(path, "WEB-INF");
+        File webXml = new File(webInf, "web.xml");
         return webXml.exists() && webXml.isFile();
     }
 
     /**
      * Is the path a Web Archive File (not directory)
-     * 
-     * @param path
-     *            the path to test.
+     *
+     * @param path the path to test.
      * @return True if a .war or .jar file.
      * @see FileID#isWebArchive(File)
      */

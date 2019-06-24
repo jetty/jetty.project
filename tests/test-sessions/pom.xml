@@ -10,8 +10,7 @@
   <name>Jetty Tests :: Sessions :: Parent</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
-  <build>
-  </build>
+  <build></build>
   <modules>
     <module>test-sessions-common</module>
     <module>test-file-sessions</module>

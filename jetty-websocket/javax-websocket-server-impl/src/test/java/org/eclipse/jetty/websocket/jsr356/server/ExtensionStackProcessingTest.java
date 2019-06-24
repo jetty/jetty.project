@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
@@ -56,28 +51,32 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 public class ExtensionStackProcessingTest
 {
     private Server server;
     private ServerConnector connector;
     private WebSocketContainer client;
     private ServletContextHandler servletContextHandler;
-    
+
     @BeforeEach
     public void prepare() throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
-    
+
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
         ServerContainer container = WebSocketServerContainerInitializer.configureContext(servletContextHandler);
-        
+
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, "/").build();
         container.addEndpoint(config);
 
         client = ContainerProvider.getWebSocketContainer();
-        
+
         server.start();
     }
 
@@ -86,11 +85,11 @@ public class ExtensionStackProcessingTest
     {
         server.stop();
     }
-    
+
     private void assumeDeflateFrameAvailable()
     {
-        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) servletContextHandler
-                .getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration)servletContextHandler
+            .getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
         ExtensionFactory serverExtensionFactory = configuration.getFactory().getExtensionFactory();
         assumeTrue(serverExtensionFactory.isAvailable("permessage-deflate"), "Server has permessage-deflate extension registered");
     }
@@ -99,10 +98,10 @@ public class ExtensionStackProcessingTest
     public void testDeflateFrameExtension() throws Exception
     {
         assumeDeflateFrameAvailable();
-        
+
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                .extensions(Arrays.<Extension>asList(new JsrExtension("deflate-frame")))
-                .build();
+            .extensions(Arrays.<Extension>asList(new JsrExtension("deflate-frame")))
+            .build();
 
         final String content = "deflate_me";
         final CountDownLatch messageLatch = new CountDownLatch(1);
@@ -147,10 +146,10 @@ public class ExtensionStackProcessingTest
     public void testPerMessageDeflateExtension() throws Exception
     {
         assumeDeflateFrameAvailable();
-        
+
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                .extensions(Arrays.<Extension>asList(new JsrExtension("permessage-deflate")))
-                .build();
+            .extensions(Arrays.<Extension>asList(new JsrExtension("permessage-deflate")))
+            .build();
 
         final String content = "deflate_me";
         final CountDownLatch messageLatch = new CountDownLatch(1);

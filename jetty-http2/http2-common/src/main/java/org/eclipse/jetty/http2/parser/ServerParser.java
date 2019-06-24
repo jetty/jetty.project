@@ -149,9 +149,9 @@ public class ServerParser extends Parser
 
     public interface Listener extends Parser.Listener
     {
-        public void onPreface();
+        void onPreface();
 
-        public static class Adapter extends Parser.Listener.Adapter implements Listener
+        class Adapter extends Parser.Listener.Adapter implements Listener
         {
             @Override
             public void onPreface()
@@ -159,7 +159,7 @@ public class ServerParser extends Parser
             }
         }
 
-        public static class Wrapper extends Parser.Listener.Wrapper implements Listener
+        class Wrapper extends Parser.Listener.Wrapper implements Listener
         {
             public Wrapper(ServerParser.Listener listener)
             {

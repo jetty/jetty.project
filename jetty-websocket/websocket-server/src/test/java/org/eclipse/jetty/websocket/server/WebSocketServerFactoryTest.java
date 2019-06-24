@@ -43,21 +43,21 @@ public class WebSocketServerFactoryTest
         Logger logger = Log.getLogger(clazz);
         if (logger instanceof StdErrLog)
         {
-            StdErrLog stdErrLog = (StdErrLog) logger;
+            StdErrLog stdErrLog = (StdErrLog)logger;
             oldLevel = stdErrLog.getLevel();
             stdErrLog.setLevel(newLevel);
         }
-        
+
         return oldLevel;
     }
-    
+
     @Test
     public void testInit()
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Executor executor = new QueuedThreadPool();
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        
+
         int wsFactoryLevel = setLogLevel(WebSocketServerFactory.class, StdErrLog.LEVEL_DEBUG);
         int abstractLifecycleLevel = setLogLevel(AbstractLifeCycle.class, StdErrLog.LEVEL_DEBUG);
         int containerLifecycleLevel = setLogLevel(ContainerLifeCycle.class, StdErrLog.LEVEL_DEBUG);

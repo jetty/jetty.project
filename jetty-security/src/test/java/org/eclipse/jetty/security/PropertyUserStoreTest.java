@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.security;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.condition.OS.MAC;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -54,6 +45,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.condition.OS.MAC;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
 public class PropertyUserStoreTest
@@ -87,23 +87,23 @@ public class PropertyUserStoreTest
         public void awaitCount(int expectedCount) throws InterruptedException
         {
             long timeout = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + TimeUnit.SECONDS.toMillis(10);
-            
+
             while (userCount.get() != expectedCount && (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) < timeout))
             {
                 TimeUnit.MILLISECONDS.sleep(100);
             }
-            
+
             assertThatCount(is(expectedCount));
         }
 
         public void assertThatCount(Matcher<Integer> matcher)
         {
-            assertThat("User count",userCount.get(),matcher);
+            assertThat("User count", userCount.get(), matcher);
         }
 
         public void assertThatUsers(Matcher<Iterable<? super String>> matcher)
         {
-            assertThat("Users list",users,matcher);
+            assertThat("Users list", users, matcher);
         }
     }
 
@@ -115,7 +115,7 @@ public class PropertyUserStoreTest
         Path users = dir.resolve("users.txt");
         Files.deleteIfExists(users);
 
-        writeUser( users );
+        writeUser(users);
         return users;
     }
 
@@ -123,32 +123,31 @@ public class PropertyUserStoreTest
         throws Exception
     {
         Path dir = testdir.getPath();
-        File users = dir.resolve( "users.txt" ).toFile();
-        writeUser( users );
-        File usersJar = dir.resolve( "users.jar" ).toFile();
+        File users = dir.resolve("users.txt").toFile();
+        writeUser(users);
+        File usersJar = dir.resolve("users.jar").toFile();
         String entryPath = "mountain_goat/pale_ale.txt";
-        try (FileInputStream fileInputStream = new FileInputStream( users ))
+        try (FileInputStream fileInputStream = new FileInputStream(users))
         {
-            try (OutputStream outputStream = new FileOutputStream( usersJar ))
+            try (OutputStream outputStream = new FileOutputStream(usersJar))
             {
-                try (JarOutputStream jarOutputStream = new JarOutputStream( outputStream ))
+                try (JarOutputStream jarOutputStream = new JarOutputStream(outputStream))
                 {
                     // add fake entry
-                    jarOutputStream.putNextEntry( new JarEntry( "foo/wine" ) );
+                    jarOutputStream.putNextEntry(new JarEntry("foo/wine"));
 
-                    JarEntry jarEntry = new JarEntry( entryPath );
-                    jarOutputStream.putNextEntry( jarEntry );
+                    JarEntry jarEntry = new JarEntry(entryPath);
+                    jarOutputStream.putNextEntry(jarEntry);
                     byte[] buffer = new byte[1024];
                     int bytesRead;
-                    while ( ( bytesRead = fileInputStream.read( buffer ) ) != -1 )
+                    while ((bytesRead = fileInputStream.read(buffer)) != -1)
                     {
-                        jarOutputStream.write( buffer, 0, bytesRead );
+                        jarOutputStream.write(buffer, 0, bytesRead);
                     }
                     // add fake entry
-                    jarOutputStream.putNextEntry( new JarEntry( "foo/cheese" ) );
+                    jarOutputStream.putNextEntry(new JarEntry("foo/cheese"));
                 }
             }
-
         }
         return "jar:" + usersJar.toURI().toASCIIString() + "!/" + entryPath;
     }
@@ -202,7 +201,8 @@ public class PropertyUserStoreTest
     @Test
     public void testPropertyUserStoreFails() throws Exception
     {
-        assertThrows(IllegalStateException.class,() -> {
+        assertThrows(IllegalStateException.class, () ->
+        {
             PropertyUserStore store = new PropertyUserStore();
             store.setConfig("file:/this/file/does/not/exist.txt");
             store.start();
@@ -225,11 +225,11 @@ public class PropertyUserStoreTest
         store.start();
 
         assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", //
-                   store.getUserIdentity("tom"), notNullValue());
+            store.getUserIdentity("tom"), notNullValue());
         assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", //
-                   store.getUserIdentity("dick"), notNullValue());
+            store.getUserIdentity("dick"), notNullValue());
         assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", //
-                   store.getUserIdentity("harry"), notNullValue());
+            store.getUserIdentity("harry"), notNullValue());
         userCount.assertThatCount(is(3));
         userCount.awaitCount(3);
     }
@@ -257,25 +257,25 @@ public class PropertyUserStoreTest
         store.registerUserListener(userCount);
 
         store.start();
-        
+
         userCount.assertThatCount(is(3));
-        assertThat(loadCount.get(),is(1));
-        
-        addAdditionalUser(usersFile,"skip: skip, roleA\n");
+        assertThat(loadCount.get(), is(1));
+
+        addAdditionalUser(usersFile, "skip: skip, roleA\n");
         userCount.awaitCount(4);
-        assertThat(loadCount.get(),is(2));
+        assertThat(loadCount.get(), is(2));
         assertThat(store.getUserIdentity("skip"), notNullValue());
         userCount.assertThatCount(is(4));
         userCount.assertThatUsers(hasItem("skip"));
-        
+
         if (OS.LINUX.isCurrentOs())
             Files.createFile(testdir.getPath().toRealPath().resolve("unrelated.txt"),
                 PosixFilePermissions.asFileAttribute(EnumSet.noneOf(PosixFilePermission.class)));
         else
             Files.createFile(testdir.getPath().toRealPath().resolve("unrelated.txt"));
-        
+
         Thread.sleep(1100);
-        assertThat(loadCount.get(),is(2));
+        assertThat(loadCount.get(), is(2));
 
         userCount.assertThatCount(is(4));
         userCount.assertThatUsers(hasItem("skip"));
@@ -290,9 +290,9 @@ public class PropertyUserStoreTest
         final UserCount userCount = new UserCount();
         // initial user file (3) users
         final Path usersFile = initUsersText();
-        
+
         // adding 4th user
-        addAdditionalUser(usersFile,"skip: skip, roleA\n");
+        addAdditionalUser(usersFile, "skip: skip, roleA\n");
 
         PropertyUserStore store = new PropertyUserStore();
         store.setHotReload(true);
@@ -306,7 +306,7 @@ public class PropertyUserStoreTest
 
         // rewrite file with original 3 users
         initUsersText();
-        
+
         userCount.awaitCount(3);
     }
 }

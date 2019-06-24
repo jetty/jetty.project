@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
@@ -30,27 +28,29 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class RewriteRegexRuleTest extends AbstractRuleTestCase
 {
     public static Stream<Arguments> scenarios()
     {
         return Stream.of(
-                new Scenario("/foo0/bar",null,".*","/replace","/replace",null),
-                new Scenario("/foo1/bar","n=v",".*","/replace","/replace","n=v"),
-                new Scenario("/foo2/bar",null,"/xxx.*","/replace",null,null),
-                new Scenario("/foo3/bar",null,"/(.*)/(.*)","/$2/$1/xxx","/bar/foo3/xxx",null),
-                new Scenario("/f%20o3/bar",null,"/(.*)/(.*)","/$2/$1/xxx","/bar/f%20o3/xxx",null),
-                new Scenario("/foo4/bar",null,"/(.*)/(.*)","/test?p2=$2&p1=$1","/test","p2=bar&p1=foo4"),
-                new Scenario("/foo5/bar","n=v","/(.*)/(.*)","/test?p2=$2&p1=$1","/test","n=v&p2=bar&p1=foo5"),
-                new Scenario("/foo6/bar",null,"/(.*)/(.*)","/foo6/bar?p2=$2&p1=$1","/foo6/bar","p2=bar&p1=foo6"),
-                new Scenario("/foo7/bar","n=v","/(.*)/(.*)","/foo7/bar?p2=$2&p1=$1","/foo7/bar","n=v&p2=bar&p1=foo7"),
-                new Scenario("/foo8/bar",null,"/(foo8)/(.*)(bar)","/$3/$1/xxx$2","/bar/foo8/xxx",null),
-                new Scenario("/foo9/$bar",null,".*","/$replace","/$replace",null),
-                new Scenario("/fooA/$bar",null,"/fooA/(.*)","/$1/replace","/$bar/replace",null),
-                new Scenario("/fooB/bar/info",null,"/fooB/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2","/info/other","p1=bar"),
-                new Scenario("/fooC/bar/info",null,"/fooC/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2&$Q","/info/other","p1=bar&"),
-                new Scenario("/fooD/bar/info","n=v","/fooD/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2&$Q","/info/other","p1=bar&n=v"),
-                new Scenario("/fooE/bar/info","n=v","/fooE/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2","/info/other","n=v&p1=bar")
+            new Scenario("/foo0/bar", null, ".*", "/replace", "/replace", null),
+            new Scenario("/foo1/bar", "n=v", ".*", "/replace", "/replace", "n=v"),
+            new Scenario("/foo2/bar", null, "/xxx.*", "/replace", null, null),
+            new Scenario("/foo3/bar", null, "/(.*)/(.*)", "/$2/$1/xxx", "/bar/foo3/xxx", null),
+            new Scenario("/f%20o3/bar", null, "/(.*)/(.*)", "/$2/$1/xxx", "/bar/f%20o3/xxx", null),
+            new Scenario("/foo4/bar", null, "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=bar&p1=foo4"),
+            new Scenario("/foo5/bar", "n=v", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "n=v&p2=bar&p1=foo5"),
+            new Scenario("/foo6/bar", null, "/(.*)/(.*)", "/foo6/bar?p2=$2&p1=$1", "/foo6/bar", "p2=bar&p1=foo6"),
+            new Scenario("/foo7/bar", "n=v", "/(.*)/(.*)", "/foo7/bar?p2=$2&p1=$1", "/foo7/bar", "n=v&p2=bar&p1=foo7"),
+            new Scenario("/foo8/bar", null, "/(foo8)/(.*)(bar)", "/$3/$1/xxx$2", "/bar/foo8/xxx", null),
+            new Scenario("/foo9/$bar", null, ".*", "/$replace", "/$replace", null),
+            new Scenario("/fooA/$bar", null, "/fooA/(.*)", "/$1/replace", "/$bar/replace", null),
+            new Scenario("/fooB/bar/info", null, "/fooB/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2", "/info/other", "p1=bar"),
+            new Scenario("/fooC/bar/info", null, "/fooC/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2&$Q", "/info/other", "p1=bar&"),
+            new Scenario("/fooD/bar/info", "n=v", "/fooD/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2&$Q", "/info/other", "p1=bar&n=v"),
+            new Scenario("/fooE/bar/info", "n=v", "/fooE/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2", "/info/other", "n=v&p1=bar")
         ).map(Arguments::of);
     }
 
@@ -67,25 +67,27 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
         rule.setRegex(scenario.regex);
         rule.setReplacement(scenario.replacement);
 
-        _request.setURIPathQuery(scenario.uriPathQuery +(scenario.queryString ==null?"":("?"+scenario.queryString)));
+        _request.setURIPathQuery(scenario.uriPathQuery + (scenario.queryString == null ? "" : ("?" + scenario.queryString)));
 
         String result = rule.matchAndApply(scenario.uriPathQuery, _request, _response);
         assertEquals(scenario.expectedRequestURI, result);
-        rule.applyURI(_request,scenario.uriPathQuery,result);
+        rule.applyURI(_request, scenario.uriPathQuery, result);
 
-        if (result!=null)
+        if (result != null)
         {
             assertEquals(scenario.expectedRequestURI, _request.getRequestURI());
             assertEquals(scenario.expectedQueryString, _request.getQueryString());
         }
 
-        if (scenario.expectedQueryString !=null)
+        if (scenario.expectedQueryString != null)
         {
-            MultiMap<String> params=new MultiMap<String>();
-            UrlEncoded.decodeTo(scenario.expectedQueryString,params, StandardCharsets.UTF_8);
+            MultiMap<String> params = new MultiMap<String>();
+            UrlEncoded.decodeTo(scenario.expectedQueryString, params, StandardCharsets.UTF_8);
 
-            for (String n:params.keySet())
-                assertEquals(params.getString(n),_request.getParameter(n));
+            for (String n : params.keySet())
+            {
+                assertEquals(params.getString(n), _request.getParameter(n));
+            }
         }
     }
 
@@ -108,11 +110,10 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
         _request.setQueryString(scenario.queryString);
         _request.getAttributes().clearAttributes();
 
-        String result = container.apply(URIUtil.decodePath(scenario.uriPathQuery),_request,_response);
-        assertEquals(URIUtil.decodePath(scenario.expectedRequestURI ==null?scenario.uriPathQuery :scenario.expectedRequestURI), result);
-        assertEquals(scenario.expectedRequestURI ==null?scenario.uriPathQuery :scenario.expectedRequestURI, _request.getRequestURI());
+        String result = container.apply(URIUtil.decodePath(scenario.uriPathQuery), _request, _response);
+        assertEquals(URIUtil.decodePath(scenario.expectedRequestURI == null ? scenario.uriPathQuery : scenario.expectedRequestURI), result);
+        assertEquals(scenario.expectedRequestURI == null ? scenario.uriPathQuery : scenario.expectedRequestURI, _request.getRequestURI());
         assertEquals(scenario.expectedQueryString, _request.getQueryString());
-
     }
 
     private static class Scenario

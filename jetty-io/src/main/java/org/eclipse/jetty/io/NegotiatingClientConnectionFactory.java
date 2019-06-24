@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-
 public abstract class NegotiatingClientConnectionFactory implements ClientConnectionFactory
 {
     private final ClientConnectionFactory connectionFactory;

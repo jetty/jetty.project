@@ -106,9 +106,9 @@ public class ResponseNotifier
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
     {
         List<Response.AsyncContentListener> contentListeners = listeners.stream()
-                .filter(Response.AsyncContentListener.class::isInstance)
-                .map(Response.AsyncContentListener.class::cast)
-                .collect(Collectors.toList());
+            .filter(Response.AsyncContentListener.class::isInstance)
+            .map(Response.AsyncContentListener.class::cast)
+            .collect(Collectors.toList());
         notifyContent(response, buffer, callback, contentListeners);
     }
 
@@ -122,7 +122,9 @@ public class ResponseNotifier
         {
             CountingCallback counter = new CountingCallback(callback, contentListeners.size());
             for (Response.AsyncContentListener listener : contentListeners)
+            {
                 notifyContent(listener, response, buffer.slice(), counter);
+            }
         }
     }
 
@@ -204,7 +206,7 @@ public class ResponseNotifier
     public void forwardSuccess(List<Response.ResponseListener> listeners, Response response)
     {
         notifyBegin(listeners, response);
-        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
+        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext(); )
         {
             HttpField field = iterator.next();
             if (!notifyHeader(listeners, response, field))
@@ -225,7 +227,7 @@ public class ResponseNotifier
     public void forwardFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
         notifyBegin(listeners, response);
-        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
+        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext(); )
         {
             HttpField field = iterator.next();
             if (!notifyHeader(listeners, response, field))

@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -40,21 +35,25 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * This tests verifies that merging of queryStrings works when dispatching
  * Requests via {@link AsyncContext} multiple times.
  */
-public class AsyncContextDispatchWithQueryStrings 
+public class AsyncContextDispatchWithQueryStrings
 {
     private Server _server = new Server();
     private ServletContextHandler _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
     private LocalConnector _connector = new LocalConnector(_server);
 
     @BeforeEach
-    public void setUp() throws Exception 
+    public void setUp() throws Exception
     {
         _connector.setIdleTimeout(30000);
-        _server.setConnectors(new Connector[] { _connector });
+        _server.setConnectors(new Connector[]{_connector});
 
         _contextHandler.setContextPath("/");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/initialCall");
@@ -62,53 +61,53 @@ public class AsyncContextDispatchWithQueryStrings
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/secondDispatchNewValueForExistingQueryString");
 
         HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[] { _contextHandler, new DefaultHandler() });
+        handlers.setHandlers(new Handler[]{_contextHandler, new DefaultHandler()});
 
         _server.setHandler(handlers);
         _server.start();
     }
 
     @Test
-    public void testMultipleDispatchesWithNewQueryStrings() throws Exception 
+    public void testMultipleDispatchesWithNewQueryStrings() throws Exception
     {
-        String request = 
-                "GET /initialCall?initialParam=right HTTP/1.1\r\n" + 
-                        "Host: localhost\r\n" + 
-                        "Content-Type: application/x-www-form-urlencoded\r\n" +
-                        "Connection: close\r\n" + "\r\n";
+        String request =
+            "GET /initialCall?initialParam=right HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Connection: close\r\n" + "\r\n";
         String responseString = _connector.getResponse(request);
-        assertThat(responseString,startsWith("HTTP/1.1 200"));
+        assertThat(responseString, startsWith("HTTP/1.1 200"));
     }
 
     @AfterEach
-    public void tearDown() throws Exception 
+    public void tearDown() throws Exception
     {
         _server.stop();
         _server.join();
     }
 
-    private class TestServlet extends HttpServlet 
+    private class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException 
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             String uri = request.getRequestURI();
             String queryString = request.getQueryString();
-            if ("/initialCall".equals(uri)) 
+            if ("/initialCall".equals(uri))
             {
                 AsyncContext async = request.startAsync();
                 async.dispatch("/firstDispatchWithNewQueryString?newQueryString=initialValue");
                 assertEquals("initialParam=right", queryString);
-            } 
-            else if ("/firstDispatchWithNewQueryString".equals(uri)) 
+            }
+            else if ("/firstDispatchWithNewQueryString".equals(uri))
             {
                 AsyncContext async = request.startAsync();
                 async.dispatch("/secondDispatchNewValueForExistingQueryString?newQueryString=newValue");
                 assertEquals("newQueryString=initialValue&initialParam=right", queryString);
-            } 
-            else 
+            }
+            else
             {
                 response.setContentType("text/html");
                 response.setStatus(HttpServletResponse.SC_OK);

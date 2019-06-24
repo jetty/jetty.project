@@ -29,7 +29,7 @@ public class BasicTextMessageStringSocket extends TrackingSocket
     @OnMessage
     public void onText(String message)
     {
-        addEvent("onText(%s)",message);
+        addEvent("onText(%s)", message);
         dataLatch.countDown();
     }
 }

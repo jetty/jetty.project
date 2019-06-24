@@ -62,9 +62,9 @@ public class SslContextFactoryTest
         java.security.cert.CertPathBuilder certPathBuilder = java.security.cert.CertPathBuilder.getInstance("PKIX");
         java.security.cert.PKIXRevocationChecker revocationChecker = (java.security.cert.PKIXRevocationChecker)certPathBuilder.getRevocationChecker();
         revocationChecker.setOptions(java.util.EnumSet.of(
-                java.security.cert.PKIXRevocationChecker.Option.valueOf("PREFER_CRLS"),
-                java.security.cert.PKIXRevocationChecker.Option.valueOf("SOFT_FAIL"),
-                java.security.cert.PKIXRevocationChecker.Option.valueOf("NO_FALLBACK")));
+            java.security.cert.PKIXRevocationChecker.Option.valueOf("PREFER_CRLS"),
+            java.security.cert.PKIXRevocationChecker.Option.valueOf("SOFT_FAIL"),
+            java.security.cert.PKIXRevocationChecker.Option.valueOf("NO_FALLBACK")));
         cf.setPkixCertPathChecker(revocationChecker);
     }
 
@@ -80,10 +80,10 @@ public class SslContextFactoryTest
         List<SslSelectionDump> dumps = cf.selectionDump();
 
         SslSelectionDump cipherDump = dumps.stream()
-                .filter((dump)-> dump.type.contains("Cipher Suite"))
-                .findFirst().get();
+            .filter((dump) -> dump.type.contains("Cipher Suite"))
+            .findFirst().get();
 
-        for(String enabledCipher : cipherDump.enabled)
+        for (String enabledCipher : cipherDump.enabled)
         {
             assertThat("Enabled Cipher Suite", enabledCipher, not(matchesRegex(".*_RSA_.*(SHA1|MD5|SHA)")));
         }
@@ -105,16 +105,16 @@ public class SslContextFactoryTest
         SSLEngine ssl = SSLContext.getDefault().createSSLEngine();
 
         List<String> tlsRsaSuites = Stream.of(ssl.getSupportedCipherSuites())
-                .filter((suite)->suite.startsWith("TLS_RSA_"))
-                .collect(Collectors.toList());
+            .filter((suite) -> suite.startsWith("TLS_RSA_"))
+            .collect(Collectors.toList());
 
         List<String> selectedSuites = Arrays.asList(cf.getSelectedCipherSuites());
         SslSelectionDump cipherDump = dumps.stream()
-                .filter((dump)-> dump.type.contains("Cipher Suite"))
-                .findFirst().get();
+            .filter((dump) -> dump.type.contains("Cipher Suite"))
+            .findFirst().get();
         assertThat("Dump Enabled List size is equal to selected list size", cipherDump.enabled.size(), is(selectedSuites.size()));
 
-        for(String expectedCipherSuite: tlsRsaSuites)
+        for (String expectedCipherSuite : tlsRsaSuites)
         {
             assertThat("Selected Cipher Suites", selectedSuites, hasItem(expectedCipherSuite));
             assertThat("Dump Enabled Cipher Suites", cipherDump.enabled, hasItem(expectedCipherSuite));
@@ -210,7 +210,7 @@ public class SslContextFactoryTest
         try (StacklessLogging ignore = new StacklessLogging(AbstractLifeCycle.class))
         {
             java.security.UnrecoverableKeyException x = assertThrows(
-                    java.security.UnrecoverableKeyException.class, ()->cf.start());
+                java.security.UnrecoverableKeyException.class, () -> cf.start());
             assertThat(x.getMessage(), containsString("Cannot recover key"));
         }
     }
@@ -229,7 +229,7 @@ public class SslContextFactoryTest
 
         try (StacklessLogging ignore = new StacklessLogging(AbstractLifeCycle.class))
         {
-            IOException x = assertThrows(IOException.class, ()->cf.start());
+            IOException x = assertThrows(IOException.class, () -> cf.start());
             assertThat(x.getMessage(), containsString("Keystore was tampered with, or password was incorrect"));
         }
     }
@@ -239,7 +239,8 @@ public class SslContextFactoryTest
     {
         try (StacklessLogging ignore = new StacklessLogging(AbstractLifeCycle.class))
         {
-            IllegalStateException x = assertThrows(IllegalStateException.class, ()-> {
+            IllegalStateException x = assertThrows(IllegalStateException.class, () ->
+            {
                 cf.setTrustStorePath("/foo");
                 cf.start();
             });
@@ -256,7 +257,9 @@ public class SslContextFactoryTest
         String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
         assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(0));
         for (String enabledCipherSuite : enabledCipherSuites)
+        {
             assertThat("CipherSuite does not contain RC4", enabledCipherSuite.contains("RC4"), equalTo(false));
+        }
     }
 
     @Test
@@ -269,7 +272,9 @@ public class SslContextFactoryTest
         String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
         assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(1));
         for (String enabledCipherSuite : enabledCipherSuites)
+        {
             assertThat("CipherSuite contains ECDHE", enabledCipherSuite.contains("ECDHE"), equalTo(true));
+        }
     }
 
     @Test

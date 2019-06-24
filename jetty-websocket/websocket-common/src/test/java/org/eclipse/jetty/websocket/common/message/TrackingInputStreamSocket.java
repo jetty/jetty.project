@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
@@ -35,6 +32,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 @WebSocket
 public class TrackingInputStreamSocket
@@ -65,20 +64,20 @@ public class TrackingInputStreamSocket
 
     public void assertCloseCode(int expectedCode) throws InterruptedException
     {
-        assertThat("Was Closed",closeLatch.await(50,TimeUnit.MILLISECONDS),is(true));
-        assertThat("Close Code",closeCode,is(expectedCode));
+        assertThat("Was Closed", closeLatch.await(50, TimeUnit.MILLISECONDS), is(true));
+        assertThat("Close Code", closeCode, is(expectedCode));
     }
 
     private void assertCloseReason(String expectedReason)
     {
-        assertThat("Close Reason",closeMessage.toString(),is(expectedReason));
+        assertThat("Close Reason", closeMessage.toString(), is(expectedReason));
     }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onClose({},{})",id,statusCode,reason);
+            LOG.debug("{} onClose({},{})", id, statusCode, reason);
         closeCode = statusCode;
         closeMessage.append(reason);
         closeLatch.countDown();
@@ -94,7 +93,7 @@ public class TrackingInputStreamSocket
     public void onInputStream(InputStream stream)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onInputStream({})",id,stream);
+            LOG.debug("{} onInputStream({})", id, stream);
         try
         {
             String msg = IO.toString(stream);
@@ -108,6 +107,6 @@ public class TrackingInputStreamSocket
 
     public void waitForClose(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
-        assertThat("Client Socket Closed",closeLatch.await(timeoutDuration,timeoutUnit),is(true));
+        assertThat("Client Socket Closed", closeLatch.await(timeoutDuration, timeoutUnit), is(true));
     }
 }

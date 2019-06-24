@@ -26,12 +26,12 @@ import java.util.Date;
 public class Pinger
 {
     private int count = 0;
-    
+
     public int getCount()
     {
         return count;
     }
-    
+
     public String ping()
     {
         count++;

@@ -29,17 +29,17 @@ public class DebugBinding implements AppLifeCycle.Binding
     private static final Logger LOG = Log.getLogger(DebugBinding.class);
 
     final String[] _targets;
-    
+
     public DebugBinding(String target)
     {
-        _targets=new String[]{target};
+        _targets = new String[]{target};
     }
-    
+
     public DebugBinding(final String... targets)
     {
-        _targets=targets;
+        _targets = targets;
     }
-    
+
     @Override
     public String[] getBindingTargets()
     {
@@ -49,6 +49,6 @@ public class DebugBinding implements AppLifeCycle.Binding
     @Override
     public void processBinding(Node node, App app) throws Exception
     {
-        LOG.info("processBinding {} {}",node,app.getContextHandler());
+        LOG.info("processBinding {} {}", node, app.getContextHandler());
     }
 }

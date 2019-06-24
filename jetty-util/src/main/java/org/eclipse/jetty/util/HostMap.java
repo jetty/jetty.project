@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.util;
 
 import java.util.HashMap;
@@ -30,25 +29,24 @@ import java.util.Map;
 public class HostMap<TYPE> extends HashMap<String, TYPE>
 {
 
-    /* --------------------------------------------------------------- */
-    /** Construct empty HostMap.
+    /**
+     * Construct empty HostMap.
      */
     public HostMap()
     {
         super(11);
     }
-   
-    /* --------------------------------------------------------------- */
-    /** Construct empty HostMap.
-     * 
+
+    /**
+     * Construct empty HostMap.
+     *
      * @param capacity initial capacity
      */
     public HostMap(int capacity)
     {
-        super (capacity);
+        super(capacity);
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @see java.util.HashMap#put(java.lang.Object, java.lang.Object)
      */
@@ -58,8 +56,7 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
     {
         return super.put(host, object);
     }
-        
-    /* ------------------------------------------------------------ */
+
     /**
      * @see java.util.HashMap#get(java.lang.Object)
      */
@@ -69,11 +66,10 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
         return super.get(key);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve a lazy list of map entries associated with specified
      * hostname by taking into account the domain suffix matches.
-     * 
+     *
      * @param host hostname
      * @return lazy list of map entries
      */
@@ -81,28 +77,29 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
     {
         if (host == null)
             return LazyList.getList(super.entrySet());
-        
+
         int idx = 0;
         String domain = host.trim();
         HashSet<String> domains = new HashSet<String>();
-        do {
+        do
+        {
             domains.add(domain);
             if ((idx = domain.indexOf('.')) > 0)
             {
-                domain = domain.substring(idx+1);
+                domain = domain.substring(idx + 1);
             }
-        } while (idx > 0);
-        
+        }
+        while (idx > 0);
+
         Object entries = null;
-        for(Map.Entry<String, TYPE> entry: super.entrySet())
+        for (Map.Entry<String, TYPE> entry : super.entrySet())
         {
             if (domains.contains(entry.getKey()))
             {
-                entries = LazyList.add(entries,entry);
+                entries = LazyList.add(entries, entry);
             }
         }
-       
-        return entries;        
-    }
 
+        return entries;
+    }
 }

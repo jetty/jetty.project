@@ -22,19 +22,17 @@ import java.io.Serializable;
 
 /**
  * TestFoo
- *
- *
  */
 public class TestFoo implements Foo, Serializable
 {
     private static final long serialVersionUID = 953717519120144555L;
-    
+
     private int i = -99;
 
     @Override
     public int getInt()
     {
-       return this.i;
+        return this.i;
     }
 
     @Override
@@ -43,15 +41,12 @@ public class TestFoo implements Foo, Serializable
         this.i = i;
     }
 
-
     @Override
     public boolean equals(Object obj)
     {
         if (obj == null)
             return false;
-  
+
         return (((Foo)obj).getInt() == getInt());
     }
-
- 
 }

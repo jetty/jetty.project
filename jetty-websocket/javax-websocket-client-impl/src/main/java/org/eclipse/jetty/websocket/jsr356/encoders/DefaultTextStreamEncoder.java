@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.encoders;
 
 import java.io.IOException;
 import java.io.Writer;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 

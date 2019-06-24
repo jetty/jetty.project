@@ -18,38 +18,37 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class PrimitiveDecoderMetadataSetTest
 {
     private void assertClassEquals(String msg, Class<?> actual, Class<?> expected)
     {
-        assertThat(msg,actual.getName(),is(expected.getName()));
+        assertThat(msg, actual.getName(), is(expected.getName()));
     }
 
     private void assertDecoderType(Class<? extends Decoder> expectedDecoder, MessageType expectedMsgType, Class<?> type)
     {
         PrimitiveDecoderMetadataSet primitives = new PrimitiveDecoderMetadataSet();
         DecoderMetadata metadata = primitives.getMetadataByType(type);
-        String prefix = String.format("Metadata By Type [%s]",type.getName());
-        assertThat(prefix,metadata,notNullValue());
+        String prefix = String.format("Metadata By Type [%s]", type.getName());
+        assertThat(prefix, metadata, notNullValue());
 
-        assertClassEquals(prefix + ".coderClass",metadata.getCoderClass(),expectedDecoder);
-        assertThat(prefix + ".messageType",metadata.getMessageType(),is(expectedMsgType));
+        assertClassEquals(prefix + ".coderClass", metadata.getCoderClass(), expectedDecoder);
+        assertThat(prefix + ".messageType", metadata.getMessageType(), is(expectedMsgType));
     }
 
     @Test
     public void testGetByteArray()
     {
-        assertDecoderType(ByteArrayDecoder.class,MessageType.BINARY,byte[].class);
+        assertDecoderType(ByteArrayDecoder.class, MessageType.BINARY, byte[].class);
     }
 }

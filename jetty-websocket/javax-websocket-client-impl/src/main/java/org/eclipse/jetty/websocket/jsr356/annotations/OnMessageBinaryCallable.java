@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
  * Callable for {@link javax.websocket.OnMessage} annotated methods with a whole or partial binary messages.
  * <p>
  * Not for use with {@link java.io.InputStream} based {@link javax.websocket.OnMessage} method objects.
- * 
+ *
  * @see javax.websocket.Decoder.Binary
  */
 public class OnMessageBinaryCallable extends OnMessageCallable
@@ -39,11 +39,12 @@ public class OnMessageBinaryCallable extends OnMessageCallable
 
     public OnMessageBinaryCallable(Class<?> pojo, Method method)
     {
-        super(pojo,method);
+        super(pojo, method);
     }
 
     /**
      * Copy Constructor
+     *
      * @param copy the callable to copy
      */
     public OnMessageBinaryCallable(OnMessageCallable copy)
@@ -73,7 +74,7 @@ public class OnMessageBinaryCallable extends OnMessageCallable
     public void init(JsrSession session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_BINARY);
-        assertRoleRequired(idxMessageObject,"Binary Message Object");
+        assertRoleRequired(idxMessageObject, "Binary Message Object");
         super.init(session);
         assertDecoderRequired();
         binaryDecoder = (Decoder.Binary<?>)getDecoder();

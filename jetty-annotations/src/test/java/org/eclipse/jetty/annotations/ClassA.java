@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.annotations;
 
-
 /**
  * ClassA
- *
- *
  */
 @Sample(1)
 public class ClassA
@@ -34,27 +31,26 @@ public class ClassA
     private Integer j;
     private Integer k;
 
-
     public static class Foo
     {
-        
+
     }
-    
+
     @Sample(7)
     private Integer m;
-    
+
     @Sample(2)
-    public void a (Integer[] x)
+    public void a(Integer[] x)
     {
         System.err.println("ClassA.public");
     }
-    
+
     @Sample(3)
     protected void b(Foo[] f)
     {
         System.err.println("ClassA.protected");
     }
-    
+
     @Sample(4)
     void c(int[] x)
     {
@@ -66,7 +62,7 @@ public class ClassA
     {
         System.err.println("ClassA.private");
     }
-    
+
     @Sample(6)
     protected void l()
     {
@@ -77,22 +73,22 @@ public class ClassA
     {
         return this.e;
     }
-    
+
     public Integer getF()
     {
         return this.f;
     }
-    
+
     public Integer getG()
     {
         return this.g;
     }
-    
+
     public Integer getJ()
     {
         return this.j;
     }
-    
+
     public void x()
     {
         System.err.println("ClassA.x");

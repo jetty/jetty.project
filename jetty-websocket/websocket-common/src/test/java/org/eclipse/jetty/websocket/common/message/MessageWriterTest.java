@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.util.Arrays;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -39,6 +36,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class MessageWriterTest
 {
@@ -65,11 +65,11 @@ public class MessageWriterTest
         policy.setMaxTextMessageBufferSize(1024);
 
         // Container
-        WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
-    
+        WebSocketContainerScope containerScope = new SimpleContainerScope(policy, bufferPool);
+
         // Event Driver factory
         EventDriverFactory factory = new EventDriverFactory(containerScope);
-    
+
         // local socket
         EventDriver driver = factory.wrap(new TrackingSocket("local"));
 
@@ -78,7 +78,7 @@ public class MessageWriterTest
         OutgoingFrames socketPipe = FramePipes.to(factory.wrap(socket));
 
         String id = testInfo.getDisplayName();
-        session = new LocalWebSocketSession(containerScope,id,driver);
+        session = new LocalWebSocketSession(containerScope, id, driver);
 
         session.setPolicy(policy);
         // talk to our remote socket
@@ -99,9 +99,9 @@ public class MessageWriterTest
             stream.write("World");
         }
 
-        assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
+        assertThat("Socket.messageQueue.size", socket.messageQueue.size(), is(1));
         String msg = socket.messageQueue.poll();
-        assertThat("Message",msg,is("Hello World"));
+        assertThat("Message", msg, is("Hello World"));
     }
 
     @Test
@@ -112,9 +112,9 @@ public class MessageWriterTest
             stream.append("Hello World");
         }
 
-        assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
+        assertThat("Socket.messageQueue.size", socket.messageQueue.size(), is(1));
         String msg = socket.messageQueue.poll();
-        assertThat("Message",msg,is("Hello World"));
+        assertThat("Message", msg, is("Hello World"));
     }
 
     @Test
@@ -123,8 +123,8 @@ public class MessageWriterTest
         int bufsize = (int)(policy.getMaxTextMessageBufferSize() * 2.5);
         char buf[] = new char[bufsize];
         if (LOG.isDebugEnabled())
-            LOG.debug("Buffer size: {}",bufsize);
-        Arrays.fill(buf,'x');
+            LOG.debug("Buffer size: {}", bufsize);
+        Arrays.fill(buf, 'x');
         buf[bufsize - 1] = 'o'; // mark last entry for debugging
 
         try (MessageWriter stream = new MessageWriter(session))
@@ -132,9 +132,9 @@ public class MessageWriterTest
             stream.write(buf);
         }
 
-        assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
+        assertThat("Socket.messageQueue.size", socket.messageQueue.size(), is(1));
         String msg = socket.messageQueue.poll();
         String expected = new String(buf);
-        assertThat("Message",msg,is(expected));
+        assertThat("Message", msg, is(expected));
     }
 }

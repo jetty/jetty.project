@@ -34,7 +34,7 @@ public class HttpResponse implements HttpResponseHeaderParseListener
     @Override
     public void addHeader(String name, String value)
     {
-        headers.put(name,value);
+        headers.put(name, value);
     }
 
     public String getExtensionsHeader()

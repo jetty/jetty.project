@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -38,7 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -79,8 +72,13 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StreamResetTest extends AbstractTest
 {
@@ -167,14 +165,14 @@ public class StreamResetTest extends AbstractTest
                     {
                         callback.succeeded();
                         completable.thenRun(() ->
-                                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback()
+                            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback()
+                            {
+                                @Override
+                                public void succeeded()
                                 {
-                                    @Override
-                                    public void succeeded()
-                                    {
-                                        serverDataLatch.countDown();
-                                    }
-                                }));
+                                    serverDataLatch.countDown();
+                                }
+                            }));
                     }
 
                     @Override
@@ -570,7 +568,7 @@ public class StreamResetTest extends AbstractTest
             });
 
             Session client = newClient(new Session.Listener.Adapter());
-         
+
             MetaData.Request request = newRequest("GET", new HttpFields());
             HeadersFrame frame = new HeadersFrame(request, null, false);
             FuturePromise<Stream> promise = new FuturePromise<>();

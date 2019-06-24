@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.samples;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
 
@@ -35,7 +34,7 @@ public class FruitDecoder implements ExtDecoder<Fruit>
         Matcher mat = pat.matcher(s);
         if (!mat.find())
         {
-            throw new DecodeException(s,"Unable to find Fruit reference encoded in text message");
+            throw new DecodeException(s, "Unable to find Fruit reference encoded in text message");
         }
 
         Fruit fruit = new Fruit();

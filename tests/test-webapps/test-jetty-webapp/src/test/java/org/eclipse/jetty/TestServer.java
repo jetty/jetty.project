@@ -24,7 +24,6 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -80,10 +79,9 @@ public class TestServer
         server.manage(threadPool);
 
         // Setup JMX
-        MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
         server.addBean(Log.getLog());
-        
 
         // Common HTTP configuration
         HttpConfiguration config = new HttpConfiguration();
@@ -92,21 +90,19 @@ public class TestServer
         config.addCustomizer(new SecureRequestCustomizer());
         config.setSendDateHeader(true);
         config.setSendServerVersion(true);
-        
-        
+
         // Http Connector
         HttpConnectionFactory http = new HttpConnectionFactory(config);
-        ServerConnector httpConnector = new ServerConnector(server,http);
+        ServerConnector httpConnector = new ServerConnector(server, http);
         httpConnector.setPort(8080);
         httpConnector.setIdleTimeout(30000);
         server.addConnector(httpConnector);
-
 
         // Handlers
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         handlers.setHandlers(new Handler[]
-        { contexts, new DefaultHandler() });
+            {contexts, new DefaultHandler()});
 
         // Add restart handler to test the ability to save sessions and restart
         RestartHandler restart = new RestartHandler();
@@ -114,14 +110,13 @@ public class TestServer
 
         server.setHandler(restart);
 
-
         // Setup context
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
         login.setConfig(jetty_root.resolve("tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/realm.properties").toString());
         server.addBean(login);
 
-        File log=File.createTempFile("jetty-yyyy_mm_dd", "log");
+        File log = File.createTempFile("jetty-yyyy_mm_dd", "log");
         CustomRequestLog requestLog = new CustomRequestLog(log.toString());
         server.setRequestLog(requestLog);
 
@@ -131,8 +126,8 @@ public class TestServer
         webapp.setContextPath("/test");
         webapp.setParentLoaderPriority(true);
         webapp.setResourceBase(jetty_root.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp").toString());
-        webapp.setAttribute("testAttribute","testValue");
-        File sessiondir=File.createTempFile("sessions",null);
+        webapp.setAttribute("testAttribute", "testValue");
+        File sessiondir = File.createTempFile("sessions", null);
         if (sessiondir.exists())
             sessiondir.delete();
         sessiondir.mkdir();
@@ -158,17 +153,17 @@ public class TestServer
 
     private static class RestartHandler extends HandlerWrapper
     {
-        /* ------------------------------------------------------------ */
+
         /**
          * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
          */
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            super.handle(target,baseRequest,request,response);
+            super.handle(target, baseRequest, request, response);
             if (Boolean.valueOf(request.getParameter("restart")))
             {
-                final Server server=getServer();
+                final Server server = getServer();
 
                 new Thread()
                 {
@@ -182,7 +177,7 @@ public class TestServer
                             Thread.sleep(100);
                             server.start();
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             LOG.warn(e);
                         }

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -40,6 +38,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Test Echo of Large messages, targeting the {@link javax.websocket.WebSocketContainer#setDefaultMaxTextMessageBufferSize(int)} functionality
  */
@@ -54,7 +54,7 @@ public class LargeContainerTest
     @Test
     public void testEcho() throws Exception
     {
-        WSServer wsb = new WSServer(testdir,"app");
+        WSServer wsb = new WSServer(testdir, "app");
         wsb.copyWebInf("large-echo-config-web.xml");
         wsb.copyEndpoint(LargeEchoDefaultSocket.class);
 
@@ -70,19 +70,19 @@ public class LargeContainerTest
             WebSocketClient client = new WebSocketClient(bufferPool);
             try
             {
-                client.getPolicy().setMaxTextMessageSize(128*1024);
+                client.getPolicy().setMaxTextMessageSize(128 * 1024);
                 client.start();
                 JettyEchoSocket clientEcho = new JettyEchoSocket();
-                Future<Session> foo = client.connect(clientEcho,uri.resolve("echo/large"));
+                Future<Session> foo = client.connect(clientEcho, uri.resolve("echo/large"));
                 // wait for connect
-                foo.get(1,TimeUnit.SECONDS);
+                foo.get(1, TimeUnit.SECONDS);
                 // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies
                 byte txt[] = new byte[100 * 1024];
-                Arrays.fill(txt,(byte)'o');
-                String msg = new String(txt,StandardCharsets.UTF_8);
+                Arrays.fill(txt, (byte)'o');
+                String msg = new String(txt, StandardCharsets.UTF_8);
                 clientEcho.sendMessage(msg);
                 LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
-                assertEquals(msg,msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), "Expected message");
+                assertEquals(msg, msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), "Expected message");
             }
             finally
             {

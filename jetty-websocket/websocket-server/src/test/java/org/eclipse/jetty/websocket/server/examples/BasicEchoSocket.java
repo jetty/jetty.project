@@ -37,7 +37,7 @@ public class BasicEchoSocket extends WebSocketAdapter
         }
         try
         {
-            ByteBuffer buf = ByteBuffer.wrap(payload,offset,len);
+            ByteBuffer buf = ByteBuffer.wrap(payload, offset, len);
             getRemote().sendBytes(buf);
         }
         catch (IOException e)

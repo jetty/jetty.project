@@ -75,7 +75,7 @@ public class ServerCloseTest
             @Override
             public void configure(WebSocketServletFactory factory)
             {
-                WebSocketServerFactory serverFactory = (WebSocketServerFactory) factory;
+                WebSocketServerFactory serverFactory = (WebSocketServerFactory)factory;
                 factory.getPolicy().setIdleTimeout(2000);
                 serverEndpointCreator = new ServerCloseCreator(serverFactory);
                 factory.setCreator(serverEndpointCreator);
@@ -170,7 +170,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(FastFailEndpoint.class, WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(FastFailEndpoint.class, WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -209,7 +209,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -222,12 +222,12 @@ public class ServerCloseTest
             // Verify that server socket got close event
             AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
             serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.ABNORMAL), containsString("Disconnected"));
-        } finally
+        }
+        finally
         {
             close(session);
         }
     }
-
 
     /**
      * Test session open session cleanup (bug #474936)
@@ -249,7 +249,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 

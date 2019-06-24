@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -35,7 +34,7 @@ import org.eclipse.jetty.websocket.common.util.StackUtil;
 public class DoubleTextSocket
 {
     private static final Logger LOG = Log.getLogger(DoubleTextSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -47,14 +46,14 @@ public class DoubleTextSocket
     @OnMessage
     public void onMessage(double d) throws IOException
     {
-        String msg = String.format(Locale.US, "%.4f",d);
+        String msg = String.format(Locale.US, "%.4f", d);
         session.getAsyncRemote().sendText(msg);
     }
 
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

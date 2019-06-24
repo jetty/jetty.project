@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.jndi.java;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.util.Hashtable;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
@@ -39,6 +34,10 @@ import javax.naming.spi.ObjectFactory;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -56,7 +55,7 @@ public class TestLocalJNDI
         {
 
             if (!env.containsKey("flavour"))
-                throw new Exception ("No flavour!");
+                throw new Exception("No flavour!");
 
             if (obj instanceof Reference)
             {
@@ -71,9 +70,8 @@ public class TestLocalJNDI
                 }
             }
             return null;
-         }
+        }
     }
-
 
     public static class Fruit implements Referenceable
     {
@@ -101,13 +99,6 @@ public class TestLocalJNDI
         }
     }
 
-
-
-
-
-
-
-
     @AfterEach
     public void tearDown() throws Exception
     {
@@ -115,11 +106,10 @@ public class TestLocalJNDI
         ic.destroySubcontext("a");
     }
 
-
     @Test
     public void testLocalReferenceable() throws Exception
     {
-        Hashtable<String,String> env1 = new Hashtable<String,String>();
+        Hashtable<String, String> env1 = new Hashtable<String, String>();
         env1.put("flavour", "orange");
         InitialContext ic1 = new InitialContext(env1);
 
@@ -127,7 +117,7 @@ public class TestLocalJNDI
 
         Object o = ic1.lookup("valencia");
 
-        Hashtable<String,String> env2 = new Hashtable<String,String>();
+        Hashtable<String, String> env2 = new Hashtable<String, String>();
         InitialContext ic2 = new InitialContext(env2);
         try
         {
@@ -140,11 +130,10 @@ public class TestLocalJNDI
         }
     }
 
-
     @Test
     public void testLocalEnvironment() throws Exception
     {
-        Hashtable<String,String> env1 = new Hashtable<String,String>();
+        Hashtable<String, String> env1 = new Hashtable<String, String>();
         env1.put("make", "holden");
         env1.put("model", "commodore");
 
@@ -162,7 +151,7 @@ public class TestLocalJNDI
         assertEquals("holden", ht.get("make"));
         assertEquals("commodore", ht.get("model"));
 
-        Hashtable<String,String> env2 = new Hashtable<String,String>();
+        Hashtable<String, String> env2 = new Hashtable<String, String>();
         env2.put("flavour", "strawberry");
         InitialContext ic2 = new InitialContext(env2);
         assertEquals(car1, ic2.lookup("car1"));
@@ -188,14 +177,10 @@ public class TestLocalJNDI
         c = (Context)ic.lookup("carz/hatchbackz");
         assertNotNull(c);
         assertEquals(hatchbackz, c);
-
     }
 
-
-
-
     @Test
-    public void testLocal () throws Exception
+    public void testLocal() throws Exception
     {
         InitialContext ic = new InitialContext();
         NameParser parser = ic.getNameParser("");

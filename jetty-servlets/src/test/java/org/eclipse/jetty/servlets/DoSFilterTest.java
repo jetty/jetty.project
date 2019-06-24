@@ -18,17 +18,10 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -40,10 +33,15 @@ import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class DoSFilterTest extends AbstractDoSFilterTest
@@ -93,7 +91,8 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     }
 
     @Test
-    public void testRemotePortLoadIdCreation_ipv6() throws ServletException {
+    public void testRemotePortLoadIdCreation_ipv6() throws ServletException
+    {
         final ServletRequest request = new RemoteAddressRequest("::192.9.5.5", 12345);
         DoSFilter doSFilter = new DoSFilter();
         doSFilter.init(new NoOpFilterConfig());
@@ -103,10 +102,10 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         {
             RateTracker tracker = doSFilter.getRateTracker(request);
             assertThat("tracker.id", tracker.getId(),
-                    anyOf(
-                            is("[::192.9.5.5]:12345"), // short form
-                            is("[0:0:0:0:0:0:c009:505]:12345") // long form
-                    ));
+                anyOf(
+                    is("[::192.9.5.5]:12345"), // short form
+                    is("[0:0:0:0:0:0:c009:505]:12345") // long form
+                ));
         }
         finally
         {
@@ -115,7 +114,8 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     }
 
     @Test
-    public void testRemotePortLoadIdCreation_ipv4() throws ServletException {
+    public void testRemotePortLoadIdCreation_ipv4() throws ServletException
+    {
         final ServletRequest request = new RemoteAddressRequest("127.0.0.1", 12345);
         DoSFilter doSFilter = new DoSFilter();
         doSFilter.init(new NoOpFilterConfig());
@@ -137,11 +137,11 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     {
         DoSFilter doSFilter = new DoSFilter();
         doSFilter.setName("foo");
-        boolean exceeded = hitRateTracker(doSFilter,0);
+        boolean exceeded = hitRateTracker(doSFilter, 0);
         assertTrue(exceeded, "Last hit should have exceeded");
 
         int sleep = 250;
-        exceeded = hitRateTracker(doSFilter,sleep);
+        exceeded = hitRateTracker(doSFilter, sleep);
         assertFalse(exceeded, "Should not exceed as we sleep 300s for each hit and thus do less than 4 hits/s");
     }
 
@@ -165,8 +165,8 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     @Test
     public void testUnresponsiveServer() throws Exception
     {
-        String last="GET /ctx/timeout/?sleep="+2*_requestMaxTime+" HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
-        String responses = doRequests("",0,0,0,last);
+        String last = "GET /ctx/timeout/?sleep=" + 2 * _requestMaxTime + " HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+        String responses = doRequests("", 0, 0, 0, last);
         assertThat(responses, Matchers.containsString(" 503 "));
     }
 
@@ -174,7 +174,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     {
         boolean exceeded = false;
         ServletContext context = new ContextHandler.StaticContext();
-        RateTracker rateTracker = new RateTracker(context, doSFilter.getName(), "test2",0,4);
+        RateTracker rateTracker = new RateTracker(context, doSFilter.getName(), "test2", 0, 4);
 
         for (int i = 0; i < 5; i++)
         {

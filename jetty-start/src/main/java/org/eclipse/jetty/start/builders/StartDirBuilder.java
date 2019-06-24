@@ -47,7 +47,7 @@ public class StartDirBuilder implements BaseBuilder.Config
         this.baseHome = baseBuilder.getBaseHome();
         this.startDir = baseHome.getBasePath("start.d");
         if (FS.ensureDirectoryExists(startDir))
-            StartLog.log("MKDIR",baseHome.toShortForm(startDir));
+            StartLog.log("MKDIR", baseHome.toShortForm(startDir));
     }
 
     @Override
@@ -58,7 +58,7 @@ public class StartDirBuilder implements BaseBuilder.Config
             if (module.hasIniTemplate())
             {
                 // warn
-                StartLog.warn("%-15s not adding [ini-template] from dynamic module",module.getName());
+                StartLog.warn("%-15s not adding [ini-template] from dynamic module", module.getName());
             }
             return null;
         }
@@ -67,9 +67,9 @@ public class StartDirBuilder implements BaseBuilder.Config
         {
             // Create start.d/{name}.ini
             Path ini = startDir.resolve(module.getName() + ".ini");
-            try (BufferedWriter writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING))
+            try (BufferedWriter writer = Files.newBufferedWriter(ini, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))
             {
-                module.writeIniSection(writer,props);
+                module.writeIniSection(writer, props);
             }
             return baseHome.toShortForm(ini);
         }

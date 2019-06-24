@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
@@ -26,27 +25,25 @@ import org.junit.jupiter.api.Test;
 
 /**
  * ClusteredSessionScavengingTest
- *
  */
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
     public static InfinispanTestSupport __testSupport;
-    
+
     @BeforeAll
-    public static void setup () throws Exception
+    public static void setup() throws Exception
     {
         __testSupport = new InfinispanTestSupport();
         __testSupport.setUseFileStore(true);
         __testSupport.setup();
     }
-    
+
     @AfterAll
-    public static void teardown () throws Exception
+    public static void teardown() throws Exception
     {
         if (__testSupport != null)
             __testSupport.teardown();
     }
-
 
     @Override
     @Test

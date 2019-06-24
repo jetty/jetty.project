@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty;
 
 import java.io.ByteArrayOutputStream;
@@ -32,7 +31,6 @@ import java.sql.DriverManager;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -56,7 +54,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.security.Constraint;
 
-
 /**
  * DatabaseLoginServiceTestServer
  */
@@ -71,9 +68,8 @@ public class DatabaseLoginServiceTestServer
     protected TestHandler _handler;
     private static File commonDerbySystemHome;
     protected static String _requestContent;
-    
-    protected static File _dbRoot;
 
+    protected static File _dbRoot;
 
     static
     {
@@ -82,13 +78,13 @@ public class DatabaseLoginServiceTestServer
         System.setProperty("derby.system.home", _dbRoot.getAbsolutePath());
     }
 
-    public static File getDbRoot ()
+    public static File getDbRoot()
     {
         return _dbRoot;
     }
 
-    public static int runscript (File scriptFile) throws Exception
-    {  
+    public static int runscript(File scriptFile) throws Exception
+    {
         //System.err.println("Running script:"+scriptFile.getAbsolutePath());
         try (FileInputStream fileStream = new FileInputStream(scriptFile))
         {
@@ -98,21 +94,20 @@ public class DatabaseLoginServiceTestServer
             return ij.runScript(connection, fileStream, "UTF-8", out, "UTF-8");
         }
     }
-  
-    public static class TestHandler extends AbstractHandler 
+
+    public static class TestHandler extends AbstractHandler
     {
         private final String _resourcePath;
         private String _requestContent;
-        
 
-        public TestHandler(String repositoryPath) 
+        public TestHandler(String repositoryPath)
         {
             _resourcePath = repositoryPath;
         }
 
         @Override
         public void handle(String target, org.eclipse.jetty.server.Request baseRequest,
-                HttpServletRequest request, HttpServletResponse response)
+                           HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
         {
             if (baseRequest.isHandled())
@@ -157,58 +152,56 @@ public class DatabaseLoginServiceTestServer
                     _requestContent = out.toString();
             }
         }
-        
+
         public String getRequestContent()
         {
             return _requestContent;
         }
     }
-    
-    
-    public DatabaseLoginServiceTestServer ()
+
+    public DatabaseLoginServiceTestServer()
     {
         _server = new Server(0);
     }
-    
-    public void setLoginService (LoginService loginService)
+
+    public void setLoginService(LoginService loginService)
     {
         _loginService = loginService;
     }
-    
-    public void setResourceBase (String resourceBase)
+
+    public void setResourceBase(String resourceBase)
     {
         _resourceBase = resourceBase;
     }
- 
-    
-    public void start () throws Exception
+
+    public void start() throws Exception
     {
         configureServer();
         _server.start();
         //_server.dumpStdErr();
         _baseUri = _server.getURI();
     }
-    
+
     public void stop() throws Exception
     {
         _server.stop();
     }
-    
+
     public URI getBaseUri()
     {
         return _baseUri;
     }
-   
+
     public TestHandler getTestHandler()
     {
         return _handler;
     }
- 
+
     public Server getServer()
     {
         return _server;
     }
-    
+
     protected void configureServer() throws Exception
     {
         _protocol = "http";
@@ -219,12 +212,12 @@ public class DatabaseLoginServiceTestServer
 
         Constraint constraint = new Constraint();
         constraint.setName("auth");
-        constraint.setAuthenticate( true );
+        constraint.setAuthenticate(true);
         constraint.setRoles(new String[]{"user", "admin"});
 
         ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec( "/*" );
-        mapping.setConstraint( constraint );
+        mapping.setPathSpec("/*");
+        mapping.setConstraint(constraint);
 
         Set<String> knownRoles = new HashSet<>();
         knownRoles.add("user");
@@ -237,9 +230,9 @@ public class DatabaseLoginServiceTestServer
         ServletContextHandler root = new ServletContextHandler();
         root.setContextPath("/");
         root.setResourceBase(_resourceBase);
-        ServletHolder servletHolder = new ServletHolder( new DefaultServlet() );
-        servletHolder.setInitParameter( "gzip", "true" );
-        root.addServlet( servletHolder, "/*" );
+        ServletHolder servletHolder = new ServletHolder(new DefaultServlet());
+        servletHolder.setInitParameter("gzip", "true");
+        root.addServlet(servletHolder, "/*");
 
         _handler = new TestHandler(_resourceBase);
 
@@ -247,5 +240,4 @@ public class DatabaseLoginServiceTestServer
         handlers.setHandlers(new Handler[]{_handler, root});
         security.setHandler(handlers);
     }
-
 }

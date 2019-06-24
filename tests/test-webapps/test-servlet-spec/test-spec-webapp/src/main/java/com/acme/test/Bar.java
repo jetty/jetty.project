@@ -18,11 +18,11 @@
 
 package com.acme.test;
 
+public class Bar
+{
 
-public class Bar {
-        
-        @com.acme.initializer.Foo(2)
-        public void someMethod () {
-        }
-
+    @com.acme.initializer.Foo(2)
+    public void someMethod()
+    {
+    }
 }

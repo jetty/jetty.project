@@ -31,6 +31,6 @@ public class ConfigurationException extends WebSocketException
 
     public ConfigurationException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 }

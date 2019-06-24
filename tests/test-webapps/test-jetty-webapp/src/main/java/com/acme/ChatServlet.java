@@ -19,12 +19,12 @@
 package com.acme;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -98,7 +98,6 @@ public class ChatServlet extends HttpServlet
     }
 
     Map<String, Map<String, Member>> _rooms = new HashMap<>();
-
 
     // Handle Ajax calls from browser
     @Override
@@ -192,7 +191,7 @@ public class ChatServlet extends HttpServlet
         buf.append("\"chat\":\"");
         buf.append(returnMessage);
         buf.append("\"}");
-        byte[] bytes = buf.toString().getBytes("utf-8");
+        byte[] bytes = buf.toString().getBytes(StandardCharsets.UTF_8);
         response.setContentLength(bytes.length);
         response.getOutputStream().write(bytes);
     }
@@ -229,5 +228,4 @@ public class ChatServlet extends HttpServlet
         else
             getServletContext().getNamedDispatcher("default").forward(request, response);
     }
-
 }

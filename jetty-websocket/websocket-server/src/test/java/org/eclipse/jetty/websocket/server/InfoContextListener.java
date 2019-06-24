@@ -35,12 +35,12 @@ public class InfoContextListener implements WebSocketCreator, ServletContextList
         configuration.addMapping("/info/*", this);
         sce.getServletContext().setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);
     }
-    
+
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
     }
-    
+
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {

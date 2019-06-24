@@ -48,7 +48,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
 
     public JettyAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JettyAnnotatedMetadata events)
     {
-        super(policy,websocket);
+        super(policy, websocket);
         this.events = events;
 
         WebSocket anno = websocket.getClass().getAnnotation(WebSocket.class);
@@ -71,7 +71,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         }
         this.batchMode = anno.batchMode();
     }
-    
+
     @Override
     public BatchMode getBatchMode()
     {
@@ -100,7 +100,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
                     {
                         try
                         {
-                            events.onBinary.call(websocket,session,msg);
+                            events.onBinary.call(websocket, session, msg);
                         }
                         catch (Throwable t)
                         {
@@ -116,7 +116,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             }
         }
 
-        appendMessage(buffer,fin);
+        appendMessage(buffer, fin);
     }
 
     @Override
@@ -124,7 +124,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onBinary != null)
         {
-            events.onBinary.call(websocket,session,data,0,data.length);
+            events.onBinary.call(websocket, session, data, 0, data.length);
         }
     }
 
@@ -139,7 +139,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         hasCloseBeenCalled = true;
         if (events.onClose != null)
         {
-            events.onClose.call(websocket,session,close.getStatusCode(),close.getReason());
+            events.onClose.call(websocket, session, close.getStatusCode(), close.getReason());
         }
     }
 
@@ -148,7 +148,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onConnect != null)
         {
-            events.onConnect.call(websocket,session);
+            events.onConnect.call(websocket, session);
         }
     }
 
@@ -157,7 +157,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onError != null)
         {
-            events.onError.call(websocket,session,cause);
+            events.onError.call(websocket, session, cause);
         }
         else
         {
@@ -170,7 +170,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onFrame != null)
         {
-            events.onFrame.call(websocket,session,frame);
+            events.onFrame.call(websocket, session, frame);
         }
     }
 
@@ -179,7 +179,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onBinary != null)
         {
-            events.onBinary.call(websocket,session,stream);
+            events.onBinary.call(websocket, session, stream);
         }
     }
 
@@ -188,7 +188,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onText != null)
         {
-            events.onText.call(websocket,session,reader);
+            events.onText.call(websocket, session, reader);
         }
     }
 
@@ -214,7 +214,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
                     {
                         try
                         {
-                            events.onText.call(websocket,session,msg);
+                            events.onText.call(websocket, session, msg);
                         }
                         catch (Throwable t)
                         {
@@ -230,7 +230,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             }
         }
 
-        appendMessage(buffer,fin);
+        appendMessage(buffer, fin);
     }
 
     @Override
@@ -238,7 +238,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onText != null)
         {
-            events.onText.call(websocket,session,message);
+            events.onText.call(websocket, session, message);
         }
     }
 

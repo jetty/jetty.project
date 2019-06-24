@@ -122,7 +122,8 @@ public class BadNetworkTest
     {
         AtomicReference<WebSocketSession> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener() {
+        connector.addBean(new Connection.Listener()
+        {
             @Override
             public void onOpened(Connection connection)
             {
@@ -135,8 +136,9 @@ public class BadNetworkTest
             }
         });
         CountDownLatch sessionCloseLatch = new CountDownLatch(1);
-        WebSocketServerFactory wssf = (WebSocketServerFactory) context.getServletContext().getAttribute(WebSocketServletFactory.class.getName());
-        wssf.addSessionListener(new WebSocketSessionListener() {
+        WebSocketServerFactory wssf = (WebSocketServerFactory)context.getServletContext().getAttribute(WebSocketServletFactory.class.getName());
+        wssf.addSessionListener(new WebSocketSessionListener()
+        {
             @Override
             public void onSessionOpened(WebSocketSession session)
             {
@@ -150,14 +152,13 @@ public class BadNetworkTest
             }
         });
 
-
         CloseTrackingEndpoint wsocket = new CloseTrackingEndpoint();
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-        Future<Session> future = client.connect(wsocket,wsUri);
+        Future<Session> future = client.connect(wsocket, wsUri);
 
         // Validate that we are connected
-        future.get(30,TimeUnit.SECONDS);
+        future.get(30, TimeUnit.SECONDS);
 
         WebSocketSession serverSession = serverSessionRef.get();
 
@@ -174,7 +175,7 @@ public class BadNetworkTest
         assertTrue(serverCloseLatch.await(1, TimeUnit.SECONDS), "Server Connection Close should have happened");
         assertTrue(sessionCloseLatch.await(1, TimeUnit.SECONDS), "Server Session Close should have happened");
 
-        AbstractWebSocketConnection conn = (AbstractWebSocketConnection) serverSession.getConnection();
+        AbstractWebSocketConnection conn = (AbstractWebSocketConnection)serverSession.getConnection();
         assertThat("Connection.isOpen", conn.isOpen(), is(false));
     }
 
@@ -184,7 +185,7 @@ public class BadNetworkTest
         CloseTrackingEndpoint wsocket = new CloseTrackingEndpoint();
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
-        Future<Session> future = client.connect(wsocket,wsUri);
+        Future<Session> future = client.connect(wsocket, wsUri);
 
         // Validate that we are connected
         Session session = future.get(30, TimeUnit.SECONDS);

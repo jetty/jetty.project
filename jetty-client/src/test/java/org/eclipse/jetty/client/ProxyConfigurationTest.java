@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-
 import org.eclipse.jetty.toolchain.test.Net;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;

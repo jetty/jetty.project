@@ -41,7 +41,7 @@ public class WebSocketServer
     public static class EchoSocket
     {
         @OnWebSocketMessage
-        public void onMessage( Session session, String message )
+        public void onMessage(Session session, String message)
         {
             session.getRemote().sendStringByFuture(message);
         }
@@ -54,19 +54,19 @@ public class WebSocketServer
     public static class EchoServlet extends WebSocketServlet
     {
         @Override
-        public void configure( WebSocketServletFactory factory )
+        public void configure(WebSocketServletFactory factory)
         {
             // Register the echo websocket with the basic WebSocketCreator
             factory.register(EchoSocket.class);
         }
     }
 
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
 
         ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 

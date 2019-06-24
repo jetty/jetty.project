@@ -63,8 +63,8 @@ public class ClientWriteThread extends Thread
 
         try
         {
-            LOG.debug("Writing {} messages to connection {}",messageCount);
-            LOG.debug("Artificial Slowness {} ms",slowness);
+            LOG.debug("Writing {} messages to connection {}", messageCount);
+            LOG.debug("Artificial Slowness {} ms", slowness);
             Future<Void> lastMessage = null;
             RemoteEndpoint remote = session.getRemote();
             while (m.get() < messageCount)
@@ -82,7 +82,7 @@ public class ClientWriteThread extends Thread
                 remote.flush();
             // block on write of last message
             if (lastMessage != null)
-                lastMessage.get(2,TimeUnit.MINUTES); // block on write
+                lastMessage.get(2, TimeUnit.MINUTES); // block on write
         }
         catch (Exception e)
         {

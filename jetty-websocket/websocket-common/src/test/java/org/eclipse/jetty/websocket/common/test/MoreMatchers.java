@@ -26,7 +26,7 @@ public class MoreMatchers
      * Create a matcher for {@link String} that matches against a regex pattern.
      *
      * <p>
-     *     Returns success based on {@code java.util.regex.Pattern.matcher(input).matches();}
+     * Returns success based on {@code java.util.regex.Pattern.matcher(input).matches();}
      * </p>
      *
      * @param pattern the {@link java.util.regex.Pattern} syntax pattern to match against.

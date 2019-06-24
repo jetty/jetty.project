@@ -31,7 +31,6 @@ public class DeflaterPool
     private final AtomicInteger _numDeflaters = new AtomicInteger(0);
     private final int _capacity;
 
-
     /**
      * Create a Pool of {@link Deflater} instances.
      *

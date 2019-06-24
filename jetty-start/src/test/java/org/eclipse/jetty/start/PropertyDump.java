@@ -38,7 +38,7 @@ public class PropertyDump
             // only interested in "test." prefixed properties
             if (name.startsWith("test."))
             {
-                System.out.printf("System %s=%s%n",name,props.getProperty(name));
+                System.out.printf("System %s=%s%n", name, props.getProperty(name));
             }
         }
 
@@ -58,7 +58,7 @@ public class PropertyDump
                         String name = (String)anames.nextElement();
                         if (name.startsWith("test."))
                         {
-                            System.out.printf("%s %s=%s%n",propFile.getName(),name,aprops.getProperty(name));
+                            System.out.printf("%s %s=%s%n", propFile.getName(), name, aprops.getProperty(name));
                         }
                     }
                 }

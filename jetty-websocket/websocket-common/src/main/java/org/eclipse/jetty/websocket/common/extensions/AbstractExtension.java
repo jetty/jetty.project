@@ -50,13 +50,13 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
     {
         log = Log.getLogger(this.getClass());
     }
-    
+
     @Deprecated
     public void init(WebSocketContainerScope container)
     {
-        init(container.getPolicy(),container.getBufferPool());
+        init(container.getPolicy(), container.getBufferPool());
     }
-    
+
     public void init(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         this.policy = policy;
@@ -106,7 +106,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
      * Used to indicate that the extension makes use of the RSV1 bit of the base websocket framing.
      * <p>
      * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV1.
-     * 
+     *
      * @return true if extension uses RSV1 for its own purposes.
      */
     @Override
@@ -119,7 +119,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
      * Used to indicate that the extension makes use of the RSV2 bit of the base websocket framing.
      * <p>
      * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV2.
-     * 
+     *
      * @return true if extension uses RSV2 for its own purposes.
      */
     @Override
@@ -132,7 +132,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
      * Used to indicate that the extension makes use of the RSV3 bit of the base websocket framing.
      * <p>
      * This is used to adjust validation during parsing, as well as a checkpoint against 2 or more extensions all simultaneously claiming ownership of RSV3.
-     * 
+     *
      * @return true if extension uses RSV3 for its own purposes.
      */
     @Override
@@ -143,7 +143,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
 
     protected void nextIncomingFrame(Frame frame)
     {
-        log.debug("nextIncomingFrame({})",frame);
+        log.debug("nextIncomingFrame({})", frame);
         this.nextIncoming.incomingFrame(frame);
     }
 
@@ -177,7 +177,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
     {
         this.connection = connection;
     }
-    
+
     @Override
     public void setNextIncomingFrames(IncomingFrames nextIncoming)
     {
@@ -198,6 +198,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
     @Override
     public String toString()
     {
-        return String.format("%s[%s]",this.getClass().getSimpleName(),config.getParameterizedName());
+        return String.format("%s[%s]", this.getClass().getSimpleName(), config.getParameterizedName());
     }
 }

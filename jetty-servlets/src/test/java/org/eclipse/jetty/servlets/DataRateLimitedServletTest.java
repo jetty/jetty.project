@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -43,12 +39,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+
 @ExtendWith(WorkDirExtension.class)
 public class DataRateLimitedServletTest
 {
-    public static final int BUFFER=8192;
-    public static final int PAUSE=10;
-    
+    public static final int BUFFER = 8192;
+    public static final int PAUSE = 10;
+
     public WorkDir testdir;
 
     private Server server;
@@ -64,19 +64,19 @@ public class DataRateLimitedServletTest
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
         context = new ServletContextHandler();
- 
+
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
-        
+
         File baseResourceDir = testdir.getEmptyPathDir().toFile();
         // Use resolved real path for Windows and OSX
         Path baseResourcePath = baseResourceDir.toPath().toRealPath();
-        
+
         context.setBaseResource(Resource.newResource(baseResourcePath.toFile()));
-        
-        ServletHolder holder =context.addServlet(DataRateLimitedServlet.class,"/stream/*");
-        holder.setInitParameter("buffersize",""+BUFFER);
-        holder.setInitParameter("pause",""+PAUSE);
+
+        ServletHolder holder = context.addServlet(DataRateLimitedServlet.class, "/stream/*");
+        holder.setInitParameter("buffersize", "" + BUFFER);
+        holder.setInitParameter("pause", "" + PAUSE);
         server.setHandler(context);
         server.addConnector(connector);
 
@@ -94,31 +94,33 @@ public class DataRateLimitedServletTest
     public void testStream() throws Exception
     {
         File content = testdir.getPathFile("content.txt").toFile();
-        String[] results=new String[10];
-        try(OutputStream out = new FileOutputStream(content);)
+        String[] results = new String[10];
+        try (OutputStream out = new FileOutputStream(content);)
         {
-            byte[] b= new byte[1024];
-            
-            for (int i=1024;i-->0;)
+            byte[] b = new byte[1024];
+
+            for (int i = 1024; i-- > 0; )
             {
-                int index=i%10;
-                Arrays.fill(b,(byte)('0'+(index)));
+                int index = i % 10;
+                Arrays.fill(b, (byte)('0' + (index)));
                 out.write(b);
                 out.write('\n');
-                if (results[index]==null)
-                    results[index]=new String(b,StandardCharsets.US_ASCII);
+                if (results[index] == null)
+                    results[index] = new String(b, StandardCharsets.US_ASCII);
             }
         }
-        
-        long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         String response = connector.getResponse("GET /context/stream/content.txt HTTP/1.0\r\n\r\n");
-        long duration=TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start;
-        
-        assertThat("Response",response,containsString("200 OK"));
-        assertThat("Response Length",response.length(),greaterThan(1024*1024));
-        assertThat("Duration",duration,greaterThan(PAUSE*1024L*1024/BUFFER));
-        
-        for (int i=0;i<10;i++)
-            assertThat(response,containsString(results[i]));
+        long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
+
+        assertThat("Response", response, containsString("200 OK"));
+        assertThat("Response Length", response.length(), greaterThan(1024 * 1024));
+        assertThat("Duration", duration, greaterThan(PAUSE * 1024L * 1024 / BUFFER));
+
+        for (int i = 0; i < 10; i++)
+        {
+            assertThat(response, containsString(results[i]));
+        }
     }
 }

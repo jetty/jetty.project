@@ -37,7 +37,7 @@ public final class HttpClientProvider
                 Object ret = getMethod.invoke(null, scope);
                 if ((ret != null) && (ret instanceof HttpClient))
                 {
-                    return (HttpClient) ret;
+                    return (HttpClient)ret;
                 }
             }
         }
@@ -45,7 +45,7 @@ public final class HttpClientProvider
         {
             Log.getLogger(HttpClientProvider.class).ignore(ignore);
         }
-        
+
         return DefaultHttpClientProvider.newHttpClient(scope);
     }
 }

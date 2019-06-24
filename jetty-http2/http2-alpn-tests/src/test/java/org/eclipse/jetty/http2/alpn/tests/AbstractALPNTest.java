@@ -48,7 +48,7 @@ public class AbstractALPNTest
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfiguration);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
-        
+
         connector = new ServerConnector(server, newServerSslContextFactory(), alpn, h1, h2);
         connector.setPort(0);
         connector.setIdleTimeout(30000);

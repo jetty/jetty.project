@@ -22,12 +22,11 @@ import javax.servlet.http.HttpSessionEvent;
 
 /**
  * TestHttpSessionListenerWithWebappClasses
- * 
+ *
  * A session listener class that checks that sessionDestroyed
  * events can reference classes known only to the webapp, ie
- * that the calling thread has been correctly annointed with 
+ * that the calling thread has been correctly annointed with
  * the webapp loader.
- *
  */
 public class TestHttpSessionListenerWithWebappClasses extends TestHttpSessionListener
 {
@@ -53,9 +52,8 @@ public class TestHttpSessionListenerWithWebappClasses extends TestHttpSessionLis
         }
         catch (Exception cnfe)
         {
-            ex=cnfe;
+            ex = cnfe;
         }
         super.sessionDestroyed(se);
     }
-
 }

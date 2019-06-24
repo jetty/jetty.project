@@ -57,9 +57,9 @@ public class ListenerEchoSocket implements WebSocketListener
     {
         if ((outbound != null) && (outbound.isOpen()))
         {
-            System.out.printf("Echoing back message [%s]%n",message);
+            System.out.printf("Echoing back message [%s]%n", message);
             // echo the message back
-            outbound.getRemote().sendString(message,null);
+            outbound.getRemote().sendString(message, null);
         }
     }
 }

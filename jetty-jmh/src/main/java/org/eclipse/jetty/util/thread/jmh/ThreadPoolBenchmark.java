@@ -51,13 +51,13 @@ public class ThreadPoolBenchmark
 {
     public enum Type
     {
-        QTP, ETP, LQTP, LETP, AQTP, AETP;
+        QTP, ETP, LQTP, LETP, AQTP, AETP
     }
 
-    @Param({ "QTP", "ETP" /*, "LQTP", "LETP", "AQTP", "AETP" */ })
+    @Param({"QTP", "ETP" /*, "LQTP", "LETP", "AQTP", "AETP" */})
     Type type;
 
-    @Param({ "200" })
+    @Param({"200"})
     int size;
 
     ThreadPool pool;
@@ -65,7 +65,7 @@ public class ThreadPoolBenchmark
     @Setup // (Level.Iteration)
     public void buildPool()
     {
-        switch(type)
+        switch (type)
         {
             case QTP:
             {
@@ -74,11 +74,11 @@ public class ThreadPoolBenchmark
                 pool = qtp;
                 break;
             }
-                
+
             case ETP:
                 pool = new ExecutorThreadPool(size, size, new BlockingArrayQueue<>(32768, 32768));
                 break;
-                
+
             case LQTP:
             {
                 QueuedThreadPool qtp = new QueuedThreadPool(size, size, new LinkedBlockingQueue<>());
@@ -86,11 +86,11 @@ public class ThreadPoolBenchmark
                 pool = qtp;
                 break;
             }
-                
+
             case LETP:
                 pool = new ExecutorThreadPool(size, size, new LinkedBlockingQueue<>());
                 break;
-                
+
             case AQTP:
             {
                 QueuedThreadPool qtp = new QueuedThreadPool(size, size, new ArrayBlockingQueue<>(32768));
@@ -98,7 +98,7 @@ public class ThreadPoolBenchmark
                 pool = qtp;
                 break;
             }
-                
+
             case AETP:
                 pool = new ExecutorThreadPool(size, size, new ArrayBlockingQueue<>(32768));
                 break;
@@ -122,7 +122,6 @@ public class ThreadPoolBenchmark
         doJob();
     }
 
-
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @Threads(200)
@@ -145,20 +144,20 @@ public class ThreadPoolBenchmark
         latch.await();
     }
 
-    public static void main(String[] args) throws RunnerException 
+    public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                .include(ThreadPoolBenchmark.class.getSimpleName())
-                .forks(1)
-                // .threads(400)
-                // .syncIterations(true) // Don't start all threads at same time
-                // .addProfiler(CompilerProfiler.class)
-                // .addProfiler(LinuxPerfProfiler.class)
-                // .addProfiler(LinuxPerfNormProfiler.class)
-                // .addProfiler(LinuxPerfAsmProfiler.class)
-                // .resultFormat(ResultFormatType.CSV)
-                .build();
-        
+            .include(ThreadPoolBenchmark.class.getSimpleName())
+            .forks(1)
+            // .threads(400)
+            // .syncIterations(true) // Don't start all threads at same time
+            // .addProfiler(CompilerProfiler.class)
+            // .addProfiler(LinuxPerfProfiler.class)
+            // .addProfiler(LinuxPerfNormProfiler.class)
+            // .addProfiler(LinuxPerfAsmProfiler.class)
+            // .resultFormat(ResultFormatType.CSV)
+            .build();
+
         new Runner(opt).run();
     }
 }

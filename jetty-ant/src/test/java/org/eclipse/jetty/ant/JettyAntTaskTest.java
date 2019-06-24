@@ -18,29 +18,29 @@
 
 package org.eclipse.jetty.ant;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.net.HttpURLConnection;
 import java.net.URI;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class JettyAntTaskTest
 {
-    
+
     @Test
     public void testConnectorTask() throws Exception
     {
         AntBuild build = new AntBuild(MavenTestingUtils.getTestResourceFile("connector-test.xml").getAbsolutePath());
-      
+
         build.start();
-        
+
         URI uri = new URI("http://" + build.getJettyHost() + ":" + build.getJettyPort());
-        
+
         HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
-        
+
         connection.connect();
 
         assertThat("response code is 404", connection.getResponseCode(), is(404));
@@ -48,9 +48,8 @@ public class JettyAntTaskTest
         build.stop();
     }
 
-
     @Test
-    public void testWebApp () throws Exception
+    public void testWebApp() throws Exception
     {
         AntBuild build = new AntBuild(MavenTestingUtils.getTestResourceFile("webapp-test.xml").getAbsolutePath());
 
@@ -67,6 +66,4 @@ public class JettyAntTaskTest
         System.err.println("Stop build!");
         build.stop();
     }
-
-   
 }

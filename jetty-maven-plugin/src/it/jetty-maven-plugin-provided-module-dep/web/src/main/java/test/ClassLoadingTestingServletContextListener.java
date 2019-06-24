@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package test;
 
 import javax.servlet.ServletContextEvent;
@@ -29,13 +28,13 @@ public class ClassLoadingTestingServletContextListener
 {
 
     @Override
-    public void contextInitialized( ServletContextEvent sce )
+    public void contextInitialized(ServletContextEvent sce)
     {
         try
         {
             Api api = new Api();
         }
-        catch ( java.lang.Exception exception )
+        catch (java.lang.Exception exception)
         {
             exception.printStackTrace();
         }
@@ -43,7 +42,7 @@ public class ClassLoadingTestingServletContextListener
     }
 
     @Override
-    public void contextDestroyed( ServletContextEvent sce )
+    public void contextDestroyed(ServletContextEvent sce)
     {
     }
 } 

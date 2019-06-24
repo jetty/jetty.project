@@ -18,12 +18,11 @@
 
 package com.acme.jmx;
 
+import com.acme.Managed;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-
-import com.acme.Managed;
 
 @ManagedObject("Managed MBean Wrapper")
 public class ManagedMBean extends ObjectMBean

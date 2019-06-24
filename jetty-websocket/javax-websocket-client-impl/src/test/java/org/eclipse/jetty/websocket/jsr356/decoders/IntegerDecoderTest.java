@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
-import org.junit.jupiter.api.Test;
-
 import javax.websocket.DecodeException;
+
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -53,7 +53,5 @@ public class IntegerDecoderTest
     public void testDecodeThrowsDecodeException()
     {
         assertThrows(DecodeException.class, () -> IntegerDecoder.INSTANCE.decode(""));
-
     }
-
 }

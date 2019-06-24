@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +26,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
@@ -41,6 +37,9 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 //TODO: reset buffer tests
 //TODO: add protocol specific tests for connection: close and/or chunking
@@ -89,13 +88,13 @@ public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             final CyclicBarrier resumeBarrier = new CyclicBarrier(1);
-            
-            if (baseRequest.getDispatcherType()==DispatcherType.ERROR)
+
+            if (baseRequest.getDispatcherType() == DispatcherType.ERROR)
             {
                 response.sendError(500);
                 return;
             }
-            
+
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();

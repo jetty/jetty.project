@@ -51,7 +51,7 @@ public class BinaryWholeMessage extends SimpleBinaryMessage
     {
         super.finished = true;
 
-        byte data[] = out.toByteArray();
+        byte[] data = out.toByteArray();
 
         DecoderFactory.Wrapper decoder = msgWrapper.getDecoder();
         Decoder.Binary<Object> binaryDecoder = (Binary<Object>)decoder.getDecoder();

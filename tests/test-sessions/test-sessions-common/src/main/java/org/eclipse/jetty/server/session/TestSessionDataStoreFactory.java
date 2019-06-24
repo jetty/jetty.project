@@ -16,26 +16,22 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 /**
  * TestSessionDataStoreFactory
- *
- *
  */
 public class TestSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {
-       TestSessionDataStore store = new TestSessionDataStore();
-       store.setSavePeriodSec(getSavePeriodSec());
-       return store;
+        TestSessionDataStore store = new TestSessionDataStore();
+        store.setSavePeriodSec(getSavePeriodSec());
+        return store;
     }
-
 }

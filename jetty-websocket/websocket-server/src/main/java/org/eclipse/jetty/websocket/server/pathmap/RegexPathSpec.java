@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.server.pathmap;
 
 /**
- * @deprecated moved to jetty-http {@link org.eclipse.jetty.http.pathmap.RegexPathSpec} (this facade will be removed in Jetty 9.4) 
+ * @deprecated moved to jetty-http {@link org.eclipse.jetty.http.pathmap.RegexPathSpec} (this facade will be removed in Jetty 9.4)
  */
 @Deprecated
 public class RegexPathSpec extends PathSpec

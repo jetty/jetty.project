@@ -1,13 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- Create the deployment manager                                   -->
-<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-<!-- The deplyment manager handles the lifecycle of deploying web    -->
-<!-- applications. Apps are provided by instances of the             -->
-<!-- AppProvider interface.                                          -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- Create the deployment manager                                   --><!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --><!-- The deplyment manager handles the lifecycle of deploying web    --><!-- applications. Apps are provided by instances of the             --><!-- AppProvider interface.                                          --><!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <Call name="addBean">

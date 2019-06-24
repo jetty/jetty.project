@@ -16,19 +16,17 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.security;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests of the HashLoginService.
@@ -43,12 +41,12 @@ public class HashLoginServiceTest
         loginService.start();
         assertTrue(loginService.getUserStore().isStarted());
         assertTrue(loginService.isUserStoreAutoCreate());
-        
+
         loginService.stop();
         assertFalse(loginService.isUserStoreAutoCreate());
         assertThat(loginService.getUserStore(), is(nullValue()));
     }
-    
+
     @Test
     public void testProvidedUserStore() throws Exception
     {
@@ -60,9 +58,9 @@ public class HashLoginServiceTest
         loginService.start();
         assertTrue(loginService.getUserStore().isStarted());
         assertFalse(loginService.isUserStoreAutoCreate());
-        
+
         loginService.stop();
-        
+
         assertFalse(loginService.isUserStoreAutoCreate());
         assertFalse(store.isStarted());
         assertThat(loginService.getUserStore(), is(notNullValue()));

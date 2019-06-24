@@ -18,17 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
@@ -60,6 +55,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test {@link AnnotatedEndpointScanner} against various valid, simple, 1 method {@link ClientEndpoint} annotated classes with valid signatures.
  */
@@ -70,13 +69,13 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
 
     public static Stream<Arguments> scenarios() throws Exception
     {
-        Field fOpen = findFieldRef(AnnotatedEndpointMetadata.class,"onOpen");
-        Field fClose = findFieldRef(AnnotatedEndpointMetadata.class,"onClose");
-        Field fError = findFieldRef(AnnotatedEndpointMetadata.class,"onError");
-        Field fText = findFieldRef(AnnotatedEndpointMetadata.class,"onText");
-        Field fBinary = findFieldRef(AnnotatedEndpointMetadata.class,"onBinary");
-        Field fBinaryStream = findFieldRef(AnnotatedEndpointMetadata.class,"onBinaryStream");
-        Field fPong = findFieldRef(AnnotatedEndpointMetadata.class,"onPong");
+        Field fOpen = findFieldRef(AnnotatedEndpointMetadata.class, "onOpen");
+        Field fClose = findFieldRef(AnnotatedEndpointMetadata.class, "onClose");
+        Field fError = findFieldRef(AnnotatedEndpointMetadata.class, "onError");
+        Field fText = findFieldRef(AnnotatedEndpointMetadata.class, "onText");
+        Field fBinary = findFieldRef(AnnotatedEndpointMetadata.class, "onBinary");
+        Field fBinaryStream = findFieldRef(AnnotatedEndpointMetadata.class, "onBinaryStream");
+        Field fPong = findFieldRef(AnnotatedEndpointMetadata.class, "onPong");
 
         List<Scenario> data = new ArrayList<>();
 
@@ -118,21 +117,21 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
     @MethodSource("scenarios")
     public void testScan_Basic(Scenario scenario) throws Exception
     {
-        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,scenario.pojo);
+        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container, scenario.pojo);
         AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 
-        assertThat("Metadata",metadata,notNullValue());
+        assertThat("Metadata", metadata, notNullValue());
 
         JsrCallable cm = (JsrCallable)scenario.metadataField.get(metadata);
-        assertThat(scenario.metadataField.toString(),cm,notNullValue());
+        assertThat(scenario.metadataField.toString(), cm, notNullValue());
         int len = scenario.expectedParameters.length;
         for (int i = 0; i < len; i++)
         {
             Class<?> expectedParam = scenario.expectedParameters[i];
             Class<?> actualParam = cm.getParamTypes()[i];
 
-            assertTrue(actualParam.equals(expectedParam),"Parameter[" + i + "] - expected:[" + expectedParam + "], actual:[" + actualParam + "]");
+            assertTrue(actualParam.equals(expectedParam), "Parameter[" + i + "] - expected:[" + expectedParam + "], actual:[" + actualParam + "]");
         }
     }
 

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +31,8 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class HttpWriterTest
 {
     private HttpOutput _httpOut;
@@ -44,8 +44,8 @@ public class HttpWriterTest
         _bytes = BufferUtil.allocate(2048);
 
         final ByteBufferPool pool = new ArrayByteBufferPool();
-        
-        HttpChannel channel = new HttpChannel(null,new HttpConfiguration(),null,null)
+
+        HttpChannel channel = new HttpChannel(null, new HttpConfiguration(), null, null)
         {
             @Override
             public ByteBufferPool getByteBufferPool()
@@ -53,7 +53,7 @@ public class HttpWriterTest
                 return pool;
             }
         };
-        
+
         _httpOut = new HttpOutput(channel)
         {
             @Override
@@ -69,7 +69,7 @@ public class HttpWriterTest
     {
         HttpWriter _writer = new Utf8HttpWriter(_httpOut);
         _writer.write("Now is the time");
-        assertArrayEquals("Now is the time".getBytes(StandardCharsets.UTF_8),BufferUtil.toArray(_bytes));
+        assertArrayEquals("Now is the time".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
 
     @Test
@@ -77,30 +77,30 @@ public class HttpWriterTest
     {
         HttpWriter _writer = new Utf8HttpWriter(_httpOut);
         _writer.write("How now \uFF22rown cow");
-        assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_8),BufferUtil.toArray(_bytes));
+        assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
 
     @Test
     public void testUTF16() throws Exception
     {
-        HttpWriter _writer = new EncodingHttpWriter(_httpOut,StringUtil.__UTF16);
+        HttpWriter _writer = new EncodingHttpWriter(_httpOut, StringUtil.__UTF16);
         _writer.write("How now \uFF22rown cow");
-        assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_16),BufferUtil.toArray(_bytes));
+        assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_16), BufferUtil.toArray(_bytes));
     }
 
     @Test
     public void testNotCESU8() throws Exception
     {
         HttpWriter _writer = new Utf8HttpWriter(_httpOut);
-        String data="xxx\uD801\uDC00xxx";
+        String data = "xxx\uD801\uDC00xxx";
         _writer.write(data);
-        assertEquals("787878F0909080787878",TypeUtil.toHexString(BufferUtil.toArray(_bytes)));
-        assertArrayEquals(data.getBytes(StandardCharsets.UTF_8),BufferUtil.toArray(_bytes));
-        assertEquals(3+4+3,_bytes.remaining());
+        assertEquals("787878F0909080787878", TypeUtil.toHexString(BufferUtil.toArray(_bytes)));
+        assertArrayEquals(data.getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
+        assertEquals(3 + 4 + 3, _bytes.remaining());
 
         Utf8StringBuilder buf = new Utf8StringBuilder();
-        buf.append(BufferUtil.toArray(_bytes),0,_bytes.remaining());
-        assertEquals(data,buf.toString());
+        buf.append(BufferUtil.toArray(_bytes), 0, _bytes.remaining());
+        assertEquals(data, buf.toString());
     }
 
     @Test
@@ -113,12 +113,14 @@ public class HttpWriterTest
 
         int multiByteStrByteLength = multiByteDuplicateStr.getBytes(StandardCharsets.UTF_8).length;
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < HttpWriter.MAX_OUTPUT_CHARS - multiByteStrByteLength; i++) {
-          sb.append(singleByteStr);
+        for (int i = 0; i < HttpWriter.MAX_OUTPUT_CHARS - multiByteStrByteLength; i++)
+        {
+            sb.append(singleByteStr);
         }
         sb.append(multiByteDuplicateStr);
-        for (int i = 0; i < remainSize; i++) {
-          sb.append(singleByteStr);
+        for (int i = 0; i < remainSize; i++)
+        {
+            sb.append(singleByteStr);
         }
         char[] buf = new char[HttpWriter.MAX_OUTPUT_CHARS * 3];
 
@@ -127,7 +129,7 @@ public class HttpWriterTest
 
         _writer.write(buf, 0, length);
 
-        assertEquals(sb.toString(),new String(BufferUtil.toArray(_bytes),StandardCharsets.UTF_8));
+        assertEquals(sb.toString(), new String(BufferUtil.toArray(_bytes), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -146,19 +148,19 @@ public class HttpWriterTest
         String source = "\uD842\uDF9F";
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
-        _writer.write(source.toCharArray(),0,source.toCharArray().length);
+        _writer.write(source.toCharArray(), 0, source.toCharArray().length);
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
         java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos, StandardCharsets.UTF_8);
-        osw.write(source.toCharArray(),0,source.toCharArray().length);
+        osw.write(source.toCharArray(), 0, source.toCharArray().length);
         osw.flush();
 
         myReportBytes(bytes);
         myReportBytes(baos.toByteArray());
         myReportBytes(BufferUtil.toArray(_bytes));
 
-        assertArrayEquals(bytes,BufferUtil.toArray(_bytes));
-        assertArrayEquals(baos.toByteArray(),BufferUtil.toArray(_bytes));
+        assertArrayEquals(bytes, BufferUtil.toArray(_bytes));
+        assertArrayEquals(baos.toByteArray(), BufferUtil.toArray(_bytes));
     }
 
     @Test
@@ -184,19 +186,19 @@ public class HttpWriterTest
         String source = sb.toString();
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
-        _writer.write(source.toCharArray(),0,source.toCharArray().length);
+        _writer.write(source.toCharArray(), 0, source.toCharArray().length);
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
         java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos, StandardCharsets.UTF_8);
-        osw.write(source.toCharArray(),0,source.toCharArray().length);
+        osw.write(source.toCharArray(), 0, source.toCharArray().length);
         osw.flush();
 
         myReportBytes(bytes);
         myReportBytes(baos.toByteArray());
         myReportBytes(BufferUtil.toArray(_bytes));
 
-        assertArrayEquals(bytes,BufferUtil.toArray(_bytes));
-        assertArrayEquals(baos.toByteArray(),BufferUtil.toArray(_bytes));
+        assertArrayEquals(bytes, BufferUtil.toArray(_bytes));
+        assertArrayEquals(baos.toByteArray(), BufferUtil.toArray(_bytes));
     }
 
     @Test
@@ -222,19 +224,19 @@ public class HttpWriterTest
         String source = sb.toString();
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
-        _writer.write(source.toCharArray(),0,source.toCharArray().length);
+        _writer.write(source.toCharArray(), 0, source.toCharArray().length);
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos,StandardCharsets.UTF_8);
-        osw.write(source.toCharArray(),0,source.toCharArray().length);
+        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos, StandardCharsets.UTF_8);
+        osw.write(source.toCharArray(), 0, source.toCharArray().length);
         osw.flush();
 
         myReportBytes(bytes);
         myReportBytes(baos.toByteArray());
         myReportBytes(BufferUtil.toArray(_bytes));
 
-        assertArrayEquals(bytes,BufferUtil.toArray(_bytes));
-        assertArrayEquals(baos.toByteArray(),BufferUtil.toArray(_bytes));
+        assertArrayEquals(bytes, BufferUtil.toArray(_bytes));
+        assertArrayEquals(baos.toByteArray(), BufferUtil.toArray(_bytes));
     }
 
     private void myReportBytes(byte[] bytes) throws Exception
@@ -248,9 +250,11 @@ public class HttpWriterTest
 
     private void assertArrayEquals(byte[] b1, byte[] b2)
     {
-        String test=new String(b1)+"=="+new String(b2);
-        assertEquals(b1.length,b2.length,test);
-        for (int i=0;i<b1.length;i++)
-            assertEquals(b1[i],b2[i],test);
+        String test = new String(b1) + "==" + new String(b2);
+        assertEquals(b1.length, b2.length, test);
+        for (int i = 0; i < b1.length; i++)
+        {
+            assertEquals(b1[i], b2[i], test);
+        }
     }
 }

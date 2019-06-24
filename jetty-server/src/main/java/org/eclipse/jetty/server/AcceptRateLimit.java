@@ -39,12 +39,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <p>A Listener that limits the rate at which new connections are accepted</p>
  * <p>
  * If the limits are exceeded, accepting is suspended until the rate is again below
- * the limit, so incoming connections are held in the operating system accept 
- * queue (no syn ack sent), where they may either timeout or wait for the server 
- * to resume accepting. 
+ * the limit, so incoming connections are held in the operating system accept
+ * queue (no syn ack sent), where they may either timeout or wait for the server
+ * to resume accepting.
  * </p>
  * <p>
- * It can be applied to an entire server or to a specific connector by adding it 
+ * It can be applied to an entire server or to a specific connector by adding it
  * via {@link Container#addBean(Object)}
  * </p>
  * <p>
@@ -56,13 +56,14 @@ import org.eclipse.jetty.util.thread.Scheduler;
  *   ...
  *   server.start();
  * </pre>
+ *
  * @see SelectorManager.AcceptListener
  */
 @ManagedObject
 public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManager.AcceptListener, Runnable
 {
     private static final Logger LOG = Log.getLogger(AcceptRateLimit.class);
-    
+
     private final Server _server;
     private final List<AbstractConnector> _connectors = new ArrayList<>();
     private final Rate _rate;
@@ -74,18 +75,18 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     {
         _server = server;
         _acceptRateLimit = acceptRateLimit;
-        _rate = new Rate(period,units);
+        _rate = new Rate(period, units);
     }
-    
-    public AcceptRateLimit(@Name("limit") int limit, @Name("period") long period, @Name("units") TimeUnit units, @Name("connectors") Connector...connectors)
+
+    public AcceptRateLimit(@Name("limit") int limit, @Name("period") long period, @Name("units") TimeUnit units, @Name("connectors") Connector... connectors)
     {
         this(limit, period, units, (Server)null);
-        for (Connector c: connectors)
+        for (Connector c : connectors)
         {
             if (c instanceof AbstractConnector)
                 _connectors.add((AbstractConnector)c);
             else
-                LOG.warn("Connector {} is not an AbstractConnector. Connections not limited",c);
+                LOG.warn("Connector {} is not an AbstractConnector. Connections not limited", c);
         }
     }
 
@@ -94,25 +95,25 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     {
         return _acceptRateLimit;
     }
-    
+
     @ManagedAttribute("The accept rate period")
     public long getPeriod()
     {
         return _rate.getPeriod();
     }
-    
+
     @ManagedAttribute("The accept rate period units")
     public TimeUnit getUnits()
     {
         return _rate.getUnits();
     }
-    
+
     @ManagedAttribute("The current accept rate")
     public int getRate()
     {
         return _rate.getRate();
     }
-    
+
     @ManagedAttribute("The maximum accept rate achieved")
     public long getMaxRate()
     {
@@ -132,25 +133,25 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
             }
         }
     }
-    
+
     protected void age(long period, TimeUnit units)
     {
-        _rate.age(period,units);
+        _rate.age(period, units);
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
         synchronized (_rate)
         {
-            if (_server!=null)
+            if (_server != null)
             {
-                for (Connector c: _server.getConnectors())
+                for (Connector c : _server.getConnectors())
                 {
                     if (c instanceof AbstractConnector)
                         _connectors.add((AbstractConnector)c);
                     else
-                        LOG.warn("Connector {} is not an AbstractConnector. Connections not limited",c);
+                        LOG.warn("Connector {} is not an AbstractConnector. Connections not limited", c);
                 }
             }
 
@@ -158,7 +159,9 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
                 LOG.debug("AcceptLimit accept<{} rate<{} in {} for {}", _acceptRateLimit, _rate, _connectors);
 
             for (AbstractConnector c : _connectors)
+            {
                 c.addBean(this);
+            }
         }
     }
 
@@ -167,11 +170,13 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     {
         synchronized (_rate)
         {
-            if (_task!=null)
+            if (_task != null)
                 _task.cancel();
             _task = null;
             for (AbstractConnector c : _connectors)
+            {
                 c.removeBean(this);
+            }
             if (_server != null)
                 _connectors.clear();
             _limiting = false;
@@ -181,14 +186,18 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     protected void limit()
     {
         for (AbstractConnector c : _connectors)
+        {
             c.setAccepting(false);
+        }
         schedule();
     }
-    
+
     protected void unlimit()
     {
         for (AbstractConnector c : _connectors)
+        {
             c.setAccepting(true);
+        }
     }
 
     @Override
@@ -199,7 +208,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
             int rate = _rate.record();
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("onAccepting rate {}/{} for {} {}",rate,_acceptRateLimit,_rate,channel);
+                LOG.debug("onAccepting rate {}/{} for {} {}", rate, _acceptRateLimit, _rate, channel);
             }
             if (rate > _acceptRateLimit)
             {
@@ -207,7 +216,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
                 {
                     _limiting = true;
 
-                    LOG.warn("AcceptLimit rate exceeded {}>{} on {}",rate,_acceptRateLimit,_connectors);
+                    LOG.warn("AcceptLimit rate exceeded {}>{} on {}", rate, _acceptRateLimit, _connectors);
                     limit();
                 }
             }
@@ -217,15 +226,15 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     private void schedule()
     {
         long oldest = _rate.getOldest(TimeUnit.MILLISECONDS);
-        long period = TimeUnit.MILLISECONDS.convert(_rate.getPeriod(),_rate.getUnits());
-        long delay = period-(oldest>0?oldest:0);
+        long period = TimeUnit.MILLISECONDS.convert(_rate.getPeriod(), _rate.getUnits());
+        long delay = period - (oldest > 0 ? oldest : 0);
         if (delay < 0)
             delay = 0;
         if (LOG.isDebugEnabled())
-            LOG.debug("schedule {} {}",delay,TimeUnit.MILLISECONDS);
-        _task = _connectors.get(0).getScheduler().schedule(this,delay,TimeUnit.MILLISECONDS);
+            LOG.debug("schedule {} {}", delay, TimeUnit.MILLISECONDS);
+        _task = _connectors.get(0).getScheduler().schedule(this, delay, TimeUnit.MILLISECONDS);
     }
-    
+
     @Override
     public void run()
     {
@@ -243,7 +252,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
             if (_limiting)
             {
                 _limiting = false;
-                LOG.warn("AcceptLimit rate OK {}<={} on {}",rate,_acceptRateLimit,_connectors);
+                LOG.warn("AcceptLimit rate OK {}<={} on {}", rate, _acceptRateLimit, _connectors);
                 unlimit();
             }
         }
@@ -253,13 +262,13 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     {
         private Rate(long period, TimeUnit units)
         {
-            super(period,units);
+            super(period, units);
         }
 
         @Override
         protected void age(long period, TimeUnit units)
         {
-            super.age(period,units);
+            super.age(period, units);
         }
     }
 }

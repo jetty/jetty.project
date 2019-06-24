@@ -16,19 +16,15 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 /**
  * TestSessionListener
- *
- *
  */
 public class TestHttpSessionListener implements HttpSessionListener
 {
@@ -67,5 +63,4 @@ public class TestHttpSessionListener implements HttpSessionListener
     {
         createdSessions.add(se.getSession().getId());
     }
-
 }

@@ -92,7 +92,7 @@ public class ClientSessionsTest
     {
         server.stop();
     }
-    
+
     @Test
     public void testBasicEcho_FromClient() throws Exception
     {
@@ -100,7 +100,8 @@ public class ClientSessionsTest
 
         CountDownLatch onSessionCloseLatch = new CountDownLatch(1);
 
-        client.addSessionListener(new WebSocketSessionListener() {
+        client.addSessionListener(new WebSocketSessionListener()
+        {
             @Override
             public void onSessionOpened(WebSocketSession session)
             {
@@ -122,7 +123,7 @@ public class ClientSessionsTest
             URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             request.setSubProtocols("echo");
-            Future<Session> future = client.connect(cliSock,wsUri,request);
+            Future<Session> future = client.connect(cliSock, wsUri, request);
             Session sess = null;
 
             try

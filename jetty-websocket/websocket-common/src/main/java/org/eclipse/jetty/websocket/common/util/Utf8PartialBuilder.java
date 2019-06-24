@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.common.util;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
 /**

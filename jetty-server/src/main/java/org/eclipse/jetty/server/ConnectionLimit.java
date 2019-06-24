@@ -38,8 +38,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>A Listener that limits the number of Connections.</p>
- * <p>This listener applies a limit to the number of connections, which when 
- * exceeded results in  a call to {@link AbstractConnector#setAccepting(boolean)} 
+ * <p>This listener applies a limit to the number of connections, which when
+ * exceeded results in  a call to {@link AbstractConnector#setAccepting(boolean)}
  * to prevent further connections being received.  It can be applied to an
  * entire server or to a specific connector by adding it via {@link Container#addBean(Object)}
  * </p>
@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.log.Logger;
  *   ...
  *   server.start();
  * </pre>
+ *
  * @see LowResourceMonitor
  * @see Connection.Listener
  * @see SelectorManager.AcceptListener
@@ -60,7 +61,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ConnectionLimit extends AbstractLifeCycle implements Listener, SelectorManager.AcceptListener
 {
     private static final Logger LOG = Log.getLogger(ConnectionLimit.class);
-    
+
     private final Server _server;
     private final List<AbstractConnector> _connectors = new ArrayList<>();
     private final Set<SelectableChannel> _accepting = new HashSet<>();
@@ -74,16 +75,16 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         _maxConnections = maxConnections;
         _server = server;
     }
-    
-    public ConnectionLimit(@Name("maxConnections") int maxConnections, @Name("connectors") Connector...connectors)
+
+    public ConnectionLimit(@Name("maxConnections") int maxConnections, @Name("connectors") Connector... connectors)
     {
         this(maxConnections, (Server)null);
-        for (Connector c: connectors)
+        for (Connector c : connectors)
         {
             if (c instanceof AbstractConnector)
                 _connectors.add((AbstractConnector)c);
             else
-                LOG.warn("Connector {} is not an AbstractConnection. Connections not limited",c);
+                LOG.warn("Connector {} is not an AbstractConnection. Connections not limited", c);
         }
     }
 
@@ -112,7 +113,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
             return _maxConnections;
         }
     }
-    
+
     public void setMaxConnections(int max)
     {
         synchronized (this)
@@ -129,7 +130,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
             return _connections;
         }
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
@@ -142,15 +143,17 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
                     if (c instanceof AbstractConnector)
                         _connectors.add((AbstractConnector)c);
                     else
-                        LOG.warn("Connector {} is not an AbstractConnector. Connections not limited",c);
+                        LOG.warn("Connector {} is not an AbstractConnector. Connections not limited", c);
                 }
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("ConnectionLimit {} for {}",_maxConnections,_connectors);
+                LOG.debug("ConnectionLimit {} for {}", _maxConnections, _connectors);
             _connections = 0;
             _limiting = false;
             for (AbstractConnector c : _connectors)
+            {
                 c.addBean(this);
+            }
         }
     }
 
@@ -160,21 +163,23 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         synchronized (this)
         {
             for (AbstractConnector c : _connectors)
+            {
                 c.removeBean(this);
+            }
             _connections = 0;
             if (_server != null)
                 _connectors.clear();
-        }   
+        }
     }
-    
+
     protected void check()
     {
-        if ( (_accepting.size()+_connections) >= _maxConnections)
+        if ((_accepting.size() + _connections) >= _maxConnections)
         {
             if (!_limiting)
             {
                 _limiting = true;
-                LOG.info("Connection Limit({}) reached for {}",_maxConnections,_connectors);
+                LOG.info("Connection Limit({}) reached for {}", _maxConnections, _connectors);
                 limit();
             }
         }
@@ -183,7 +188,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
             if (_limiting)
             {
                 _limiting = false;
-                LOG.info("Connection Limit({}) cleared for {}",_maxConnections,_connectors);
+                LOG.info("Connection Limit({}) cleared for {}", _maxConnections, _connectors);
                 unlimit();
             }
         }
@@ -195,27 +200,31 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         {
             c.setAccepting(false);
 
-            if (_idleTimeout>0)
+            if (_idleTimeout > 0)
             {
                 for (EndPoint endPoint : c.getConnectedEndPoints())
+                {
                     endPoint.setIdleTimeout(_idleTimeout);
+                }
             }
         }
     }
-    
+
     protected void unlimit()
     {
         for (AbstractConnector c : _connectors)
         {
             c.setAccepting(true);
 
-            if (_idleTimeout>0)
+            if (_idleTimeout > 0)
             {
                 for (EndPoint endPoint : c.getConnectedEndPoints())
+                {
                     endPoint.setIdleTimeout(c.getIdleTimeout());
+                }
             }
         }
-    }    
+    }
 
     @Override
     public void onAccepting(SelectableChannel channel)
@@ -224,7 +233,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         {
             _accepting.add(channel);
             if (LOG.isDebugEnabled())
-                LOG.debug("onAccepting ({}+{}) < {} {}",_accepting.size(),_connections,_maxConnections,channel);
+                LOG.debug("onAccepting ({}+{}) < {} {}", _accepting.size(), _connections, _maxConnections, channel);
             check();
         }
     }
@@ -236,7 +245,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         {
             _accepting.remove(channel);
             if (LOG.isDebugEnabled())
-                LOG.debug("onAcceptFailed ({}+{}) < {} {} {}",_accepting.size(),_connections,_maxConnections,channel,cause);
+                LOG.debug("onAcceptFailed ({}+{}) < {} {} {}", _accepting.size(), _connections, _maxConnections, channel, cause);
             check();
         }
     }
@@ -245,16 +254,16 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     public void onAccepted(SelectableChannel channel)
     {
     }
-    
+
     @Override
     public void onOpened(Connection connection)
-    {        
+    {
         synchronized (this)
-        {        
+        {
             _accepting.remove(connection.getEndPoint().getTransport());
             _connections++;
             if (LOG.isDebugEnabled())
-                LOG.debug("onOpened ({}+{}) < {} {}",_accepting.size(),_connections,_maxConnections,connection);
+                LOG.debug("onOpened ({}+{}) < {} {}", _accepting.size(), _connections, _maxConnections, connection);
             check();
         }
     }
@@ -266,7 +275,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         {
             _connections--;
             if (LOG.isDebugEnabled())
-                LOG.debug("onClosed ({}+{}) < {} {}",_accepting.size(),_connections,_maxConnections,connection);
+                LOG.debug("onClosed ({}+{}) < {} {}", _accepting.size(), _connections, _maxConnections, connection);
             check();
         }
     }

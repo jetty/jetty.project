@@ -37,10 +37,10 @@ public class EchoBroadcastSocket
     @OnWebSocketMessage
     public void onBinary(byte buf[], int offset, int len)
     {
-        ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
+        ByteBuffer data = ByteBuffer.wrap(buf, offset, len);
         for (EchoBroadcastSocket sock : BROADCAST)
         {
-            sock.session.getRemote().sendBytes(data.slice(),null);
+            sock.session.getRemote().sendBytes(data.slice(), null);
         }
     }
 
@@ -62,7 +62,7 @@ public class EchoBroadcastSocket
     {
         for (EchoBroadcastSocket sock : BROADCAST)
         {
-            sock.session.getRemote().sendString(text,null);
+            sock.session.getRemote().sendString(text, null);
         }
     }
 }

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,6 +35,9 @@ import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class WebSocketOverSSLTest
 {
@@ -63,24 +63,25 @@ public class WebSocketOverSSLTest
 
     /**
      * Test the requirement of issuing socket and receiving echo response
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testEcho() throws Exception
     {
-        assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
+        assertThat("server scheme", server.getServerUri().getScheme(), is("wss"));
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(), null, bufferPool);
         try
         {
             client.start();
 
             CaptureSocket clientSocket = new CaptureSocket();
             URI requestUri = server.getServerUri();
-            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
-            Future<Session> fut = client.connect(clientSocket,requestUri);
+            System.err.printf("Request URI: %s%n", requestUri.toASCIIString());
+            Future<Session> fut = client.connect(clientSocket, requestUri);
 
             // wait for connect
-            Session session = fut.get(FUTURE_TIMEOUT_SEC,TimeUnit.SECONDS);
+            Session session = fut.get(FUTURE_TIMEOUT_SEC, TimeUnit.SECONDS);
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
@@ -91,7 +92,7 @@ public class WebSocketOverSSLTest
 
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<String> captured = clientSocket.messages;
-            assertThat("Text Message",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is(msg));
+            assertThat("Text Message", captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), is(msg));
 
             // Shutdown the socket
             clientSocket.close();
@@ -104,13 +105,14 @@ public class WebSocketOverSSLTest
 
     /**
      * Test that server session reports as secure
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testServerSessionIsSecure() throws Exception
     {
-        assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
+        assertThat("server scheme", server.getServerUri().getScheme(), is("wss"));
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(), null, bufferPool);
         try
         {
             client.setConnectTimeout(CONNECT_TIMEOUT);
@@ -118,11 +120,11 @@ public class WebSocketOverSSLTest
 
             CaptureSocket clientSocket = new CaptureSocket();
             URI requestUri = server.getServerUri();
-            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
-            Future<Session> fut = client.connect(clientSocket,requestUri);
+            System.err.printf("Request URI: %s%n", requestUri.toASCIIString());
+            Future<Session> fut = client.connect(clientSocket, requestUri);
 
             // wait for connect
-            Session session = fut.get(FUTURE_TIMEOUT_SEC,TimeUnit.SECONDS);
+            Session session = fut.get(FUTURE_TIMEOUT_SEC, TimeUnit.SECONDS);
 
             // Generate text frame
             RemoteEndpoint remote = session.getRemote();
@@ -132,7 +134,7 @@ public class WebSocketOverSSLTest
 
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<String> captured = clientSocket.messages;
-            assertThat("Server.session.isSecure",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is("session.isSecure=true"));
+            assertThat("Server.session.isSecure", captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), is("session.isSecure=true"));
 
             // Shutdown the socket
             clientSocket.close();
@@ -145,13 +147,14 @@ public class WebSocketOverSSLTest
 
     /**
      * Test that server session.upgradeRequest.requestURI reports correctly
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testServerSessionRequestURI() throws Exception
     {
-        assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
+        assertThat("server scheme", server.getServerUri().getScheme(), is("wss"));
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(), null, bufferPool);
         try
         {
             client.setConnectTimeout(CONNECT_TIMEOUT);
@@ -159,11 +162,11 @@ public class WebSocketOverSSLTest
 
             CaptureSocket clientSocket = new CaptureSocket();
             URI requestUri = server.getServerUri().resolve("/deep?a=b");
-            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
-            Future<Session> fut = client.connect(clientSocket,requestUri);
+            System.err.printf("Request URI: %s%n", requestUri.toASCIIString());
+            Future<Session> fut = client.connect(clientSocket, requestUri);
 
             // wait for connect
-            Session session = fut.get(FUTURE_TIMEOUT_SEC,TimeUnit.SECONDS);
+            Session session = fut.get(FUTURE_TIMEOUT_SEC, TimeUnit.SECONDS);
 
             // Generate text frame
             RemoteEndpoint remote = session.getRemote();
@@ -173,8 +176,8 @@ public class WebSocketOverSSLTest
 
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<String> captured = clientSocket.messages;
-            String expected = String.format("session.upgradeRequest.requestURI=%s",requestUri.toASCIIString());
-            assertThat("session.upgradeRequest.requestURI",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is(expected));
+            String expected = String.format("session.upgradeRequest.requestURI=%s", requestUri.toASCIIString());
+            assertThat("session.upgradeRequest.requestURI", captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), is(expected));
 
             // Shutdown the socket
             clientSocket.close();

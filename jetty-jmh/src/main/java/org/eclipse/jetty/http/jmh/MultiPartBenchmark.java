@@ -18,11 +18,26 @@
 
 package org.eclipse.jetty.http.jmh;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.toolchain.test.Hex;
@@ -47,28 +62,11 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.http.Part;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 @State(Scope.Benchmark)
 @Threads(4)
@@ -79,20 +77,19 @@ public class MultiPartBenchmark
     public static final int MAX_FILE_SIZE = Integer.MAX_VALUE;
     public static final int MAX_REQUEST_SIZE = Integer.MAX_VALUE;
     public static final int FILE_SIZE_THRESHOLD = 50;
-    
+
     public int count = 0;
     static String _contentType;
     static File _file;
     static int _numSections;
     static int _numBytesPerSection;
-    
-    
+
     public static List<String> data = new ArrayList<>();
-    
+
     static
     {
         // Capture of raw request body contents from various browsers
-        
+
         // simple form - 2 fields
         data.add("browser-capture-form1-android-chrome");
         data.add("browser-capture-form1-android-firefox");
@@ -102,15 +99,15 @@ public class MultiPartBenchmark
         data.add("browser-capture-form1-ios-safari");
         data.add("browser-capture-form1-msie");
         data.add("browser-capture-form1-osx-safari");
-        
+
         // form submitted as shift-jis
         data.add("browser-capture-sjis-form-edge");
         data.add("browser-capture-sjis-form-msie");
-        
+
         // form submitted as shift-jis (with HTML5 specific hidden _charset_ field)
         data.add("browser-capture-sjis-charset-form-edge");
         data.add("browser-capture-sjis-charset-form-msie");
-        
+
         // form submitted with simple file upload
         data.add("browser-capture-form-fileupload-android-chrome");
         data.add("browser-capture-form-fileupload-android-firefox");
@@ -120,7 +117,7 @@ public class MultiPartBenchmark
         data.add("browser-capture-form-fileupload-ios-safari");
         data.add("browser-capture-form-fileupload-msie");
         data.add("browser-capture-form-fileupload-safari");
-        
+
         // form submitted with 2 files (1 binary, 1 text) and 2 text fields
         data.add("browser-capture-form-fileupload-alt-chrome");
         data.add("browser-capture-form-fileupload-alt-edge");
@@ -128,27 +125,25 @@ public class MultiPartBenchmark
         data.add("browser-capture-form-fileupload-alt-msie");
         data.add("browser-capture-form-fileupload-alt-safari");
     }
-    
-    
+
     @Param({"UTIL", "HTTP"})
     public static String parserType;
-    
+
     @Setup(Level.Trial)
     public static void setupTrial() throws Exception
     {
         _file = File.createTempFile("test01", null);
         _file.deleteOnExit();
-        
+
         _numSections = 1;
         _numBytesPerSection = 1024 * 1024 * 10;
-        
+
         _contentType = "multipart/form-data, boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW";
         String initialBoundary = "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n";
         String boundary = "\r\n--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n";
         String closingBoundary = "\r\n--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW--\r\n";
         String headerStart = "Content-Disposition: form-data; name=\"";
-        
-        
+
         for (int i = 0; i < _numSections; i++)
         {
             //boundary and headers
@@ -156,32 +151,31 @@ public class MultiPartBenchmark
                 Files.write(_file.toPath(), initialBoundary.getBytes(), StandardOpenOption.APPEND);
             else
                 Files.write(_file.toPath(), boundary.getBytes(), StandardOpenOption.APPEND);
-            
+
             Files.write(_file.toPath(), headerStart.getBytes(), StandardOpenOption.APPEND);
             Files.write(_file.toPath(), ("part" + (i + 1)).getBytes(), StandardOpenOption.APPEND);
             Files.write(_file.toPath(), ("\"\r\n\r\n").getBytes(), StandardOpenOption.APPEND);
-            
+
             //append random data
             byte[] data = new byte[_numBytesPerSection];
             new Random().nextBytes(data);
             Files.write(_file.toPath(), data, StandardOpenOption.APPEND);
         }
-        
+
         //closing boundary
         Files.write(_file.toPath(), closingBoundary.getBytes(), StandardOpenOption.APPEND);
     }
-    
-    
+
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
     @SuppressWarnings("deprecation")
     public long testLargeGenerated() throws Exception
     {
         Path multipartRawFile = _file.toPath();
-        Path outputDir = Files.createTempDirectory( "jetty_multipart_benchmark");
-        
+        Path outputDir = Files.createTempDirectory("jetty_multipart_benchmark");
+
         MultipartConfigElement config = newMultipartConfigElement(outputDir);
-        
+
         try (InputStream in = Files.newInputStream(multipartRawFile))
         {
             switch (parserType)
@@ -195,12 +189,14 @@ public class MultiPartBenchmark
                     for (Part p : parser.getParts())
                     {
                         count += p.getSize();
-                        if(p instanceof MultiPartFormInputStream.MultiPart) ((MultiPartFormInputStream.MultiPart)p).cleanUp();
-                        else p.delete();
+                        if (p instanceof MultiPartFormInputStream.MultiPart)
+                            ((MultiPartFormInputStream.MultiPart)p).cleanUp();
+                        else
+                            p.delete();
                     }
+                    break;
                 }
-                break;
-                
+
                 case "UTIL":
                 {
                     org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, _contentType, config, outputDir.toFile());
@@ -210,12 +206,14 @@ public class MultiPartBenchmark
                     for (Part p : parser.getParts())
                     {
                         count += p.getSize();
-                        if(p instanceof org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart) ((org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart)p).cleanUp();
-                        else p.delete();
+                        if (p instanceof org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart)
+                            ((org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart)p).cleanUp();
+                        else
+                            p.delete();
                     }
+                    break;
                 }
-                break;
-                
+
                 default:
                     throw new IllegalStateException("Unknown parserType Parameter");
             }
@@ -223,19 +221,18 @@ public class MultiPartBenchmark
         IO.delete(outputDir.toFile());
         return count;
     }
-    
-    
+
     @TearDown(Level.Trial)
     public static void stopTrial() throws Exception
     {
         _file = null;
     }
-    
+
     private MultipartConfigElement newMultipartConfigElement(Path path)
     {
         return new MultipartConfigElement(path.toString(), MAX_FILE_SIZE, MAX_REQUEST_SIZE, FILE_SIZE_THRESHOLD);
     }
-    
+
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
     @SuppressWarnings("deprecation")
@@ -245,19 +242,21 @@ public class MultiPartBenchmark
         {
             String expectationPath = "multipart/" + multiPart + ".expected.txt";
 
-            File expectationFile = File.createTempFile( expectationPath, ".tmp" );
+            File expectationFile = File.createTempFile(expectationPath, ".tmp");
 
-            try(InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(expectationPath); //
-                OutputStream os = Files.newOutputStream( expectationFile.toPath())) {
+            try (InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(expectationPath);
+                 //
+                 OutputStream os = Files.newOutputStream(expectationFile.toPath()))
+            {
                 IO.copy(inputStream, os);
             }
 
             Path outputDir = Files.createTempDirectory("expected_output_jmh_jetty");
-            
+
             MultipartExpectations multipartExpectations = new MultipartExpectations(expectationFile.toPath());
             MultipartConfigElement config = newMultipartConfigElement(outputDir);
-            
-            try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream( "multipart/" + multiPart + ".raw" ))
+
+            try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("multipart/" + multiPart + ".raw"))
             {
                 switch (parserType)
                 {
@@ -268,11 +267,13 @@ public class MultiPartBenchmark
                         for (Part p : parser.getParts())
                         {
                             count += p.getSize();
-                            if(p instanceof MultiPartFormInputStream.MultiPart) ((MultiPartFormInputStream.MultiPart)p).cleanUp();
-                            else p.delete();
+                            if (p instanceof MultiPartFormInputStream.MultiPart)
+                                ((MultiPartFormInputStream.MultiPart)p).cleanUp();
+                            else
+                                p.delete();
                         }
+                        break;
                     }
-                    break;
                     case "UTIL":
                     {
                         org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
@@ -280,11 +281,13 @@ public class MultiPartBenchmark
                         for (Part p : parser.getParts())
                         {
                             count += p.getSize();
-                            if(p instanceof org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart) ((org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart)p).cleanUp();
-                            else p.delete();
+                            if (p instanceof org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart)
+                                ((org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart)p).cleanUp();
+                            else
+                                p.delete();
                         }
+                        break;
                     }
-                    break;
                     default:
                         throw new IllegalStateException("Unknown parserType Parameter");
                 }
@@ -294,20 +297,19 @@ public class MultiPartBenchmark
         }
         return count;
     }
-    
+
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                .include(MultiPartBenchmark.class.getSimpleName())
-                .warmupIterations(20)
-                .measurementIterations(10)
-                .forks(1)
-                .threads(1)
-                .build();
-        
+            .include(MultiPartBenchmark.class.getSimpleName())
+            .warmupIterations(20)
+            .measurementIterations(10)
+            .forks(1)
+            .threads(1)
+            .build();
+
         new Runner(opt).run();
     }
-
 
     public static class MultipartExpectations
     {
@@ -334,11 +336,11 @@ public class MultiPartBenchmark
                         continue;
                     }
 
-                    String split[] = line.split("\\|");
+                    String[] split = line.split("\\|");
                     switch (split[0])
                     {
                         case "Request-Header":
-                            if(split[1].equalsIgnoreCase("Content-Type"))
+                            if (split[1].equalsIgnoreCase("Content-Type"))
                             {
                                 parsedContentType = split[2];
                             }
@@ -394,11 +396,10 @@ public class MultiPartBenchmark
 
             String defaultCharset = UTF_8.toString();
             Part charSetPart = getPart.apply("_charset_");
-            if(charSetPart != null)
+            if (charSetPart != null)
             {
                 defaultCharset = org.eclipse.jetty.util.IO.toString(charSetPart.getInputStream());
             }
-
 
             // Evaluate expected Contents
             for (NameValue expected : partContainsContents)
@@ -440,16 +441,16 @@ public class MultiPartBenchmark
 
         private String getCharsetFromContentType(String contentType, String defaultCharset)
         {
-            if(StringUtil.isBlank(contentType))
+            if (StringUtil.isBlank(contentType))
             {
                 return defaultCharset;
             }
 
             QuotedStringTokenizer tok = new QuotedStringTokenizer(contentType, ";", false, false);
-            while(tok.hasMoreTokens())
+            while (tok.hasMoreTokens())
             {
                 String str = tok.nextToken().trim();
-                if(str.startsWith("charset="))
+                if (str.startsWith("charset="))
                 {
                     return str.substring("charset=".length());
                 }

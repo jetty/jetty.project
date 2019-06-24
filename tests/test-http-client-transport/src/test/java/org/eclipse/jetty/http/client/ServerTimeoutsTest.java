@@ -153,7 +153,6 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                         asyncContext.complete();
                     }
                 });
-
             }
         }, delayDispatch);
     }
@@ -183,14 +182,14 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         CountDownLatch resultLatch = new CountDownLatch(2);
         DeferredContentProvider content = new DeferredContentProvider();
         scenario.client.POST(scenario.newURI())
-                .content(content)
-                .onResponseSuccess(response ->
-                {
-                    if (response.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                        resultLatch.countDown();
-                    content.close();
-                })
-                .send(result -> resultLatch.countDown());
+            .content(content)
+            .onResponseSuccess(response ->
+            {
+                if (response.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                    resultLatch.countDown();
+                content.close();
+            })
+            .send(result -> resultLatch.countDown());
 
         // The client did not send the content, the request was
         // dispatched, the server should have idle timed it out.
@@ -214,12 +213,12 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
             CountDownLatch resultLatch = new CountDownLatch(1);
             scenario.client.POST(scenario.newURI())
-                    .content(contentProvider)
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                            resultLatch.countDown();
-                    });
+                .content(contentProvider)
+                .send(result ->
+                {
+                    if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                        resultLatch.countDown();
+                });
 
             // Blocking read should timeout.
             assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -246,12 +245,12 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
             CountDownLatch resultLatch = new CountDownLatch(1);
             scenario.client.POST(scenario.newURI())
-                    .content(contentProvider)
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                            resultLatch.countDown();
-                    });
+                .content(contentProvider)
+                .send(result ->
+                {
+                    if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                        resultLatch.countDown();
+                });
 
             // Blocking read should timeout.
             assertTrue(handlerLatch.await(2 * blockingTimeout, TimeUnit.MILLISECONDS));
@@ -278,12 +277,12 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
             CountDownLatch resultLatch = new CountDownLatch(1);
             scenario.client.POST(scenario.newURI())
-                    .content(contentProvider)
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                            resultLatch.countDown();
-                    });
+                .content(contentProvider)
+                .send(result ->
+                {
+                    if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                        resultLatch.countDown();
+                });
 
             // Blocking read should timeout.
             assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -309,16 +308,16 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
             CountDownLatch resultLatch = new CountDownLatch(1);
             scenario.client.newRequest(scenario.newURI())
-                    .onResponseContentAsync((response, content, callback) ->
-                    {
-                        // Do not succeed the callback so the server will block writing.
-                        callbacks.offer(callback);
-                    })
-                    .send(result ->
-                    {
-                        if (result.isFailed())
-                            resultLatch.countDown();
-                    });
+                .onResponseContentAsync((response, content, callback) ->
+                {
+                    // Do not succeed the callback so the server will block writing.
+                    callbacks.offer(callback);
+                })
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        resultLatch.countDown();
+                });
 
             // Blocking write should timeout.
             assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -351,16 +350,16 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
             CountDownLatch resultLatch = new CountDownLatch(1);
             scenario.client.newRequest(scenario.newURI())
-                    .onResponseContentAsync((response, content, callback) ->
-                    {
-                        // Do not succeed the callback so the server will block writing.
-                        callbacks.offer(callback);
-                    })
-                    .send(result ->
-                    {
-                        if (result.isFailed())
-                            resultLatch.countDown();
-                    });
+                .onResponseContentAsync((response, content, callback) ->
+                {
+                    // Do not succeed the callback so the server will block writing.
+                    callbacks.offer(callback);
+                })
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        resultLatch.countDown();
+                });
 
             // Blocking write should timeout.
             assertTrue(handlerLatch.await(2 * blockingTimeout, TimeUnit.MILLISECONDS));
@@ -393,16 +392,16 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
             CountDownLatch resultLatch = new CountDownLatch(1);
             scenario.client.newRequest(scenario.newURI())
-                    .onResponseContentAsync((response, content, callback) ->
-                    {
-                        // Do not succeed the callback so the server will block writing.
-                        callbacks.offer(callback);
-                    })
-                    .send(result ->
-                    {
-                        if (result.isFailed())
-                            resultLatch.countDown();
-                    });
+                .onResponseContentAsync((response, content, callback) ->
+                {
+                    // Do not succeed the callback so the server will block writing.
+                    callbacks.offer(callback);
+                })
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        resultLatch.countDown();
+                });
 
             // Blocking read should timeout.
             assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -457,14 +456,14 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             DeferredContentProvider contentProvider = new DeferredContentProvider();
             CountDownLatch resultLatch = new CountDownLatch(1);
             scenario.client.newRequest(scenario.newURI())
-                    .content(contentProvider)
-                    .send(result ->
-                    {
-                        // Result may fail to send the whole request body,
-                        // but the response has arrived successfully.
-                        if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                            resultLatch.countDown();
-                    });
+                .content(contentProvider)
+                .send(result ->
+                {
+                    // Result may fail to send the whole request body,
+                    // but the response has arrived successfully.
+                    if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                        resultLatch.countDown();
+                });
 
             // The writes should be slow but not trigger the idle timeout.
             long period = idleTimeout / 2;
@@ -531,12 +530,12 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-                .content(contentProvider)
-                .send(result ->
-                {
-                    if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                        resultLatch.countDown();
-                });
+            .content(contentProvider)
+            .send(result ->
+            {
+                if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                    resultLatch.countDown();
+            });
 
         // Async read should timeout.
         assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -587,16 +586,16 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .onResponseContentAsync((response, content, callback) ->
-                {
-                    // Do not succeed the callback so the server will block writing.
-                    callbacks.offer(callback);
-                })
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        resultLatch.countDown();
-                });
+            .onResponseContentAsync((response, content, callback) ->
+            {
+                // Do not succeed the callback so the server will block writing.
+                callbacks.offer(callback);
+            })
+            .send(result ->
+            {
+                if (result.isFailed())
+                    resultLatch.countDown();
+            });
 
         // Async write should timeout.
         assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -647,14 +646,14 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         DeferredContentProvider contentProvider = new DeferredContentProvider();
         BlockingQueue<Object> results = new BlockingArrayQueue<>();
         scenario.client.newRequest(scenario.newURI())
-                .content(contentProvider)
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        results.offer(result.getFailure());
-                    else
-                        results.offer(result.getResponse().getStatus());
-                });
+            .content(contentProvider)
+            .send(result ->
+            {
+                if (result.isFailed())
+                    results.offer(result.getFailure());
+                else
+                    results.offer(result.getResponse().getStatus());
+            });
 
         for (int i = 0; i < 3; ++i)
         {
@@ -663,7 +662,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         }
         contentProvider.close();
 
-        assertThat(scenario.requestLog.poll(5,TimeUnit.SECONDS), containsString(" 408"));
+        assertThat(scenario.requestLog.poll(5, TimeUnit.SECONDS), containsString(" 408"));
 
         // Request should timeout.
         assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
@@ -671,9 +670,9 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         Object result = results.poll(5, TimeUnit.SECONDS);
         assertNotNull(result);
         if (result instanceof Integer)
-            assertThat((Integer)result,is(408));
+            assertThat((Integer)result, is(408));
         else
-            assertThat(result,instanceOf(Throwable.class));
+            assertThat(result, instanceOf(Throwable.class));
     }
 
     @ParameterizedTest
@@ -704,12 +703,12 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         DeferredContentProvider contentProvider = new DeferredContentProvider();
         CountDownLatch resultLatch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .content(contentProvider)
-                .send(result ->
-                {
-                    if (result.getResponse().getStatus() == HttpStatus.OK_200)
-                        resultLatch.countDown();
-                });
+            .content(contentProvider)
+            .send(result ->
+            {
+                if (result.getResponse().getStatus() == HttpStatus.OK_200)
+                    resultLatch.countDown();
+            });
 
         for (int i = 0; i < 3; ++i)
         {
@@ -739,12 +738,12 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
             CountDownLatch resultLatch = new CountDownLatch(1);
             scenario.client.POST(scenario.newURI())
-                    .content(contentProvider)
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                            resultLatch.countDown();
-                    });
+                .content(contentProvider)
+                .send(result ->
+                {
+                    if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                        resultLatch.countDown();
+                });
 
             // Blocking read should timeout.
             assertTrue(handlerLatch.await(2 * httpIdleTimeout, TimeUnit.MILLISECONDS));
@@ -805,12 +804,12 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-                .content(contentProvider)
-                .send(result ->
-                {
-                    if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                        resultLatch.countDown();
-                });
+            .content(contentProvider)
+            .send(result ->
+            {
+                if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                    resultLatch.countDown();
+            });
 
         // Async read should timeout.
         assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -852,19 +851,19 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(data1));
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .path(scenario.servletPath)
-                .content(content)
-                .send(new BufferingResponseListener()
+            .path(scenario.servletPath)
+            .content(content)
+            .send(new BufferingResponseListener()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertTrue(result.isSucceeded());
-                        assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
-                        assertArrayEquals(data, getContent());
-                        latch.countDown();
-                    }
-                });
+                    assertTrue(result.isSucceeded());
+                    assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                    assertArrayEquals(data, getContent());
+                    latch.countDown();
+                }
+            });
 
         // Wait for the server application to block reading.
         Thread.sleep(2 * idleTimeout);
@@ -918,18 +917,18 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         BlockingQueue<Object> objects = new LinkedBlockingQueue<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .onResponseContentAsync((response, content, callback) ->
-                {
-                    objects.offer(content.remaining());
-                    objects.offer(callback);
-                })
-                .send(result ->
-                {
-                    objects.offer(-1);
-                    objects.offer(Callback.NOOP);
-                    if (result.isFailed())
-                        clientLatch.countDown();
-                });
+            .onResponseContentAsync((response, content, callback) ->
+            {
+                objects.offer(content.remaining());
+                objects.offer(callback);
+            })
+            .send(result ->
+            {
+                objects.offer(-1);
+                objects.offer(Callback.NOOP);
+                if (result.isFailed())
+                    clientLatch.countDown();
+            });
 
         long readRate = bytesPerSecond / 2;
         while (true)

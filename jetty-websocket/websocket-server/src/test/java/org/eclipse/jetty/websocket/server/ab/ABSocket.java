@@ -43,11 +43,11 @@ public class ABSocket
     @OnWebSocketMessage
     public void onBinary(byte buf[], int offset, int len)
     {
-        LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
+        LOG.debug("onBinary(byte[{}],{},{})", buf.length, offset, len);
 
         // echo the message back.
-        ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
-        this.session.getRemote().sendBytes(data,null);
+        ByteBuffer data = ByteBuffer.wrap(buf, offset, len);
+        this.session.getRemote().sendBytes(data, null);
     }
 
     @OnWebSocketConnect
@@ -67,18 +67,18 @@ public class ABSocket
             }
             else
             {
-                LOG.debug("onText() size={}, msg={}",message.length(),TextUtil.hint(message));
+                LOG.debug("onText() size={}, msg={}", message.length(), TextUtil.hint(message));
             }
         }
 
         try
         {
             // echo the message back.
-            this.session.getRemote().sendString(message,null);
+            this.session.getRemote().sendString(message, null);
         }
         catch (WebSocketException e)
         {
-            LOG.warn("Unable to echo TEXT message",e);
+            LOG.warn("Unable to echo TEXT message", e);
         }
     }
 

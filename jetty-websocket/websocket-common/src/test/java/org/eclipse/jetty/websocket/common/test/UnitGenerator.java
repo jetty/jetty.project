@@ -42,16 +42,15 @@ public class UnitGenerator extends Generator
     public static ByteBuffer generate(Frame frame)
     {
         return generate(new Frame[]
-        { frame });
+            {frame});
     }
 
     /**
      * Generate All Frames into a single ByteBuffer.
      * <p>
      * This is highly inefficient and is not used in production! (This exists to make testing of the Generator easier)
-     * 
-     * @param frames
-     *            the frames to generate from
+     *
+     * @param frames the frames to generate from
      * @return the ByteBuffer representing all of the generated frames provided.
      */
     public static ByteBuffer generate(Frame[] frames)
@@ -70,19 +69,20 @@ public class UnitGenerator extends Generator
         // Generate frames
         for (Frame f : frames)
         {
-            generator.generateWholeFrame(f,completeBuf);
+            generator.generateWholeFrame(f, completeBuf);
         }
 
-        BufferUtil.flipToFlush(completeBuf,0);
+        BufferUtil.flipToFlush(completeBuf, 0);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("generate({} frames) - {}",frames.length,BufferUtil.toDetailString(completeBuf));
+            LOG.debug("generate({} frames) - {}", frames.length, BufferUtil.toDetailString(completeBuf));
         }
         return completeBuf;
     }
 
     /**
      * Generate a single giant buffer of all provided frames Not appropriate for production code, but useful for testing.
+     *
      * @param frames the list of frames to generate from
      * @return the bytebuffer representing all of the generated frames
      */
@@ -90,7 +90,7 @@ public class UnitGenerator extends Generator
     {
         // Create non-symmetrical mask (helps show mask bytes order issues)
         byte[] MASK =
-        { 0x11, 0x22, 0x33, 0x44 };
+            {0x11, 0x22, 0x33, 0x44};
 
         // the generator
         Generator generator = new UnitGenerator();
@@ -108,29 +108,29 @@ public class UnitGenerator extends Generator
         for (WebSocketFrame f : frames)
         {
             f.setMask(MASK); // make sure we have the test mask set
-            BufferUtil.put(generator.generateHeaderBytes(f),completeBuf);
+            BufferUtil.put(generator.generateHeaderBytes(f), completeBuf);
             ByteBuffer window = f.getPayload();
             if (BufferUtil.hasContent(window))
             {
-                BufferUtil.put(window,completeBuf);
+                BufferUtil.put(window, completeBuf);
             }
         }
 
-        BufferUtil.flipToFlush(completeBuf,0);
+        BufferUtil.flipToFlush(completeBuf, 0);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("generate({} frames) - {}",frames.size(),BufferUtil.toDetailString(completeBuf));
+            LOG.debug("generate({} frames) - {}", frames.size(), BufferUtil.toDetailString(completeBuf));
         }
         return completeBuf;
     }
 
     public UnitGenerator()
     {
-        super(WebSocketPolicy.newServerPolicy(),new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+        super(WebSocketPolicy.newServerPolicy(), new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
     }
-    
+
     public UnitGenerator(ByteBufferPool bufferPool)
     {
-        super(WebSocketPolicy.newServerPolicy(),bufferPool);
+        super(WebSocketPolicy.newServerPolicy(), bufferPool);
     }
 }

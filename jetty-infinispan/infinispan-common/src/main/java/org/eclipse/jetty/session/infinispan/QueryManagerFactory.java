@@ -23,5 +23,5 @@ import org.infinispan.commons.api.BasicCache;
 
 public interface QueryManagerFactory
 {
-    public QueryManager getQueryManager(BasicCache<String, SessionData> cache);
+    QueryManager getQueryManager(BasicCache<String, SessionData> cache);
 }

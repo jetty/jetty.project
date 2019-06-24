@@ -30,8 +30,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * MultiPartConfigAnnotationHandler
- *
- *
  */
 public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
@@ -40,10 +38,11 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
     public MultiPartConfigAnnotationHandler(WebAppContext context)
     {
         //TODO verify that MultipartConfig is not inheritable
-        super(false); 
+        super(false);
         _context = context;
     }
-    /** 
+
+    /**
      * @see org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler#doHandle(java.lang.Class)
      */
     @Override
@@ -51,25 +50,25 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
     {
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
-        
-        MultipartConfig multi = (MultipartConfig) clazz.getAnnotation(MultipartConfig.class);
+
+        MultipartConfig multi = (MultipartConfig)clazz.getAnnotation(MultipartConfig.class);
         if (multi == null)
             return;
-        
+
         MetaData metaData = _context.getMetaData();
-              
+
         //TODO: The MultipartConfigElement needs to be set on the ServletHolder's Registration.
         //How to identify the correct Servlet?  If the Servlet has no WebServlet annotation on it, does it mean that this MultipartConfig
         //annotation applies to all declared instances in web.xml/programmatically?
         //Assuming TRUE for now.
         for (ServletHolder holder : _context.getServletHandler().getServlets(clazz))
         {
-            Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.multipart-config");
+            Descriptor d = metaData.getOriginDescriptor(holder.getName() + ".servlet.multipart-config");
             //if a descriptor has already set the value for multipart config, do not 
             //let the annotation override it
             if (d == null)
             {
-                metaData.setOrigin(holder.getName()+".servlet.multipart-config",multi,clazz);
+                metaData.setOrigin(holder.getName() + ".servlet.multipart-config", multi, clazz);
                 holder.getRegistration().setMultipartConfig(new MultipartConfigElement(multi));
             }
         }

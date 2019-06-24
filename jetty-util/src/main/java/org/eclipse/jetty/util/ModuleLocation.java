@@ -84,7 +84,7 @@ class ModuleLocation
 
             handleGetName = lookup.findVirtual(classModule, "getName", methodType(String.class));
 
-            Method findModuleMethod = classConfiguration.getMethod("findModule", new Class<?>[]{String.class});
+            Method findModuleMethod = classConfiguration.getMethod("findModule", String.class);
             handleOptionalResolvedModule = lookup.findVirtual(classConfiguration, "findModule", methodType(findModuleMethod.getReturnType(), String.class));
 
             Class<?> classResolvedModule = loader.loadClass("java.lang.module.ResolvedModule");

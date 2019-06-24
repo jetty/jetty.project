@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
@@ -84,10 +83,9 @@ public class CustomRequestLogTest
         testHandlerServerStart("Filename: %f");
 
         _connector.getResponse("GET /context/servlet/info HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("Filename: " + _tmpDir + File.separator + "servlet" + File.separator + "info"));
     }
-
 
     @Test
     public void testLogRequestHandler() throws Exception
@@ -95,10 +93,9 @@ public class CustomRequestLogTest
         testHandlerServerStart("RequestHandler: %R");
 
         _connector.getResponse("GET /context/servlet/ HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, Matchers.containsString("TestServlet"));
     }
-
 
     class TestRequestLogWriter implements RequestLog.Writer
     {
@@ -109,7 +106,7 @@ public class CustomRequestLogTest
             {
                 _entries.add(requestEntry);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }

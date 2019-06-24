@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +41,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class LargeServerContainerAsClientContainerServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(LargeServerContainerAsClientContainerServlet.class);
@@ -63,7 +62,7 @@ public class LargeServerContainerAsClientContainerServlet extends HttpServlet
     {
         super.init();
 
-        ServerContainer serverContainer = (ServerContainer) getServletContext().getAttribute(ServerContainer.class.getName());
+        ServerContainer serverContainer = (ServerContainer)getServletContext().getAttribute(ServerContainer.class.getName());
         clientContainer = serverContainer;
     }
 
@@ -74,16 +73,16 @@ public class LargeServerContainerAsClientContainerServlet extends HttpServlet
         int size = LARGER_THAN_DEFAULT_SIZE;
 
         String sizeParam = req.getParameter("size");
-        if(StringUtil.isNotBlank(sizeParam))
+        if (StringUtil.isNotBlank(sizeParam))
         {
             size = Integer.parseInt(sizeParam);
         }
 
         byte buf[] = new byte[size];
-        Arrays.fill(buf, (byte) 'x');
+        Arrays.fill(buf, (byte)'x');
 
         String destUrl = req.getParameter("destUrl");
-        if(StringUtil.isBlank(destUrl))
+        if (StringUtil.isBlank(destUrl))
         {
             resp.sendError(HttpServletResponse.SC_EXPECTATION_FAILED, "Missing destUrl");
             return;
@@ -94,7 +93,7 @@ public class LargeServerContainerAsClientContainerServlet extends HttpServlet
         try
         {
             Session session = clientContainer.connectToServer(EchoClientSocket.class, wsUri);
-            EchoClientSocket clientSocket = (EchoClientSocket) session.getUserProperties().get("endpoint");
+            EchoClientSocket clientSocket = (EchoClientSocket)session.getUserProperties().get("endpoint");
             String message = new String(buf, UTF_8);
             session.getBasicRemote().sendText(message);
             String echoed = clientSocket.messages.poll(1, TimeUnit.SECONDS);

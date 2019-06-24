@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -28,8 +27,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
-/* ------------------------------------------------------------ */
-/** Welcome Filter
+/**
+ * Welcome Filter
  * This filter can be used to server an index file for a directory
  * when no index file actually exists (thus the web.xml mechanism does
  * not work).
@@ -42,33 +41,34 @@ import javax.servlet.http.HttpServletRequest;
  *
  * Requests to "/some/directory" will be redirected to "/some/directory/".
  */
-public  class WelcomeFilter implements Filter
+public class WelcomeFilter implements Filter
 {
     private String welcome;
 
     @Override
     public void init(FilterConfig filterConfig)
     {
-        welcome=filterConfig.getInitParameter("welcome");
-        if (welcome==null)
-            welcome="index.html";
+        welcome = filterConfig.getInitParameter("welcome");
+        if (welcome == null)
+            welcome = "index.html";
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void doFilter(ServletRequest request,
                          ServletResponse response,
                          FilterChain chain)
         throws IOException, ServletException
     {
-        String path=((HttpServletRequest)request).getServletPath();
-        if (welcome!=null && path.endsWith("/"))
-            request.getRequestDispatcher(path+welcome).forward(request,response);
+        String path = ((HttpServletRequest)request).getServletPath();
+        if (welcome != null && path.endsWith("/"))
+            request.getRequestDispatcher(path + welcome).forward(request, response);
         else
             chain.doFilter(request, response);
     }
 
     @Override
-    public void destroy() {}
+    public void destroy()
+    {
+    }
 }
 

@@ -37,31 +37,31 @@ public interface ThreadPool extends Executor
      *
      * @throws InterruptedException if thread was interrupted
      */
-    public void join() throws InterruptedException;
+    void join() throws InterruptedException;
 
     /**
      * @return The total number of threads currently in the pool
      */
     @ManagedAttribute("number of threads in pool")
-    public int getThreads();
+    int getThreads();
 
     /**
      * @return The number of idle threads in the pool
      */
     @ManagedAttribute("number of idle threads in pool")
-    public int getIdleThreads();
+    int getIdleThreads();
 
     /**
      * @return True if the pool is low on threads
      */
     @ManagedAttribute("indicates the pool is low on available threads")
-    public boolean isLowOnThreads();
+    boolean isLowOnThreads();
 
     /**
      * <p>Specialized sub-interface of ThreadPool that allows to get/set
      * the minimum and maximum number of threads of the pool.</p>
      */
-    public interface SizedThreadPool extends ThreadPool
+    interface SizedThreadPool extends ThreadPool
     {
         /**
          * @return the minimum number of threads

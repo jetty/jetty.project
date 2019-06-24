@@ -79,7 +79,7 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
-        payload.putChar((char) statusCode);
+        payload.putChar((char)statusCode);
         BufferUtil.flipToFlush(payload, 0);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -109,7 +109,7 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
-        payload.putChar((char) statusCode);
+        payload.putChar((char)statusCode);
         payload.put(StringUtil.getBytes("Reason"));
         BufferUtil.flipToFlush(payload, 0);
 

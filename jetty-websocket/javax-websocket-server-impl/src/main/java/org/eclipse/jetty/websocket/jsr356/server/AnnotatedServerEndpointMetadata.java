@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.LinkedList;
-
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
@@ -29,7 +28,7 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 
-public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<ServerEndpoint,ServerEndpointConfig> implements ServerEndpointMetadata
+public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<ServerEndpoint, ServerEndpointConfig> implements ServerEndpointMetadata
 {
     private final ServerEndpoint endpoint;
     private final AnnotatedServerEndpointConfig config;
@@ -45,8 +44,8 @@ public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<S
         }
 
         this.endpoint = anno;
-        this.config = new AnnotatedServerEndpointConfig(containerScope,websocket,anno,baseConfig);
-        
+        this.config = new AnnotatedServerEndpointConfig(containerScope, websocket, anno, baseConfig);
+
         getDecoders().addAll(anno.decoders());
         getEncoders().addAll(anno.encoders());
     }
@@ -64,14 +63,14 @@ public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<S
         super.customizeParamsOnError(params);
         params.addFirst(JsrPathParamId.INSTANCE);
     }
-    
+
     @Override
     public void customizeParamsOnOpen(LinkedList<IJsrParamId> params)
     {
         super.customizeParamsOnOpen(params);
         params.addFirst(JsrPathParamId.INSTANCE);
     }
-    
+
     @Override
     public void customizeParamsOnMessage(LinkedList<IJsrParamId> params)
     {

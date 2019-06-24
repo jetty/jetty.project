@@ -47,6 +47,7 @@ public class TestABCase7 extends AbstractABCase
 {
     /**
      * Basic message then close frame, normal behavior
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -60,7 +61,7 @@ public class TestABCase7 extends AbstractABCase
         expect.add(new TextFrame().setPayload("Hello World"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -71,6 +72,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * Close frame, then another close frame (send frame ignored)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -83,7 +85,7 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -95,6 +97,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * Close frame, then ping frame (no pong received)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -107,7 +110,7 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -119,6 +122,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * Close frame, then ping frame (no pong received)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -131,7 +135,7 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -143,6 +147,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * Text fin=false, close, then continuation fin=true
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -156,7 +161,7 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -168,13 +173,14 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * 256k msg, then close, then ping
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase7_1_6() throws Exception
     {
         byte msg[] = new byte[256 * 1024];
-        Arrays.fill(msg,(byte)'*');
+        Arrays.fill(msg, (byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(msg);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -186,7 +192,7 @@ public class TestABCase7 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -198,6 +204,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with no payload (payload length 0)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -209,7 +216,7 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame());
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -221,12 +228,13 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with invalid payload (payload length 1)
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase7_3_2() throws Exception
     {
-        byte payload[] = new byte[] { 0x00 };
+        byte payload[] = new byte[]{0x00};
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -235,7 +243,8 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging scope = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging scope = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -247,6 +256,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with valid payload (payload length 2)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -258,7 +268,7 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -270,18 +280,19 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with valid payload (with reason)
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase7_3_4() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new CloseInfo(StatusCode.NORMAL,"Hic").asFrame());
+        send.add(new CloseInfo(StatusCode.NORMAL, "Hic").asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.NORMAL,"Hic").asFrame());
+        expect.add(new CloseInfo(StatusCode.NORMAL, "Hic").asFrame());
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -293,22 +304,24 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with valid payload (with 123 byte reason)
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase7_3_5() throws Exception
     {
         byte utf[] = new byte[123];
-        Arrays.fill(utf,(byte)'!');
-        String reason = StringUtil.toUTF8String(utf,0,utf.length);
+        Arrays.fill(utf, (byte)'!');
+        String reason = StringUtil.toUTF8String(utf, 0, utf.length);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new CloseInfo(StatusCode.NORMAL,reason).asFrame());
+        send.add(new CloseInfo(StatusCode.NORMAL, reason).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.NORMAL,reason).asFrame());
+        expect.add(new CloseInfo(StatusCode.NORMAL, reason).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(AbstractWebSocketConnection.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(AbstractWebSocketConnection.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -320,6 +333,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with invalid UTF8 in payload
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -331,7 +345,7 @@ public class TestABCase7 extends AbstractABCase
         payload.put((byte)0xE8);
         byte invalidUtf[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
         payload.put(invalidUtf);
-        BufferUtil.flipToFlush(payload,0);
+        BufferUtil.flipToFlush(payload, 0);
 
         List<WebSocketFrame> send = new ArrayList<>();
         WebSocketFrame close = new BadFrame(OpCode.CLOSE);
@@ -341,7 +355,8 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging scope = new StacklessLogging(Parser.class,CloseInfo.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging scope = new StacklessLogging(Parser.class, CloseInfo.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);

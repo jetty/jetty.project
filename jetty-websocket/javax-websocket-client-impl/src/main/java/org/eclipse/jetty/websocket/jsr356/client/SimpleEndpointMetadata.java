@@ -38,7 +38,7 @@ public class SimpleEndpointMetadata implements EndpointMetadata
     {
         this(endpointClass, null);
     }
-    
+
     public SimpleEndpointMetadata(Class<? extends Endpoint> endpointClass, EndpointConfig config)
     {
         this.endpointClass = endpointClass;

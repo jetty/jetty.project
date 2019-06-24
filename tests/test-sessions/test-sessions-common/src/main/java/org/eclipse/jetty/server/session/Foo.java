@@ -20,11 +20,10 @@ package org.eclipse.jetty.server.session;
 
 /**
  * Foo
- *
- *
  */
 public interface Foo
 {
-    public int getInt();
-    public void setInt (int i);
+    int getInt();
+
+    void setInt(int i);
 }

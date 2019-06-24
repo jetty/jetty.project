@@ -189,6 +189,6 @@ public class Sweeper extends AbstractLifeCycle implements Runnable
         /**
          * @return whether this resource should be swept
          */
-        public boolean sweep();
+        boolean sweep();
     }
 }

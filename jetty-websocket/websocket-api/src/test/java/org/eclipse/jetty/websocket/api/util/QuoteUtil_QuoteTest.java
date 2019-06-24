@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.api.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -28,6 +25,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Test QuoteUtil.quote(), and QuoteUtil.dequote()
@@ -39,13 +39,17 @@ public class QuoteUtil_QuoteTest
         // The various quoting of a String
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[] { "Hi", "\"Hi\"" });
-        data.add(new Object[] { "Hello World", "\"Hello World\"" });
-        data.add(new Object[] { "9.0.0", "\"9.0.0\"" });
-        data.add(new Object[] { "Something \"Special\"", 
-                                "\"Something \\\"Special\\\"\"" });
-        data.add(new Object[] { "A Few\n\"Good\"\tMen", 
-                                "\"A Few\\n\\\"Good\\\"\\tMen\"" });
+        data.add(new Object[]{"Hi", "\"Hi\""});
+        data.add(new Object[]{"Hello World", "\"Hello World\""});
+        data.add(new Object[]{"9.0.0", "\"9.0.0\""});
+        data.add(new Object[]{
+            "Something \"Special\"",
+            "\"Something \\\"Special\\\"\""
+        });
+        data.add(new Object[]{
+            "A Few\n\"Good\"\tMen",
+            "\"A Few\\n\\\"Good\\\"\\tMen\""
+        });
 
         return data.stream().map(Arguments::of);
     }
@@ -56,7 +60,7 @@ public class QuoteUtil_QuoteTest
     {
         String actual = QuoteUtil.dequote(quoted);
         actual = QuoteUtil.unescape(actual);
-        assertThat(actual,is(unquoted));
+        assertThat(actual, is(unquoted));
     }
 
     @ParameterizedTest
@@ -64,9 +68,9 @@ public class QuoteUtil_QuoteTest
     public void testQuoting(final String unquoted, final String quoted)
     {
         StringBuilder buf = new StringBuilder();
-        QuoteUtil.quote(buf,unquoted);
+        QuoteUtil.quote(buf, unquoted);
 
         String actual = buf.toString();
-        assertThat(actual,is(quoted));
+        assertThat(actual, is(quoted));
     }
 }

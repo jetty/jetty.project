@@ -118,9 +118,9 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
                 if (channel != null)
                     channel.close();
             }
-            catch (IOException xx)
+            catch (IOException ignored)
             {
-                LOG.ignore(xx);
+                LOG.ignore(ignored);
             }
             finally
             {

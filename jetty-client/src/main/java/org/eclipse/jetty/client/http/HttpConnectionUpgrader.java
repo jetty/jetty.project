@@ -22,5 +22,5 @@ import org.eclipse.jetty.client.HttpResponse;
 
 public interface HttpConnectionUpgrader
 {
-    public void upgrade(HttpResponse response, HttpConnectionOverHTTP connection);
+    void upgrade(HttpResponse response, HttpConnectionOverHTTP connection);
 }

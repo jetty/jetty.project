@@ -99,7 +99,7 @@ public class BinaryStreamTest
 
         try (OutputStream output = session.getBasicRemote().getSendStream())
         {
-             output.write(data);
+            output.write(data);
         }
 
         assertTrue(client.await(5, TimeUnit.SECONDS));
@@ -118,7 +118,9 @@ public class BinaryStreamTest
         try (OutputStream output = session.getBasicRemote().getSendStream())
         {
             for (int i = 0; i < size; ++i)
+            {
                 output.write(data[i]);
+            }
         }
 
         assertTrue(client.await(5, TimeUnit.SECONDS));
@@ -173,7 +175,9 @@ public class BinaryStreamTest
             {
                 int read;
                 while ((read = input.read(buffer)) >= 0)
+                {
                     output.write(buffer, 0, read);
+                }
             }
         }
     }

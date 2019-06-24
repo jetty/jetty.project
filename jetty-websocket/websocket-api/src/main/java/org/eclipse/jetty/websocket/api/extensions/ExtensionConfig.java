@@ -35,9 +35,8 @@ public class ExtensionConfig
 {
     /**
      * Parse a single parameterized name.
-     * 
-     * @param parameterizedName
-     *            the parameterized name
+     *
+     * @param parameterizedName the parameterized name
      * @return the ExtensionConfig
      */
     public static ExtensionConfig parse(String parameterizedName)
@@ -47,9 +46,8 @@ public class ExtensionConfig
 
     /**
      * Parse enumeration of <code>Sec-WebSocket-Extensions</code> header values into a {@link ExtensionConfig} list
-     * 
-     * @param valuesEnum
-     *            the raw header values enum
+     *
+     * @param valuesEnum the raw header values enum
      * @return the list of extension configs
      */
     public static List<ExtensionConfig> parseEnum(Enumeration<String> valuesEnum)
@@ -60,7 +58,7 @@ public class ExtensionConfig
         {
             while (valuesEnum.hasMoreElements())
             {
-                Iterator<String> extTokenIter = QuoteUtil.splitAt(valuesEnum.nextElement(),",");
+                Iterator<String> extTokenIter = QuoteUtil.splitAt(valuesEnum.nextElement(), ",");
                 while (extTokenIter.hasNext())
                 {
                     String extToken = extTokenIter.next();
@@ -74,9 +72,8 @@ public class ExtensionConfig
 
     /**
      * Parse 1 or more raw <code>Sec-WebSocket-Extensions</code> header values into a {@link ExtensionConfig} list
-     * 
-     * @param rawSecWebSocketExtensions
-     *            the raw header values
+     *
+     * @param rawSecWebSocketExtensions the raw header values
      * @return the list of extension configs
      */
     public static List<ExtensionConfig> parseList(String... rawSecWebSocketExtensions)
@@ -85,7 +82,7 @@ public class ExtensionConfig
 
         for (String rawValue : rawSecWebSocketExtensions)
         {
-            Iterator<String> extTokenIter = QuoteUtil.splitAt(rawValue,",");
+            Iterator<String> extTokenIter = QuoteUtil.splitAt(rawValue, ",");
             while (extTokenIter.hasNext())
             {
                 String extToken = extTokenIter.next();
@@ -98,9 +95,8 @@ public class ExtensionConfig
 
     /**
      * Convert a list of {@link ExtensionConfig} to a header value
-     * 
-     * @param configs
-     *            the list of extension configs
+     *
+     * @param configs the list of extension configs
      * @return the header value (null if no configs present)
      */
     public static String toHeaderValue(List<ExtensionConfig> configs)
@@ -128,6 +124,7 @@ public class ExtensionConfig
 
     /**
      * Copy constructor
+     *
      * @param copy the extension config to copy
      */
     public ExtensionConfig(ExtensionConfig copy)
@@ -139,7 +136,7 @@ public class ExtensionConfig
 
     public ExtensionConfig(String parameterizedName)
     {
-        Iterator<String> extListIter = QuoteUtil.splitAt(parameterizedName,";");
+        Iterator<String> extListIter = QuoteUtil.splitAt(parameterizedName, ";");
         this.name = extListIter.next();
         this.parameters = new HashMap<>();
 
@@ -147,14 +144,14 @@ public class ExtensionConfig
         while (extListIter.hasNext())
         {
             String extParam = extListIter.next();
-            Iterator<String> extParamIter = QuoteUtil.splitAt(extParam,"=");
+            Iterator<String> extParamIter = QuoteUtil.splitAt(extParam, "=");
             String key = extParamIter.next().trim();
             String value = null;
             if (extParamIter.hasNext())
             {
                 value = extParamIter.next();
             }
-            parameters.put(key,value);
+            parameters.put(key, value);
         }
     }
 
@@ -195,7 +192,7 @@ public class ExtensionConfig
             if (value != null)
             {
                 str.append('=');
-                QuoteUtil.quoteIfNeeded(str,value,";=");
+                QuoteUtil.quoteIfNeeded(str, value, ";=");
             }
         }
         return str.toString();
@@ -208,7 +205,7 @@ public class ExtensionConfig
 
     /**
      * Return parameters found in request URI.
-     * 
+     *
      * @return the parameter map
      */
     public final Map<String, String> getParameters()
@@ -218,9 +215,8 @@ public class ExtensionConfig
 
     /**
      * Initialize the parameters on this config from the other configuration.
-     * 
-     * @param other
-     *            the other configuration.
+     *
+     * @param other the other configuration.
      */
     public final void init(ExtensionConfig other)
     {
@@ -230,17 +226,17 @@ public class ExtensionConfig
 
     public final void setParameter(String key)
     {
-        parameters.put(key,null);
+        parameters.put(key, null);
     }
 
     public final void setParameter(String key, int value)
     {
-        parameters.put(key,Integer.toString(value));
+        parameters.put(key, Integer.toString(value));
     }
 
     public final void setParameter(String key, String value)
     {
-        parameters.put(key,value);
+        parameters.put(key, value);
     }
 
     @Override

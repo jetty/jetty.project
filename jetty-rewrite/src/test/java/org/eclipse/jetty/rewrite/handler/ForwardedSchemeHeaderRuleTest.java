@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
 {
@@ -70,21 +70,21 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
         _rule.setHeader("Front-End-Https");
         _rule.setHeaderValue("on");
         _rule.setScheme("https");
-        _rule.matchAndApply("/",_request,_response);
-        assertEquals("https",_request.getScheme());
+        _rule.matchAndApply("/", _request, _response);
+        assertEquals("https", _request.getScheme());
 
         _request.setScheme("other");
         // header value doesn't match rule's value
         setRequestHeader("Front-End-Https", "off");
-        _rule.matchAndApply("/",_request,_response);
-        assertEquals("other",_request.getScheme());
+        _rule.matchAndApply("/", _request, _response);
+        assertEquals("other", _request.getScheme());
 
         _request.setScheme(null);
         // header value can be any value
         setRequestHeader("Front-End-Https", "any");
         _rule.setHeaderValue(null);
-        _rule.matchAndApply("/",_request,_response);
-        assertEquals("https",_request.getScheme());
+        _rule.matchAndApply("/", _request, _response);
+        assertEquals("https", _request.getScheme());
     }
 
     private void setRequestHeader(String header, String headerValue)

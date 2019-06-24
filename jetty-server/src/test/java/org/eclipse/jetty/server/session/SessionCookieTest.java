@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.util.concurrent.TimeUnit;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
 
@@ -28,16 +29,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * SessionCookieTest
  */
 public class SessionCookieTest
 {
-   
-    
-    
+
     public class MockSessionStore extends AbstractSessionCache
     {
 
@@ -48,9 +45,8 @@ public class SessionCookieTest
 
         @Override
         public void shutdown()
-        {        
+        {
         }
-
 
         @Override
         public Session newSession(SessionData data)
@@ -58,20 +54,18 @@ public class SessionCookieTest
             return null;
         }
 
-
         @Override
         public Session doGet(String key)
         {
             return null;
         }
 
-
         @Override
         public Session doPutIfAbsent(String key, Session session)
         {
             return null;
         }
-      
+
         @Override
         public Session doDelete(String key)
         {
@@ -91,8 +85,6 @@ public class SessionCookieTest
         }
     }
 
-    
-    
     public class MockSessionIdManager extends DefaultSessionIdManager
     {
         public MockSessionIdManager(Server server)
@@ -116,14 +108,11 @@ public class SessionCookieTest
         public String renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
         {
             return "";
-            
         }
     }
-  
-  
 
     @Test
-    public void testSecureSessionCookie () throws Exception
+    public void testSecureSessionCookie() throws Exception
     {
         Server server = new Server();
         MockSessionIdManager idMgr = new MockSessionIdManager(server);
@@ -133,10 +122,10 @@ public class SessionCookieTest
         store.setSessionDataStore(new NullSessionDataStore());
         mgr.setSessionCache(store);
         mgr.setSessionIdManager(idMgr);
-        
+
         long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        
-        Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30)); 
+
+        Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
 
         SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
         sessionCookieConfig.setSecure(true);
