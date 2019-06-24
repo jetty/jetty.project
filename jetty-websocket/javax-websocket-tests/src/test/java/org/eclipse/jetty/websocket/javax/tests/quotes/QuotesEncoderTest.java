@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.tests.quotes;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.websocket.javax.tests.LocalServer;
-import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -38,12 +35,15 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.websocket.javax.tests.LocalServer;
+import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -83,8 +83,8 @@ public class QuotesEncoderTest
 
         public void write(Quotes quotes) throws IOException, EncodeException
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Writing Quotes: {}", quotes);
+            if (logger.isDebugEnabled())
+                logger.debug("Writing Quotes: {}", quotes);
             this.session.getBasicRemote().sendObject(quotes);
         }
     }
@@ -137,7 +137,8 @@ public class QuotesEncoderTest
 
         // read file
         File qfile = MavenTestingUtils.getTestResourceFile(filename);
-        try (FileReader reader = new FileReader(qfile); BufferedReader buf = new BufferedReader(reader))
+        try (FileReader reader = new FileReader(qfile);
+             BufferedReader buf = new BufferedReader(reader))
         {
             String line;
             while ((line = buf.readLine()) != null)

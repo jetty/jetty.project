@@ -59,7 +59,9 @@ public class MaxFrameSizeParseTest
             buffer.putInt(0, maxFrameLength + 1);
             buffer.position(1);
             while (buffer.hasRemaining())
+            {
                 parser.parse(buffer);
+            }
         }
 
         assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, failure.get());

@@ -76,9 +76,9 @@ public class JettyWebSocketNegotiationTest
     public void testBadRequest() throws Exception
     {
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
-        container.addMapping("/", (req, resp)->new EchoSocket());
+        container.addMapping("/", (req, resp) -> new EchoSocket());
 
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
 
         UpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -100,7 +100,7 @@ public class JettyWebSocketNegotiationTest
             return new EchoSocket();
         });
 
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
 
         try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class))

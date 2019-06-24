@@ -35,20 +35,18 @@
  * under the License.
  */
 
-
 package org.eclipse.jetty.servlet;
+
+import java.util.Collections;
+import java.util.Set;
+import javax.servlet.ServletRegistration;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
-import java.util.Collections;
-import java.util.Set;
-
-import javax.servlet.ServletRegistration;
-
-import org.junit.jupiter.api.Test;
 
 /**
  * @version $Rev$ $Date$
@@ -85,7 +83,7 @@ public class HolderTest
 
         try
         {
-            reg.setInitParameters(Collections.singletonMap((String) null, "bax"));
+            reg.setInitParameters(Collections.singletonMap((String)null, "bax"));
             fail("null name in map accepted");
         }
         catch (IllegalArgumentException e)
@@ -93,7 +91,7 @@ public class HolderTest
         }
         try
         {
-            reg.setInitParameters(Collections.singletonMap("foo", (String) null));
+            reg.setInitParameters(Collections.singletonMap("foo", (String)null));
             fail("null value in map accepted");
         }
         catch (IllegalArgumentException e)
@@ -103,6 +101,5 @@ public class HolderTest
         Set<String> clash2 = reg.setInitParameters(Collections.singletonMap("FOO", "bax"));
         assertTrue(clash2.isEmpty(), "should be no clash");
         assertEquals(2, reg.getInitParameters().size(), "setInitParameters should not replace existing non-clashing init parameters");
-
     }
 }

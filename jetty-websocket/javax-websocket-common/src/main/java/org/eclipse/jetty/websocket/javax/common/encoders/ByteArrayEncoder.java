@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.javax.common.encoders;
 
+import java.nio.ByteBuffer;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
-import java.nio.ByteBuffer;
 
 public class ByteArrayEncoder implements Encoder.Binary<byte[]>
 {

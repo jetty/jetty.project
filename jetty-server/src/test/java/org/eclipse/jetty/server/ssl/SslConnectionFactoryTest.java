@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLParameters;
@@ -85,15 +84,14 @@ public class SslConnectionFactoryTest
         HttpConfiguration https_config = new HttpConfiguration(http_config);
         https_config.addCustomizer(new SecureRequestCustomizer());
 
-
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
 
         ServerConnector https = _connector = new ServerConnector(_server,
-                new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(https_config));
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(https_config));
         https.setPort(0);
         https.setIdleTimeout(30000);
 
@@ -138,7 +136,8 @@ public class SslConnectionFactoryTest
     @Test
     public void testBadHandshake() throws Exception
     {
-        try (Socket socket = new Socket("127.0.0.1", _port); OutputStream out = socket.getOutputStream())
+        try (Socket socket = new Socket("127.0.0.1", _port);
+             OutputStream out = socket.getOutputStream())
         {
             out.write("Rubbish".getBytes());
             out.flush();
@@ -196,7 +195,7 @@ public class SslConnectionFactoryTest
     {
         _server.stop();
         assertNotNull(_connector.removeConnectionFactory(HttpVersion.HTTP_1_1.asString()));
-        assertThrows(IllegalStateException.class, ()-> _server.start());
+        assertThrows(IllegalStateException.class, () -> _server.start());
     }
 
     private String getResponse(String host, String cn) throws Exception

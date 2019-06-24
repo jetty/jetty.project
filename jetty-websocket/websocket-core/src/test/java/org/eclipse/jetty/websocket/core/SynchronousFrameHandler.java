@@ -30,13 +30,15 @@ public interface SynchronousFrameHandler extends FrameHandler
             onOpen(coreSession);
             callback.succeeded();
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
             callback.failed(t);
         }
     }
 
-    default void onOpen(CoreSession coreSession) throws Exception {}
+    default void onOpen(CoreSession coreSession) throws Exception
+    {
+    }
 
     @Override
     default void onFrame(Frame frame, Callback callback)
@@ -46,13 +48,15 @@ public interface SynchronousFrameHandler extends FrameHandler
             onFrame(frame);
             callback.succeeded();
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
             callback.failed(t);
         }
     }
 
-    default void onFrame(Frame frame) throws Exception {}
+    default void onFrame(Frame frame) throws Exception
+    {
+    }
 
     @Override
     default void onClosed(CloseStatus closeStatus, Callback callback)
@@ -62,12 +66,15 @@ public interface SynchronousFrameHandler extends FrameHandler
             onClosed(closeStatus);
             callback.succeeded();
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
             callback.failed(t);
         }
     }
-    default void onClosed(CloseStatus closeStatus) throws Exception {}
+
+    default void onClosed(CloseStatus closeStatus) throws Exception
+    {
+    }
 
     @Override
     default void onError(Throwable cause, Callback callback)
@@ -77,11 +84,13 @@ public interface SynchronousFrameHandler extends FrameHandler
             onError(cause);
             callback.succeeded();
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
             callback.failed(t);
         }
     }
 
-    default void onError(Throwable cause) throws Exception  {}
+    default void onError(Throwable cause) throws Exception
+    {
+    }
 }

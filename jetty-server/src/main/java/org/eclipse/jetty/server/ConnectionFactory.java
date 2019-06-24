@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-
 import java.util.List;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -38,7 +37,7 @@ import org.eclipse.jetty.io.EndPoint;
  * <dl>
  * <dt>http</dt><dd>Creates a HTTP connection that can handle multiple versions of HTTP from 0.9 to 1.1</dd>
  * <dt>h2</dt><dd>Creates a HTTP/2 connection that handles the HTTP/2 protocol</dd>
- * <dt>SSL-XYZ</dt><dd>Create an SSL connection chained to a connection obtained from a connection factory 
+ * <dt>SSL-XYZ</dt><dd>Create an SSL connection chained to a connection obtained from a connection factory
  * with a protocol "XYZ".</dd>
  * <dt>SSL-http</dt><dd>Create an SSL connection chained to a HTTP connection (aka https)</dd>
  * <dt>SSL-ALPN</dt><dd>Create an SSL connection chained to a ALPN connection, that uses a negotiation with
@@ -47,43 +46,43 @@ import org.eclipse.jetty.io.EndPoint;
  */
 public interface ConnectionFactory
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * @return A string representing the primary protocol name.
      */
     public String getProtocol();
 
-    /* ------------------------------------------------------------ */
     /**
      * @return A list of alternative protocol names/versions including the primary protocol.
      */
     public List<String> getProtocols();
-    
+
     /**
      * <p>Creates a new {@link Connection} with the given parameters</p>
+     *
      * @param connector The {@link Connector} creating this connection
      * @param endPoint the {@link EndPoint} associated with the connection
      * @return a new {@link Connection}
      */
     public Connection newConnection(Connector connector, EndPoint endPoint);
-    
-    
+
     public interface Upgrading extends ConnectionFactory
     {
-        /* ------------------------------------------------------------ */
-        /** Create a connection for an upgrade request.
+
+        /**
+         * Create a connection for an upgrade request.
          * <p>This is a variation of {@link #newConnection(Connector, EndPoint)} that can create (and/or customise)
-         * a connection for an upgrade request.  Implementations may call {@link #newConnection(Connector, EndPoint)} or 
+         * a connection for an upgrade request.  Implementations may call {@link #newConnection(Connector, EndPoint)} or
          * may construct the connection instance themselves.</p>
-         *  
-         * @param connector  The connector to upgrade for.
+         *
+         * @param connector The connector to upgrade for.
          * @param endPoint The endpoint of the connection.
          * @param upgradeRequest The meta data of the upgrade request.
-         * @param responseFields  The fields to be sent with the 101 response
+         * @param responseFields The fields to be sent with the 101 response
          * @return Null to indicate that request processing should continue normally without upgrading. A new connection instance to
          * indicate that the upgrade should proceed.
          * @throws BadMessageException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
          */
-        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest,HttpFields responseFields) throws BadMessageException;
+        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields responseFields) throws BadMessageException;
     }
 }

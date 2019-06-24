@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -115,7 +114,6 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         }
         return user;
     }
-    
 
     @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
@@ -239,8 +237,8 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     {
         private static final String ATTRIBUTE = UserIdentityHolder.class.getName();
 
-        private transient final Instant _validFrom = Instant.now();
-        private transient final UserIdentity _userIdentity;
+        private final transient Instant _validFrom = Instant.now();
+        private final transient UserIdentity _userIdentity;
 
         private UserIdentityHolder(UserIdentity userIdentity)
         {

@@ -46,7 +46,7 @@ public class HazelcastSessionDataStore
     implements SessionDataStore
 {
 
-    private  final static Logger LOG = Log.getLogger( "org.eclipse.jetty.server.session");
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     private IMap<String, SessionData> sessionDataMap;
 
@@ -56,41 +56,42 @@ public class HazelcastSessionDataStore
     {
     }
 
-    /** Control whether or not to execute queries to find
+    /**
+     * Control whether or not to execute queries to find
      * "zombie" sessions - ie sessions that are no longer
      * actively referenced by any jetty instance and should
      * be expired.
-     * 
+     *
      * If you use this feature, be aware that if your session
      * stores any attributes that use classes from within your
      * webapp, or from within jetty, you will need to make sure
-     * those classes are available to all of your hazelcast 
+     * those classes are available to all of your hazelcast
      * instances, whether embedded or remote.
-     * 
+     *
      * @param scavengeZombies true means unreferenced sessions
      * will be actively sought and expired. False means that they
      * will remain in hazelcast until some other mechanism removes them.
      */
-    public void setScavengeZombieSessions (boolean scavengeZombies)
+    public void setScavengeZombieSessions(boolean scavengeZombies)
     {
         _scavengeZombies = scavengeZombies;
     }
-    
+
     public boolean isScavengeZombies()
     {
         return _scavengeZombies;
     }
 
     @Override
-    public SessionData doLoad( String id )
-            throws Exception
+    public SessionData doLoad(String id)
+        throws Exception
     {
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug( "Loading session {} from hazelcast", id );
+                LOG.debug("Loading session {} from hazelcast", id);
 
-            SessionData sd = sessionDataMap.get( getCacheKey( id ) );
+            SessionData sd = sessionDataMap.get(getCacheKey(id));
             return sd;
         }
         catch (Exception e)
@@ -99,16 +100,15 @@ public class HazelcastSessionDataStore
         }
     }
 
-    
     @Override
-    public boolean delete( String id )
+    public boolean delete(String id)
         throws Exception
     {
         if (sessionDataMap == null)
             return false;
-        
+
         //use delete which does not deserialize the SessionData object being removed
-        sessionDataMap.delete( getCacheKey(id));
+        sessionDataMap.delete(getCacheKey(id));
         return true;
     }
 
@@ -117,13 +117,13 @@ public class HazelcastSessionDataStore
         return sessionDataMap;
     }
 
-    public void setSessionDataMap( IMap<String, SessionData> sessionDataMap )
+    public void setSessionDataMap(IMap<String, SessionData> sessionDataMap)
     {
         this.sessionDataMap = sessionDataMap;
     }
 
     @Override
-    public void initialize( SessionContext context )
+    public void initialize(SessionContext context)
         throws Exception
     {
         super.initialize(context);
@@ -132,10 +132,10 @@ public class HazelcastSessionDataStore
     }
 
     @Override
-    public void doStore( String id, SessionData data, long lastSaveTime )
+    public void doStore(String id, SessionData data, long lastSaveTime)
         throws Exception
     {
-        this.sessionDataMap.set( getCacheKey( id ), data);
+        this.sessionDataMap.set(getCacheKey(id), data);
     }
 
     @Override
@@ -144,17 +144,17 @@ public class HazelcastSessionDataStore
         return true;
     }
 
-
     @Override
-    public Set<String> doGetExpired( Set<String> candidates )
+    public Set<String> doGetExpired(Set<String> candidates)
     {
         long now = System.currentTimeMillis();
-      
-        Set<String> expiredSessionIds = candidates.stream().filter( candidate -> {
-            
+
+        Set<String> expiredSessionIds = candidates.stream().filter(candidate ->
+        {
+
             if (LOG.isDebugEnabled())
-                LOG.debug( "Checking expiry for candidate {}", candidate );
-            
+                LOG.debug("Checking expiry for candidate {}", candidate);
+
             try
             {
                 SessionData sd = load(candidate);
@@ -164,7 +164,7 @@ public class HazelcastSessionDataStore
                 {
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.debug( "Session {} does not exist in Hazelcast", candidate );
+                        LOG.debug("Session {} does not exist in Hazelcast", candidate);
                     }
                     return true;
                 }
@@ -173,11 +173,11 @@ public class HazelcastSessionDataStore
                     if (_context.getWorkerName().equals(sd.getLastNode()))
                     {
                         //we are its manager, add it to the expired set if it is expired now
-                        if ((sd.getExpiry() > 0 ) && sd.getExpiry() <= now)
+                        if ((sd.getExpiry() > 0) && sd.getExpiry() <= now)
                         {
                             if (LOG.isDebugEnabled())
                             {
-                                LOG.debug( "Session {} managed by {} is expired", candidate, _context.getWorkerName() );
+                                LOG.debug("Session {} managed by {} is expired", candidate, _context.getWorkerName());
                             }
                             return true;
                         }
@@ -188,16 +188,16 @@ public class HazelcastSessionDataStore
                         // this is our first expiryCheck and the session expired a long time ago
                         //or
                         //the session expired at least one graceperiod ago
-                        if (_lastExpiryCheckTime <=0)
+                        if (_lastExpiryCheckTime <= 0)
                         {
-                            if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
+                            if ((sd.getExpiry() > 0) && sd.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
                             {
                                 return true;
                             }
                         }
                         else
                         {
-                            if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * _gracePeriodSec)))
+                            if ((sd.getExpiry() > 0) && sd.getExpiry() < (now - (1000L * _gracePeriodSec)))
                             {
                                 return true;
                             }
@@ -211,7 +211,7 @@ public class HazelcastSessionDataStore
                 return true;
             }
             return false;
-        } ).collect( Collectors.toSet() );
+        }).collect(Collectors.toSet());
 
         if (isScavengeZombies())
         {
@@ -219,7 +219,7 @@ public class HazelcastSessionDataStore
             final AtomicReference<Set<String>> reference = new AtomicReference<>();
             final AtomicReference<Exception> exception = new AtomicReference<>();
 
-            _context.run(()->
+            _context.run(() ->
             {
                 try
                 {
@@ -229,8 +229,10 @@ public class HazelcastSessionDataStore
                     Collection<SessionData> results = sessionDataMap.values(predicate);
                     if (results != null)
                     {
-                        for (SessionData sd: results)
+                        for (SessionData sd : results)
+                        {
                             ids.add(sd.getId());
+                        }
                     }
                     reference.set(ids);
                 }
@@ -251,14 +253,13 @@ public class HazelcastSessionDataStore
                 expiredSessionIds.addAll(reference.get());
             }
         }
-        
+
         return expiredSessionIds;
     }
-    
 
     @Override
-    public boolean exists( String id )
-    throws Exception
+    public boolean exists(String id)
+        throws Exception
     {
         //TODO find way to do query without pulling in whole session data
         SessionData sd = load(id);
@@ -271,7 +272,7 @@ public class HazelcastSessionDataStore
             return sd.getExpiry() > System.currentTimeMillis(); //not expired yet
     }
 
-    public String getCacheKey( String id )
+    public String getCacheKey(String id)
     {
         return _context.getCanonicalContextPath() + "_" + _context.getVhost() + "_" + id;
     }

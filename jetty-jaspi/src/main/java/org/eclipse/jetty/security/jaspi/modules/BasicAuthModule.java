@@ -40,7 +40,6 @@ public class BasicAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = Log.getLogger(BasicAuthModule.class);
 
-
     private String realmName;
 
     private static final String REALM_KEY = "org.eclipse.jetty.security.jaspi.modules.RealmName";
@@ -56,33 +55,39 @@ public class BasicAuthModule extends BaseAuthModule
     }
 
     @Override
-    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, 
-                           CallbackHandler handler, Map options) 
-    throws AuthException
+    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy,
+                           CallbackHandler handler, Map options)
+        throws AuthException
     {
         super.initialize(requestPolicy, responsePolicy, handler, options);
-        realmName = (String) options.get(REALM_KEY);
+        realmName = (String)options.get(REALM_KEY);
     }
 
     @Override
-    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, 
-                                      Subject serviceSubject) 
-    throws AuthException
+    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject,
+                                      Subject serviceSubject)
+        throws AuthException
     {
-        HttpServletRequest request = (HttpServletRequest) messageInfo.getRequestMessage();
-        HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
+        HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();
+        HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
         String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
 
         try
         {
             if (credentials != null)
             {
-                if (LOG.isDebugEnabled()) LOG.debug("Credentials: " + credentials);
-                if (login(clientSubject, credentials, Constraint.__BASIC_AUTH, messageInfo)) { return AuthStatus.SUCCESS; }
-
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Credentials: " + credentials);
+                if (login(clientSubject, credentials, Constraint.__BASIC_AUTH, messageInfo))
+                {
+                    return AuthStatus.SUCCESS;
+                }
             }
 
-            if (!isMandatory(messageInfo)) { return AuthStatus.SUCCESS; }
+            if (!isMandatory(messageInfo))
+            {
+                return AuthStatus.SUCCESS;
+            }
             response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + realmName + '"');
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;
@@ -95,6 +100,5 @@ public class BasicAuthModule extends BaseAuthModule
         {
             throw new AuthException(e.getMessage());
         }
-
     }
 }

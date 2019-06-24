@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,13 +28,12 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 
-
-/* ------------------------------------------------------------ */
-/** ScopedHandler.
+/**
+ * ScopedHandler.
  *
  * A ScopedHandler is a HandlerWrapper where the wrapped handlers
- * each define a scope.   
- * 
+ * each define a scope.
+ *
  * <p>When {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
  * is called on the first ScopedHandler in a chain of HandlerWrappers,
  * the {@link #doScope(String, Request, HttpServletRequest, HttpServletResponse)} method is
@@ -103,11 +101,10 @@ import org.eclipse.jetty.server.Response;
  */
 public abstract class ScopedHandler extends HandlerWrapper
 {
-    private static final ThreadLocal<ScopedHandler> __outerScope= new ThreadLocal<ScopedHandler>();
+    private static final ThreadLocal<ScopedHandler> __outerScope = new ThreadLocal<ScopedHandler>();
     protected ScopedHandler _outerScope;
     protected ScopedHandler _nextScope;
 
-    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
      */
@@ -116,120 +113,97 @@ public abstract class ScopedHandler extends HandlerWrapper
     {
         try
         {
-            _outerScope=__outerScope.get();
-            if (_outerScope==null)
+            _outerScope = __outerScope.get();
+            if (_outerScope == null)
                 __outerScope.set(this);
 
             super.doStart();
 
-            _nextScope= getChildHandlerByClass(ScopedHandler.class);
-
+            _nextScope = getChildHandlerByClass(ScopedHandler.class);
         }
         finally
         {
-            if (_outerScope==null)
+            if (_outerScope == null)
                 __outerScope.set(null);
         }
     }
 
-    /** ------------------------------------------------------------ */
-    /*
-     */
     @Override
     public final void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (isStarted())
         {
-            if (_outerScope==null)
-                doScope(target,baseRequest,request, response);
+            if (_outerScope == null)
+                doScope(target, baseRequest, request, response);
             else
-                doHandle(target,baseRequest,request, response);
+                doHandle(target, baseRequest, request, response);
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Scope the handler
      * <p>Derived implementations should call {@link #nextScope(String, Request, HttpServletRequest, HttpServletResponse)}
-     * @param target
-     *          The target of the request - either a URI or a name.
-     * @param baseRequest
-     *          The original unwrapped request object.
-     * @param request
-     *            The request either as the {@link Request} object or a wrapper of that request. The
-     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
-     *            method can be used access the Request object if required.
-     * @param response
-     *            The response as the {@link Response} object or a wrapper of that request. The
-     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
-     *            method can be used access the Response object if required.
-     * @throws IOException
-     *             if unable to handle the request or response processing
-     * @throws ServletException
-     *             if unable to handle the request or response due to underlying servlet issue
+     *
+     * @param target The target of the request - either a URI or a name.
+     * @param baseRequest The original unwrapped request object.
+     * @param request The request either as the {@link Request} object or a wrapper of that request. The
+     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
+     * method can be used access the Request object if required.
+     * @param response The response as the {@link Response} object or a wrapper of that request. The
+     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
+     * method can be used access the Response object if required.
+     * @throws IOException if unable to handle the request or response processing
+     * @throws ServletException if unable to handle the request or response due to underlying servlet issue
      */
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
-        nextScope(target,baseRequest,request,response);
+        nextScope(target, baseRequest, request, response);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Scope the handler
-     * @param target
-     *          The target of the request - either a URI or a name.
-     * @param baseRequest
-     *          The original unwrapped request object.
-     * @param request
-     *            The request either as the {@link Request} object or a wrapper of that request. The
-     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
-     *            method can be used access the Request object if required.
-     * @param response
-     *            The response as the {@link Response} object or a wrapper of that request. The
-     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
-     *            method can be used access the Response object if required.
-     * @throws IOException
-     *             if unable to handle the request or response processing
-     * @throws ServletException
-     *             if unable to handle the request or response due to underlying servlet issue
+     *
+     * @param target The target of the request - either a URI or a name.
+     * @param baseRequest The original unwrapped request object.
+     * @param request The request either as the {@link Request} object or a wrapper of that request. The
+     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
+     * method can be used access the Request object if required.
+     * @param response The response as the {@link Response} object or a wrapper of that request. The
+     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
+     * method can be used access the Response object if required.
+     * @throws IOException if unable to handle the request or response processing
+     * @throws ServletException if unable to handle the request or response due to underlying servlet issue
      */
     public final void nextScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
-        if (_nextScope!=null)
-            _nextScope.doScope(target,baseRequest,request, response);
-        else if (_outerScope!=null)
-            _outerScope.doHandle(target,baseRequest,request, response);
+        if (_nextScope != null)
+            _nextScope.doScope(target, baseRequest, request, response);
+        else if (_outerScope != null)
+            _outerScope.doHandle(target, baseRequest, request, response);
         else
-            doHandle(target,baseRequest,request, response);
+            doHandle(target, baseRequest, request, response);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Do the handler work within the scope.
      * <p>Derived implementations should call {@link #nextHandle(String, Request, HttpServletRequest, HttpServletResponse)}
-     * @param target
-     *          The target of the request - either a URI or a name.
-     * @param baseRequest
-     *          The original unwrapped request object.
-     * @param request
-     *            The request either as the {@link Request} object or a wrapper of that request. The
-     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
-     *            method can be used access the Request object if required.
-     * @param response
-     *            The response as the {@link Response} object or a wrapper of that request. The
-     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
-     *            method can be used access the Response object if required.
-     * @throws IOException
-     *             if unable to handle the request or response processing
-     * @throws ServletException
-     *             if unable to handle the request or response due to underlying servlet issue
+     *
+     * @param target The target of the request - either a URI or a name.
+     * @param baseRequest The original unwrapped request object.
+     * @param request The request either as the {@link Request} object or a wrapper of that request. The
+     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
+     * method can be used access the Request object if required.
+     * @param response The response as the {@link Response} object or a wrapper of that request. The
+     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
+     * method can be used access the Response object if required.
+     * @throws IOException if unable to handle the request or response processing
+     * @throws ServletException if unable to handle the request or response due to underlying servlet issue
      */
     public abstract void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException;
 
-    /* ------------------------------------------------------------ */
     /*
      * Do the handler work within the scope.
      * @param target
@@ -251,9 +225,9 @@ public abstract class ScopedHandler extends HandlerWrapper
      */
     public final void nextHandle(String target, final Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (_nextScope!=null && _nextScope==_handler)
-            _nextScope.doHandle(target,baseRequest,request, response);
-        else if (_handler!=null)
-            super.handle(target,baseRequest,request,response);
+        if (_nextScope != null && _nextScope == _handler)
+            _nextScope.doHandle(target, baseRequest, request, response);
+        else if (_handler != null)
+            super.handle(target, baseRequest, request, response);
     }
 }

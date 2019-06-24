@@ -49,7 +49,7 @@ public class ThreadPoolBudget
         private final Object leasee;
         private final int threads;
 
-        private Leased(Object leasee,int threads)
+        private Leased(Object leasee, int threads)
         {
             this.leasee = leasee;
             this.threads = threads;
@@ -90,6 +90,7 @@ public class ThreadPoolBudget
 
     /**
      * Construct a budget for a SizedThreadPool.
+     *
      * @param pool The pool to budget thread allocation for.
      */
     public ThreadPoolBudget(ThreadPool.SizedThreadPool pool)
@@ -111,14 +112,14 @@ public class ThreadPoolBudget
 
     public Lease leaseTo(Object leasee, int threads)
     {
-        Leased lease = new Leased(leasee,threads);
+        Leased lease = new Leased(leasee, threads);
         leases.add(lease);
         try
         {
             check(pool.getMaxThreads());
             return lease;
         }
-        catch(IllegalStateException e)
+        catch (IllegalStateException e)
         {
             lease.close();
             throw e;
@@ -146,7 +147,7 @@ public class ThreadPoolBudget
 
         if (left < warnAt)
         {
-            if (warned.compareAndSet(false,true))
+            if (warned.compareAndSet(false, true))
             {
                 printInfoOnLeases();
                 LOG.info("Low configured threads: (max={} - required={})={} < warnAt={} for {}", maxThreads, required, left, warnAt, pool);
@@ -158,7 +159,7 @@ public class ThreadPoolBudget
 
     private void printInfoOnLeases()
     {
-        leases.forEach(lease-> LOG.info("{} requires {} threads from {}",lease.leasee,lease.getThreads(),pool));
+        leases.forEach(lease -> LOG.info("{} requires {} threads from {}", lease.leasee, lease.getThreads(), pool));
     }
 
     public static Lease leaseFrom(Executor executor, Object leasee, int threads)
@@ -166,8 +167,8 @@ public class ThreadPoolBudget
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
             ThreadPoolBudget budget = ((ThreadPool.SizedThreadPool)executor).getThreadPoolBudget();
-            if (budget!=null)
-                return budget.leaseTo(leasee,threads);
+            if (budget != null)
+                return budget.leaseTo(leasee, threads);
         }
         return NOOP_LEASE;
     }

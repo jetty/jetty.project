@@ -79,7 +79,7 @@ public class MessageOutputStream extends OutputStream
     {
         try
         {
-            send(new byte[] { (byte)b }, 0, 1);
+            send(new byte[]{(byte)b}, 0, 1);
         }
         catch (Throwable x)
         {

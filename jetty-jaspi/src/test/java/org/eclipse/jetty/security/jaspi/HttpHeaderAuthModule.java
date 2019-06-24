@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security.jaspi;
 
 import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -43,7 +42,7 @@ public class HttpHeaderAuthModule implements ServerAuthModule
      * Supported message types. For our case we only need to deal with HTTP servlet request and responses. On Java EE 7 this will handle WebSockets as well.
      */
     private static final Class<?>[] SUPPORTED_MESSAGE_TYPES = new Class<?>[]
-    { HttpServletRequest.class, HttpServletResponse.class };
+        {HttpServletRequest.class, HttpServletResponse.class};
 
     /**
      * Callback handler that is passed in initialize by the container. This processes the callbacks which are objects that populate the "subject".
@@ -67,15 +66,11 @@ public class HttpHeaderAuthModule implements ServerAuthModule
 
     /**
      * Initializes the module. Allows you to pass in options.
-     * 
-     * @param requestPolicy
-     *            request policy, ignored
-     * @param responsePolicy
-     *            response policy, ignored
-     * @param h
-     *            callback handler
-     * @param options
-     *            options
+     *
+     * @param requestPolicy request policy, ignored
+     * @param responsePolicy response policy, ignored
+     * @param h callback handler
+     * @param options options
      */
     @Override
     public void initialize(final MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler h, Map options) throws AuthException
@@ -112,8 +107,11 @@ public class HttpHeaderAuthModule implements ServerAuthModule
 
             // Store the user name that was in the header and also set a group.
             handler.handle(new Callback[]
-            { new CallerPrincipalCallback(client,userName), new GroupPrincipalCallback(client,new String[]
-            { "users" }) });
+                {
+                    new CallerPrincipalCallback(client, userName),
+                    new GroupPrincipalCallback(client, new String[]
+                        {"users"})
+                });
             return AuthStatus.SUCCESS;
         }
         catch (final Exception e)
@@ -121,5 +119,4 @@ public class HttpHeaderAuthModule implements ServerAuthModule
             throw new AuthException(e.getMessage());
         }
     }
-
 }

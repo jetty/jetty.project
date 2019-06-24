@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
+import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-
-import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
 
 public class PartialByteBufferMessageSink extends AbstractMessageSink
 {

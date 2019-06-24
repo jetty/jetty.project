@@ -24,7 +24,6 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
@@ -38,7 +37,6 @@ import org.eclipse.jetty.util.security.Credential;
  * Abstract base class for LoginModules that interact with a
  * database to retrieve authentication and authorization information.
  * Used by the JDBCLoginModule and DataSourceLoginModule.
- *
  */
 public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
 {
@@ -57,35 +55,31 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
      * @return a java.sql.Connection from the database
      * @throws Exception if unable to get the connection
      */
-    public abstract Connection getConnection () throws Exception;
-    
-    
+    public abstract Connection getConnection() throws Exception;
+
     public class JDBCUserInfo extends UserInfo
     {
-        public JDBCUserInfo (String userName, Credential credential)
+        public JDBCUserInfo(String userName, Credential credential)
         {
             super(userName, credential);
         }
-        
-        
-        
+
         @Override
-        public List<String> doFetchRoles ()
-        throws Exception
+        public List<String> doFetchRoles()
+            throws Exception
         {
-           return getRoles(getUserName());
+            return getRoles(getUserName());
         }
     }
 
-
-
-    /* ------------------------------------------------ */
-    /** Load info from database
+    /**
+     * Load info from database
+     *
      * @param userName user info to load
-     * @exception Exception if unable to get the user info
+     * @throws Exception if unable to get the user info
      */
     @Override
-    public UserInfo getUserInfo (String userName)
+    public UserInfo getUserInfo(String userName)
         throws Exception
     {
         try (Connection connection = getConnection())
@@ -93,9 +87,9 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
 
             //query for credential
             String dbCredential = null;
-            try (PreparedStatement statement = connection.prepareStatement (userQuery))
+            try (PreparedStatement statement = connection.prepareStatement(userQuery))
             {
-                statement.setString (1, userName);
+                statement.setString(1, userName);
                 try (ResultSet results = statement.executeQuery())
                 {
                     if (results.next())
@@ -105,53 +99,46 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
                 }
             }
 
-            if (dbCredential==null)
+            if (dbCredential == null)
             {
                 return null;
             }
 
-          
-
-            return new JDBCUserInfo (userName, Credential.getCredential(dbCredential));
+            return new JDBCUserInfo(userName, Credential.getCredential(dbCredential));
         }
     }
-    
-    
-    public List<String>  getRoles (String userName)
-    throws Exception
+
+    public List<String> getRoles(String userName)
+        throws Exception
     {
         List<String> roles = new ArrayList<String>();
-        
+
         try (Connection connection = getConnection())
         {
             //query for role names
 
-            try (PreparedStatement statement = connection.prepareStatement (rolesQuery))
+            try (PreparedStatement statement = connection.prepareStatement(rolesQuery))
             {
-                statement.setString (1, userName);
+                statement.setString(1, userName);
                 try (ResultSet results = statement.executeQuery())
                 {
                     while (results.next())
                     {
-                        String roleName = results.getString (1);
-                        roles.add (roleName);
+                        String roleName = results.getString(1);
+                        roles.add(roleName);
                     }
                 }
             }
-          
         }
 
         return roles;
     }
-    
-    
-
 
     @Override
     public void initialize(Subject subject,
-            CallbackHandler callbackHandler,
-            Map<String,?> sharedState,
-            Map<String,?> options)
+                           CallbackHandler callbackHandler,
+                           Map<String, ?> sharedState,
+                           Map<String, ?> options)
     {
         super.initialize(subject, callbackHandler, sharedState, options);
 
@@ -160,17 +147,18 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
         dbUserTableUserField = (String)options.get("userField");
         dbUserTableCredentialField = (String)options.get("credentialField");
 
-        userQuery = "select "+dbUserTableCredentialField+" from "+dbUserTable+" where "+dbUserTableUserField+"=?";
-
+        userQuery = "select " + dbUserTableCredentialField + " from " + dbUserTable + " where " + dbUserTableUserField + "=?";
 
         //get the user roles query out of the options
         dbUserRoleTable = (String)options.get("userRoleTable");
         dbUserRoleTableUserField = (String)options.get("userRoleUserField");
         dbUserRoleTableRoleField = (String)options.get("userRoleRoleField");
 
-        rolesQuery = "select "+dbUserRoleTableRoleField+" from "+dbUserRoleTable+" where "+dbUserRoleTableUserField+"=?";
+        rolesQuery = "select " + dbUserRoleTableRoleField + " from " + dbUserRoleTable + " where " + dbUserRoleTableUserField + "=?";
 
-        if(LOG.isDebugEnabled())LOG.debug("userQuery = "+userQuery);
-        if(LOG.isDebugEnabled())LOG.debug("rolesQuery = "+rolesQuery);
+        if (LOG.isDebugEnabled())
+            LOG.debug("userQuery = " + userQuery);
+        if (LOG.isDebugEnabled())
+            LOG.debug("rolesQuery = " + rolesQuery);
     }
 }

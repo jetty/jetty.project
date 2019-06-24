@@ -18,38 +18,32 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-
-
-
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class GCloudSessionTester
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         if (args.length < 4)
             System.err.println("Usage: GCloudSessionTester projectid p12file password serviceaccount");
-        
+
         System.setProperty("org.eclipse.jetty.server.session.LEVEL", "DEBUG");
-        
+
         Server server = new Server(8080);
         HashLoginService loginService = new HashLoginService();
-        loginService.setName( "Test Realm" );
-        loginService.setConfig( "../../jetty-distribution/target/distribution/demo-base/resources/realm.properties" );
-        server.addBean( loginService );
-
+        loginService.setName("Test Realm");
+        loginService.setConfig("../../jetty-distribution/target/distribution/demo-base/resources/realm.properties");
+        server.addBean(loginService);
 
         DefaultSessionIdManager idmgr = new DefaultSessionIdManager(server);
         idmgr.setWorkerName("w1");
         server.setSessionIdManager(idmgr);
 
- 
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
         webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
@@ -68,7 +62,6 @@ public class GCloudSessionTester
         // Start things up! 
         server.start();
 
-    
         server.join();
     }
 }

@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -40,6 +36,9 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
 {
@@ -64,25 +63,25 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         final AtomicReference<CountDownLatch> contentLatch = new AtomicReference<>(new CountDownLatch(1));
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onResponseContentAsync(new Response.AsyncContentListener()
+            .scheme(scenario.getScheme())
+            .onResponseContentAsync(new Response.AsyncContentListener()
+            {
+                @Override
+                public void onContent(Response response, ByteBuffer content, Callback callback)
                 {
-                    @Override
-                    public void onContent(Response response, ByteBuffer content, Callback callback)
-                    {
-                        contentCount.incrementAndGet();
-                        callbackRef.set(callback);
-                        contentLatch.get().countDown();
-                    }
-                })
-                .send(new Response.CompleteListener()
+                    contentCount.incrementAndGet();
+                    callbackRef.set(callback);
+                    contentLatch.get().countDown();
+                }
+            })
+            .send(new Response.CompleteListener()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        completeLatch.countDown();
-                    }
-                });
+                    completeLatch.countDown();
+                }
+            });
 
         assertTrue(contentLatch.get().await(5, TimeUnit.SECONDS));
         Callback callback = callbackRef.get();

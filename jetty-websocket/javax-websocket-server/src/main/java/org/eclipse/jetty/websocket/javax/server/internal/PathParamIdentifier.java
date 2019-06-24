@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.server.internal;
 
-import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
-
-import javax.websocket.server.PathParam;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import javax.websocket.server.PathParam;
+
+import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
 
 /**
  * Method argument identifier for {@link javax.websocket.server.PathParam} annotations.
@@ -33,7 +33,7 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
     @Override
     public InvokerUtils.Arg getParamArg(Method method, Class<?> paramType, int idx)
     {
-        Annotation annos[] = method.getParameterAnnotations()[idx];
+        Annotation[] annos = method.getParameterAnnotations()[idx];
         if (annos != null || (annos.length > 0))
         {
             for (Annotation anno : annos)

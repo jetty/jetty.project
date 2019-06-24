@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import org.eclipse.jetty.websocket.core.Frame;
-
 import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
+
+import org.eclipse.jetty.websocket.core.Frame;
 
 public class ReaderMessageSink extends DispatchedMessageSink<Reader, Void>
 {

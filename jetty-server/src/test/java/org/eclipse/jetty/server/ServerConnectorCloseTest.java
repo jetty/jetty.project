@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-
 public class ServerConnectorCloseTest extends ConnectorCloseTestBase
 {
     @BeforeEach
@@ -29,7 +28,7 @@ public class ServerConnectorCloseTest extends ConnectorCloseTestBase
     {
         startServer(new ServerConnector(_server));
     }
-    
+
     @AfterEach
     public void after() throws Exception
     {

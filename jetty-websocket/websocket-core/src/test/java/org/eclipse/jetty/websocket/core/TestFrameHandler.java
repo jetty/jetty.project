@@ -79,7 +79,7 @@ public class TestFrameHandler implements SynchronousFrameHandler
     @Override
     public void onError(Throwable cause)
     {
-        LOG.info("onError {} ", cause == null?null:cause.toString());
+        LOG.info("onError {} ", cause == null ? null : cause.toString());
         failure = cause;
         error.countDown();
     }

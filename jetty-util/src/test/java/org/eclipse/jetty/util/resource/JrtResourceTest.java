@@ -33,83 +33,80 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
-
 public class JrtResourceTest
 {
     @Test
     @DisabledOnJre(JRE.JAVA_8)
     @Disabled("Not supported on Java 9+ Module API")
     public void testResourceFromUriForString()
-    throws Exception
+        throws Exception
     {
         URI string_loc = TypeUtil.getLocationOfClass(String.class);
         Resource resource = Resource.newResource(string_loc);
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(false));
-        assertThat(IO.readBytes(resource.getInputStream()).length,Matchers.greaterThan(0));
-        assertThat(IO.readBytes(resource.getInputStream()).length,is((int)resource.length()));
-        assertThat(resource.getWeakETag("-xxx"),startsWith("W/\""));
-        assertThat(resource.getWeakETag("-xxx"),endsWith("-xxx\""));
-
+        assertThat(IO.readBytes(resource.getInputStream()).length, Matchers.greaterThan(0));
+        assertThat(IO.readBytes(resource.getInputStream()).length, is((int)resource.length()));
+        assertThat(resource.getWeakETag("-xxx"), startsWith("W/\""));
+        assertThat(resource.getWeakETag("-xxx"), endsWith("-xxx\""));
     }
 
     @Test
     @DisabledOnJre(JRE.JAVA_8)
     @Disabled("Not supported on Java 9+ Module API")
     public void testResourceFromStringForString()
-            throws Exception
+        throws Exception
     {
         URI string_loc = TypeUtil.getLocationOfClass(String.class);
         Resource resource = Resource.newResource(string_loc.toASCIIString());
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(false));
-        assertThat(IO.readBytes(resource.getInputStream()).length,Matchers.greaterThan(0));
-        assertThat(IO.readBytes(resource.getInputStream()).length,is((int)resource.length()));
-        assertThat(resource.getWeakETag("-xxx"),startsWith("W/\""));
-        assertThat(resource.getWeakETag("-xxx"),endsWith("-xxx\""));
+        assertThat(IO.readBytes(resource.getInputStream()).length, Matchers.greaterThan(0));
+        assertThat(IO.readBytes(resource.getInputStream()).length, is((int)resource.length()));
+        assertThat(resource.getWeakETag("-xxx"), startsWith("W/\""));
+        assertThat(resource.getWeakETag("-xxx"), endsWith("-xxx\""));
     }
 
     @Test
     @DisabledOnJre(JRE.JAVA_8)
     @Disabled("Not supported on Java 9+ Module API")
     public void testResourceFromURLForString()
-            throws Exception
+        throws Exception
     {
         URI string_loc = TypeUtil.getLocationOfClass(String.class);
         Resource resource = Resource.newResource(string_loc.toURL());
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(false));
-        assertThat(IO.readBytes(resource.getInputStream()).length,Matchers.greaterThan(0));
-        assertThat(IO.readBytes(resource.getInputStream()).length,is((int)resource.length()));
-        assertThat(resource.getWeakETag("-xxx"),startsWith("W/\""));
-        assertThat(resource.getWeakETag("-xxx"),endsWith("-xxx\""));
+        assertThat(IO.readBytes(resource.getInputStream()).length, Matchers.greaterThan(0));
+        assertThat(IO.readBytes(resource.getInputStream()).length, is((int)resource.length()));
+        assertThat(resource.getWeakETag("-xxx"), startsWith("W/\""));
+        assertThat(resource.getWeakETag("-xxx"), endsWith("-xxx\""));
     }
-
 
     @Test
     @DisabledOnJre(JRE.JAVA_8)
     public void testResourceModule()
-            throws Exception
+        throws Exception
     {
         Resource resource = Resource.newResource("jrt:/java.base");
 
         assertThat(resource.exists(), is(false));
         assertThat(resource.isDirectory(), is(false));
-        assertThat(resource.length(),is(-1L));
+        assertThat(resource.length(), is(-1L));
     }
 
     @Test
     @DisabledOnJre(JRE.JAVA_8)
     public void testResourceAllModules()
-            throws Exception
+        throws Exception
     {
         Resource resource = Resource.newResource("jrt:/");
 
         assertThat(resource.exists(), is(false));
         assertThat(resource.isDirectory(), is(false));
-        assertThat(resource.length(),is(-1L));
+        assertThat(resource.length(), is(-1L));
     }
 }

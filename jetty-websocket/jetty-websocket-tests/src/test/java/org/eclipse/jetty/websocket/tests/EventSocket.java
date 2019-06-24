@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @WebSocket
 public class EventSocket
 {
-    private final static Logger LOG = Log.getLogger(EventSocket.class);
+    private static final Logger LOG = Log.getLogger(EventSocket.class);
 
     public Session session;
     private String behavior;
@@ -67,7 +67,6 @@ public class EventSocket
         LOG.info("{}  onMessage(): {}", toString(), message);
         messageQueue.offer(message);
     }
-
 
     @OnWebSocketMessage
     public void onMessage(byte buf[], int offset, int len)

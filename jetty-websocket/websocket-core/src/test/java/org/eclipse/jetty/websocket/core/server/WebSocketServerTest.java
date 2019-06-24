@@ -403,7 +403,6 @@ public class WebSocketServerTest extends WebSocketTester
 
             assertThat(serverHandler.receivedFrames.poll().getOpCode(), is(OpCode.CLOSE));
             receivedCallbacks.poll().succeeded();
-
         }
     }
 

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
@@ -46,7 +45,7 @@ public class IdleTimeoutHandler extends HandlerWrapper
 {
     private long _idleTimeoutMs = 1000;
     private boolean _applyToAsync = false;
-    
+
     public boolean isApplyToAsync()
     {
         return _applyToAsync;
@@ -54,6 +53,7 @@ public class IdleTimeoutHandler extends HandlerWrapper
 
     /**
      * Should the adjusted idle time be maintained for asynchronous requests
+     *
      * @param applyToAsync true if alternate idle timeout is applied to asynchronous requests
      */
     public void setApplyToAsync(boolean applyToAsync)
@@ -73,18 +73,17 @@ public class IdleTimeoutHandler extends HandlerWrapper
     {
         this._idleTimeoutMs = idleTimeoutMs;
     }
-    
-   
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         final HttpChannel channel = baseRequest.getHttpChannel();
-        final long idle_timeout=baseRequest.getHttpChannel().getIdleTimeout();
+        final long idle_timeout = baseRequest.getHttpChannel().getIdleTimeout();
         channel.setIdleTimeout(_idleTimeoutMs);
-        
+
         try
         {
-            super.handle(target,baseRequest,request,response);
+            super.handle(target, baseRequest, request, response);
         }
         finally
         {
@@ -94,7 +93,7 @@ public class IdleTimeoutHandler extends HandlerWrapper
                 {
                     @Override
                     public void onTimeout(AsyncEvent event) throws IOException
-                    {                            
+                    {
                     }
 
                     @Override
@@ -115,7 +114,7 @@ public class IdleTimeoutHandler extends HandlerWrapper
                     }
                 });
             }
-            else 
+            else
                 channel.setIdleTimeout(idle_timeout);
         }
     }

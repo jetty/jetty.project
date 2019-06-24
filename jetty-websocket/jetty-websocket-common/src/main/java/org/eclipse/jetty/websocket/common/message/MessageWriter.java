@@ -85,7 +85,7 @@ public class MessageWriter extends Writer
     {
         try
         {
-            send(new char[] { (char)c }, 0, 1);
+            send(new char[]{(char)c}, 0, 1);
         }
         catch (Throwable x)
         {

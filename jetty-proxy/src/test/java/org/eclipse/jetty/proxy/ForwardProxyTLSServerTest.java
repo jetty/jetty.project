@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -215,11 +214,11 @@ public class ForwardProxyTLSServerTest
             String host = "127.0.0.1";
             String body = "BODY";
             ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .method(HttpMethod.GET)
-                    .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
@@ -247,11 +246,11 @@ public class ForwardProxyTLSServerTest
         {
             String body = "BODY";
             ContentResponse response1 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .method(HttpMethod.GET)
-                    .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
             assertEquals(HttpStatus.OK_200, response1.getStatus());
             String content = response1.getContentAsString();
@@ -259,14 +258,14 @@ public class ForwardProxyTLSServerTest
 
             content = "body=" + body;
             ContentResponse response2 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .method(HttpMethod.POST)
-                    .path("/echo")
-                    .header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString())
-                    .header(HttpHeader.CONTENT_LENGTH, String.valueOf(content.length()))
-                    .content(new StringContentProvider(content))
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.POST)
+                .path("/echo")
+                .header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString())
+                .header(HttpHeader.CONTENT_LENGTH, String.valueOf(content.length()))
+                .content(new StringContentProvider(content))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
             assertEquals(HttpStatus.OK_200, response2.getStatus());
             content = response2.getContentAsString();
@@ -296,24 +295,24 @@ public class ForwardProxyTLSServerTest
             CountDownLatch connectionLatch = new CountDownLatch(1);
             String content1 = "BODY";
             ContentResponse response1 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .method(HttpMethod.GET)
-                    .path("/echo?body=" + URLEncoder.encode(content1, "UTF-8"))
-                    .onRequestCommit(request ->
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(content1, "UTF-8"))
+                .onRequestCommit(request ->
+                {
+                    Destination destination = httpClient.getDestination(HttpScheme.HTTPS.asString(), "localhost", serverConnector.getLocalPort());
+                    destination.newConnection(new Promise.Adapter<>()
                     {
-                        Destination destination = httpClient.getDestination(HttpScheme.HTTPS.asString(), "localhost", serverConnector.getLocalPort());
-                        destination.newConnection(new Promise.Adapter<>()
+                        @Override
+                        public void succeeded(Connection result)
                         {
-                            @Override
-                            public void succeeded(Connection result)
-                            {
-                                connection.set(result);
-                                connectionLatch.countDown();
-                            }
-                        });
-                    })
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                            connection.set(result);
+                            connectionLatch.countDown();
+                        }
+                    });
+                })
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
             assertEquals(HttpStatus.OK_200, response1.getStatus());
             String content = response1.getContentAsString();
@@ -323,12 +322,12 @@ public class ForwardProxyTLSServerTest
 
             String body2 = "body=" + content1;
             org.eclipse.jetty.client.api.Request request2 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .method(HttpMethod.POST)
-                    .path("/echo")
-                    .header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString())
-                    .header(HttpHeader.CONTENT_LENGTH, String.valueOf(body2.length()))
-                    .content(new StringContentProvider(body2));
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.POST)
+                .path("/echo")
+                .header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString())
+                .header(HttpHeader.CONTENT_LENGTH, String.valueOf(body2.length()))
+                .content(new StringContentProvider(body2));
 
             // Make sure the second connection can send the exchange via the tunnel
             FutureResponseListener listener2 = new FutureResponseListener(request2);
@@ -383,13 +382,13 @@ public class ForwardProxyTLSServerTest
             String host = "localhost";
             String body = "BODY";
             ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .method(HttpMethod.GET)
-                    .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
-                    // Long idle timeout for the request.
-                    .idleTimeout(10 * idleTimeout, TimeUnit.MILLISECONDS)
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                // Long idle timeout for the request.
+                .idleTimeout(10 * idleTimeout, TimeUnit.MILLISECONDS)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
@@ -415,14 +414,15 @@ public class ForwardProxyTLSServerTest
         httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), proxySslContextFactory != null));
         httpClient.start();
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             String body = "BODY";
             httpClient.newRequest("localhost", serverConnector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .method(HttpMethod.GET)
-                    .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         });
         assertThat(x.getCause(), Matchers.instanceOf(ConnectException.class));
 
@@ -443,14 +443,15 @@ public class ForwardProxyTLSServerTest
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
+        {
             String body = "BODY";
             httpClient.newRequest("localhost", serverPort)
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .method(HttpMethod.GET)
-                    .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         });
 
         httpClient.stop();
@@ -476,7 +477,7 @@ public class ForwardProxyTLSServerTest
         httpClient.start();
 
         assertThrows(ExecutionException.class, () ->
-                httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            httpClient.newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .timeout(5, TimeUnit.SECONDS)
                 .send());
@@ -608,11 +609,11 @@ public class ForwardProxyTLSServerTest
             String host = "localhost";
             String body = "BODY";
             ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .method(HttpMethod.GET)
-                    .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
@@ -650,9 +651,9 @@ public class ForwardProxyTLSServerTest
         try
         {
             ContentResponse response = httpClient.newRequest("https://www.google.com")
-                    // Use a longer timeout, sometimes the proxy takes a while to answer
-                    .timeout(20, TimeUnit.SECONDS)
-                    .send();
+                // Use a longer timeout, sometimes the proxy takes a while to answer
+                .timeout(20, TimeUnit.SECONDS)
+                .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         finally

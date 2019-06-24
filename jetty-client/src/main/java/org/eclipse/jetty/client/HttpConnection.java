@@ -67,7 +67,7 @@ public abstract class HttpConnection implements IConnection
         HttpRequest httpRequest = (HttpRequest)request;
 
         ArrayList<Response.ResponseListener> listeners = new ArrayList<>(httpRequest.getResponseListeners());
-        
+
         httpRequest.sent();
         if (listener != null)
             listeners.add(listener);

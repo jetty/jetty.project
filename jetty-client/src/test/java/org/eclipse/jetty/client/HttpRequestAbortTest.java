@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -56,10 +55,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 
         Exception failure = new Exception("oops");
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             Request request = client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .timeout(5, TimeUnit.SECONDS);
+                .scheme(scenario.getScheme())
+                .timeout(5, TimeUnit.SECONDS);
             request.abort(failure);
             request.send();
         });
@@ -84,26 +84,27 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicBoolean begin = new AtomicBoolean();
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .listener(new Request.Listener.Adapter()
+                .scheme(scenario.getScheme())
+                .listener(new Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onQueued(Request request)
                     {
-                        @Override
-                        public void onQueued(Request request)
-                        {
-                            aborted.set(request.abort(cause));
-                            latch.countDown();
-                        }
+                        aborted.set(request.abort(cause));
+                        latch.countDown();
+                    }
 
-                        @Override
-                        public void onBegin(Request request)
-                        {
-                            begin.set(true);
-                        }
-                    })
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                    @Override
+                    public void onBegin(Request request)
+                    {
+                        begin.set(true);
+                    }
+                })
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -129,26 +130,27 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch committed = new CountDownLatch(1);
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .listener(new Request.Listener.Adapter()
+                .scheme(scenario.getScheme())
+                .listener(new Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onBegin(Request request)
                     {
-                        @Override
-                        public void onBegin(Request request)
-                        {
-                            aborted.set(request.abort(cause));
-                            latch.countDown();
-                        }
+                        aborted.set(request.abort(cause));
+                        latch.countDown();
+                    }
 
-                        @Override
-                        public void onCommit(Request request)
-                        {
-                            committed.countDown();
-                        }
-                    })
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                    @Override
+                    public void onCommit(Request request)
+                    {
+                        committed.countDown();
+                    }
+                })
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())
@@ -173,26 +175,27 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch committed = new CountDownLatch(1);
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .listener(new Request.Listener.Adapter()
+                .scheme(scenario.getScheme())
+                .listener(new Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onHeaders(Request request)
                     {
-                        @Override
-                        public void onHeaders(Request request)
-                        {
-                            aborted.set(request.abort(cause));
-                            latch.countDown();
-                        }
+                        aborted.set(request.abort(cause));
+                        latch.countDown();
+                    }
 
-                        @Override
-                        public void onCommit(Request request)
-                        {
-                            committed.countDown();
-                        }
-                    })
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                    @Override
+                    public void onCommit(Request request)
+                    {
+                        committed.countDown();
+                    }
+                })
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())
@@ -219,16 +222,17 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final Throwable cause = new Exception();
         final AtomicBoolean aborted = new AtomicBoolean();
         final CountDownLatch latch = new CountDownLatch(1);
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .onRequestCommit(request ->
-                    {
-                        aborted.set(request.abort(cause));
-                        latch.countDown();
-                    })
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(scenario.getScheme())
+                .onRequestCommit(request ->
+                {
+                    aborted.set(request.abort(cause));
+                    latch.countDown();
+                })
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())
@@ -269,24 +273,25 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final AtomicBoolean aborted = new AtomicBoolean();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
-            .onRequestCommit(request ->
-            {
-                aborted.set(request.abort(cause));
-                latch.countDown();
-            })
-            .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
-            {
-                @Override
-                public long getLength()
+                .scheme(scenario.getScheme())
+                .onRequestCommit(request ->
                 {
-                    return -1;
-                }
-            })
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+                    aborted.set(request.abort(cause));
+                    latch.countDown();
+                })
+                .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+                {
+                    @Override
+                    public long getLength()
+                    {
+                        return -1;
+                    }
+                })
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())
@@ -297,7 +302,6 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
         assertEquals(0, connectionPool.getIdleConnections().size());
-
     }
 
     @ParameterizedTest
@@ -327,24 +331,25 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             final Throwable cause = new Exception();
             final AtomicBoolean aborted = new AtomicBoolean();
             final CountDownLatch latch = new CountDownLatch(1);
-            ExecutionException x = assertThrows(ExecutionException.class, ()->{
+            ExecutionException x = assertThrows(ExecutionException.class, () ->
+            {
                 client.newRequest("localhost", connector.getLocalPort())
-                        .scheme(scenario.getScheme())
-                        .onRequestContent((request, content) ->
+                    .scheme(scenario.getScheme())
+                    .onRequestContent((request, content) ->
+                    {
+                        aborted.set(request.abort(cause));
+                        latch.countDown();
+                    })
+                    .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+                    {
+                        @Override
+                        public long getLength()
                         {
-                            aborted.set(request.abort(cause));
-                            latch.countDown();
-                        })
-                        .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
-                        {
-                            @Override
-                            public long getLength()
-                            {
-                                return -1;
-                            }
-                        })
-                        .timeout(5, TimeUnit.SECONDS)
-                        .send();
+                            return -1;
+                        }
+                    })
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
             });
             assertTrue(latch.await(5, TimeUnit.SECONDS));
             if (aborted.get())
@@ -384,8 +389,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .timeout(3 * delay, TimeUnit.MILLISECONDS)
-                .scheme(scenario.getScheme());
+            .timeout(3 * delay, TimeUnit.MILLISECONDS)
+            .scheme(scenario.getScheme());
 
         final Thread thread = Thread.currentThread();
         new Thread(() ->
@@ -401,7 +406,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         }).start();
 
-        assertThrows(InterruptedException.class, ()->request.send());
+        assertThrows(InterruptedException.class, () -> request.send());
     }
 
     @ParameterizedTest
@@ -428,8 +433,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         });
 
         final Request request = client.newRequest("localhost", connector.getLocalPort())
-                .timeout(3 * delay, TimeUnit.MILLISECONDS)
-                .scheme(scenario.getScheme());
+            .timeout(3 * delay, TimeUnit.MILLISECONDS)
+            .scheme(scenario.getScheme());
 
         final Throwable cause = new Exception();
         final AtomicBoolean aborted = new AtomicBoolean();
@@ -492,8 +497,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final Throwable cause = new Exception();
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(3 * delay, TimeUnit.MILLISECONDS);
+            .scheme(scenario.getScheme())
+            .timeout(3 * delay, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
             assertTrue(result.isFailed());
@@ -547,12 +552,13 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        ExecutionException e = assertThrows(ExecutionException.class,()->{
+        ExecutionException e = assertThrows(ExecutionException.class, () ->
+        {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path("/redirect")
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(scenario.getScheme())
+                .path("/redirect")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())

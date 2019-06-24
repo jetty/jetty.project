@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.embedded;
 
 import java.io.File;
@@ -27,7 +26,6 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -63,64 +61,64 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 public class Http2Server
 {
     public static void main(String... args) throws Exception
-    {   
+    {
         Server server = new Server();
 
         MBeanContainer mbContainer = new MBeanContainer(
-                ManagementFactory.getPlatformMBeanServer());
+            ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/",ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
         String docroot = "src/main/resources/docroot";
         if (!new File(docroot).exists())
             docroot = "examples/embedded/src/main/resources/docroot";
         context.setResourceBase(docroot);
-        context.addFilter(PushCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(PushCacheFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         // context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
-        context.addFilter(PushedTilesFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(PushedTilesFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addServlet(new ServletHolder(servlet), "/test/*");
-        context.addServlet(DefaultServlet.class, "/").setInitParameter("maxCacheSize","81920");
+        context.addServlet(DefaultServlet.class, "/").setInitParameter("maxCacheSize", "81920");
         server.setHandler(context);
 
         // HTTP Configuration
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(8443);
-        http_config.setSendXPoweredBy(true);
-        http_config.setSendServerVersion(true);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecureScheme("https");
+        httpConfig.setSecurePort(8443);
+        httpConfig.setSendXPoweredBy(true);
+        httpConfig.setSendServerVersion(true);
 
         // HTTP Connector
-        ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config), new HTTP2CServerConnectionFactory(http_config));
+        ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfig), new HTTP2CServerConnectionFactory(httpConfig));
         http.setPort(8080);
         server.addConnector(http);
 
         // SSL Context Factory for HTTPS and HTTP/2
-        String jetty_distro = System.getProperty("jetty.distro","../../jetty-distribution/target/distribution");
-        if (!new File(jetty_distro).exists())
-            jetty_distro = "jetty-distribution/target/distribution";
+        String jettyDistro = System.getProperty("jetty.distro", "../../jetty-distribution/target/distribution");
+        if (!new File(jettyDistro).exists())
+            jettyDistro = "jetty-distribution/target/distribution";
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(jetty_distro + "/demo-base/etc/keystore");
+        sslContextFactory.setKeyStorePath(jettyDistro + "/demo-base/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
         // sslContextFactory.setProvider("Conscrypt");
 
         // HTTPS Configuration
-        HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
         // HTTP/2 Connection Factory
-        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
 
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(http.getDefaultProtocol());
 
         // SSL Connection Factory
-        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,alpn.getProtocol());
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
 
         // HTTP/2 Connector
         ServerConnector http2Connector =
-            new ServerConnector(server,ssl,alpn,h2,new HttpConnectionFactory(https_config));
+            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(httpsConfig));
         http2Connector.setPort(8443);
         server.addConnector(http2Connector);
 
@@ -140,14 +138,14 @@ public class Http2Server
         {
             Request baseRequest = Request.getBaseRequest(request);
 
-            if (baseRequest.isPush() && baseRequest.getRequestURI().contains("tiles") )
+            if (baseRequest.isPush() && baseRequest.getRequestURI().contains("tiles"))
             {
-                String uri = baseRequest.getRequestURI().replace("tiles","pushed").substring(baseRequest.getContextPath().length());
-                request.getRequestDispatcher(uri).forward(request,response);
+                String uri = baseRequest.getRequestURI().replace("tiles", "pushed").substring(baseRequest.getContextPath().length());
+                request.getRequestDispatcher(uri).forward(request, response);
                 return;
             }
 
-            chain.doFilter(request,response);
+            chain.doFilter(request, response);
         }
 
         @Override
@@ -163,26 +161,26 @@ public class Http2Server
         @Override
         protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            String code=request.getParameter("code");
-            if (code!=null)
+            String code = request.getParameter("code");
+            if (code != null)
                 response.setStatus(Integer.parseInt(code));
 
             HttpSession session = request.getSession(true);
             if (session.isNew())
                 response.addCookie(new Cookie("bigcookie",
-                "This is a test cookies that was created on "+new Date()+" and is used by the jetty http/2 test servlet."));
-            response.setHeader("Custom","Value");
+                    "This is a test cookies that was created on " + new Date() + " and is used by the jetty http/2 test servlet."));
+            response.setHeader("Custom", "Value");
             response.setContentType("text/plain");
-            String content = "Hello from Jetty using "+request.getProtocol() +"\n";
-            content+="uri="+request.getRequestURI()+"\n";
-            content+="session="+session.getId()+(session.isNew()?"(New)\n":"\n");
-            content+="date="+new Date()+"\n";
+            String content = "Hello from Jetty using " + request.getProtocol() + "\n";
+            content += "uri=" + request.getRequestURI() + "\n";
+            content += "session=" + session.getId() + (session.isNew() ? "(New)\n" : "\n");
+            content += "date=" + new Date() + "\n";
 
             content += Optional.ofNullable(request.getCookies())
-                    .stream()
-                    .flatMap(Arrays::stream)
-                    .map(cookie -> String.format("cookie %s=%s", cookie.getName(), cookie.getValue()))
-                    .collect(Collectors.joining(System.lineSeparator()));
+                .stream()
+                .flatMap(Arrays::stream)
+                .map(cookie -> String.format("cookie %s=%s", cookie.getName(), cookie.getValue()))
+                .collect(Collectors.joining(System.lineSeparator()));
 
             response.setContentLength(content.length());
             response.getOutputStream().print(content);

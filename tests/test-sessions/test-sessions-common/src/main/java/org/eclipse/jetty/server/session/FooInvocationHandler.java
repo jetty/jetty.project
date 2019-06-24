@@ -24,26 +24,21 @@ import java.lang.reflect.Method;
 
 /**
  * ProxiableSessionAttributeObjectInvocationHandler
- *
- *
  */
 public class FooInvocationHandler implements InvocationHandler, Serializable
 {
     private static final long serialVersionUID = -4009478822490178554L;
-    
+
     private Foo foo;
-    
-    public FooInvocationHandler (Foo f)
+
+    public FooInvocationHandler(Foo f)
     {
         foo = f;
     }
-    
- 
-    
+
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
     {
         return method.invoke(foo, args);
     }
-
 }

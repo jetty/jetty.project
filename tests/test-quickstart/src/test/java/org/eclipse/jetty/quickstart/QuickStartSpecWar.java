@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.quickstart;
 
-
-public class QuickStartSpecWar 
-{    
+public class QuickStartSpecWar
+{
     public static void main(String... args) throws Exception
-    {   
+    {
         // Log.getRootLogger().setDebugEnabled(true);
-       System.setProperty("jetty.home", "target");
-       Quickstart.main("target/test-spec-preconfigured", "src/test/resources/test-spec.xml");
+        System.setProperty("jetty.home", "target");
+        Quickstart.main("target/test-spec-preconfigured", "src/test/resources/test-spec.xml");
     }
 }

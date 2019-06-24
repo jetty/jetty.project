@@ -76,7 +76,7 @@ public interface IStream extends Stream, Closeable
      * <p>Updates the close state of this stream.</p>
      *
      * @param update whether to update the close state
-     * @param event  the event that caused the close state update
+     * @param event the event that caused the close state update
      * @return whether the stream has been fully closed by this invocation
      */
     public boolean updateClose(boolean update, CloseState.Event event);

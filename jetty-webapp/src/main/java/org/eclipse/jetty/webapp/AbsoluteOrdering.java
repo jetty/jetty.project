@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * AbsoluteOrdering
- *
  */
 public class AbsoluteOrdering implements Ordering
 {
@@ -36,24 +35,24 @@ public class AbsoluteOrdering implements Ordering
     protected boolean _hasOther = false;
     protected MetaData _metaData;
 
-    public AbsoluteOrdering (MetaData metaData)
+    public AbsoluteOrdering(MetaData metaData)
     {
         _metaData = metaData;
     }
-    
+
     @Override
     public List<Resource> order(List<Resource> jars)
-    {           
+    {
         List<Resource> orderedList = new ArrayList<Resource>();
         List<Resource> tmp = new ArrayList<Resource>(jars);
-      
+
         //1. put everything into the list of named others, and take the named ones out of there,
         //assuming we will want to use the <other> clause
-        Map<String,FragmentDescriptor> others = new HashMap<String,FragmentDescriptor>(_metaData.getNamedFragments());
-        
+        Map<String, FragmentDescriptor> others = new HashMap<String, FragmentDescriptor>(_metaData.getNamedFragments());
+
         //2. for each name, take out of the list of others, add to tail of list
         int index = -1;
-        for (String item:_order)
+        for (String item : _order)
         {
             if (!item.equals(OTHER))
             {
@@ -69,26 +68,26 @@ public class AbsoluteOrdering implements Ordering
             else
                 index = orderedList.size(); //remember the index at which we want to add in all the others
         }
-        
+
         //3. if <other> was specified, insert rest of the fragments 
         if (_hasOther)
         {
-            orderedList.addAll((index < 0? 0: index), tmp);
+            orderedList.addAll((index < 0 ? 0 : index), tmp);
         }
-        
+
         return orderedList;
     }
-    
-    public void add (String name)
+
+    public void add(String name)
     {
-        _order.add(name); 
+        _order.add(name);
     }
-    
-    public void addOthers ()
+
+    public void addOthers()
     {
         if (_hasOther)
-            throw new IllegalStateException ("Duplicate <other> element in absolute ordering");
-        
+            throw new IllegalStateException("Duplicate <other> element in absolute ordering");
+
         _hasOther = true;
         _order.add(OTHER);
     }

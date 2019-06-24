@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server.config;
 
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 
@@ -72,17 +71,17 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      * Immediately initialize the {@link ServletContextHandler} with the default {@link JettyWebSocketServerContainer}.
      *
      * <p>
-     *     This method is typically called from {@link #onStartup(Set, ServletContext)} itself or from
-     *     another dependent {@link ServletContainerInitializer} that requires minimal setup to
-     *     be performed.
+     * This method is typically called from {@link #onStartup(Set, ServletContext)} itself or from
+     * another dependent {@link ServletContainerInitializer} that requires minimal setup to
+     * be performed.
      * </p>
      * <p>
-     *     This method SHOULD NOT BE CALLED by users of Jetty.
-     *     Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
+     * This method SHOULD NOT BE CALLED by users of Jetty.
+     * Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
      * </p>
      * <p>
-     *     This will return the default {@link JettyWebSocketServerContainer} if already initialized,
-     *     and not create a new {@link JettyWebSocketServerContainer} each time it is called.
+     * This will return the default {@link JettyWebSocketServerContainer} if already initialized,
+     * and not create a new {@link JettyWebSocketServerContainer} each time it is called.
      * </p>
      *
      * @param context the context to work with

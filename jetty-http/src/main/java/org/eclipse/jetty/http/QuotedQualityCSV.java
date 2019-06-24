@@ -27,10 +27,6 @@ import org.eclipse.jetty.util.log.Log;
 
 import static java.lang.Integer.MIN_VALUE;
 
-import static java.lang.Integer.MIN_VALUE;
-
-/* ------------------------------------------------------------ */
-
 /**
  * Implements a quoted comma separated list of quality values
  * in accordance with RFC7230 and RFC7231.
@@ -63,8 +59,6 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     private boolean _sorted = false;
     private final ToIntFunction<String> _secondaryOrdering;
 
-    /* ------------------------------------------------------------ */
-
     /**
      * Sorts values with equal quality according to the length of the value String.
      */
@@ -72,8 +66,6 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     {
         this((ToIntFunction)null);
     }
-
-    /* ------------------------------------------------------------ */
 
     /**
      * Sorts values with equal quality according to given order.
@@ -85,8 +77,10 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         this((s) ->
         {
             for (int i = 0; i < preferredOrder.length; ++i)
+            {
                 if (preferredOrder[i].equals(s))
                     return preferredOrder.length - i;
+            }
 
             if ("*".equals(s))
                 return preferredOrder.length;
@@ -94,8 +88,6 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             return MIN_VALUE;
         });
     }
-
-    /* ------------------------------------------------------------ */
 
     /**
      * Orders values with equal quality with the given function.
@@ -107,7 +99,6 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         this._secondaryOrdering = secondaryOrdering == null ? s -> 0 : secondaryOrdering;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void parsedValue(StringBuffer buffer)
     {
@@ -117,7 +108,6 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         _quality.add(1.0D);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
     {
@@ -127,15 +117,15 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
                 buffer.setLength(buffer.length() - 1);
         }
         else if (paramValue >= 0 &&
-                buffer.charAt(paramName) == 'q' && paramValue > paramName &&
-                buffer.length() >= paramName && buffer.charAt(paramName + 1) == '=')
+            buffer.charAt(paramName) == 'q' && paramValue > paramName &&
+            buffer.length() >= paramName && buffer.charAt(paramName + 1) == '=')
         {
             Double q;
             try
             {
                 q = (_keepQuotes && buffer.charAt(paramValue) == '"')
-                        ? Double.valueOf(buffer.substring(paramValue + 1, buffer.length() - 1))
-                        : Double.valueOf(buffer.substring(paramValue));
+                    ? Double.valueOf(buffer.substring(paramValue + 1, buffer.length() - 1))
+                    : Double.valueOf(buffer.substring(paramValue));
             }
             catch (Exception e)
             {
@@ -195,11 +185,11 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             lastSecondaryOrder = _secondaryOrdering.applyAsInt(v);
         }
 
-        int last_element = _quality.size();
-        while (last_element > 0 && _quality.get(--last_element).equals(0.0D))
+        int lastElement = _quality.size();
+        while (lastElement > 0 && _quality.get(--lastElement).equals(0.0D))
         {
-            _quality.remove(last_element);
-            _values.remove(last_element);
+            _quality.remove(lastElement);
+            _values.remove(lastElement);
         }
     }
 }

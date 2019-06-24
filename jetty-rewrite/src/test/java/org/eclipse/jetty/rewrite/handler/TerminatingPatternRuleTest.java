@@ -46,12 +46,12 @@ public class TerminatingPatternRuleTest extends AbstractRuleTestCase
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                    ServletException
+                ServletException
             {
                 response.setStatus(HttpStatus.CREATED_201);
-                request.setAttribute("target",target);
-                request.setAttribute("URI",request.getRequestURI());
-                request.setAttribute("info",request.getPathInfo());
+                request.setAttribute("target", target);
+                request.setAttribute("URI", request.getRequestURI());
+                request.setAttribute("info", request.getPathInfo());
             }
         });
         rewriteHandler.start();
@@ -67,34 +67,34 @@ public class TerminatingPatternRuleTest extends AbstractRuleTestCase
 
     private void assertIsRedirect(int expectedStatus, String expectedLocation)
     {
-        assertThat("Response Status",_response.getStatus(),is(expectedStatus));
-        assertThat("Response Location Header",_response.getHeader(HttpHeader.LOCATION.asString()),is(expectedLocation));
+        assertThat("Response Status", _response.getStatus(), is(expectedStatus));
+        assertThat("Response Location Header", _response.getHeader(HttpHeader.LOCATION.asString()), is(expectedLocation));
     }
 
     private void assertIsRequest(String expectedRequestPath)
     {
-        assertThat("Response Status",_response.getStatus(),is(HttpStatus.CREATED_201));
-        assertThat("Request Target",_request.getAttribute("target"),is(expectedRequestPath));
+        assertThat("Response Status", _response.getStatus(), is(HttpStatus.CREATED_201));
+        assertThat("Request Target", _request.getAttribute("target"), is(expectedRequestPath));
     }
 
     @Test
     public void testTerminatingEarly() throws IOException, ServletException
     {
-        rewriteHandler.handle("/login.jsp",_request,_request,_response);
+        rewriteHandler.handle("/login.jsp", _request, _request, _response);
         assertIsRequest("/login.jsp");
     }
 
     @Test
     public void testNoTerminationDo() throws IOException, ServletException
     {
-        rewriteHandler.handle("/login.do",_request,_request,_response);
-        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302,"http://login.company.com/");
+        rewriteHandler.handle("/login.do", _request, _request, _response);
+        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302, "http://login.company.com/");
     }
 
     @Test
     public void testNoTerminationDir() throws IOException, ServletException
     {
-        rewriteHandler.handle("/login/",_request,_request,_response);
-        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302,"http://login.company.com/");
+        rewriteHandler.handle("/login/", _request, _request, _response);
+        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302, "http://login.company.com/");
     }
 }

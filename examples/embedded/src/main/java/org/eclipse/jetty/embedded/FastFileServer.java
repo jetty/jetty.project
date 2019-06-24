@@ -58,14 +58,15 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class FastFileServer
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
 
         HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[] {
-                new FastFileHandler(new File(System.getProperty("user.dir"))),
-                new DefaultHandler() });
+        handlers.setHandlers(new Handler[]{
+            new FastFileHandler(new File(System.getProperty("user.dir"))),
+            new DefaultHandler()
+        });
         server.setHandler(handlers);
 
         server.start();
@@ -77,17 +78,17 @@ public class FastFileServer
         private final MimeTypes mimeTypes = new MimeTypes();
         private final File dir;
 
-        private FastFileHandler( File dir )
+        private FastFileHandler(File dir)
         {
             this.dir = dir;
         }
 
         @Override
-        public void handle( String target,
-                            Request baseRequest,
-                            HttpServletRequest request,
-                            HttpServletResponse response ) throws IOException,
-                                                          ServletException
+        public void handle(String target,
+                           Request baseRequest,
+                           HttpServletRequest request,
+                           HttpServletResponse response) throws IOException,
+            ServletException
         {
             // define small medium and large.
             // This should be turned for your content, JVM and OS, but we will
@@ -110,20 +111,20 @@ public class FastFileServer
             {
                 if (!request.getPathInfo().endsWith(URIUtil.SLASH))
                 {
-                    response.sendRedirect(response.encodeRedirectURL(request.getRequestURI()+URIUtil.SLASH));
+                    response.sendRedirect(response.encodeRedirectURL(request.getRequestURI() + URIUtil.SLASH));
                     return;
                 }
                 String listing = Resource.newResource(file).getListHTML(
-                        request.getRequestURI(),
-                        request.getPathInfo().lastIndexOf("/") > 0,
-                        request.getQueryString());
+                    request.getRequestURI(),
+                    request.getPathInfo().lastIndexOf("/") > 0,
+                    request.getQueryString());
                 response.setContentType("text/html; charset=utf-8");
                 response.getWriter().println(listing);
                 return;
             }
 
             // Set some content headers.
-            
+
             // Jetty DefaultServlet will cache formatted date strings, but we
             // will reformat for each request here
             response.setDateHeader("Last-Modified", file.lastModified());
@@ -134,9 +135,9 @@ public class FastFileServer
             if (file.length() < SMALL)
             {
                 // need to caste to Jetty output stream for best API
-                ((HttpOutput) response.getOutputStream())
-                        .sendContent(FileChannel.open(file.toPath(),
-                                StandardOpenOption.READ));
+                ((HttpOutput)response.getOutputStream())
+                    .sendContent(FileChannel.open(file.toPath(),
+                        StandardOpenOption.READ));
                 return;
             }
 
@@ -153,7 +154,7 @@ public class FastFileServer
                 }
 
                 @Override
-                public void failed( Throwable x )
+                public void failed(Throwable x)
                 {
                     // log error and complete async response;
                     x.printStackTrace();
@@ -165,9 +166,9 @@ public class FastFileServer
             if (file.length() < MEDIUM)
             {
                 // the file channel is closed by the async send
-                ((HttpOutput) response.getOutputStream())
-                        .sendContent(FileChannel.open(file.toPath(),
-                                StandardOpenOption.READ), completionCB);
+                ((HttpOutput)response.getOutputStream())
+                    .sendContent(FileChannel.open(file.toPath(),
+                        StandardOpenOption.READ), completionCB);
                 return;
             }
 
@@ -176,10 +177,10 @@ public class FastFileServer
             // can be hard to GC on some JVMs. But for this example we will
             // create a new buffer per file
             ByteBuffer buffer;
-            try ( RandomAccessFile raf = new RandomAccessFile(file, "r"); )
+            try (RandomAccessFile raf = new RandomAccessFile(file, "r");)
             {
                 buffer = raf.getChannel().map(MapMode.READ_ONLY, 0,
-                        raf.length());
+                    raf.length());
             }
 
             // Assuming the file buffer might be shared cached version, so lets
@@ -188,8 +189,8 @@ public class FastFileServer
 
             // send the content as a buffer with a callback to complete the
             // async request need to caste to Jetty output stream for best API
-            ((HttpOutput) response.getOutputStream()).sendContent(buffer,
-                    completionCB);
+            ((HttpOutput)response.getOutputStream()).sendContent(buffer,
+                completionCB);
         }
     }
 }

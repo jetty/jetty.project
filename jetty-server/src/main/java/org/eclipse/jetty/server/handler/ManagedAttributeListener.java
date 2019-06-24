@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.handler;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextEvent;
@@ -30,61 +29,63 @@ import javax.servlet.ServletContextListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
-/** Enable Jetty style JMX MBeans from within a Context 
+/**
+ * Enable Jetty style JMX MBeans from within a Context
  */
-public class ManagedAttributeListener implements  ServletContextListener, ServletContextAttributeListener
+public class ManagedAttributeListener implements ServletContextListener, ServletContextAttributeListener
 {
     private static final Logger LOG = Log.getLogger(ManagedAttributeListener.class);
 
-    final Set<String> _managedAttributes=new HashSet<>();
+    final Set<String> _managedAttributes = new HashSet<>();
     final ContextHandler _context;
-    
-    public ManagedAttributeListener(ContextHandler context,String... managedAttributes)
-    {
-        _context=context;
 
-        for (String attr:managedAttributes)
+    public ManagedAttributeListener(ContextHandler context, String... managedAttributes)
+    {
+        _context = context;
+
+        for (String attr : managedAttributes)
+        {
             _managedAttributes.add(attr);
-        
+        }
+
         if (LOG.isDebugEnabled())
-            LOG.debug("managedAttributes {}",_managedAttributes);
+            LOG.debug("managedAttributes {}", _managedAttributes);
     }
 
     @Override
     public void attributeReplaced(ServletContextAttributeEvent event)
     {
         if (_managedAttributes.contains(event.getName()))
-            updateBean(event.getName(),event.getValue(),event.getServletContext().getAttribute(event.getName()));
+            updateBean(event.getName(), event.getValue(), event.getServletContext().getAttribute(event.getName()));
     }
-    
+
     @Override
     public void attributeRemoved(ServletContextAttributeEvent event)
     {
         if (_managedAttributes.contains(event.getName()))
-            updateBean(event.getName(),event.getValue(),null);                    
+            updateBean(event.getName(), event.getValue(), null);
     }
-    
+
     @Override
     public void attributeAdded(ServletContextAttributeEvent event)
     {
         if (_managedAttributes.contains(event.getName()))
-            updateBean(event.getName(),null,event.getValue());    
+            updateBean(event.getName(), null, event.getValue());
     }
 
     @Override
     public void contextInitialized(ServletContextEvent event)
-    {                 
+    {
         // Update existing attributes
         Enumeration<String> e = event.getServletContext().getAttributeNames();
         while (e.hasMoreElements())
         {
             String name = e.nextElement();
             if (_managedAttributes.contains(name))
-                updateBean(name,null,event.getServletContext().getAttribute(name));
+                updateBean(name, null, event.getServletContext().getAttribute(name));
         }
     }
-    
+
     @Override
     public void contextDestroyed(ServletContextEvent event)
     {
@@ -93,15 +94,15 @@ public class ManagedAttributeListener implements  ServletContextListener, Servle
         {
             String name = e.nextElement();
             if (_managedAttributes.contains(name))
-                updateBean(name,event.getServletContext().getAttribute(name),null);
+                updateBean(name, event.getServletContext().getAttribute(name), null);
         }
     }
-    
-    protected void updateBean(String name,Object oldBean,Object newBean)
+
+    protected void updateBean(String name, Object oldBean, Object newBean)
     {
-        LOG.info("update {} {}->{} on {}",name,oldBean,newBean,_context);
+        LOG.info("update {} {}->{} on {}", name, oldBean, newBean, _context);
         if (LOG.isDebugEnabled())
-            LOG.debug("update {} {}->{} on {}",name,oldBean,newBean,_context);
-        _context.updateBean(oldBean,newBean,false);
+            LOG.debug("update {} {}->{} on {}", name, oldBean, newBean, _context);
+        _context.updateBean(oldBean, newBean, false);
     }
 }

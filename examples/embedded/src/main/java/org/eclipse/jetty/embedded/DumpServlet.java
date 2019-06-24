@@ -20,8 +20,6 @@ package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -30,9 +28,8 @@ import javax.servlet.http.HttpServletResponse;
 public class DumpServlet extends HttpServlet
 {
     @Override
-    protected void doGet( HttpServletRequest request,
-                          HttpServletResponse response ) throws ServletException,
-                                                        IOException
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response) throws IOException
     {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
@@ -51,8 +48,7 @@ public class DumpServlet extends HttpServlet
         String r = request.getParameter("resource");
         if (r != null)
         {
-            out.println("resource(" + r + ")="
-                    + getServletContext().getResource(r));
+            out.println("resource(" + r + ")=" + getServletContext().getResource(r));
         }
 
         out.println("</pre>");

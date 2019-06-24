@@ -34,13 +34,11 @@ import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
-
-
 @WebListener
-public class AnnotatedListener implements HttpSessionListener,  HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
+public class AnnotatedListener implements HttpSessionListener, HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
 {
 
-    @Resource(mappedName="maxAmount")
+    @Resource(mappedName = "maxAmount")
     private Double maxAmount;
 
     @Override
@@ -78,8 +76,8 @@ public class AnnotatedListener implements HttpSessionListener,  HttpSessionAttri
     {
         if (sce.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest") != null)
             throw new IllegalStateException("AnnotatedListener already initialized");
-        
-        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest", Boolean.valueOf(maxAmount!=null));
+
+        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest", Boolean.valueOf(maxAmount != null));
     }
 
     @Override
@@ -151,19 +149,18 @@ public class AnnotatedListener implements HttpSessionListener,  HttpSessionAttri
     public void requestCompleted(ServletRequestEvent rre)
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void requestResumed(ServletRequestEvent rre)
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void requestSuspended(ServletRequestEvent rre)
     {
         // TODO Auto-generated method stub
-        
-    }
 
+    }
 }

@@ -45,7 +45,9 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
         super(destination, maxConnections, requester);
         entries = new ArrayList<>(maxConnections);
         for (int i = 0; i < maxConnections; ++i)
+        {
             entries.add(new Entry());
+        }
         this.maxMultiplex = maxMultiplex;
     }
 
@@ -213,11 +215,11 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
             }
         }
         return String.format("%s@%x[c=%d/%d,a=%d]",
-                getClass().getSimpleName(),
-                hashCode(),
-                present,
-                getMaxConnectionCount(),
-                active
+            getClass().getSimpleName(),
+            hashCode(),
+            present,
+            getMaxConnectionCount(),
+            active
         );
     }
 

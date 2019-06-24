@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -40,9 +37,10 @@ import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BalancerServletTest
 {
@@ -116,9 +114,9 @@ public class BalancerServletTest
     protected byte[] sendRequestToBalancer(String path) throws Exception
     {
         ContentResponse response = client.newRequest("localhost", getServerPort(balancer))
-                .path(CONTEXT_PATH + SERVLET_PATH + path)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .path(CONTEXT_PATH + SERVLET_PATH + path)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         return response.getContent();
     }
 

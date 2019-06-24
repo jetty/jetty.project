@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.either;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -33,6 +27,12 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.either;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpGeneratorServerHTTPTest
 {
@@ -163,7 +163,6 @@ public class HttpGeneratorServerHTTPTest
                         chunk = BufferUtil.allocate(2048);
                         continue;
 
-
                     case FLUSH:
                         if (BufferUtil.hasContent(header))
                         {
@@ -274,7 +273,7 @@ public class HttpGeneratorServerHTTPTest
         }
     }
 
-    public final static String CONTENT = "The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
+    public static final String CONTENT = "The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
 
     private static class Run
     {
@@ -327,18 +326,17 @@ public class HttpGeneratorServerHTTPTest
         }
     }
 
-
     public static Stream<Arguments> data()
     {
         Result[] results = {
-                new Result(200, null, -1, null, false),
-                new Result(200, null, -1, CONTENT, false),
-                new Result(200, null, CONTENT.length(), null, true),
-                new Result(200, null, CONTENT.length(), CONTENT, false),
-                new Result(200, "text/html", -1, null, true),
-                new Result(200, "text/html", -1, CONTENT, false),
-                new Result(200, "text/html", CONTENT.length(), null, true),
-                new Result(200, "text/html", CONTENT.length(), CONTENT, false)
+            new Result(200, null, -1, null, false),
+            new Result(200, null, -1, CONTENT, false),
+            new Result(200, null, CONTENT.length(), null, true),
+            new Result(200, null, CONTENT.length(), CONTENT, false),
+            new Result(200, "text/html", -1, null, true),
+            new Result(200, "text/html", -1, CONTENT, false),
+            new Result(200, "text/html", CONTENT.length(), null, true),
+            new Result(200, "text/html", CONTENT.length(), CONTENT, false)
         };
 
         ArrayList<Arguments> data = new ArrayList<>();

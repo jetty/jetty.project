@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.util.preventers;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -29,21 +28,17 @@ import org.eclipse.jetty.util.log.Logger;
  * Abstract base class for code that seeks to avoid pinning of webapp classloaders by using the jetty classloader to
  * proactively call the code that pins them (generally pinned as static data members, or as static
  * data members that are daemon threads (which use the context classloader)).
- * 
+ *
  * Instances of subclasses of this class should be set with Server.addBean(), which will
  * ensure that they are called when the Server instance starts up, which will have the jetty
  * classloader in scope.
- *
  */
 public abstract class AbstractLeakPreventer extends AbstractLifeCycle
 {
     protected static final Logger LOG = Log.getLogger(AbstractLeakPreventer.class);
-    
-    /* ------------------------------------------------------------ */
-    abstract public void prevent(ClassLoader loader);
-    
-    
-    /* ------------------------------------------------------------ */
+
+    public abstract void prevent(ClassLoader loader);
+
     @Override
     protected void doStart() throws Exception
     {

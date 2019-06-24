@@ -16,12 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
-
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
-import org.eclipse.jetty.util.component.LifeCycle;
 
 import java.io.Writer;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -30,10 +25,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
+import org.eclipse.jetty.util.component.LifeCycle;
+
 /**
  * ServerConnectorListener
  *
- * This is for test support, where we need jetty to run on a random port, and we need 
+ * This is for test support, where we need jetty to run on a random port, and we need
  * a client to be able to find out which port was picked.
  */
 public class ServerConnectorListener extends AbstractLifeCycleListener
@@ -42,9 +41,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     private String _fileName;
     private String _sysPropertyName;
 
-
-
-    /** 
+    /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener#lifeCycleStarted(org.eclipse.jetty.util.component.LifeCycle)
      */
     @Override
@@ -54,32 +51,32 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
         {
             try
             {
-                Path tmp = Files.createTempFile( "jettyport", ".tmp" );
-                try (Writer writer = Files.newBufferedWriter( tmp ))
+                Path tmp = Files.createTempFile("jettyport", ".tmp");
+                try (Writer writer = Files.newBufferedWriter(tmp))
                 {
-                    writer.write( String.valueOf( ( (ServerConnector) event ).getLocalPort() ) );
+                    writer.write(String.valueOf(((ServerConnector)event).getLocalPort()));
                 }
 
                 Path path = Paths.get(getFileName());
                 Files.deleteIfExists(path);
                 try
                 {
-                    Files.move( tmp, path, StandardCopyOption.ATOMIC_MOVE );
+                    Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE);
                 }
-                catch ( AtomicMoveNotSupportedException e ) // can append on some os (windows).. so try again without the option
+                catch (AtomicMoveNotSupportedException e) // can append on some os (windows).. so try again without the option
                 {
-                    Files.move( tmp, path);
+                    Files.move(tmp, path);
                 }
             }
             catch (Exception e)
             {
-                throw new RuntimeException (e);
+                throw new RuntimeException(e);
             }
         }
-        
+
         if (getSysPropertyName() != null)
         {
-            System.setProperty(_sysPropertyName,String.valueOf(((ServerConnector)event).getLocalPort()));
+            System.setProperty(_sysPropertyName, String.valueOf(((ServerConnector)event).getLocalPort()));
         }
         super.lifeCycleStarted(event);
     }
@@ -116,6 +113,4 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     {
         _sysPropertyName = sysPropertyName;
     }
-
-    
 }

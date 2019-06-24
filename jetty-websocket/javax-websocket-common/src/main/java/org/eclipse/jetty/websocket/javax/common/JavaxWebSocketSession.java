@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
@@ -73,15 +72,15 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     private JavaxWebSocketBasicRemote basicRemote;
 
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
-        FrameHandler.CoreSession coreSession,
-        JavaxWebSocketFrameHandler frameHandler,
-        EndpointConfig endpointConfig)
+                                 FrameHandler.CoreSession coreSession,
+                                 JavaxWebSocketFrameHandler frameHandler,
+                                 EndpointConfig endpointConfig)
     {
         this.container = container;
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
 
-        this.config = endpointConfig == null?new BasicEndpointConfig():endpointConfig;
+        this.config = endpointConfig == null ? new BasicEndpointConfig() : endpointConfig;
 
         this.availableDecoders = new AvailableDecoders(this.config);
         this.availableEncoders = new AvailableEncoders(this.config);
@@ -141,7 +140,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
      * @see Session#addMessageHandler(MessageHandler)
      * @since JSR356 v1.0
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void addMessageHandler(MessageHandler handler) throws IllegalStateException
     {

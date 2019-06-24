@@ -27,6 +27,7 @@ import java.security.PrivilegedAction;
 public class MemoryUtils
 {
     private static final int cacheLineBytes;
+
     static
     {
         final int defaultValue = 64;

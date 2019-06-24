@@ -91,7 +91,7 @@ public class ParserCapture
 
     public boolean onFrame(Frame frame)
     {
-        framesQueue.offer(copy?Frame.copy(frame):frame);
+        framesQueue.offer(copy ? Frame.copy(frame) : frame);
         if (frame.getOpCode() == OpCode.CLOSE)
             closed = true;
         return true; // it is consumed

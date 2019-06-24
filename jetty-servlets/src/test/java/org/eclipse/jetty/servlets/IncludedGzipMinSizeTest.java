@@ -58,12 +58,15 @@ public class IncludedGzipMinSizeTest
 
         tester.copyTestServerFile("small_script.js");
 
-        try {
+        try
+        {
             tester.start();
             tester.assertIsResponseNotGziped("small_script.js",
-                    "small_script.js.sha1",
-                    "text/javascript; charset=utf-8");
-        } finally {
+                "small_script.js.sha1",
+                "text/javascript; charset=utf-8");
+        }
+        finally
+        {
             tester.stop();
         }
     }
@@ -74,15 +77,18 @@ public class IncludedGzipMinSizeTest
         GzipTester tester = new GzipTester(testdir.getEmptyPathDir(), compressionType);
 
         tester.setContentServlet(testServlet);
-        tester.getGzipHandler().addIncludedMimeTypes("application/soap+xml","text/javascript","application/javascript");
+        tester.getGzipHandler().addIncludedMimeTypes("application/soap+xml", "text/javascript", "application/javascript");
         tester.getGzipHandler().setMinGzipSize(2048);
 
         tester.copyTestServerFile("big_script.js");
 
-        try {
+        try
+        {
             tester.start();
-            tester.assertIsResponseGzipCompressed("GET","big_script.js");
-        } finally {
+            tester.assertIsResponseGzipCompressed("GET", "big_script.js");
+        }
+        finally
+        {
             tester.stop();
         }
     }

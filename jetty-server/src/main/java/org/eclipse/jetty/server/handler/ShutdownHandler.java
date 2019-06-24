@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /**
  * A handler that shuts the server down on a valid request. Used to do "soft" restarts from Java.
  * If _exitJvm is set to true a hard System.exit() call is being made.
@@ -48,30 +47,30 @@ import org.eclipse.jetty.util.log.Logger;
  * Usage:
  *
  * <pre>
-    Server server = new Server(8080);
-    HandlerList handlers = new HandlerList();
-    handlers.setHandlers(new Handler[]
-    { someOtherHandler, new ShutdownHandler(&quot;secret password&quot;, false, true) });
-    server.setHandler(handlers);
-    server.start();
-   </pre>
+ * Server server = new Server(8080);
+ * HandlerList handlers = new HandlerList();
+ * handlers.setHandlers(new Handler[]
+ * { someOtherHandler, new ShutdownHandler(&quot;secret password&quot;, false, true) });
+ * server.setHandler(handlers);
+ * server.start();
+ * </pre>
  *
-   <pre>
-   public static void attemptShutdown(int port, String shutdownCookie) {
-        try {
-            URL url = new URL("http://localhost:" + port + "/shutdown?token=" + shutdownCookie);
-            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.getResponseCode();
-            logger.info("Shutting down " + url + ": " + connection.getResponseMessage());
-        } catch (SocketException e) {
-            logger.debug("Not running");
-            // Okay - the server is not running
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-  </pre>
+ * <pre>
+ * public static void attemptShutdown(int port, String shutdownCookie) {
+ * try {
+ * URL url = new URL("http://localhost:" + port + "/shutdown?token=" + shutdownCookie);
+ * HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+ * connection.setRequestMethod("POST");
+ * connection.getResponseCode();
+ * logger.info("Shutting down " + url + ": " + connection.getResponseMessage());
+ * } catch (SocketException e) {
+ * logger.debug("Not running");
+ * // Okay - the server is not running
+ * } catch (IOException e) {
+ * throw new RuntimeException(e);
+ * }
+ * }
+ * </pre>
  */
 public class ShutdownHandler extends HandlerWrapper
 {
@@ -81,25 +80,22 @@ public class ShutdownHandler extends HandlerWrapper
     private boolean _sendShutdownAtStart;
     private boolean _exitJvm = false;
 
-
     /**
      * Creates a listener that lets the server be shut down remotely (but only from localhost).
      *
-     * @param shutdownToken
-     *            a secret password to avoid unauthorized shutdown attempts
+     * @param shutdownToken a secret password to avoid unauthorized shutdown attempts
      */
     public ShutdownHandler(String shutdownToken)
     {
-        this(shutdownToken,false,false);
+        this(shutdownToken, false, false);
     }
-    
+
     /**
-     * @param shutdownToken
-     *            a secret password to avoid unauthorized shutdown attempts
+     * @param shutdownToken a secret password to avoid unauthorized shutdown attempts
      * @param exitJVM If true, when the shutdown is executed, the handler class System.exit()
      * @param sendShutdownAtStart If true, a shutdown is sent as a HTTP post
-     *            during startup, which will shutdown any previously running instances of
-     *            this server with an identically configured ShutdownHandler
+     * during startup, which will shutdown any previously running instances of
+     * this server with an identically configured ShutdownHandler
      */
     public ShutdownHandler(String shutdownToken, boolean exitJVM, boolean sendShutdownAtStart)
     {
@@ -107,7 +103,6 @@ public class ShutdownHandler extends HandlerWrapper
         setExitJvm(exitJVM);
         setSendShutdownAtStart(sendShutdownAtStart);
     }
-    
 
     public void sendShutdown() throws IOException
     {
@@ -133,23 +128,22 @@ public class ShutdownHandler extends HandlerWrapper
     @SuppressWarnings("resource")
     private String getServerUrl()
     {
-        NetworkConnector connector=null;
-        for (Connector c: getServer().getConnectors())
+        NetworkConnector connector = null;
+        for (Connector c : getServer().getConnectors())
         {
             if (c instanceof NetworkConnector)
             {
-                connector=(NetworkConnector)c;
+                connector = (NetworkConnector)c;
                 break;
             }
         }
 
-        if (connector==null)
+        if (connector == null)
             return "http://localhost";
 
         return "http://localhost:" + connector.getPort();
     }
-    
-    
+
     @Override
     protected void doStart() throws Exception
     {
@@ -157,13 +151,13 @@ public class ShutdownHandler extends HandlerWrapper
         if (_sendShutdownAtStart)
             sendShutdown();
     }
-    
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!target.equals("/shutdown"))
         {
-            super.handle(target,baseRequest,request,response);
+            super.handle(target, baseRequest, request, response);
             return;
         }
 
@@ -189,9 +183,9 @@ public class ShutdownHandler extends HandlerWrapper
         doShutdown(baseRequest, response);
     }
 
-    protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException 
+    protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException
     {
-        for (Connector connector : getServer().getConnectors()) 
+        for (Connector connector : getServer().getConnectors())
         {
             connector.shutdown();
         }
@@ -199,11 +193,11 @@ public class ShutdownHandler extends HandlerWrapper
         response.sendError(200, "Connectors closed, commencing full shutdown");
         baseRequest.setHandled(true);
 
-        final Server server=getServer();
+        final Server server = getServer();
         new Thread()
         {
             @Override
-            public void run ()
+            public void run()
             {
                 try
                 {
@@ -215,7 +209,7 @@ public class ShutdownHandler extends HandlerWrapper
                 }
                 catch (Exception e)
                 {
-                    throw new RuntimeException("Shutting down server",e);
+                    throw new RuntimeException("Shutting down server", e);
                 }
             }
         }.start();
@@ -273,5 +267,4 @@ public class ShutdownHandler extends HandlerWrapper
     {
         return _exitJvm;
     }
-
 }

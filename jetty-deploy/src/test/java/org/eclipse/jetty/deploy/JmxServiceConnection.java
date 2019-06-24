@@ -32,7 +32,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 
 /**
  * JmxServiceConnection
- * 
+ *
  * Provides ability to create a connection to either an external
  * JMX server, or a loopback connection to the internal one.
  */
@@ -54,9 +54,8 @@ public class JmxServiceConnection
 
     /**
      * Construct a connection to specified server
-     * 
-     * @param url
-     *            URL of JMX server
+     *
+     * @param url URL of JMX server
      */
     public JmxServiceConnection(String url)
     {
@@ -65,7 +64,7 @@ public class JmxServiceConnection
 
     /**
      * Retrieve an external URL for the JMX server
-     * 
+     *
      * @return service URL
      */
     public String getServiceUrl()
@@ -75,7 +74,7 @@ public class JmxServiceConnection
 
     /**
      * Retrieve a connection to MBean server
-     * 
+     *
      * @return connection to MBean server
      */
     public MBeanServerConnection getConnection()
@@ -100,15 +99,13 @@ public class JmxServiceConnection
 
     /**
      * Open a loopback connection to local JMX server
-     * 
-     * @throws IOException
      */
     private void openLoopbackConnection() throws IOException
     {
         server = ManagementFactory.getPlatformMBeanServer();
 
         JMXServiceURL serviceUrl = new JMXServiceURL("service:jmx:rmi://");
-        connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(serviceUrl,null,server);
+        connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(serviceUrl, null, server);
         connectorServer.start();
 
         this.serviceUrl = connectorServer.getAddress().toString();
@@ -119,9 +116,6 @@ public class JmxServiceConnection
 
     /**
      * Open a connection to remote JMX server
-     * 
-     * @param url
-     * @throws IOException
      */
     private void openServerConnection(String url) throws IOException
     {

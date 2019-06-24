@@ -188,7 +188,7 @@ public abstract class BufferingResponseListener extends Listener.Adapter
             return null;
         return BufferUtil.toString(buffer, encoding);
     }
-    
+
     /**
      * @return Content as InputStream
      */

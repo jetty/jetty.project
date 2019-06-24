@@ -18,20 +18,10 @@
 
 package org.eclipse.jetty.server;
 
-import static org.eclipse.jetty.server.HttpInput.EARLY_EOF_CONTENT;
-import static org.eclipse.jetty.server.HttpInput.EOF_CONTENT;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import javax.servlet.ReadListener;
 
 import org.eclipse.jetty.server.HttpChannelState.Action;
@@ -40,25 +30,31 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.eclipse.jetty.server.HttpInput.EARLY_EOF_CONTENT;
+import static org.eclipse.jetty.server.HttpInput.EOF_CONTENT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * this tests HttpInput and its interaction with HttpChannelState
  */
 
-
 public class HttpInputAsyncStateTest
 {
 
     private static final Queue<String> __history = new LinkedBlockingQueue<>();
-    private ByteBuffer _expected = BufferUtil.allocate(16*1024);
+    private ByteBuffer _expected = BufferUtil.allocate(16 * 1024);
     private boolean _eof;
     private boolean _noReadInDataAvailable;
     private boolean _completeInOnDataAvailable;
-    
+
     private final ReadListener _listener = new ReadListener()
     {
         @Override
@@ -97,7 +93,7 @@ public class HttpInputAsyncStateTest
 
     @BeforeEach
     public void before()
-    {        
+    {
         _noReadInDataAvailable = false;
         _in = new HttpInput(new HttpChannelState(new HttpChannel(null, new HttpConfiguration(), null, null)
         {
@@ -125,7 +121,7 @@ public class HttpInputAsyncStateTest
             public boolean onContentAdded()
             {
                 boolean wake = super.onContentAdded();
-                __history.add("onReadPossible "+wake);
+                __history.add("onReadPossible " + wake);
                 return wake;
             }
 
@@ -133,7 +129,7 @@ public class HttpInputAsyncStateTest
             public boolean onReadReady()
             {
                 boolean wake = super.onReadReady();
-                __history.add("onReadReady "+wake);
+                __history.add("onReadReady " + wake);
                 return wake;
             }
         })
@@ -151,68 +147,68 @@ public class HttpInputAsyncStateTest
 
     private void check(String... history)
     {
-        if (history==null || history.length==0)
-            assertThat(__history,empty());
+        if (history == null || history.length == 0)
+            assertThat(__history, empty());
         else
-            assertThat(__history.toArray(new String[__history.size()]),Matchers.arrayContaining(history));
+            assertThat(__history.toArray(new String[__history.size()]), Matchers.arrayContaining(history));
         __history.clear();
     }
-    
+
     private void wake()
     {
         handle(null);
     }
 
-
     private void handle()
     {
         handle(null);
     }
-    
+
     private void handle(Runnable run)
     {
         Action action = _state.handling();
-        loop: while(true)
+        loop:
+        while (true)
         {
-            switch(action)
+            switch (action)
             {
                 case DISPATCH:
-                    if (run==null)
+                    if (run == null)
                         fail("Run is null during DISPATCH");
                     run.run();
                     break;
-                    
+
                 case READ_CALLBACK:
                     _in.run();
                     break;
-                    
+
                 case TERMINATED:
-                case WAIT: 
+                case WAIT:
                     break loop;
-                    
-                case COMPLETE: 
+
+                case COMPLETE:
                     __history.add("COMPLETE");
                     break;
-                    
+
                 default:
                     fail("Bad Action: " + action);
             }
             action = _state.unhandle();
         }
     }
-    
+
     private void deliver(Content... content)
     {
-        if (content!=null)
+        if (content != null)
         {
-            for (Content c: content)
+            for (Content c : content)
             {
-                if (c==EOF_CONTENT)
+                if (c == EOF_CONTENT)
                 {
                     _in.eof();
                     _eof = true;
                 }
-                else if (c==HttpInput.EARLY_EOF_CONTENT)
+                else if (c == HttpInput.EARLY_EOF_CONTENT)
                 {
                     _in.earlyEOF();
                     _eof = true;
@@ -220,25 +216,25 @@ public class HttpInputAsyncStateTest
                 else
                 {
                     _in.addContent(c);
-                    BufferUtil.append(_expected,c.getByteBuffer().slice());
+                    BufferUtil.append(_expected, c.getByteBuffer().slice());
                 }
             }
         }
     }
-    
+
     boolean readAvailable() throws IOException
     {
-        int len=0;
+        int len = 0;
         try
         {
-            while(_in.isReady())
+            while (_in.isReady())
             {
                 int b = _in.read();
-                
-                if (b<0)
+
+                if (b < 0)
                 {
-                    if (len>0)
-                        __history.add("read "+len);
+                    if (len > 0)
+                        __history.add("read " + len);
                     __history.add("read -1");
                     assertTrue(BufferUtil.isEmpty(_expected));
                     assertTrue(_eof);
@@ -249,23 +245,22 @@ public class HttpInputAsyncStateTest
                     len++;
                     assertFalse(BufferUtil.isEmpty(_expected));
                     int a = 0xff & _expected.get();
-                    assertThat(b,equalTo(a));
+                    assertThat(b, equalTo(a));
                 }
             }
-            __history.add("read "+len);
+            __history.add("read " + len);
             assertTrue(BufferUtil.isEmpty(_expected));
         }
-        catch(IOException e)
+        catch (IOException e)
         {
-            if (len>0)
-                __history.add("read "+len);
-            __history.add("read "+e);
+            if (len > 0)
+                __history.add("read " + len);
+            __history.add("read " + e);
             throw e;
         }
         return false;
     }
-    
-    
+
     @AfterEach
     public void after()
     {
@@ -276,470 +271,454 @@ public class HttpInputAsyncStateTest
     public void testInitialEmptyListenInHandle() throws Exception
     {
         deliver(EOF_CONTENT);
-        check();      
-        
-        handle(()->
+        check();
+
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadReady false");       
+            check("onReadReady false");
         });
 
-        check("onAllDataRead");       
+        check("onAllDataRead");
     }
-
 
     @Test
     public void testInitialEmptyListenAfterHandle() throws Exception
     {
         deliver(EOF_CONTENT);
-        
-        handle(()->
+
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         _in.setReadListener(_listener);
-        check("onReadReady true","wake");
+        check("onReadReady true", "wake");
         wake();
-        check("onAllDataRead");       
+        check("onAllDataRead");
     }
 
     @Test
     public void testListenInHandleEmpty() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadUnready");       
+            check("onReadUnready");
         });
 
         check("onAsyncWaitForContent");
-        
+
         deliver(EOF_CONTENT);
         check("onReadPossible true");
         handle();
-        check("onAllDataRead");       
+        check("onAllDataRead");
     }
-
 
     @Test
     public void testEmptyListenAfterHandle() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         deliver(EOF_CONTENT);
-        check();       
-        
-        _in.setReadListener(_listener);
-        check("onReadReady true","wake");
-        wake();
-        check("onAllDataRead");       
-    }
+        check();
 
+        _in.setReadListener(_listener);
+        check("onReadReady true", "wake");
+        wake();
+        check("onAllDataRead");
+    }
 
     @Test
     public void testListenAfterHandleEmpty() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         _in.setReadListener(_listener);
-        check("onAsyncWaitForContent","onReadUnready");
+        check("onAsyncWaitForContent", "onReadUnready");
 
         deliver(EOF_CONTENT);
-        check("onReadPossible true");        
-        
-        handle();
-        check("onAllDataRead");       
-    }
+        check("onReadPossible true");
 
+        handle();
+        check("onAllDataRead");
+    }
 
     @Test
     public void testInitialEarlyEOFListenInHandle() throws Exception
     {
         deliver(EARLY_EOF_CONTENT);
-        check();      
-        
-        handle(()->
+        check();
+
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadReady false");       
+            check("onReadReady false");
         });
 
-        check("onError:org.eclipse.jetty.io.EofException: Early EOF");       
+        check("onError:org.eclipse.jetty.io.EofException: Early EOF");
     }
-
 
     @Test
     public void testInitialEarlyEOFListenAfterHandle() throws Exception
     {
         deliver(EARLY_EOF_CONTENT);
-        
-        handle(()->
+
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         _in.setReadListener(_listener);
-        check("onReadReady true","wake");
+        check("onReadReady true", "wake");
         wake();
-        check("onError:org.eclipse.jetty.io.EofException: Early EOF");        
+        check("onError:org.eclipse.jetty.io.EofException: Early EOF");
     }
 
     @Test
     public void testListenInHandleEarlyEOF() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadUnready");       
+            check("onReadUnready");
         });
 
         check("onAsyncWaitForContent");
-        
+
         deliver(EARLY_EOF_CONTENT);
         check("onReadPossible true");
         handle();
-        check("onError:org.eclipse.jetty.io.EofException: Early EOF");      
+        check("onError:org.eclipse.jetty.io.EofException: Early EOF");
     }
-
 
     @Test
     public void testEarlyEOFListenAfterHandle() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         deliver(EARLY_EOF_CONTENT);
-        check();       
-        
-        _in.setReadListener(_listener);
-        check("onReadReady true","wake");
-        wake();
-        check("onError:org.eclipse.jetty.io.EofException: Early EOF");       
-    }
+        check();
 
+        _in.setReadListener(_listener);
+        check("onReadReady true", "wake");
+        wake();
+        check("onError:org.eclipse.jetty.io.EofException: Early EOF");
+    }
 
     @Test
     public void testListenAfterHandleEarlyEOF() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         _in.setReadListener(_listener);
-        check("onAsyncWaitForContent","onReadUnready");
+        check("onAsyncWaitForContent", "onReadUnready");
 
         deliver(EARLY_EOF_CONTENT);
-        check("onReadPossible true");        
-        
-        handle();
-        check("onError:org.eclipse.jetty.io.EofException: Early EOF");      
-    }
+        check("onReadPossible true");
 
-    
+        handle();
+        check("onError:org.eclipse.jetty.io.EofException: Early EOF");
+    }
 
     @Test
     public void testInitialAllContentListenInHandle() throws Exception
     {
-        deliver(new TContent("Hello"),EOF_CONTENT);
-        check();      
-        
-        handle(()->
+        deliver(new TContent("Hello"), EOF_CONTENT);
+        check();
+
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadReady false");       
+            check("onReadReady false");
         });
 
-        check("onDataAvailable","read 5","read -1","onAllDataRead");       
+        check("onDataAvailable", "read 5", "read -1", "onAllDataRead");
     }
-
 
     @Test
     public void testInitialAllContentListenAfterHandle() throws Exception
     {
-        deliver(new TContent("Hello"),EOF_CONTENT);
-        
-        handle(()->
+        deliver(new TContent("Hello"), EOF_CONTENT);
+
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         _in.setReadListener(_listener);
-        check("onReadReady true","wake");
+        check("onReadReady true", "wake");
         wake();
-        check("onDataAvailable","read 5","read -1","onAllDataRead"); 
+        check("onDataAvailable", "read 5", "read -1", "onAllDataRead");
     }
 
-    
     @Test
     public void testListenInHandleAllContent() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadUnready");       
+            check("onReadUnready");
         });
 
         check("onAsyncWaitForContent");
-        
-        deliver(new TContent("Hello"),EOF_CONTENT);
-        check("onReadPossible true","onReadPossible false");
-        handle();
-        check("onDataAvailable","read 5","read -1","onAllDataRead");
-    }
 
+        deliver(new TContent("Hello"), EOF_CONTENT);
+        check("onReadPossible true", "onReadPossible false");
+        handle();
+        check("onDataAvailable", "read 5", "read -1", "onAllDataRead");
+    }
 
     @Test
     public void testAllContentListenAfterHandle() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
-        deliver(new TContent("Hello"),EOF_CONTENT);
-        check();       
-        
-        _in.setReadListener(_listener);
-        check("onReadReady true","wake");
-        wake();
-        check("onDataAvailable","read 5","read -1","onAllDataRead");
-    }
+        deliver(new TContent("Hello"), EOF_CONTENT);
+        check();
 
+        _in.setReadListener(_listener);
+        check("onReadReady true", "wake");
+        wake();
+        check("onDataAvailable", "read 5", "read -1", "onAllDataRead");
+    }
 
     @Test
     public void testListenAfterHandleAllContent() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         _in.setReadListener(_listener);
-        check("onAsyncWaitForContent","onReadUnready");
+        check("onAsyncWaitForContent", "onReadUnready");
 
-        deliver(new TContent("Hello"),EOF_CONTENT);
-        check("onReadPossible true","onReadPossible false");        
-        
+        deliver(new TContent("Hello"), EOF_CONTENT);
+        check("onReadPossible true", "onReadPossible false");
+
         handle();
-        check("onDataAvailable","read 5","read -1","onAllDataRead");
+        check("onDataAvailable", "read 5", "read -1", "onAllDataRead");
     }
-    
 
     @Test
     public void testInitialIncompleteContentListenInHandle() throws Exception
     {
-        deliver(new TContent("Hello"),EARLY_EOF_CONTENT);
-        check();      
-        
-        handle(()->
+        deliver(new TContent("Hello"), EARLY_EOF_CONTENT);
+        check();
+
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadReady false");       
+            check("onReadReady false");
         });
 
         check(
             "onDataAvailable",
             "read 5",
             "read org.eclipse.jetty.io.EofException: Early EOF",
-            "onError:org.eclipse.jetty.io.EofException: Early EOF");       
+            "onError:org.eclipse.jetty.io.EofException: Early EOF");
     }
-
 
     @Test
     public void testInitialPartialContentListenAfterHandle() throws Exception
     {
-        deliver(new TContent("Hello"),EARLY_EOF_CONTENT);
-        
-        handle(()->
+        deliver(new TContent("Hello"), EARLY_EOF_CONTENT);
+
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         _in.setReadListener(_listener);
-        check("onReadReady true","wake");
+        check("onReadReady true", "wake");
         wake();
         check(
             "onDataAvailable",
             "read 5",
             "read org.eclipse.jetty.io.EofException: Early EOF",
-            "onError:org.eclipse.jetty.io.EofException: Early EOF");  
+            "onError:org.eclipse.jetty.io.EofException: Early EOF");
     }
 
-    
     @Test
     public void testListenInHandlePartialContent() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadUnready");       
+            check("onReadUnready");
         });
 
         check("onAsyncWaitForContent");
-        
-        deliver(new TContent("Hello"),EARLY_EOF_CONTENT);
-        check("onReadPossible true","onReadPossible false");
+
+        deliver(new TContent("Hello"), EARLY_EOF_CONTENT);
+        check("onReadPossible true", "onReadPossible false");
         handle();
         check(
             "onDataAvailable",
             "read 5",
             "read org.eclipse.jetty.io.EofException: Early EOF",
-            "onError:org.eclipse.jetty.io.EofException: Early EOF");  
+            "onError:org.eclipse.jetty.io.EofException: Early EOF");
     }
-
 
     @Test
     public void testPartialContentListenAfterHandle() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
-        deliver(new TContent("Hello"),EARLY_EOF_CONTENT);
-        check();       
-        
+        deliver(new TContent("Hello"), EARLY_EOF_CONTENT);
+        check();
+
         _in.setReadListener(_listener);
-        check("onReadReady true","wake");
+        check("onReadReady true", "wake");
         wake();
         check(
             "onDataAvailable",
             "read 5",
             "read org.eclipse.jetty.io.EofException: Early EOF",
-            "onError:org.eclipse.jetty.io.EofException: Early EOF");  
+            "onError:org.eclipse.jetty.io.EofException: Early EOF");
     }
-
 
     @Test
     public void testListenAfterHandlePartialContent() throws Exception
     {
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
-            check();       
+            check();
         });
 
         _in.setReadListener(_listener);
-        check("onAsyncWaitForContent","onReadUnready");
+        check("onAsyncWaitForContent", "onReadUnready");
 
-        deliver(new TContent("Hello"),EARLY_EOF_CONTENT);
-        check("onReadPossible true","onReadPossible false");        
-        
+        deliver(new TContent("Hello"), EARLY_EOF_CONTENT);
+        check("onReadPossible true", "onReadPossible false");
+
         handle();
         check(
             "onDataAvailable",
             "read 5",
             "read org.eclipse.jetty.io.EofException: Early EOF",
-            "onError:org.eclipse.jetty.io.EofException: Early EOF");  
+            "onError:org.eclipse.jetty.io.EofException: Early EOF");
     }
-    
-    
+
     @Test
     public void testReadAfterOnDataAvailable() throws Exception
     {
         _noReadInDataAvailable = true;
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadUnready");       
+            check("onReadUnready");
         });
 
         check("onAsyncWaitForContent");
-        
-        deliver(new TContent("Hello"),EOF_CONTENT);
-        check("onReadPossible true","onReadPossible false");
-        
+
+        deliver(new TContent("Hello"), EOF_CONTENT);
+        check("onReadPossible true", "onReadPossible false");
+
         handle();
-        check("onDataAvailable"); 
-        
+        check("onDataAvailable");
+
         readAvailable();
-        check("wake","read 5","read -1"); 
+        check("wake", "read 5", "read -1");
         wake();
-        check("onAllDataRead");   
+        check("onAllDataRead");
     }
-    
+
     @Test
     public void testReadOnlyExpectedAfterOnDataAvailable() throws Exception
     {
         _noReadInDataAvailable = true;
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadUnready");       
+            check("onReadUnready");
         });
 
         check("onAsyncWaitForContent");
-        
-        deliver(new TContent("Hello"),EOF_CONTENT);
-        check("onReadPossible true","onReadPossible false");
-        
+
+        deliver(new TContent("Hello"), EOF_CONTENT);
+        check("onReadPossible true", "onReadPossible false");
+
         handle();
-        check("onDataAvailable"); 
-        
+        check("onDataAvailable");
+
         byte[] buffer = new byte[_expected.remaining()];
-        assertThat(_in.read(buffer),equalTo(buffer.length));
-        assertThat(new String(buffer),equalTo(BufferUtil.toString(_expected)));
+        assertThat(_in.read(buffer), equalTo(buffer.length));
+        assertThat(new String(buffer), equalTo(BufferUtil.toString(_expected)));
         BufferUtil.clear(_expected);
         check();
-        
+
         assertTrue(_in.isReady());
         check();
-        
-        assertThat(_in.read(),equalTo(-1));
-        check("wake"); 
-        
+
+        assertThat(_in.read(), equalTo(-1));
+        check("wake");
+
         wake();
-        check("onAllDataRead");   
+        check("onAllDataRead");
     }
 
     @Test
     public void testReadAndCompleteInOnDataAvailable() throws Exception
     {
         _completeInOnDataAvailable = true;
-        handle(()->
+        handle(() ->
         {
             _state.startAsync(null);
             _in.setReadListener(_listener);
-            check("onReadUnready");       
+            check("onReadUnready");
         });
 
         check("onAsyncWaitForContent");
-        
-        deliver(new TContent("Hello"),EOF_CONTENT);
-        check("onReadPossible true","onReadPossible false");
-        
-        handle(()->{__history.add(_state.getState().toString());});
+
+        deliver(new TContent("Hello"), EOF_CONTENT);
+        check("onReadPossible true", "onReadPossible false");
+
+        handle(() ->
+        {
+            __history.add(_state.getState().toString());
+        });
         System.err.println(__history);
         check(
             "onDataAvailable",
@@ -747,6 +726,6 @@ public class HttpInputAsyncStateTest
             "read -1",
             "complete",
             "COMPLETE"
-            ); 
+        );
     }
 }

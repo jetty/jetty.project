@@ -34,7 +34,7 @@ public interface ConfigSource
      * The identifier for this source.
      * <p>
      * Used in end-user display of the source.
-     * 
+     *
      * @return the configuration source identifier.
      */
     public String getId();
@@ -47,37 +47,37 @@ public interface ConfigSource
      *           -1 = the command line
      *            0 = the ${jetty.base} source
      *       [1..n] = include-jetty-dir entries from command line
-     *     [n+1..n] = include-jetty-dir entries from start.ini (or start.d/*.ini) 
+     *     [n+1..n] = include-jetty-dir entries from start.ini (or start.d/*.ini)
      *      9999999 = the ${jetty.home} source
      * </pre>
-     * 
+     *
      * @return the weight of the config source. (lower value is more important)
      */
     public int getWeight();
 
     /**
      * The list of Arguments for this ConfigSource
-     * 
+     *
      * @return the list of Arguments for this ConfigSource
      */
     public RawArgs getArgs();
 
     /**
      * The properties for this ConfigSource
-     * 
+     *
      * @return the properties for this ConfigSource
      */
     public Props getProps();
-    
+
     /**
      * Return the value of the specified property.
-     * 
+     *
      * @param key the key to lookup
      * @return the value of the property, or null if not found
      */
     public String getProperty(String key);
-    
-    public default Set<StartIni> getStartInis() 
+
+    public default Set<StartIni> getStartInis()
     {
         return Collections.emptySet();
     }

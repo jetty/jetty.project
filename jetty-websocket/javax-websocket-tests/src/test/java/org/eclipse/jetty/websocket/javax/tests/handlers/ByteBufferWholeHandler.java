@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.javax.tests.handlers;
 
-import javax.websocket.MessageHandler;
 import java.nio.ByteBuffer;
+import javax.websocket.MessageHandler;
 
 public class ByteBufferWholeHandler implements MessageHandler.Whole<ByteBuffer>
 {

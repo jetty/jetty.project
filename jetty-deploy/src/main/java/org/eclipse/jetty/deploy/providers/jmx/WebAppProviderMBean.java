@@ -37,8 +37,8 @@ public class WebAppProviderMBean extends ObjectMBean
     @ManagedAttribute("List of monitored resources")
     public List<String> getMonitoredResources()
     {
-        return ((WebAppProvider) _managed).getMonitoredResources().stream()
-                .map((r) -> r.getURI().toASCIIString())
-                .collect(Collectors.toList());
+        return ((WebAppProvider)_managed).getMonitoredResources().stream()
+            .map((r) -> r.getURI().toASCIIString())
+            .collect(Collectors.toList());
     }
 }

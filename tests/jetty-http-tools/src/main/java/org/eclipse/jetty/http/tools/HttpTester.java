@@ -70,7 +70,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpTester
 {
-    private final static Logger LOG = Log.getLogger(HttpTester.class);
+    private static final Logger LOG = Log.getLogger(HttpTester.class);
 
     private HttpTester()
     {
@@ -119,26 +119,26 @@ public class HttpTester
 
     public static Response parseResponse(InputStream responseStream) throws IOException
     {
-        Response r=new Response();
-        HttpParser parser =new HttpParser(r);
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
 
         // Read and parse a character at a time so we never can read more than we should.
         byte[] array = new byte[1];
         ByteBuffer buffer = ByteBuffer.wrap(array);
         buffer.limit(1);
 
-        while(true)
+        while (true)
         {
             buffer.position(1);
             int l = responseStream.read(array);
-            if (l<0)
+            if (l < 0)
                 parser.atEOF();
             else
                 buffer.position(0);
 
             if (parser.parseNext(buffer))
                 return r;
-            else if (l<0)
+            else if (l < 0)
                 return null;
         }
     }
@@ -450,13 +450,12 @@ public class HttpTester
                 ByteBuffer chunk = null;
                 ByteBuffer content = _content == null ? null : ByteBuffer.wrap(_content.toByteArray());
 
-
                 loop:
                 while (!generator.isEnd())
                 {
                     HttpGenerator.Result result = info instanceof MetaData.Request
-                            ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
-                            : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
+                        ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
+                        : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
                     switch (result)
                     {
                         case NEED_HEADER:

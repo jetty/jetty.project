@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session.remote;
 
 import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
@@ -27,32 +26,26 @@ import org.junit.jupiter.api.BeforeAll;
 
 /**
  * InvalidationSessionTest
- *
- *
  */
 public class RemoteClusteredInvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
 
     public static RemoteInfinispanTestSupport __testSupport;
 
-   
-    
-    
     @BeforeAll
-    public static void setup () throws Exception
+    public static void setup() throws Exception
     {
-      __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
-      __testSupport.setup();
+        __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
+        __testSupport.setup();
     }
-    
-    @AfterAll
-    public static void teardown () throws Exception
-    {
-       __testSupport.teardown();
-    }
-    
 
-    /** 
+    @AfterAll
+    public static void teardown() throws Exception
+    {
+        __testSupport.teardown();
+    }
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
@@ -62,6 +55,4 @@ public class RemoteClusteredInvalidationSessionTest extends AbstractClusteredInv
         factory.setCache(__testSupport.getCache());
         return factory;
     }
-
-
 }

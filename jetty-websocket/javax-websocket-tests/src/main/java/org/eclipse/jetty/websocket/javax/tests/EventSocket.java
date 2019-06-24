@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.tests;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -39,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ClientEndpoint
 public class EventSocket
 {
-    private final static Logger LOG = Log.getLogger(EventSocket.class);
+    private static final Logger LOG = Log.getLogger(EventSocket.class);
 
     public Session session;
 

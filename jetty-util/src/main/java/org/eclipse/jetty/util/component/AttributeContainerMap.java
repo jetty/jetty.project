@@ -77,6 +77,6 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     @Override
     public String toString()
     {
-        return String.format("%s@%x{size=%d}",this.getClass().getSimpleName(),hashCode(),_map.size());
+        return String.format("%s@%x{size=%d}", this.getClass().getSimpleName(), hashCode(), _map.size());
     }
 }

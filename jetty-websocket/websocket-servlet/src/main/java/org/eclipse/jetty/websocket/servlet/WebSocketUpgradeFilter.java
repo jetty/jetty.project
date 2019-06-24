@@ -75,7 +75,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
 
-
     private static FilterHolder getFilter(ServletContext servletContext)
     {
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
@@ -93,12 +92,12 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
      * Configure the default WebSocketUpgradeFilter.
      *
      * <p>
-     *     This will return the default {@link WebSocketUpgradeFilter} on the
-     *     provided {@link ServletContext}, creating the filter if necessary.
+     * This will return the default {@link WebSocketUpgradeFilter} on the
+     * provided {@link ServletContext}, creating the filter if necessary.
      * </p>
      * <p>
-     *     The default {@link WebSocketUpgradeFilter} is also available via
-     *     the {@link ServletContext} attribute named {@code org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
+     * The default {@link WebSocketUpgradeFilter} is also available via
+     * the {@link ServletContext} attribute named {@code org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
      * </p>
      *
      * @param servletContext the {@link ServletContext} to use
@@ -126,7 +125,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return holder;
     }
 
-    public final static String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
+    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
 
     private final FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
     private WebSocketMapping mapping;

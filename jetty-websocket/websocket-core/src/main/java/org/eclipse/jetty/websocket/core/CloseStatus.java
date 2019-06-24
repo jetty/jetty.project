@@ -74,7 +74,7 @@ public class CloseStatus
     /**
      * Creates a reason for closing a web socket connection with the given status code and reason phrase.
      *
-     * @param statusCode   the close code
+     * @param statusCode the close code
      * @param reasonPhrase the reason phrase
      */
     public CloseStatus(int statusCode, String reasonPhrase)
@@ -136,7 +136,7 @@ public class CloseStatus
             {
                 // Reason (trimmed to max reason size)
                 int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
-                byte reasonBytes[] = new byte[len];
+                byte[] reasonBytes = new byte[len];
                 data.get(reasonBytes, 0, len);
 
                 // Spec Requirement : throw BadPayloadException on invalid UTF8
@@ -167,7 +167,7 @@ public class CloseStatus
     {
         if (frame instanceof CloseStatus.Supplier)
             return ((CloseStatus.Supplier)frame).getCloseStatus();
-        if (frame.getOpCode()==OpCode.CLOSE)
+        if (frame.getOpCode() == OpCode.CLOSE)
             return new CloseStatus(frame);
         return null;
     }

@@ -43,6 +43,7 @@ public class Fields implements Iterable<Fields.Field>
 
     /**
      * <p>Creates an empty, modifiable, case insensitive {@link Fields} instance.</p>
+     *
      * @see #Fields(Fields, boolean)
      */
     public Fields()
@@ -52,6 +53,7 @@ public class Fields implements Iterable<Fields.Field>
 
     /**
      * <p>Creates an empty, modifiable, case insensitive {@link Fields} instance.</p>
+     *
      * @param caseSensitive whether this {@link Fields} instance must be case sensitive
      * @see #Fields(Fields, boolean)
      */
@@ -111,7 +113,9 @@ public class Fields implements Iterable<Fields.Field>
     {
         Set<String> result = new LinkedHashSet<>();
         for (Field field : fields.values())
+        {
             result.add(field.getName());
+        }
         return result;
     }
 
@@ -190,6 +194,7 @@ public class Fields implements Iterable<Fields.Field>
 
     /**
      * <p>Empties this {@link Fields} instance from all fields</p>
+     *
      * @see #isEmpty()
      */
     public void clear()
@@ -309,7 +314,7 @@ public class Fields implements Iterable<Fields.Field>
         public Integer getValueAsInt()
         {
             final String value = getValue();
-            return value == null ? null : (Integer) Integer.parseInt(value);
+            return value == null ? null : (Integer)Integer.parseInt(value);
         }
 
         /**

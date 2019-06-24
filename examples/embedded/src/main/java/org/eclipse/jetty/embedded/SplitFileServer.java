@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class SplitFileServer
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         // Create the Server object and a corresponding ServerConnector and then
         // set the port for the connector. In this example the server will
@@ -47,7 +47,7 @@ public class SplitFileServer
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(8090);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
 
         // Create a Context Handler and ResourceHandler. The ContextHandler is
         // getting set to "/" path but this could be anything you like for
@@ -77,13 +77,13 @@ public class SplitFileServer
         // This will let jetty process urls against the declared contexts in
         // order to match up content.
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        contexts.setHandlers(new Handler[] { context0, context1 });
+        contexts.setHandlers(new Handler[]{context0, context1});
 
         server.setHandler(contexts);
 
         // Start things up! 
         server.start();
-        
+
         // Dump the server state
         System.out.println(server.dump());
 

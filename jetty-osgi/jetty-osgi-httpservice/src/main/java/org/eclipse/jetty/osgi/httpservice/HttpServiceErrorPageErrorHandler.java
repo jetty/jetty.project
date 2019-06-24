@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.httpservice;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,46 +34,44 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 public class HttpServiceErrorPageErrorHandler extends ErrorPageErrorHandler
 {
 
-        private static HttpServiceErrorPageErrorHandler INSTANCE;
-        
-        public static HttpServiceErrorPageErrorHandler getInstance()
-        {
-                return INSTANCE;
-        }
-        
-        public HttpServiceErrorPageErrorHandler()
-        {
-                INSTANCE = this;
-        }
+    private static HttpServiceErrorPageErrorHandler INSTANCE;
 
-        @Override
-        public void handle(String target, Request baseRequest,
-                        HttpServletRequest request, HttpServletResponse response)
-                        throws IOException {
-                if (HttpServiceErrorHandlerHelper.getCustomErrorHandler() != null)
-                {
-                        try
-                        {
-                                HttpServiceErrorHandlerHelper.getCustomErrorHandler().service(request, response);
-                        }
-                        catch (ServletException e)
-                        {
-                                //well
-                        }
-                }
-                if (!response.isCommitted())
-                {
-                        super.handle(target, baseRequest, request, response);
-                }
-        }
+    public static HttpServiceErrorPageErrorHandler getInstance()
+    {
+        return INSTANCE;
+    }
 
-        @Override
-        protected void doStop() throws Exception
+    public HttpServiceErrorPageErrorHandler()
+    {
+        INSTANCE = this;
+    }
+
+    @Override
+    public void handle(String target, Request baseRequest,
+                       HttpServletRequest request, HttpServletResponse response)
+        throws IOException
+    {
+        if (HttpServiceErrorHandlerHelper.getCustomErrorHandler() != null)
         {
-                INSTANCE = null;
-                super.doStop();
+            try
+            {
+                HttpServiceErrorHandlerHelper.getCustomErrorHandler().service(request, response);
+            }
+            catch (ServletException e)
+            {
+                //well
+            }
         }
-        
-        
-        
+        if (!response.isCommitted())
+        {
+            super.handle(target, baseRequest, request, response);
+        }
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        INSTANCE = null;
+        super.doStop();
+    }
 }

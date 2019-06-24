@@ -118,22 +118,22 @@ public class ExternalSiteTest
         {
             final CountDownLatch latch = new CountDownLatch(3);
             client.newRequest(host, port)
-                    .onResponseFailure((response, failure) -> latch.countDown())
-                    .send(new Response.Listener.Adapter()
+                .onResponseFailure((response, failure) -> latch.countDown())
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onFailure(Response response, Throwable failure)
                     {
-                        @Override
-                        public void onFailure(Response response, Throwable failure)
-                        {
-                            latch.countDown();
-                        }
+                        latch.countDown();
+                    }
 
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                            assertTrue(result.isFailed());
-                            latch.countDown();
-                        }
-                    });
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        assertTrue(result.isFailed());
+                        latch.countDown();
+                    }
+                });
             assertTrue(latch.await(15, TimeUnit.SECONDS));
         }
     }
@@ -149,10 +149,10 @@ public class ExternalSiteTest
         assumeCanConnectTo(host, port);
 
         ContentResponse response = client.newRequest(host, port)
-                .scheme(HttpScheme.HTTPS.asString())
-                .path("/twitter")
-                .timeout(15, TimeUnit.SECONDS)
-                .send();
+            .scheme(HttpScheme.HTTPS.asString())
+            .path("/twitter")
+            .timeout(15, TimeUnit.SECONDS)
+            .send();
         assertEquals(200, response.getStatus());
     }
 

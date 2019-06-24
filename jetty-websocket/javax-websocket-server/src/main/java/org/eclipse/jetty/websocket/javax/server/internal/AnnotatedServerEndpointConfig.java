@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.server.internal;
 
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
-import org.eclipse.jetty.websocket.javax.server.ContainerDefaultConfigurator;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 import javax.websocket.Encoder;
@@ -28,12 +31,9 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
+import org.eclipse.jetty.websocket.javax.server.ContainerDefaultConfigurator;
 
 public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 {
@@ -218,16 +218,16 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 
         AnnotatedServerEndpointConfig that = (AnnotatedServerEndpointConfig)o;
 
-        if (endpointClass != null?!endpointClass.equals(that.endpointClass):that.endpointClass != null)
+        if (endpointClass != null ? !endpointClass.equals(that.endpointClass) : that.endpointClass != null)
             return false;
-        return path != null?path.equals(that.path):that.path == null;
+        return path != null ? path.equals(that.path) : that.path == null;
     }
 
     @Override
     public int hashCode()
     {
-        int result = endpointClass != null?endpointClass.hashCode():0;
-        result = 31 * result + (path != null?path.hashCode():0);
+        int result = endpointClass != null ? endpointClass.hashCode() : 0;
+        result = 31 * result + (path != null ? path.hashCode() : 0);
         return result;
     }
 

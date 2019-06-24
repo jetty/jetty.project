@@ -18,19 +18,19 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.javax.common.MessageSink;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.javax.common.MessageSink;
 
 /**
  * Support class for reading a WebSocket BINARY message via a InputStream.
@@ -170,7 +170,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     @Override
     public int read() throws IOException
     {
-        byte buf[] = new byte[1];
+        byte[] buf = new byte[1];
         while (true)
         {
             int len = read(buf, 0, 1);

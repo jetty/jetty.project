@@ -64,7 +64,6 @@ public class WebSocketComponents
     private WebSocketExtensionRegistry extensionRegistry;
     private ByteBufferPool bufferPool;
 
-
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;

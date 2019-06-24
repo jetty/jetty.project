@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.handshake;
 
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 public class DummyUpgradeResponse implements UpgradeResponse
 {

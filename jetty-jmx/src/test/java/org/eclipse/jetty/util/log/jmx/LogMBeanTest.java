@@ -51,7 +51,7 @@ public class LogMBeanTest
         assertThat("Managed is not registered with loggers", MANAGED_CLASS, not(is(in(logMBean.getLoggers()))));
 
         // when
-        logMBean.setDebugEnabled(MANAGED_CLASS,true);
+        logMBean.setDebugEnabled(MANAGED_CLASS, true);
 
         // then
         assertThat("Managed must be registered with loggers", MANAGED_CLASS, is(in(logMBean.getLoggers())));

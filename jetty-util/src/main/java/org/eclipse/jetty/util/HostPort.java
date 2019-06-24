@@ -27,7 +27,7 @@ package org.eclipse.jetty.util;
  */
 public class HostPort
 {
-    private final static boolean STRIP_IPV6 = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.HostPort.STRIP_IPV6","false"));
+    private static final boolean STRIP_IPV6 = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.HostPort.STRIP_IPV6", "false"));
 
     private final String _host;
     private final int _port;
@@ -40,42 +40,42 @@ public class HostPort
 
     public HostPort(String authority) throws IllegalArgumentException
     {
-        if (authority==null)
+        if (authority == null)
             throw new IllegalArgumentException("No Authority");
         try
         {
             if (authority.isEmpty())
             {
-                _host=authority;
-                _port=0;
+                _host = authority;
+                _port = 0;
             }
-            else if (authority.charAt(0)=='[')
+            else if (authority.charAt(0) == '[')
             {
                 // ipv6reference
-                int close=authority.lastIndexOf(']');
-                if (close<0)
+                int close = authority.lastIndexOf(']');
+                if (close < 0)
                     throw new IllegalArgumentException("Bad IPv6 host");
-                _host=STRIP_IPV6?authority.substring(1,close):authority.substring(0,close+1);
+                _host = STRIP_IPV6 ? authority.substring(1, close) : authority.substring(0, close + 1);
 
-                if (authority.length()>close+1)
+                if (authority.length() > close + 1)
                 {
-                    if (authority.charAt(close+1)!=':')
+                    if (authority.charAt(close + 1) != ':')
                         throw new IllegalArgumentException("Bad IPv6 port");
-                    _port=StringUtil.toInt(authority,close+2);
+                    _port = StringUtil.toInt(authority, close + 2);
                 }
                 else
-                    _port=0;
+                    _port = 0;
             }
             else
             {
                 // ipv4address or hostname
                 int c = authority.lastIndexOf(':');
-                if (c>=0)
+                if (c >= 0)
                 {
-                    if (c!=authority.indexOf(':'))
+                    if (c != authority.indexOf(':'))
                     {
-                        _host="[" + authority + "]";
-                        _port=0;
+                        _host = "[" + authority + "]";
+                        _port = 0;
                     }
                     else
                     {
@@ -85,8 +85,8 @@ public class HostPort
                 }
                 else
                 {
-                    _host=authority;
-                    _port=0;
+                    _host = authority;
+                    _port = 0;
                 }
             }
         }
@@ -94,20 +94,24 @@ public class HostPort
         {
             throw iae;
         }
-        catch(final Exception ex)
+        catch (final Exception ex)
         {
             throw new IllegalArgumentException("Bad HostPort")
             {
-                {initCause(ex);}
+                {
+                    initCause(ex);
+                }
             };
         }
-        if(_host==null)
+        if (_host == null)
             throw new IllegalArgumentException("Bad host");
-        if(_port<0)
+        if (_port < 0)
             throw new IllegalArgumentException("Bad port");
     }
 
-    /** Get the host.
+    /**
+     * Get the host.
+     *
      * @return the host
      */
     public String getHost()
@@ -115,42 +119,48 @@ public class HostPort
         return _host;
     }
 
-    /** Get the port.
+    /**
+     * Get the port.
+     *
      * @return the port
      */
     public int getPort()
     {
         return _port;
     }
-    
-    /** Get the port.
+
+    /**
+     * Get the port.
+     *
      * @param defaultPort, the default port to return if a port is not specified
      * @return the port
      */
     public int getPort(int defaultPort)
     {
-        return _port>0?_port:defaultPort;
+        return _port > 0 ? _port : defaultPort;
     }
 
     @Override
     public String toString()
     {
-        if (_port>0)
+        if (_port > 0)
             return normalizeHost(_host) + ":" + _port;
         return _host;
     }
 
-    /** Normalize IPv6 address as per https://www.ietf.org/rfc/rfc2732.txt
+    /**
+     * Normalize IPv6 address as per https://www.ietf.org/rfc/rfc2732.txt
+     *
      * @param host A host name
      * @return Host name surrounded by '[' and ']' as needed.
      */
     public static String normalizeHost(String host)
     {
         // if it is normalized IPv6 or could not be IPv6, return
-        if (host.isEmpty() || host.charAt(0)=='[' || host.indexOf(':')<0)
+        if (host.isEmpty() || host.charAt(0) == '[' || host.indexOf(':') < 0)
             return host;
-        
+
         // normalize with [ ]
-        return "["+host+"]";
+        return "[" + host + "]";
     }
 }

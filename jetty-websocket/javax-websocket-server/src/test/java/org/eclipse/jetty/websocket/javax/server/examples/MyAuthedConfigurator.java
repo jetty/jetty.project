@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.javax.server.examples;
 
 import java.security.Principal;
-
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;

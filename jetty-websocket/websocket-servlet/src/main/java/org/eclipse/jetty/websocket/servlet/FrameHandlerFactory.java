@@ -28,12 +28,12 @@ public interface FrameHandlerFactory
     /**
      * Create a FrameHandler from the provided websocketPojo.
      *
-     * @param websocketPojo   the websocket pojo to work with
-     * @param upgradeRequest  the Upgrade Handshake Request used to create the FrameHandler
+     * @param websocketPojo the websocket pojo to work with
+     * @param upgradeRequest the Upgrade Handshake Request used to create the FrameHandler
      * @param upgradeResponse the Upgrade Handshake Response used to create the FrameHandler
      * @return the API specific FrameHandler, or null if this implementation is unable to create
      * the FrameHandler (allowing another {@link FrameHandlerFactory} to try)
      */
     FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest,
-        ServletUpgradeResponse upgradeResponse);
+                                 ServletUpgradeResponse upgradeResponse);
 }

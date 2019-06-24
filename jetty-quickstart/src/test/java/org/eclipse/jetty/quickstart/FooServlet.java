@@ -16,11 +16,9 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.quickstart;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -29,7 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 public class FooServlet extends HttpServlet
 {
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
@@ -38,5 +36,4 @@ public class FooServlet extends HttpServlet
         resp.setContentType("text/html");
         resp.getWriter().println("FOO");
     }
-    
 }

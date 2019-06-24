@@ -21,7 +21,7 @@ package org.eclipse.jetty.jaas;
 import java.io.Serializable;
 import java.security.Principal;
 
-/** 
+/**
  * JAASPrincipal
  * <p>
  * Impl class of Principal interface.
@@ -29,37 +29,37 @@ import java.security.Principal;
 public class JAASPrincipal implements Principal, Serializable
 {
     private static final long serialVersionUID = -5538962177019315479L;
-    
+
     private final String _name;
-    
+
     public JAASPrincipal(String userName)
     {
         this._name = userName;
     }
 
     @Override
-    public boolean equals (Object p)
+    public boolean equals(Object p)
     {
-        if (! (p instanceof JAASPrincipal))
+        if (!(p instanceof JAASPrincipal))
             return false;
 
         return getName().equals(((JAASPrincipal)p).getName());
     }
 
     @Override
-    public int hashCode ()
+    public int hashCode()
     {
         return getName().hashCode();
     }
 
     @Override
-    public String getName ()
+    public String getName()
     {
         return this._name;
     }
 
     @Override
-    public String toString ()
+    public String toString()
     {
         return getName();
     }

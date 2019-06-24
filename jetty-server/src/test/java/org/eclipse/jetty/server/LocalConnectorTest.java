@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +28,12 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LocalConnectorTest
 {
@@ -55,8 +55,8 @@ public class LocalConnectorTest
     public void dispose() throws Exception
     {
         _server.stop();
-        _server=null;
-        _connector=null;
+        _server = null;
+        _connector = null;
     }
 
     @Test
@@ -79,8 +79,8 @@ public class LocalConnectorTest
             }
         });
 
-        _connector.getResponse("" +
-                "GET / HTTP/1.1\r\n" +
+        _connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -92,86 +92,86 @@ public class LocalConnectorTest
     @Test
     public void testOneGET() throws Exception
     {
-        String response=_connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
+        String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
     }
-    
+
     @Test
     public void testOneResponse_10() throws Exception
     {
-        String response=_connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
+        String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
     }
 
     @Test
     public void testOneResponse_10_keep_alive() throws Exception
     {
-        String response=_connector.getResponse(
+        String response = _connector.getResponse(
             "GET /R1 HTTP/1.0\r\n" +
-            "Connection: keep-alive\r\n" +
-            "\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
+                "Connection: keep-alive\r\n" +
+                "\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
     }
 
     @Test
     public void testOneResponse_10_keep_alive_empty() throws Exception
     {
-        String response=_connector.getResponse(
+        String response = _connector.getResponse(
             "GET /R1?empty=true HTTP/1.0\r\n" +
-            "Connection: keep-alive\r\n" +
-            "\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,not(containsString("pathInfo=/R1")));
+                "Connection: keep-alive\r\n" +
+                "\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, not(containsString("pathInfo=/R1")));
     }
 
     @Test
     public void testOneResponse_11() throws Exception
     {
-        String response=_connector.getResponse(
+        String response = _connector.getResponse(
             "GET /R1 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
+                "Host: localhost\r\n" +
+                "\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
     }
 
     @Test
     public void testOneResponse_11_close() throws Exception
     {
-        String response=_connector.getResponse(
+        String response = _connector.getResponse(
             "GET /R1 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
     }
 
     @Test
     public void testOneResponse_11_empty() throws Exception
     {
-        String response=_connector.getResponse(
+        String response = _connector.getResponse(
             "GET /R1?empty=true HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,not(containsString("pathInfo=/R1")));
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, not(containsString("pathInfo=/R1")));
     }
 
     @Test
     public void testOneResponse_11_chunked() throws Exception
     {
-        String response=_connector.getResponse(
+        String response = _connector.getResponse(
             "GET /R1?flush=true HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
-        assertThat(response,containsString("\r\n0\r\n"));
+                "Host: localhost\r\n" +
+                "\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
+        assertThat(response, containsString("\r\n0\r\n"));
     }
 
     @Test
@@ -180,59 +180,58 @@ public class LocalConnectorTest
         LocalEndPoint endp = _connector.connect();
         endp.addInput(
             "GET /R1 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n"+
-            "GET /R2 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n"+
-            "GET /R3 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n"
-            );
-        String response=endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
-        response=endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R2"));
-        response=endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R3"));
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R2 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R3 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n"
+        );
+        String response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
+        response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R2"));
+        response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R3"));
     }
-    
+
     @Test
     public void testThreeResponse_11() throws Exception
     {
         LocalEndPoint endp = _connector.connect();
         endp.addInput(
             "GET /R1 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "\r\n");
 
-        String response=endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
-        
+        String response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
+
         endp.addInput(
             "GET /R2 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "\r\n");
 
-        response=endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R2"));
+        response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R2"));
 
         endp.addInput(
             "GET /R3 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n"
-            );
-        
-        response=endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R3"));
-    }
+                "Host: localhost\r\n" +
+                "\r\n"
+        );
 
+        response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R3"));
+    }
 
     @Test
     public void testThreeResponseClosed_11() throws Exception
@@ -240,43 +239,42 @@ public class LocalConnectorTest
         LocalEndPoint endp = _connector.connect();
         endp.addInput(
             "GET /R1 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n"+
-            "GET /R2 HTTP/1.1\r\n" +
-            "Connection: close\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n"+
-            "GET /R3 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n"
-            );
-        String response=endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
-        response=endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R2"));
-        response=endp.getResponse();
-        assertThat(response,nullValue());
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R2 HTTP/1.1\r\n" +
+                "Connection: close\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R3 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n"
+        );
+        String response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
+        response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R2"));
+        response = endp.getResponse();
+        assertThat(response, nullValue());
     }
-    
-    
+
     @Test
     public void testExpectContinuesAvailable() throws Exception
     {
         LocalEndPoint endp = _connector.connect();
         endp.addInput(
             "GET /R1 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: text/plain; charset=UTF-8\r\n" +
-            "Expect: 100-Continue\r\n" +
-            "Content-Length: 10\r\n" +
-            "\r\n"+
-            "01234567890\r\n");
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain; charset=UTF-8\r\n" +
+                "Expect: 100-Continue\r\n" +
+                "Content-Length: 10\r\n" +
+                "\r\n" +
+                "01234567890\r\n");
         String response = endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));       
-        assertThat(response,containsString("pathInfo=/R1"));     
-        assertThat(response,containsString("0123456789"));
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
+        assertThat(response, containsString("0123456789"));
     }
 
     @Test
@@ -284,33 +282,33 @@ public class LocalConnectorTest
     {
         LocalEndPoint endp = _connector.executeRequest(
             "GET /R1 HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: text/plain; charset=UTF-8\r\n" +
-            "Expect: 100-Continue\r\n" +
-            "Content-Length: 10\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain; charset=UTF-8\r\n" +
+                "Expect: 100-Continue\r\n" +
+                "Content-Length: 10\r\n" +
+                "\r\n");
         String response = endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 100 Continue"));
+        assertThat(response, containsString("HTTP/1.1 100 Continue"));
         endp.addInput("01234567890\r\n");
         response = endp.getResponse();
-        assertThat(response,containsString("HTTP/1.1 200 OK"));       
-        assertThat(response,containsString("pathInfo=/R1"));     
-        assertThat(response,containsString("0123456789"));
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
+        assertThat(response, containsString("0123456789"));
     }
-    
+
     @Test
     public void testStopStart() throws Exception
     {
-        String response=_connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
+        String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
 
         _server.stop();
         _server.start();
 
-        response=_connector.getResponse("GET /R2 HTTP/1.0\r\n\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R2"));
+        response = _connector.getResponse("GET /R2 HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R2"));
     }
 
     @Test
@@ -318,90 +316,91 @@ public class LocalConnectorTest
     {
         LocalEndPoint endp = _connector.connect();
         endp.addInput(
-            "GET /R1 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "\r\n"+
-            "GET /R2 HTTP/1.0\r\n\r\n");
+            "GET /R1 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R2 HTTP/1.0\r\n\r\n");
 
         String response = endp.getResponse() + endp.getResponse();
-        
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
 
-        response=response.substring(response.indexOf("</html>")+8);
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
 
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R2"));
+        response = response.substring(response.indexOf("</html>") + 8);
+
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R2"));
     }
-    
+
     @Test
     public void testTwoGETsParsed() throws Exception
     {
         LocalConnector.LocalEndPoint endp = _connector.executeRequest(
-            "GET /R1 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "\r\n"+
-            "GET /R2 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "\r\n");
+            "GET /R1 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R2 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n");
 
-        String response = BufferUtil.toString(endp.waitForResponse(false,10,TimeUnit.SECONDS),StandardCharsets.ISO_8859_1);
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
-        
-        response = BufferUtil.toString(endp.waitForResponse(false,10,TimeUnit.SECONDS),StandardCharsets.ISO_8859_1);
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R2"));
+        String response = BufferUtil.toString(endp.waitForResponse(false, 10, TimeUnit.SECONDS), StandardCharsets.ISO_8859_1);
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
+
+        response = BufferUtil.toString(endp.waitForResponse(false, 10, TimeUnit.SECONDS), StandardCharsets.ISO_8859_1);
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R2"));
     }
-    
-    
+
     @Test
     public void testManyGETs() throws Exception
     {
         LocalEndPoint endp = _connector.connect();
         endp.addInput(
-            "GET /R1 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "\r\n"+
-            "GET /R2 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "\r\n"+
-            "GET /R3 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "\r\n"+
-            "GET /R4 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "\r\n"+
-            "GET /R5 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "\r\n"+
-            "GET /R6 HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
-            "Connection: close\r\n"+
-            "\r\n");
-        
-        String r="";
-        
-        for (String response=endp.getResponse();response!=null;response=endp.getResponse())
-            r+=response;
-        
-        for (int i=1;i<=6;i++)
+            "GET /R1 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R2 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R3 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R4 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R5 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "GET /R6 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+
+        String r = "";
+
+        for (String response = endp.getResponse(); response != null; response = endp.getResponse())
         {
-            assertThat(r,containsString("HTTP/1.1 200 OK"));
-            assertThat(r,containsString("pathInfo=/R"+i));
-            r=r.substring(r.indexOf("</html>")+8);
+            r += response;
+        }
+
+        for (int i = 1; i <= 6; i++)
+        {
+            assertThat(r, containsString("HTTP/1.1 200 OK"));
+            assertThat(r, containsString("pathInfo=/R" + i));
+            r = r.substring(r.indexOf("</html>") + 8);
         }
     }
 
     @Test
     public void testGETandGET() throws Exception
     {
-        String response=_connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R1"));
+        String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R1"));
 
-        response=_connector.getResponse("GET /R2 HTTP/1.0\r\n\r\n");
-        assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R2"));
+        response = _connector.getResponse("GET /R2 HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("pathInfo=/R2"));
     }
 }

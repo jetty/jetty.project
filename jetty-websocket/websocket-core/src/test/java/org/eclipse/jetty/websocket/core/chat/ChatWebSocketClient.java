@@ -72,7 +72,7 @@ public class ChatWebSocketClient
             if (matcher.matches())
             {
                 String command = matcher.group(1);
-                String value = (matcher.groupCount() > 2)?matcher.group(3):null;
+                String value = (matcher.groupCount() > 2) ? matcher.group(3) : null;
 
                 switch (command)
                 {
@@ -83,13 +83,12 @@ public class ChatWebSocketClient
                             handler.sendText("[" + value + ": changed name from " + name + "]", Callback.NOOP, false);
                             name = value;
                             LOG.debug("name changed: " + name);
-
                         }
                         break;
 
                     case "exit":
                         handler.sendText("[" + name + ": has left the " +
-                            ("elvis".equalsIgnoreCase(name)?"building!]":"room]"), Callback.NOOP, false);
+                            ("elvis".equalsIgnoreCase(name) ? "building!]" : "room]"), Callback.NOOP, false);
                         handler.getCoreSession().close(Callback.from(() -> System.exit(0), x ->
                         {
                             x.printStackTrace();
@@ -133,7 +132,6 @@ public class ChatWebSocketClient
                     client.chat(line);
                 line = in.readLine();
             }
-
         }
         catch (Throwable t)
         {

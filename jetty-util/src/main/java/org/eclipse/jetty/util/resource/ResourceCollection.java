@@ -70,7 +70,7 @@ public class ResourceCollection extends Resource
             }
             if (r instanceof ResourceCollection)
             {
-                Collections.addAll(list, ((ResourceCollection) r).getResources());
+                Collections.addAll(list, ((ResourceCollection)r).getResources());
             }
             else
             {
@@ -195,7 +195,7 @@ public class ResourceCollection extends Resource
         if (len == 0)
         {
             throw new IllegalArgumentException("ResourceCollection@setResourcesAsCSV(String) " +
-                    " argument must be a string containing one or more comma-separated resource strings.");
+                " argument must be a string containing one or more comma-separated resource strings.");
         }
 
         List<Resource> res = new ArrayList<>();
@@ -223,7 +223,6 @@ public class ResourceCollection extends Resource
             }
 
             _resources = res.toArray(new Resource[0]);
-
         }
         catch (RuntimeException e)
         {
@@ -462,7 +461,7 @@ public class ResourceCollection extends Resource
 
     @Override
     public void copyTo(File destination)
-            throws IOException
+        throws IOException
     {
         assertResourcesSet();
 

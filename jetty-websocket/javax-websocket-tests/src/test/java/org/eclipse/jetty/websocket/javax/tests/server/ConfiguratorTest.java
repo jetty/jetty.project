@@ -37,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -347,9 +346,9 @@ public class ConfiguratorTest
 
     @SuppressWarnings("unused")
     @ServerEndpoint(value = "/timedecoder",
-        subprotocols = { "time", "gmt" },
+        subprotocols = {"time", "gmt"},
         configurator = SelectedProtocolConfigurator.class,
-        decoders = { GmtTimeDecoder.class })
+        decoders = {GmtTimeDecoder.class})
     public static class TimeDecoderSocket
     {
         private TimeZone TZ = TimeZone.getTimeZone("GMT+0");
@@ -631,7 +630,7 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
-        upgradeRequest.setSubProtocols("echo","chat","status");
+        upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
@@ -650,7 +649,7 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
-        upgradeRequest.setSubProtocols("echo","chat","status");
+        upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
@@ -693,7 +692,6 @@ public class ConfiguratorTest
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming message", incomingMessage, is("cal=2016.06.20 AD at 14:27:44 +0000"));
-
         }
         finally
         {

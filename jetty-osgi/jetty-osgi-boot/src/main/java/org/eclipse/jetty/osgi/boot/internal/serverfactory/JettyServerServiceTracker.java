@@ -20,7 +20,6 @@ package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-import java.util.Properties;
 
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.server.Server;
@@ -32,29 +31,31 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * JettyServerServiceTracker
- * 
- * Tracks instances of Jetty Servers, and configures them so that they can deploy 
+ *
+ * Tracks instances of Jetty Servers, and configures them so that they can deploy
  * webapps or ContextHandlers discovered from the OSGi environment.
- * 
  */
 public class JettyServerServiceTracker implements ServiceTrackerCustomizer
 {
     private static Logger LOG = Log.getLogger(JettyServerServiceTracker.class.getName());
 
-
-    /** 
+    /**
      * @see org.osgi.util.tracker.ServiceTrackerCustomizer#addingService(org.osgi.framework.ServiceReference)
      */
     @Override
     public Object addingService(ServiceReference sr)
     {
         Bundle contributor = sr.getBundle();
-        Server server = (Server) contributor.getBundleContext().getService(sr);
-        String name = (String) sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-        if (name == null) { throw new IllegalArgumentException("The property " + OSGiServerConstants.MANAGED_JETTY_SERVER_NAME + " is mandatory"); }
-        if (LOG.isDebugEnabled()) LOG.debug("Adding Server {}", name);
+        Server server = (Server)contributor.getBundleContext().getService(sr);
+        String name = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+        if (name == null)
+        {
+            throw new IllegalArgumentException("The property " + OSGiServerConstants.MANAGED_JETTY_SERVER_NAME + " is mandatory");
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding Server {}", name);
         ServerInstanceWrapper wrapper = new ServerInstanceWrapper(name);
-        Dictionary<String,Object> props = new Hashtable<>();
+        Dictionary<String, Object> props = new Hashtable<>();
         for (String key : sr.getPropertyKeys())
         {
             props.put(key, sr.getProperty(key));
@@ -72,7 +73,7 @@ public class JettyServerServiceTracker implements ServiceTrackerCustomizer
         }
     }
 
-    /** 
+    /**
      * @see org.osgi.util.tracker.ServiceTrackerCustomizer#modifiedService(org.osgi.framework.ServiceReference, java.lang.Object)
      */
     @Override
@@ -82,7 +83,7 @@ public class JettyServerServiceTracker implements ServiceTrackerCustomizer
         addingService(reference);
     }
 
-    /** 
+    /**
      * @see org.osgi.util.tracker.ServiceTrackerCustomizer#removedService(org.osgi.framework.ServiceReference, java.lang.Object)
      */
     @Override
@@ -94,13 +95,12 @@ public class JettyServerServiceTracker implements ServiceTrackerCustomizer
             {
                 ServerInstanceWrapper wrapper = (ServerInstanceWrapper)service;
                 wrapper.stop();
-                LOG.info("Stopped Server {}",wrapper.getManagedServerName());
+                LOG.info("Stopped Server {}", wrapper.getManagedServerName());
             }
             catch (Exception e)
             {
                 LOG.warn(e);
             }
         }
-        
     }
 }

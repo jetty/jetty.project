@@ -30,19 +30,19 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.junit.jupiter.api.Disabled;
 
 @Disabled
-public class TestConfiguration extends HashMap<String,Object>
+public class TestConfiguration extends HashMap<String, Object>
 {
-    public static int VALUE=77;
+    public static int VALUE = 77;
 
     public final Object ID = new Object();
-    
+
     public final String name;
     public TestConfiguration nested;
-    public String testString="default";
+    public String testString = "default";
     public Object testObject;
     public int testInt;
     public URL url;
-    public static boolean called=false;
+    public static boolean called = false;
     public Object[] oa;
     public int[] ia;
     public int testField1;
@@ -54,32 +54,30 @@ public class TestConfiguration extends HashMap<String,Object>
     private Set set;
     private ConstructorArgTestClass constructorArgTestClass;
     public Map map;
-    
 
-    
     public TestConfiguration()
     {
         this("");
     }
-    
+
     public TestConfiguration(@Name("name") String n)
     {
-        name=n;
+        name = n;
     }
-    
+
     public void setTest(Object value)
     {
-        testObject=value;
+        testObject = value;
     }
 
     public void setTest(int value)
     {
-        testInt=value;
+        testInt = value;
     }
 
     public void setPropertyTest(int value)
     {
-        propValue=value;
+        propValue = value;
     }
 
     public TestConfiguration getNested()
@@ -104,19 +102,19 @@ public class TestConfiguration extends HashMap<String,Object>
 
     public void call()
     {
-        put("Called","Yes");
+        put("Called", "Yes");
     }
 
     public TestConfiguration call(Boolean b)
     {
-        nested.put("Arg",b);
+        nested.put("Arg", b);
         return nested;
     }
 
-    public void call(URL u,boolean b)
+    public void call(URL u, boolean b)
     {
-        put("URL",b?"1":"0");
-        url=u;
+        put("URL", b ? "1" : "0");
+        url = u;
     }
 
     public String getString()
@@ -126,17 +124,17 @@ public class TestConfiguration extends HashMap<String,Object>
 
     public static void callStatic()
     {
-        called=true;
+        called = true;
     }
 
     public void call(Object[] oa)
     {
-        this.oa=oa;
+        this.oa = oa;
     }
 
     public void call(int[] ia)
     {
-        this.ia=ia;
+        this.ia = ia;
     }
 
     @SuppressWarnings("rawtypes")
@@ -188,5 +186,4 @@ public class TestConfiguration extends HashMap<String,Object>
     {
         this.map = map;
     }
-    
 }

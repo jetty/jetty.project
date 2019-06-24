@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 
 @SuppressWarnings("serial")
 public class DuplicateAnnotationException extends InvalidWebSocketException

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -61,13 +60,13 @@ public class AsyncManipFilter implements Filter, AsyncListener
             ctx.addListener(this);
             ctx.setTimeout(1000);
             LOG.debug("AsyncContext: {}", ctx);
-            request.setAttribute(MANIP_KEY,ctx);
+            request.setAttribute(MANIP_KEY, ctx);
             return;
         }
         else
         {
             LOG.debug("Second pass through: {}", chain);
-            chain.doFilter(request,response);
+            chain.doFilter(request, response);
         }
     }
 
@@ -79,25 +78,25 @@ public class AsyncManipFilter implements Filter, AsyncListener
     @Override
     public void onComplete(AsyncEvent event) throws IOException
     {
-        LOG.debug("onComplete() {}",event);
+        LOG.debug("onComplete() {}", event);
     }
 
     @Override
     public void onTimeout(AsyncEvent event) throws IOException
     {
-        LOG.debug("onTimeout() {}",event.getAsyncContext());
+        LOG.debug("onTimeout() {}", event.getAsyncContext());
         event.getAsyncContext().dispatch();
     }
 
     @Override
     public void onError(AsyncEvent event) throws IOException
     {
-        LOG.debug("onError()",event.getThrowable());
+        LOG.debug("onError()", event.getThrowable());
     }
 
     @Override
     public void onStartAsync(AsyncEvent event) throws IOException
     {
-        LOG.debug("onTimeout() {}",event);
+        LOG.debug("onTimeout() {}", event);
     }
 }

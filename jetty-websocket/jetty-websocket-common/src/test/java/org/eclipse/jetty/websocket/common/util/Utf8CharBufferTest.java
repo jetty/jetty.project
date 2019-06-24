@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.Test;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

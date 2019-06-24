@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -34,6 +31,8 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -58,7 +57,7 @@ public class InvokerTest
         context.setContextPath("/");
 
         ServletHolder holder = context.addServlet(Invoker.class, "/servlet/*");
-        holder.setInitParameter("nonContextServlets","true");
+        holder.setInitParameter("nonContextServlets", "true");
         _server.start();
     }
 
@@ -72,9 +71,9 @@ public class InvokerTest
     @Test
     public void testInvoker() throws Exception
     {
-        String requestPath = "/servlet/"+TestServlet.class.getName();
-        String request =  "GET "+requestPath+" HTTP/1.0\r\n"+
-            "Host: tester\r\n"+
+        String requestPath = "/servlet/" + TestServlet.class.getName();
+        String request = "GET " + requestPath + " HTTP/1.0\r\n" +
+            "Host: tester\r\n" +
             "\r\n";
 
         String expectedResponse = "HTTP/1.1 200 OK\r\n" +

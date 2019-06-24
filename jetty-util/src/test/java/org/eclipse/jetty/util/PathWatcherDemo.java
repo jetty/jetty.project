@@ -62,23 +62,26 @@ public class PathWatcherDemo implements PathWatcher.Listener
     {
         PathWatcher watcher = new PathWatcher();
         //watcher.addListener(new PathWatcherDemo());
-        watcher.addListener ((PathWatcher.EventListListener) events -> {
-           if (events == null)
-           {
-               LOG.warn("Null events received");
-           }
-           else if (events.isEmpty())
-           {
-               LOG.warn("Empty events received");
-           }
-           else
-           {
-               LOG.info("Bulk notification received");
-               for (PathWatchEvent e : events)
-                   onPathWatchEvent(e);
-           }
+        watcher.addListener((PathWatcher.EventListListener)events ->
+        {
+            if (events == null)
+            {
+                LOG.warn("Null events received");
+            }
+            else if (events.isEmpty())
+            {
+                LOG.warn("Empty events received");
+            }
+            else
+            {
+                LOG.info("Bulk notification received");
+                for (PathWatchEvent e : events)
+                {
+                    onPathWatchEvent(e);
+                }
+            }
         });
-        
+
         watcher.setNotifyExistingOnStart(false);
 
         List<String> excludes = new ArrayList<>();
@@ -101,7 +104,7 @@ public class PathWatcherDemo implements PathWatcher.Listener
             }
         }
         watcher.start();
-        
+
         Thread.currentThread().join();
     }
 
@@ -117,14 +120,14 @@ public class PathWatcherDemo implements PathWatcher.Listener
         {
             try
             {
-                String fsize = String.format(" (filesize=%,d)",Files.size(event.getPath()));
+                String fsize = String.format(" (filesize=%,d)", Files.size(event.getPath()));
                 msg.append(fsize);
             }
             catch (IOException e)
             {
-                LOG.warn("Unable to get filesize",e);
+                LOG.warn("Unable to get filesize", e);
             }
         }
-        LOG.info("{}",msg.toString());
+        LOG.info("{}", msg.toString());
     }
 }

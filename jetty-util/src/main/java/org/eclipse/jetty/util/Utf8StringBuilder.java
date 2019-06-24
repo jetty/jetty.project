@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.util;
 
-
-/* ------------------------------------------------------------ */
-/** UTF-8 StringBuilder.
+/**
+ * UTF-8 StringBuilder.
  *
  * This class wraps a standard {@link java.lang.StringBuilder} and provides methods to append
  * UTF-8 encoded bytes, that are converted into characters.
@@ -30,7 +29,6 @@ package org.eclipse.jetty.util;
  *
  * The UTF-8 decoding is done by this class and no additional buffers or Readers are used.
  * The UTF-8 code was inspired by http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
- *
  */
 public class Utf8StringBuilder extends Utf8Appendable
 {
@@ -39,13 +37,13 @@ public class Utf8StringBuilder extends Utf8Appendable
     public Utf8StringBuilder()
     {
         super(new StringBuilder());
-        _buffer=(StringBuilder)_appendable;
+        _buffer = (StringBuilder)_appendable;
     }
 
     public Utf8StringBuilder(int capacity)
     {
         super(new StringBuilder(capacity));
-        _buffer=(StringBuilder)_appendable;
+        _buffer = (StringBuilder)_appendable;
     }
 
     @Override
@@ -79,6 +77,4 @@ public class Utf8StringBuilder extends Utf8Appendable
         checkState();
         return _buffer.toString();
     }
-
-
 }

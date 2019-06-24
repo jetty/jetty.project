@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.channels.Selector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +39,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LivelockTest
 {
@@ -71,7 +71,7 @@ public class LivelockTest
         server.setHandler(handler);
         server.start();
     }
-    
+
     @AfterEach
     public void after() throws Exception
     {
@@ -90,7 +90,7 @@ public class LivelockTest
         // NonBlocking actions are submitted to both the client and server
         // ManagedSelectors that submit themselves in an attempt to cause a live lock
         // as there will always be an action available to run.
-        
+
         int count = 5;
         HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
         client = new HttpClient(transport);
@@ -103,7 +103,7 @@ public class LivelockTest
         clientThreads.setName("client");
         client.setExecutor(clientThreads);
         client.start();
-        
+
         AtomicBoolean busy = new AtomicBoolean(true);
 
         if (clientLiveLock)
@@ -125,19 +125,19 @@ public class LivelockTest
         for (int i = 0; i < count; ++i)
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .path("/" + i)
-                    .send(result ->
+                .path("/" + i)
+                .send(result ->
+                {
+                    if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                        latch.countDown();
+                    else
                     {
-                        if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
-                            latch.countDown();
-                        else
-                        {
-                            if(result.getRequestFailure() != null)
-                                clientLog.warn(result.getRequestFailure());
-                            if(result.getResponseFailure() != null)
-                                clientLog.warn(result.getResponseFailure());
-                        }
-                    });
+                        if (result.getRequestFailure() != null)
+                            clientLog.warn(result.getRequestFailure());
+                        if (result.getResponseFailure() != null)
+                            clientLog.warn(result.getResponseFailure());
+                    }
+                });
             sleep(pause);
         }
         assertTrue(latch.await(2 * pause * count, TimeUnit.MILLISECONDS));

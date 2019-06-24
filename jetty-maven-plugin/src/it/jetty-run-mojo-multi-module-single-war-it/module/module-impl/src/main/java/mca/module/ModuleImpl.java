@@ -24,5 +24,4 @@ public class ModuleImpl implements ModuleApi
 {
 
     private static final CommonService cs = new CommonService();
-
 }

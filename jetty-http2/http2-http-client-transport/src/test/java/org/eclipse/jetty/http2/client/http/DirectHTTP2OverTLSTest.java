@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -134,9 +133,9 @@ public class DirectHTTP2OverTLSTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }

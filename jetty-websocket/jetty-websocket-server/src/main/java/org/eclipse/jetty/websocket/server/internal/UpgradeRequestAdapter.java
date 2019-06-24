@@ -61,8 +61,8 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     public List<ExtensionConfig> getExtensions()
     {
         return this.servletRequest.getExtensions().stream()
-                .map((ext) -> new JettyExtensionConfig(ext.getName(), ext.getParameters()))
-                .collect(Collectors.toList());
+            .map((ext) -> new JettyExtensionConfig(ext.getName(), ext.getParameters()))
+            .collect(Collectors.toList());
     }
 
     @Override

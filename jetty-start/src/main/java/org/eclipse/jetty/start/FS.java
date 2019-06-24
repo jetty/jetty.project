@@ -74,7 +74,7 @@ public class FS
             // Is it a directory?
             if (!Files.isDirectory(dir))
                 throw new IOException("Path is not directory: " + dir.toAbsolutePath());
-            
+
             // exists already, nothing to do
             return false;
         }
@@ -125,17 +125,17 @@ public class FS
     {
         return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
     }
-    
+
     public static String toRelativePath(File baseDir, File path)
     {
         return baseDir.toURI().relativize(path.toURI()).toASCIIString();
     }
-    
+
     public static boolean isPropertyFile(String filename)
     {
         return filename.toLowerCase(Locale.ENGLISH).endsWith(".properties");
     }
-    
+
     public static String separators(String path)
     {
         StringBuilder ret = new StringBuilder();
@@ -161,7 +161,7 @@ public class FS
     public static void touch(Path path) throws IOException
     {
         FileTime now = FileTime.fromMillis(System.currentTimeMillis());
-        Files.setLastModifiedTime(path,now);
+        Files.setLastModifiedTime(path, now);
     }
 
     public static Path toRealPath(Path path) throws IOException

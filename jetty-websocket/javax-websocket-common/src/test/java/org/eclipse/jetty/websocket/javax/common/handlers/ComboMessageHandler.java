@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.javax.common.handlers;
 
-import javax.websocket.MessageHandler;
 import java.nio.ByteBuffer;
+import javax.websocket.MessageHandler;
 
 /**
  * A particularly annoying type of MessageHandler. One defining 2 implementations.

@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
-import org.eclipse.jetty.websocket.javax.tests.server.sockets.echo.BasicEchoSocket;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
+
+import org.eclipse.jetty.websocket.javax.tests.server.sockets.echo.BasicEchoSocket;
 
 /**
  * Example of adding a server socket (annotated) programmatically directly with no config

@@ -19,9 +19,7 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
-
 
 /**
  * This is similar to the jaspi PasswordValidationCallback but includes user
@@ -50,6 +48,4 @@ public interface LoginCallback
     public void setRoles(String[] roles);
 
     public void clearPassword();
-
-
 }

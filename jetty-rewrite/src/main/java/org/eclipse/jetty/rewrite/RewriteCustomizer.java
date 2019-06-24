@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.server.Request;
 
-public class RewriteCustomizer extends RuleContainer implements Customizer 
+public class RewriteCustomizer extends RuleContainer implements Customizer
 {
     @Override
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)

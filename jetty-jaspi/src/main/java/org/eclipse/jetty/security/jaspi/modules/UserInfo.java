@@ -44,7 +44,7 @@ public class UserInfo
 
     public void clearPassword()
     {
-        Arrays.fill(password, (char) 0);
+        Arrays.fill(password, (char)0);
         password = null;
     }
 }

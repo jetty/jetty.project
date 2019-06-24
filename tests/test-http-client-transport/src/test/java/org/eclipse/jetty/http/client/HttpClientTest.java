@@ -87,8 +87,8 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -218,16 +218,18 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
                 baseRequest.setHandled(true);
                 ServletInputStream input = request.getInputStream();
                 for (byte b : bytes)
+                {
                     assertEquals(b & 0xFF, input.read());
+                }
                 assertEquals(-1, input.read());
             }
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .method(HttpMethod.POST)
-                .content(new BytesContentProvider(bytes))
-                .timeout(15, TimeUnit.SECONDS)
-                .send();
+            .method(HttpMethod.POST)
+            .content(new BytesContentProvider(bytes))
+            .timeout(15, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -271,10 +273,10 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         byte[][] bytes = IntStream.range(0, chunks).mapToObj(x -> new byte[chunkSize]).toArray(byte[][]::new);
         BytesContentProvider contentProvider = new BytesContentProvider("application/octet-stream", bytes);
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .method(HttpMethod.POST)
-                .content(contentProvider)
-                .timeout(15, TimeUnit.SECONDS)
-                .send();
+            .method(HttpMethod.POST)
+            .content(contentProvider)
+            .timeout(15, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(chunks * chunkSize, Integer.parseInt(response.getContentAsString()));
@@ -296,7 +298,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
                     baseRequest.setHandled(true);
                     response.getOutputStream().write(new byte[length]);
                 }
-                catch(IOException ignored)
+                catch (IOException ignored)
                 {
                 }
             }
@@ -320,7 +322,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         }
         catch (ExecutionException x)
         {
-            assertThat(x.getMessage(),containsString("exceeded"));
+            assertThat(x.getMessage(), containsString("exceeded"));
         }
 
         // Verify that we can make another request.
@@ -350,10 +352,11 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.client.setExecutor(clientThreads);
         scenario.client.start();
 
-        assertThrows(ExecutionException.class, ()-> {
+        assertThrows(ExecutionException.class, () ->
+        {
             scenario.client.newRequest(scenario.newURI())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         });
     }
 
@@ -375,11 +378,11 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.OPTIONS)
-                .path("*")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.OPTIONS)
+            .path("*")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -406,11 +409,11 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.OPTIONS)
-                .path("*")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.OPTIONS)
+            .path("*")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -434,9 +437,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         CountDownLatch latch = new CountDownLatch(1);
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .onResponseSuccess(response -> latch.countDown())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .onResponseSuccess(response -> latch.countDown())
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(200, response.getStatus());
 
@@ -476,9 +479,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(openLatch.await(1, TimeUnit.SECONDS));
@@ -508,20 +511,20 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         AtomicReference<Callback> callbackRef = new AtomicReference<>();
         AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(1));
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .onResponseContentAsync((response, content, callback) ->
+            .scheme(scenario.getScheme())
+            .onResponseContentAsync((response, content, callback) ->
+            {
+                if (counter.incrementAndGet() == 1)
                 {
-                    if (counter.incrementAndGet() == 1)
-                    {
-                        callbackRef.set(callback);
-                        latchRef.get().countDown();
-                    }
-                    else
-                    {
-                        callback.succeeded();
-                    }
-                })
-                .send(result -> completeLatch.countDown());
+                    callbackRef.set(callback);
+                    latchRef.get().countDown();
+                }
+                else
+                {
+                    callback.succeeded();
+                }
+            })
+            .send(result -> completeLatch.countDown());
 
         assertTrue(latchRef.get().await(5, TimeUnit.SECONDS));
         // Wait some time to verify that back pressure is applied correctly.
@@ -548,7 +551,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
 
         AtomicInteger completes = new AtomicInteger();
         scenario.client.newRequest(scenario.newURI())
-                .send(result -> completes.incrementAndGet());
+            .send(result -> completes.incrementAndGet());
 
         sleep(1000);
 
@@ -585,9 +588,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .method(HttpMethod.HEAD)
-                .path(path)
-                .send();
+            .method(HttpMethod.HEAD)
+            .path(path)
+            .send();
 
         assertEquals(status, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -609,10 +612,10 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .method(HttpMethod.HEAD)
-                .path(scenario.servletPath)
-                .header(HttpHeader.ACCEPT, "*/*")
-                .send();
+            .method(HttpMethod.HEAD)
+            .path(scenario.servletPath)
+            .header(HttpHeader.ACCEPT, "*/*")
+            .send();
 
         assertEquals(status, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -635,9 +638,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         org.eclipse.jetty.client.api.Request request = scenario.client
-                .newRequest(scenario.newURI())
-                .method(HttpMethod.HEAD)
-                .path(scenario.servletPath);
+            .newRequest(scenario.newURI())
+            .method(HttpMethod.HEAD)
+            .path(scenario.servletPath);
         FutureResponseListener listener = new FutureResponseListener(request, length / 2);
         request.send(listener);
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);

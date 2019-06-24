@@ -18,7 +18,7 @@
 
 /**
  * Jetty Client : Implementation and Core Classes
- * 
+ *
  * This package provides APIs, utility classes and an implementation of an asynchronous HTTP client.
  * <p>
  * The core class is {@link org.eclipse.jetty.client.HttpClient}, which acts as a central configuration object (for example
@@ -47,7 +47,4 @@
  * {@link org.eclipse.jetty.client.api.Request#send(org.eclipse.jetty.client.api.Response.CompleteListener)}.
  */
 package org.eclipse.jetty.client;
-
-import org.eclipse.jetty.client.api.Response;
-
 

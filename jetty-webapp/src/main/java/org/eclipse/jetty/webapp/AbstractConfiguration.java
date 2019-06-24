@@ -27,10 +27,10 @@ import java.util.stream.Collectors;
 public class AbstractConfiguration implements Configuration
 {
     private final boolean _disabledByDefault;
-    private final List<String> _after=new ArrayList<>();
-    private final List<String> _beforeThis=new ArrayList<>();
-    private final ClassMatcher _system=new ClassMatcher();
-    private final ClassMatcher _server=new ClassMatcher();
+    private final List<String> _after = new ArrayList<>();
+    private final List<String> _beforeThis = new ArrayList<>();
+    private final ClassMatcher _system = new ClassMatcher();
+    private final ClassMatcher _server = new ClassMatcher();
 
     protected AbstractConfiguration()
     {
@@ -39,21 +39,25 @@ public class AbstractConfiguration implements Configuration
 
     protected AbstractConfiguration(boolean disabledByDefault)
     {
-        _disabledByDefault=disabledByDefault;
+        _disabledByDefault = disabledByDefault;
     }
 
     /**
      * Add configuration classes that come before this configuration
+     *
      * @param classes Classname or package name
      */
     protected void addDependencies(String... classes)
     {
-        for (String c:classes)
+        for (String c : classes)
+        {
             _beforeThis.add(c);
+        }
     }
 
     /**
      * Add configuration classes that come before this configuration
+     *
      * @param classes Classes
      */
     protected void addDependencies(Class<? extends Configuration>... classes)
@@ -63,16 +67,20 @@ public class AbstractConfiguration implements Configuration
 
     /**
      * Add configuration classes that come after this configuration
+     *
      * @param classes Classname or package name
      */
     protected void addDependents(String... classes)
     {
-        for (String c:classes)
+        for (String c : classes)
+        {
             _after.add(c);
+        }
     }
 
     /**
      * Add configuration classes that come after this configuration
+     *
      * @param classes Class
      */
     protected void addDependents(Class<?>... classes)
@@ -83,6 +91,7 @@ public class AbstractConfiguration implements Configuration
     /**
      * Protect classes from modification by the web application by adding them
      * to the {@link WebAppConfiguration#getSystemClasses()}
+     *
      * @param classes classname or package pattern
      */
     protected void protect(String... classes)
@@ -93,6 +102,7 @@ public class AbstractConfiguration implements Configuration
     /**
      * Hide classes from the web application by adding them
      * to the {@link WebAppConfiguration#getServerClasses()}
+     *
      * @param classes classname or package pattern
      */
     protected void hide(String... classes)
@@ -103,15 +113,16 @@ public class AbstractConfiguration implements Configuration
     /**
      * Expose classes to the web application by adding them
      * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+     *
      * @param classes classname or package pattern
      */
     protected void expose(String... classes)
     {
-        for (String c:classes)
+        for (String c : classes)
         {
             if (c.startsWith("-"))
                 throw new IllegalArgumentException();
-            _server.add("-"+c);
+            _server.add("-" + c);
         }
     }
 
@@ -120,20 +131,20 @@ public class AbstractConfiguration implements Configuration
      * to the {@link WebAppConfiguration#getSystemClasses()} and
      * expose them to the web application by adding them
      * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+     *
      * @param classes classname or package pattern
      */
     protected void protectAndExpose(String... classes)
     {
-        for (String c:classes)
+        for (String c : classes)
         {
             if (c.startsWith("-"))
                 throw new IllegalArgumentException();
 
             _system.add(c);
-            _server.add("-"+c);
+            _server.add("-" + c);
         }
     }
-
 
     @Override
     public Collection<String> getDependents()

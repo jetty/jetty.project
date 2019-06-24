@@ -57,7 +57,7 @@ public class ProxyConfiguration
         return null;
     }
 
-    public static abstract class Proxy
+    public abstract static class Proxy
     {
         // TO use IPAddress Map
         private final Set<String> included = new HashSet<>();
@@ -154,7 +154,7 @@ public class ProxyConfiguration
             HostPort hostPort = new HostPort(pattern);
             String host = hostPort.getHost();
             int port = hostPort.getPort();
-            return host.equals(address.getHost())  && ( port<=0 || port==address.getPort() ); 
+            return host.equals(address.getHost()) && (port <= 0 || port == address.getPort());
         }
 
         /**
@@ -169,5 +169,4 @@ public class ProxyConfiguration
             return address.toString();
         }
     }
-
 }

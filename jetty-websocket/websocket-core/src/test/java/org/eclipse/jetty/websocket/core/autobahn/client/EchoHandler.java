@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.core.autobahn.client;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class EchoHandler extends AbstractClientFrameHandler
 {
@@ -72,7 +72,7 @@ public class EchoHandler extends AbstractClientFrameHandler
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {
-        LOG.debug("onBinary {} {} {}", payload == null?-1:payload.remaining(), fin, getCoreSession());
+        LOG.debug("onBinary {} {} {}", payload == null ? -1 : payload.remaining(), fin, getCoreSession());
         if (fin)
         {
             Frame echo = new Frame(OpCode.BINARY);

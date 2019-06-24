@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.common.util;
 
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
-
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
+
+import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
 
 @SuppressWarnings("serial")
 public class InvalidSignatureException extends InvalidWebSocketException
@@ -68,5 +68,4 @@ public class InvalidSignatureException extends InvalidWebSocketException
     {
         super(message, cause);
     }
-
 }

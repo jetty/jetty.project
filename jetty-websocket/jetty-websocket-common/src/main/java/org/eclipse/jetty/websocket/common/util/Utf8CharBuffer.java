@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Utf8Appendable;
-
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Utf8Appendable;
 
 /**
  * A CharBuffer wrapped with the Utf8Appendable logic.

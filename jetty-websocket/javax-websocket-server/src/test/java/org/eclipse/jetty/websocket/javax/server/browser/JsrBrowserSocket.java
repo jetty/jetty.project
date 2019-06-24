@@ -24,7 +24,6 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
-
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-@ServerEndpoint(value = "/", subprotocols = { "tool" }, configurator = JsrBrowserConfigurator.class)
+@ServerEndpoint(value = "/", subprotocols = {"tool"}, configurator = JsrBrowserConfigurator.class)
 public class JsrBrowserSocket
 {
     private static class WriteMany implements Runnable

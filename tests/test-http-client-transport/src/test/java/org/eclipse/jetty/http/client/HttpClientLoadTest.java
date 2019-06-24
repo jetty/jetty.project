@@ -31,7 +31,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -98,12 +97,16 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         int runs = 1;
         int iterations = 500;
         for (int i = 0; i < runs; ++i)
+        {
             run(iterations);
+        }
 
         // Re-run after warmup
         iterations = 5_000;
         for (int i = 0; i < runs; ++i)
+        {
             run(iterations);
+        }
 
         System.gc();
 
@@ -140,12 +143,11 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         });
 
-
         int runs = 1;
         int iterations = 256;
         IntStream.range(0, 16).parallel().forEach(i ->
-                IntStream.range(0, runs).forEach(j ->
-                        run(iterations)));
+            IntStream.range(0, runs).forEach(j ->
+                run(iterations)));
     }
 
     private void run(int iterations)
@@ -160,8 +162,8 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         Scheduler.Task task = scenario.client.getScheduler().schedule(() ->
         {
             logger.warn("Interrupting test, it is taking too long{}{}{}{}",
-                    System.lineSeparator(), scenario.server.dump(),
-                    System.lineSeparator(), scenario.client.dump());
+                System.lineSeparator(), scenario.server.dump(),
+                System.lineSeparator(), scenario.client.dump());
             testThread.interrupt();
         }, iterations * factor, TimeUnit.MILLISECONDS);
 
@@ -178,7 +180,9 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         logger.info("{} requests in {} ms, {} req/s", iterations, elapsed, elapsed > 0 ? iterations * 1000 / elapsed : -1);
 
         for (String failure : failures)
+        {
             logger.info("FAILED: {}", failure);
+        }
 
         assertTrue(failures.isEmpty(), failures.toString());
     }
@@ -215,9 +219,9 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     {
         long requestId = requestCount.incrementAndGet();
         Request request = scenario.client.newRequest(host, scenario.getNetworkConnectorLocalPortInt().orElse(0))
-                .scheme(scheme)
-                .path("/" + requestId)
-                .method(method);
+            .scheme(scheme)
+            .path("/" + requestId)
+            .method(method);
 
         if (clientClose)
             request.header(HttpHeader.CONNECTION, "close");
@@ -289,8 +293,8 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         if (!await(requestLatch, 5, TimeUnit.SECONDS))
         {
             logger.warn("Request {} took too long{}{}{}{}", requestId,
-                    System.lineSeparator(), scenario.server.dump(),
-                    System.lineSeparator(), scenario.client.dump());
+                System.lineSeparator(), scenario.server.dump(),
+                System.lineSeparator(), scenario.client.dump());
         }
     }
 

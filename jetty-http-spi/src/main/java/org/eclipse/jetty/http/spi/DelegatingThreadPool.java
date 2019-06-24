@@ -29,55 +29,50 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.TryExecutor;
 
 public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPool, TryExecutor
-{    
+{
     private Executor _executor; // memory barrier provided by start/stop semantics
     private TryExecutor _tryExecutor;
 
     public DelegatingThreadPool(Executor executor)
     {
-        _executor=executor;
-        _tryExecutor=TryExecutor.asTryExecutor(executor);
+        _executor = executor;
+        _tryExecutor = TryExecutor.asTryExecutor(executor);
         addBean(_executor);
     }
 
-    /* ------------------------------------------------------------ */
     public Executor getExecutor()
     {
         return _executor;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public void setExecutor(Executor executor)
     {
         if (isRunning())
             throw new IllegalStateException(getState());
-        updateBean(_executor,executor);
-        _executor=executor;
-        _tryExecutor=TryExecutor.asTryExecutor(executor);
+        updateBean(_executor, executor);
+        _executor = executor;
+        _tryExecutor = TryExecutor.asTryExecutor(executor);
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public void execute(Runnable job)
     {
         _executor.execute(job);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public boolean tryExecute(Runnable task)
     {
         return _tryExecutor.tryExecute(task);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public int getIdleThreads()
     {
-        final Executor executor=_executor;
+        final Executor executor = _executor;
         if (executor instanceof ThreadPool)
             return ((ThreadPool)executor).getIdleThreads();
-        
+
         if (executor instanceof ThreadPoolExecutor)
         {
             final ThreadPoolExecutor tpe = (ThreadPoolExecutor)executor;
@@ -86,14 +81,13 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public int getThreads()
     {
-        final Executor executor=_executor;
+        final Executor executor = _executor;
         if (executor instanceof ThreadPool)
             return ((ThreadPool)executor).getThreads();
-        
+
         if (executor instanceof ThreadPoolExecutor)
         {
             final ThreadPoolExecutor tpe = (ThreadPoolExecutor)executor;
@@ -102,29 +96,27 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public boolean isLowOnThreads()
     {
-        final Executor executor=_executor;
+        final Executor executor = _executor;
         if (executor instanceof ThreadPool)
             return ((ThreadPool)executor).isLowOnThreads();
-        
+
         if (executor instanceof ThreadPoolExecutor)
         {
             final ThreadPoolExecutor tpe = (ThreadPoolExecutor)executor;
             // getActiveCount() locks the thread pool, so execute it last
             return tpe.getPoolSize() == tpe.getMaximumPoolSize() &&
-                    tpe.getQueue().size() >= tpe.getPoolSize() - tpe.getActiveCount();
+                tpe.getQueue().size() >= tpe.getPoolSize() - tpe.getActiveCount();
         }
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void join() throws InterruptedException
     {
-        final Executor executor=_executor;
+        final Executor executor = _executor;
         if (executor instanceof ThreadPool)
             ((ThreadPool)executor).join();
         else if (executor instanceof ExecutorService)
@@ -133,7 +125,6 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
             throw new IllegalStateException();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
@@ -141,5 +132,4 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         if (!(_executor instanceof LifeCycle) && (_executor instanceof ExecutorService))
             ((ExecutorService)_executor).shutdownNow();
     }
-
 }

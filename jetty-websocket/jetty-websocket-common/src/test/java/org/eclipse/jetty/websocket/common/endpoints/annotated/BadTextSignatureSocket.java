@@ -32,7 +32,7 @@ public class BadTextSignatureSocket
      * Declaring a static method
      *
      * @param session the session
-     * @param text    the text message
+     * @param text the text message
      */
     @OnWebSocketMessage
     public static void onText(Session session, String text)

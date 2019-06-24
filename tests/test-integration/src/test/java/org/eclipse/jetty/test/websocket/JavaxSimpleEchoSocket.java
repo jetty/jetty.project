@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.test.websocket;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.util.concurrent.CountDownLatch;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -33,8 +30,10 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 @ClientEndpoint(
-        subprotocols = {"chat"})
+    subprotocols = {"chat"})
 public class JavaxSimpleEchoSocket
 {
     private static final Logger LOG = Log.getLogger(JavaxSimpleEchoSocket.class);

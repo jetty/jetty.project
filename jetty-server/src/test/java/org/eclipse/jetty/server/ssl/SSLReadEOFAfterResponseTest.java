@@ -25,7 +25,6 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-
 import javax.net.ssl.SSLContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -105,8 +104,8 @@ public class SSLReadEOFAfterResponseTest
                 client.setSoTimeout(5 * idleTimeout);
 
                 OutputStream output = client.getOutputStream();
-                String request = "" +
-                        "POST / HTTP/1.1\r\n" +
+                String request =
+                    "POST / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
                         "Content-Length: " + content.length() + "\r\n" +
                         "\r\n";
@@ -129,8 +128,9 @@ public class SSLReadEOFAfterResponseTest
                         break;
                 }
                 for (byte b : bytes)
+                {
                     assertEquals(b, input.read());
-
+                }
 
                 // Shutdown the output so the server reads the TLS close_notify.
                 client.shutdownOutput();

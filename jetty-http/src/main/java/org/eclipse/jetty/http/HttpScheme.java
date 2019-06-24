@@ -24,8 +24,8 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Trie;
 
-/* ------------------------------------------------------------------------------- */
 /**
+ *
  */
 public enum HttpScheme
 {
@@ -34,34 +34,33 @@ public enum HttpScheme
     WS("ws"),
     WSS("wss");
 
-    /* ------------------------------------------------------------ */
-    public final static Trie<HttpScheme> CACHE= new ArrayTrie<HttpScheme>();
+    public static final Trie<HttpScheme> CACHE = new ArrayTrie<HttpScheme>();
+
     static
     {
         for (HttpScheme version : HttpScheme.values())
-            CACHE.put(version.asString(),version);
+        {
+            CACHE.put(version.asString(), version);
+        }
     }
 
     private final String _string;
     private final ByteBuffer _buffer;
 
-    /* ------------------------------------------------------------ */
     HttpScheme(String s)
     {
-        _string=s;
-        _buffer=BufferUtil.toBuffer(s);
+        _string = s;
+        _buffer = BufferUtil.toBuffer(s);
     }
 
-    /* ------------------------------------------------------------ */
     public ByteBuffer asByteBuffer()
     {
         return _buffer.asReadOnlyBuffer();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean is(String s)
     {
-        return s!=null && _string.equalsIgnoreCase(s);
+        return s != null && _string.equalsIgnoreCase(s);
     }
 
     public String asString()
@@ -69,11 +68,9 @@ public enum HttpScheme
         return _string;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return _string;
     }
-
 }

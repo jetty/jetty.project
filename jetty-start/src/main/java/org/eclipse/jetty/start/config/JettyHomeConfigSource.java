@@ -27,10 +27,10 @@ import java.nio.file.Path;
 public class JettyHomeConfigSource extends DirConfigSource
 {
     // Standard weight for ${jetty.home}, so that it comes after everything else
-    private final static int WEIGHT = 9999999;
+    private static final int WEIGHT = 9999999;
 
     public JettyHomeConfigSource(Path dir) throws IOException
     {
-        super("${jetty.home}",dir,WEIGHT,false);
+        super("${jetty.home}", dir, WEIGHT, false);
     }
 }

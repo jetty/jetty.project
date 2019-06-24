@@ -21,7 +21,6 @@ package org.eclipse.jetty.jndi;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.Statement;
-
 import javax.sql.DataSource;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -34,7 +33,6 @@ import org.eclipse.jetty.util.log.Logger;
  * Some {@link DataSource}'s need to be close (eg. Atomikos).  This bean is a {@link Destroyable} and
  * may be added to any {@link ContainerLifeCycle} so that {@link #destroy()}
  * will be called.   The {@link #destroy()} method calls any no-arg method called "close" on the passed DataSource.
- *
  */
 public class DataSourceCloser implements Destroyable
 {
@@ -45,18 +43,18 @@ public class DataSourceCloser implements Destroyable
 
     public DataSourceCloser(DataSource datasource)
     {
-        if (datasource==null)
+        if (datasource == null)
             throw new IllegalArgumentException();
-        _datasource=datasource;
-        _shutdown=null;
+        _datasource = datasource;
+        _shutdown = null;
     }
 
-    public DataSourceCloser(DataSource datasource,String shutdownSQL)
+    public DataSourceCloser(DataSource datasource, String shutdownSQL)
     {
-        if (datasource==null)
+        if (datasource == null)
             throw new IllegalArgumentException();
-        _datasource=datasource;
-        _shutdown=shutdownSQL;
+        _datasource = datasource;
+        _shutdown = shutdownSQL;
     }
 
     @Override
@@ -64,11 +62,11 @@ public class DataSourceCloser implements Destroyable
     {
         try
         {
-            if (_shutdown!=null)
+            if (_shutdown != null)
             {
-                LOG.info("Shutdown datasource {}",_datasource);
+                LOG.info("Shutdown datasource {}", _datasource);
                 try (Connection connection = _datasource.getConnection();
-                        Statement stmt = connection.createStatement())
+                     Statement stmt = connection.createStatement())
                 {
                     stmt.executeUpdate(_shutdown);
                 }
@@ -82,7 +80,7 @@ public class DataSourceCloser implements Destroyable
         try
         {
             Method close = _datasource.getClass().getMethod("close", new Class[]{});
-            LOG.info("Close datasource {}",_datasource);
+            LOG.info("Close datasource {}", _datasource);
             close.invoke(_datasource, new Object[]{});
         }
         catch (Exception e)

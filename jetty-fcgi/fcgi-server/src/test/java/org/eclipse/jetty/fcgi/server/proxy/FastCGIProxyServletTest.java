@@ -18,16 +18,10 @@
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -53,13 +47,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class FastCGIProxyServletTest
 {
     public static Stream<Arguments> factories()
     {
         return Stream.of(
-                true, // send status 200
-                false // don't send status 200
+            true, // send status 200
+            false // don't send status 200
         ).map(Arguments::of);
     }
 
@@ -116,21 +115,21 @@ public class FastCGIProxyServletTest
         server.stop();
     }
 
-    @ParameterizedTest(name="[{index}] sendStatus200={0}")
+    @ParameterizedTest(name = "[{index}] sendStatus200={0}")
     @MethodSource("factories")
     public void testGETWithSmallResponseContent(boolean sendStatus200) throws Exception
     {
         testGETWithResponseContent(sendStatus200, 1024, 0);
     }
 
-    @ParameterizedTest(name="[{index}] sendStatus200={0}")
+    @ParameterizedTest(name = "[{index}] sendStatus200={0}")
     @MethodSource("factories")
     public void testGETWithLargeResponseContent(boolean sendStatus200) throws Exception
     {
         testGETWithResponseContent(sendStatus200, 16 * 1024 * 1024, 0);
     }
 
-    @ParameterizedTest(name="[{index}] sendStatus200={0}")
+    @ParameterizedTest(name = "[{index}] sendStatus200={0}")
     @MethodSource("factories")
     public void testGETWithLargeResponseContentWithSlowClient(boolean sendStatus200) throws Exception
     {
@@ -155,20 +154,20 @@ public class FastCGIProxyServletTest
         });
 
         Request request = client.newRequest("localhost", httpConnector.getLocalPort())
-                .onResponseContentAsync((response, content, callback) ->
+            .onResponseContentAsync((response, content, callback) ->
+            {
+                try
                 {
-                    try
-                    {
-                        if (delay > 0)
-                            TimeUnit.MILLISECONDS.sleep(delay);
-                        callback.succeeded();
-                    }
-                    catch (InterruptedException x)
-                    {
-                        callback.failed(x);
-                    }
-                })
-                .path(path);
+                    if (delay > 0)
+                        TimeUnit.MILLISECONDS.sleep(delay);
+                    callback.succeeded();
+                }
+                catch (InterruptedException x)
+                {
+                    callback.failed(x);
+                }
+            })
+            .path(path);
         FutureResponseListener listener = new FutureResponseListener(request, length);
         request.send(listener);
 
@@ -178,7 +177,7 @@ public class FastCGIProxyServletTest
         assertArrayEquals(data, response.getContent());
     }
 
-    @ParameterizedTest(name="[{index}] sendStatus200={0}")
+    @ParameterizedTest(name = "[{index}] sendStatus200={0}")
     @MethodSource("factories")
     public void testURIRewrite(boolean sendStatus200) throws Exception
     {
@@ -217,8 +216,8 @@ public class FastCGIProxyServletTest
         context.start();
 
         ContentResponse response = client.newRequest("localhost", httpConnector.getLocalPort())
-                .path(remotePath)
-                .send();
+            .path(remotePath)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }

@@ -16,13 +16,10 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 /**
  * CachingSessionDataStoreFactory
- *
- *
  */
 public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
@@ -30,12 +27,10 @@ public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFact
     /**
      * The SessionDataStore that will store session data.
      */
-    protected  SessionDataStoreFactory _sessionStoreFactory;
-    
+    protected SessionDataStoreFactory _sessionStoreFactory;
+
     protected SessionDataMapFactory _mapFactory;
-    
- 
-    
+
     /**
      * @return the SessionDataMapFactory
      */
@@ -56,18 +51,17 @@ public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFact
      * @param factory The factory for the actual SessionDataStore that the
      * CachingSessionDataStore will delegate to
      */
-    public void setSessionStoreFactory (SessionDataStoreFactory factory)
+    public void setSessionStoreFactory(SessionDataStoreFactory factory)
     {
         _sessionStoreFactory = factory;
     }
-    
-    /** 
+
+    /**
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {
-        return new CachingSessionDataStore(_mapFactory.getSessionDataMap(), _sessionStoreFactory.getSessionDataStore(handler));    
+        return new CachingSessionDataStore(_mapFactory.getSessionDataMap(), _sessionStoreFactory.getSessionDataStore(handler));
     }
-
 }

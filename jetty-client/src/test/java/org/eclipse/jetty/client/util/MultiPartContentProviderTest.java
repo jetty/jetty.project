@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import static org.eclipse.jetty.toolchain.test.StackUtils.supply;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -41,7 +35,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -59,6 +52,12 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.eclipse.jetty.toolchain.test.StackUtils.supply;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
 {
@@ -79,10 +78,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(multiPart)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -110,10 +109,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFieldPart(name, new StringContentProvider(value), null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(multiPart)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -150,10 +149,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFieldPart(name, content, fields);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(multiPart)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -184,15 +183,15 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.close();
         CountDownLatch responseLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(multiPart)
-                .send(result ->
-                {
-                    assertTrue(result.isSucceeded(),supply(result.getFailure()));
-                    assertEquals(200, result.getResponse().getStatus());
-                    responseLatch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded(), supply(result.getFailure()));
+                assertEquals(200, result.getResponse().getStatus());
+                responseLatch.countDown();
+            });
 
         // Wait until the request has been sent.
         Thread.sleep(1000);
@@ -245,10 +244,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFilePart(name, fileName, content, fields);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(multiPart)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
         assertEquals(200, response.getStatus());
@@ -292,10 +291,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFilePart(name, tmpPath.getFileName().toString(), content, null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(multiPart)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
 
@@ -359,10 +358,10 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFilePart(fileField, tmpPath.getFileName().toString(), new PathContentProvider(tmpPath), null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(multiPart)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
 
         assertEquals(200, response.getStatus());
 
@@ -409,15 +408,15 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         multiPart.addFilePart("file", "fileName", fileContent, null);
         CountDownLatch responseLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(multiPart)
-                .send(result ->
-                {
-                    assertTrue(result.isSucceeded(),supply(result.getFailure()));
-                    assertEquals(200, result.getResponse().getStatus());
-                    responseLatch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded(), supply(result.getFailure()));
+                assertEquals(200, result.getResponse().getStatus());
+                responseLatch.countDown();
+            });
 
         // Wait until the request has been sent.
         Thread.sleep(1000);
@@ -436,7 +435,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static abstract class AbstractMultiPartHandler extends AbstractHandler
+    private abstract static class AbstractMultiPartHandler extends AbstractHandler
     {
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

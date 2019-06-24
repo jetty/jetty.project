@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.test.websocket;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
@@ -34,6 +31,8 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JavaxWebSocketTest
 {

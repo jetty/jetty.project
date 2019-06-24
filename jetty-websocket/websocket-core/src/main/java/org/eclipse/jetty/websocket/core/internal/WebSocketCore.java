@@ -47,6 +47,5 @@ public final class WebSocketCore
             throw new RuntimeException(e);
         }
     }
-
 }
 

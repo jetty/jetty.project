@@ -248,9 +248,9 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     public String dumpSelf()
     {
         return String.format("%s@%x[behavior=%s,idleTimeout=%dms]",
-                this.getClass().getSimpleName(), hashCode(),
-                getPolicy().getBehavior(),
-                getIdleTimeout().toMillis());
+            this.getClass().getSimpleName(), hashCode(),
+            getPolicy().getBehavior(),
+            getIdleTimeout().toMillis());
     }
 
     @Override

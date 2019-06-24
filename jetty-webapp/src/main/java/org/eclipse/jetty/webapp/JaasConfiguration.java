@@ -27,10 +27,10 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>JAAS Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the org.eclipse.jetty.jaas package.   
+ * be able to see the org.eclipse.jetty.jaas package.
  * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
  * which is unknown to the jaas package.  However, the corresponding {@link ServiceLoader}
- * resource is defined in the jaas package, so that this configuration only be 
+ * resource is defined in the jaas package, so that this configuration only be
  * loaded if the jetty-jaas jars are on the classpath.
  * </p>
  */
@@ -50,7 +50,7 @@ public class JaasConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.jaas.JAASLoginService")!=null;
+            return Loader.loadClass("org.eclipse.jetty.jaas.JAASLoginService") != null;
         }
         catch (Throwable e)
         {

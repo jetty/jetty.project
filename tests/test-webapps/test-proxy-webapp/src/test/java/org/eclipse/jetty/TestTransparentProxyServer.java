@@ -60,10 +60,9 @@ public class TestTransparentProxyServer
         server.manage(threadPool);
 
         // Setup JMX
-        MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
         server.addBean(Log.getLog());
-        
 
         // Common HTTP configuration
         HttpConfiguration config = new HttpConfiguration();
@@ -71,16 +70,14 @@ public class TestTransparentProxyServer
         config.addCustomizer(new ForwardedRequestCustomizer());
         config.setSendDateHeader(true);
         config.setSendServerVersion(true);
-        
-        
+
         // Http Connector
         HttpConnectionFactory http = new HttpConnectionFactory(config);
-        ServerConnector httpConnector = new ServerConnector(server,http);
+        ServerConnector httpConnector = new ServerConnector(server, http);
         httpConnector.setPort(8080);
         httpConnector.setIdleTimeout(30000);
         server.addConnector(httpConnector);
 
-        
         // SSL configurations
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
@@ -89,40 +86,39 @@ public class TestTransparentProxyServer
         sslContextFactory.setTrustStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setExcludeCipherSuites(
-                "SSL_RSA_WITH_DES_CBC_SHA",
-                "SSL_DHE_RSA_WITH_DES_CBC_SHA",
-                "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
-                "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
+            "SSL_RSA_WITH_DES_CBC_SHA",
+            "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+            "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+            "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+            "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+            "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+            "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
         sslContextFactory.setCipherComparator(new HTTP2Cipher.CipherComparator());
-        
 
         // HTTPS Configuration
         HttpConfiguration https_config = new HttpConfiguration(config);
         https_config.addCustomizer(new SecureRequestCustomizer());
-        
+
         // HTTP2 factory
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h2.getProtocol());
-        
+
         // SSL Factory
-        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,alpn.getProtocol());
-        
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
+
         // HTTP2 Connector
-        ServerConnector http2Connector = 
-            new ServerConnector(server,ssl,alpn,h2,new HttpConnectionFactory(https_config));
+        ServerConnector http2Connector =
+            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(https_config));
         http2Connector.setPort(8443);
         http2Connector.setIdleTimeout(15000);
         server.addConnector(http2Connector);
-        
+
         // Handlers
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         handlers.setHandlers(new Handler[]
-        { contexts, new DefaultHandler() });
+            {contexts, new DefaultHandler()});
 
         server.setHandler(handlers);
 

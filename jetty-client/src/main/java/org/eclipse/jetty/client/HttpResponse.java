@@ -96,8 +96,10 @@ public class HttpResponse implements Response
     {
         ArrayList<T> result = new ArrayList<>();
         for (ResponseListener listener : listeners)
+        {
             if (type == null || type.isInstance(listener))
                 result.add((T)listener);
+        }
         return result;
     }
 

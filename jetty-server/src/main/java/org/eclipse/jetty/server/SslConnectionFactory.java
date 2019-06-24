@@ -16,9 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server;
-
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -47,7 +45,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
     public SslConnectionFactory(@Name("next") String nextProtocol)
     {
-        this(null,nextProtocol);
+        this(null, nextProtocol);
     }
 
     public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory.Server factory, @Name("next") String nextProtocol)
@@ -95,9 +93,9 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
         SSLEngine engine = _sslContextFactory.newSSLEngine();
         engine.setUseClientMode(false);
-        SSLSession session=engine.getSession();
+        SSLSession session = engine.getSession();
 
-        if (session.getPacketBufferSize()>getInputBufferSize())
+        if (session.getPacketBufferSize() > getInputBufferSize())
             setInputBufferSize(session.getPacketBufferSize());
     }
 
@@ -144,7 +142,6 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s->%s}",this.getClass().getSimpleName(),hashCode(),getProtocol(),_nextProtocol);
+        return String.format("%s@%x{%s->%s}", this.getClass().getSimpleName(), hashCode(), getProtocol(), _nextProtocol);
     }
-
 }

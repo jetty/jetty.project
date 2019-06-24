@@ -29,19 +29,19 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 public class OneWebAppWithJsp
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         // Create a basic jetty server object that will listen on port 8080.
         // Note that if you set this to port 0 then
         // a randomly available port will be assigned that you can either look
         // in the logs for the port,
         // or programmatically obtain it for use in test cases.
-        Server server = new Server( 8080 );
+        Server server = new Server(8080);
 
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(
-                ManagementFactory.getPlatformMBeanServer() );
-        server.addBean( mbContainer );
+            ManagementFactory.getPlatformMBeanServer());
+        server.addBean(mbContainer);
 
         // The WebAppContext is the entity that controls the environment in
         // which a web application lives and
@@ -53,18 +53,16 @@ public class OneWebAppWithJsp
         // the webapp (through
         // PlusConfiguration) to choosing where the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
-        webapp.setContextPath( "/" );
+        webapp.setContextPath("/");
         File warFile = new File(
-                "jetty-distribution/target/distribution/demo-base/webapps/test.war" );
+            "jetty-distribution/target/distribution/demo-base/webapps/test.war");
         if (!warFile.exists())
         {
-            throw new RuntimeException( "Unable to find WAR File: "
-                    + warFile.getAbsolutePath() );
+            throw new RuntimeException("Unable to find WAR File: " + warFile.getAbsolutePath());
         }
-        webapp.setWar( warFile.getAbsolutePath() );
+        webapp.setWar(warFile.getAbsolutePath());
         webapp.setExtractWAR(true);
 
-        
         // This webapp will use jsps and jstl. We need to enable the
         // AnnotationConfiguration in order to correctly
         // set up the jsp container
@@ -75,13 +73,13 @@ public class OneWebAppWithJsp
         // If you omit the jar that contains the jstl .tlds, the jsp engine will
         // scan for them instead.
         webapp.setAttribute(
-                "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                ".*/jetty-servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$" );
+            "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+            ".*/jetty-servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to
         // the server so it is aware of where to
         // send the appropriate requests.
-        server.setHandler( webapp );
+        server.setHandler(webapp);
 
         // Configure a LoginService.
         // Since this example is for our test webapp, we need to setup a
@@ -92,13 +90,13 @@ public class OneWebAppWithJsp
         // can be started and stopped according to the lifecycle of the server
         // itself.
         HashLoginService loginService = new HashLoginService();
-        loginService.setName( "Test Realm" );
-        loginService.setConfig( "examples/embedded/src/test/resources/realm.properties" );
-        server.addBean( loginService );
+        loginService.setName("Test Realm");
+        loginService.setConfig("examples/embedded/src/test/resources/realm.properties");
+        server.addBean(loginService);
 
         // Start things up! 
         server.start();
-        
+
         server.dumpStdErr();
 
         // The use of server.join() the will make the current thread join and

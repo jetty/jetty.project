@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +157,8 @@ public abstract class HttpReceiver
      */
     protected boolean responseHeader(HttpExchange exchange, HttpField field)
     {
-        out: while (true)
+        out:
+        while (true)
         {
             ResponseState current = responseState.get();
             switch (current)
@@ -240,7 +240,8 @@ public abstract class HttpReceiver
      */
     protected boolean responseHeaders(HttpExchange exchange)
     {
-        out: while (true)
+        out:
+        while (true)
         {
             ResponseState current = responseState.get();
             switch (current)
@@ -266,16 +267,16 @@ public abstract class HttpReceiver
         List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
         notifier.notifyHeaders(responseListeners, response);
         contentListeners = responseListeners.stream()
-                .filter(Response.AsyncContentListener.class::isInstance)
-                .map(Response.AsyncContentListener.class::cast)
-                .collect(Collectors.toList());
+            .filter(Response.AsyncContentListener.class::isInstance)
+            .map(Response.AsyncContentListener.class::cast)
+            .collect(Collectors.toList());
 
         List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
         if (contentEncodings != null && !contentEncodings.isEmpty())
         {
             for (ContentDecoder.Factory factory : getHttpDestination().getHttpClient().getContentDecoderFactories())
             {
-                for (String encoding: contentEncodings)
+                for (String encoding : contentEncodings)
                 {
                     if (factory.getEncoding().equalsIgnoreCase(encoding))
                     {
@@ -305,7 +306,8 @@ public abstract class HttpReceiver
      */
     protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, Callback callback)
     {
-        out: while (true)
+        out:
+        while (true)
         {
             ResponseState current = responseState.get();
             switch (current)
@@ -483,7 +485,8 @@ public abstract class HttpReceiver
     {
         // Update the state to avoid more response processing.
         boolean terminate;
-        out: while (true)
+        out:
+        while (true)
         {
             ResponseState current = responseState.get();
             switch (current)
@@ -546,10 +549,10 @@ public abstract class HttpReceiver
     public String toString()
     {
         return String.format("%s@%x(rsp=%s,failure=%s)",
-                getClass().getSimpleName(),
-                hashCode(),
-                responseState,
-                failure);
+            getClass().getSimpleName(),
+            hashCode(),
+            responseState,
+            failure);
     }
 
     /**

@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server.sockets.streaming;
 
+import java.io.IOException;
+import java.io.InputStream;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
+
 import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.io.InputStream;
 
 @ServerEndpoint("/echo/streaming/inputstream")
 public class InputStreamSocket

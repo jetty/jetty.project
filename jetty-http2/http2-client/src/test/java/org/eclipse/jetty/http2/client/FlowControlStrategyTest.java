@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -74,9 +67,14 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class FlowControlStrategyTest
 {
@@ -505,7 +503,7 @@ public abstract class FlowControlStrategyTest
     private void checkThatWeAreFlowControlStalled(Exchanger<Callback> exchanger) throws Exception
     {
         assertThrows(TimeoutException.class,
-                () -> exchanger.exchange(null, 1, TimeUnit.SECONDS));
+            () -> exchanger.exchange(null, 1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -605,7 +603,9 @@ public abstract class FlowControlStrategyTest
         // Consume the data of the first response.
         // This will open up the session window, allowing the fourth stream to send data.
         for (Callback callback : callbacks1)
+        {
             callback.succeeded();
+        }
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

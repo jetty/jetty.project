@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -64,6 +58,12 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PrefaceTest extends AbstractTest
 {
@@ -238,8 +238,8 @@ public class PrefaceTest extends AbstractTest
         {
             socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
-            String upgradeRequest = "" +
-                    "GET /one HTTP/1.1\r\n" +
+            String upgradeRequest =
+                "GET /one HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Connection: Upgrade, HTTP2-Settings\r\n" +
                     "Upgrade: h2c\r\n" +
@@ -254,7 +254,8 @@ public class PrefaceTest extends AbstractTest
 
             // The 101 response is the reply to the client preface SETTINGS frame.
             ByteBuffer buffer = byteBufferPool.acquire(1024, true);
-            http1: while (true)
+            http1:
+            while (true)
             {
                 BufferUtil.clearToFill(buffer);
                 int read = socket.read(buffer);

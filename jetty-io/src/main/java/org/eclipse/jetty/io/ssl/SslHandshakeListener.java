@@ -20,7 +20,6 @@ package org.eclipse.jetty.io.ssl;
 
 import java.util.EventListener;
 import java.util.EventObject;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
