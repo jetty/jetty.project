@@ -103,10 +103,10 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         });
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-            .content(new BytesContentProvider(contents))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+                                       .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+                                       .content(new BytesContentProvider(contents))
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -144,17 +144,17 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         byte[] content1 = new byte[10240];
         byte[] content2 = new byte[16384];
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-            .content(new BytesContentProvider(content1, content2)
-            {
-                @Override
-                public long getLength()
-                {
-                    return -1;
-                }
-            })
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+                                       .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+                                       .content(new BytesContentProvider(content1, content2)
+                                       {
+                                           @Override
+                                           public long getLength()
+                                           {
+                                               return -1;
+                                           }
+                                       })
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -711,24 +711,24 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 readRequestHeaders(socket.getInputStream());
 
                 OutputStream output = socket.getOutputStream();
-                String responses = "" +
+                String responses =
                     "HTTP/1.1 100 Continue\r\n" +
-                    "\r\n" +
-                    "HTTP/1.1 200 OK\r\n" +
-                    "Transfer-Encoding: chunked\r\n" +
-                    "\r\n" +
-                    "10\r\n" +
-                    "0123456789ABCDEF\r\n";
+                        "\r\n" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Transfer-Encoding: chunked\r\n" +
+                        "\r\n" +
+                        "10\r\n" +
+                        "0123456789ABCDEF\r\n";
                 output.write(responses.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 Thread.sleep(1000);
 
-                String content = "" +
+                String content =
                     "10\r\n" +
-                    "0123456789ABCDEF\r\n" +
-                    "0\r\n" +
-                    "\r\n";
+                        "0123456789ABCDEF\r\n" +
+                        "0\r\n" +
+                        "\r\n";
                 output.write(content.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -758,9 +758,9 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-            .content(new BytesContentProvider(bytes))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+                                       .content(new BytesContentProvider(bytes))
+                                       .timeout(5, TimeUnit.SECONDS)
+                                       .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
@@ -795,24 +795,24 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 OutputStream output = socket.getOutputStream();
 
                 readRequestHeaders(input);
-                String response1 = "" +
+                String response1 =
                     "HTTP/1.1 100 Continue\r\n" +
-                    "\r\n" +
-                    "HTTP/1.1 303 See Other\r\n" +
-                    "Location: /redirect\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "\r\n";
+                        "\r\n" +
+                        "HTTP/1.1 303 See Other\r\n" +
+                        "Location: /redirect\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
                 output.write(response1.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 readRequestHeaders(input);
-                String response2 = "" +
+                String response2 =
                     "HTTP/1.1 100 Continue\r\n" +
-                    "\r\n" +
-                    "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+                        "\r\n" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n";
                 output.write(response2.getBytes(StandardCharsets.UTF_8));
                 output.flush();
             }

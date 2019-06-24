@@ -121,11 +121,11 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request = "" +
+        String request =
             "GET /one?" + query1 + " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(response.startsWith("HTTP/1.1 200"), response);
@@ -171,11 +171,11 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request = "" +
+        String request =
             "GET /one?" + query1 + " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(response.startsWith("HTTP/1.1 200"), response);
@@ -220,11 +220,11 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request = "" +
+        String request =
             "GET /one?" + query1 + " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(response.startsWith("HTTP/1.1 200"), response);
@@ -273,14 +273,14 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request = "" +
+        String request =
             "POST /one?" + query1 + " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            form;
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: " + form.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -330,14 +330,14 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request = "" +
+        String request =
             "POST /one?" + query1 + " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            form;
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: " + form.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -386,14 +386,14 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request = "" +
+        String request =
             "POST /one?" + query1 + " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            form;
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: " + form.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -445,14 +445,14 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request = "" +
+        String request =
             "POST /one?" + query1 + " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            form;
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: " + form.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -494,14 +494,14 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request = "" +
+        String request =
             "POST /one?" + query1 + " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            form;
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: " + form.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -546,14 +546,14 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request = "" +
+        String request =
             "POST /one?" + query1 + " HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            form;
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: " + form.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));

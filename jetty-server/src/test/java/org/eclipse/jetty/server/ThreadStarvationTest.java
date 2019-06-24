@@ -175,12 +175,12 @@ public class ThreadStarvationTest
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
-            String request = "" +
+            String request =
                 "GET / HTTP/1.0\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Length: 10\r\n" +
-                "\r\n" +
-                "0123456789\r\n";
+                    "Host: localhost\r\n" +
+                    "Content-Length: 10\r\n" +
+                    "\r\n" +
+                    "0123456789\r\n";
             os.write(request.getBytes(StandardCharsets.UTF_8));
             os.flush();
 
@@ -212,12 +212,12 @@ public class ThreadStarvationTest
                 {
                     client.setSoTimeout(10000);
 
-                    String request = "" +
+                    String request =
                         "PUT / HTTP/1.0\r\n" +
-                        "host: localhost\r\n" +
-                        "content-length: 10\r\n" +
-                        "\r\n" +
-                        "1";
+                            "host: localhost\r\n" +
+                            "content-length: 10\r\n" +
+                            "\r\n" +
+                            "1";
 
                     // Write partial request
                     out.write(request.getBytes(StandardCharsets.UTF_8));
@@ -302,10 +302,10 @@ public class ThreadStarvationTest
                 {
                     client.setSoTimeout(30000);
 
-                    String request = "" +
+                    String request =
                         "GET / HTTP/1.0\r\n" +
-                        "host: localhost\r\n" +
-                        "\r\n";
+                            "host: localhost\r\n" +
+                            "\r\n";
 
                     // Write GET request
                     out.write(request.getBytes(StandardCharsets.UTF_8));

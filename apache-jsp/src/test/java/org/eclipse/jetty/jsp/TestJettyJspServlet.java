@@ -103,11 +103,11 @@ public class TestJettyJspServlet
     public void testWithJsp() throws Exception
     {
         //test that an ordinary jsp is served by jsp servlet
-        String request = "" +
+        String request =
             "GET /context/foo.jsp HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
 
         String rawResponse = _tester.getResponses(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -118,11 +118,11 @@ public class TestJettyJspServlet
     public void testWithDirectory() throws Exception
     {
         //test that a dir is served by the default servlet
-        String request = "" +
+        String request =
             "GET /context/dir HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         String rawResponse = _tester.getResponses(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getContent(), containsString("This.Is.The.Default."));

@@ -105,10 +105,10 @@ public class HttpReceiverOverHTTPTest
     public void test_Receive_NoResponseContent(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        endPoint.addInput("" +
+        endPoint.addInput(
             "HTTP/1.1 200 OK\r\n" +
-            "Content-length: 0\r\n" +
-            "\r\n");
+                "Content-length: 0\r\n" +
+                "\r\n");
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
@@ -130,11 +130,11 @@ public class HttpReceiverOverHTTPTest
     {
         init(compliance);
         String content = "0123456789ABCDEF";
-        endPoint.addInput("" +
+        endPoint.addInput(
             "HTTP/1.1 200 OK\r\n" +
-            "Content-length: " + content.length() + "\r\n" +
-            "\r\n" +
-            content);
+                "Content-length: " + content.length() + "\r\n" +
+                "\r\n" +
+                content);
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
@@ -159,11 +159,11 @@ public class HttpReceiverOverHTTPTest
         init(compliance);
         String content1 = "0123456789";
         String content2 = "ABCDEF";
-        endPoint.addInput("" +
+        endPoint.addInput(
             "HTTP/1.1 200 OK\r\n" +
-            "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
-            "\r\n" +
-            content1);
+                "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1);
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
@@ -179,10 +179,10 @@ public class HttpReceiverOverHTTPTest
     public void test_Receive_ResponseContent_IdleTimeout(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        endPoint.addInput("" +
+        endPoint.addInput(
             "HTTP/1.1 200 OK\r\n" +
-            "Content-length: 1\r\n" +
-            "\r\n");
+                "Content-length: 1\r\n" +
+                "\r\n");
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
@@ -200,10 +200,10 @@ public class HttpReceiverOverHTTPTest
     public void test_Receive_BadResponse(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        endPoint.addInput("" +
+        endPoint.addInput(
             "HTTP/1.1 200 OK\r\n" +
-            "Content-length: A\r\n" +
-            "\r\n");
+                "Content-length: A\r\n" +
+                "\r\n");
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
@@ -249,10 +249,10 @@ public class HttpReceiverOverHTTPTest
         endPoint.setConnection(connection);
 
         // Partial response to trigger the call to fillInterested().
-        endPoint.addInput("" +
+        endPoint.addInput(
             "HTTP/1.1 200 OK\r\n" +
-            "Content-Length: 1\r\n" +
-            "\r\n");
+                "Content-Length: 1\r\n" +
+                "\r\n");
 
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);

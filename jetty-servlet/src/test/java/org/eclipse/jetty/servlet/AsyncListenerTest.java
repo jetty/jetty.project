@@ -71,11 +71,11 @@ public class AsyncListenerTest
     public void test_StartAsync_Throw_OnError_Dispatch() throws Exception
     {
         test_StartAsync_Throw_OnError(event -> event.getAsyncContext().dispatch("/dispatch"));
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 200 "));
     }
 
@@ -93,11 +93,11 @@ public class AsyncListenerTest
             output.println("COMPLETE");
             event.getAsyncContext().complete();
         });
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
         assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
         assertThat(httpResponse, containsString("COMPLETE"));
@@ -110,11 +110,11 @@ public class AsyncListenerTest
         {
             throw new IOException();
         });
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
         assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
     }
@@ -123,12 +123,13 @@ public class AsyncListenerTest
     public void test_StartAsync_Throw_OnError_Nothing() throws Exception
     {
         test_StartAsync_Throw_OnError(event ->
-        {});
-        String httpResponse = connector.getResponse("" +
+        {
+        });
+        String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
         assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
     }
@@ -141,11 +142,11 @@ public class AsyncListenerTest
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502);
         });
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
         assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
     }
@@ -171,11 +172,11 @@ public class AsyncListenerTest
         };
         server.setErrorHandler(errorHandler);
 
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n", 10, TimeUnit.MINUTES);
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n", 10, TimeUnit.MINUTES);
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
         assertThat(httpResponse, containsString("CUSTOM"));
     }
@@ -226,11 +227,11 @@ public class AsyncListenerTest
     public void test_StartAsync_OnTimeout_Dispatch() throws Exception
     {
         test_StartAsync_OnTimeout(500, event -> event.getAsyncContext().dispatch("/dispatch"));
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 200 "));
     }
 
@@ -245,11 +246,11 @@ public class AsyncListenerTest
             output.println("COMPLETE");
             event.getAsyncContext().complete();
         });
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 200 "));
         assertThat(httpResponse, containsString("COMPLETE"));
     }
@@ -261,11 +262,11 @@ public class AsyncListenerTest
         {
             throw new TestRuntimeException();
         });
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
         assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
     }
@@ -276,11 +277,11 @@ public class AsyncListenerTest
         test_StartAsync_OnTimeout(500, event ->
         {
         });
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
     }
 
@@ -292,11 +293,11 @@ public class AsyncListenerTest
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502);
         });
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
     }
 
@@ -324,11 +325,11 @@ public class AsyncListenerTest
         errorHandler.setServer(server);
         server.setErrorHandler(errorHandler);
 
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
         assertThat(httpResponse, containsString("CUSTOM"));
     }
@@ -399,11 +400,11 @@ public class AsyncListenerTest
 
         startServer(context);
 
-        String httpResponse = connector.getResponse("" +
+        String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 200 "));
         assertThat(httpResponse, containsString("DATA"));
     }
@@ -438,10 +439,10 @@ public class AsyncListenerTest
         }), "/*");
         startServer(context);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("" +
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
             "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n"));
+                "Host: localhost\r\n" +
+                "\r\n"));
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
