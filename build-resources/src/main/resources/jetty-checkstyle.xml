@@ -20,12 +20,6 @@
     <property name="optional" value="true"/>
   </module>
 
-  <!-- reference to suppressions filter for maven plugins -->
-  <module name="SuppressionFilter">
-    <property name="file" value="/jetty-suppressions.xml"/>
-    <property name="optional" value="true"/>
-  </module>
-
   <!-- Excludes all 'module-info.java' files              -->
   <!-- See https://checkstyle.org/config_filefilters.html -->
   <module name="BeforeExecutionExclusionFileFilter">
