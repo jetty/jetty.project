@@ -81,10 +81,10 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
             }
             else
             {
-                springResource = new ByteArrayResource(("" +
-                                                            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                                                            "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
-                                                            config).getBytes(StandardCharsets.UTF_8));
+                springResource = new ByteArrayResource((
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                        "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
+                        config).getBytes(StandardCharsets.UTF_8));
             }
 
             _beanFactory = new DefaultListableBeanFactory()

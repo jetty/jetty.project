@@ -213,11 +213,11 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         Socket socket = sslContextFactory.getSslContext().getSocketFactory().createSocket("localhost", connector.getLocalPort());
         socket.setSoTimeout((int)connector.getIdleTimeout());
         OutputStream output = socket.getOutputStream();
-        output.write(("" +
-                          "GET / HTTP/1.1\r\n" +
-                          "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                          "Connection: close\r\n" +
-                          "\r\n").getBytes(StandardCharsets.UTF_8));
+        output.write((
+            "GET / HTTP/1.1\r\n" +
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         // Read to EOF

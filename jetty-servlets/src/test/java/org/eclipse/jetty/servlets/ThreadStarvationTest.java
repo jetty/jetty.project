@@ -135,10 +135,10 @@ public class ThreadStarvationTest
             Socket socket = new Socket("localhost", connector.getLocalPort());
             sockets.add(socket);
             OutputStream output = socket.getOutputStream();
-            String request = "" +
-                                 "GET /" + resourceName + " HTTP/1.1\r\n" +
-                                 "Host: localhost\r\n" +
-                                 "\r\n";
+            String request =
+                "GET /" + resourceName + " HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
             Thread.sleep(100);
@@ -308,11 +308,11 @@ public class ThreadStarvationTest
                 Socket socket = new Socket("localhost", connector.getLocalPort());
                 sockets.add(socket);
                 OutputStream output = socket.getOutputStream();
-                String request = "" +
-                                     "GET / HTTP/1.1\r\n" +
-                                     "Host: localhost\r\n" +
-                                     //                    "Connection: close\r\n" +
-                                     "\r\n";
+                String request =
+                    "GET / HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        //                    "Connection: close\r\n" +
+                        "\r\n";
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
             }

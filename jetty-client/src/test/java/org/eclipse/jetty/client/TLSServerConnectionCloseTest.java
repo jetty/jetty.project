@@ -115,23 +115,23 @@ public class TLSServerConnectionCloseTest
                 consumeRequest(input);
 
                 OutputStream output = sslSocket.getOutputStream();
-                String serverResponse = "" +
-                                            "HTTP/1.1 200 OK\r\n" +
-                                            "Connection: close\r\n";
+                String serverResponse =
+                    "HTTP/1.1 200 OK\r\n" +
+                        "Connection: close\r\n";
                 if (chunked)
                 {
-                    serverResponse += "" +
-                                          "Transfer-Encoding: chunked\r\n" +
-                                          "\r\n";
+                    serverResponse +=
+                        "Transfer-Encoding: chunked\r\n" +
+                            "\r\n";
                     for (int i = 0; i < 2; ++i)
                     {
                         serverResponse +=
                             Integer.toHexString(content.length()) + "\r\n" +
                                 content + "\r\n";
                     }
-                    serverResponse += "" +
-                                          "0\r\n" +
-                                          "\r\n";
+                    serverResponse +=
+                        "0\r\n" +
+                            "\r\n";
                 }
                 else
                 {

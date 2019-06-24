@@ -106,11 +106,11 @@ public class Socks4ProxyTest
             assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
 
             // Response
-            String response = "" +
-                                  "HTTP/1.1 200 OK\r\n" +
-                                  "Content-Length: 0\r\n" +
-                                  "Connection: close\r\n" +
-                                  "\r\n";
+            String response =
+                "HTTP/1.1 200 OK\r\n" +
+                    "Content-Length: 0\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
             channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -164,11 +164,11 @@ public class Socks4ProxyTest
             assertEquals(method, StandardCharsets.UTF_8.decode(buffer).toString());
 
             // Response
-            String response = "" +
-                                  "HTTP/1.1 200 OK\r\n" +
-                                  "Content-Length: 0\r\n" +
-                                  "Connection: close\r\n" +
-                                  "\r\n";
+            String response =
+                "HTTP/1.1 200 OK\r\n" +
+                    "Content-Length: 0\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
             channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));

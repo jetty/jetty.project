@@ -532,64 +532,64 @@ public class MultiPartParserTest
         };
 
         MultiPartParser parser = new MultiPartParser(handler, "---------------------------9051914041544843365972754266");
-        ByteBuffer data = BufferUtil.toBuffer("" +
-                                                  "POST / HTTP/1.1\n" +
-                                                  "Host: localhost:8000\n" +
-                                                  "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0\n" +
-                                                  "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\n" +
-                                                  "Accept-Language: en-US,en;q=0.5\n" +
-                                                  "Accept-Encoding: gzip, deflate\n" +
-                                                  "Cookie: __atuvc=34%7C7; permanent=0; _gitlab_session=226ad8a0be43681acf38c2fab9497240; __profilin=p%3Dt; request_method=GET\n" +
-                                                  "Connection: keep-alive\n" +
-                                                  "Content-Type: multipart/form-data; boundary=---------------------------9051914041544843365972754266\n" +
-                                                  "Content-Length: 554\n" +
-                                                  "\r\n" +
-                                                  "-----------------------------9051914041544843365972754266\n" +
-                                                  "Content-Disposition: form-data; name=\"text\"\n" +
-                                                  "\n" +
-                                                  "text default\r\n" +
-                                                  "-----------------------------9051914041544843365972754266\n" +
-                                                  "Content-Disposition: form-data; name=\"file1\"; filename=\"a.txt\"\n" +
-                                                  "Content-Type: text/plain\n" +
-                                                  "\n" +
-                                                  "Content of a.txt.\n" +
-                                                  "\r\n" +
-                                                  "-----------------------------9051914041544843365972754266\n" +
-                                                  "Content-Disposition: form-data; name=\"file2\"; filename=\"a.html\"\n" +
-                                                  "Content-Type: text/html\n" +
-                                                  "\n" +
-                                                  "<!DOCTYPE html><title>Content of a.html.</title>\n" +
-                                                  "\r\n" +
-                                                  "-----------------------------9051914041544843365972754266\n" +
-                                                  "Field1: value1\n" +
-                                                  "Field2: value2\n" +
-                                                  "Field3: value3\n" +
-                                                  "Field4: value4\n" +
-                                                  "Field5: value5\n" +
-                                                  "Field6: value6\n" +
-                                                  "Field7: value7\n" +
-                                                  "Field8: value8\n" +
-                                                  "Field9: value\n" +
-                                                  " 9\n" +
-                                                  "\r\n" +
-                                                  "-----------------------------9051914041544843365972754266\n" +
-                                                  "Field1: value1\n" +
-                                                  "\r\n" +
-                                                  "But the amount of denudation which the strata have\n" +
-                                                  "in many places suffered, independently of the rate\n" +
-                                                  "of accumulation of the degraded matter, probably\n" +
-                                                  "offers the best evidence of the lapse of time. I remember\n" +
-                                                  "having been much struck with the evidence of\n" +
-                                                  "denudation, when viewing volcanic islands, which\n" +
-                                                  "have been worn by the waves and pared all round\n" +
-                                                  "into perpendicular cliffs of one or two thousand feet\n" +
-                                                  "in height; for the gentle slope of the lava-streams,\n" +
-                                                  "due to their formerly liquid state, showed at a glance\n" +
-                                                  "how far the hard, rocky beds had once extended into\n" +
-                                                  "the open ocean.\n" +
-                                                  "\r\n" +
-                                                  "-----------------------------9051914041544843365972754266--" +
-                                                  "===== ajlkfja;lkdj;lakjd;lkjf ==== epilogue here  ==== kajflajdfl;kjafl;kjl;dkfja ====\n\r\n\r\r\r\n\n\n");
+        ByteBuffer data = BufferUtil.toBuffer(
+            "POST / HTTP/1.1\n" +
+                "Host: localhost:8000\n" +
+                "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0\n" +
+                "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\n" +
+                "Accept-Language: en-US,en;q=0.5\n" +
+                "Accept-Encoding: gzip, deflate\n" +
+                "Cookie: __atuvc=34%7C7; permanent=0; _gitlab_session=226ad8a0be43681acf38c2fab9497240; __profilin=p%3Dt; request_method=GET\n" +
+                "Connection: keep-alive\n" +
+                "Content-Type: multipart/form-data; boundary=---------------------------9051914041544843365972754266\n" +
+                "Content-Length: 554\n" +
+                "\r\n" +
+                "-----------------------------9051914041544843365972754266\n" +
+                "Content-Disposition: form-data; name=\"text\"\n" +
+                "\n" +
+                "text default\r\n" +
+                "-----------------------------9051914041544843365972754266\n" +
+                "Content-Disposition: form-data; name=\"file1\"; filename=\"a.txt\"\n" +
+                "Content-Type: text/plain\n" +
+                "\n" +
+                "Content of a.txt.\n" +
+                "\r\n" +
+                "-----------------------------9051914041544843365972754266\n" +
+                "Content-Disposition: form-data; name=\"file2\"; filename=\"a.html\"\n" +
+                "Content-Type: text/html\n" +
+                "\n" +
+                "<!DOCTYPE html><title>Content of a.html.</title>\n" +
+                "\r\n" +
+                "-----------------------------9051914041544843365972754266\n" +
+                "Field1: value1\n" +
+                "Field2: value2\n" +
+                "Field3: value3\n" +
+                "Field4: value4\n" +
+                "Field5: value5\n" +
+                "Field6: value6\n" +
+                "Field7: value7\n" +
+                "Field8: value8\n" +
+                "Field9: value\n" +
+                " 9\n" +
+                "\r\n" +
+                "-----------------------------9051914041544843365972754266\n" +
+                "Field1: value1\n" +
+                "\r\n" +
+                "But the amount of denudation which the strata have\n" +
+                "in many places suffered, independently of the rate\n" +
+                "of accumulation of the degraded matter, probably\n" +
+                "offers the best evidence of the lapse of time. I remember\n" +
+                "having been much struck with the evidence of\n" +
+                "denudation, when viewing volcanic islands, which\n" +
+                "have been worn by the waves and pared all round\n" +
+                "into perpendicular cliffs of one or two thousand feet\n" +
+                "in height; for the gentle slope of the lava-streams,\n" +
+                "due to their formerly liquid state, showed at a glance\n" +
+                "how far the hard, rocky beds had once extended into\n" +
+                "the open ocean.\n" +
+                "\r\n" +
+                "-----------------------------9051914041544843365972754266--" +
+                "===== ajlkfja;lkdj;lakjd;lkjf ==== epilogue here  ==== kajflajdfl;kjafl;kjl;dkfja ====\n\r\n\r\r\r\n\n\n");
 
         int length = data.remaining();
         for (int i = 0; i < length - 1; i++)

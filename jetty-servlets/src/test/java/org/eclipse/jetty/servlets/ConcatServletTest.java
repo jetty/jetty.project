@@ -90,11 +90,11 @@ public class ConcatServletTest
         String resource1 = "/resource/one.js";
         String resource2 = "/resource/two.js";
         String uri = contextPath + concatPath + "?" + resource1 + "&" + resource2;
-        String request = "" +
-                             "GET " + uri + " HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n";
+        String request =
+            "GET " + uri + " HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         String response = connector.getResponse(request);
         try (BufferedReader reader = new BufferedReader(new StringReader(response)))
         {
@@ -137,41 +137,41 @@ public class ConcatServletTest
         // Having a path segment and then ".." triggers a special case
         // that the ConcatServlet must detect and avoid.
         String uri = contextPath + concatPath + "?/trick/../WEB-INF/one.js";
-        String request = "" +
-                             "GET " + uri + " HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n";
+        String request =
+            "GET " + uri + " HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         String response = connector.getResponse(request);
         assertTrue(response.startsWith("HTTP/1.1 404 "));
 
         // Make sure ConcatServlet behaves well if it's case insensitive.
         uri = contextPath + concatPath + "?/trick/../web-inf/one.js";
-        request = "" +
-                      "GET " + uri + " HTTP/1.1\r\n" +
-                      "Host: localhost\r\n" +
-                      "Connection: close\r\n" +
-                      "\r\n";
+        request =
+            "GET " + uri + " HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         response = connector.getResponse(request);
         assertTrue(response.startsWith("HTTP/1.1 404 "));
 
         // Make sure ConcatServlet behaves well if encoded.
         uri = contextPath + concatPath + "?/trick/..%2FWEB-INF%2Fone.js";
-        request = "" +
-                      "GET " + uri + " HTTP/1.1\r\n" +
-                      "Host: localhost\r\n" +
-                      "Connection: close\r\n" +
-                      "\r\n";
+        request =
+            "GET " + uri + " HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         response = connector.getResponse(request);
         assertTrue(response.startsWith("HTTP/1.1 404 "));
 
         // Make sure ConcatServlet cannot see file system files.
         uri = contextPath + concatPath + "?/trick/../../" + directoryFile.getName();
-        request = "" +
-                      "GET " + uri + " HTTP/1.1\r\n" +
-                      "Host: localhost\r\n" +
-                      "Connection: close\r\n" +
-                      "\r\n";
+        request =
+            "GET " + uri + " HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         response = connector.getResponse(request);
         assertTrue(response.startsWith("HTTP/1.1 404 "));
     }

@@ -49,23 +49,23 @@ public class XmlAppendableTest
 
         out.closeTag();
 
-        String expected = "" +
-                              "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                              "<test>\n" +
-                              "  <tag/>\n" +
-                              "  <tag name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\"/>\n" +
-                              "  <tag name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\">content</tag>\n" +
-                              "  <level1>\n" +
-                              "    <tag>content</tag>\n" +
-                              "    <tag>content</tag>\n" +
-                              "  </level1>\n" +
-                              "  <level1 name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\">\n" +
-                              "    <level2>\n" +
-                              "      <tag>content</tag>\n" +
-                              "      <tag>content</tag>\n" +
-                              "    </level2>\n" +
-                              "  </level1>\n" +
-                              "</test>\n";
+        String expected =
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                "<test>\n" +
+                "  <tag/>\n" +
+                "  <tag name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\"/>\n" +
+                "  <tag name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\">content</tag>\n" +
+                "  <level1>\n" +
+                "    <tag>content</tag>\n" +
+                "    <tag>content</tag>\n" +
+                "  </level1>\n" +
+                "  <level1 name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\">\n" +
+                "    <level2>\n" +
+                "      <tag>content</tag>\n" +
+                "      <tag>content</tag>\n" +
+                "    </level2>\n" +
+                "  </level1>\n" +
+                "</test>\n";
         assertEquals(expected, b.toString());
     }
 }

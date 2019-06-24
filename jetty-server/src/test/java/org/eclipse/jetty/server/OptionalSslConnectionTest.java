@@ -90,10 +90,10 @@ public class OptionalSslConnectionTest
     {
         startServer(this::optionalSsl, new EmptyServerHandler());
 
-        String request = "" +
-                             "GET / HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "\r\n";
+        String request =
+            "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
         byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
 
         // Try first a plain text connection.
@@ -181,10 +181,10 @@ public class OptionalSslConnectionTest
     {
         startServer(this::optionalSslNoOtherProtocol, new EmptyServerHandler());
 
-        String request = "" +
-                             "GET / HTTP/1.1\r\n" +
-                             "Host: localhost\r\n" +
-                             "\r\n";
+        String request =
+            "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
         byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
 
         // Send a plain text HTTP request to SSL port,

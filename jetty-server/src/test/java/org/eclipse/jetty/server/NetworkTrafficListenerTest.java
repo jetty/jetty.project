@@ -140,15 +140,15 @@ public class NetworkTrafficListenerTest
         });
         int port = connector.getLocalPort();
 
-        String request = "" +
-                             "GET / HTTP/1.1\r\n" +
-                             "Host: localhost:" + port + "\r\n" +
-                             "Connection: close\r\n" +
-                             "\r\n";
-        String expectedResponse = "" +
-                                      "HTTP/1.1 200 OK\r\n" +
-                                      "Connection: close\r\n" +
-                                      "\r\n";
+        String request =
+            "GET / HTTP/1.1\r\n" +
+                "Host: localhost:" + port + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+        String expectedResponse =
+            "HTTP/1.1 200 OK\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
@@ -206,15 +206,15 @@ public class NetworkTrafficListenerTest
         });
         int port = connector.getLocalPort();
 
-        String request = "" +
-                             "GET / HTTP/1.1\r\n" +
-                             "Host: localhost:" + port + "\r\n" +
-                             "\r\n";
-        String expectedResponse = "" +
-                                      "HTTP/1.1 200 OK\r\n" +
-                                      "Content-Length: " + (responseContent.length() + 1) + "\r\n" +
-                                      "\r\n" +
-                                      "" + responseContent + (char)END_OF_CONTENT;
+        String request =
+            "GET / HTTP/1.1\r\n" +
+                "Host: localhost:" + port + "\r\n" +
+                "\r\n";
+        String expectedResponse =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: " + (responseContent.length() + 1) + "\r\n" +
+                "\r\n" +
+                "" + responseContent + (char)END_OF_CONTENT;
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
@@ -277,20 +277,20 @@ public class NetworkTrafficListenerTest
         });
         int port = connector.getLocalPort();
 
-        String request = "" +
-                             "GET / HTTP/1.1\r\n" +
-                             "Host: localhost:" + port + "\r\n" +
-                             "\r\n";
-        String expectedResponse = "" +
-                                      "HTTP/1.1 200 OK\r\n" +
-                                      "Transfer-Encoding: chunked\r\n" +
-                                      "\r\n" +
-                                      responseChunk1.length() + "\r\n" +
-                                      responseChunk1 + "\r\n" +
-                                      responseChunk2.length() + "\r\n" +
-                                      responseChunk2 + "\r\n" +
-                                      "0\r\n" +
-                                      "\r\n";
+        String request =
+            "GET / HTTP/1.1\r\n" +
+                "Host: localhost:" + port + "\r\n" +
+                "\r\n";
+        String expectedResponse =
+            "HTTP/1.1 200 OK\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                responseChunk1.length() + "\r\n" +
+                responseChunk1 + "\r\n" +
+                responseChunk2.length() + "\r\n" +
+                responseChunk2 + "\r\n" +
+                "0\r\n" +
+                "\r\n";
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
@@ -347,18 +347,18 @@ public class NetworkTrafficListenerTest
         int port = connector.getLocalPort();
 
         String requestContent = "a=1&b=2";
-        String request = "" +
-                             "POST / HTTP/1.1\r\n" +
-                             "Host: localhost:" + port + "\r\n" +
-                             "Content-Type: application/x-www-form-urlencoded\r\n" +
-                             "Content-Length: " + requestContent.length() + "\r\n" +
-                             "\r\n" +
-                             requestContent;
-        String expectedResponse = "" +
-                                      "HTTP/1.1 302 Found\r\n" +
-                                      "Location: http://localhost:" + port + location + "\r\n" +
-                                      "Content-Length: 0\r\n" +
-                                      "\r\n";
+        String request =
+            "POST / HTTP/1.1\r\n" +
+                "Host: localhost:" + port + "\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: " + requestContent.length() + "\r\n" +
+                "\r\n" +
+                requestContent;
+        String expectedResponse =
+            "HTTP/1.1 302 Found\r\n" +
+                "Location: http://localhost:" + port + location + "\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n";
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
@@ -427,17 +427,17 @@ public class NetworkTrafficListenerTest
         {
             requestContent += requestContent;
         }
-        String request = "" +
-                             "POST / HTTP/1.1\r\n" +
-                             "Host: localhost:" + port + "\r\n" +
-                             "Content-Type: text/plain\r\n" +
-                             "Content-Length: " + requestContent.length() + "\r\n" +
-                             "\r\n" +
-                             requestContent;
-        String expectedResponse = "" +
-                                      "HTTP/1.1 200 OK\r\n" +
-                                      "Content-Length: 0\r\n" +
-                                      "\r\n";
+        String request =
+            "POST / HTTP/1.1\r\n" +
+                "Host: localhost:" + port + "\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + requestContent.length() + "\r\n" +
+                "\r\n" +
+                requestContent;
+        String expectedResponse =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n";
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();

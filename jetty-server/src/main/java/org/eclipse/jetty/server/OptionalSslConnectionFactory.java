@@ -97,22 +97,22 @@ public class OptionalSslConnectionFactory extends AbstractConnectionFactory
         {
             // Plain text HTTP to a HTTPS port,
             // write a minimal response.
-            String body = "" +
-                              "<!DOCTYPE html>\r\n" +
-                              "<html>\r\n" +
-                              "<head><title>Bad Request</title></head>\r\n" +
-                              "<body>" +
-                              "<h1>Bad Request</h1>" +
-                              "<p>HTTP request to HTTPS port</p>" +
-                              "</body>\r\n" +
-                              "</html>";
-            String response = "" +
-                                  "HTTP/1.1 400 Bad Request\r\n" +
-                                  "Content-Type: text/html\r\n" +
-                                  "Content-Length: " + body.length() + "\r\n" +
-                                  "Connection: close\r\n" +
-                                  "\r\n" +
-                                  body;
+            String body =
+                "<!DOCTYPE html>\r\n" +
+                    "<html>\r\n" +
+                    "<head><title>Bad Request</title></head>\r\n" +
+                    "<body>" +
+                    "<h1>Bad Request</h1>" +
+                    "<p>HTTP request to HTTPS port</p>" +
+                    "</body>\r\n" +
+                    "</html>";
+            String response =
+                "HTTP/1.1 400 Bad Request\r\n" +
+                    "Content-Type: text/html\r\n" +
+                    "Content-Length: " + body.length() + "\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n" +
+                    body;
             Callback.Completable completable = new Callback.Completable();
             endPoint.write(completable, ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
             completable.whenComplete((r, x) -> endPoint.close());

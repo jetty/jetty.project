@@ -107,10 +107,10 @@ public class AsyncContextListenersTest
         {
             OutputStream output = socket.getOutputStream();
 
-            String request = "" +
-                                 "GET " + path + " HTTP/1.1\r\n" +
-                                 "Host: localhost\r\n" +
-                                 "\r\n";
+            String request =
+                "GET " + path + " HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -178,10 +178,10 @@ public class AsyncContextListenersTest
         {
             OutputStream output = socket.getOutputStream();
 
-            String request = "" +
-                                 "GET " + path + " HTTP/1.1\r\n" +
-                                 "Host: localhost\r\n" +
-                                 "\r\n";
+            String request =
+                "GET " + path + " HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -256,10 +256,10 @@ public class AsyncContextListenersTest
         {
             OutputStream output = socket.getOutputStream();
 
-            String request = "" +
-                                 "GET " + path + "/one HTTP/1.1\r\n" +
-                                 "Host: localhost\r\n" +
-                                 "\r\n";
+            String request =
+                "GET " + path + "/one HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
