@@ -82,7 +82,7 @@ public class TestFilter implements Filter
             return;
         }
 
-        Integer old_value = null;
+        Integer oldValue = null;
         ServletRequest r = request;
         while (r instanceof ServletRequestWrapper)
         {
@@ -91,9 +91,9 @@ public class TestFilter implements Filter
 
         try
         {
-            old_value = (Integer)request.getAttribute("testFilter");
+            oldValue = (Integer)request.getAttribute("testFilter");
 
-            Integer value = (old_value == null) ? 1 : old_value + 1;
+            Integer value = (oldValue == null) ? 1 : oldValue + 1;
 
             request.setAttribute("testFilter", value);
 
@@ -108,8 +108,8 @@ public class TestFilter implements Filter
         }
         finally
         {
-            request.setAttribute("testFilter", old_value);
-            _context.setAttribute("request" + r.hashCode(), old_value);
+            request.setAttribute("testFilter", oldValue);
+            _context.setAttribute("request" + r.hashCode(), oldValue);
         }
     }
 

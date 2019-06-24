@@ -117,9 +117,9 @@ public class Dump extends HttpServlet
             {
                 request.login("user", "password");
             }
-            catch (ServletException se)
+            catch (ServletException e)
             {
-                getServletContext().log(se.toString());
+                getServletContext().log(e.toString());
             }
         }
 
@@ -377,8 +377,8 @@ public class Dump extends HttpServlet
         {
             try
             {
-                String locale_name = info.substring(info.indexOf("Locale/") + 7);
-                Field f = java.util.Locale.class.getField(locale_name);
+                String localeName = info.substring(info.indexOf("Locale/") + 7);
+                Field f = java.util.Locale.class.getField(localeName);
                 response.setLocale((Locale)f.get(null));
             }
             catch (Exception e)
@@ -615,10 +615,10 @@ public class Dump extends HttpServlet
                 pout.write("<td>" + notag(cookie.getValue()) + "</td>");
             }
 
-            String content_type = request.getContentType();
-            if (content_type != null &&
-                !content_type.startsWith("application/x-www-form-urlencoded") &&
-                !content_type.startsWith("multipart/form-data"))
+            String contentType = request.getContentType();
+            if (contentType != null &&
+                !contentType.startsWith("application/x-www-form-urlencoded") &&
+                !contentType.startsWith("multipart/form-data"))
             {
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"left\" valign=\"top\" colspan=\"2\"><big><br/>Content:</big></th>");
