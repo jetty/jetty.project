@@ -167,9 +167,9 @@ public class ErrorHandler extends AbstractHandler
         {
             for (String mimeType : acceptable)
             {
-                generateAcceptableResponse(baseRequest, request, response, code, message, mimeType);
-                if (baseRequest.isHandled())
+                if (generateAcceptableResponse(baseRequest, request, response, code, message, mimeType)) {
                     break;
+                }
             }
         }
         baseRequest.setHandled(true);
@@ -234,9 +234,10 @@ public class ErrorHandler extends AbstractHandler
      * @param code the http error code
      * @param message the http error message
      * @param mimeType The mimetype to generate (may be *&#47;*or other wildcard)
+     * @return boolean is the acceptable response generated?
      * @throws IOException if a response cannot be generated
      */
-    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String mimeType)
+    protected boolean generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String mimeType)
         throws IOException
     {
         switch (mimeType)
@@ -251,6 +252,7 @@ public class ErrorHandler extends AbstractHandler
                 {
                     response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
                     handleErrorPage(request, writer, code, message);
+                    return true;
                 }
             }
         }
