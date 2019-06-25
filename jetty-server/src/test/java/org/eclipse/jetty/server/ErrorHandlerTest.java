@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,12 +28,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 public class ErrorHandlerTest
 {
@@ -56,7 +52,7 @@ public class ErrorHandlerTest
         server.addBean(new ErrorHandler()
         {
             @Override
-            protected void generateAcceptableResponse(
+            protected boolean generateAcceptableResponse(
                 Request baseRequest,
                 HttpServletRequest request,
                 HttpServletResponse response,
@@ -76,17 +72,17 @@ public class ErrorHandlerTest
                             .append("code: \"").append(Integer.toString(code)).append("\",")
                             .append("message: \"").append(message).append('"')
                             .append("}");
-                        break;
+                        return true;
                     }
                     case "text/plain":
                     {
                         baseRequest.setHandled(true);
                         response.setContentType("text/plain");
                         response.getOutputStream().print(response.getContentType());
-                        break;
+                        return true;
                     }
                     default:
-                        super.generateAcceptableResponse(baseRequest, request, response, code, message, mimeType);
+                        return super.generateAcceptableResponse(baseRequest, request, response, code, message, mimeType);
                 }
             }
         });
