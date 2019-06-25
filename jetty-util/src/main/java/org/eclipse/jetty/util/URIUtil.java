@@ -50,7 +50,8 @@ public class URIUtil
     public static final Charset __CHARSET = StandardCharsets.UTF_8;
 
     private URIUtil()
-    {}
+    {
+    }
 
     /**
      * Encode a URI path.
@@ -1033,9 +1034,8 @@ public class URIUtil
                 return true;
             }
             if (!(c >= 'a' && c <= 'z' ||
-                      c >= 'A' && c <= 'Z' ||
-                      (i > 0 && (c >= '0' && c <= '9' || c == '.' || c == '+' || c == '-'))
-            ))
+                c >= 'A' && c <= 'Z' ||
+                (i > 0 && (c >= '0' && c <= '9' || c == '.' || c == '+' || c == '-'))))
             {
                 break;
             }

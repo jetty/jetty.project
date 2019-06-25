@@ -191,6 +191,5 @@ public enum HttpHeader
     {
         return _string;
     }
-
 }
 

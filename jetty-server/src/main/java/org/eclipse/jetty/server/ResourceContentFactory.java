@@ -87,7 +87,7 @@ public class ResourceContentFactory implements ContentFactory
                 String compressedPathInContext = pathInContext + format._extension;
                 Resource compressedResource = _factory.getResource(compressedPathInContext);
                 if (compressedResource != null && compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
-                        compressedResource.length() < resource.length())
+                    compressedResource.length() < resource.length())
                     compressedContents.put(format,
                         new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
             }

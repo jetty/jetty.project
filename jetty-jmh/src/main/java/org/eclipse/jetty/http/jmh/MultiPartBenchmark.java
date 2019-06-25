@@ -194,8 +194,8 @@ public class MultiPartBenchmark
                         else
                             p.delete();
                     }
+                    break;
                 }
-                break;
 
                 case "UTIL":
                 {
@@ -211,8 +211,8 @@ public class MultiPartBenchmark
                         else
                             p.delete();
                     }
+                    break;
                 }
-                break;
 
                 default:
                     throw new IllegalStateException("Unknown parserType Parameter");
@@ -272,8 +272,8 @@ public class MultiPartBenchmark
                             else
                                 p.delete();
                         }
+                        break;
                     }
-                    break;
                     case "UTIL":
                     {
                         org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
@@ -286,8 +286,8 @@ public class MultiPartBenchmark
                             else
                                 p.delete();
                         }
+                        break;
                     }
-                    break;
                     default:
                         throw new IllegalStateException("Unknown parserType Parameter");
                 }

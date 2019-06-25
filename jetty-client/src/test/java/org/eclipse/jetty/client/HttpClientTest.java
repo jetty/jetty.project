@@ -429,7 +429,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 buffer.get(bytes);
                 assertEquals(bytes[0], progress.getAndIncrement());
             })
-            .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
+            .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{
+                2
+            }, new byte[]{3}, new byte[]{4}))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -1580,9 +1582,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 consume(input, false);
 
                 // HTTP/1.0 response, the client must not close the connection.
-                String httpResponse = "" +
+                String httpResponse =
                     "HTTP/1.0 200 OK\r\n" +
-                    "\r\n";
+                        "\r\n";
                 OutputStream output = socket.getOutputStream();
                 output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
                 output.flush();
@@ -1602,10 +1604,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 consume(input, false);
 
-                httpResponse = "" +
+                httpResponse =
                     "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "\r\n";
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
                 output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -1741,10 +1743,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 consume(input, false);
 
                 // Send a bad response.
-                String httpResponse = "" +
+                String httpResponse =
                     "HTTP/1.1 204 No Content\r\n" +
-                    "\r\n" +
-                    "No Content";
+                        "\r\n" +
+                        "No Content";
                 OutputStream output = socket.getOutputStream();
                 output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
                 output.flush();
@@ -1765,10 +1767,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 consume(input, false);
 
-                httpResponse = "" +
+                httpResponse =
                     "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "\r\n";
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
                 output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 

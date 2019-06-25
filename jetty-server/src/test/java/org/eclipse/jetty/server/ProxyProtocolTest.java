@@ -74,11 +74,11 @@ public class ProxyProtocolTest
 
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
-            String request1 = "" +
+            String request1 =
                 "PROXY TCP4 " + remoteAddr + " 127.0.0.0 " + remotePort + " 8080\r\n" +
-                "GET /1 HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+                    "GET /1 HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(request1.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -94,11 +94,11 @@ public class ProxyProtocolTest
             }
 
             // Send a second request to verify that the proxied IP is retained.
-            String request2 = "" +
+            String request2 =
                 "GET /2 HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+                    "Host: localhost\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
             output.write(request2.getBytes(StandardCharsets.UTF_8));
             output.flush();
 

@@ -42,7 +42,8 @@ public class ReservedThreadExecutorTest
     {
         @Override
         public void run()
-        {}
+        {
+        }
 
         @Override
         public String toString()

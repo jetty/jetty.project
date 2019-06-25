@@ -711,24 +711,24 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 readRequestHeaders(socket.getInputStream());
 
                 OutputStream output = socket.getOutputStream();
-                String responses = "" +
+                String responses =
                     "HTTP/1.1 100 Continue\r\n" +
-                    "\r\n" +
-                    "HTTP/1.1 200 OK\r\n" +
-                    "Transfer-Encoding: chunked\r\n" +
-                    "\r\n" +
-                    "10\r\n" +
-                    "0123456789ABCDEF\r\n";
+                        "\r\n" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Transfer-Encoding: chunked\r\n" +
+                        "\r\n" +
+                        "10\r\n" +
+                        "0123456789ABCDEF\r\n";
                 output.write(responses.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 Thread.sleep(1000);
 
-                String content = "" +
+                String content =
                     "10\r\n" +
-                    "0123456789ABCDEF\r\n" +
-                    "0\r\n" +
-                    "\r\n";
+                        "0123456789ABCDEF\r\n" +
+                        "0\r\n" +
+                        "\r\n";
                 output.write(content.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -795,24 +795,24 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 OutputStream output = socket.getOutputStream();
 
                 readRequestHeaders(input);
-                String response1 = "" +
+                String response1 =
                     "HTTP/1.1 100 Continue\r\n" +
-                    "\r\n" +
-                    "HTTP/1.1 303 See Other\r\n" +
-                    "Location: /redirect\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "\r\n";
+                        "\r\n" +
+                        "HTTP/1.1 303 See Other\r\n" +
+                        "Location: /redirect\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
                 output.write(response1.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 readRequestHeaders(input);
-                String response2 = "" +
+                String response2 =
                     "HTTP/1.1 100 Continue\r\n" +
-                    "\r\n" +
-                    "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+                        "\r\n" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n";
                 output.write(response2.getBytes(StandardCharsets.UTF_8));
                 output.flush();
             }

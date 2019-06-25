@@ -367,9 +367,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (connectorOnlyIndexes != null && hostMatch && !connectorHostMatch)
             {
                 LOG.warn("ContextHandler {} has a connector only entry e.g. \"@connector\" and one or more host only entries. \n" +
-                             "The host entries will be ignored to match legacy behavior.  " +
-                             "To clear this warning remove the host entries or update to use " +
-                             "at least one host@connector syntax entry that will match a host for an specific connector",
+                        "The host entries will be ignored to match legacy behavior.  " +
+                        "To clear this warning remove the host entries or update to use " +
+                        "at least one host@connector syntax entry that will match a host for an specific connector",
                     Arrays.asList(vhosts));
                 String[] filteredHosts = new String[connectorOnlyIndexes.size()];
                 for (int i = 0; i < connectorOnlyIndexes.size(); i++)
@@ -1126,7 +1126,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             // check the target.
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) ||
-                    DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
+                DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
             {
                 if (_compactPath)
                     target = URIUtil.compactPath(target);
@@ -2006,8 +2006,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 String contextPath = ch.getContextPath();
 
                 if (uripath.equals(contextPath) ||
-                        (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
-                        "/".equals(contextPath))
+                    (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
+                    "/".equals(contextPath))
                 {
                     // look first for vhost matching context only
                     if (getVirtualHosts() != null && getVirtualHosts().length > 0)
@@ -2060,8 +2060,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 String contextPath = ch.getContextPath();
 
                 if (uripath.equals(contextPath) ||
-                        (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
-                        "/".equals(contextPath))
+                    (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
+                    "/".equals(contextPath))
                 {
                     if (matchedPath == null || contextPath.length() > matchedPath.length())
                     {

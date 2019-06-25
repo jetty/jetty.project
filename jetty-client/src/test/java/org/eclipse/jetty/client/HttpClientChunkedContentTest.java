@@ -90,18 +90,18 @@ public class HttpClientChunkedContentTest
                 consumeRequestHeaders(socket);
 
                 OutputStream output = socket.getOutputStream();
-                String headers = "" +
+                String headers =
                     "HTTP/1.1 200 OK\r\n" +
-                    "Transfer-Encoding: chunked\r\n" +
-                    "\r\n";
+                        "Transfer-Encoding: chunked\r\n" +
+                        "\r\n";
                 output.write(headers.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 Thread.sleep(1000);
 
-                String terminal = "" +
+                String terminal =
                     "0\r\n" +
-                    "\r\n";
+                        "\r\n";
                 output.write(terminal.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -155,14 +155,14 @@ public class HttpClientChunkedContentTest
                 consumeRequestHeaders(socket);
 
                 OutputStream output = socket.getOutputStream();
-                String response = "" +
+                String response =
                     "HTTP/1.1 200 OK\r\n" +
-                    "Transfer-Encoding: chunked\r\n" +
-                    "\r\n" +
-                    "8\r\n" +
-                    "01234567\r\n" +
-                    "0\r\n" +
-                    "\r\n";
+                        "Transfer-Encoding: chunked\r\n" +
+                        "\r\n" +
+                        "8\r\n" +
+                        "01234567\r\n" +
+                        "0\r\n" +
+                        "\r\n";
                 output.write(response.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 

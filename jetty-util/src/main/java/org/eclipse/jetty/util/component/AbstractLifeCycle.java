@@ -252,19 +252,29 @@ public abstract class AbstractLifeCycle implements LifeCycle
     public abstract static class AbstractLifeCycleListener implements LifeCycle.Listener
     {
         @Override
-        public void lifeCycleFailure(LifeCycle event, Throwable cause) {}
+        public void lifeCycleFailure(LifeCycle event, Throwable cause)
+        {
+        }
 
         @Override
-        public void lifeCycleStarted(LifeCycle event) {}
+        public void lifeCycleStarted(LifeCycle event)
+        {
+        }
 
         @Override
-        public void lifeCycleStarting(LifeCycle event) {}
+        public void lifeCycleStarting(LifeCycle event)
+        {
+        }
 
         @Override
-        public void lifeCycleStopped(LifeCycle event) {}
+        public void lifeCycleStopped(LifeCycle event)
+        {
+        }
 
         @Override
-        public void lifeCycleStopping(LifeCycle event) {}
+        public void lifeCycleStopping(LifeCycle event)
+        {
+        }
     }
 
     @Override

@@ -211,7 +211,8 @@ public class ByteArrayISO8859Writer extends Writer
 
     @Override
     public void flush()
-    {}
+    {
+    }
 
     public void resetWriter()
     {
@@ -220,7 +221,8 @@ public class ByteArrayISO8859Writer extends Writer
 
     @Override
     public void close()
-    {}
+    {
+    }
 
     public void destroy()
     {

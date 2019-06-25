@@ -51,5 +51,4 @@ public enum HttpComplianceSection
     {
         return description;
     }
-
 }

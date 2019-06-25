@@ -581,10 +581,10 @@ public class SslBytesServerTest extends SslBytesTest
         threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -619,10 +619,10 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -712,10 +712,10 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -790,10 +790,10 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -861,10 +861,10 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -927,10 +927,10 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -982,10 +982,10 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -1039,12 +1039,12 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET /echo HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Length: " + content.length() + "\r\n" +
-                "\r\n" +
-                content).getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "Content-Length: " + content.length() + "\r\n" +
+                    "\r\n" +
+                    content).getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -1094,12 +1094,12 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET /echo_suppress_exception HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Length: " + content.length() + "\r\n" +
-                "\r\n" +
-                content).getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "Content-Length: " + content.length() + "\r\n" +
+                    "\r\n" +
+                    content).getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -1151,10 +1151,10 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -1223,13 +1223,13 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "POST / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + content.length() + "\r\n" +
-                "\r\n" +
-                content).getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "Content-Type: text/plain\r\n" +
+                    "Content-Length: " + content.length() + "\r\n" +
+                    "\r\n" +
+                    content).getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -1285,13 +1285,13 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
+            clientOutput.write((
                 "POST / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + content.length() + "\r\n" +
-                "\r\n" +
-                content).getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "Content-Type: text/plain\r\n" +
+                    "Content-Length: " + content.length() + "\r\n" +
+                    "\r\n" +
+                    content).getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
             return null;
         });
@@ -1364,13 +1364,13 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Write only part of the body
         automaticProxyFlow = proxy.startAutomaticFlow();
-        clientOutput.write(("" +
+        clientOutput.write((
             "POST / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
-            "\r\n" +
-            content1).getBytes(StandardCharsets.UTF_8));
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1).getBytes(StandardCharsets.UTF_8));
         clientOutput.flush();
         assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -1440,13 +1440,13 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Write only part of the body
         automaticProxyFlow = proxy.startAutomaticFlow();
-        clientOutput.write(("" +
+        clientOutput.write((
             "POST / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
-            "\r\n" +
-            content1).getBytes(StandardCharsets.UTF_8));
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1).getBytes(StandardCharsets.UTF_8));
         clientOutput.flush();
         assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -1559,13 +1559,13 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Write only part of the body
         automaticProxyFlow = proxy.startAutomaticFlow();
-        clientOutput.write(("" +
+        clientOutput.write((
             "POST / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
-            "\r\n" +
-            content1).getBytes(StandardCharsets.UTF_8));
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1).getBytes(StandardCharsets.UTF_8));
         clientOutput.flush();
         assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -1698,14 +1698,14 @@ public class SslBytesServerTest extends SslBytesTest
         Arrays.fill(data, (byte)'Y');
         String content = new String(data, StandardCharsets.UTF_8);
         automaticProxyFlow = proxy.startAutomaticFlow();
-        clientOutput.write(("" +
+        clientOutput.write((
             "POST / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Content-Length: " + content.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            content).getBytes(StandardCharsets.UTF_8));
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + content.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                content).getBytes(StandardCharsets.UTF_8));
         clientOutput.flush();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
@@ -1782,10 +1782,10 @@ public class SslBytesServerTest extends SslBytesTest
             try
             {
                 // Send request
-                clientOutput.write(("" +
+                clientOutput.write((
                     "GET / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n").getBytes(StandardCharsets.UTF_8));
+                        "Host: localhost\r\n" +
+                        "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 latch.countDown();
             }

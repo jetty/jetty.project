@@ -105,11 +105,11 @@ public class SSLReadEOFAfterResponseTest
                 client.setSoTimeout(5 * idleTimeout);
 
                 OutputStream output = client.getOutputStream();
-                String request = "" +
+                String request =
                     "POST / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Content-Length: " + content.length() + "\r\n" +
-                    "\r\n";
+                        "Host: localhost\r\n" +
+                        "Content-Length: " + content.length() + "\r\n" +
+                        "\r\n";
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.write(bytes);
                 output.flush();

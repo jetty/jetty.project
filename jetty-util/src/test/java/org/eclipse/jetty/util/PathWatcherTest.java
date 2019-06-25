@@ -362,7 +362,9 @@ public class PathWatcherTest
             expected.clear();
             long start = System.nanoTime();
             new Thread(() ->
-            {updateFileOverTime(dir.resolve("file1"), 2 * QUIET_TIME, TimeUnit.MILLISECONDS);}).start();
+            {
+                updateFileOverTime(dir.resolve("file1"), 2 * QUIET_TIME, TimeUnit.MILLISECONDS);
+            }).start();
             expected.put("file1", new PathWatchEventType[]{MODIFIED});
             capture.finishedLatch.await(LONG_TIME, TimeUnit.MILLISECONDS);
             long end = System.nanoTime();
@@ -376,7 +378,9 @@ public class PathWatcherTest
             expected.clear();
             start = System.nanoTime();
             new Thread(() ->
-            {updateFileOverTime(dir.resolve("file2"), 2 * QUIET_TIME, TimeUnit.MILLISECONDS);}).start();
+            {
+                updateFileOverTime(dir.resolve("file2"), 2 * QUIET_TIME, TimeUnit.MILLISECONDS);
+            }).start();
             expected.put("file2", new PathWatchEventType[]{ADDED});
             capture.finishedLatch.await(LONG_TIME, TimeUnit.MILLISECONDS);
             end = System.nanoTime();

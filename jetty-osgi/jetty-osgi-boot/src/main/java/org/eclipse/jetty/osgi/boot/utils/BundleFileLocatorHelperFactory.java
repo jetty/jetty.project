@@ -32,7 +32,9 @@ public class BundleFileLocatorHelperFactory
 
     private static BundleFileLocatorHelperFactory _instance = new BundleFileLocatorHelperFactory();
 
-    private BundleFileLocatorHelperFactory() {}
+    private BundleFileLocatorHelperFactory()
+    {
+    }
 
     public static BundleFileLocatorHelperFactory getFactory()
     {

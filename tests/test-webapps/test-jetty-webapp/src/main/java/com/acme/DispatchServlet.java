@@ -240,18 +240,13 @@ public class DispatchServlet extends HttpServlet
             sres.setContentType("text/html");
             PrintWriter pout = sres.getWriter();
             pout.write(
-                "<H1>Dispatch URL must be of the form: </H1>"
-                    + "<PRE>"
-                    + prefix
-                    + "/includeW/path\n"
-                    + prefix
-                    + "/includeS/path\n"
-                    + prefix
-                    + "/forward/path\n"
-                    + prefix
-                    + "/includeN/name\n"
-                    + prefix
-                    + "/forwardC/_context/path\n</PRE>");
+                "<H1>Dispatch URL must be of the form: </H1>" +
+                    "<PRE>" +
+                    prefix + "/includeW/path\n" +
+                    prefix + "/includeS/path\n" +
+                    prefix + "/forward/path\n" +
+                    prefix + "/includeN/name\n" +
+                    prefix + "/forwardC/_context/path\n</PRE>");
         }
     }
 

@@ -151,11 +151,11 @@ public class AsyncContextTest
     @Test
     public void testStartDispatchThrow() throws Exception
     {
-        String request = "" +
+        String request =
             "GET /ctx/startthrow?dispatch=true HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
 
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));

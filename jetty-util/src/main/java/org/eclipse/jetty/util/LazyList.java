@@ -66,7 +66,8 @@ public class LazyList
     private static final String[] __EMPTY_STRING_ARRAY = new String[0];
 
     private LazyList()
-    {}
+    {
+    }
 
     /**
      * Add an item to a LazyList

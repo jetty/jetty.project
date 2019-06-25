@@ -412,12 +412,12 @@ public class ServerProxyImpl implements ServerProxy
             server.setRequestLog(requestLog);
 
         contexts = server
-                       .getChildHandlerByClass(ContextHandlerCollection.class);
+            .getChildHandlerByClass(ContextHandlerCollection.class);
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
             HandlerCollection handlers = server
-                                             .getChildHandlerByClass(HandlerCollection.class);
+                .getChildHandlerByClass(HandlerCollection.class);
             if (handlers == null)
             {
                 handlers = new HandlerCollection();

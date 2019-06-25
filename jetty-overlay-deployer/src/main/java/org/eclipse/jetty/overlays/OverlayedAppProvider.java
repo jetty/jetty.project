@@ -618,7 +618,10 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             __log.debug("{}: libs={}", key, libs);
             libLoader = new URLClassLoader(libs.toArray(new URL[]{}), parent)
             {
-                public String toString() {return "libLoader@" + Long.toHexString(hashCode()) + "-lib-" + key;}
+                public String toString()
+                {
+                    return "libLoader@" + Long.toHexString(hashCode()) + "-lib-" + key;
+                }
             };
         }
         else

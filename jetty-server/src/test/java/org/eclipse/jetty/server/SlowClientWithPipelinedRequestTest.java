@@ -112,11 +112,11 @@ public class SlowClientWithPipelinedRequestTest
 
         Socket client = new Socket("localhost", connector.getLocalPort());
         OutputStream output = client.getOutputStream();
-        output.write(("" +
+        output.write((
             "GET /content HTTP/1.1\r\n" +
-            "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-            "\r\n" +
-            "").getBytes(StandardCharsets.UTF_8));
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "\r\n" +
+                "").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         InputStream input = client.getInputStream();
@@ -125,11 +125,11 @@ public class SlowClientWithPipelinedRequestTest
         assertTrue(read >= 0);
         // As soon as we can read the response, send a pipelined request
         // so it is a different read for the server and it will trigger NIO
-        output.write(("" +
+        output.write((
             "GET /pipelined HTTP/1.1\r\n" +
-            "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-            "\r\n" +
-            "").getBytes(StandardCharsets.UTF_8));
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "\r\n" +
+                "").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         // Simulate a slow reader

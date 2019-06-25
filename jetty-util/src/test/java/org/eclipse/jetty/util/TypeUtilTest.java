@@ -110,7 +110,10 @@ public class TypeUtilTest
         assertTrue(TypeUtil.isTrue(new Object()
         {
             @Override
-            public String toString() {return "true";}
+            public String toString()
+            {
+                return "true";
+            }
         }));
 
         assertFalse(TypeUtil.isTrue(Boolean.FALSE));
@@ -120,7 +123,10 @@ public class TypeUtilTest
         assertFalse(TypeUtil.isTrue(new Object()
         {
             @Override
-            public String toString() {return "false";}
+            public String toString()
+            {
+                return "false";
+            }
         }));
     }
 
@@ -133,7 +139,10 @@ public class TypeUtilTest
         assertTrue(TypeUtil.isFalse(new Object()
         {
             @Override
-            public String toString() {return "false";}
+            public String toString()
+            {
+                return "false";
+            }
         }));
 
         assertFalse(TypeUtil.isFalse(Boolean.TRUE));
@@ -143,7 +152,10 @@ public class TypeUtilTest
         assertFalse(TypeUtil.isFalse(new Object()
         {
             @Override
-            public String toString() {return "true";}
+            public String toString()
+            {
+                return "true";
+            }
         }));
     }
 

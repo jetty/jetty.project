@@ -97,11 +97,11 @@ public class BufferUtil
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
     static final byte[] DIGIT =
-    {
-        (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
-        (byte)'A', (byte)'B', (byte)'C', (byte)'D',
-        (byte)'E', (byte)'F'
-    };
+        {
+            (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
+            (byte)'A', (byte)'B', (byte)'C', (byte)'D',
+            (byte)'E', (byte)'F'
+        };
 
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
