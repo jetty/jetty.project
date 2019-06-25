@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -36,11 +32,14 @@ import org.eclipse.jetty.client.api.Request;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * ClusteredSessionMigrationTest
- * 
+ *
  * Test that a session that is active on node 1 can be loaded by node 2.
- * 
+ *
  * This test is applicable to any of the SessionDataStores that support
  * clustering, but does not test the actual SessionDataStore itself.
  * Rather, it tests all of the machinery above the SessionDataStore. Thus,
@@ -52,16 +51,14 @@ public class ClusteredSessionMigrationTest extends AbstractTestBase
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-       return JdbcTestHelper.newSessionDataStoreFactory();
+        return JdbcTestHelper.newSessionDataStoreFactory();
     }
-    
 
-    
     @AfterEach
-    public void tearDown() throws Exception 
+    public void tearDown() throws Exception
     {
         JdbcTestHelper.shutdown(null);
-    } 
+    }
 
     @Test
     public void testSessionMigration() throws Exception
@@ -74,24 +71,24 @@ public class ClusteredSessionMigrationTest extends AbstractTestBase
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE,  TestServer.DEFAULT_SCAVENGE_SEC,  
-                                            cacheFactory, storeFactory);
+        TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+            cacheFactory, storeFactory);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
         try
         {
             server1.start();
-            int port1=server1.getPort();
+            int port1 = server1.getPort();
 
-            TestServer server2 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE,  TestServer.DEFAULT_SCAVENGE_SEC,  
-                                                                cacheFactory, storeFactory);
+            TestServer server2 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+                cacheFactory, storeFactory);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
             try
             {
                 server2.start();
-                int port2=server2.getPort();
-                
+                int port2 = server2.getPort();
+
                 HttpClient client = new HttpClient();
                 client.start();
                 try
@@ -100,7 +97,7 @@ public class ClusteredSessionMigrationTest extends AbstractTestBase
                     int value = 1;
                     Request request1 = client.POST("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=set&value=" + value);
                     ContentResponse response1 = request1.send();
-                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
@@ -111,9 +108,10 @@ public class ClusteredSessionMigrationTest extends AbstractTestBase
                     Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1) + "?action=get");
                     request2.header("Cookie", sessionCookie);
                     ContentResponse response2 = request2.send();
-                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
                     String response = response2.getContentAsString();
-                    assertEquals(response.trim(),String.valueOf(value));               }
+                    assertEquals(response.trim(), String.valueOf(value));
+                }
                 finally
                 {
                     client.stop();
@@ -148,7 +146,8 @@ public class ClusteredSessionMigrationTest extends AbstractTestBase
             String action = request.getParameter("action");
             if ("set".equals(action))
             {
-                if (session == null) session = request.getSession(true);
+                if (session == null)
+                    session = request.getSession(true);
                 int value = Integer.parseInt(request.getParameter("value"));
                 session.setAttribute("value", value);
                 PrintWriter writer = response.getWriter();

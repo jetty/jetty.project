@@ -50,13 +50,14 @@ public class WarURLConnection extends URLConnection
     /**
      * Use PipedOuputStream and PipedInputStream to do the transformation without making
      * a new temporary file ust to replace the manifest.
+     *
      * @param newmanifest The new manifest
      * @param rawIn The file input stream or equivalent. not the jar input stream.
-     * @throws IOException if an I/O error occurs.
      * @return InputStream of the replaced manifest file
+     * @throws IOException if an I/O error occurs.
      */
     public static InputStream substitueManifest(final Manifest newmanifest,
-            final InputStream rawIn) throws IOException
+                                                final InputStream rawIn) throws IOException
     {
         final PipedOutputStream pOut = new PipedOutputStream();
         PipedInputStream pIn = new PipedInputStream(pOut);
@@ -81,18 +82,21 @@ public class WarURLConnection extends URLConnection
                         dest.putNextEntry(next);
                         if (next.getSize() > 0)
                         {
-                            IO.copy(jin,dest,next.getSize());
+                            IO.copy(jin, dest, next.getSize());
                         }
                         next = jin.getNextJarEntry();
                     }
                 }
-                catch (IOException ioe) {
+                catch (IOException ioe)
+                {
                     ioe.printStackTrace();
                 }
                 finally
                 {
-                    if (dest != null) IO.close(dest);
-                    if (jin != null) IO.close(jin);
+                    if (dest != null)
+                        IO.close(dest);
+                    if (jin != null)
+                        IO.close(jin);
                     IO.close(pOut);
                 }
             }
@@ -101,10 +105,10 @@ public class WarURLConnection extends URLConnection
         th.start();
         return pIn;
     }
-    
+
     private Manifest _mf;
     private URLConnection _conn;
-    
+
     /**
      * @param url The file url (for example)
      * @param mf The manifest to use as a replacement to the jar file inside
@@ -118,12 +122,12 @@ public class WarURLConnection extends URLConnection
         _conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
         _mf = mf;
     }
+
     @Override
     public void connect() throws IOException
     {
         _conn.connect();
     }
-    
 
     @Override
     public InputStream getInputStream() throws IOException
@@ -134,7 +138,7 @@ public class WarURLConnection extends URLConnection
     @Override
     public void addRequestProperty(String key, String value)
     {
-        _conn.addRequestProperty(key,value);
+        _conn.addRequestProperty(key, value);
     }
 
     @Override
@@ -228,15 +232,15 @@ public class WarURLConnection extends URLConnection
     }
 
     @Override
-    public long getHeaderFieldDate(String name, long Default)
+    public long getHeaderFieldDate(String name, long defaultVal)
     {
-        return _conn.getHeaderFieldDate(name,Default);
+        return _conn.getHeaderFieldDate(name, defaultVal);
     }
 
     @Override
-    public int getHeaderFieldInt(String name, int Default)
+    public int getHeaderFieldInt(String name, int defaultVal)
     {
-        return _conn.getHeaderFieldInt(name,Default);
+        return _conn.getHeaderFieldInt(name, defaultVal);
     }
 
     @Override
@@ -350,7 +354,7 @@ public class WarURLConnection extends URLConnection
     @Override
     public void setRequestProperty(String key, String value)
     {
-        _conn.setRequestProperty(key,value);
+        _conn.setRequestProperty(key, value);
     }
 
     @Override
@@ -358,7 +362,4 @@ public class WarURLConnection extends URLConnection
     {
         _conn.setUseCaches(usecaches);
     }
-
-    
-
 }

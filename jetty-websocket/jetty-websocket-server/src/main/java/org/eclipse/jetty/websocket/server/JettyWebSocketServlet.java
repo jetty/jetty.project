@@ -38,7 +38,7 @@ public abstract class JettyWebSocketServlet extends WebSocketServlet
     {
         JettyServerFrameHandlerFactory frameHandlerFactory = JettyServerFrameHandlerFactory.getFactory(getServletContext());
 
-        if (frameHandlerFactory==null)
+        if (frameHandlerFactory == null)
             throw new IllegalStateException("JettyServerFrameHandlerFactory not found");
 
         return frameHandlerFactory;

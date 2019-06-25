@@ -61,7 +61,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         super();
         this.provider = provider;
         String upgradeRequest = UpgradeUtils.generateUpgradeRequest(requestPath, headers);
-        LOG.debug("Request: {}", upgradeRequest);
+        logger.debug("Request: {}", upgradeRequest);
         ByteBuffer upgradeRequestBytes = BufferUtil.toBuffer(upgradeRequest.toString(), StandardCharsets.UTF_8);
         this.endPoint = this.provider.newLocalConnection();
         this.upgradeResponse = performUpgrade(endPoint, upgradeRequestBytes);
@@ -278,7 +278,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         ByteBuffer response = endPoint.waitForResponse(false, 1, TimeUnit.SECONDS);
         HttpTester.Response parsedResponse = HttpTester.parseResponse(response);
 
-        LOG.debug("Response: {}", parsedResponse);
+        logger.debug("Response: {}", parsedResponse);
 
         assertThat("Is Switching Protocols", parsedResponse.getStatus(), is(101));
         assertThat("Is Connection Upgrade", parsedResponse.get(HttpHeader.SEC_WEBSOCKET_ACCEPT.asString()), notNullValue());

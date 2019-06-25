@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
+import java.io.ByteArrayOutputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -25,15 +31,9 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
 
-import java.io.ByteArrayOutputStream;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
-    private static final byte EMPTY_BUFFER[] = new byte[0];
+    private static final byte[] EMPTY_BUFFER = new byte[0];
     private static final int BUFFER_SIZE = 65535;
     private ByteArrayOutputStream out;
     private int size;
@@ -78,7 +78,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 if (out != null)
                 {
-                    byte buf[] = out.toByteArray();
+                    byte[] buf = out.toByteArray();
                     methodHandle.invoke(buf);
                 }
                 else

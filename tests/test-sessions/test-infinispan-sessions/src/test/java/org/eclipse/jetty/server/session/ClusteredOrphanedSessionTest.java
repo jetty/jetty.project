@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
@@ -25,29 +24,25 @@ import org.junit.jupiter.api.BeforeAll;
 
 /**
  * ClusteredOrphanedSessionTest
- *
- *
  */
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
     public static InfinispanTestSupport __testSupport;
-    
-    
+
     @BeforeAll
-    public static void setup () throws Exception
+    public static void setup() throws Exception
     {
         __testSupport = new InfinispanTestSupport();
         __testSupport.setup();
     }
-    
+
     @AfterAll
-    public static void teardown () throws Exception
+    public static void teardown() throws Exception
     {
         __testSupport.teardown();
     }
-    
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
@@ -57,7 +52,4 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
         factory.setCache(__testSupport.getCache());
         return factory;
     }
-  
- 
-
 }

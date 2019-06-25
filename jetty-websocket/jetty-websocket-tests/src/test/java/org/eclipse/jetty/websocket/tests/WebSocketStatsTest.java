@@ -58,7 +58,7 @@ public class WebSocketStatsTest
         public void configure(JettyWebSocketServletFactory factory)
         {
             factory.setAutoFragment(false);
-            factory.addMapping("/",(req, resp)->new EchoSocket());
+            factory.addMapping("/", (req, resp) -> new EchoSocket());
         }
     }
 
@@ -114,17 +114,16 @@ public class WebSocketStatsTest
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator generator = new Generator(bufferPool);
-        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength()+10, true);
+        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength() + 10, true);
         int pos = BufferUtil.flipToFill(buffer);
         generator.generateWholeFrame(frame, buffer);
         return buffer.position() - pos;
     }
 
-
     @Test
     public void echoStatsTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/testPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/testPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
 
@@ -161,8 +160,8 @@ public class WebSocketStatsTest
         final long closeFrameSize = getFrameByteSize(closeFrame);
         final int maskSize = 4; // We use 4 byte mask for client frames in WSConnection
 
-        final long expectedSent = upgradeSentBytes + numMessages*textFrameSize + closeFrameSize;
-        final long expectedReceived = upgradeReceivedBytes + numMessages*(textFrameSize+maskSize) + closeFrameSize+maskSize;
+        final long expectedSent = upgradeSentBytes + numMessages * textFrameSize + closeFrameSize;
+        final long expectedReceived = upgradeReceivedBytes + numMessages * (textFrameSize + maskSize) + closeFrameSize + maskSize;
 
         assertThat(statistics.getSentBytes(), is(expectedSent));
         assertThat(statistics.getReceivedBytes(), is(expectedReceived));

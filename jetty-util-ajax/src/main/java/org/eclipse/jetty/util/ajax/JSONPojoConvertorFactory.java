@@ -31,51 +31,49 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
 
     public JSONPojoConvertorFactory(JSON json)
     {
-        if (json==null)
+        if (json == null)
         {
             throw new IllegalArgumentException();
         }
-        _json=json;
-        _fromJson=true;
+        _json = json;
+        _fromJson = true;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param json The JSON instance to use
      * @param fromJSON If true, the class name of the objects is included
      * in the generated JSON and is used to instantiate the object when
      * JSON is parsed (otherwise a Map is used).
      */
-    public JSONPojoConvertorFactory(JSON json,boolean fromJSON)
+    public JSONPojoConvertorFactory(JSON json, boolean fromJSON)
     {
-        if (json==null)
+        if (json == null)
         {
             throw new IllegalArgumentException();
         }
-        _json=json;
-        _fromJson=fromJSON;
+        _json = json;
+        _fromJson = fromJSON;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public void toJSON(Object obj, Output out)
     {
-        String clsName=obj.getClass().getName();
-        Convertor convertor=_json.getConvertorFor(clsName);
-        if (convertor==null)
+        String clsName = obj.getClass().getName();
+        Convertor convertor = _json.getConvertorFor(clsName);
+        if (convertor == null)
         {
             try
             {
-                Class cls=Loader.loadClass(clsName);
-                convertor=new JSONPojoConvertor(cls,_fromJson);
+                Class cls = Loader.loadClass(clsName);
+                convertor = new JSONPojoConvertor(cls, _fromJson);
                 _json.addConvertorFor(clsName, convertor);
-             }
+            }
             catch (ClassNotFoundException e)
             {
                 JSON.LOG.warn(e);
             }
         }
-        if (convertor!=null)
+        if (convertor != null)
         {
             convertor.toJSON(obj, out);
         }
@@ -84,17 +82,17 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
     @Override
     public Object fromJSON(Map object)
     {
-        Map map=object;
-        String clsName=(String)map.get("class");
-        if (clsName!=null)
+        Map map = object;
+        String clsName = (String)map.get("class");
+        if (clsName != null)
         {
-            Convertor convertor=_json.getConvertorFor(clsName);
-            if (convertor==null)
+            Convertor convertor = _json.getConvertorFor(clsName);
+            if (convertor == null)
             {
                 try
                 {
-                    Class cls=Loader.loadClass(clsName);
-                    convertor=new JSONPojoConvertor(cls,_fromJson);
+                    Class cls = Loader.loadClass(clsName);
+                    convertor = new JSONPojoConvertor(cls, _fromJson);
                     _json.addConvertorFor(clsName, convertor);
                 }
                 catch (ClassNotFoundException e)
@@ -102,7 +100,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
                     JSON.LOG.warn(e);
                 }
             }
-            if (convertor!=null)
+            if (convertor != null)
             {
                 return convertor.fromJSON(object);
             }

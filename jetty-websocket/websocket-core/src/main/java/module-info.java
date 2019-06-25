@@ -45,10 +45,10 @@ module org.eclipse.jetty.websocket.core
     uses Extension;
 
     provides Extension with
-            DeflateFrameExtension,
-            FragmentExtension,
-            IdentityExtension,
-            PerMessageDeflateExtension,
-            ValidationExtension,
-            XWebkitDeflateFrameExtension;
+        DeflateFrameExtension,
+        FragmentExtension,
+        IdentityExtension,
+        PerMessageDeflateExtension,
+        ValidationExtension,
+        XWebkitDeflateFrameExtension;
 }

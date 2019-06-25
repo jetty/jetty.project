@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.util.Callback;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.util.Callback;
 
 public class CapturedHexPayloads implements OutgoingFrames
 {

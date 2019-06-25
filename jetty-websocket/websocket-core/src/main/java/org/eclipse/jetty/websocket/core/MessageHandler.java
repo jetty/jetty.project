@@ -288,7 +288,7 @@ public class MessageHandler implements FrameHandler
     /**
      * Method called when a complete text message is received.
      *
-     * @param message the received text payload
+     * @param message  the received text payload
      * @param callback The callback to signal completion of handling.
      */
     protected void onText(String message, Callback callback)
@@ -299,7 +299,7 @@ public class MessageHandler implements FrameHandler
     /**
      * Method called when a complete binary message is received.
      *
-     * @param message The binary payload
+     * @param message  The binary payload
      * @param callback The callback to signal completion of handling.
      */
     protected void onBinary(ByteBuffer message, Callback callback)
@@ -354,8 +354,8 @@ public class MessageHandler implements FrameHandler
 
                 String part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
-                    i == 1?OpCode.TEXT:OpCode.CONTINUATION,
-                    i == parts.length, part), this, batch);
+                        i == 1 ? OpCode.TEXT : OpCode.CONTINUATION,
+                        i == parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }
         }.iterate();
@@ -406,8 +406,8 @@ public class MessageHandler implements FrameHandler
 
                 ByteBuffer part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
-                    i == 1?OpCode.BINARY:OpCode.CONTINUATION,
-                    i == parts.length, part), this, batch);
+                        i == 1 ? OpCode.BINARY : OpCode.CONTINUATION,
+                        i == parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }
         }.iterate();

@@ -90,7 +90,7 @@ public class JarVersion
 
     private static String getMavenVersion(JarFile jar) throws IOException
     {
-        JarEntry pomProp = findEntry(jar,"META-INF/maven/.*/pom\\.properties$");
+        JarEntry pomProp = findEntry(jar, "META-INF/maven/.*/pom\\.properties$");
         if (pomProp == null)
         {
             return null;
@@ -148,7 +148,7 @@ public class JarVersion
             String version = null;
 
             Manifest manifest = jar.getManifest();
-            
+
             if (manifest == null)
             {
                 return "(none specified)";

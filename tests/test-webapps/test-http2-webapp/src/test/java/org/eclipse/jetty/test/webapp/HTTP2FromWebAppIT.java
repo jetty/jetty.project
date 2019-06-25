@@ -80,10 +80,10 @@ public class HTTP2FromWebAppIT
             try
             {
                 ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                        .scheme(HttpScheme.HTTPS.asString())
-                        .path(contextPath + "/h1")
-                        .timeout(5, TimeUnit.SECONDS)
-                        .send();
+                    .scheme(HttpScheme.HTTPS.asString())
+                    .path(contextPath + "/h1")
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
 
                 assertEquals("ok", response.getContentAsString());
             }

@@ -41,5 +41,4 @@ public class Managed
     {
         return "bad";
     }
-
 }

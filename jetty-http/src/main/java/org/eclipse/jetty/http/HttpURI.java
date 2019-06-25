@@ -29,9 +29,8 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
-
-/* ------------------------------------------------------------ */
-/** Http URI.
+/**
+ * Http URI.
  * Parse a HTTP URI from a string or byte array.  Given a URI
  * <code>http://user@host:port/path/info;param?query#fragment</code>
  * this class will split it into the following undecoded optional elements:<ul>
@@ -44,25 +43,29 @@ import org.eclipse.jetty.util.UrlEncoded;
  * <li>{@link #getQuery()} - query</li>
  * <li>{@link #getFragment()} - fragment</li>
  * </ul>
- * 
+ *
  * <p>Any parameters will be returned from {@link #getPath()}, but are excluded from the
- * return value of {@link #getDecodedPath()}.   If there are multiple parameters, the 
+ * return value of {@link #getDecodedPath()}.   If there are multiple parameters, the
  * {@link #getParam()} method returns only the last one.
  */
 public class HttpURI
 {
-    private enum State {
-    START,
-    HOST_OR_PATH,
-    SCHEME_OR_PATH,
-    HOST,
-    IPV6,
-    PORT,
-    PATH,
-    PARAM,
-    QUERY,
-    FRAGMENT,
-    ASTERISK};
+    private enum State
+    {
+        START,
+        HOST_OR_PATH,
+        SCHEME_OR_PATH,
+        HOST,
+        IPV6,
+        PORT,
+        PATH,
+        PARAM,
+        QUERY,
+        FRAGMENT,
+        ASTERISK
+    }
+
+    ;
 
     private String _scheme;
     private String _user;
@@ -72,14 +75,14 @@ public class HttpURI
     private String _param;
     private String _query;
     private String _fragment;
-    
+
     String _uri;
     String _decodedPath;
 
-    /* ------------------------------------------------------------ */
     /**
      * Construct a normalized URI.
      * Port is not set if it is the default port.
+     *
      * @param scheme the URI scheme
      * @param host the URI hose
      * @param port the URI port
@@ -91,19 +94,17 @@ public class HttpURI
      */
     public static HttpURI createHttpURI(String scheme, String host, int port, String path, String param, String query, String fragment)
     {
-        if (port==80 && HttpScheme.HTTP.is(scheme))
-            port=0;
-        if (port==443 && HttpScheme.HTTPS.is(scheme))
-            port=0;
-        return new HttpURI(scheme,host,port,path,param,query,fragment);
+        if (port == 80 && HttpScheme.HTTP.is(scheme))
+            port = 0;
+        if (port == 443 && HttpScheme.HTTPS.is(scheme))
+            port = 0;
+        return new HttpURI(scheme, host, port, path, param, query, fragment);
     }
-    
-    /* ------------------------------------------------------------ */
+
     public HttpURI()
     {
     }
 
-    /* ------------------------------------------------------------ */
     public HttpURI(String scheme, String host, int port, String path, String param, String query, String fragment)
     {
         _scheme = scheme;
@@ -115,33 +116,30 @@ public class HttpURI
         _fragment = fragment;
     }
 
-    /* ------------------------------------------------------------ */
     public HttpURI(HttpURI uri)
     {
-        this(uri._scheme,uri._host,uri._port,uri._path,uri._param,uri._query,uri._fragment);
-        _uri=uri._uri;
-    }
-    
-    /* ------------------------------------------------------------ */
-    public HttpURI(String uri)
-    {
-        _port=-1;
-        parse(State.START,uri);
+        this(uri._scheme, uri._host, uri._port, uri._path, uri._param, uri._query, uri._fragment);
+        _uri = uri._uri;
     }
 
-    /* ------------------------------------------------------------ */
+    public HttpURI(String uri)
+    {
+        _port = -1;
+        parse(State.START, uri);
+    }
+
     public HttpURI(URI uri)
     {
-        _uri=null;
-        
-        _scheme=uri.getScheme();
-        _host=uri.getHost();
-        if (_host==null && uri.getRawSchemeSpecificPart().startsWith("//"))
-            _host="";
-        _port=uri.getPort();
+        _uri = null;
+
+        _scheme = uri.getScheme();
+        _host = uri.getHost();
+        if (_host == null && uri.getRawSchemeSpecificPart().startsWith("//"))
+            _host = "";
+        _port = uri.getPort();
         _user = uri.getUserInfo();
-        _path=uri.getRawPath();
-        
+        _path = uri.getRawPath();
+
         _decodedPath = uri.getPath();
         if (_decodedPath != null)
         {
@@ -149,114 +147,109 @@ public class HttpURI
             if (p >= 0)
                 _param = _decodedPath.substring(p + 1);
         }
-        _query=uri.getRawQuery();
-        _fragment=uri.getFragment();
-        
-        _decodedPath=null;
+        _query = uri.getRawQuery();
+        _fragment = uri.getFragment();
+
+        _decodedPath = null;
     }
 
-    /* ------------------------------------------------------------ */
     public HttpURI(String scheme, String host, int port, String pathQuery)
     {
-        _uri=null;
-        
-        _scheme=scheme;
-        _host=host;
-        _port=port;
+        _uri = null;
 
-        parse(State.PATH,pathQuery);
-        
+        _scheme = scheme;
+        _host = host;
+        _port = port;
+
+        parse(State.PATH, pathQuery);
     }
 
-    /* ------------------------------------------------------------ */
     public void parse(String uri)
     {
         clear();
-        _uri=uri;
-        parse(State.START,uri);
+        _uri = uri;
+        parse(State.START, uri);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Parse according to https://tools.ietf.org/html/rfc7230#section-5.3
+     *
      * @param method the request method
      * @param uri the request uri
      */
-    public void parseRequestTarget(String method,String uri)
+    public void parseRequestTarget(String method, String uri)
     {
         clear();
-        _uri=uri;
+        _uri = uri;
 
         if (HttpMethod.CONNECT.is(method))
-            _path=uri;
+            _path = uri;
         else
-            parse(uri.startsWith("/")?State.PATH:State.START,uri);
+            parse(uri.startsWith("/") ? State.PATH : State.START, uri);
     }
 
-    /* ------------------------------------------------------------ */
     public void parse(String uri, int offset, int length)
     {
         clear();
-        int end=offset+length;
-        _uri=uri.substring(offset,end);
-        parse(State.START,uri);
+        int end = offset + length;
+        _uri = uri.substring(offset, end);
+        parse(State.START, uri);
     }
 
-    /* ------------------------------------------------------------ */
     private void parse(State state, final String uri)
     {
-        boolean encoded=false;
-        int end=uri.length();
-        int mark=0;
-        int path_mark=0;
-        char last='/';
-        for (int i=0; i<end; i++)
+        boolean encoded = false;
+        int end = uri.length();
+        int mark = 0;
+        int pathMark = 0;
+        char last = '/';
+        for (int i = 0; i < end; i++)
         {
-            char c=uri.charAt(i);
+            char c = uri.charAt(i);
 
             switch (state)
             {
                 case START:
                 {
-                    switch(c)
+                    switch (c)
                     {
                         case '/':
                             mark = i;
                             state = State.HOST_OR_PATH;
                             break;
                         case ';':
-                            mark=i+1;
-                            state=State.PARAM;
+                            mark = i + 1;
+                            state = State.PARAM;
                             break;
                         case '?':
                             // assume empty path (if seen at start)
                             _path = "";
-                            mark=i+1;
-                            state=State.QUERY;
+                            mark = i + 1;
+                            state = State.QUERY;
                             break;
                         case '#':
-                            mark=i+1;
-                            state=State.FRAGMENT;
+                            mark = i + 1;
+                            state = State.FRAGMENT;
                             break;
                         case '*':
-                            _path="*";
-                            state=State.ASTERISK;
+                            _path = "*";
+                            state = State.ASTERISK;
                             break;
 
                         case '.':
-                            path_mark=i;
-                            state=State.PATH;
-                            encoded=true;
+                            pathMark = i;
+                            state = State.PATH;
+                            encoded = true;
                             break;
 
                         default:
-                            mark=i;
-                            if (_scheme==null)
-                                state=State.SCHEME_OR_PATH;
+                            mark = i;
+                            if (_scheme == null)
+                                state = State.SCHEME_OR_PATH;
                             else
                             {
-                                path_mark=i;
-                                state=State.PATH;
+                                pathMark = i;
+                                state = State.PATH;
                             }
                             break;
                     }
@@ -270,75 +263,75 @@ public class HttpURI
                     {
                         case ':':
                             // must have been a scheme
-                            _scheme=uri.substring(mark,i);
+                            _scheme = uri.substring(mark, i);
                             // Start again with scheme set
-                            state=State.START;
+                            state = State.START;
                             break;
 
                         case '/':
                             // must have been in a path and still are
-                            state=State.PATH;
+                            state = State.PATH;
                             break;
 
                         case ';':
                             // must have been in a path 
-                            mark=i+1;
-                            state=State.PARAM;
+                            mark = i + 1;
+                            state = State.PARAM;
                             break;
 
                         case '?':
                             // must have been in a path 
-                            _path=uri.substring(mark,i);
-                            mark=i+1;
-                            state=State.QUERY;
+                            _path = uri.substring(mark, i);
+                            mark = i + 1;
+                            state = State.QUERY;
                             break;
 
                         case '%':
                             // must have be in an encoded path 
-                            encoded=true;
-                            state=State.PATH;
+                            encoded = true;
+                            state = State.PATH;
                             break;
-                        
+
                         case '#':
                             // must have been in a path 
-                            _path=uri.substring(mark,i);
-                            state=State.FRAGMENT;
+                            _path = uri.substring(mark, i);
+                            state = State.FRAGMENT;
                             break;
                     }
                     continue;
                 }
-                
+
                 case HOST_OR_PATH:
                 {
-                    switch(c)
+                    switch (c)
                     {
                         case '/':
-                            _host="";
-                            mark=i+1;
-                            state=State.HOST;
+                            _host = "";
+                            mark = i + 1;
+                            state = State.HOST;
                             break;
-                            
+
                         case '@':
                         case ';':
                         case '?':
                         case '#':
                             // was a path, look again
                             i--;
-                            path_mark=mark;
-                            state=State.PATH;
+                            pathMark = mark;
+                            state = State.PATH;
                             break;
 
                         case '.':
                             // it is a path
-                            encoded=true;
-                            path_mark=mark;
-                            state=State.PATH;
+                            encoded = true;
+                            pathMark = mark;
+                            state = State.PATH;
                             break;
 
                         default:
                             // it is a path
-                            path_mark=mark;
-                            state=State.PATH;
+                            pathMark = mark;
+                            state = State.PATH;
                     }
                     continue;
                 }
@@ -348,25 +341,25 @@ public class HttpURI
                     switch (c)
                     {
                         case '/':
-                            _host = uri.substring(mark,i);
-                            path_mark=mark=i;
-                            state=State.PATH;
+                            _host = uri.substring(mark, i);
+                            pathMark = mark = i;
+                            state = State.PATH;
                             break;
                         case ':':
                             if (i > mark)
-                                _host=uri.substring(mark,i);
-                            mark=i+1;
-                            state=State.PORT;
+                                _host = uri.substring(mark, i);
+                            mark = i + 1;
+                            state = State.PORT;
                             break;
                         case '@':
-                            if (_user!=null)
+                            if (_user != null)
                                 throw new IllegalArgumentException("Bad authority");
-                            _user=uri.substring(mark,i);
-                            mark=i+1;
+                            _user = uri.substring(mark, i);
+                            mark = i + 1;
                             break;
-                            
+
                         case '[':
-                            state=State.IPV6;
+                            state = State.IPV6;
                             break;
                     }
                     break;
@@ -380,16 +373,16 @@ public class HttpURI
                             throw new IllegalArgumentException("No closing ']' for ipv6 in " + uri);
                         case ']':
                             c = uri.charAt(++i);
-                            _host=uri.substring(mark,i);
+                            _host = uri.substring(mark, i);
                             if (c == ':')
                             {
-                                mark=i+1;
-                                state=State.PORT;
+                                mark = i + 1;
+                                state = State.PORT;
                             }
                             else
                             {
-                                path_mark=mark=i;
-                                state=State.PATH;
+                                pathMark = mark = i;
+                                state = State.PATH;
                             }
                             break;
                     }
@@ -399,20 +392,20 @@ public class HttpURI
 
                 case PORT:
                 {
-                    if (c=='@')
+                    if (c == '@')
                     {
-                        if (_user!=null)
+                        if (_user != null)
                             throw new IllegalArgumentException("Bad authority");
                         // It wasn't a port, but a password!
-                        _user=_host+":"+uri.substring(mark,i);
-                        mark=i+1;
-                        state=State.HOST;
+                        _user = _host + ":" + uri.substring(mark, i);
+                        mark = i + 1;
+                        state = State.HOST;
                     }
-                    else if (c=='/')
+                    else if (c == '/')
                     {
-                        _port=TypeUtil.parseInt(uri,mark,i-mark,10);
-                        path_mark=mark=i;
-                        state=State.PATH;
+                        _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
+                        pathMark = mark = i;
+                        state = State.PATH;
                     }
                     break;
                 }
@@ -422,56 +415,53 @@ public class HttpURI
                     switch (c)
                     {
                         case ';':
-                            mark=i+1;
-                            state=State.PARAM;
+                            mark = i + 1;
+                            state = State.PARAM;
                             break;
                         case '?':
-                            _path=uri.substring(path_mark,i);
-                            mark=i+1;
-                            state=State.QUERY;
+                            _path = uri.substring(pathMark, i);
+                            mark = i + 1;
+                            state = State.QUERY;
                             break;
                         case '#':
-                            _path=uri.substring(path_mark,i);
-                            mark=i+1;
-                            state=State.FRAGMENT;
+                            _path = uri.substring(pathMark, i);
+                            mark = i + 1;
+                            state = State.FRAGMENT;
                             break;
                         case '%':
-                            encoded=true;
+                            encoded = true;
                             break;
                         case '.':
-                            if ('/'==last)
-                                encoded=true;
+                            if ('/' == last)
+                                encoded = true;
                     }
                     break;
                 }
-
-
-
 
                 case PARAM:
                 {
                     switch (c)
                     {
                         case '?':
-                            _path=uri.substring(path_mark,i);
-                            _param=uri.substring(mark,i);
-                            mark=i+1;
-                            state=State.QUERY;
+                            _path = uri.substring(pathMark, i);
+                            _param = uri.substring(mark, i);
+                            mark = i + 1;
+                            state = State.QUERY;
                             break;
                         case '#':
-                            _path=uri.substring(path_mark,i);
-                            _param=uri.substring(mark,i);
-                            mark=i+1;
-                            state=State.FRAGMENT;
+                            _path = uri.substring(pathMark, i);
+                            _param = uri.substring(mark, i);
+                            mark = i + 1;
+                            state = State.FRAGMENT;
                             break;
                         case '/':
-                            encoded=true;
+                            encoded = true;
                             // ignore internal params
-                            state=State.PATH;
+                            state = State.PATH;
                             break;
                         case ';':
                             // multiple parameters
-                            mark=i+1;
+                            mark = i + 1;
                             break;
                     }
                     break;
@@ -479,11 +469,11 @@ public class HttpURI
 
                 case QUERY:
                 {
-                    if (c=='#')
+                    if (c == '#')
                     {
-                        _query=uri.substring(mark,i);
-                        mark=i+1;
-                        state=State.FRAGMENT;
+                        _query = uri.substring(mark, i);
+                        mark = i + 1;
+                        state = State.FRAGMENT;
                     }
                     break;
                 }
@@ -492,97 +482,92 @@ public class HttpURI
                 {
                     throw new IllegalArgumentException("Bad character '*'");
                 }
-                
+
                 case FRAGMENT:
                 {
-                    _fragment=uri.substring(mark,end);
-                    i=end;
+                    _fragment = uri.substring(mark, end);
+                    i = end;
                     break;
                 }
             }
-            last=c;
+            last = c;
         }
 
-        
-        switch(state)
+        switch (state)
         {
             case START:
                 break;
             case SCHEME_OR_PATH:
-                _path=uri.substring(mark,end);
+                _path = uri.substring(mark, end);
                 break;
 
             case HOST_OR_PATH:
-                _path=uri.substring(mark,end);
+                _path = uri.substring(mark, end);
                 break;
-                
+
             case HOST:
-                if(end>mark)
-                    _host=uri.substring(mark,end);
+                if (end > mark)
+                    _host = uri.substring(mark, end);
                 break;
-                
+
             case IPV6:
                 throw new IllegalArgumentException("No closing ']' for ipv6 in " + uri);
 
             case PORT:
-                _port=TypeUtil.parseInt(uri,mark,end-mark,10);
+                _port = TypeUtil.parseInt(uri, mark, end - mark, 10);
                 break;
-                
+
             case ASTERISK:
                 break;
-                
+
             case FRAGMENT:
-                _fragment=uri.substring(mark,end);
+                _fragment = uri.substring(mark, end);
                 break;
-                
+
             case PARAM:
-                _path=uri.substring(path_mark,end);
-                _param=uri.substring(mark,end);
+                _path = uri.substring(pathMark, end);
+                _param = uri.substring(mark, end);
                 break;
-                
+
             case PATH:
-                _path=uri.substring(path_mark,end);
+                _path = uri.substring(pathMark, end);
                 break;
-                
+
             case QUERY:
-                _query=uri.substring(mark,end);
+                _query = uri.substring(mark, end);
                 break;
         }
-        
+
         if (!encoded)
         {
-            if (_param==null)
-                _decodedPath=_path;
+            if (_param == null)
+                _decodedPath = _path;
             else
-                _decodedPath=_path.substring(0,_path.length()-_param.length()-1);
+                _decodedPath = _path.substring(0, _path.length() - _param.length() - 1);
         }
     }
 
-    /* ------------------------------------------------------------ */
     public String getScheme()
     {
         return _scheme;
     }
 
-    /* ------------------------------------------------------------ */
     public String getHost()
     {
         // Return null for empty host to retain compatibility with java.net.URI
-        if (_host!=null && _host.isEmpty())
+        if (_host != null && _host.isEmpty())
             return null;
         return _host;
     }
 
-    /* ------------------------------------------------------------ */
     public int getPort()
     {
         return _port;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * The parsed Path.
-     * 
+     *
      * @return the path as parsed on valid URI.  null for invalid URI.
      */
     public String getPath()
@@ -590,97 +575,86 @@ public class HttpURI
         return _path;
     }
 
-    /* ------------------------------------------------------------ */
     public String getDecodedPath()
     {
-        if (_decodedPath==null && _path!=null)
-            _decodedPath=URIUtil.canonicalPath(URIUtil.decodePath(_path));
+        if (_decodedPath == null && _path != null)
+            _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
         return _decodedPath;
     }
 
-    /* ------------------------------------------------------------ */
     public String getParam()
     {
         return _param;
     }
 
-    /* ------------------------------------------------------------ */
     public String getQuery()
     {
         return _query;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean hasQuery()
     {
-        return _query!=null && !_query.isEmpty();
+        return _query != null && !_query.isEmpty();
     }
 
-    /* ------------------------------------------------------------ */
     public String getFragment()
     {
         return _fragment;
     }
 
-    /* ------------------------------------------------------------ */
     public void decodeQueryTo(MultiMap<String> parameters)
     {
-        if (_query==null)
+        if (_query == null)
             return;
-        UrlEncoded.decodeUtf8To(_query,parameters);
+        UrlEncoded.decodeUtf8To(_query, parameters);
     }
 
-    /* ------------------------------------------------------------ */
     public void decodeQueryTo(MultiMap<String> parameters, String encoding) throws UnsupportedEncodingException
     {
-        decodeQueryTo(parameters,Charset.forName(encoding));
+        decodeQueryTo(parameters, Charset.forName(encoding));
     }
 
-    /* ------------------------------------------------------------ */
     public void decodeQueryTo(MultiMap<String> parameters, Charset encoding) throws UnsupportedEncodingException
     {
-        if (_query==null)
+        if (_query == null)
             return;
 
-        if (encoding==null || StandardCharsets.UTF_8.equals(encoding))
-            UrlEncoded.decodeUtf8To(_query,parameters);
+        if (encoding == null || StandardCharsets.UTF_8.equals(encoding))
+            UrlEncoded.decodeUtf8To(_query, parameters);
         else
-            UrlEncoded.decodeTo(_query,parameters,encoding);
+            UrlEncoded.decodeTo(_query, parameters, encoding);
     }
 
-    /* ------------------------------------------------------------ */
     public void clear()
     {
-        _uri=null;
+        _uri = null;
 
-        _scheme=null;
-        _host=null;
-        _port=-1;
-        _path=null;
-        _param=null;
-        _query=null;
-        _fragment=null;
+        _scheme = null;
+        _host = null;
+        _port = -1;
+        _path = null;
+        _param = null;
+        _query = null;
+        _fragment = null;
 
-        _decodedPath=null;
+        _decodedPath = null;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isAbsolute()
     {
-        return _scheme!=null && !_scheme.isEmpty();
+        return _scheme != null && !_scheme.isEmpty();
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
-        if (_uri==null)
+        if (_uri == null)
         {
             StringBuilder out = new StringBuilder();
-            
-            if (_scheme!=null)
+
+            if (_scheme != null)
                 out.append(_scheme).append(':');
-            
+
             if (_host != null)
             {
                 out.append("//");
@@ -688,138 +662,124 @@ public class HttpURI
                     out.append(_user).append('@');
                 out.append(_host);
             }
-            
-            if (_port>0)
+
+            if (_port > 0)
                 out.append(':').append(_port);
-            
-            if (_path!=null)
+
+            if (_path != null)
                 out.append(_path);
-            
-            if (_query!=null)
+
+            if (_query != null)
                 out.append('?').append(_query);
-            
-            if (_fragment!=null)
+
+            if (_fragment != null)
                 out.append('#').append(_fragment);
-            
-            if (out.length()>0)
-                _uri=out.toString();
+
+            if (out.length() > 0)
+                _uri = out.toString();
             else
-                _uri="";
+                _uri = "";
         }
         return _uri;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public boolean equals(Object o)
     {
-        if (o==this)
+        if (o == this)
             return true;
         if (!(o instanceof HttpURI))
             return false;
         return toString().equals(o.toString());
     }
 
-    /* ------------------------------------------------------------ */
     public void setScheme(String scheme)
     {
-        _scheme=scheme;
-        _uri=null;
+        _scheme = scheme;
+        _uri = null;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param host the host
      * @param port the port
      */
     public void setAuthority(String host, int port)
     {
-        _host=host;
-        _port=port;
-        _uri=null;
+        _host = host;
+        _port = port;
+        _uri = null;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param path the path
      */
     public void setPath(String path)
     {
-        _uri=null;
-        _path=path;
-        _decodedPath=null;
+        _uri = null;
+        _path = path;
+        _decodedPath = null;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param path the decoded path
      */
     public void setDecodedPath(String path)
     {
-        _uri=null;
-        _path=URIUtil.encodePath(path);
-        _decodedPath=path;
+        _uri = null;
+        _path = URIUtil.encodePath(path);
+        _decodedPath = path;
     }
 
-    /* ------------------------------------------------------------ */
     public void setPathQuery(String path)
     {
-        _uri=null;
-        _path=null;
-        _decodedPath=null;
-        _param=null;
-        _fragment=null;
-        if (path!=null)
-            parse(State.PATH,path);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void setQuery(String query)
-    {
-        _query=query;
-        _uri=null;
+        _uri = null;
+        _path = null;
+        _decodedPath = null;
+        _param = null;
+        _fragment = null;
+        if (path != null)
+            parse(State.PATH, path);
     }
 
-    /* ------------------------------------------------------------ */
+    public void setQuery(String query)
+    {
+        _query = query;
+        _uri = null;
+    }
+
     public URI toURI()
     {
         try
         {
-            return new URI(_scheme,null,_host,_port,_path,_query==null?null:UrlEncoded.decodeString(_query),_fragment);
+            return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
         }
-        catch(URISyntaxException x)
+        catch (URISyntaxException x)
         {
             throw new RuntimeException(x);
         }
     }
 
-    /* ------------------------------------------------------------ */
     public String getPathQuery()
     {
-        if (_query==null)
+        if (_query == null)
             return _path;
-        return _path+"?"+_query;
+        return _path + "?" + _query;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean hasAuthority()
     {
-        return _host!=null;
+        return _host != null;
     }
 
-    /* ------------------------------------------------------------ */
     public String getAuthority()
     {
-        if (_port>0)
-            return _host+":"+_port;
+        if (_port > 0)
+            return _host + ":" + _port;
         return _host;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public String getUser()
     {
         return _user;
     }
-
-
 }

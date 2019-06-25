@@ -25,16 +25,15 @@ import java.util.Locale;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /**
  * Password utility class.
  *
  * This utility class gets a password or pass phrase either by:
  *
  * <PRE>
- *  + Password is set as a system property.
- *  + The password is prompted for and read from standard input
- *  + A program is run to get the password.
+ * + Password is set as a system property.
+ * + The password is prompted for and read from standard input
+ * + A program is run to get the password.
  * </pre>
  *
  * Passwords that begin with OBF: are de obfuscated. Passwords can be obfuscated
@@ -50,8 +49,6 @@ import org.eclipse.jetty.util.log.Logger;
  * a secure(ish) way to store passwords that only need to be checked rather than
  * recovered. Note that it is not strong security - specially if simple
  * passwords are used.
- *
- *
  */
 public class Password extends Credential
 {
@@ -63,7 +60,6 @@ public class Password extends Credential
 
     private String _pw;
 
-    /* ------------------------------------------------------------ */
     /**
      * Constructor.
      *
@@ -75,23 +71,22 @@ public class Password extends Credential
 
         // expand password
         while (_pw != null && _pw.startsWith(__OBFUSCATE))
+        {
             _pw = deobfuscate(_pw);
+        }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return _pw;
     }
 
-    /* ------------------------------------------------------------ */
     public String toStarString()
     {
         return "*****************************************************".substring(0, _pw.length());
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public boolean check(Object credentials)
     {
@@ -113,7 +108,6 @@ public class Password extends Credential
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public boolean equals(Object o)
     {
@@ -132,14 +126,12 @@ public class Password extends Credential
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public int hashCode()
     {
         return null == _pw ? super.hashCode() : _pw.hashCode();
     }
 
-    /* ------------------------------------------------------------ */
     public static String obfuscate(String s)
     {
         StringBuilder buf = new StringBuilder();
@@ -150,11 +142,11 @@ public class Password extends Credential
         {
             byte b1 = b[i];
             byte b2 = b[b.length - (i + 1)];
-            if (b1<0 || b2<0)
+            if (b1 < 0 || b2 < 0)
             {
-                int i0 = (0xff&b1)*256 + (0xff&b2);
+                int i0 = (0xff & b1) * 256 + (0xff & b2);
                 String x = Integer.toString(i0, 36).toLowerCase(Locale.ENGLISH);
-                buf.append("U0000",0,5-x.length());
+                buf.append("U0000", 0, 5 - x.length());
                 buf.append(x);
             }
             else
@@ -167,31 +159,30 @@ public class Password extends Credential
                 int j0 = Integer.parseInt(x, 36);
                 int j1 = (i0 / 256);
                 int j2 = (i0 % 256);
-                byte bx = (byte) ((j1 + j2 - 254) / 2);
+                byte bx = (byte)((j1 + j2 - 254) / 2);
 
-                buf.append("000",0,4-x.length());
+                buf.append("000", 0, 4 - x.length());
                 buf.append(x);
             }
-
         }
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
     public static String deobfuscate(String s)
     {
-        if (s.startsWith(__OBFUSCATE)) s = s.substring(4);
+        if (s.startsWith(__OBFUSCATE))
+            s = s.substring(4);
 
         byte[] b = new byte[s.length() / 2];
         int l = 0;
         for (int i = 0; i < s.length(); i += 4)
         {
-            if (s.charAt(i)=='U')
+            if (s.charAt(i) == 'U')
             {
                 i++;
                 String x = s.substring(i, i + 4);
                 int i0 = Integer.parseInt(x, 36);
-                byte bx = (byte)(i0>>8);
+                byte bx = (byte)(i0 >> 8);
                 b[l++] = bx;
             }
             else
@@ -200,15 +191,14 @@ public class Password extends Credential
                 int i0 = Integer.parseInt(x, 36);
                 int i1 = (i0 / 256);
                 int i2 = (i0 % 256);
-                byte bx = (byte) ((i1 + i2 - 254) / 2);
+                byte bx = (byte)((i1 + i2 - 254) / 2);
                 b[l++] = bx;
             }
         }
 
-        return new String(b, 0, l,StandardCharsets.UTF_8);
+        return new String(b, 0, l, StandardCharsets.UTF_8);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Get a password. A password is obtained by trying
      * <UL>
@@ -218,7 +208,7 @@ public class Password extends Credential
      * </UL>
      *
      * @param realm The realm name for the password, used as a SystemProperty
-     *                name.
+     * name.
      * @param dft The default password.
      * @param promptDft The default to use if prompting for the password.
      * @return Password
@@ -234,13 +224,15 @@ public class Password extends Credential
                 System.out.flush();
                 byte[] buf = new byte[512];
                 int len = System.in.read(buf);
-                if (len > 0) passwd = new String(buf, 0, len).trim();
+                if (len > 0)
+                    passwd = new String(buf, 0, len).trim();
             }
             catch (IOException e)
             {
                 LOG.warn(Log.EXCEPTION, e);
             }
-            if (passwd == null || passwd.length() == 0) passwd = promptDft;
+            if (passwd == null || passwd.length() == 0)
+                passwd = promptDft;
         }
         return new Password(passwd);
     }
@@ -258,6 +250,7 @@ public class Password extends Credential
         System.err.println(pw.toString());
         System.err.println(obfuscate(pw.toString()));
         System.err.println(Credential.MD5.digest(p));
-        if (arg.length == 2) System.err.println(Credential.Crypt.crypt(arg[0], pw.toString()));
+        if (arg.length == 2)
+            System.err.println(Credential.Crypt.crypt(arg[0], pw.toString()));
     }
 }

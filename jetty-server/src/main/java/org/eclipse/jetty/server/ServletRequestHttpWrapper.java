@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
@@ -33,11 +32,9 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
-
-/* ------------------------------------------------------------ */
-/** 
+/**
  * ServletRequestHttpWrapper
- * 
+ *
  * Class to tunnel a ServletRequest via a HttpServletRequest
  */
 public class ServletRequestHttpWrapper extends ServletRequestWrapper implements HttpServletRequest
@@ -243,8 +240,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
 
     }
 
-
-    /** 
+    /**
      * @see javax.servlet.http.HttpServletRequest#changeSessionId()
      */
     @Override
@@ -254,7 +250,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
         return null;
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpServletRequest#upgrade(java.lang.Class)
      */
     @Override
@@ -263,6 +259,4 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
         // TODO 3.1 Auto-generated method stub
         return null;
     }
-
-
 }

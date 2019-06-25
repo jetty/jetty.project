@@ -27,13 +27,11 @@ import javax.transaction.UserTransaction;
 
 /**
  * MockUserTransaction
- *
- *
  */
 public class MockUserTransaction implements UserTransaction
 {
 
-    /** 
+    /**
      * @see javax.transaction.UserTransaction#begin()
      */
     @Override
@@ -41,17 +39,17 @@ public class MockUserTransaction implements UserTransaction
     {
     }
 
-    /** 
+    /**
      * @see javax.transaction.UserTransaction#commit()
      */
     @Override
     public void commit() throws HeuristicMixedException,
-            HeuristicRollbackException, IllegalStateException,
-            RollbackException, SecurityException, SystemException
+        HeuristicRollbackException, IllegalStateException,
+        RollbackException, SecurityException, SystemException
     {
     }
 
-    /** 
+    /**
      * @see javax.transaction.UserTransaction#getStatus()
      */
     @Override
@@ -60,16 +58,16 @@ public class MockUserTransaction implements UserTransaction
         return 0;
     }
 
-    /** 
+    /**
      * @see javax.transaction.UserTransaction#rollback()
      */
     @Override
     public void rollback() throws IllegalStateException, SecurityException,
-            SystemException
+        SystemException
     {
     }
 
-    /** 
+    /**
      * @see javax.transaction.UserTransaction#setRollbackOnly()
      */
     @Override
@@ -77,12 +75,11 @@ public class MockUserTransaction implements UserTransaction
     {
     }
 
-    /** 
+    /**
      * @see javax.transaction.UserTransaction#setTransactionTimeout(int)
      */
     @Override
     public void setTransactionTimeout(int arg0) throws SystemException
     {
     }
-
 }

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletResponse;
@@ -131,7 +130,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.start();
 
         HttpTester.Response response = executeRequest(httpVersion);
-    
+
         assertThat("response code", response.getStatus(), is(200));
         if (httpVersion.is("HTTP/1.1"))
             assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "0"));
@@ -266,7 +265,6 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.start();
 
         HttpTester.Response response = executeRequest(httpVersion);
-
 
         assertThat("response code", response.getStatus(), is(200));
         assertThat("no exceptions", handler.failure(), is(nullValue()));

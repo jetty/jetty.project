@@ -132,7 +132,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
      * Set append to log flag.
      *
      * @param append true - request log file will be appended after restart,
-     *               false - request log file will be overwritten after restart
+     * false - request log file will be overwritten after restart
      */
     public void setAppend(boolean append)
     {

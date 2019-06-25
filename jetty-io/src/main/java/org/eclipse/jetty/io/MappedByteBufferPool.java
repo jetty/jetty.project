@@ -197,8 +197,8 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
     private long getByteBufferCount(boolean direct)
     {
         return bucketsFor(direct).values().stream()
-                .mapToLong(Bucket::size)
-                .sum();
+            .mapToLong(Bucket::size)
+            .sum();
     }
 
     // Package local for testing

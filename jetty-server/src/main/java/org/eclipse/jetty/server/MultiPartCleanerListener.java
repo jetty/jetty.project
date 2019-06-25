@@ -16,24 +16,21 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server;
 
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.MultiException;
-
 
 public class MultiPartCleanerListener implements ServletRequestListener
 {
-    public final static MultiPartCleanerListener INSTANCE = new MultiPartCleanerListener();
-    
+    public static final MultiPartCleanerListener INSTANCE = new MultiPartCleanerListener();
+
     protected MultiPartCleanerListener()
     {
     }
-    
+
     @Override
     public void requestDestroyed(ServletRequestEvent sre)
     {
@@ -63,5 +60,4 @@ public class MultiPartCleanerListener implements ServletRequestListener
     {
         //nothing to do, multipart config set up by ServletHolder.handle()
     }
-    
 }

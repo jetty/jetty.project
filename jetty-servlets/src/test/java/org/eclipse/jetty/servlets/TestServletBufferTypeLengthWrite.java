@@ -20,7 +20,6 @@ package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -59,10 +58,10 @@ public class TestServletBufferTypeLengthWrite extends TestDirContentServlet
             response.setContentType("text/plain");
         else if (fileName.endsWith("mp3"))
             response.setContentType("audio/mpeg");
-        response.setHeader("ETag","W/etag-"+fileName);
+        response.setHeader("ETag", "W/etag-" + fileName);
 
         response.setContentLength(dataBytes.length);
-        
+
         ((HttpOutput)out).write(ByteBuffer.wrap(dataBytes).asReadOnlyBuffer());
     }
 }

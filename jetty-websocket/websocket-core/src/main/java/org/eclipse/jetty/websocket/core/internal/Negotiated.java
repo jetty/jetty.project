@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -31,6 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public class Negotiated
 {
@@ -42,7 +42,7 @@ public class Negotiated
     private final String protocolVersion;
 
     public Negotiated(URI requestURI, String subProtocol, boolean secure,
-        ExtensionStack extensions, String protocolVersion)
+                      ExtensionStack extensions, String protocolVersion)
     {
         this.requestURI = toWebsocket(requestURI);
         this.subProtocol = subProtocol;
@@ -59,7 +59,9 @@ public class Negotiated
             MultiMap<String> params = new MultiMap<>();
             UrlEncoded.decodeUtf8To(requestURI.getQuery(), params);
             for (String p : params.keySet())
+            {
                 map.put(p, Collections.unmodifiableList(params.getValues(p)));
+            }
         }
         this.parameterMap = Collections.unmodifiableMap(map);
     }

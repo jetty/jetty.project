@@ -37,8 +37,8 @@ public class TransportProvider implements ArgumentsProvider
         if (!StringUtil.isBlank(transports))
             return Arrays.stream(transports.split("\\s*,\\s*")).map(Transport::valueOf);
 
-         if (OS.LINUX.isCurrentOs())
-             return Arrays.stream(Transport.values());
+        if (OS.LINUX.isCurrentOs())
+            return Arrays.stream(Transport.values());
 
         return EnumSet.complementOf(EnumSet.of(Transport.UNIX_SOCKET)).stream();
     }

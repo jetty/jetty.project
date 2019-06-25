@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.security;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
@@ -44,9 +41,10 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DataConstraintsTest
 {
@@ -57,14 +55,14 @@ public class DataConstraintsTest
     private ConstraintSecurityHandler _security;
 
     @BeforeEach
-    public  void startServer()
+    public void startServer()
     {
         _server = new Server();
-        
+
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.getHttpConfiguration().setSecurePort(9999);
         http.getHttpConfiguration().setSecureScheme("BWTP");
-        _connector = new LocalConnector(_server,http);
+        _connector = new LocalConnector(_server, http);
         _connector.setIdleTimeout(300000);
 
         HttpConnectionFactory https = new HttpConnectionFactory();
@@ -77,9 +75,9 @@ public class DataConstraintsTest
                 request.setSecure(true);
             }
         });
-        
-        _connectorS = new LocalConnector(_server,https);
-        _server.setConnectors(new Connector[]{_connector,_connectorS});
+
+        _connectorS = new LocalConnector(_server, https);
+        _server.setConnectors(new Connector[]{_connector, _connectorS});
 
         ContextHandler _context = new ContextHandler();
         _session = new SessionHandler();
@@ -100,7 +98,6 @@ public class DataConstraintsTest
                 response.sendError(404);
             }
         });
-
     }
 
     @AfterEach
@@ -125,9 +122,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                {
-                        mapping0
-                }));
+            {
+                mapping0
+            }));
 
         _server.start();
 
@@ -142,7 +139,6 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("GET /ctx/integral/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
-
     }
 
     @Test
@@ -157,9 +153,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                {
-                        mapping0
-                }));
+            {
+                mapping0
+            }));
 
         _server.start();
 
@@ -174,7 +170,6 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
-
     }
 
     @Test
@@ -188,9 +183,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                                            {
+            {
                 mapping0
-                                                                            }));
+            }));
 
         _server.start();
 
@@ -201,7 +196,6 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
-
     }
 
     @Test
@@ -216,9 +210,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                                            {
+            {
                 mapping0
-                                                                            }));
+            }));
 
         _server.start();
 
@@ -235,13 +229,13 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("POST /ctx/confid/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
-
     }
+
     @Test
     public void testConfidentialWithRolesSetAndMethodRestriction() throws Exception
     {
         Constraint constraint0 = new Constraint();
-        constraint0.setRoles(new String[] { "admin" } );
+        constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("confid");
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
@@ -250,9 +244,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                                            {
+            {
                 mapping0
-                                                                            }));
+            }));
 
         _server.start();
 
@@ -269,14 +263,13 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("POST /ctx/confid/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
-
     }
 
     @Test
     public void testConfidentialWithRolesSetAndMethodRestrictionAndAuthenticationRequired() throws Exception
     {
         Constraint constraint0 = new Constraint();
-        constraint0.setRoles(new String[] { "admin" } );
+        constraint0.setRoles(new String[]{"admin"});
         constraint0.setAuthenticate(true);
         constraint0.setName("confid");
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
@@ -286,9 +279,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                                            {
+            {
                 mapping0
-                                                                            }));
+            }));
         DefaultIdentityService identityService = new DefaultIdentityService();
         _security.setLoginService(new CustomLoginService(identityService));
         _security.setIdentityService(identityService);
@@ -317,7 +310,6 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("POST /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
-
     }
 
     @Test
@@ -325,16 +317,16 @@ public class DataConstraintsTest
     {
         Constraint constraint0 = new Constraint();
         constraint0.setAuthenticate(true);
-        constraint0.setRoles(new String[] { "admin" } );
+        constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("restricted");
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/restricted/*");
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                                            {
+            {
                 mapping0
-                                                                            }));
+            }));
         _server.start();
 
         String response;
@@ -350,7 +342,6 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
-
     }
 
     @Test
@@ -358,7 +349,7 @@ public class DataConstraintsTest
     {
         Constraint constraint0 = new Constraint();
         constraint0.setAuthenticate(true);
-        constraint0.setRoles(new String[] { "admin" } );
+        constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("restricted");
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/restricted/*");
@@ -366,9 +357,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                                            {
+            {
                 mapping0
-                                                                            }));
+            }));
         _server.start();
 
         String response;
@@ -384,7 +375,6 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
-
     }
 
     @Test
@@ -392,7 +382,7 @@ public class DataConstraintsTest
     {
         Constraint constraint0 = new Constraint();
         constraint0.setAuthenticate(true);
-        constraint0.setRoles(new String[] { "admin" } );
+        constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("restricted");
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/restricted/*");
@@ -400,9 +390,9 @@ public class DataConstraintsTest
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                                                                            {
+            {
                 mapping0
-                                                                            }));
+            }));
         DefaultIdentityService identityService = new DefaultIdentityService();
         _security.setLoginService(new CustomLoginService(identityService));
         _security.setIdentityService(identityService);
@@ -422,17 +412,17 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\n\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
-
     }
 
-    private class CustomLoginService implements LoginService{
+    private class CustomLoginService implements LoginService
+    {
         private IdentityService identityService;
 
         public CustomLoginService(IdentityService identityService)
         {
             this.identityService = identityService;
         }
-        
+
         @Override
         public String getName()
         {
@@ -442,8 +432,8 @@ public class DataConstraintsTest
         @Override
         public UserIdentity login(String username, Object credentials, ServletRequest request)
         {
-            if("admin".equals(username) && "password".equals(credentials))
-                    return new DefaultUserIdentity(null,null,new String[] { "admin" } );
+            if ("admin".equals(username) && "password".equals(credentials))
+                return new DefaultUserIdentity(null, null, new String[]{"admin"});
             return null;
         }
 
@@ -468,7 +458,5 @@ public class DataConstraintsTest
         public void logout(UserIdentity user)
         {
         }
-
     }
-
 }

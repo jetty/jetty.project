@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
 import javax.websocket.Extension;
 import javax.websocket.WebSocketContainer;
 
@@ -40,7 +39,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
 {
-    private final static Logger LOG = Log.getLogger(JavaxWebSocketContainer.class);
+    private static final Logger LOG = Log.getLogger(JavaxWebSocketContainer.class);
     private final SessionTracker sessionTracker = new SessionTracker();
     private List<JavaxWebSocketSessionListener> sessionListeners = new ArrayList<>();
     protected FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();

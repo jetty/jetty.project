@@ -51,8 +51,8 @@ public class OptionalSslConnectionFactory extends AbstractConnectionFactory
      * {@link #otherProtocol(ByteBuffer, EndPoint)} is called.</p>
      *
      * @param sslConnectionFactory The SslConnectionFactory to use if the first bytes are TLS
-     * @param otherProtocol        the protocol of the ConnectionFactory to use if the first bytes are not TLS,
-     *                             or null to explicitly handle the non-TLS case
+     * @param otherProtocol the protocol of the ConnectionFactory to use if the first bytes are not TLS,
+     * or null to explicitly handle the non-TLS case
      */
     public OptionalSslConnectionFactory(SslConnectionFactory sslConnectionFactory, String otherProtocol)
     {
@@ -84,7 +84,7 @@ public class OptionalSslConnectionFactory extends AbstractConnectionFactory
      * <p>This typically happens when a client is trying to connect to a TLS
      * port using the {@code http} scheme (and not the {@code https} scheme).</p>
      *
-     * @param buffer   The buffer with the first bytes of the connection
+     * @param buffer The buffer with the first bytes of the connection
      * @param endPoint The connection EndPoint object
      * @see #seemsTLS(ByteBuffer)
      */
@@ -97,8 +97,8 @@ public class OptionalSslConnectionFactory extends AbstractConnectionFactory
         {
             // Plain text HTTP to a HTTPS port,
             // write a minimal response.
-            String body = "" +
-                    "<!DOCTYPE html>\r\n" +
+            String body =
+                "<!DOCTYPE html>\r\n" +
                     "<html>\r\n" +
                     "<head><title>Bad Request</title></head>\r\n" +
                     "<body>" +
@@ -106,8 +106,8 @@ public class OptionalSslConnectionFactory extends AbstractConnectionFactory
                     "<p>HTTP request to HTTPS port</p>" +
                     "</body>\r\n" +
                     "</html>";
-            String response = "" +
-                    "HTTP/1.1 400 Bad Request\r\n" +
+            String response =
+                "HTTP/1.1 400 Bad Request\r\n" +
                     "Content-Type: text/html\r\n" +
                     "Content-Length: " + body.length() + "\r\n" +
                     "Connection: close\r\n" +

@@ -24,7 +24,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -84,22 +83,22 @@ public class PushSessionCacheFilter implements Filter
                 if (referer != null)
                 {
                     // Is the referer from this contexts?
-                    HttpURI referer_uri = new HttpURI(referer);
-                    if (request.getServerName().equals(referer_uri.getHost()))
+                    HttpURI refererUri = new HttpURI(referer);
+                    if (request.getServerName().equals(refererUri.getHost()))
                     {
-                        Target referer_target = _cache.get(referer_uri.getPath());
-                        if (referer_target != null)
+                        Target refererTarget = _cache.get(refererUri.getPath());
+                        if (refererTarget != null)
                         {
                             HttpSession session = request.getSession();
                             @SuppressWarnings("unchecked")
                             ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
-                            Long last = timestamps.get(referer_target._path);
+                            Long last = timestamps.get(refererTarget._path);
                             if (last != null && TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - last) < _associateDelay)
                             {
-                                if (referer_target._associated.putIfAbsent(target._path, target) == null)
+                                if (refererTarget._associated.putIfAbsent(target._path, target) == null)
                                 {
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("ASSOCIATE {}->{}", referer_target._path, target._path);
+                                        LOG.debug("ASSOCIATE {}->{}", refererTarget._path, target._path);
                                 }
                             }
                         }
@@ -151,7 +150,7 @@ public class PushSessionCacheFilter implements Filter
         if (builder != null && !target._associated.isEmpty())
         {
             boolean conditional = request.getHeader(HttpHeader.IF_NONE_MATCH.asString()) != null ||
-                                  request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString()) != null;
+                request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString()) != null;
             // Breadth-first push of associated resources.
             Queue<Target> queue = new ArrayDeque<>();
             queue.offer(target);
@@ -168,8 +167,8 @@ public class PushSessionCacheFilter implements Filter
                         LOG.debug("PUSH {} <- {}", path, uri);
 
                     builder.path(path)
-                    .setHeader(HttpHeader.IF_NONE_MATCH.asString(),conditional?child._etag:null)
-                    .setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),conditional?child._lastModified:null);
+                        .setHeader(HttpHeader.IF_NONE_MATCH.asString(), conditional ? child._etag : null)
+                        .setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(), conditional ? child._lastModified : null);
                 }
             }
         }

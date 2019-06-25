@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 
@@ -39,7 +38,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
     {
         boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher);
     }
-    
+
     private final Connector connector;
     private final SSLEngine engine;
     private final List<String> protocols;
@@ -69,7 +68,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
     {
         return connector;
     }
-    
+
     public SSLEngine getSSLEngine()
     {
         return engine;
@@ -121,7 +120,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
                 if (connectionFactory == null)
                 {
                     LOG.info("{} application selected protocol '{}', but no correspondent {} has been configured",
-                             this, protocol, ConnectionFactory.class.getName());
+                        this, protocol, ConnectionFactory.class.getName());
                     close();
                 }
                 else

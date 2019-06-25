@@ -218,7 +218,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     {
         // What pywebsocket produces for "time:", "time:", "time:"
         String expected[] = new String[]
-            { "2AC9CC4DB50200", "2A01110000", "02130000" };
+            {"2AC9CC4DB50200", "2A01110000", "02130000"};
 
         // Lets see what we produce
         CapturedHexPayloads capture = new CapturedHexPayloads();
@@ -414,7 +414,6 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         assertArrayEquals(input, result.toByteArray());
     }
-
 
     private WebSocketCoreSession sessionWithMaxMessageSize(int maxMessageSize)
     {

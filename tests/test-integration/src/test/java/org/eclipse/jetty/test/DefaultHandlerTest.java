@@ -64,9 +64,10 @@ public class DefaultHandlerTest
         server.load();
         server.start();
     }
-    
+
     @BeforeEach
-    public void testInit() {
+    public void testInit()
+    {
         serverPort = server.getServerPort();
     }
 
@@ -87,7 +88,7 @@ public class DefaultHandlerTest
 
         String response = IO.toString(in);
         String expected = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
-        
+
         assertEquals(expected, response, "Response");
     }
 
@@ -100,13 +101,13 @@ public class DefaultHandlerTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        Socket sock = new Socket(InetAddress.getLocalHost(),serverPort);
+        Socket sock = new Socket(InetAddress.getLocalHost(), serverPort);
         sock.setSoTimeout(5000); // 5 second timeout;
 
         InputStream in = new ByteArrayInputStream(rawRequest.toString().getBytes());
 
         // Send request
-        IO.copy(in,sock.getOutputStream());
+        IO.copy(in, sock.getOutputStream());
 
         // Collect response
         String rawResponse = IO.toString(sock.getInputStream());
@@ -122,11 +123,11 @@ public class DefaultHandlerTest
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setURI("/tests/alpha.txt");
-        request.put("Host","localhost");
-        request.put("Connection","close");
+        request.put("Host", "localhost");
+        request.put("Connection", "close");
         // request.setContent(null);
 
-        HttpTesting testing = new HttpTesting(new HttpSocketImpl(),serverPort);
+        HttpTesting testing = new HttpTesting(new HttpSocketImpl(), serverPort);
         HttpTester.Response response = testing.request(request);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));

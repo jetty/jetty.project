@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -72,8 +71,8 @@ public class AsyncListenerTest
     public void test_StartAsync_Throw_OnError_Dispatch() throws Exception
     {
         test_StartAsync_Throw_OnError(event -> event.getAsyncContext().dispatch("/dispatch"));
-        String httpResponse = connector.getResponse("" +
-                "GET /ctx/path HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET /ctx/path HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -89,13 +88,13 @@ public class AsyncListenerTest
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
             ServletOutputStream output = response.getOutputStream();
             output.println(event.getThrowable().getClass().getName());
-            if (event.getThrowable().getCause()!=null)
+            if (event.getThrowable().getCause() != null)
                 output.println(event.getThrowable().getCause().getClass().getName());
             output.println("COMPLETE");
             event.getAsyncContext().complete();
         });
-        String httpResponse = connector.getResponse("" +
-                "GET /ctx/path HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET /ctx/path HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -111,8 +110,8 @@ public class AsyncListenerTest
         {
             throw new IOException();
         });
-        String httpResponse = connector.getResponse("" +
-                "GET /ctx/path HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET /ctx/path HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -123,9 +122,11 @@ public class AsyncListenerTest
     @Test
     public void test_StartAsync_Throw_OnError_Nothing() throws Exception
     {
-        test_StartAsync_Throw_OnError(event -> {});
-        String httpResponse = connector.getResponse("" +
-                "GET /ctx/path HTTP/1.1\r\n" +
+        test_StartAsync_Throw_OnError(event ->
+        {
+        });
+        String httpResponse = connector.getResponse(
+            "GET /ctx/path HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -141,8 +142,8 @@ public class AsyncListenerTest
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502);
         });
-        String httpResponse = connector.getResponse("" +
-                "GET /ctx/path HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET /ctx/path HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -166,14 +167,13 @@ public class AsyncListenerTest
             protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
             {
                 writer.write("CUSTOM\n");
-                super.writeErrorPageMessage(request,writer,code,message,uri);
+                super.writeErrorPageMessage(request, writer, code, message, uri);
             }
-            
         };
         server.setErrorHandler(errorHandler);
 
-        String httpResponse = connector.getResponse("" +
-                "GET /ctx/path HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET /ctx/path HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n", 10, TimeUnit.MINUTES);
@@ -227,8 +227,8 @@ public class AsyncListenerTest
     public void test_StartAsync_OnTimeout_Dispatch() throws Exception
     {
         test_StartAsync_OnTimeout(500, event -> event.getAsyncContext().dispatch("/dispatch"));
-        String httpResponse = connector.getResponse("" +
-                "GET / HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -245,10 +245,9 @@ public class AsyncListenerTest
             ServletOutputStream output = response.getOutputStream();
             output.println("COMPLETE");
             event.getAsyncContext().complete();
-
         });
-        String httpResponse = connector.getResponse("" +
-                "GET / HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -263,8 +262,8 @@ public class AsyncListenerTest
         {
             throw new TestRuntimeException();
         });
-        String httpResponse = connector.getResponse("" +
-                "GET / HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -275,10 +274,11 @@ public class AsyncListenerTest
     @Test
     public void test_StartAsync_OnTimeout_Nothing() throws Exception
     {
-        test_StartAsync_OnTimeout(500, event -> {
+        test_StartAsync_OnTimeout(500, event ->
+        {
         });
-        String httpResponse = connector.getResponse("" +
-                "GET / HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -293,8 +293,8 @@ public class AsyncListenerTest
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502);
         });
-        String httpResponse = connector.getResponse("" +
-                "GET / HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -319,15 +319,14 @@ public class AsyncListenerTest
             protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
             {
                 writer.write("CUSTOM\n");
-                super.writeErrorPageMessage(request,writer,code,message,uri);
+                super.writeErrorPageMessage(request, writer, code, message, uri);
             }
-            
         };
         errorHandler.setServer(server);
         server.setErrorHandler(errorHandler);
 
-        String httpResponse = connector.getResponse("" +
-                "GET / HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -401,8 +400,8 @@ public class AsyncListenerTest
 
         startServer(context);
 
-        String httpResponse = connector.getResponse("" +
-                "GET / HTTP/1.1\r\n" +
+        String httpResponse = connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n");
@@ -440,8 +439,8 @@ public class AsyncListenerTest
         }), "/*");
         startServer(context);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("" +
-                "GET / HTTP/1.1\r\n" +
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "\r\n"));
         assertEquals(HttpStatus.OK_200, response.getStatus());

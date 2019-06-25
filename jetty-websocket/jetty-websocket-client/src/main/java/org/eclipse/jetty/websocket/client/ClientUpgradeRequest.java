@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-
 import java.net.HttpCookie;
 import java.net.URI;
 import java.security.Principal;
@@ -31,6 +27,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
  * Client based UpgradeRequest API
@@ -366,8 +366,8 @@ public final class ClientUpgradeRequest implements UpgradeRequest
      * <p>
      * Quoting is determined if any of the characters in the {@code delim} are found in the input {@code str}.
      *
-     * @param buf   the buffer to append to
-     * @param str   the string to possibly quote
+     * @param buf the buffer to append to
+     * @param str the string to possibly quote
      * @param delim the delimiter characters that will trigger automatic quoting
      */
     private static void quoteIfNeeded(StringBuilder buf, String str, String delim)

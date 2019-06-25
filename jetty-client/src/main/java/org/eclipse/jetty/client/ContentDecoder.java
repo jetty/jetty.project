@@ -53,7 +53,7 @@ public interface ContentDecoder
      * {@link Factory} instances are configured in {@link HttpClient} via
      * {@link HttpClient#getContentDecoderFactories()}.
      */
-    public static abstract class Factory
+    public abstract static class Factory
     {
         private final String encoding;
 
@@ -73,8 +73,10 @@ public interface ContentDecoder
         @Override
         public boolean equals(Object obj)
         {
-            if (this == obj) return true;
-            if (!(obj instanceof Factory)) return false;
+            if (this == obj)
+                return true;
+            if (!(obj instanceof Factory))
+                return false;
             Factory that = (Factory)obj;
             return encoding.equals(that.encoding);
         }

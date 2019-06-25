@@ -46,10 +46,10 @@ public class UnixSocketClient
             content_length = body.length();
         }
         String data = method + " / HTTP/1.1\r\n"
-                + "Host: unixsock\r\n"
-                + "Content-Length: " + content_length + "\r\n"
-                + "Connection: close\r\n"
-                + "\r\n";
+            + "Host: unixsock\r\n"
+            + "Content-Length: " + content_length + "\r\n"
+            + "Connection: close\r\n"
+            + "\r\n";
         if (body != null)
             data += body;
 

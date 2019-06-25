@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.tests.client;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.MessageHandler;
@@ -257,7 +256,7 @@ public class SessionAddMessageHandlerTest
             ByteBuffer copy = ByteBuffer.allocate(partialMsg.remaining());
             copy.put(partialMsg);
             copy.flip();
-            received.add(new Object[] { copy, isLast });
+            received.add(new Object[]{copy, isLast});
         });
 
         assertThat("session", session, SessionMatchers.isMessageHandlerTypeRegistered(MessageType.BINARY));

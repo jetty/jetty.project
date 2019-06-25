@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.ServletContainerInitializer;
 
 import org.eclipse.jetty.util.Loader;
@@ -40,20 +39,19 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class ContainerInitializer
 {
     private static final Logger LOG = Log.getLogger(ContainerInitializer.class);
-    
-    final protected ServletContainerInitializer _target;
-    final protected Class<?>[] _interestedTypes;
-    final protected Set<String> _applicableTypeNames = ConcurrentHashMap.newKeySet();
-    final protected Set<String> _annotatedTypeNames = ConcurrentHashMap.newKeySet();
 
+    protected final ServletContainerInitializer _target;
+    protected final Class<?>[] _interestedTypes;
+    protected final Set<String> _applicableTypeNames = ConcurrentHashMap.newKeySet();
+    protected final Set<String> _annotatedTypeNames = ConcurrentHashMap.newKeySet();
 
-    public ContainerInitializer (ServletContainerInitializer target, Class<?>[] classes)
+    public ContainerInitializer(ServletContainerInitializer target, Class<?>[] classes)
     {
         _target = target;
         _interestedTypes = classes;
     }
-    
-    public ContainerInitializer (ClassLoader loader, String toString)
+
+    public ContainerInitializer(ClassLoader loader, String toString)
     {
         Matcher m = Pattern.compile("ContainerInitializer\\{(.*),interested=(.*),applicable=(.*),annotated=(.*)\\}").matcher(toString);
         if (!m.matches())
@@ -64,58 +62,63 @@ public class ContainerInitializer
             _target = (ServletContainerInitializer)loader.loadClass(m.group(1)).getDeclaredConstructor().newInstance();
             String[] interested = StringUtil.arrayFromString(m.group(2));
             _interestedTypes = new Class<?>[interested.length];
-            for (int i=0;i<interested.length;i++)
-                _interestedTypes[i]=loader.loadClass(interested[i]);
-            for (String s:StringUtil.arrayFromString(m.group(3)))
+            for (int i = 0; i < interested.length; i++)
+            {
+                _interestedTypes[i] = loader.loadClass(interested[i]);
+            }
+            for (String s : StringUtil.arrayFromString(m.group(3)))
+            {
                 _applicableTypeNames.add(s);
-            for (String s:StringUtil.arrayFromString(m.group(4)))
+            }
+            for (String s : StringUtil.arrayFromString(m.group(4)))
+            {
                 _annotatedTypeNames.add(s);
+            }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new IllegalArgumentException(toString, e);
         }
     }
-    
-    public ServletContainerInitializer getTarget ()
+
+    public ServletContainerInitializer getTarget()
     {
         return _target;
     }
 
-    public Class[] getInterestedTypes ()
+    public Class[] getInterestedTypes()
     {
         return _interestedTypes;
     }
 
-
     /**
      * A class has been found that has an annotation of interest
      * to this initializer.
+     *
      * @param className the class name to add
      */
-    public void addAnnotatedTypeName (String className)
+    public void addAnnotatedTypeName(String className)
     {
         _annotatedTypeNames.add(className);
     }
 
-    public Set<String> getAnnotatedTypeNames ()
+    public Set<String> getAnnotatedTypeNames()
     {
         return Collections.unmodifiableSet(_annotatedTypeNames);
     }
 
-    public void addApplicableTypeName (String className)
+    public void addApplicableTypeName(String className)
     {
         _applicableTypeNames.add(className);
     }
 
-    public Set<String> getApplicableTypeNames ()
+    public Set<String> getApplicableTypeNames()
     {
         return Collections.unmodifiableSet(_applicableTypeNames);
     }
 
-
     public void callStartup(WebAppContext context)
-    throws Exception
+        throws Exception
     {
         if (_target != null)
         {
@@ -127,20 +130,22 @@ public class ContainerInitializer
             try
             {
                 for (String s : _applicableTypeNames)
+                {
                     classes.add(Loader.loadClass(s));
+                }
 
                 context.getServletContext().setExtendedListenerTypes(true);
                 if (LOG.isDebugEnabled())
                 {
                     long start = System.nanoTime();
                     _target.onStartup(classes, context.getServletContext());
-                    LOG.debug("ContainerInitializer {} called in {}ms", _target.getClass().getName(), TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS));
+                    LOG.debug("ContainerInitializer {} called in {}ms", _target.getClass().getName(), TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
                 }
                 else
                     _target.onStartup(classes, context.getServletContext());
             }
             finally
-            { 
+            {
                 context.getServletContext().setExtendedListenerTypes(false);
                 Thread.currentThread().setContextClassLoader(oldLoader);
             }
@@ -155,13 +160,15 @@ public class ContainerInitializer
         {
             interested = new ArrayList<>(_interestedTypes.length);
             for (Class<?> c : _interestedTypes)
+            {
                 interested.add(c.getName());
+            }
         }
 
-        return String.format("ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}",_target.getClass().getName(),interested,_applicableTypeNames,_annotatedTypeNames);
+        return String.format("ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}", _target.getClass().getName(), interested, _applicableTypeNames, _annotatedTypeNames);
     }
 
-    public void resolveClasses(WebAppContext context, Map<String, Set<String>> classMap) 
+    public void resolveClasses(WebAppContext context, Map<String, Set<String>> classMap)
     {
         //We have already found the classes that directly have an annotation that was in the HandlesTypes
         //annotation of the ServletContainerInitializer. For each of those classes, walk the inheritance
@@ -179,7 +186,6 @@ public class ContainerInitializer
             }
         }
 
-
         //Now we need to look at the HandlesTypes classes that were not annotations. We need to
         //find all classes that extend or implement them.
         if (getInterestedTypes() != null)
@@ -196,7 +202,7 @@ public class ContainerInitializer
         }
     }
 
-    private void addInheritedTypes(Map<String, Set<String>> classMap,Set<String> names)
+    private void addInheritedTypes(Map<String, Set<String>> classMap, Set<String> names)
     {
         if (names == null || names.isEmpty())
             return;

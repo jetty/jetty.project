@@ -64,7 +64,7 @@ public class StartIniBuilder implements BaseBuilder.Config
 
     private void parseIni() throws IOException
     {
-        try (BufferedReader reader = Files.newBufferedReader(startIni,StandardCharsets.UTF_8))
+        try (BufferedReader reader = Files.newBufferedReader(startIni, StandardCharsets.UTF_8))
         {
             String line;
             while ((line = reader.readLine()) != null)
@@ -77,7 +77,7 @@ public class StartIniBuilder implements BaseBuilder.Config
                 }
                 else if (!line.startsWith("-") && line.contains("="))
                 {
-                    String key = line.substring(0,line.indexOf('='));
+                    String key = line.substring(0, line.indexOf('='));
                     this.propsPresent.add(key);
                 }
             }
@@ -89,7 +89,7 @@ public class StartIniBuilder implements BaseBuilder.Config
     {
         if (modulesPresent.contains(module.getName()))
         {
-            StartLog.info("%-15s already initialised in %s",module.getName(),baseHome.toShortForm(startIni));
+            StartLog.info("%-15s already initialised in %s", module.getName(), baseHome.toShortForm(startIni));
             // skip, already present
             return null;
         }
@@ -99,7 +99,7 @@ public class StartIniBuilder implements BaseBuilder.Config
             if (module.hasIniTemplate())
             {
                 // warn
-                StartLog.warn("%-15s not adding [ini-template] from dynamic module",module.getName());
+                StartLog.warn("%-15s not adding [ini-template] from dynamic module", module.getName());
             }
             return null;
         }
@@ -107,7 +107,7 @@ public class StartIniBuilder implements BaseBuilder.Config
         if (module.hasIniTemplate() || !module.isTransitive())
         {
             // Append to start.ini
-            try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
+            try (BufferedWriter writer = Files.newBufferedWriter(startIni, StandardCharsets.UTF_8, StandardOpenOption.APPEND, StandardOpenOption.CREATE))
             {
                 module.writeIniSection(writer, props);
             }

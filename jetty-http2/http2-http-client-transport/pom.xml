@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.http2</groupId>
     <artifactId>http2-parent</artifactId>
@@ -21,9 +20,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine}
-            --add-reads org.eclipse.jetty.http2.http.client.transport=jetty.servlet.api
-            --add-modules jetty.servlet.api
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.http2.http.client.transport=jetty.servlet.api --add-modules jetty.servlet.api
           </argLine>
         </configuration>
       </plugin>

@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
-    public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
+    public static final int DEFAULT_MAX_CONTENT_LENGTH = 16 * 1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
     private final HttpClient client;
     private final int maxContentLength;
@@ -80,18 +80,17 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         return new AuthenticationListener();
     }
 
-
     protected List<HeaderInfo> getHeaderInfo(String header) throws IllegalArgumentException
     {
         List<HeaderInfo> headerInfos = new ArrayList<>();
         Matcher m;
 
-        for(String value : new QuotedCSV(true, header))
+        for (String value : new QuotedCSV(true, header))
         {
             m = CHALLENGE_PATTERN.matcher(value);
             if (m.matches())
             {
-                if(m.group("schemeOnly") != null)
+                if (m.group("schemeOnly") != null)
                 {
                     headerInfos.add(new HeaderInfo(getAuthorizationHeader(), m.group(1), new HashMap<>()));
                     continue;
@@ -291,7 +290,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 {
                     result.addAll(getHeaderInfo(value));
                 }
-                catch(IllegalArgumentException e)
+                catch (IllegalArgumentException e)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failed to parse authentication header", e);

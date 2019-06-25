@@ -46,7 +46,7 @@ public class MessageHandlerTest
     // Testing with 4 byte UTF8 character "\uD842\uDF9F"
     static String fourByteUtf8String = "\uD842\uDF9F";
     static byte[] fourByteUtf8Bytes = fourByteUtf8String.getBytes(StandardCharsets.UTF_8);
-    static byte[] nonUtf8Bytes = { 0x7F, (byte)0xFF, (byte)0xFF };
+    static byte[] nonUtf8Bytes = {0x7F, (byte)0xFF, (byte)0xFF};
 
     boolean demanding;
     CoreSession coreSession;
@@ -343,7 +343,6 @@ public class MessageHandlerTest
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
         assertDoesNotThrow(() -> callback1.get());
-
         FutureCallback callback2 = new FutureCallback();
         handler.onFrame(new Frame(OpCode.TEXT, true, BufferUtil.toBuffer(fourByteUtf8Bytes)), callback2);
         assertThat(callback2.isDone(), is(true));

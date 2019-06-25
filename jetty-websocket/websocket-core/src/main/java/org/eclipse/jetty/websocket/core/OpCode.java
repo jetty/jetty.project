@@ -142,5 +142,4 @@ public final class OpCode
                 return "NON-SPEC[" + opcode + "]";
         }
     }
-
 }

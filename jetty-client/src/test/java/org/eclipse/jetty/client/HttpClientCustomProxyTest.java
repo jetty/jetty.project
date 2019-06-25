@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -107,8 +106,8 @@ public class HttpClientCustomProxyTest
         client.getProxyConfiguration().getProxies().add(new CAFEBABEProxy(new Origin.Address("localhost", proxyPort), false));
 
         ContentResponse response = client.newRequest(serverHost, serverPort)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response.getStatus());
     }

@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.util;
 
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnJre;
@@ -40,116 +37,146 @@ public class TypeUtilTest
 {
     @Test
     public void convertHexDigitTest()
-    {   
-        assertEquals((byte)0,TypeUtil.convertHexDigit((byte)'0'));
-        assertEquals((byte)9,TypeUtil.convertHexDigit((byte)'9'));
-        assertEquals((byte)10,TypeUtil.convertHexDigit((byte)'a'));
-        assertEquals((byte)10,TypeUtil.convertHexDigit((byte)'A'));
-        assertEquals((byte)15,TypeUtil.convertHexDigit((byte)'f'));
-        assertEquals((byte)15,TypeUtil.convertHexDigit((byte)'F'));
-        
-        assertEquals((int)0,TypeUtil.convertHexDigit((int)'0'));
-        assertEquals((int)9,TypeUtil.convertHexDigit((int)'9'));
-        assertEquals((int)10,TypeUtil.convertHexDigit((int)'a'));
-        assertEquals((int)10,TypeUtil.convertHexDigit((int)'A'));
-        assertEquals((int)15,TypeUtil.convertHexDigit((int)'f'));
-        assertEquals((int)15,TypeUtil.convertHexDigit((int)'F'));
+    {
+        assertEquals((byte)0, TypeUtil.convertHexDigit((byte)'0'));
+        assertEquals((byte)9, TypeUtil.convertHexDigit((byte)'9'));
+        assertEquals((byte)10, TypeUtil.convertHexDigit((byte)'a'));
+        assertEquals((byte)10, TypeUtil.convertHexDigit((byte)'A'));
+        assertEquals((byte)15, TypeUtil.convertHexDigit((byte)'f'));
+        assertEquals((byte)15, TypeUtil.convertHexDigit((byte)'F'));
+
+        assertEquals((int)0, TypeUtil.convertHexDigit((int)'0'));
+        assertEquals((int)9, TypeUtil.convertHexDigit((int)'9'));
+        assertEquals((int)10, TypeUtil.convertHexDigit((int)'a'));
+        assertEquals((int)10, TypeUtil.convertHexDigit((int)'A'));
+        assertEquals((int)15, TypeUtil.convertHexDigit((int)'f'));
+        assertEquals((int)15, TypeUtil.convertHexDigit((int)'F'));
     }
-    
+
     @Test
     public void testToHexInt() throws Exception
     {
         StringBuilder b = new StringBuilder();
-        
+
         b.setLength(0);
-        TypeUtil.toHex((int)0,b);
-        assertEquals("00000000",b.toString());
-        
+        TypeUtil.toHex((int)0, b);
+        assertEquals("00000000", b.toString());
+
         b.setLength(0);
-        TypeUtil.toHex(Integer.MAX_VALUE,b);
-        assertEquals("7FFFFFFF",b.toString());
-        
+        TypeUtil.toHex(Integer.MAX_VALUE, b);
+        assertEquals("7FFFFFFF", b.toString());
+
         b.setLength(0);
-        TypeUtil.toHex(Integer.MIN_VALUE,b);
-        assertEquals("80000000",b.toString());
-        
+        TypeUtil.toHex(Integer.MIN_VALUE, b);
+        assertEquals("80000000", b.toString());
+
         b.setLength(0);
-        TypeUtil.toHex(0x12345678,b);
-        assertEquals("12345678",b.toString());
-        
+        TypeUtil.toHex(0x12345678, b);
+        assertEquals("12345678", b.toString());
+
         b.setLength(0);
-        TypeUtil.toHex(0x9abcdef0,b);
-        assertEquals("9ABCDEF0",b.toString());
+        TypeUtil.toHex(0x9abcdef0, b);
+        assertEquals("9ABCDEF0", b.toString());
     }
 
     @Test
     public void testToHexLong() throws Exception
     {
         StringBuilder b = new StringBuilder();
-        
+
         b.setLength(0);
-        TypeUtil.toHex((long)0,b);
-        assertEquals("0000000000000000",b.toString());
-        
+        TypeUtil.toHex((long)0, b);
+        assertEquals("0000000000000000", b.toString());
+
         b.setLength(0);
-        TypeUtil.toHex(Long.MAX_VALUE,b);
-        assertEquals("7FFFFFFFFFFFFFFF",b.toString());
-        
+        TypeUtil.toHex(Long.MAX_VALUE, b);
+        assertEquals("7FFFFFFFFFFFFFFF", b.toString());
+
         b.setLength(0);
-        TypeUtil.toHex(Long.MIN_VALUE,b);
-        assertEquals("8000000000000000",b.toString());
-        
+        TypeUtil.toHex(Long.MIN_VALUE, b);
+        assertEquals("8000000000000000", b.toString());
+
         b.setLength(0);
-        TypeUtil.toHex(0x123456789abcdef0L,b);
-        assertEquals("123456789ABCDEF0",b.toString());
+        TypeUtil.toHex(0x123456789abcdef0L, b);
+        assertEquals("123456789ABCDEF0", b.toString());
     }
 
     @Test
-    public void testIsTrue() throws Exception
+    public void testIsTrue()
     {
         assertTrue(TypeUtil.isTrue(Boolean.TRUE));
         assertTrue(TypeUtil.isTrue(true));
         assertTrue(TypeUtil.isTrue("true"));
-        assertTrue(TypeUtil.isTrue(new Object(){@Override public String toString(){return "true";}}));
-        
+        assertTrue(TypeUtil.isTrue(new Object()
+        {
+            @Override
+            public String toString()
+            {
+                return "true";
+            }
+        }));
+
         assertFalse(TypeUtil.isTrue(Boolean.FALSE));
         assertFalse(TypeUtil.isTrue(false));
         assertFalse(TypeUtil.isTrue("false"));
         assertFalse(TypeUtil.isTrue("blargle"));
-        assertFalse(TypeUtil.isTrue(new Object(){@Override public String toString(){return "false";}}));
+        assertFalse(TypeUtil.isTrue(new Object()
+        {
+            @Override
+            public String toString()
+            {
+                return "false";
+            }
+        }));
     }
 
     @Test
-    public void testIsFalse() throws Exception
+    public void testIsFalse()
     {
         assertTrue(TypeUtil.isFalse(Boolean.FALSE));
         assertTrue(TypeUtil.isFalse(false));
         assertTrue(TypeUtil.isFalse("false"));
-        assertTrue(TypeUtil.isFalse(new Object(){@Override public String toString(){return "false";}}));
-        
+        assertTrue(TypeUtil.isFalse(new Object()
+        {
+            @Override
+            public String toString()
+            {
+                return "false";
+            }
+        }));
+
         assertFalse(TypeUtil.isFalse(Boolean.TRUE));
         assertFalse(TypeUtil.isFalse(true));
         assertFalse(TypeUtil.isFalse("true"));
         assertFalse(TypeUtil.isFalse("blargle"));
-        assertFalse(TypeUtil.isFalse(new Object(){@Override public String toString(){return "true";}}));
+        assertFalse(TypeUtil.isFalse(new Object()
+        {
+            @Override
+            public String toString()
+            {
+                return "true";
+            }
+        }));
     }
-    
-    @Test
-    @Disabled // TODO fails if the mavenRepo is a symbolic link
-    public void testGetLocationOfClass() throws Exception
-    {
-        String mavenRepoPathProperty = System.getProperty( "mavenRepoPath");
-        assumeTrue(mavenRepoPathProperty != null);
-        Path mavenRepoPath = Paths.get( mavenRepoPathProperty );
 
-        System.err.println("mavenRepoPath "+mavenRepoPath);
+    @Test
+    public void testGetLocationOfClass_FromMavenRepo()
+    {
+        String mavenRepoPathProperty = System.getProperty("mavenRepoPath");
+        assumeTrue(mavenRepoPathProperty != null);
+        Path mavenRepoPath = Paths.get(mavenRepoPathProperty);
+
         String mavenRepo = mavenRepoPath.toFile().getPath().replaceAll("\\\\", "/");
 
         // Classes from maven dependencies
-        assertThat(TypeUtil.getLocationOfClass(Assertions.class).toASCIIString(),containsString(mavenRepo));
-        
+        assertThat(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString(), containsString(mavenRepo));
+    }
+
+    @Test
+    public void getLocationOfClass_ClassDirectory()
+    {
         // Class from project dependencies
-        assertThat(TypeUtil.getLocationOfClass(TypeUtil.class).toASCIIString(),containsString("/classes/"));
+        assertThat(TypeUtil.getLocationOfClass(TypeUtil.class).toASCIIString(), containsString("/classes/"));
     }
 
     @Test
@@ -157,8 +184,17 @@ public class TypeUtilTest
     public void testGetLocation_JvmCore_JPMS()
     {
         // Class from JVM core
-        String expectedJavaBase = "/java.base/";
-        assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(),containsString(expectedJavaBase));
+        String expectedJavaBase = "/java.base";
+        assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(), containsString(expectedJavaBase));
+    }
+
+    @Test
+    @DisabledOnJre(JRE.JAVA_8)
+    public void testGetLocation_JavaLangThreadDeath_JPMS()
+    {
+        // Class from JVM core
+        String expectedJavaBase = "/java.base";
+        assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(), containsString(expectedJavaBase));
     }
 
     @Test
@@ -167,6 +203,15 @@ public class TypeUtilTest
     {
         // Class from JVM core
         String expectedJavaBase = "/rt.jar";
-        assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(),containsString(expectedJavaBase));
+        assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(), containsString(expectedJavaBase));
+    }
+
+    @Test
+    @EnabledOnJre(JRE.JAVA_8)
+    public void testGetLocation_JavaLangThreadDeath_Java8RT()
+    {
+        // Class from JVM core
+        String expectedJavaBase = "/rt.jar";
+        assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(), containsString(expectedJavaBase));
     }
 }

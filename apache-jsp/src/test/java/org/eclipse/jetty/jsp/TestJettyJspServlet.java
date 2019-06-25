@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -54,7 +53,7 @@ public class TestJettyJspServlet
 
     private File _dir;
     private ServletTester _tester;
-    
+
     public static class DfltServlet extends HttpServlet
     {
 
@@ -62,8 +61,8 @@ public class TestJettyJspServlet
         {
             super();
         }
-        
-        /** 
+
+        /**
          * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
          */
         @Override
@@ -72,11 +71,10 @@ public class TestJettyJspServlet
             resp.setContentType("html/text");
             resp.getOutputStream().println("This.Is.The.Default.");
         }
-        
     }
-    
+
     @BeforeEach
-    public void setUp () throws Exception
+    public void setUp() throws Exception
     {
         JspFactory.setDefaultFactory(new JspFactoryImpl());
         _dir = MavenTestingUtils.getTestResourceDir("base");
@@ -88,12 +86,12 @@ public class TestJettyJspServlet
         _tester.getContext().setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
         ServletHolder dfltHolder = new ServletHolder();
         dfltHolder.setName("default");
-        dfltHolder.setHeldClass( DfltServlet.class);
+        dfltHolder.setHeldClass(DfltServlet.class);
         _tester.getContext().addServlet(dfltHolder, "/");
 
         _tester.start();
     }
-    
+
     @AfterEach
     public void tearDown() throws Exception
     {
@@ -105,8 +103,8 @@ public class TestJettyJspServlet
     public void testWithJsp() throws Exception
     {
         //test that an ordinary jsp is served by jsp servlet
-        String request = "" +
-                "GET /context/foo.jsp HTTP/1.1\r\n" +
+        String request =
+            "GET /context/foo.jsp HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
@@ -115,14 +113,13 @@ public class TestJettyJspServlet
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getContent(), not(containsString("This.Is.The.Default.")));
     }
-    
-    
+
     @Test
     public void testWithDirectory() throws Exception
     {
         //test that a dir is served by the default servlet
-        String request = "" +
-                "GET /context/dir HTTP/1.1\r\n" +
+        String request =
+            "GET /context/dir HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";

@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.server.ServerEndpoint;
+
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -31,15 +40,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Test various {@link javax.websocket.Decoder.Binary Decoder.Binary} / {@link javax.websocket.Encoder.Binary Encoder.Binary} echo behavior of Java Primitives

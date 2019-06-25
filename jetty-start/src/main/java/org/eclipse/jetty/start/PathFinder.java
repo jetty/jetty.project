@@ -49,7 +49,7 @@ public class PathFinder extends SimpleFileVisitor<Path>
     {
         String relPath = basePath.relativize(path).toString();
         StartLog.debug("Found [" + relPath + "]  " + path);
-        hits.put(relPath,path);
+        hits.put(relPath, path);
     }
 
     public PathMatcher getDirMatcher()
@@ -105,9 +105,8 @@ public class PathFinder extends SimpleFileVisitor<Path>
      * Set the active basePath, used for resolving relative paths.
      * <p>
      * When a hit arrives for a subsequent find that has the same relative path as a prior hit, the new hit overrides the prior path as the active hit.
-     * 
-     * @param basePath
-     *            the basePath to tag all hits with
+     *
+     * @param basePath the basePath to tag all hits with
      */
     public void setBase(Path basePath)
     {
@@ -163,7 +162,7 @@ public class PathFinder extends SimpleFileVisitor<Path>
         else
         {
             StartLog.warn(exc);
-            return super.visitFileFailed(file,exc);
+            return super.visitFileFailed(file, exc);
         }
     }
 }

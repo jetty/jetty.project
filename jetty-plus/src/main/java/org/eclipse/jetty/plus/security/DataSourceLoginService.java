@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.plus.security;
 
 import java.sql.Connection;
@@ -28,7 +27,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
@@ -41,7 +39,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Credential;
-
 
 /**
  * DataSourceUserRealm
@@ -69,229 +66,178 @@ public class DataSourceLoginService extends AbstractLoginService
     private String _userSql;
     private String _roleSql;
     private boolean _createTables = false;
-    
-    
+
     /**
      * DBUser
      */
     public class DBUserPrincipal extends UserPrincipal
     {
         private int _key;
-        
+
         public DBUserPrincipal(String name, Credential credential, int key)
         {
             super(name, credential);
             _key = key;
         }
-        
-        public int getKey ()
+
+        public int getKey()
         {
             return _key;
         }
-        
     }
 
-    /* ------------------------------------------------------------ */
     public DataSourceLoginService()
     {
     }
 
-    /* ------------------------------------------------------------ */
     public DataSourceLoginService(String name)
     {
         setName(name);
     }
 
-    /* ------------------------------------------------------------ */
     public DataSourceLoginService(String name, IdentityService identityService)
     {
         setName(name);
         setIdentityService(identityService);
     }
 
-    /* ------------------------------------------------------------ */
-    public void setJndiName (String jndi)
+    public void setJndiName(String jndi)
     {
         _jndiName = jndi;
     }
 
-    /* ------------------------------------------------------------ */
-    public String getJndiName ()
+    public String getJndiName()
     {
         return _jndiName;
     }
 
-    /* ------------------------------------------------------------ */
-    public void setServer (Server server)
+    public void setServer(Server server)
     {
-        _server=server;
+        _server = server;
     }
 
-    /* ------------------------------------------------------------ */
     public Server getServer()
     {
         return _server;
     }
 
-    /* ------------------------------------------------------------ */
     public void setCreateTables(boolean createTables)
     {
         _createTables = createTables;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean getCreateTables()
     {
         return _createTables;
     }
 
-    /* ------------------------------------------------------------ */
-    public void setUserTableName (String name)
+    public void setUserTableName(String name)
     {
-        _userTableName=name;
+        _userTableName = name;
     }
 
-    /* ------------------------------------------------------------ */
     public String getUserTableName()
     {
         return _userTableName;
     }
 
-    /* ------------------------------------------------------------ */
     public String getUserTableKey()
     {
         return _userTableKey;
     }
 
-
-    /* ------------------------------------------------------------ */
     public void setUserTableKey(String tableKey)
     {
         _userTableKey = tableKey;
     }
 
-
-    /* ------------------------------------------------------------ */
     public String getUserTableUserField()
     {
         return _userTableUserField;
     }
 
-
-    /* ------------------------------------------------------------ */
     public void setUserTableUserField(String tableUserField)
     {
         _userTableUserField = tableUserField;
     }
 
-
-    /* ------------------------------------------------------------ */
     public String getUserTablePasswordField()
     {
         return _userTablePasswordField;
     }
 
-
-    /* ------------------------------------------------------------ */
     public void setUserTablePasswordField(String tablePasswordField)
     {
         _userTablePasswordField = tablePasswordField;
     }
 
-
-    /* ------------------------------------------------------------ */
     public String getRoleTableName()
     {
         return _roleTableName;
     }
 
-
-    /* ------------------------------------------------------------ */
     public void setRoleTableName(String tableName)
     {
         _roleTableName = tableName;
     }
 
-
-    /* ------------------------------------------------------------ */
     public String getRoleTableKey()
     {
         return _roleTableKey;
     }
 
-
-    /* ------------------------------------------------------------ */
     public void setRoleTableKey(String tableKey)
     {
         _roleTableKey = tableKey;
     }
 
-
-    /* ------------------------------------------------------------ */
     public String getRoleTableRoleField()
     {
         return _roleTableRoleField;
     }
 
-
-    /* ------------------------------------------------------------ */
     public void setRoleTableRoleField(String tableRoleField)
     {
         _roleTableRoleField = tableRoleField;
     }
 
-
-    /* ------------------------------------------------------------ */
     public String getUserRoleTableName()
     {
         return _userRoleTableName;
     }
 
-
-    /* ------------------------------------------------------------ */
     public void setUserRoleTableName(String roleTableName)
     {
         _userRoleTableName = roleTableName;
     }
 
-
-    /* ------------------------------------------------------------ */
     public String getUserRoleTableUserKey()
     {
         return _userRoleTableUserKey;
     }
 
-
-    /* ------------------------------------------------------------ */
     public void setUserRoleTableUserKey(String roleTableUserKey)
     {
         _userRoleTableUserKey = roleTableUserKey;
     }
 
-
-    /* ------------------------------------------------------------ */
     public String getUserRoleTableRoleKey()
     {
         return _userRoleTableRoleKey;
     }
 
-
-    /* ------------------------------------------------------------ */
     public void setUserRoleTableRoleKey(String roleTableRoleKey)
     {
         _userRoleTableRoleKey = roleTableRoleKey;
     }
 
-  
-    
-    /* ------------------------------------------------------------ */
     @Override
-    public UserPrincipal loadUserInfo (String username)
+    public UserPrincipal loadUserInfo(String username)
     {
         try
         {
             try (Connection connection = getConnection();
-                    PreparedStatement statement1 = connection.prepareStatement(_userSql))
+                 PreparedStatement statement1 = connection.prepareStatement(_userSql))
             {
                 statement1.setObject(1, username);
                 try (ResultSet rs1 = statement1.executeQuery())
@@ -300,7 +246,7 @@ public class DataSourceLoginService extends AbstractLoginService
                     {
                         int key = rs1.getInt(_userTableKey);
                         String credentials = rs1.getString(_userTablePasswordField);
-                        
+
                         return new DBUserPrincipal(username, Credential.getCredential(credentials), key);
                     }
                 }
@@ -308,26 +254,24 @@ public class DataSourceLoginService extends AbstractLoginService
         }
         catch (NamingException e)
         {
-            LOG.warn("No datasource for "+_jndiName, e);
+            LOG.warn("No datasource for " + _jndiName, e);
         }
         catch (SQLException e)
         {
-            LOG.warn("Problem loading user info for "+username, e);
+            LOG.warn("Problem loading user info for " + username, e);
         }
         return null;
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
-    public String[] loadRoleInfo (UserPrincipal user)
+    public String[] loadRoleInfo(UserPrincipal user)
     {
         DBUserPrincipal dbuser = (DBUserPrincipal)user;
 
         try
         {
             try (Connection connection = getConnection();
-                    PreparedStatement statement2 = connection.prepareStatement(_roleSql))
+                 PreparedStatement statement2 = connection.prepareStatement(_roleSql))
             {
 
                 List<String> roles = new ArrayList<String>();
@@ -339,25 +283,22 @@ public class DataSourceLoginService extends AbstractLoginService
                     {
                         roles.add(rs2.getString(_roleTableRoleField));
                     }
-                    
+
                     return roles.toArray(new String[roles.size()]);
                 }
             }
         }
         catch (NamingException e)
         {
-            LOG.warn("No datasource for "+_jndiName, e);
+            LOG.warn("No datasource for " + _jndiName, e);
         }
         catch (SQLException e)
         {
-            LOG.warn("Problem loading user info for "+user.getName(), e);
+            LOG.warn("Problem loading user info for " + user.getName(), e);
         }
         return null;
     }
-    
- 
 
-    /* ------------------------------------------------------------ */
     /**
      * Lookup the datasource for the jndiName and formulate the
      * necessary sql query strings based on the configured table
@@ -373,7 +314,7 @@ public class DataSourceLoginService extends AbstractLoginService
 
         @SuppressWarnings("unused")
         InitialContext ic = new InitialContext();
-        assert ic!=null;
+        assert ic != null;
 
         // TODO Should we try webapp scope too?
 
@@ -390,33 +331,30 @@ public class DataSourceLoginService extends AbstractLoginService
             }
         }
 
-
         //try finding the datasource in the jvm scope
-        if (_datasource==null)
+        if (_datasource == null)
         {
             _datasource = (DataSource)NamingEntryUtil.lookup(null, _jndiName);
         }
 
         // set up the select statements based on the table and column names configured
-        _userSql = "select " + _userTableKey + "," + _userTablePasswordField
-                  + " from " + _userTableName
-                  + " where "+ _userTableUserField + " = ?";
+        _userSql = "select " + _userTableKey + "," + _userTablePasswordField +
+            " from " + _userTableName +
+            " where " + _userTableUserField + " = ?";
 
-        _roleSql = "select r." + _roleTableRoleField
-                  + " from " + _roleTableName + " r, " + _userRoleTableName
-                  + " u where u."+ _userRoleTableUserKey + " = ?"
-                  + " and r." + _roleTableKey + " = u." + _userRoleTableRoleKey;
+        _roleSql = "select r." + _roleTableRoleField +
+            " from " + _roleTableName + " r, " + _userRoleTableName +
+            " u where u." + _userRoleTableUserKey + " = ?" +
+            " and r." + _roleTableKey + " = u." + _userRoleTableRoleKey;
 
         prepareTables();
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @throws NamingException
-     * @throws SQLException
+     *
      */
     private void prepareTables()
-    throws NamingException, SQLException
+        throws NamingException, SQLException
     {
         if (_createTables)
         {
@@ -429,7 +367,7 @@ public class DataSourceLoginService extends AbstractLoginService
                 DatabaseMetaData metaData = connection.getMetaData();
 
                 //check if tables exist
-                String tableName = (metaData.storesLowerCaseIdentifiers()? _userTableName.toLowerCase(Locale.ENGLISH): (metaData.storesUpperCaseIdentifiers()?_userTableName.toUpperCase(Locale.ENGLISH): _userTableName));
+                String tableName = (metaData.storesLowerCaseIdentifiers() ? _userTableName.toLowerCase(Locale.ENGLISH) : (metaData.storesUpperCaseIdentifiers() ? _userTableName.toUpperCase(Locale.ENGLISH) : _userTableName));
                 try (ResultSet result = metaData.getTables(null, null, tableName, null))
                 {
                     if (!result.next())
@@ -440,14 +378,15 @@ public class DataSourceLoginService extends AbstractLoginService
                          * _userTableUserField varchar(100) not null unique,
                          * _userTablePasswordField varchar(20) not null, primary key(_userTableKey));
                          */
-                        stmt.executeUpdate("create table "+_userTableName+ "("+_userTableKey+" integer,"+
-                                _userTableUserField+" varchar(100) not null unique,"+
-                                _userTablePasswordField+" varchar(20) not null, primary key("+_userTableKey+"))");
-                        if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userTableName);
+                        stmt.executeUpdate("create table " + _userTableName + "(" + _userTableKey + " integer," +
+                            _userTableUserField + " varchar(100) not null unique," +
+                            _userTablePasswordField + " varchar(20) not null, primary key(" + _userTableKey + "))");
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Created table " + _userTableName);
                     }
                 }
 
-                tableName = (metaData.storesLowerCaseIdentifiers()? _roleTableName.toLowerCase(Locale.ENGLISH): (metaData.storesUpperCaseIdentifiers()?_roleTableName.toUpperCase(Locale.ENGLISH): _roleTableName));
+                tableName = (metaData.storesLowerCaseIdentifiers() ? _roleTableName.toLowerCase(Locale.ENGLISH) : (metaData.storesUpperCaseIdentifiers() ? _roleTableName.toUpperCase(Locale.ENGLISH) : _roleTableName));
                 try (ResultSet result = metaData.getTables(null, null, tableName, null))
                 {
                     if (!result.next())
@@ -457,14 +396,15 @@ public class DataSourceLoginService extends AbstractLoginService
                          * create table _roleTableName (_roleTableKey integer,
                          * _roleTableRoleField varchar(100) not null unique, primary key(_roleTableKey));
                          */
-                        String str = "create table "+_roleTableName+" ("+_roleTableKey+" integer, "+
-                        _roleTableRoleField+" varchar(100) not null unique, primary key("+_roleTableKey+"))";
+                        String str = "create table " + _roleTableName + " (" + _roleTableKey + " integer, " +
+                            _roleTableRoleField + " varchar(100) not null unique, primary key(" + _roleTableKey + "))";
                         stmt.executeUpdate(str);
-                        if (LOG.isDebugEnabled()) LOG.debug("Created table "+_roleTableName);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Created table " + _roleTableName);
                     }
                 }
 
-                tableName = (metaData.storesLowerCaseIdentifiers()? _userRoleTableName.toLowerCase(Locale.ENGLISH): (metaData.storesUpperCaseIdentifiers()?_userRoleTableName.toUpperCase(Locale.ENGLISH): _userRoleTableName));
+                tableName = (metaData.storesLowerCaseIdentifiers() ? _userRoleTableName.toLowerCase(Locale.ENGLISH) : (metaData.storesUpperCaseIdentifiers() ? _userRoleTableName.toUpperCase(Locale.ENGLISH) : _userRoleTableName));
                 try (ResultSet result = metaData.getTables(null, null, tableName, null))
                 {
                     if (!result.next())
@@ -477,11 +417,12 @@ public class DataSourceLoginService extends AbstractLoginService
                          *
                          * create index idx_user_role on _userRoleTableName (_userRoleTableUserKey);
                          */
-                        stmt.executeUpdate("create table "+_userRoleTableName+" ("+_userRoleTableUserKey+" integer, "+
-                                _userRoleTableRoleKey+" integer, "+
-                                "primary key ("+_userRoleTableUserKey+", "+_userRoleTableRoleKey+"))");
-                        stmt.executeUpdate("create index indx_user_role on "+_userRoleTableName+"("+_userRoleTableUserKey+")");
-                        if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userRoleTableName +" and index");
+                        stmt.executeUpdate("create table " + _userRoleTableName + " (" + _userRoleTableUserKey + " integer, " +
+                            _userRoleTableRoleKey + " integer, " +
+                            "primary key (" + _userRoleTableUserKey + ", " + _userRoleTableRoleKey + "))");
+                        stmt.executeUpdate("create index indx_user_role on " + _userRoleTableName + "(" + _userRoleTableUserKey + ")");
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Created table " + _userRoleTableName + " and index");
                     }
                 }
                 connection.commit();
@@ -494,7 +435,8 @@ public class DataSourceLoginService extends AbstractLoginService
                 }
                 catch (SQLException e)
                 {
-                    if (LOG.isDebugEnabled()) LOG.debug("Prepare tables", e);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Prepare tables", e);
                 }
                 finally
                 {
@@ -504,7 +446,8 @@ public class DataSourceLoginService extends AbstractLoginService
                     }
                     catch (SQLException e)
                     {
-                        if (LOG.isDebugEnabled()) LOG.debug("Prepare tables", e);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Prepare tables", e);
                     }
                 }
             }
@@ -515,14 +458,11 @@ public class DataSourceLoginService extends AbstractLoginService
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return
-     * @throws NamingException
-     * @throws SQLException
+     *
      */
-    private Connection getConnection ()
-    throws NamingException, SQLException
+    private Connection getConnection()
+        throws NamingException, SQLException
     {
         initDb();
         return _datasource.getConnection();

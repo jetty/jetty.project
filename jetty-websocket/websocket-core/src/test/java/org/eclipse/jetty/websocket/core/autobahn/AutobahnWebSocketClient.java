@@ -32,6 +32,12 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+
+import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
@@ -178,7 +184,7 @@ public class AutobahnWebSocketClient
         Future<FrameHandler.CoreSession> response = client.connect(echoHandler, wsUri);
         if (waitForUpgrade(wsUri, response))
         {
-            if(!echoHandler.closeLatch.await(5, TimeUnit.MINUTES))
+            if (!echoHandler.closeLatch.await(5, TimeUnit.MINUTES))
             {
                 LOG.warn("could not close {}, aborting session", echoHandler);
                 echoHandler.coreSession.abort();

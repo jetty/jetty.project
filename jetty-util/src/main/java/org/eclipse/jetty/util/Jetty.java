@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class Jetty
 {
-    private static final Logger LOG = Log.getLogger( Jetty.class);
+    private static final Logger LOG = Log.getLogger(Jetty.class);
 
     public static final String VERSION;
     public static final String POWERED_BY;
@@ -38,41 +38,41 @@ public class Jetty
      * a formatted build timestamp with pattern yyyy-MM-dd'T'HH:mm:ssXXX
      */
     public static final String BUILD_TIMESTAMP;
-    private static final Properties __buildProperties = new Properties( );
+    private static final Properties __buildProperties = new Properties();
 
     static
     {
         try
         {
             try (InputStream inputStream = //
-                     Jetty.class.getResourceAsStream( "/org/eclipse/jetty/version/build.properties" ))
+                     Jetty.class.getResourceAsStream("/org/eclipse/jetty/version/build.properties"))
             {
-                __buildProperties.load( inputStream );
+                __buildProperties.load(inputStream);
             }
         }
-        catch ( Exception e )
+        catch (Exception e)
         {
-            LOG.ignore( e );
+            LOG.ignore(e);
         }
 
-        String git_hash = __buildProperties.getProperty( "buildNumber", "unknown" );
-        if (git_hash.startsWith("${"))
-            git_hash = "unknown";
-        GIT_HASH = git_hash;
-        System.setProperty( "jetty.git.hash" , GIT_HASH );
-        BUILD_TIMESTAMP = formatTimestamp( __buildProperties.getProperty( "timestamp", "unknown" ));
+        String gitHash = __buildProperties.getProperty("buildNumber", "unknown");
+        if (gitHash.startsWith("${"))
+            gitHash = "unknown";
+        GIT_HASH = gitHash;
+        System.setProperty("jetty.git.hash", GIT_HASH);
+        BUILD_TIMESTAMP = formatTimestamp(__buildProperties.getProperty("timestamp", "unknown"));
 
         // using __buildProperties.getProperty("version") will contain version from the pom
 
         Package pkg = Jetty.class.getPackage();
         if (pkg != null &&
-                "Eclipse Jetty Project".equals(pkg.getImplementationVendor()) &&
-                pkg.getImplementationVersion() != null)
+            "Eclipse Jetty Project".equals(pkg.getImplementationVendor()) &&
+            pkg.getImplementationVersion() != null)
             VERSION = pkg.getImplementationVersion();
         else
             VERSION = System.getProperty("jetty.version", "10.0.z-SNAPSHOT");
 
-        POWERED_BY="<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// "+VERSION+"</a>";
+        POWERED_BY = "<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// " + VERSION + "</a>";
 
         // Show warning when RC# or M# is in version string
         STABLE = !VERSION.matches("^.*\\.(RC|M)[0-9]+$");
@@ -82,19 +82,17 @@ public class Jetty
     {
     }
 
-
-    private static String formatTimestamp( String timestamp )
+    private static String formatTimestamp(String timestamp)
     {
         try
         {
             long epochMillis = Long.parseLong(timestamp);
             return Instant.ofEpochMilli(epochMillis).toString();
         }
-        catch ( NumberFormatException e )
+        catch (NumberFormatException e)
         {
-            LOG.ignore( e );
+            LOG.ignore(e);
             return "unknown";
         }
     }
-    
 }

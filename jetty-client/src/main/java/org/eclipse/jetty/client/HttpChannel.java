@@ -40,7 +40,7 @@ public abstract class HttpChannel
     {
         _totalTimeout.destroy();
     }
-    
+
     public HttpDestination getHttpDestination()
     {
         return _destination;

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.RequestDispatcher;
@@ -31,44 +30,44 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
-    final private Context _context;
-    final private AsyncContextState _asyncContext;
+    private final Context _context;
+    private final AsyncContextState _asyncContext;
     private volatile HttpChannelState _state;
     private ServletContext _dispatchContext;
     private String _dispatchPath;
     private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
-    public AsyncContextEvent(Context context,AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response)
+    public AsyncContextEvent(Context context, AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response)
     {
-        super(null,request,response,null);
-        _context=context;
-        _asyncContext=asyncContext;
-        _state=state;
+        super(null, request, response, null);
+        _context = context;
+        _asyncContext = asyncContext;
+        _state = state;
 
         // If we haven't been async dispatched before
-        if (baseRequest.getAttribute(AsyncContext.ASYNC_REQUEST_URI)==null)
+        if (baseRequest.getAttribute(AsyncContext.ASYNC_REQUEST_URI) == null)
         {
             // We are setting these attributes during startAsync, when the spec implies that
             // they are only available after a call to AsyncContext.dispatch(...);
 
             // have we been forwarded before?
-            String uri=(String)baseRequest.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-            if (uri!=null)
+            String uri = (String)baseRequest.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+            if (uri != null)
             {
-                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI,uri);
-                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,baseRequest.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
-                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,baseRequest.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
-                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO,baseRequest.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
-                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING,baseRequest.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, uri);
+                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, baseRequest.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
+                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, baseRequest.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
+                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, baseRequest.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
+                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, baseRequest.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
             }
             else
             {
-                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI,baseRequest.getRequestURI());
-                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,baseRequest.getContextPath());
-                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,baseRequest.getServletPath());
-                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO,baseRequest.getPathInfo());
-                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING,baseRequest.getQueryString());
+                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, baseRequest.getRequestURI());
+                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, baseRequest.getContextPath());
+                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, baseRequest.getServletPath());
+                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, baseRequest.getPathInfo());
+                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, baseRequest.getQueryString());
             }
         }
     }
@@ -90,7 +89,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 
     public ServletContext getServletContext()
     {
-        return _dispatchContext==null?_context:_dispatchContext;
+        return _dispatchContext == null ? _context : _dispatchContext;
     }
 
     /**
@@ -108,14 +107,14 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 
     public boolean hasTimeoutTask()
     {
-        return _timeoutTask!=null;
+        return _timeoutTask != null;
     }
-    
+
     public void cancelTimeoutTask()
     {
-        Scheduler.Task task=_timeoutTask;
-        _timeoutTask=null;
-        if (task!=null)
+        Scheduler.Task task = _timeoutTask;
+        _timeoutTask = null;
+        if (task != null)
             task.cancel();
     }
 
@@ -133,7 +132,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 
     public void setDispatchContext(ServletContext context)
     {
-        _dispatchContext=context;
+        _dispatchContext = context;
     }
 
     /**
@@ -141,12 +140,12 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
      */
     public void setDispatchPath(String path)
     {
-        _dispatchPath=path;
+        _dispatchPath = path;
     }
 
     public void completed()
     {
-        _timeoutTask=null;
+        _timeoutTask = null;
         _asyncContext.reset();
     }
 
@@ -158,16 +157,16 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     @Override
     public void run()
     {
-        Scheduler.Task task=_timeoutTask;
-        _timeoutTask=null;
-        if (task!=null)
+        Scheduler.Task task = _timeoutTask;
+        _timeoutTask = null;
+        if (task != null)
             _state.getHttpChannel().execute(() -> _state.onTimeout());
     }
 
     public void addThrowable(Throwable e)
     {
-        if (_throwable==null)
-            _throwable=e;
+        if (_throwable == null)
+            _throwable = e;
         else if (e != _throwable)
             _throwable.addSuppressed(e);
     }

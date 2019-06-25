@@ -181,7 +181,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
                 Response jettyResponse = (Response)response;
                 jettyResponse.setTrailerFields(() ->
-                        trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
+                    trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
 
                 if (content != null)
                     response.getOutputStream().write(content);
@@ -190,23 +190,23 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
         AtomicReference<Throwable> failure = new AtomicReference<>(new Throwable("no_success"));
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .onResponseSuccess(r ->
+            .onResponseSuccess(r ->
+            {
+                try
                 {
-                    try
-                    {
-                        HttpResponse httpResponse = (HttpResponse)r;
-                        HttpFields trailers = httpResponse.getTrailers();
-                        assertNotNull(trailers);
-                        assertEquals(trailerValue, trailers.get(trailerName));
-                        failure.set(null);
-                    }
-                    catch (Throwable x)
-                    {
-                        failure.set(x);
-                    }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                    HttpResponse httpResponse = (HttpResponse)r;
+                    HttpFields trailers = httpResponse.getTrailers();
+                    assertNotNull(trailers);
+                    assertEquals(trailerValue, trailers.get(trailerName));
+                    failure.set(null);
+                }
+                catch (Throwable x)
+                {
+                    failure.set(x);
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertNull(failure.get());
     }
@@ -227,28 +227,28 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
                 Response jettyResponse = (Response)response;
                 jettyResponse.setTrailerFields(() ->
-                        trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
+                    trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
             }
         });
 
         AtomicReference<Throwable> failure = new AtomicReference<>(new Throwable("no_success"));
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .onResponseSuccess(r ->
+            .onResponseSuccess(r ->
+            {
+                try
                 {
-                    try
-                    {
-                        HttpResponse httpResponse = (HttpResponse)r;
-                        HttpFields trailers = httpResponse.getTrailers();
-                        assertNull(trailers);
-                        failure.set(null);
-                    }
-                    catch (Throwable x)
-                    {
-                        failure.set(x);
-                    }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                    HttpResponse httpResponse = (HttpResponse)r;
+                    HttpFields trailers = httpResponse.getTrailers();
+                    assertNull(trailers);
+                    failure.set(null);
+                }
+                catch (Throwable x)
+                {
+                    failure.set(x);
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertNull(failure.get());
     }
@@ -274,7 +274,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
                 Response jettyResponse = (Response)response;
                 jettyResponse.setTrailerFields(() ->
-                        trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
+                    trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
 
                 // Write a large content
                 response.getOutputStream().write(content);
@@ -283,8 +283,8 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .timeout(15, TimeUnit.SECONDS)
-                .send(listener);
+            .timeout(15, TimeUnit.SECONDS)
+            .send(listener);
         org.eclipse.jetty.client.api.Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 

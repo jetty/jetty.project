@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -36,6 +32,10 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DeferredContentProviderTest
 {
@@ -131,7 +131,7 @@ public class DeferredContentProviderTest
 
         assertFalse(iterator.hasNext());
 
-        assertThrows(NoSuchElementException.class, ()->iterator.next());
+        assertThrows(NoSuchElementException.class, () -> iterator.next());
 
         assertFalse(iterator.hasNext());
     }

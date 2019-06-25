@@ -47,7 +47,7 @@ public class FrameHandlerTracker extends MessageHandler
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
-        super.onOpen(coreSession, Callback.from(callback,()->openLatch.countDown()));
+        super.onOpen(coreSession, Callback.from(callback, () -> openLatch.countDown()));
     }
 
     @Override
@@ -67,17 +67,16 @@ public class FrameHandlerTracker extends MessageHandler
     @Override
     public void onError(Throwable cause, Callback callback)
     {
-        super.onError(cause, Callback.from(callback, ()-> error.compareAndSet(null, cause)));
+        super.onError(cause, Callback.from(callback, () -> error.compareAndSet(null, cause)));
     }
 
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        super.onClosed(closeStatus, Callback.from(callback,()->
+        super.onClosed(closeStatus, Callback.from(callback, () ->
         {
             closeDetail.compareAndSet(null, closeStatus);
             closeLatch.countDown();
         }));
     }
-
 }

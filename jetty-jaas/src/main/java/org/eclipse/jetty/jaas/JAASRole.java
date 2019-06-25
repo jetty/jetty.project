@@ -24,13 +24,13 @@ public class JAASRole extends JAASPrincipal
 
     public JAASRole(String name)
     {
-        super (name);
+        super(name);
     }
 
     @Override
-    public boolean equals (Object o)
+    public boolean equals(Object o)
     {
-        if (! (o instanceof JAASRole))
+        if (!(o instanceof JAASRole))
             return false;
 
         return getName().equals(((JAASRole)o).getName());

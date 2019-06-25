@@ -29,22 +29,18 @@ import org.eclipse.jetty.util.log.Logger;
 public class BundleClassLoaderHelperFactory
 {
     private static final Logger LOG = Log.getLogger(BundleClassLoaderHelperFactory.class);
-    
+
     private static BundleClassLoaderHelperFactory _instance = new BundleClassLoaderHelperFactory();
-    
-    
-    /* ------------------------------------------------------------ */
+
     public static BundleClassLoaderHelperFactory getFactory()
     {
         return _instance;
     }
-    
-    /* ------------------------------------------------------------ */
+
     private BundleClassLoaderHelperFactory()
     {
     }
-    
-    /* ------------------------------------------------------------ */
+
     public BundleClassLoaderHelper getHelper()
     {
         //use the default
@@ -52,15 +48,14 @@ public class BundleClassLoaderHelperFactory
         try
         {
             //if a fragment has not provided their own impl
-            helper = (BundleClassLoaderHelper) Class.forName(BundleClassLoaderHelper.CLASS_NAME)
+            helper = (BundleClassLoaderHelper)Class.forName(BundleClassLoaderHelper.CLASS_NAME)
                 .getDeclaredConstructor().newInstance();
         }
         catch (Throwable t)
         {
             LOG.ignore(t);
         }
-        
+
         return helper;
     }
-
 }

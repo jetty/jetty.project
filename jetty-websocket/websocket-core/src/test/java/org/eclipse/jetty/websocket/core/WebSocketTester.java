@@ -25,12 +25,12 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.core.internal.Parser;
@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.startsWith;
 
 public class WebSocketTester
 {
-    private static String NON_RANDOM_KEY = new String(B64Code.encode("0123456701234567".getBytes()));
+    private static String NON_RANDOM_KEY = Base64.getEncoder().encodeToString("0123456701234567".getBytes());
     private static SslContextFactory.Client sslContextFactory;
     protected ByteBufferPool bufferPool;
     protected Parser parser;
@@ -79,7 +79,7 @@ public class WebSocketTester
     {
         return newClient(port, tls, null);
     }
-    
+
     protected Socket newClient(int port, String extensions) throws Exception
     {
         return newClient(port, false, extensions);
@@ -116,16 +116,16 @@ public class WebSocketTester
             switch (state)
             {
                 case 0:
-                    state = (b == '\r')?1:0;
+                    state = (b == '\r') ? 1 : 0;
                     break;
                 case 1:
-                    state = (b == '\n')?2:0;
+                    state = (b == '\n') ? 2 : 0;
                     break;
                 case 2:
-                    state = (b == '\r')?3:0;
+                    state = (b == '\r') ? 3 : 0;
                     break;
                 case 3:
-                    state = (b == '\n')?4:0;
+                    state = (b == '\n') ? 4 : 0;
                     break;
                 default:
                     state = 0;

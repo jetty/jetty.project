@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import javax.servlet.http.Cookie;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class CookiesTest
 {
@@ -32,9 +32,9 @@ public class CookiesTest
     public void testEmpty()
     {
         Cookies cutter = new Cookies();
-        assertThat(cutter.getCookies().length,is(0));
+        assertThat(cutter.getCookies().length, is(0));
         cutter.reset();
-        assertThat(cutter.getCookies().length,is(0));
+        assertThat(cutter.getCookies().length, is(0));
     }
 
     @Test
@@ -45,17 +45,17 @@ public class CookiesTest
         cutter.addCookieField("nameB0=B0; nameB1=B1");
 
         Cookie[] cookiesX = cutter.getCookies();
-        assertThat(cookiesX.length,is(4));
-        assertThat(cookiesX[0].getName(),is("nameA0"));
-        assertThat(cookiesX[3].getValue(),is("B1"));
+        assertThat(cookiesX.length, is(4));
+        assertThat(cookiesX[0].getName(), is("nameA0"));
+        assertThat(cookiesX[3].getValue(), is("B1"));
 
         cutter.reset();
         cutter.addCookieField("nameA0=A0; nameA1=A1");
         cutter.addCookieField("nameB0=B0; nameB1=B1");
         Cookie[] cookiesY = cutter.getCookies();
-        assertThat(cookiesY.length,is(4));
-        assertThat(cookiesY[0].getName(),is("nameA0"));
-        assertThat(cookiesY[3].getValue(),is("B1"));
+        assertThat(cookiesY.length, is(4));
+        assertThat(cookiesY[0].getName(), is("nameA0"));
+        assertThat(cookiesY[3].getValue(), is("B1"));
 
         assertThat(cookiesX, Matchers.sameInstance(cookiesY));
     }
@@ -68,17 +68,17 @@ public class CookiesTest
         cutter.addCookieField("nameB0=B0; nameB1=B1");
 
         Cookie[] cookiesX = cutter.getCookies();
-        assertThat(cookiesX.length,is(4));
-        assertThat(cookiesX[0].getName(),is("nameA0"));
-        assertThat(cookiesX[3].getValue(),is("B1"));
+        assertThat(cookiesX.length, is(4));
+        assertThat(cookiesX[0].getName(), is("nameA0"));
+        assertThat(cookiesX[3].getValue(), is("B1"));
 
         cutter.reset();
         cutter.addCookieField("nameA0=A0; nameA1=A1");
         cutter.addCookieField("nameC0=C0; nameC1=C1");
         Cookie[] cookiesY = cutter.getCookies();
-        assertThat(cookiesY.length,is(4));
-        assertThat(cookiesY[0].getName(),is("nameA0"));
-        assertThat(cookiesY[3].getValue(),is("C1"));
+        assertThat(cookiesY.length, is(4));
+        assertThat(cookiesY[0].getName(), is("nameA0"));
+        assertThat(cookiesY[3].getValue(), is("C1"));
 
         assertThat(cookiesX, Matchers.not(Matchers.sameInstance(cookiesY)));
     }
@@ -91,16 +91,16 @@ public class CookiesTest
         cutter.addCookieField("nameB0=B0; nameB1=B1");
 
         Cookie[] cookiesX = cutter.getCookies();
-        assertThat(cookiesX.length,is(4));
-        assertThat(cookiesX[0].getName(),is("nameA0"));
-        assertThat(cookiesX[3].getValue(),is("B1"));
+        assertThat(cookiesX.length, is(4));
+        assertThat(cookiesX[0].getName(), is("nameA0"));
+        assertThat(cookiesX[3].getValue(), is("B1"));
 
         cutter.reset();
         cutter.addCookieField("nameA0=A0; nameA1=A1");
         Cookie[] cookiesY = cutter.getCookies();
-        assertThat(cookiesY.length,is(2));
-        assertThat(cookiesY[0].getName(),is("nameA0"));
-        assertThat(cookiesY[1].getValue(),is("A1"));
+        assertThat(cookiesY.length, is(2));
+        assertThat(cookiesY[0].getName(), is("nameA0"));
+        assertThat(cookiesY[1].getValue(), is("A1"));
 
         assertThat(cookiesX, Matchers.not(Matchers.sameInstance(cookiesY)));
     }
@@ -137,19 +137,19 @@ public class CookiesTest
         cutter.addCookieField("nameB0=B0; nameB1=B1");
 
         Cookie[] cookiesX = cutter.getCookies();
-        assertThat(cookiesX.length,is(4));
-        assertThat(cookiesX[0].getName(),is("nameA0"));
-        assertThat(cookiesX[3].getValue(),is("B1"));
+        assertThat(cookiesX.length, is(4));
+        assertThat(cookiesX[0].getName(), is("nameA0"));
+        assertThat(cookiesX[3].getValue(), is("B1"));
 
         cutter.reset();
-        assertThat(cutter.getCookies().length,is(0));
+        assertThat(cutter.getCookies().length, is(0));
 
         cutter.addCookieField("nameA0=A0; nameA1=A1");
         cutter.addCookieField("nameB0=B0; nameB1=B1");
         Cookie[] cookiesY = cutter.getCookies();
-        assertThat(cookiesY.length,is(4));
-        assertThat(cookiesY[0].getName(),is("nameA0"));
-        assertThat(cookiesY[3].getValue(),is("B1"));
+        assertThat(cookiesY.length, is(4));
+        assertThat(cookiesY[0].getName(), is("nameA0"));
+        assertThat(cookiesY[3].getValue(), is("B1"));
 
         assertThat(cookiesX, Matchers.not(Matchers.sameInstance(cookiesY)));
     }
@@ -159,21 +159,20 @@ public class CookiesTest
     {
         Cookies cutter = new Cookies();
         cutter.setCookies(new Cookie[]
-        {
-            new Cookie("nameA0","A0"),
-            new Cookie("nameA1","A1"),
-            new Cookie("nameB0","B0"),
-            new Cookie("nameB1","B1"),
-        });
+            {
+                new Cookie("nameA0", "A0"),
+                new Cookie("nameA1", "A1"),
+                new Cookie("nameB0", "B0"),
+                new Cookie("nameB1", "B1"),
+                });
 
         Cookie[] cookiesX = cutter.getCookies();
-        assertThat(cookiesX.length,is(4));
-        assertThat(cookiesX[0].getName(),is("nameA0"));
-        assertThat(cookiesX[3].getValue(),is("B1"));
-        
+        assertThat(cookiesX.length, is(4));
+        assertThat(cookiesX[0].getName(), is("nameA0"));
+        assertThat(cookiesX[3].getValue(), is("B1"));
+
         cutter.reset();
 
-        assertThat(cutter.getCookies().length,is(0));
+        assertThat(cutter.getCookies().length, is(0));
     }
-
 }

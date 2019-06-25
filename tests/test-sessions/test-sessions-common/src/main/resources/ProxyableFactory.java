@@ -16,19 +16,18 @@
 //  ========================================================================
 //
 
-import java.lang.ClassLoader;
 import java.lang.reflect.Proxy;
 
 public class ProxyableFactory
 {
-    public static Proxyable newProxyable (ClassLoader cl)
+    public static Proxyable newProxyable(ClassLoader cl)
     {
         return getProxy(cl, new ProxyableInvocationHandler());
     }
 
     public static Proxyable getProxy(ClassLoader classloader, ProxyableInvocationHandler pih)
     {
-        Proxyable p = (Proxyable)Proxy.newProxyInstance(classloader, new Class[] {Proxyable.class}, pih);
+        Proxyable p = (Proxyable)Proxy.newProxyInstance(classloader, new Class[]{Proxyable.class}, pih);
         return p;
     }
 }

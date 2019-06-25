@@ -38,16 +38,16 @@ public class SocketChannelEndPoint extends ChannelEndPoint
 
     public SocketChannelEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
-        this((SocketChannel)channel,selector,key,scheduler);
+        this((SocketChannel)channel, selector, key, scheduler);
     }
-    
+
     public SocketChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
-        super(channel,selector,key,scheduler);
-        
-        _socket=channel.socket();
-        _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-        _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
+        super(channel, selector, key, scheduler);
+
+        _socket = channel.socket();
+        _local = (InetSocketAddress)_socket.getLocalSocketAddress();
+        _remote = (InetSocketAddress)_socket.getRemoteSocketAddress();
     }
 
     public Socket getSocket()
@@ -66,7 +66,7 @@ public class SocketChannelEndPoint extends ChannelEndPoint
     {
         return _remote;
     }
-    
+
     @Override
     protected void doShutdownOutput()
     {

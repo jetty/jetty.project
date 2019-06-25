@@ -6,12 +6,32 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.cdi</groupId>
-  <artifactId>jetty-cdi-parent</artifactId>
-  <name>Jetty :: CDI :: Parent</name>
+  <artifactId>cdi-2</artifactId>
+  <name>Jetty :: CDI 2</name>
   <url>http://www.eclipse.org/jetty</url>
-  <packaging>pom</packaging>
-
-  <modules>
-    <module>cdi-2</module>
-  </modules>
+  <packaging>jar</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.cdi2</bundle-symbolic-name>
+  </properties>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>config</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

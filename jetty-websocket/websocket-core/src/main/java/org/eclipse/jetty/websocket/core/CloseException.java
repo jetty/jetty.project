@@ -45,5 +45,4 @@ public class CloseException extends WebSocketException
     {
         return statusCode;
     }
-
 }

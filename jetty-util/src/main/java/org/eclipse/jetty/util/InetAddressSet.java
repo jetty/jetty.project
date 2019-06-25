@@ -33,64 +33,65 @@ import java.util.function.Predicate;
  * The patterns that may be set are:
  * </p>
  * <dl>
- * <dt>InetAddress</dt><dd>A single InetAddress either in hostname or address format. 
+ * <dt>InetAddress</dt><dd>A single InetAddress either in hostname or address format.
  * All formats supported by {@link InetAddress} are accepted.   Not ethat using hostname
  * matches may force domain lookups.  eg. "[::1]", "1.2.3.4", "::ffff:127.0.0.1"</dd>
  * <dt>InetAddress/CIDR</dt><dd>An InetAddress with a integer number of bits to indicate
  * the significant prefix. eg. "192.168.0.0/16" will match from "192.168.0.0" to
  * "192.168.255.255" </dd>
- * <dt>InetAddress-InetAddress</dt><dd>An inclusive range of InetAddresses. 
+ * <dt>InetAddress-InetAddress</dt><dd>An inclusive range of InetAddresses.
  * eg. "[a000::1]-[afff::]", "192.168.128.0-192.168.128.255"</dd>
  * </dl>
  * <p>This class is designed to work with {@link IncludeExcludeSet}</p>
+ *
  * @see IncludeExcludeSet
  */
 public class InetAddressSet extends AbstractSet<String> implements Set<String>, Predicate<InetAddress>
 {
-    private Map<String,InetPattern> _patterns = new HashMap<>();
+    private Map<String, InetPattern> _patterns = new HashMap<>();
 
     @Override
     public boolean add(String pattern)
     {
-        return _patterns.put(pattern,newInetRange(pattern))==null;
+        return _patterns.put(pattern, newInetRange(pattern)) == null;
     }
-    
+
     protected InetPattern newInetRange(String pattern)
     {
-        if (pattern==null)
+        if (pattern == null)
             return null;
 
         int slash = pattern.lastIndexOf('/');
         int dash = pattern.lastIndexOf('-');
         try
         {
-            if (slash>=0)
-                return new CidrInetRange(pattern,InetAddress.getByName(pattern.substring(0,slash).trim()),StringUtil.toInt(pattern,slash+1));
+            if (slash >= 0)
+                return new CidrInetRange(pattern, InetAddress.getByName(pattern.substring(0, slash).trim()), StringUtil.toInt(pattern, slash + 1));
 
-            if (dash>=0)
-                return new MinMaxInetRange(pattern,InetAddress.getByName(pattern.substring(0,dash).trim()),InetAddress.getByName(pattern.substring(dash+1).trim()));
-            
-            return new SingletonInetRange(pattern,InetAddress.getByName(pattern));
+            if (dash >= 0)
+                return new MinMaxInetRange(pattern, InetAddress.getByName(pattern.substring(0, dash).trim()), InetAddress.getByName(pattern.substring(dash + 1).trim()));
+
+            return new SingletonInetRange(pattern, InetAddress.getByName(pattern));
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             try
             {
-                if (slash<0 && dash>0)
+                if (slash < 0 && dash > 0)
                     return new LegacyInetRange(pattern);
             }
-            catch(Exception e2)
+            catch (Exception e2)
             {
                 e.addSuppressed(e2);
             }
-            throw new IllegalArgumentException("Bad pattern: "+pattern,e);
+            throw new IllegalArgumentException("Bad pattern: " + pattern, e);
         }
     }
 
     @Override
     public boolean remove(Object pattern)
     {
-        return _patterns.remove(pattern)!=null;
+        return _patterns.remove(pattern) != null;
     }
 
     @Override
@@ -105,30 +106,31 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
         return _patterns.size();
     }
 
-    
     @Override
     public boolean test(InetAddress address)
     {
-        if (address==null)
+        if (address == null)
             return false;
         byte[] raw = address.getAddress();
         for (InetPattern pattern : _patterns.values())
-            if (pattern.test(address,raw))
+        {
+            if (pattern.test(address, raw))
                 return true;
+        }
         return false;
     }
-    
+
     abstract static class InetPattern
     {
         final String _pattern;
-        
+
         InetPattern(String pattern)
         {
-            _pattern=pattern;
+            _pattern = pattern;
         }
-        
+
         abstract boolean test(InetAddress address, byte[] raw);
-        
+
         @Override
         public String toString()
         {
@@ -139,10 +141,11 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
     static class SingletonInetRange extends InetPattern
     {
         final InetAddress _address;
+
         public SingletonInetRange(String pattern, InetAddress address)
         {
             super(pattern);
-            _address=address;
+            _address = address;
         }
 
         @Override
@@ -151,47 +154,48 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
             return _address.equals(address);
         }
     }
-    
-    
+
     static class MinMaxInetRange extends InetPattern
     {
         final int[] _min;
         final int[] _max;
-        
+
         public MinMaxInetRange(String pattern, InetAddress min, InetAddress max)
         {
             super(pattern);
-            
-            byte[] raw_min = min.getAddress();
-            byte[] raw_max = max.getAddress();
-            if (raw_min.length!=raw_max.length)
-                throw new IllegalArgumentException("Cannot mix IPv4 and IPv6: "+pattern);
-            
-            if (raw_min.length==4)
+
+            byte[] rawMin = min.getAddress();
+            byte[] rawMax = max.getAddress();
+            if (rawMin.length != rawMax.length)
+                throw new IllegalArgumentException("Cannot mix IPv4 and IPv6: " + pattern);
+
+            if (rawMin.length == 4)
             {
                 // there must be 6 '.' or this is likely to be a legacy pattern
-                int count=0;
-                for (char c:pattern.toCharArray())
-                    if (c=='.')
+                int count = 0;
+                for (char c : pattern.toCharArray())
+                {
+                    if (c == '.')
                         count++;
-                if (count!=6)
-                    throw new IllegalArgumentException("Legacy pattern: "+pattern);
-            }
-            
-            _min = new int[raw_min.length];
-            _max = new int[raw_min.length];
-            
-            for (int i=0;i<_min.length;i++)
-            {
-                _min[i]=0xff&raw_min[i];
-                _max[i]=0xff&raw_max[i];
+                }
+                if (count != 6)
+                    throw new IllegalArgumentException("Legacy pattern: " + pattern);
             }
 
-            for (int i=0;i<_min.length;i++)
+            _min = new int[rawMin.length];
+            _max = new int[rawMin.length];
+
+            for (int i = 0; i < _min.length; i++)
             {
-                if (_min[i]>_max[i])
-                    throw new IllegalArgumentException("min is greater than max: "+pattern);
-                if (_min[i]<_max[i])
+                _min[i] = 0xff & rawMin[i];
+                _max[i] = 0xff & rawMax[i];
+            }
+
+            for (int i = 0; i < _min.length; i++)
+            {
+                if (_min[i] > _max[i])
+                    throw new IllegalArgumentException("min is greater than max: " + pattern);
+                if (_min[i] < _max[i])
                     break;
             }
         }
@@ -199,38 +203,37 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
         @Override
         public boolean test(InetAddress item, byte[] raw)
         {
-            if (raw.length!=_min.length)
+            if (raw.length != _min.length)
                 return false;
 
-            boolean min_ok = false;
-            boolean max_ok = false;
+            boolean minOk = false;
+            boolean maxOk = false;
 
-            for (int i=0;i<_min.length;i++)
+            for (int i = 0; i < _min.length; i++)
             {
-                int r = 0xff&raw[i];
-                if (!min_ok)
+                int r = 0xff & raw[i];
+                if (!minOk)
                 {
-                    if (r<_min[i])
+                    if (r < _min[i])
                         return false;
-                    if (r>_min[i])
-                        min_ok=true;
+                    if (r > _min[i])
+                        minOk = true;
                 }
-                if (!max_ok)
+                if (!maxOk)
                 {
-                    if (r>_max[i])
+                    if (r > _max[i])
                         return false;
-                    if (r<_max[i])
-                        max_ok=true;
+                    if (r < _max[i])
+                        maxOk = true;
                 }
-                
-                if (min_ok && max_ok)
+
+                if (minOk && maxOk)
                     break;
             }
-            
+
             return true;
         }
     }
-    
 
     static class CidrInetRange extends InetPattern
     {
@@ -238,37 +241,41 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
         final int _octets;
         final int _mask;
         final int _masked;
-        
+
         public CidrInetRange(String pattern, InetAddress address, int cidr)
         {
             super(pattern);
             _raw = address.getAddress();
-            _octets = cidr/8;
-            _mask = 0xff&(0xff<<(8-cidr%8));
-            _masked = _mask==0?0:_raw[_octets]&_mask;
-                        
-            if (cidr>(_raw.length*8))
-                throw new IllegalArgumentException("CIDR too large: "+pattern);
-                
-            if (_mask!=0 && (0xff&_raw[_octets])!=_masked)
-                throw new IllegalArgumentException("CIDR bits non zero: "+pattern);
-            
-            for (int o=_octets+(_mask==0?0:1);o<_raw.length;o++)
-                if (_raw[o]!=0)
-                    throw new IllegalArgumentException("CIDR bits non zero: "+pattern);
+            _octets = cidr / 8;
+            _mask = 0xff & (0xff << (8 - cidr % 8));
+            _masked = _mask == 0 ? 0 : _raw[_octets] & _mask;
+
+            if (cidr > (_raw.length * 8))
+                throw new IllegalArgumentException("CIDR too large: " + pattern);
+
+            if (_mask != 0 && (0xff & _raw[_octets]) != _masked)
+                throw new IllegalArgumentException("CIDR bits non zero: " + pattern);
+
+            for (int o = _octets + (_mask == 0 ? 0 : 1); o < _raw.length; o++)
+            {
+                if (_raw[o] != 0)
+                    throw new IllegalArgumentException("CIDR bits non zero: " + pattern);
+            }
         }
 
         @Override
         public boolean test(InetAddress item, byte[] raw)
         {
-            if (raw.length!=_raw.length)
+            if (raw.length != _raw.length)
                 return false;
-            
-            for (int o=0;o<_octets;o++)
-                if (_raw[o]!=raw[o])
+
+            for (int o = 0; o < _octets; o++)
+            {
+                if (_raw[o] != raw[o])
                     return false;
-            
-            if (_mask!=0 && (raw[_octets]&_mask)!=_masked)
+            }
+
+            if (_mask != 0 && (raw[_octets] & _mask) != _masked)
                 return false;
             return true;
         }
@@ -278,42 +285,44 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
     {
         int[] _min = new int[4];
         int[] _max = new int[4];
-        
+
         public LegacyInetRange(String pattern)
         {
             super(pattern);
-            
+
             String[] parts = pattern.split("\\.");
-            if (parts.length!=4)
-                throw new IllegalArgumentException("Bad legacy pattern: "+pattern);
-            
-            for (int i=0;i<4;i++)
+            if (parts.length != 4)
+                throw new IllegalArgumentException("Bad legacy pattern: " + pattern);
+
+            for (int i = 0; i < 4; i++)
             {
-                String part=parts[i].trim();
+                String part = parts[i].trim();
                 int dash = part.indexOf('-');
-                if (dash<0)
-                    _min[i]=_max[i]=Integer.parseInt(part);
-                else 
+                if (dash < 0)
+                    _min[i] = _max[i] = Integer.parseInt(part);
+                else
                 {
-                    _min[i] = (dash==0)?0:StringUtil.toInt(part,0);
-                    _max[i] = (dash==part.length()-1)?255:StringUtil.toInt(part,dash+1);
+                    _min[i] = (dash == 0) ? 0 : StringUtil.toInt(part, 0);
+                    _max[i] = (dash == part.length() - 1) ? 255 : StringUtil.toInt(part, dash + 1);
                 }
-                
-                if (_min[i]<0 || _min[i]>_max[i] || _max[i]>255)
-                    throw new IllegalArgumentException("Bad legacy pattern: "+pattern);
+
+                if (_min[i] < 0 || _min[i] > _max[i] || _max[i] > 255)
+                    throw new IllegalArgumentException("Bad legacy pattern: " + pattern);
             }
         }
 
         @Override
         public boolean test(InetAddress item, byte[] raw)
         {
-            if (raw.length!=4)
+            if (raw.length != 4)
                 return false;
 
-            for (int i=0;i<4;i++)
-                if ((0xff&raw[i])<_min[i] || (0xff&raw[i])>_max[i])
+            for (int i = 0; i < 4; i++)
+            {
+                if ((0xff & raw[i]) < _min[i] || (0xff & raw[i]) > _max[i])
                     return false;
-            
+            }
+
             return true;
         }
     }

@@ -27,7 +27,7 @@ public class PrefaceFrame extends Frame
      * request, used in the direct upgrade.
      */
     public static final byte[] PREFACE_PREAMBLE_BYTES = (
-            "PRI * HTTP/2.0\r\n" +
+        "PRI * HTTP/2.0\r\n" +
             "\r\n"
     ).getBytes(StandardCharsets.US_ASCII);
 
@@ -35,7 +35,7 @@ public class PrefaceFrame extends Frame
      * The HTTP/2 preface bytes.
      */
     public static final byte[] PREFACE_BYTES = (
-            "PRI * HTTP/2.0\r\n" +
+        "PRI * HTTP/2.0\r\n" +
             "\r\n" +
             "SM\r\n" +
             "\r\n"

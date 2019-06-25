@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.server.Server;

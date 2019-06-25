@@ -38,15 +38,15 @@ public class ReflectUtilsTest
     {
     }
 
-    public static abstract class Apple<T extends Object> implements Fruit<T>, Color<String>
+    public abstract static class Apple<T extends Object> implements Fruit<T>, Color<String>
     {
     }
 
-    public static abstract class Cherry<A extends Object, B extends Number> implements Fruit<A>, Color<B>
+    public abstract static class Cherry<A extends Object, B extends Number> implements Fruit<A>, Color<B>
     {
     }
 
-    public static abstract class Banana implements Fruit<String>, Color<String>
+    public abstract static class Banana implements Fruit<String>, Color<String>
     {
     }
 

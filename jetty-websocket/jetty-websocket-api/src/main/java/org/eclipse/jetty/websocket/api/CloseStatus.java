@@ -29,7 +29,7 @@ public class CloseStatus
     /**
      * Creates a reason for closing a web socket connection with the given code and reason phrase.
      *
-     * @param closeCode    the close code
+     * @param closeCode the close code
      * @param reasonPhrase the reason phrase
      * @see StatusCode
      */

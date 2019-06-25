@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 public abstract class CompressExtension extends AbstractExtension
 {
-    protected static final byte[] TAIL_BYTES = new byte[] { 0x00, 0x00, (byte)0xFF, (byte)0xFF };
+    protected static final byte[] TAIL_BYTES = new byte[]{0x00, 0x00, (byte)0xFF, (byte)0xFF};
     protected static final ByteBuffer TAIL_BYTES_BUF = ByteBuffer.wrap(TAIL_BYTES);
     private static final Logger LOG = Log.getLogger(CompressExtension.class);
 
@@ -84,7 +84,7 @@ public abstract class CompressExtension extends AbstractExtension
      */
     private static final int DECOMPRESS_BUF_SIZE = 8 * 1024;
 
-    private final static boolean NOWRAP = true;
+    private static final boolean NOWRAP = true;
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
@@ -296,7 +296,7 @@ public abstract class CompressExtension extends AbstractExtension
             return false;
         }
 
-        byte input[];
+        byte[] input;
         int inputOffset;
         int len;
 
@@ -336,7 +336,7 @@ public abstract class CompressExtension extends AbstractExtension
             return false;
         }
 
-        byte input[];
+        byte[] input;
         int inputOffset;
         int len;
 
@@ -529,7 +529,7 @@ public abstract class CompressExtension extends AbstractExtension
             {
                 // Special case: 7.2.3.6.  Generating an Empty Fragment Manually
                 // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
-                payload = ByteBuffer.wrap(new byte[] { 0x00 });
+                payload = ByteBuffer.wrap(new byte[]{0x00});
             }
 
             if (LOG.isDebugEnabled())
@@ -538,7 +538,7 @@ public abstract class CompressExtension extends AbstractExtension
             }
 
             boolean continuation = (frame.getOpCode() == OpCode.CONTINUATION) || !first;
-            Frame chunk = new Frame(continuation?OpCode.CONTINUATION:frame.getOpCode());
+            Frame chunk = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
             if (rsvUse == RSV_USE_ONLY_FIRST)
             {
                 chunk.setRsv1(!continuation);
@@ -566,8 +566,9 @@ public abstract class CompressExtension extends AbstractExtension
             // Fail all the frames in the queue.
             FrameEntry entry;
             while ((entry = pollEntry()) != null)
+            {
                 notifyCallbackFailure(entry.callback, x);
+            }
         }
-
     }
 }

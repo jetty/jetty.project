@@ -111,8 +111,8 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
         CountDownLatch responseLatch = new CountDownLatch(1);
         Request request = client.newRequest(destination.getHost(), destination.getPort())
-                .scheme(scenario.getScheme())
-                .onResponseSuccess(response -> responseLatch.countDown());
+            .scheme(scenario.getScheme())
+            .onResponseSuccess(response -> responseLatch.countDown());
 
         FutureResponseListener listener = new FutureResponseListener(request);
         connection.send(request, listener);

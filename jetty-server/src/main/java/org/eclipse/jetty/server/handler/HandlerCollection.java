@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,8 +34,7 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
-/* ------------------------------------------------------------ */
-/** 
+/**
  * A collection of handlers.
  * <p>
  * The default implementations  calls all handlers in list order,
@@ -50,39 +48,34 @@ public class HandlerCollection extends AbstractHandlerContainer
     private final boolean _mutableWhenRunning;
     protected final AtomicReference<Handlers> _handlers = new AtomicReference<>();
 
-    /* ------------------------------------------------------------ */
     public HandlerCollection()
     {
         this(false);
     }
 
-    /* ------------------------------------------------------------ */
     public HandlerCollection(Handler... handlers)
     {
-        this(false,handlers);
+        this(false, handlers);
     }
-    
-    /* ------------------------------------------------------------ */
+
     public HandlerCollection(boolean mutableWhenRunning, Handler... handlers)
     {
-        _mutableWhenRunning=mutableWhenRunning;
-        if (handlers.length>0)
+        _mutableWhenRunning = mutableWhenRunning;
+        if (handlers.length > 0)
             setHandlers(handlers);
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the array of handlers.
      */
     @Override
-    @ManagedAttribute(value="Wrapped handlers", readonly=true)
+    @ManagedAttribute(value = "Wrapped handlers", readonly = true)
     public Handler[] getHandlers()
     {
         Handlers handlers = _handlers.get();
-        return handlers==null ? null : handlers._handlers;
+        return handlers == null ? null : handlers._handlers;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param handlers the array of handlers to set.
      */
@@ -91,36 +84,38 @@ public class HandlerCollection extends AbstractHandlerContainer
         if (!_mutableWhenRunning && isStarted())
             throw new IllegalStateException(STARTED);
 
-        while(true)
+        while (true)
         {
             if (updateHandlers(_handlers.get(), newHandlers(handlers)))
                 break;
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected Handlers newHandlers(Handler[] handlers)
     {
-        if (handlers==null || handlers.length==0)
+        if (handlers == null || handlers.length == 0)
             return null;
         return new Handlers(handlers);
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean updateHandlers(Handlers old, Handlers handlers)
     {
-        if (handlers!=null)
+        if (handlers != null)
         {
             // check for loops
-            for (Handler handler:handlers._handlers)
+            for (Handler handler : handlers._handlers)
+            {
                 if (handler == this || (handler instanceof HandlerContainer &&
-                        Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
+                    Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
                     throw new IllegalStateException("setHandler loop");
+            }
 
             // Set server
-            for (Handler handler:handlers._handlers)
-                if (handler.getServer()!=getServer())
+            for (Handler handler : handlers._handlers)
+            {
+                if (handler.getServer() != getServer())
                     handler.setServer(getServer());
+            }
         }
 
         if (_handlers.compareAndSet(old, handlers))
@@ -133,7 +128,6 @@ public class HandlerCollection extends AbstractHandlerContainer
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
@@ -141,10 +135,10 @@ public class HandlerCollection extends AbstractHandlerContainer
         if (isStarted())
         {
             Handlers handlers = _handlers.get();
-            if (handlers==null)
+            if (handlers == null)
                 return;
 
-            MultiException mex=null;
+            MultiException mex = null;
             for (Handler handler : handlers._handlers)
             {
                 try
@@ -162,9 +156,9 @@ public class HandlerCollection extends AbstractHandlerContainer
                     mex.add(e);
                 }
             }
-            if (mex!=null)
+            if (mex != null)
             {
-                if (mex.size()==1)
+                if (mex.size() == 1)
                     throw new ServletException(mex.getThrowable(0));
                 else
                     throw new ServletException(mex);
@@ -172,7 +166,6 @@ public class HandlerCollection extends AbstractHandlerContainer
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Adds a handler.
      * This implementation adds the passed handler to the end of the existing collection of handlers.
@@ -180,56 +173,54 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void addHandler(Handler handler)
     {
-        while(true)
+        while (true)
         {
             Handlers old = _handlers.get();
-            Handlers handlers = newHandlers(ArrayUtil.addToArray(old==null?null:ArrayUtil.removeFromArray(old._handlers, handler), handler, Handler.class));
-            if (updateHandlers(old,handlers))
+            Handlers handlers = newHandlers(ArrayUtil.addToArray(old == null ? null : ArrayUtil.removeFromArray(old._handlers, handler), handler, Handler.class));
+            if (updateHandlers(old, handlers))
                 break;
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Prepends a handler.
      * This implementation adds the passed handler to the start of the existing collection of handlers.
      */
     public void prependHandler(Handler handler)
     {
-        while(true)
+        while (true)
         {
             Handlers old = _handlers.get();
-            Handlers handlers = newHandlers(ArrayUtil.prependToArray(handler, old==null?null:old._handlers, Handler.class));
-            if (updateHandlers(old,handlers))
+            Handlers handlers = newHandlers(ArrayUtil.prependToArray(handler, old == null ? null : old._handlers, Handler.class));
+            if (updateHandlers(old, handlers))
                 break;
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void removeHandler(Handler handler)
     {
-        while(true)
+        while (true)
         {
             Handlers old = _handlers.get();
-            if (old==null || old._handlers.length==0)
+            if (old == null || old._handlers.length == 0)
                 break;
             Handlers handlers = newHandlers(ArrayUtil.removeFromArray(old._handlers, handler));
-            if (updateHandlers(old,handlers))
+            if (updateHandlers(old, handlers))
                 break;
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
         Handler[] handlers = getHandlers();
-        if (handlers!=null)
-            for (Handler h:handlers)
+        if (handlers != null)
+            for (Handler h : handlers)
+            {
                 expandHandler(h, list, byClass);
+            }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void destroy()
     {
@@ -237,14 +228,13 @@ public class HandlerCollection extends AbstractHandlerContainer
             throw new IllegalStateException("!STOPPED");
         Handler[] children = getChildHandlers();
         setHandlers(null);
-        for (Handler child: children)
+        for (Handler child : children)
+        {
             child.destroy();
+        }
         super.destroy();
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     protected static class Handlers
     {
         private final Handler[] _handlers;

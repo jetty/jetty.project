@@ -18,15 +18,8 @@
 
 package org.eclipse.jetty.memcached.session;
 
-
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -48,10 +41,12 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * TestMemcachedSessions
- *
- *
  */
 public class TestMemcachedSessions
 {
@@ -74,7 +69,7 @@ public class TestMemcachedSessions
             else if ("get".equals(arg))
             {
                 s = req.getSession(false);
-                System.err.println("GET: s="+s);
+                System.err.println("GET: s=" + s);
             }
             else if ("del".equals(arg))
             {
@@ -83,7 +78,7 @@ public class TestMemcachedSessions
                 s.invalidate();
                 s = null;
             }
-            
+
             resp.setContentType("text/html");
             PrintWriter w = resp.getWriter();
             if (s == null)
@@ -91,10 +86,8 @@ public class TestMemcachedSessions
             else
                 w.write((String)s.getAttribute("val"));
         }
-        
     }
-    
-    
+
     public static class NullSessionCache extends AbstractSessionCache
     {
 
@@ -143,12 +136,11 @@ public class TestMemcachedSessions
         {
             return null;
         }
-        
     }
-    
+
     @Test
-    public void testMemcached () throws Exception
-    {           
+    public void testMemcached() throws Exception
+    {
         String contextPath = "/";
         Server server = new Server(0);
 
@@ -173,40 +165,38 @@ public class TestMemcachedSessions
             client.start();
             try
             {
-                
+
                 int value = 42;
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + "?action=set&value=" + value);
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 String resp = response.getContentAsString();
-                assertEquals(resp.trim(),String.valueOf(value));
+                assertEquals(resp.trim(), String.valueOf(value));
 
                 // Be sure the session value is still there
-                Request request = client.newRequest("http://localhost:" + port + contextPath +  "?action=get");
+                Request request = client.newRequest("http://localhost:" + port + contextPath + "?action=get");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
                 resp = response.getContentAsString();
-                assertEquals(String.valueOf(value),resp.trim());
-                
-                
+                assertEquals(String.valueOf(value), resp.trim());
+
                 //Delete the session
-                request = client.newRequest("http://localhost:" + port + contextPath +  "?action=del");
+                request = client.newRequest("http://localhost:" + port + contextPath + "?action=del");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
                 //Check that the session is gone
-                request = client.newRequest("http://localhost:" + port + contextPath +  "?action=get");
+                request = client.newRequest("http://localhost:" + port + contextPath + "?action=get");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 resp = response.getContentAsString();
                 assertEquals("No session", resp.trim());
             }
@@ -219,7 +209,5 @@ public class TestMemcachedSessions
         {
             server.stop();
         }
-        
     }
-
 }

@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.endpoints.annotated;
 
+import java.io.IOException;
+
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-import java.io.IOException;
 
 /**
  * The most common websocket implementation.

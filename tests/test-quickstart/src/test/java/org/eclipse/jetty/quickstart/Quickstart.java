@@ -24,22 +24,22 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 public class Quickstart
 {
-    
+
     public static void main(String... args) throws Exception
-    {   
-        if (args.length<1)
+    {
+        if (args.length < 1)
             error("No WAR file or directory given");
-        
+
         //war file or dir to start
         String war = args[0];
-        
+
         //optional jetty context xml file to configure the webapp
         Resource contextXml = null;
         if (args.length > 1)
             contextXml = Resource.newResource(args[1]);
-        
+
         Server server = new Server(8080);
-        
+
         QuickStartWebApp webapp = new QuickStartWebApp();
         webapp.setMode(QuickStartConfiguration.Mode.AUTO);
         webapp.setWar(war);
@@ -49,22 +49,19 @@ public class Quickstart
         if (contextXml != null)
         {
             XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);
-            xmlConfiguration.configure(webapp);   
+            xmlConfiguration.configure(webapp);
         }
-        
+
         server.setHandler(webapp);
 
         server.start();
 
-        
-      
         server.join();
     }
-    
 
     private static void error(String message)
     {
-        System.err.println("ERROR: "+message);
+        System.err.println("ERROR: " + message);
         System.err.println("Usage: java -jar QuickStartWar.jar <war-directory> <context-xml>");
         System.err.println("       java -jar QuickStartWar.jar <war-file> <context-xml>");
         System.exit(1);

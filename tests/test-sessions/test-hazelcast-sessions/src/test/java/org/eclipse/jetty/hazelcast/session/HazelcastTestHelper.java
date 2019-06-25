@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.hazelcast.session;
 
 import java.util.Collections;
@@ -41,31 +40,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * HazelcastTestHelper
- *
- *
  */
 public class HazelcastTestHelper
 {
-    static final String _hazelcastInstanceName = "SESSION_TEST_"+Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
-    
-    static final String _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
-    
-    static SerializerConfig _serializerConfig; 
-    
+    static final String _hazelcastInstanceName = "SESSION_TEST_" + Long.toString(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+
+    static final String _name = Long.toString(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+
+    static SerializerConfig _serializerConfig;
+
     static HazelcastInstance _instance;
-                       
-    static 
+
+    static
     {
         _serializerConfig = new SerializerConfig().setImplementation(new SessionDataSerializer()).setTypeClass(SessionData.class);
         Config config = new Config();
-        config.setInstanceName(_hazelcastInstanceName );
-        config.setNetworkConfig( new NetworkConfig().setJoin(new JoinConfig().setMulticastConfig(new MulticastConfig().setEnabled(false))));
+        config.setInstanceName(_hazelcastInstanceName);
+        config.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().setMulticastConfig(new MulticastConfig().setEnabled(false))));
         config.addMapConfig(new MapConfig().setName(_name));
         config.getSerializationConfig().addSerializerConfig(_serializerConfig);
         _instance = Hazelcast.getOrCreateHazelcastInstance(config);
     }
 
-    public HazelcastTestHelper ()
+    public HazelcastTestHelper()
     {
         // noop
     }
@@ -73,52 +70,53 @@ public class HazelcastTestHelper
     public SessionDataStoreFactory createSessionDataStoreFactory(boolean onlyClient)
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
-        factory.setOnlyClient( onlyClient );
+        factory.setOnlyClient(onlyClient);
         factory.setMapName(_name);
-        if(onlyClient){
+        if (onlyClient)
+        {
             ClientNetworkConfig clientNetworkConfig = new ClientNetworkConfig()
-                    .setAddresses(Collections.singletonList("localhost:"+_instance.getConfig().getNetworkConfig().getPort()));
+                .setAddresses(Collections.singletonList("localhost:" + _instance.getConfig().getNetworkConfig().getPort()));
             ClientConfig clientConfig = new ClientConfig()
-                    .setNetworkConfig(clientNetworkConfig);
+                .setNetworkConfig(clientNetworkConfig);
 
             SerializerConfig sc = new SerializerConfig().
-                    setImplementation(new SessionDataSerializer()).
-                    setTypeClass(SessionData.class);
+                setImplementation(new SessionDataSerializer()).
+                setTypeClass(SessionData.class);
             clientConfig.getSerializationConfig().addSerializerConfig(sc);
 
             factory.setHazelcastInstance(HazelcastClient.newHazelcastClient(clientConfig));
-
-        } else {
+        }
+        else
+        {
             factory.setHazelcastInstance(_instance);
         }
         return factory;
     }
-    
-   
+
     public void tearDown()
     {
         _instance.getMap(_name).clear();
     }
-    
-    public void createSession (SessionData data)
+
+    public void createSession(SessionData data)
     {
         _instance.getMap(_name).put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
     }
-    
-    public boolean checkSessionExists (SessionData data)
+
+    public boolean checkSessionExists(SessionData data)
     {
         return (_instance.getMap(_name).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
     }
-    
-    public boolean checkSessionPersisted (SessionData data)
+
+    public boolean checkSessionPersisted(SessionData data)
     {
         Object obj = _instance.getMap(_name).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
-        
+
         SessionData saved = (SessionData)obj;
-        
-        assertEquals(data.getId(),saved.getId());
+
+        assertEquals(data.getId(), saved.getId());
         assertEquals(data.getContextPath(), saved.getContextPath());
         assertEquals(data.getVhost(), saved.getVhost());
         assertEquals(data.getLastNode(), saved.getLastNode());
@@ -129,16 +127,14 @@ public class HazelcastTestHelper
         assertEquals(data.getExpiry(), saved.getExpiry());
         assertEquals(data.getMaxInactiveMs(), saved.getMaxInactiveMs());
 
-        
         //same number of attributes
-        assertEquals(data.getAllAttributes().size(),saved.getAllAttributes().size());
+        assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
         //same keys
         assertTrue(data.getKeys().equals(saved.getKeys()));
         //same values
-        for (String name:data.getKeys())
+        for (String name : data.getKeys())
         {
             assertTrue(data.getAttribute(name).equals(saved.getAttribute(name)));
-        
         }
         return true;
     }

@@ -148,12 +148,12 @@ public class CookieCutterLenientTest
             Arguments.of("$Version=0; rToken=F_TOKEN''!--\"</a>=&{()}", "rToken", "F_TOKEN''!--\"</a>=&{()}"),
 
             // Commas that were not commas
-            Arguments.of("name=foo,bar","name","foo,bar"),
-            Arguments.of("name=foo , bar","name","foo , bar"),
-            Arguments.of("name=foo , bar, bob","name","foo , bar, bob")
+            Arguments.of("name=foo,bar", "name", "foo,bar"),
+            Arguments.of("name=foo , bar", "name", "foo , bar"),
+            Arguments.of("name=foo , bar, bob", "name", "foo , bar, bob")
         );
     }
-    
+
     @ParameterizedTest
     @MethodSource("data")
     public void testLenientBehavior(String rawHeader, String expectedName, String expectedValue)
@@ -161,7 +161,7 @@ public class CookieCutterLenientTest
         TestCutter cutter = new TestCutter();
         cutter.parseField(rawHeader);
 
-        if (expectedName==null)
+        if (expectedName == null)
             assertThat("Cookies.length", cutter.names.size(), is(0));
         else
         {
@@ -170,7 +170,6 @@ public class CookieCutterLenientTest
             assertThat("Cookie.value", cutter.values.get(0), is(expectedValue));
         }
     }
-
 
     class TestCutter extends CookieCutter
     {
@@ -193,5 +192,7 @@ public class CookieCutterLenientTest
         {
             super.parseFields(Collections.singletonList(field));
         }
-    };
+    }
+
+    ;
 }

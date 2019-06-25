@@ -69,7 +69,7 @@ public class CustomRequestLogTest
     ServerConnector _serverConnector;
     URI _serverURI;
 
-    private final static long DELAY = 2000;
+    private static final long DELAY = 2000;
 
     @BeforeEach
     public void before() throws Exception
@@ -97,7 +97,7 @@ public class CustomRequestLogTest
             host = "localhost";
         }
         int localPort = _serverConnector.getLocalPort();
-        _serverURI = new URI(String.format("http://%s:%d/",host,localPort));
+        _serverURI = new URI(String.format("http://%s:%d/", host, localPort));
     }
 
     @AfterEach
@@ -112,15 +112,15 @@ public class CustomRequestLogTest
         testHandlerServerStart("%s: %!404,301{Referer}i");
 
         _connector.getResponse("GET /error404 HTTP/1.0\nReferer: testReferer\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("404: -"));
 
         _connector.getResponse("GET /error301 HTTP/1.0\nReferer: testReferer\n\n");
-        log = _entries.poll(5,TimeUnit.SECONDS);
+        log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("301: -"));
 
         _connector.getResponse("GET /success HTTP/1.0\nReferer: testReferer\n\n");
-        log = _entries.poll(5,TimeUnit.SECONDS);
+        log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("200: testReferer"));
     }
 
@@ -130,7 +130,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("%%%%%%a");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("%%%a"));
     }
 
@@ -138,14 +138,14 @@ public class CustomRequestLogTest
     public void testLogAddress() throws Exception
     {
         testHandlerServerStart("%{local}a|%{local}p|" +
-                "%{remote}a|%{remote}p|" +
-                "%{server}a|%{server}p|" +
-                "%{client}a|%{client}p");
+            "%{remote}a|%{remote}p|" +
+            "%{server}a|%{server}p|" +
+            "%{client}a|%{client}p");
 
         Enumeration e = NetworkInterface.getNetworkInterfaces();
-        while(e.hasMoreElements())
+        while (e.hasMoreElements())
         {
-            NetworkInterface n = (NetworkInterface) e.nextElement();
+            NetworkInterface n = (NetworkInterface)e.nextElement();
             if (n.isLoopback())
             {
                 Enumeration ee = n.getInetAddresses();
@@ -156,9 +156,9 @@ public class CustomRequestLogTest
                     {
                         OutputStream os = client.getOutputStream();
                         String request = "GET / HTTP/1.0\n" +
-                                "Host: webtide.com:1234\n" +
-                                "Forwarded: For=10.1.2.3:1337\n" +
-                                "\n\n";
+                            "Host: webtide.com:1234\n" +
+                            "Forwarded: For=10.1.2.3:1337\n" +
+                            "\n\n";
                         os.write(request.getBytes(StandardCharsets.ISO_8859_1));
                         os.flush();
 
@@ -195,7 +195,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("BytesSent: %O");
 
         _connector.getResponse("GET / HTTP/1.0\necho: hello world\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("BytesSent: 11"));
     }
 
@@ -205,10 +205,10 @@ public class CustomRequestLogTest
         testHandlerServerStart("BytesReceived: %I");
 
         _connector.getResponse("GET / HTTP/1.0\n" +
-                "Content-Length: 11\n\n" +
-                "hello world");
+            "Content-Length: 11\n\n" +
+            "hello world");
 
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("BytesReceived: 11"));
     }
 
@@ -218,11 +218,11 @@ public class CustomRequestLogTest
         testHandlerServerStart("BytesTransferred: %S");
 
         _connector.getResponse("GET / HTTP/1.0\n" +
-                "echo: hello world\n" +
-                "Content-Length: 11\n\n" +
-                "hello world");
+            "echo: hello world\n" +
+            "Content-Length: 11\n\n" +
+            "hello world");
 
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("BytesTransferred: 22"));
     }
 
@@ -232,7 +232,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("RequestCookies: %{cookieName}C, %{cookie2}C, %{cookie3}C");
 
         _connector.getResponse("GET / HTTP/1.0\nCookie: cookieName=cookieValue; cookie2=value2\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("RequestCookies: cookieValue, value2, -"));
     }
 
@@ -242,7 +242,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("RequestCookies: %C");
 
         _connector.getResponse("GET / HTTP/1.0\nCookie: cookieName=cookieValue; cookie2=value2\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("RequestCookies: cookieName=cookieValue;cookie2=value2"));
     }
 
@@ -252,10 +252,10 @@ public class CustomRequestLogTest
         testHandlerServerStart("EnvironmentVar: %{JAVA_HOME}e");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
 
         String envVar = System.getenv("JAVA_HOME");
-        assertThat(log, is("EnvironmentVar: " + ((envVar==null) ? "-" : envVar)));
+        assertThat(log, is("EnvironmentVar: " + ((envVar == null) ? "-" : envVar)));
     }
 
     @Test
@@ -264,7 +264,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("%H");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("HTTP/1.0"));
     }
 
@@ -274,7 +274,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("RequestHeader: %{Header1}i, %{Header2}i, %{Header3}i");
 
         _connector.getResponse("GET / HTTP/1.0\nHeader1: value1\nHeader2: value2\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("RequestHeader: value1, value2, -"));
     }
 
@@ -285,9 +285,9 @@ public class CustomRequestLogTest
 
         LocalConnector.LocalEndPoint connect = _connector.connect();
         connect.addInput("GET /a HTTP/1.0\n" +
-                "Connection: keep-alive\n\n");
+            "Connection: keep-alive\n\n");
         connect.addInput("GET /a HTTP/1.1\n" +
-                "Host: localhost\n\n");
+            "Host: localhost\n\n");
 
         assertThat(connect.getResponse(), containsString("200 OK"));
         assertThat(connect.getResponse(), containsString("200 OK"));
@@ -295,10 +295,9 @@ public class CustomRequestLogTest
         connect.addInput("GET /a HTTP/1.0\n\n");
         assertThat(connect.getResponse(), containsString("200 OK"));
 
-
-        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("KeepAliveRequests: 1"));
-        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("KeepAliveRequests: 2"));
-        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("KeepAliveRequests: 3"));
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("KeepAliveRequests: 1"));
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("KeepAliveRequests: 2"));
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("KeepAliveRequests: 3"));
     }
 
     @Disabled
@@ -315,7 +314,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("RequestMethod: %m");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("RequestMethod: GET"));
     }
 
@@ -325,7 +324,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("ResponseHeader: %{Header1}o, %{Header2}o, %{Header3}o");
 
         _connector.getResponse("GET /responseHeaders HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("ResponseHeader: value1, value2, -"));
     }
 
@@ -335,7 +334,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("QueryString: %q");
 
         _connector.getResponse("GET /path?queryString HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("QueryString: ?queryString"));
     }
 
@@ -345,7 +344,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("RequestFirstLin: %r");
 
         _connector.getResponse("GET /path?query HTTP/1.0\nHeader: null\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("RequestFirstLin: GET /path?query HTTP/1.0"));
     }
 
@@ -355,15 +354,15 @@ public class CustomRequestLogTest
         testHandlerServerStart("LogResponseStatus: %s");
 
         _connector.getResponse("GET /error404 HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("LogResponseStatus: 404"));
 
         _connector.getResponse("GET /error301 HTTP/1.0\n\n");
-        log = _entries.poll(5,TimeUnit.SECONDS);
+        log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("LogResponseStatus: 301"));
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
-        log = _entries.poll(5,TimeUnit.SECONDS);
+        log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("LogResponseStatus: 200"));
     }
 
@@ -373,31 +372,31 @@ public class CustomRequestLogTest
         testHandlerServerStart("RequestTime: %t");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        long requestTime = requestTimes.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
+        long requestTime = requestTimes.poll(5, TimeUnit.SECONDS);
         DateCache dateCache = new DateCache(_log.DEFAULT_DATE_FORMAT, Locale.getDefault(), "GMT");
-        assertThat(log, is("RequestTime: ["+ dateCache.format(requestTime) +"]"));
+        assertThat(log, is("RequestTime: [" + dateCache.format(requestTime) + "]"));
     }
 
     @Test
     public void testLogRequestTimeCustomFormats() throws Exception
     {
         testHandlerServerStart("%{EEE MMM dd HH:mm:ss zzz yyyy}t\n" +
-                "%{EEE MMM dd HH:mm:ss zzz yyyy|EST}t\n" +
-                "%{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t");
+            "%{EEE MMM dd HH:mm:ss zzz yyyy|EST}t\n" +
+            "%{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        long requestTime = requestTimes.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
+        long requestTime = requestTimes.poll(5, TimeUnit.SECONDS);
 
         DateCache dateCache1 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault(), "GMT");
         DateCache dateCache2 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault(), "EST");
         DateCache dateCache3 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.forLanguageTag("ja"), "EST");
 
         String[] logs = log.split("\n");
-        assertThat(logs[0], is("["+ dateCache1.format(requestTime) +"]"));
-        assertThat(logs[1], is("["+ dateCache2.format(requestTime) +"]"));
-        assertThat(logs[2], is("["+ dateCache3.format(requestTime) +"]"));
+        assertThat(logs[0], is("[" + dateCache1.format(requestTime) + "]"));
+        assertThat(logs[1], is("[" + dateCache2.format(requestTime) + "]"));
+        assertThat(logs[2], is("[" + dateCache3.format(requestTime) + "]"));
     }
 
     @Test
@@ -406,13 +405,13 @@ public class CustomRequestLogTest
         testHandlerServerStart("%{us}T");
 
         _connector.getResponse("GET /delay HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        long lowerBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
+        long lowerBound = requestTimes.poll(5, TimeUnit.SECONDS);
         long upperBound = System.currentTimeMillis();
 
         long measuredDuration = Long.parseLong(log);
         long durationLowerBound = TimeUnit.MILLISECONDS.toMicros(DELAY);
-        long durationUpperBound = TimeUnit.MILLISECONDS.toMicros(upperBound-lowerBound);
+        long durationUpperBound = TimeUnit.MILLISECONDS.toMicros(upperBound - lowerBound);
 
         assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
         assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));
@@ -424,13 +423,13 @@ public class CustomRequestLogTest
         testHandlerServerStart("%{ms}T");
 
         _connector.getResponse("GET /delay HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        long lowerBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
+        long lowerBound = requestTimes.poll(5, TimeUnit.SECONDS);
         long upperBound = System.currentTimeMillis();
 
         long measuredDuration = Long.parseLong(log);
         long durationLowerBound = DELAY;
-        long durationUpperBound = upperBound-lowerBound;
+        long durationUpperBound = upperBound - lowerBound;
 
         assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
         assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));
@@ -442,13 +441,13 @@ public class CustomRequestLogTest
         testHandlerServerStart("%{s}T");
 
         _connector.getResponse("GET /delay HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
-        long lowerBound = requestTimes.poll(5 ,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
+        long lowerBound = requestTimes.poll(5, TimeUnit.SECONDS);
         long upperBound = System.currentTimeMillis();
 
         long measuredDuration = Long.parseLong(log);
         long durationLowerBound = TimeUnit.MILLISECONDS.toSeconds(DELAY);
-        long durationUpperBound = TimeUnit.MILLISECONDS.toSeconds(upperBound-lowerBound);
+        long durationUpperBound = TimeUnit.MILLISECONDS.toSeconds(upperBound - lowerBound);
 
         assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
         assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));
@@ -460,7 +459,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("UrlRequestPath: %U");
 
         _connector.getResponse("GET /path?query HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("UrlRequestPath: /path"));
     }
 
@@ -470,33 +469,33 @@ public class CustomRequestLogTest
         testHandlerServerStart("%U ConnectionStatus: %s %X");
 
         _connector.getResponse("GET /one HTTP/1.0\n\n");
-        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/one ConnectionStatus: 200 -"));
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/one ConnectionStatus: 200 -"));
 
         _connector.getResponse("GET /two HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Connection: close\n" +
-                "\n");
-        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/two ConnectionStatus: 200 -"));
+            "Host: localhost\n" +
+            "Connection: close\n" +
+            "\n");
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/two ConnectionStatus: 200 -"));
 
         LocalConnector.LocalEndPoint connect = _connector.connect();
         connect.addInput("GET /three HTTP/1.0\n" +
-                "Connection: keep-alive\n\n");
+            "Connection: keep-alive\n\n");
         connect.addInput("GET /four HTTP/1.1\n" +
-                "Host: localhost\n\n");
+            "Host: localhost\n\n");
         connect.addInput("GET /BAD HTTP/1.1\n\n");
         assertThat(connect.getResponse(), containsString("200 OK"));
         assertThat(connect.getResponse(), containsString("200 OK"));
         assertThat(connect.getResponse(), containsString("400 "));
 
-        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/three ConnectionStatus: 200 +"));
-        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/four ConnectionStatus: 200 +"));
-        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/BAD ConnectionStatus: 400 -"));
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/three ConnectionStatus: 200 +"));
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/four ConnectionStatus: 200 +"));
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/BAD ConnectionStatus: 400 -"));
 
         _connector.getResponse("GET /abort HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "\n");
+            "Host: localhost\n" +
+            "\n");
         connect.getResponse();
-        assertThat(_entries.poll(5,TimeUnit.SECONDS), is("/abort ConnectionStatus: 200 X"));
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/abort ConnectionStatus: 200 X"));
     }
 
     @Disabled
@@ -506,7 +505,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("%{trailerName}ti");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         fail(log);
     }
 
@@ -517,7 +516,7 @@ public class CustomRequestLogTest
         testHandlerServerStart("%{trailerName}to");
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
-        String log = _entries.poll(5,TimeUnit.SECONDS);
+        String log = _entries.poll(5, TimeUnit.SECONDS);
         fail(log);
     }
 
@@ -543,7 +542,7 @@ public class CustomRequestLogTest
             {
                 _entries.add(requestEntry);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
@@ -597,7 +596,10 @@ public class CustomRequestLogTest
             if (request.getContentLength() > 0)
             {
                 InputStream in = request.getInputStream();
-                while (in.read()>0);
+                while (in.read() > 0)
+                {
+                    ;
+                }
             }
         }
     }

@@ -24,43 +24,41 @@ import java.lang.reflect.Modifier;
 
 /**
  * PostConstructCallback
- *
- *
  */
 public class PostConstructCallback extends LifeCycleCallback
 {
 
-    /** 
+    /**
      * Commons Annotation Specification section 2.5
-     *  - no params
-     *  - must be void return 
-     *  - no checked exceptions
-     *  - cannot be static
+     * - no params
+     * - must be void return
+     * - no checked exceptions
+     * - cannot be static
+     *
      * @see org.eclipse.jetty.plus.annotation.LifeCycleCallback#validate(java.lang.Class, java.lang.reflect.Method)
      */
     @Override
     public void validate(Class<?> clazz, Method method)
     {
         if (method.getExceptionTypes().length > 0)
-            throw new IllegalArgumentException(clazz.getName()+"."+method.getName()+ " cannot not throw a checked exception");
-        
+            throw new IllegalArgumentException(clazz.getName() + "." + method.getName() + " cannot not throw a checked exception");
+
         if (!method.getReturnType().equals(Void.TYPE))
-            throw new IllegalArgumentException(clazz.getName()+"."+method.getName()+ " cannot not have a return type");
-        
+            throw new IllegalArgumentException(clazz.getName() + "." + method.getName() + " cannot not have a return type");
+
         if (Modifier.isStatic(method.getModifiers()))
-            throw new IllegalArgumentException(clazz.getName()+"."+method.getName()+ " cannot be static");
+            throw new IllegalArgumentException(clazz.getName() + "." + method.getName() + " cannot be static");
     }
-    
-    
+
     @Override
-    public void callback (Object instance) 
-    throws SecurityException, IllegalArgumentException, NoSuchMethodException, ClassNotFoundException, IllegalAccessException, InvocationTargetException
+    public void callback(Object instance)
+        throws SecurityException, IllegalArgumentException, NoSuchMethodException, ClassNotFoundException, IllegalAccessException, InvocationTargetException
     {
         super.callback(instance);
     }
 
     @Override
-    public boolean equals (Object o)
+    public boolean equals(Object o)
     {
         if (super.equals(o) && (o instanceof PostConstructCallback))
             return true;

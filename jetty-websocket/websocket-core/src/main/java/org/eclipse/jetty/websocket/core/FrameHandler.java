@@ -49,15 +49,15 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
  * Once instantiated the FrameHandler follows is used as follows:
  * </p>
  * <ul>
- * <li>The {@link #onOpen(CoreSession,Callback)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
+ * <li>The {@link #onOpen(CoreSession, Callback)} method is called when negotiation of the connection is completed. The passed {@link CoreSession} instance is used
  * to obtain information about the connection and to send frames</li>
  * <li>Every data and control frame received is passed to {@link #onFrame(Frame, Callback)}.</li>
  * <li>Received Control Frames that require a response (eg Ping, Close) are first passed to the {@link #onFrame(Frame, Callback)} to give the
  * Application an opportunity to send the response itself. If an appropriate response has not been sent when the callback passed is completed, then a
  * response will be generated.</li>
- * <li>If an error is detected or received, then {@link #onError(Throwable,Callback)} will be called to inform the application of the cause of the problem.
- * The connection will then be closed or aborted and the {@link #onClosed(CloseStatus,Callback)} method called.</li>
- * <li>The {@link #onClosed(CloseStatus,Callback)} method is always called once a websocket connection is terminated, either gracefully or not. The error code
+ * <li>If an error is detected or received, then {@link #onError(Throwable, Callback)} will be called to inform the application of the cause of the problem.
+ * The connection will then be closed or aborted and the {@link #onClosed(CloseStatus, Callback)} method called.</li>
+ * <li>The {@link #onClosed(CloseStatus, Callback)} method is always called once a websocket connection is terminated, either gracefully or not. The error code
  * will indicate the nature of the close.</li>
  * </ul>
  */
@@ -72,7 +72,7 @@ public interface FrameHandler extends IncomingFrames
      * If the FrameHandler succeeds the callback we transition to OPEN state and can now receive frames if
      * not demanding, or can now call {@link CoreSession#demand(long)} to receive frames if demanding.
      * If the FrameHandler fails the callback a close frame will be sent with {@link CloseStatus#SERVER_ERROR} and
-     *the connection will be closed. <br>
+     * the connection will be closed. <br>
      * </p>
      *
      * @param coreSession the session associated with this connection.
@@ -89,7 +89,7 @@ public interface FrameHandler extends IncomingFrames
      * Close frames may be responded to by the handler, but if an appropriate close response is not
      * sent once the callback is succeeded, then a response close will be generated and sent.
      *
-     * @param frame    the raw frame
+     * @param frame the raw frame
      * @param callback the callback to indicate success in processing frame (or failure)
      */
     void onFrame(Frame frame, Callback callback);
@@ -117,7 +117,6 @@ public interface FrameHandler extends IncomingFrames
      * @param callback the callback to indicate success in processing (or failure)
      */
     void onClosed(CloseStatus closeStatus, Callback callback);
-
 
     /**
      * Does the FrameHandler manage it's own demand?
@@ -186,7 +185,6 @@ public interface FrameHandler extends IncomingFrames
 
         void setMaxTextMessageSize(long maxSize);
     }
-
 
     /**
      * Represents the outgoing Frames.
@@ -294,8 +292,8 @@ public interface FrameHandler extends IncomingFrames
          * Initiate close handshake with provide status code and optional reason phrase.
          *
          * @param statusCode the status code (should be a valid status code that can be sent)
-         * @param reason     optional reason phrase (will be truncated automatically by implementation to fit within limits of protocol)
-         * @param callback   the callback to track close frame sent (or failed)
+         * @param reason optional reason phrase (will be truncated automatically by implementation to fit within limits of protocol)
+         * @param callback the callback to track close frame sent (or failed)
          */
         void close(int statusCode, String reason, Callback callback);
 
@@ -307,10 +305,10 @@ public interface FrameHandler extends IncomingFrames
          * </p>
          * <p>
          * Once called, any read/write activity on the websocket from this point will be indeterminate.
-         * This can result in the {@link #onError(Throwable,Callback)} event being called indicating any issue that arises.
+         * This can result in the {@link #onError(Throwable, Callback)} event being called indicating any issue that arises.
          * </p>
          * <p>
-         * Once the underlying connection has been determined to be closed, the {@link #onClosed(CloseStatus,Callback)} event will be called.
+         * Once the underlying connection has been determined to be closed, the {@link #onClosed(CloseStatus, Callback)} event will be called.
          * </p>
          */
         void abort();
@@ -322,7 +320,7 @@ public interface FrameHandler extends IncomingFrames
          * if {@link FrameHandler#isDemanding()} returns false.
          *
          * @param n The number of frames that can be handled (in sequential calls to
-         *          {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
+         * {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
          */
         void demand(long n);
 
@@ -445,13 +443,13 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public Duration getIdleTimeout()
         {
-            return idleTimeout==null ? WebSocketConstants.DEFAULT_IDLE_TIMEOUT : idleTimeout;
+            return idleTimeout == null ? WebSocketConstants.DEFAULT_IDLE_TIMEOUT : idleTimeout;
         }
 
         @Override
         public Duration getWriteTimeout()
         {
-            return writeTimeout==null ? WebSocketConstants.DEFAULT_WRITE_TIMEOUT : writeTimeout;
+            return writeTimeout == null ? WebSocketConstants.DEFAULT_WRITE_TIMEOUT : writeTimeout;
         }
 
         @Override
@@ -469,7 +467,7 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public boolean isAutoFragment()
         {
-            return autoFragment==null?WebSocketConstants.DEFAULT_AUTO_FRAGMENT:autoFragment;
+            return autoFragment == null ? WebSocketConstants.DEFAULT_AUTO_FRAGMENT : autoFragment;
         }
 
         @Override
@@ -481,7 +479,7 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public long getMaxFrameSize()
         {
-            return maxFrameSize==null?WebSocketConstants.DEFAULT_MAX_FRAME_SIZE:maxFrameSize;
+            return maxFrameSize == null ? WebSocketConstants.DEFAULT_MAX_FRAME_SIZE : maxFrameSize;
         }
 
         @Override
@@ -493,7 +491,7 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public int getOutputBufferSize()
         {
-            return outputBufferSize==null?WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE:outputBufferSize;
+            return outputBufferSize == null ? WebSocketConstants.DEFAULT_OUTPUT_BUFFER_SIZE : outputBufferSize;
         }
 
         @Override
@@ -505,7 +503,7 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public int getInputBufferSize()
         {
-            return inputBufferSize==null?WebSocketConstants.DEFAULT_INPUT_BUFFER_SIZE:inputBufferSize;
+            return inputBufferSize == null ? WebSocketConstants.DEFAULT_INPUT_BUFFER_SIZE : inputBufferSize;
         }
 
         @Override
@@ -517,7 +515,7 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public long getMaxBinaryMessageSize()
         {
-            return maxBinaryMessageSize==null?WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE:maxBinaryMessageSize;
+            return maxBinaryMessageSize == null ? WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE : maxBinaryMessageSize;
         }
 
         @Override
@@ -529,7 +527,7 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public long getMaxTextMessageSize()
         {
-            return maxTextMessageSize==null?WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE:maxTextMessageSize;
+            return maxTextMessageSize == null ? WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE : maxTextMessageSize;
         }
 
         @Override
@@ -544,21 +542,21 @@ public interface FrameHandler extends IncomingFrames
         @Override
         public void customize(Configuration configurable)
         {
-            if (idleTimeout !=null)
+            if (idleTimeout != null)
                 configurable.setIdleTimeout(idleTimeout);
-            if (writeTimeout!=null)
+            if (writeTimeout != null)
                 configurable.setWriteTimeout(idleTimeout);
-            if (autoFragment!=null)
+            if (autoFragment != null)
                 configurable.setAutoFragment(autoFragment);
-            if (maxFrameSize!=null)
+            if (maxFrameSize != null)
                 configurable.setMaxFrameSize(maxFrameSize);
-            if (inputBufferSize!=null)
+            if (inputBufferSize != null)
                 configurable.setInputBufferSize(inputBufferSize);
-            if (outputBufferSize!=null)
+            if (outputBufferSize != null)
                 configurable.setOutputBufferSize(outputBufferSize);
-            if (maxBinaryMessageSize!=null)
+            if (maxBinaryMessageSize != null)
                 configurable.setMaxBinaryMessageSize(maxBinaryMessageSize);
-            if (maxTextMessageSize!=null)
+            if (maxTextMessageSize != null)
                 configurable.setMaxTextMessageSize(maxTextMessageSize);
         }
 
@@ -570,5 +568,4 @@ public interface FrameHandler extends IncomingFrames
             return customizer;
         }
     }
-
 }

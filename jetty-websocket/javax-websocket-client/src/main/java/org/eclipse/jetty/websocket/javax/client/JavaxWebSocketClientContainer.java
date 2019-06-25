@@ -28,7 +28,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -67,7 +66,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
 
     public JavaxWebSocketClientContainer(WebSocketComponents components)
     {
-        this(components, ()->
+        this(components, () ->
         {
             WebSocketCoreClient coreClient = new WebSocketCoreClient(components);
             coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
@@ -112,7 +111,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         try
         {
             WebSocketCoreClient coreClient = getWebSocketCoreClient();
-            coreClient.connect(upgradeRequest).whenComplete((coreSession, error)->
+            coreClient.connect(upgradeRequest).whenComplete((coreSession, error) ->
             {
                 if (error != null)
                 {
@@ -148,7 +147,9 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             upgradeRequest.addListener(jsrUpgradeListener);
 
             for (Extension ext : clientEndpointConfig.getExtensions())
+            {
                 upgradeRequest.addExtensions(new JavaxWebSocketExtensionConfig(ext));
+            }
 
             if (clientEndpointConfig.getPreferredSubprotocols().size() > 0)
                 upgradeRequest.setSubProtocols(clientEndpointConfig.getPreferredSubprotocols());
@@ -158,8 +159,8 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         try
         {
             Future<Session> sessionFuture = connect(upgradeRequest);
-            if (timeout>0)
-                return sessionFuture.get(timeout+1000, TimeUnit.MILLISECONDS);
+            if (timeout > 0)
+                return sessionFuture.get(timeout + 1000, TimeUnit.MILLISECONDS);
             return sessionFuture.get();
         }
         catch (ExecutionException e)

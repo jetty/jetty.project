@@ -28,7 +28,7 @@ public class FastFailEndpoint extends AbstractCloseEndpoint
     @Override
     public void onWebSocketConnect(Session sess)
     {
-        LOG.debug("onWebSocketConnect({})",sess);
+        LOG.debug("onWebSocketConnect({})", sess);
         // Test failure due to unhandled exception
         // this should trigger a fast-fail closure during open/connect
         throw new RuntimeException("Intentional FastFail");

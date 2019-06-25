@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Executor;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;

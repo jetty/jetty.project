@@ -75,8 +75,8 @@ public final class ContainerInitializer
         /**
          * Add classes to be passed to the {@link ServletContainerInitializer#onStartup(Set, ServletContext)}  call.
          * <p>
-         *     Note that these classes will be loaded using the context classloader for the ServletContext
-         *     initialization phase.
+         * Note that these classes will be loaded using the context classloader for the ServletContext
+         * initialization phase.
          * </p>
          *
          * @param classNames the class names to load and pass into the {@link ServletContainerInitializer#onStartup(Set, ServletContext)}  call
@@ -95,9 +95,9 @@ public final class ContainerInitializer
         /**
          * Add classes to be passed to the {@link ServletContainerInitializer#onStartup(Set, ServletContext)}  call.
          * <p>
-         *     Note that these classes will exist on the classloader that was used to call this method.
-         *     If you want the classes to be loaded using the context classloader for the ServletContext
-         *     then use the String form of the classes via the {@link #addClasses(String...)} method.
+         * Note that these classes will exist on the classloader that was used to call this method.
+         * If you want the classes to be loaded using the context classloader for the ServletContext
+         * then use the String form of the classes via the {@link #addClasses(String...)} method.
          * </p>
          *
          * @param classes the classes to pass into the {@link ServletContainerInitializer#onStartup(Set, ServletContext)}  call
@@ -113,12 +113,12 @@ public final class ContainerInitializer
          * Add a optional consumer to execute once the {@link ServletContainerInitializer#onStartup(Set, ServletContext)} has
          * been called successfully.
          * <p>
-         *     This would be for actions to perform on a ServletContext once this specific SCI has completed
-         *     its execution.  Actions that would require specific configurations that the SCI provides to be present on the
-         *     ServletContext to function properly.
+         * This would be for actions to perform on a ServletContext once this specific SCI has completed
+         * its execution.  Actions that would require specific configurations that the SCI provides to be present on the
+         * ServletContext to function properly.
          * </p>
          * <p>
-         *     This consumer is typically used for Embedded Jetty users to configure Jetty for their specific needs.
+         * This consumer is typically used for Embedded Jetty users to configure Jetty for their specific needs.
          * </p>
          *
          * @param consumer the consumer to execute after the SCI has executed

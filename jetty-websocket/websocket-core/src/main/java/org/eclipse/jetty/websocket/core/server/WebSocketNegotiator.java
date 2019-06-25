@@ -95,8 +95,8 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
             ByteBufferPool bufferPool,
             FrameHandler.Customizer customizer)
         {
-            this.extensionRegistry = extensionRegistry == null?new WebSocketExtensionRegistry():extensionRegistry;
-            this.objectFactory = objectFactory == null?new DecoratedObjectFactory():objectFactory;
+            this.extensionRegistry = extensionRegistry == null ? new WebSocketExtensionRegistry() : extensionRegistry;
+            this.objectFactory = objectFactory == null ? new DecoratedObjectFactory() : objectFactory;
             this.bufferPool = bufferPool;
             this.customizer = customizer;
         }

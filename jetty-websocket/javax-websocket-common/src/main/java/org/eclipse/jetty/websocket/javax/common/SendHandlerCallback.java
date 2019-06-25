@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.util.Callback;
-
 import javax.websocket.SendHandler;
 import javax.websocket.SendResult;
+
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Wrapper of user provided {@link SendHandler} to Jetty internal {@link Callback}

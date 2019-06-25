@@ -54,8 +54,8 @@ import org.eclipse.jetty.util.Callback;
  * However, it is possible for subclasses to override {@link #offer(ByteBuffer)} and {@link #close()} to copy
  * the content to another location (for example a file) and be able to support multiple invocations
  * of of {@link #iterator()} returning the iterator provided by this
-  * class on the first invocation, and an iterator on the bytes copied to the other location
-  * for subsequent invocations.
+ * class on the first invocation, and an iterator on the bytes copied to the other location
+ * for subsequent invocations.
  * <p>
  * Typical usage of {@link DeferredContentProvider} is in asynchronous proxies, where HTTP headers arrive
  * separately from HTTP content chunks.
@@ -107,7 +107,9 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
     public DeferredContentProvider(ByteBuffer... buffers)
     {
         for (ByteBuffer buffer : buffers)
+        {
             offer(buffer);
+        }
     }
 
     @Override
@@ -115,7 +117,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
     {
         if (!this.listener.compareAndSet(null, listener))
             throw new IllegalStateException(String.format("The same %s instance cannot be used in multiple requests",
-                    AsyncContentProvider.class.getName()));
+                AsyncContentProvider.class.getName()));
 
         if (isClosed())
         {
@@ -123,7 +125,9 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
             {
                 long total = 0;
                 for (Chunk chunk : chunks)
+                {
                     total += chunk.buffer.remaining();
+                }
                 length = total;
             }
         }
@@ -308,7 +312,9 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
                 lock.notify();
             }
             for (Chunk chunk : chunks)
+            {
                 chunk.callback.failed(x);
+            }
         }
 
         @Override

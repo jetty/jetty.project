@@ -16,15 +16,14 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.its.jetty_run_war_exploded_mojo_it;
 
+import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 /**
  *
@@ -35,11 +34,11 @@ public class HelloServlet
 {
 
     @Override
-    protected void doGet( HttpServletRequest req, HttpServletResponse resp )
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        String who = req.getParameter( "name" );
+        String who = req.getParameter("name");
 
-        resp.getWriter().write( "Hello " + (who == null ? "unknown" : who) );
+        resp.getWriter().write("Hello " + (who == null ? "unknown" : who));
     }
 }

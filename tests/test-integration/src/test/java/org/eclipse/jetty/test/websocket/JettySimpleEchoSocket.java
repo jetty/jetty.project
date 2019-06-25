@@ -19,7 +19,6 @@
 package org.eclipse.jetty.test.websocket;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.log.Log;

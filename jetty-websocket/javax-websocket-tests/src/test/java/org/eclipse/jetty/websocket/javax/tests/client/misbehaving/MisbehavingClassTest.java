@@ -19,12 +19,10 @@
 package org.eclipse.jetty.websocket.javax.tests.client.misbehaving;
 
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.junit.jupiter.api.AfterEach;

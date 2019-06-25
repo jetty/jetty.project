@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -57,7 +56,7 @@ import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
 
 public class JavaxWebSocketFrameHandler implements FrameHandler
 {
-    private final Logger LOG;
+    private final Logger logger;
     private final JavaxWebSocketContainer container;
     private final Object endpointInstance;
     /**
@@ -109,20 +108,20 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     protected byte dataType = OpCode.UNDEFINED;
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
-        Object endpointInstance,
-        MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-        JavaxWebSocketFrameHandlerMetadata.MessageMetadata textMetadata,
-        JavaxWebSocketFrameHandlerMetadata.MessageMetadata binaryMetadata,
-        MethodHandle pongHandle,
-        EndpointConfig endpointConfig)
+                                      Object endpointInstance,
+                                      MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
+                                      JavaxWebSocketFrameHandlerMetadata.MessageMetadata textMetadata,
+                                      JavaxWebSocketFrameHandlerMetadata.MessageMetadata binaryMetadata,
+                                      MethodHandle pongHandle,
+                                      EndpointConfig endpointConfig)
     {
-        this.LOG = Log.getLogger(endpointInstance.getClass());
+        this.logger = Log.getLogger(endpointInstance.getClass());
 
         this.container = container;
         if (endpointInstance instanceof ConfiguredEndpoint)
         {
             RuntimeException oops = new RuntimeException("ConfiguredEndpoint needs to be unwrapped");
-            LOG.warn(oops);
+            logger.warn(oops);
             throw oops;
         }
         this.endpointInstance = endpointInstance;
@@ -238,7 +237,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             dataType = OpCode.UNDEFINED;
     }
 
-
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
@@ -267,7 +265,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             if (errorHandle != null)
                 errorHandle.invoke(cause);
             else
-                LOG.warn("Unhandled Error: " + endpointInstance,  cause);
+                logger.warn("Unhandled Error: " + endpointInstance, cause);
             callback.succeeded();
         }
         catch (Throwable t)
@@ -277,8 +275,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             callback.failed(wsError);
         }
     }
-
-
 
     public Set<MessageHandler> getMessageHandlers()
     {
@@ -290,7 +286,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         return Collections.unmodifiableSet(messageHandlerMap.values().stream()
             .map((rh) -> rh.getMessageHandler())
             .collect(Collectors.toSet()));
-
     }
 
     public Map<Byte, RegisteredMessageHandler> getMessageHandlerMap()
@@ -361,8 +356,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             else
             {
                 throw new RuntimeException(
-                    "Unable to add " + handler.getClass().getName() + " with type " + clazz + ": only supported types byte[], " + ByteBuffer.class.getName()
-                        + ", " + String.class.getName());
+                    "Unable to add " + handler.getClass().getName() + " with type " + clazz + ": only supported types byte[], " + ByteBuffer.class.getName() +
+                        ", " + String.class.getName());
             }
         }
         catch (NoSuchMethodException e)

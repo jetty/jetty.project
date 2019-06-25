@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.BufferUtil;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.util.BufferUtil;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -58,7 +58,9 @@ public class RawFrameBuilder
         assertThat("Mask.length", mask.length, is(4));
         int len = data.length;
         for (int i = 0; i < len; i++)
+        {
             data[i] ^= mask[i % 4];
+        }
     }
 
     public static void putLength(ByteBuffer buf, int length, boolean masked)
@@ -67,7 +69,7 @@ public class RawFrameBuilder
         {
             throw new IllegalArgumentException("Length cannot be negative");
         }
-        byte b = (masked?(byte)0x80:0x00);
+        byte b = (masked ? (byte)0x80 : 0x00);
 
         // write the uncompressed length
         if (length > 0xFF_FF)
@@ -144,9 +146,9 @@ public class RawFrameBuilder
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);
 
-        byte[] bytes = status == null?null:BufferUtil.toArray(status.asPayloadBuffer());
+        byte[] bytes = status == null ? null : BufferUtil.toArray(status.asPayloadBuffer());
         RawFrameBuilder.putOpFin(buffer, OpCode.CLOSE, true);
-        putLength(buffer, bytes == null?0:bytes.length, masked);
+        putLength(buffer, bytes == null ? 0 : bytes.length, masked);
         if (masked)
         {
             byte[] mask = new byte[4];
@@ -159,5 +161,4 @@ public class RawFrameBuilder
         BufferUtil.flipToFlush(buffer, 0);
         return BufferUtil.toArray(buffer);
     }
-
 }

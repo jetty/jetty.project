@@ -37,16 +37,15 @@ public class JettyHttpContext extends com.sun.net.httpserver.HttpContext
     private HttpSpiContextHandler _jettyContextHandler;
 
     private HttpServer _server;
-    
-    private Map<String,Object> _attributes = new HashMap<String,Object>();
-    
+
+    private Map<String, Object> _attributes = new HashMap<String, Object>();
+
     private List<Filter> _filters = new ArrayList<Filter>();
-    
+
     private Authenticator _authenticator;
 
-
     protected JettyHttpContext(HttpServer server, String path,
-            HttpHandler handler)
+                               HttpHandler handler)
     {
         this._server = server;
         _jettyContextHandler = new HttpSpiContextHandler(this, handler);
@@ -107,5 +106,4 @@ public class JettyHttpContext extends com.sun.net.httpserver.HttpContext
     {
         return _authenticator;
     }
-
 }

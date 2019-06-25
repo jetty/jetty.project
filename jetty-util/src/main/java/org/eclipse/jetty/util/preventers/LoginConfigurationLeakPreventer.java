@@ -21,16 +21,16 @@ package org.eclipse.jetty.util.preventers;
 /**
  * LoginConfigurationLeakPreventer
  *
- * The javax.security.auth.login.Configuration class keeps a static reference to the 
+ * The javax.security.auth.login.Configuration class keeps a static reference to the
  * thread context classloader. We prevent a webapp context classloader being used for
  * that by invoking the classloading here.
- * 
+ *
  * Inspired by Tomcat JreMemoryLeakPrevention
  */
 public class LoginConfigurationLeakPreventer extends AbstractLeakPreventer
 {
-    /* ------------------------------------------------------------ */
-    /** 
+
+    /**
      * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
      */
     @Override
@@ -45,5 +45,4 @@ public class LoginConfigurationLeakPreventer extends AbstractLeakPreventer
             LOG.warn(e);
         }
     }
-
 }

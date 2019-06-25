@@ -36,7 +36,7 @@ public class RawFrameBuilder
         buf.put(b);
     }
 
-    public static void putLengthAndMask(ByteBuffer buf, int length, byte mask[])
+    public static void putLengthAndMask(ByteBuffer buf, int length, byte[] mask)
     {
         if (mask != null)
         {
@@ -50,11 +50,11 @@ public class RawFrameBuilder
         }
     }
 
-    public static byte[] mask(final byte[] data, final byte mask[])
+    public static byte[] mask(final byte[] data, final byte[] mask)
     {
         assertThat("Mask.length", mask.length, is(4));
         int len = data.length;
-        byte ret[] = new byte[len];
+        byte[] ret = new byte[len];
         System.arraycopy(data, 0, ret, 0, len);
         for (int i = 0; i < len; i++)
         {
@@ -69,7 +69,7 @@ public class RawFrameBuilder
         {
             throw new IllegalArgumentException("Length cannot be negative");
         }
-        byte b = (masked?(byte)0x80:0x00);
+        byte b = (masked ? (byte)0x80 : 0x00);
 
         // write the uncompressed length
         if (length > 0xFF_FF)
@@ -96,7 +96,7 @@ public class RawFrameBuilder
         }
     }
 
-    public static void putMask(ByteBuffer buf, byte mask[])
+    public static void putMask(ByteBuffer buf, byte[] mask)
     {
         assertThat("Mask.length", mask.length, is(4));
         buf.put(mask);

@@ -60,7 +60,6 @@ public class GZIPContentDecoderTest
                 buffers.decrementAndGet();
                 super.release(buffer);
             }
-
         };
     }
 
@@ -98,7 +97,9 @@ public class GZIPContentDecoderTest
     {
         String data = "0123456789ABCDEF";
         for (int i = 0; i < 10; ++i)
+        {
             data += data;
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
         output.write(data.getBytes(StandardCharsets.UTF_8));
@@ -109,7 +110,9 @@ public class GZIPContentDecoderTest
         GZIPInputStream input = new GZIPInputStream(new ByteArrayInputStream(bytes), 1);
         int read;
         while ((read = input.read()) >= 0)
+        {
             baos.write(read);
+        }
         assertEquals(data, new String(baos.toByteArray(), StandardCharsets.UTF_8));
     }
 
@@ -262,7 +265,9 @@ public class GZIPContentDecoderTest
     {
         String data = "0123456789ABCDEF";
         for (int i = 0; i < 10; ++i)
+        {
             data += data;
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
         output.write(data.getBytes(StandardCharsets.UTF_8));
@@ -286,7 +291,9 @@ public class GZIPContentDecoderTest
     {
         String data = "0123456789ABCDEF";
         for (int i = 0; i < 10; ++i)
+        {
             data += data;
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
         output.write(data.getBytes(StandardCharsets.UTF_8));
@@ -312,7 +319,9 @@ public class GZIPContentDecoderTest
     {
         String data1 = "0123456789ABCDEF";
         for (int i = 0; i < 10; ++i)
+        {
             data1 += data1;
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
         output.write(data1.getBytes(StandardCharsets.UTF_8));

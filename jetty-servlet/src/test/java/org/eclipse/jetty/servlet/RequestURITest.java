@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -31,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -45,6 +42,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class RequestURITest
 {
@@ -72,12 +71,12 @@ public class RequestURITest
         ret.add(Arguments.of("/hello%252Fworld", "/hello%252Fworld", null));
         ret.add(Arguments.of("/hello%u0025world", "/hello%u0025world", null));
         ret.add(Arguments.of("/hello-euro-%E2%82%AC", "/hello-euro-%E2%82%AC", null));
-        ret.add(Arguments.of("/hello-euro?%E2%82%AC", "/hello-euro","%E2%82%AC"));
+        ret.add(Arguments.of("/hello-euro?%E2%82%AC", "/hello-euro", "%E2%82%AC"));
         // test the ascii control characters (just for completeness)
         for (int i = 0x0; i < 0x1f; i++)
         {
-            String raw = String.format("/hello%%%02Xworld",i);
-            ret.add(Arguments.of(raw, raw, null ));
+            String raw = String.format("/hello%%%02Xworld", i);
+            ret.add(Arguments.of(raw, raw, null));
         }
 
         return ret.stream();
@@ -118,7 +117,7 @@ public class RequestURITest
         context.setContextPath("/");
         server.setHandler(context);
 
-        context.addServlet(RequestUriServlet.class,"/*");
+        context.addServlet(RequestUriServlet.class, "/*");
 
         server.start();
 
@@ -128,7 +127,7 @@ public class RequestURITest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverURI = new URI(String.format("http://%s:%d/",host,port));
+        serverURI = new URI(String.format("http://%s:%d/", host, port));
     }
 
     @AfterAll
@@ -146,7 +145,7 @@ public class RequestURITest
 
     protected Socket newSocket(String host, int port) throws Exception
     {
-        Socket socket = new Socket(host,port);
+        Socket socket = new Socket(host, port);
         socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
         return socket;
@@ -154,12 +153,10 @@ public class RequestURITest
 
     /**
      * Read entire response from the client. Close the output.
-     * 
-     * @param client
-     *            Open client socket.
+     *
+     * @param client Open client socket.
      * @return The response string.
-     * @throws IOException
-     *             in case of I/O problems
+     * @throws IOException in case of I/O problems
      */
     protected static String readResponse(Socket client) throws IOException
     {
@@ -188,11 +185,11 @@ public class RequestURITest
     @MethodSource("data")
     public void testGetRequestURI_HTTP10(String rawpath, String expectedReqUri, String expectedQuery) throws Exception
     {
-        try (Socket client = newSocket(serverURI.getHost(),serverURI.getPort()))
+        try (Socket client = newSocket(serverURI.getHost(), serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
-            String request = String.format("GET %s HTTP/1.0\r\n\r\n",rawpath);
+            String request = String.format("GET %s HTTP/1.0\r\n\r\n", rawpath);
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
@@ -200,9 +197,9 @@ public class RequestURITest
             String response = readResponse(client);
 
             // TODO: is HTTP/1.1 response appropriate for a HTTP/1.0 request?
-            assertThat(response,Matchers.containsString("HTTP/1.1 200 OK"));
-            assertThat(response,Matchers.containsString("RequestURI: " + expectedReqUri));
-            assertThat(response,Matchers.containsString("QueryString: " + expectedQuery));
+            assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
+            assertThat(response, Matchers.containsString("RequestURI: " + expectedReqUri));
+            assertThat(response, Matchers.containsString("QueryString: " + expectedQuery));
         }
     }
 
@@ -210,20 +207,20 @@ public class RequestURITest
     @MethodSource("data")
     public void testGetRequestURI_HTTP11(String rawpath, String expectedReqUri, String expectedQuery) throws Exception
     {
-        try (Socket client = newSocket(serverURI.getHost(),serverURI.getPort()))
+        try (Socket client = newSocket(serverURI.getHost(), serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
-            String request = String.format("GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",rawpath,serverURI.getHost());
+            String request = String.format("GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", rawpath, serverURI.getHost());
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
             // Read the response.
             String response = readResponse(client);
 
-            assertThat(response,Matchers.containsString("HTTP/1.1 200 OK"));
-            assertThat(response,Matchers.containsString("RequestURI: " + expectedReqUri));
-            assertThat(response,Matchers.containsString("QueryString: " + expectedQuery));
+            assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
+            assertThat(response, Matchers.containsString("RequestURI: " + expectedReqUri));
+            assertThat(response, Matchers.containsString("QueryString: " + expectedQuery));
         }
     }
 }

@@ -35,10 +35,9 @@ import org.eclipse.jetty.util.log.Logger;
 public class ClassInheritanceHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
-    
+
     Map<String, Set<String>> _inheritanceMap;
- 
-    
+
     public ClassInheritanceHandler(Map<String, Set<String>> map)
     {
         _inheritanceMap = map;
@@ -52,8 +51,8 @@ public class ClassInheritanceHandler extends AbstractHandler
             //Don't scan Object
             if ("java.lang.Object".equals(classInfo.getClassName()))
                 return;
-            
-            for (int i=0; classInfo.getInterfaces() != null && i < classInfo.getInterfaces().length;i++)
+
+            for (int i = 0; classInfo.getInterfaces() != null && i < classInfo.getInterfaces().length; i++)
             {
                 addToInheritanceMap(classInfo.getInterfaces()[i], classInfo.getClassName());
             }
@@ -66,12 +65,12 @@ public class ClassInheritanceHandler extends AbstractHandler
         catch (Exception e)
         {
             LOG.warn(e);
-        }  
+        }
     }
-    
-    private void addToInheritanceMap (String interfaceOrSuperClassName, String implementingOrExtendingClassName)
+
+    private void addToInheritanceMap(String interfaceOrSuperClassName, String implementingOrExtendingClassName)
     {
-      
+
         //As it is likely that the interfaceOrSuperClassName is already in the map, try getting it first
         Set<String> implementingClasses = _inheritanceMap.get(interfaceOrSuperClassName);
         //If it isn't in the map, then add it in, but test to make sure that someone else didn't get in 
@@ -83,7 +82,7 @@ public class ClassInheritanceHandler extends AbstractHandler
             if (tmp != null)
                 implementingClasses = tmp;
         }
-        
+
         implementingClasses.add(implementingOrExtendingClassName);
     }
 }

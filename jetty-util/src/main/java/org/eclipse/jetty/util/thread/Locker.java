@@ -23,11 +23,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * <p>Convenience auto closeable {@link java.util.concurrent.locks.ReentrantLock} wrapper.</p>
- * 
+ *
  * <pre>
  * try (Locker.Lock lock = locker.lock())
  * {
- *   // something 
+ *   // something
  * }
  * </pre>
  */

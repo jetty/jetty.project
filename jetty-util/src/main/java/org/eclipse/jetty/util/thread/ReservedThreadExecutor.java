@@ -73,16 +73,16 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     /**
      * @param executor The executor to use to obtain threads
      * @param capacity The number of threads to preallocate. If less than 0 then capacity
-     *                 is calculated based on a heuristic from the number of available processors and
-     *                 thread pool size.
+     * is calculated based on a heuristic from the number of available processors and
+     * thread pool size.
      */
-    public ReservedThreadExecutor(Executor executor,int capacity)
+    public ReservedThreadExecutor(Executor executor, int capacity)
     {
         _executor = executor;
-        _capacity = reservedThreads(executor,capacity);
+        _capacity = reservedThreads(executor, capacity);
         _stack = new ConcurrentLinkedDeque<>();
 
-        LOG.debug("{}",this);
+        LOG.debug("{}", this);
     }
 
     /**
@@ -93,9 +93,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
      * @return the number of reserved threads that would be used by a ReservedThreadExecutor
      * constructed with these arguments.
      */
-    private static int reservedThreads(Executor executor,int capacity)
+    private static int reservedThreads(Executor executor, int capacity)
     {
-        if (capacity>=0)
+        if (capacity >= 0)
             return capacity;
         int cpus = ProcessorUtils.availableProcessors();
         if (executor instanceof ThreadPool.SizedThreadPool)
@@ -132,13 +132,14 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @ManagedAttribute(value = "idletimeout in MS", readonly = true)
     public long getIdleTimeoutMs()
     {
-        if(_idleTimeUnit==null)
+        if (_idleTimeUnit == null)
             return 0;
         return _idleTimeUnit.toMillis(_idleTime);
     }
 
     /**
      * Set the idle timeout for shrinking the reserved thread pool
+     *
      * @param idleTime Time to wait before shrinking, or 0 for no timeout.
      * @param idleTimeUnit Time units for idle timeout
      */
@@ -153,16 +154,16 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @Override
     public void doStart() throws Exception
     {
-        _lease = ThreadPoolBudget.leaseFrom(getExecutor(),this,_capacity);
+        _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _capacity);
         super.doStart();
     }
 
     @Override
     public void doStop() throws Exception
     {
-        if (_lease!=null)
+        if (_lease != null)
             _lease.close();
-        while(true)
+        while (true)
         {
             ReservedThread thread = _stack.pollFirst();
             if (thread == null)
@@ -187,13 +188,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public boolean tryExecute(Runnable task)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} tryExecute {}",this ,task);
+            LOG.debug("{} tryExecute {}", this, task);
 
-        if (task==null)
+        if (task == null)
             return false;
 
         ReservedThread thread = _stack.pollFirst();
-        if (thread==null && task!=STOP)
+        if (thread == null && task != STOP)
         {
             startReservedThread();
             return false;
@@ -202,7 +203,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         int size = _size.decrementAndGet();
         thread.offer(task);
 
-        if (size==0 && task!=STOP)
+        if (size == 0 && task != STOP)
             startReservedThread();
 
         return true;
@@ -228,7 +229,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 }
             }
         }
-        catch(RejectedExecutionException e)
+        catch (RejectedExecutionException e)
         {
             LOG.ignore(e);
         }
@@ -238,11 +239,11 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public String toString()
     {
         return String.format("%s@%x{s=%d/%d,p=%d}",
-                getClass().getSimpleName(),
-                hashCode(),
-                _size.get(),
-                _capacity,
-                _pending.get());
+            getClass().getSimpleName(),
+            hashCode(),
+            _size.get(),
+            _capacity,
+            _pending.get());
     }
 
     private class ReservedThread implements Runnable
@@ -275,7 +276,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 LOG.debug("{} waiting", this);
 
             Runnable task = null;
-            while (task==null)
+            while (task == null)
             {
                 boolean idle = false;
 
@@ -325,10 +326,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 // test and increment size BEFORE decrementing pending,
                 // so that we don't have a race starting new pending.
-                while(true)
+                while (true)
                 {
                     int size = _size.get();
-                    if (size>=_capacity)
+                    if (size >= _capacity)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("{} size {} > capacity", this, size, _capacity);
@@ -336,7 +337,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                             _pending.decrementAndGet();
                         return;
                     }
-                    if (_size.compareAndSet(size,size+1))
+                    if (_size.compareAndSet(size, size + 1))
                         break;
                 }
 
@@ -355,7 +356,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 // Wait for a task
                 Runnable task = reservedWait();
 
-                if (task==STOP)
+                if (task == STOP)
                     // return on STOP poison pill
                     break;
 
@@ -377,7 +378,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         @Override
         public String toString()
         {
-            return String.format("%s@%x",ReservedThreadExecutor.this,hashCode());
+            return String.format("%s@%x", ReservedThreadExecutor.this, hashCode());
         }
     }
 }

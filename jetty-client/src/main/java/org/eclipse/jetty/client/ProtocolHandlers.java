@@ -79,7 +79,7 @@ public class ProtocolHandlers implements Dumpable
      * {@link ProtocolHandler#accept(Request, Response) accepts}
      * the given request and response.</p>
      *
-     * @param request  the request to accept
+     * @param request the request to accept
      * @param response the response to accept
      * @return the protocol handler that accepted the request and response,
      * or null if none of the protocol handlers accepted the request and response

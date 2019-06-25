@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
@@ -105,8 +104,8 @@ public class JDK9ALPNTest
             client.startHandshake();
 
             OutputStream output = client.getOutputStream();
-            output.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            output.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Connection: close\r\n" +
                     "\r\n" +
@@ -150,8 +149,8 @@ public class JDK9ALPNTest
             client.startHandshake();
 
             OutputStream output = client.getOutputStream();
-            output.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            output.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Connection: close\r\n" +
                     "\r\n" +

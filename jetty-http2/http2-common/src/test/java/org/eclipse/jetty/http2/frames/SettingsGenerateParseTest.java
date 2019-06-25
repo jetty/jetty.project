@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,8 +33,10 @@ import org.eclipse.jetty.http2.generator.SettingsGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SettingsGenerateParseTest
 {
@@ -207,7 +206,9 @@ public class SettingsGenerateParseTest
 
         Map<Integer, Integer> settings = new HashMap<>();
         for (int i = 0; i < maxSettingsKeys + 1; ++i)
+        {
             settings.put(i + 10, i);
+        }
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.generateSettings(lease, settings, false);
@@ -215,7 +216,9 @@ public class SettingsGenerateParseTest
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
+            {
                 parser.parse(buffer);
+            }
         }
 
         assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
@@ -257,7 +260,9 @@ public class SettingsGenerateParseTest
         buffer.flip().position(1);
 
         while (buffer.hasRemaining())
+        {
             parser.parse(buffer);
+        }
 
         assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
@@ -285,12 +290,16 @@ public class SettingsGenerateParseTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         for (int i = 0; i < maxSettingsKeys + 1; ++i)
+        {
             generator.generateSettings(lease, settings, false);
+        }
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
+            {
                 parser.parse(buffer);
+            }
         }
 
         assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());

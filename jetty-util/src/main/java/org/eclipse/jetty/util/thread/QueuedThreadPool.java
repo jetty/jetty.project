@@ -48,13 +48,15 @@ import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadPool, Dumpable, TryExecutor
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
-    private static Runnable NOOP = () -> {};
+    private static Runnable NOOP = () ->
+    {
+    };
 
     /**
      * Encodes thread counts:
      * <dl>
-     *   <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if stopping</dd>
-     *   <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size</dd>
+     * <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if stopping</dd>
+     * <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size</dd>
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
@@ -113,8 +115,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
     {
         if (maxThreads < minThreads)
-            throw new IllegalArgumentException("max threads (" + maxThreads + ") less than min threads ("
-                                                   + minThreads + ")");
+            throw new IllegalArgumentException("max threads (" + maxThreads + ") less than min threads (" + minThreads + ")");
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
@@ -787,16 +788,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     protected BlockingQueue<Runnable> getQueue()
     {
         return _jobs;
-    }
-
-    /**
-     * @param queue the job queue
-     * @deprecated pass the queue to the constructor instead
-     */
-    @Deprecated
-    public void setQueue(BlockingQueue<Runnable> queue)
-    {
-        throw new UnsupportedOperationException("Use constructor injection");
     }
 
     /**

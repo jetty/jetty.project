@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -54,6 +53,7 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,7 +84,8 @@ public class ClientCloseTest
         {
             // Send message from client to server
             final String echoMsg = "echo-test";
-            Future<Void> testFut = clientSocket.getRemote().sendStringByFuture(echoMsg);
+            FutureWriteCallback testFut = new FutureWriteCallback();
+            clientSocket.getRemote().sendString(echoMsg, testFut);
 
             // Wait for send future
             testFut.get(5, SECONDS);
@@ -129,7 +130,7 @@ public class ClientCloseTest
             {
                 factory.setIdleTimeout(Duration.ofSeconds(10));
                 factory.setMaxTextMessageSize(1024 * 1024 * 2);
-                factory.setCreator((req,resp)->
+                factory.setCreator((req, resp) ->
                 {
                     ServerEndpoint endpoint = new ServerEndpoint();
                     serverEndpoints.offer(endpoint);
@@ -256,8 +257,8 @@ public class ClientCloseTest
         // client reads -1 (EOF)
         // client triggers close event on client ws-endpoint
         clientSocket.assertReceivedCloseEvent(2000,
-                is(StatusCode.ABNORMAL),
-                containsString("Session Closed"));
+            is(StatusCode.ABNORMAL),
+            containsString("Session Closed"));
 
         clientSessionTracker.assertClosedProperly(client);
     }
@@ -287,8 +288,8 @@ public class ClientCloseTest
 
             // client close should occur
             clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
-                    is(StatusCode.SHUTDOWN),
-                    containsString("Timeout"));
+                is(StatusCode.SHUTDOWN),
+                containsString("Timeout"));
 
             // client idle timeout triggers close event on client ws-endpoint
             assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
@@ -330,7 +331,9 @@ public class ClientCloseTest
         {
             // block all the server threads
             for (int i = 0; i < sessionCount; i++)
+            {
                 clientSockets.get(i).getSession().getRemote().sendString("block");
+            }
 
             assertTimeoutPreemptively(ofSeconds(5), () ->
             {
@@ -340,7 +343,9 @@ public class ClientCloseTest
 
             // clients disconnect
             for (int i = 0; i < sessionCount; i++)
+            {
                 clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), containsString("Session Closed"));
+            }
 
             // ensure all Sessions are gone. connections are gone. etc. (client and server)
             // ensure ConnectionListener onClose is called 3 times
@@ -351,7 +356,9 @@ public class ClientCloseTest
         finally
         {
             for (int i = 0; i < sessionCount; i++)
+            {
                 serverEndpoints.get(i).block.countDown();
+            }
         }
     }
 
@@ -400,7 +407,9 @@ public class ClientCloseTest
         finally
         {
             for (ServerEndpoint endpoint : serverEndpoints)
+            {
                 endpoint.block.countDown();
+            }
         }
     }
 
@@ -424,7 +433,7 @@ public class ClientCloseTest
                 {
                     // send extra large message
                     byte[] buf = new byte[1024 * 1024];
-                    Arrays.fill(buf, (byte) 'x');
+                    Arrays.fill(buf, (byte)'x');
                     String bigmsg = new String(buf, UTF_8);
                     session.getRemote().sendString(bigmsg);
                 }

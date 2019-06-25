@@ -172,7 +172,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketCoreSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(WebSocketCoreSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -211,7 +211,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -230,7 +230,6 @@ public class ServerCloseTest
             close(session);
         }
     }
-
 
     /**
      * Test session open session cleanup (bug #474936)
@@ -252,7 +251,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 

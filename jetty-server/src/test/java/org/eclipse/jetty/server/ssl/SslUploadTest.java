@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyStore;
 import java.util.Arrays;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
@@ -50,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
+ *
  */
 public class SslUploadTest
 {
@@ -90,7 +90,7 @@ public class SslUploadTest
     public void test() throws Exception
     {
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        SslContextFactory ctx=connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
+        SslContextFactory ctx = connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
         try (InputStream stream = new FileInputStream(ctx.getKeyStorePath()))
         {
             keystore.load(stream, "storepwd".toCharArray());
@@ -100,7 +100,7 @@ public class SslUploadTest
         SSLContext sslContext = SSLContext.getInstance("SSL");
         sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 
-        final SSLSocket socket =  (SSLSocket)sslContext.getSocketFactory().createSocket("localhost",connector.getLocalPort());
+        final SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort());
 
         // Simulate async close
         /*
@@ -143,7 +143,7 @@ public class SslUploadTest
 
         InputStream in = socket.getInputStream();
         String response = IO.toString(in);
-        assertTrue (response.indexOf("200")>0);
+        assertTrue(response.indexOf("200") > 0);
         // System.err.println(response);
 
         // long end = System.nanoTime();
@@ -158,11 +158,13 @@ public class SslUploadTest
         {
             request.setHandled(true);
             InputStream in = request.getInputStream();
-            byte[] b = new byte[4096*4];
+            byte[] b = new byte[4096 * 4];
             int read;
-            while((read = in.read(b))>=0)
+            while ((read = in.read(b)) >= 0)
+            {
                 total += read;
-            System.err.println("Read "+ total);
+            }
+            System.err.println("Read " + total);
         }
     }
 }

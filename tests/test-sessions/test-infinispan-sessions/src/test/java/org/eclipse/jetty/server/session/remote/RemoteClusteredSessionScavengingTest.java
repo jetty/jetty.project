@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session.remote;
 
 import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
@@ -25,33 +24,28 @@ import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
-
 /**
  * ClusteredSessionScavengingTest
- *
- *
  */
 public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
 
     public static RemoteInfinispanTestSupport __testSupport;
-    
+
     @BeforeAll
-    public static void setup () throws Exception
+    public static void setup() throws Exception
     {
         __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
         __testSupport.setup();
     }
-    
-    @AfterAll
-    public static void teardown () throws Exception
-    {
-       __testSupport.teardown();
-    }
-    
-    
 
-    /** 
+    @AfterAll
+    public static void teardown() throws Exception
+    {
+        __testSupport.teardown();
+    }
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
@@ -61,5 +55,4 @@ public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessi
         factory.setCache(__testSupport.getCache());
         return factory;
     }
-
 }

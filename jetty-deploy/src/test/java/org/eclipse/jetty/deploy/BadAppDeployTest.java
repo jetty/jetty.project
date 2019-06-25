@@ -101,11 +101,12 @@ public class BadAppDeployTest
 
         server.addBean(deploymentManager); // this should be done after setHandler(handlers)
 
-        assertTimeoutPreemptively(ofSeconds(10), () -> {
+        assertTimeoutPreemptively(ofSeconds(10), () ->
+        {
 
             try (StacklessLogging ignore = new StacklessLogging(Log.getLogger(WebAppContext.class),
-                    Log.getLogger(DeploymentManager.class),
-                    Log.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
+                Log.getLogger(DeploymentManager.class),
+                Log.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
             {
                 ServletException cause = assertThrows(ServletException.class, () -> server.start());
                 assertThat(cause.getMessage(), containsString("intentionally"));
@@ -153,11 +154,12 @@ public class BadAppDeployTest
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers); // this should be done after addBean(deploymentManager)
 
-        assertTimeoutPreemptively(ofSeconds(10), () -> {
+        assertTimeoutPreemptively(ofSeconds(10), () ->
+        {
 
             try (StacklessLogging ignore = new StacklessLogging(Log.getLogger(WebAppContext.class),
-                    Log.getLogger(DeploymentManager.class),
-                    Log.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
+                Log.getLogger(DeploymentManager.class),
+                Log.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
             {
                 ServletException cause = assertThrows(ServletException.class, () -> server.start());
                 assertThat(cause.getMessage(), containsString("intentionally"));

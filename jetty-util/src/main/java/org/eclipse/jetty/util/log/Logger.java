@@ -30,6 +30,7 @@ public interface Logger
 
     /**
      * Formats and logs at warn level.
+     *
      * @param msg the formatting string
      * @param args the optional arguments
      */
@@ -37,12 +38,14 @@ public interface Logger
 
     /**
      * Logs the given Throwable information at warn level
+     *
      * @param thrown the Throwable to log
      */
     public void warn(Throwable thrown);
 
     /**
      * Logs the given message at warn level, with Throwable information.
+     *
      * @param msg the message to log
      * @param thrown the Throwable to log
      */
@@ -50,6 +53,7 @@ public interface Logger
 
     /**
      * Formats and logs at info level.
+     *
      * @param msg the formatting string
      * @param args the optional arguments
      */
@@ -57,12 +61,14 @@ public interface Logger
 
     /**
      * Logs the given Throwable information at info level
+     *
      * @param thrown the Throwable to log
      */
     public void info(Throwable thrown);
 
     /**
      * Logs the given message at info level, with Throwable information.
+     *
      * @param msg the message to log
      * @param thrown the Throwable to log
      */
@@ -75,21 +81,23 @@ public interface Logger
 
     /**
      * Mutator used to turn debug on programmatically.
+     *
      * @param enabled whether to enable the debug level
      */
     public void setDebugEnabled(boolean enabled);
 
     /**
      * Formats and logs at debug level.
+     *
      * @param msg the formatting string
      * @param args the optional arguments
      */
     public void debug(String msg, Object... args);
-    
 
     /**
      * Formats and logs at debug level.
      * avoids autoboxing of integers
+     *
      * @param msg the formatting string
      * @param value long value
      */
@@ -97,12 +105,14 @@ public interface Logger
 
     /**
      * Logs the given Throwable information at debug level
+     *
      * @param thrown the Throwable to log
      */
     public void debug(Throwable thrown);
 
     /**
      * Logs the given message at debug level, with Throwable information.
+     *
      * @param msg the message to log
      * @param thrown the Throwable to log
      */
@@ -113,11 +123,12 @@ public interface Logger
      * @return a logger with the given name
      */
     public Logger getLogger(String name);
-    
+
     /**
      * Ignore an exception.
      * <p>This should be used rather than an empty catch block.
+     *
      * @param ignored the throwable to log as ignored
      */
-    public void ignore(Throwable ignored); 
+    public void ignore(Throwable ignored);
 }

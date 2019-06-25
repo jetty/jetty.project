@@ -16,11 +16,9 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -31,6 +29,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -39,12 +38,12 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * a comprehensive web.xml that combines all information from annotations, webdefault.xml and all web-fragment.xml
  * files. By default, the web.xml is generated to the console output only. Use the <b>effectiveWebXml</b> parameter
  * to provide a file name into which to save the output.
- * 
+ *
  * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
  *
  * Runs jetty on the unassembled webapp to generate the effective web.xml
  */
-@Mojo( name = "effective-web-xml", requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "effective-web-xml", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class JettyEffectiveWebXml extends JettyRunMojo
 {
@@ -53,16 +52,14 @@ public class JettyEffectiveWebXml extends JettyRunMojo
      */
     @Parameter(defaultValue = "${project.build.directory}", readonly = true, required = true)
     protected File target;
-    
+
     /**
      * The name of the file to generate into
-     * 
      */
     @Parameter
     protected File effectiveWebXml;
 
     protected boolean deleteOnExit = true;
-    
 
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
@@ -72,34 +69,32 @@ public class JettyEffectiveWebXml extends JettyRunMojo
     {
         super.execute();
     }
-    
-    
+
     @Override
     public void startJetty() throws MojoExecutionException
     {
         //Only do enough setup to be able to produce a quickstart-web.xml file 
 
         QueuedThreadPool tpool = null;
-        
+
         try
         {
             printSystemProperties();
 
             //apply any config from a jetty.xml file first to our "fake" server instance
             //TODO probably not necessary
-            applyJettyXml ();  
-        
+            applyJettyXml();
+
             ServerSupport.configureHandlers(server, null);
             ServerSupport.configureDefaultConfigurationClasses(server);
-                   
+
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
-            
+
             //set the webapp up to do very little other than generate the quickstart-web.xml
             webApp.setCopyWebDir(false);
             webApp.setCopyWebInf(false);
             webApp.setGenerateQuickStart(true);
-
 
             //if the user didn't nominate a file to generate into, pick the name and
             //make sure that it is deleted on exit
@@ -121,9 +116,9 @@ public class JettyEffectiveWebXml extends JettyRunMojo
 
                 webApp.setQuickStartWebDescriptor(descriptor);
             }
-            
+
             ServerSupport.addWebApplication(server, webApp);
-                       
+
             //if our server has a thread pool associated we can do any annotation scanning multithreaded,
             //otherwise scanning will be single threaded
             tpool = server.getBean(QueuedThreadPool.class);
@@ -131,9 +126,8 @@ public class JettyEffectiveWebXml extends JettyRunMojo
                 tpool.start();
             else
                 webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
-            
-             webApp.start(); //just enough to generate the quickstart           
-           
+
+            webApp.start(); //just enough to generate the quickstart
         }
         catch (Exception e)
         {
@@ -141,12 +135,24 @@ public class JettyEffectiveWebXml extends JettyRunMojo
         }
         finally
         {
-            try {webApp.stop();}catch (Exception x) {};
-            
-            try {if (tpool != null) tpool.stop();} catch (Exception x) {};
+            try
+            {
+                webApp.stop();
+            }
+            catch (Exception ignored)
+            {
+            }
+
+            try
+            {
+                if (tpool != null)
+                    tpool.stop();
+            }
+            catch (Exception ignored)
+            {
+            }
         }
-         
-       
+
         if (deleteOnExit)
         {
             try
@@ -156,10 +162,8 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             }
             catch (Exception e)
             {
-               throw new MojoExecutionException("Unable to output effective web.xml", e);
+                throw new MojoExecutionException("Unable to output effective web.xml", e);
             }
-            
         }
-        
     }
 }

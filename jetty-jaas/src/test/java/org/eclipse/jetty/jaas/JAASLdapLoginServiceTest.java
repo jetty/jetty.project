@@ -16,8 +16,13 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.jaas;
+
+import java.util.HashMap;
+import java.util.Map;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
+import javax.security.auth.login.Configuration;
 
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
@@ -33,24 +38,20 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
-import javax.security.auth.login.Configuration;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * JAASLdapLoginServiceTest
- *
- *
  */
-@RunWith( FrameworkRunner.class)
-@CreateLdapServer( transports = { @CreateTransport(protocol = "LDAP" ) } )
+@RunWith(FrameworkRunner.class)
+@CreateLdapServer(transports = {@CreateTransport(protocol = "LDAP")})
 @CreateDS(allowAnonAccess = false, partitions = {
     @CreatePartition(name = "Users Partition", suffix = "ou=people,dc=jetty,dc=org"),
-    @CreatePartition(name = "Groups Partition", suffix = "ou=groups,dc=jetty,dc=org")})
+    @CreatePartition(name = "Groups Partition", suffix = "ou=groups,dc=jetty,dc=org")
+})
 @ApplyLdifs({
     // Entry 1
     "dn: ou=people,dc=jetty,dc=org",
@@ -121,26 +122,29 @@ public class JAASLdapLoginServiceTest
 {
     private static LdapServer _ldapServer;
 
-    private JAASLoginService jaasLoginService(String name) {
-      JAASLoginService ls = new JAASLoginService("foo");
-      ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
-      ls.setIdentityService(new DefaultIdentityService());
-      ls.setConfiguration(new TestConfiguration(true));
-      return ls;
+    private JAASLoginService jaasLoginService(String name)
+    {
+        JAASLoginService ls = new JAASLoginService("foo");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
+        ls.setIdentityService(new DefaultIdentityService());
+        ls.setConfiguration(new TestConfiguration(true));
+        return ls;
     }
 
     private UserIdentity doLogin(String username, String password) throws Exception
     {
         JAASLoginService ls = jaasLoginService("foo");
         Request request = new Request(null, null);
-        return ls.login( username, password, request);
+        return ls.login(username, password, request);
     }
 
-    public static LdapServer getLdapServer() {
+    public static LdapServer getLdapServer()
+    {
         return _ldapServer;
     }
 
-    public static void setLdapServer(LdapServer ldapServer) {
+    public static void setLdapServer(LdapServer ldapServer)
+    {
         _ldapServer = ldapServer;
     }
 
@@ -148,7 +152,7 @@ public class JAASLdapLoginServiceTest
     {
         private boolean forceBindingLogin;
 
-        public TestConfiguration( boolean forceBindingLogin )
+        public TestConfiguration(boolean forceBindingLogin)
         {
             this.forceBindingLogin = forceBindingLogin;
         }
@@ -156,23 +160,21 @@ public class JAASLdapLoginServiceTest
         @Override
         public AppConfigurationEntry[] getAppConfigurationEntry(String name)
         {
-            Map<String,String> options = new HashMap<>( );
-            options.put( "hostname", "localhost" );
-            options.put( "port",  Integer.toString(_ldapServer.getTransports()[0].getPort()));
-            options.put( "contextFactory", "com.sun.jndi.ldap.LdapCtxFactory" );
-            options.put( "bindDn", "uid=admin,ou=system");
-            options.put( "bindPassword", "secret");
-            options.put( "userBaseDn", "ou=people,dc=jetty,dc=org" );
-            options.put( "roleBaseDn","ou=groups,dc=jetty,dc=org");
-            options.put( "roleNameAttribute", "cn" );
-            options.put( "forceBindingLogin", Boolean.toString( forceBindingLogin ) );
-            AppConfigurationEntry entry = new AppConfigurationEntry( LdapLoginModule.class.getCanonicalName(), LoginModuleControlFlag.REQUIRED, options);
+            Map<String, String> options = new HashMap<>();
+            options.put("hostname", "localhost");
+            options.put("port", Integer.toString(_ldapServer.getTransports()[0].getPort()));
+            options.put("contextFactory", "com.sun.jndi.ldap.LdapCtxFactory");
+            options.put("bindDn", "uid=admin,ou=system");
+            options.put("bindPassword", "secret");
+            options.put("userBaseDn", "ou=people,dc=jetty,dc=org");
+            options.put("roleBaseDn", "ou=groups,dc=jetty,dc=org");
+            options.put("roleNameAttribute", "cn");
+            options.put("forceBindingLogin", Boolean.toString(forceBindingLogin));
+            AppConfigurationEntry entry = new AppConfigurationEntry(LdapLoginModule.class.getCanonicalName(), LoginModuleControlFlag.REQUIRED, options);
 
-            return new AppConfigurationEntry[] {entry};
+            return new AppConfigurationEntry[]{entry};
         }
-        
     }
-
 
     @Test
     public void testLdapUserIdentity() throws Exception
@@ -182,17 +184,17 @@ public class JAASLdapLoginServiceTest
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(new TestConfiguration(false));
         Request request = new Request(null, null);
-        UserIdentity userIdentity = ls.login( "someone", "complicatedpassword", request);
-        assertNotNull( userIdentity );
-        assertTrue( userIdentity.isUserInRole( "developers", null) );
-        assertTrue( userIdentity.isUserInRole( "admin", null) );
-        assertFalse( userIdentity.isUserInRole( "blabla", null) );
+        UserIdentity userIdentity = ls.login("someone", "complicatedpassword", request);
+        assertNotNull(userIdentity);
+        assertTrue(userIdentity.isUserInRole("developers", null));
+        assertTrue(userIdentity.isUserInRole("admin", null));
+        assertFalse(userIdentity.isUserInRole("blabla", null));
 
-        userIdentity = ls.login( "someoneelse", "verycomplicatedpassword", request);
-        assertNotNull( userIdentity );
-        assertFalse( userIdentity.isUserInRole( "developers", null) );
-        assertTrue( userIdentity.isUserInRole( "admin", null) );
-        assertFalse( userIdentity.isUserInRole( "blabla", null) );
+        userIdentity = ls.login("someoneelse", "verycomplicatedpassword", request);
+        assertNotNull(userIdentity);
+        assertFalse(userIdentity.isUserInRole("developers", null));
+        assertTrue(userIdentity.isUserInRole("admin", null));
+        assertFalse(userIdentity.isUserInRole("blabla", null));
     }
 
     @Test
@@ -203,38 +205,37 @@ public class JAASLdapLoginServiceTest
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(new TestConfiguration(true));
         Request request = new Request(null, null);
-        UserIdentity userIdentity = ls.login( "someone", "complicatedpassword", request);
-        assertNotNull( userIdentity );
-        assertTrue( userIdentity.isUserInRole( "developers", null) );
-        assertTrue( userIdentity.isUserInRole( "admin", null) );
-        assertFalse( userIdentity.isUserInRole( "blabla", null) );
+        UserIdentity userIdentity = ls.login("someone", "complicatedpassword", request);
+        assertNotNull(userIdentity);
+        assertTrue(userIdentity.isUserInRole("developers", null));
+        assertTrue(userIdentity.isUserInRole("admin", null));
+        assertFalse(userIdentity.isUserInRole("blabla", null));
 
-        userIdentity = ls.login( "someone", "wrongpassword", request);
-        assertNull( userIdentity );
-
+        userIdentity = ls.login("someone", "wrongpassword", request);
+        assertNull(userIdentity);
     }
 
     @Test
     public void testLdapBindingSubdirUniqueUserName() throws Exception
     {
         UserIdentity userIdentity = doLogin("uniqueuser", "hello123");
-        assertNotNull( userIdentity );
-        assertTrue( userIdentity.isUserInRole( "developers", null) );
-        assertTrue( userIdentity.isUserInRole( "admin", null) );
-        assertFalse( userIdentity.isUserInRole( "blabla", null) );
+        assertNotNull(userIdentity);
+        assertTrue(userIdentity.isUserInRole("developers", null));
+        assertTrue(userIdentity.isUserInRole("admin", null));
+        assertFalse(userIdentity.isUserInRole("blabla", null));
     }
 
     @Test
     public void testLdapBindingAmbiguousUserName() throws Exception
     {
-        UserIdentity userIdentity = doLogin( "ambiguousone", "foobar");
-        assertNull( userIdentity );
+        UserIdentity userIdentity = doLogin("ambiguousone", "foobar");
+        assertNull(userIdentity);
     }
 
     @Test
     public void testLdapBindingSubdirAmbiguousUserName() throws Exception
     {
-        UserIdentity userIdentity = doLogin( "ambiguousone", "barfoo");
-        assertNull( userIdentity );
+        UserIdentity userIdentity = doLogin("ambiguousone", "barfoo");
+        assertNull(userIdentity);
     }
 }

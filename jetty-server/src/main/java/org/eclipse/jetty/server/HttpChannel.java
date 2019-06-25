@@ -31,7 +31,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
@@ -90,7 +89,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
 
-    /** Bytes written after interception (eg after compression) */
+    /**
+     * Bytes written after interception (eg after compression)
+     */
     private long _written;
 
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
@@ -114,10 +115,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
-                    this,
-                    _endPoint,
-                    _endPoint==null?null:_endPoint.getConnection(),
-                    _state);
+                this,
+                _endPoint,
+                _endPoint == null ? null : _endPoint.getConnection(),
+                _state);
     }
 
     protected HttpInput newHttpInput(HttpChannelState state)
@@ -139,12 +140,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         return _listeners.add(listener);
     }
-    
+
     public boolean removeListener(Listener listener)
     {
         return _listeners.remove(listener);
     }
-    
+
     public long getBytesWritten()
     {
         return _written;
@@ -180,10 +181,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public void addRequestLog(RequestLog requestLog)
     {
-        if (_requestLog==null)
+        if (_requestLog == null)
             _requestLog = requestLog;
         else if (_requestLog instanceof RequestLogCollection)
-            ((RequestLogCollection) _requestLog).add(requestLog);
+            ((RequestLogCollection)_requestLog).add(requestLog);
         else
             _requestLog = new RequestLogCollection(_requestLog, requestLog);
     }
@@ -197,6 +198,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * Get the idle timeout.
      * <p>This is implemented as a call to {@link EndPoint#getIdleTimeout()}, but may be
      * overridden by channels that have timeouts different from their connections.
+     *
      * @return the idle timeout (in milliseconds)
      */
     public long getIdleTimeout()
@@ -208,6 +210,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * Set the idle timeout.
      * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long)}, but may be
      * overridden by channels that have timeouts different from their connections.
+     *
      * @param timeoutMs the idle timeout in milliseconds
      */
     public void setIdleTimeout(long timeoutMs)
@@ -285,11 +288,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _responseCompleted.set(false);
         _request.recycle();
         _response.recycle();
-        _committedMetaData=null;
-        _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
-        _written=0;
-        _trailers=null;
-        _oldIdleTimeout=0;
+        _committedMetaData = null;
+        _requestLog = _connector == null ? null : _connector.getServer().getRequestLog();
+        _written = 0;
+        _trailers = null;
+        _oldIdleTimeout = 0;
     }
 
     public void onAsyncWaitForContent()
@@ -317,7 +320,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public boolean handle()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} handle {} ", this,_request.getHttpURI());
+            LOG.debug("{} handle {} ", this, _request.getHttpURI());
 
         HttpChannelState.Action action = _state.handling();
 
@@ -325,20 +328,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         // The loop is controlled by the call to async.unhandle in the
         // finally block below.  Unhandle will return false only if an async dispatch has
         // already happened when unhandle is called.
-        loop: while (!getServer().isStopped())
+        loop:
+        while (!getServer().isStopped())
         {
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} action {}",this,action);
+                    LOG.debug("{} action {}", this, action);
 
-                switch(action)
+                switch (action)
                 {
                     case TERMINATED:
                     case WAIT:
                         // break loop without calling unhandle
                         break loop;
-                        
+
                     case NOOP:
                         // do nothing other than call unhandle
                         break;
@@ -414,7 +418,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
-                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,code);
+                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
 
@@ -440,7 +444,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", x);
                             Throwable failure = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-                            if (failure==null)
+                            if (failure == null)
                             {
                                 minimalErrorResponse(x);
                             }
@@ -464,12 +468,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _request.getHttpInput().asyncReadProduce();
                         break;
                     }
-                    
+
                     case READ_CALLBACK:
                     {
-                        ContextHandler handler=_state.getContextHandler();
-                        if (handler!=null)
-                            handler.handle(_request,_request.getHttpInput());
+                        ContextHandler handler = _state.getContextHandler();
+                        if (handler != null)
+                            handler.handle(_request, _request.getHttpInput());
                         else
                             _request.getHttpInput().run();
                         break;
@@ -477,9 +481,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case WRITE_CALLBACK:
                     {
-                        ContextHandler handler=_state.getContextHandler();
-                        if (handler!=null)
-                            handler.handle(_request,_response.getHttpOutput());
+                        ContextHandler handler = _state.getContextHandler();
+                        if (handler != null)
+                            handler.handle(_request, _response.getHttpOutput());
                         else
                             _response.getHttpOutput().run();
                         break;
@@ -511,7 +515,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 }
                             }
                             _response.closeOutput();
-
                         }
                         finally
                         {
@@ -525,7 +528,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     default:
                     {
-                        throw new IllegalStateException("state="+_state);
+                        throw new IllegalStateException("state=" + _state);
                     }
                 }
             }
@@ -543,7 +546,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
             LOG.debug("{} handle exit, result {}", this, action);
 
-        boolean suspended=action==Action.WAIT;
+        boolean suspended = action == Action.WAIT;
         return !suspended;
     }
 
@@ -577,20 +580,20 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         // Unwrap wrapping Jetty and Servlet exceptions.
         Throwable quiet = unwrap(failure, QuietException.class);
-        Throwable no_stack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
+        Throwable noStack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
 
-        if (quiet!=null || !getServer().isRunning())
+        if (quiet != null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
         }
-        else if (no_stack!=null)
+        else if (noStack != null)
         {
             // No stack trace unless there is debug turned on
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
             else
-                LOG.warn("{} {}",_request.getRequestURI(), no_stack.toString());
+                LOG.warn("{} {}", _request.getRequestURI(), noStack.toString());
         }
         else
         {
@@ -611,38 +614,42 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    /** Unwrap failure causes to find target class
+    /**
+     * Unwrap failure causes to find target class
+     *
      * @param failure The throwable to have its causes unwrapped
      * @param targets Exception classes that we should not unwrap
      * @return A target throwable or null
      */
-    protected Throwable unwrap(Throwable failure, Class<?> ... targets)
+    protected Throwable unwrap(Throwable failure, Class<?>... targets)
     {
-        while (failure!=null)
+        while (failure != null)
         {
             for (Class<?> x : targets)
+            {
                 if (x.isInstance(failure))
                     return failure;
+            }
             failure = failure.getCause();
         }
-        return null;        
+        return null;
     }
-    
+
     private void minimalErrorResponse(Throwable failure)
     {
         try
-        {        
+        {
             int code = 500;
-            Integer status=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-            if (status!=null)
+            Integer status = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+            if (status != null)
                 code = status.intValue();
             else
             {
-                Throwable cause = unwrap(failure,BadMessageException.class);
+                Throwable cause = unwrap(failure, BadMessageException.class);
                 if (cause instanceof BadMessageException)
                     code = ((BadMessageException)cause).getCode();
             }
-            
+
             _response.reset(true);
             _response.setStatus(code);
             _response.flushBuffer();
@@ -670,15 +677,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         long timeStamp = _request.getTimeStamp();
         return String.format("%s@%x{r=%s,c=%b,c=%b/%b,a=%s,uri=%s,age=%d}",
-                getClass().getSimpleName(),
-                hashCode(),
-                _requests,
-                _committed.get(),
-                isRequestCompleted(),
-                isResponseCompleted(),
-                _state.getState(),
-                _request.getHttpURI(),
-                timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
+            getClass().getSimpleName(),
+            hashCode(),
+            _requests,
+            _committed.get(),
+            isRequestCompleted(),
+            isResponseCompleted(),
+            _state.getState(),
+            _request.getHttpURI(),
+            timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 
     public void onRequest(MetaData.Request request)
@@ -689,9 +696,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
             fields.put(_connector.getServer().getDateField());
 
-        long idleTO=_configuration.getIdleTimeout();
-        _oldIdleTimeout=getIdleTimeout();
-        if (idleTO>=0 && _oldIdleTimeout!=idleTO)
+        long idleTO = _configuration.getIdleTimeout();
+        _oldIdleTimeout = getIdleTimeout();
+        if (idleTO >= 0 && _oldIdleTimeout != idleTO)
             setIdleTimeout(idleTO);
 
         request.setTrailerSupplier(_trailerSupplier);
@@ -702,9 +709,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         notifyRequestBegin(_request);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("REQUEST for {} on {}{}{} {} {}{}{}",request.getURIString(),this,System.lineSeparator(),
-                    request.getMethod(),request.getURIString(),request.getHttpVersion(),System.lineSeparator(),
-                    request.getFields());
+            LOG.debug("REQUEST for {} on {}{}{} {} {}{}{}", request.getURIString(), this, System.lineSeparator(),
+                request.getMethod(), request.getURIString(), request.getHttpVersion(), System.lineSeparator(),
+                request.getFields());
     }
 
     public boolean onContent(HttpInput.Content content)
@@ -743,13 +750,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onCompleted()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("COMPLETE for {} written={}",getRequest().getRequestURI(),getBytesWritten());
+            LOG.debug("COMPLETE for {} written={}", getRequest().getRequestURI(), getBytesWritten());
 
-        if (_requestLog!=null )
+        if (_requestLog != null)
             _requestLog.log(_request, _response);
 
-        long idleTO=_configuration.getIdleTimeout();
-        if (idleTO>=0 && getIdleTimeout()!=_oldIdleTimeout)
+        long idleTO = _configuration.getIdleTimeout();
+        if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
 
         notifyComplete(_request);
@@ -774,9 +781,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         Action action;
         try
         {
-            action=_state.handling();
+            action = _state.handling();
         }
-        catch(Throwable e)
+        catch (Throwable e)
         {
             // The bad message cannot be handled in the current state,
             // so rethrow, hopefully somebody will be able to handle.
@@ -786,16 +793,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         try
         {
-            if (action==Action.DISPATCH)
+            if (action == Action.DISPATCH)
             {
-                ByteBuffer content=null;
-                HttpFields fields=new HttpFields();
+                ByteBuffer content = null;
+                HttpFields fields = new HttpFields();
 
-                ErrorHandler handler=getServer().getBean(ErrorHandler.class);
-                if (handler!=null)
-                    content=handler.badMessageError(status,message,fields);
+                ErrorHandler handler = getServer().getBean(ErrorHandler.class);
+                if (handler != null)
+                    content = handler.badMessageError(status, message, fields);
 
-                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,status,null,fields,BufferUtil.length(content)),content ,true);
+                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, status, null, fields, BufferUtil.length(content)), content, true);
             }
         }
         catch (IOException e)
@@ -808,7 +815,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             {
                 onCompleted();
             }
-            catch(Throwable e)
+            catch (Throwable e)
             {
                 LOG.debug(e);
                 abort(e);
@@ -822,32 +829,32 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (LOG.isDebugEnabled())
             LOG.debug("sendResponse info={} content={} complete={} committing={} callback={}",
-                    info,
-                    BufferUtil.toDetailString(content),
-                    complete,
-                    committing,
-                    callback);
+                info,
+                BufferUtil.toDetailString(content),
+                complete,
+                committing,
+                callback);
 
         if (committing)
         {
             // We need an info to commit
-            if (info==null)
+            if (info == null)
                 info = _response.newResponseMetaData();
             commit(info);
 
             // wrap callback to process 100 responses
-            final int status=info.getStatus();
-            final Callback committed = (status<200&&status>=100)?new Send100Callback(callback):new SendCallback(callback, content, true, complete);
+            final int status = info.getStatus();
+            final Callback committed = (status < 200 && status >= 100) ? new Send100Callback(callback) : new SendCallback(callback, content, true, complete);
 
             notifyResponseBegin(_request);
 
             // committing write
             _transport.send(info, _request.isHead(), content, complete, committed);
         }
-        else if (info==null)
+        else if (info == null)
         {
             // This is a normal write
-            _transport.send(null,_request.isHead(), content, complete, new SendCallback(callback, content, false, complete));
+            _transport.send(null, _request.isHead(), content, complete, new SendCallback(callback, content, false, complete));
         }
         else
         {
@@ -858,9 +865,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
     {
-        try(Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
+        try (Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
         {
-            boolean committing = sendResponse(info,content,complete,blocker);
+            boolean committing = sendResponse(info, content, complete, blocker);
             blocker.block();
             return committing;
         }
@@ -873,13 +880,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    protected void commit (MetaData.Response info)
+    protected void commit(MetaData.Response info)
     {
-        _committedMetaData=info;
+        _committedMetaData = info;
         if (LOG.isDebugEnabled())
-            LOG.debug("COMMIT for {} on {}{}{} {} {}{}{}",getRequest().getRequestURI(),this,System.lineSeparator(),
-                    info.getStatus(),info.getReason(),info.getHttpVersion(),System.lineSeparator(),
-                    info.getFields());
+            LOG.debug("COMMIT for {} on {}{}{} {} {}{}{}", getRequest().getRequestURI(), this, System.lineSeparator(),
+                info.getStatus(), info.getReason(), info.getHttpVersion(), System.lineSeparator(),
+                info.getFields());
     }
 
     public boolean isCommitted()
@@ -911,20 +918,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /**
      * <p>Non-Blocking write, committing the response if needed.</p>
      * Called as last link in HttpOutput.Filter chain
-     * @param content  the content buffer to write
+     *
+     * @param content the content buffer to write
      * @param complete whether the content is complete for the response
      * @param callback Callback when complete or failed
      */
     @Override
     public void write(ByteBuffer content, boolean complete, Callback callback)
     {
-        sendResponse(null,content,complete,callback);
+        sendResponse(null, content, complete, callback);
     }
 
     @Override
     public void resetBuffer()
     {
-        if(isCommitted())
+        if (isCommitted())
             throw new IllegalStateException("Committed");
     }
 
@@ -1274,8 +1282,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             _written += _length;
             super.succeeded();
             if (_commit)
-               notifyResponseCommit(_request);
-            if (_length>0)
+                notifyResponseCommit(_request);
+            if (_length > 0)
                 notifyResponseContent(_request, _content);
             if (_complete)
             {

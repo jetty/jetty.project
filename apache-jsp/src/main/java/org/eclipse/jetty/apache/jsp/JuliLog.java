@@ -18,28 +18,28 @@
 
 package org.eclipse.jetty.apache.jsp;
 
-public class JuliLog implements org.apache.juli.logging.Log 
+public class JuliLog implements org.apache.juli.logging.Log
 {
     public static org.apache.juli.logging.Log getInstance(String name)
     {
         return new JuliLog(name);
     }
-    
+
     private final org.eclipse.jetty.util.log.Logger _logger;
     private final org.eclipse.jetty.util.log.StdErrLog _stdErrLog;
 
     public JuliLog()
-    {    
-        _logger=org.eclipse.jetty.util.log.Log.getRootLogger();
-        _stdErrLog=(_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger:null;
+    {
+        _logger = org.eclipse.jetty.util.log.Log.getRootLogger();
+        _stdErrLog = (_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger : null;
     }
-    
+
     public JuliLog(String name)
     {
-        _logger=org.eclipse.jetty.util.log.Log.getLogger(name);
-        _stdErrLog=(_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger:null;
+        _logger = org.eclipse.jetty.util.log.Log.getLogger(name);
+        _stdErrLog = (_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger : null;
     }
-    
+
     @Override
     public boolean isDebugEnabled()
     {
@@ -49,31 +49,31 @@ public class JuliLog implements org.apache.juli.logging.Log
     @Override
     public boolean isErrorEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
     }
 
     @Override
     public boolean isFatalEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
     }
 
     @Override
     public boolean isInfoEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_INFO;
+        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_INFO;
     }
 
     @Override
     public boolean isTraceEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_DEBUG;
+        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_DEBUG;
     }
 
     @Override
     public boolean isWarnEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
     }
 
     @Override
@@ -82,16 +82,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.debug((String)message);
         else
-            _logger.debug("{}",message);
+            _logger.debug("{}", message);
     }
 
     @Override
     public void trace(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.debug((String)message,t);
+            _logger.debug((String)message, t);
         else
-            _logger.debug("{}",message,t);
+            _logger.debug("{}", message, t);
     }
 
     @Override
@@ -100,16 +100,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.debug((String)message);
         else
-            _logger.debug("{}",message);
+            _logger.debug("{}", message);
     }
 
     @Override
     public void debug(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.debug((String)message,t);
+            _logger.debug((String)message, t);
         else
-            _logger.debug("{}",message,t);
+            _logger.debug("{}", message, t);
     }
 
     @Override
@@ -118,16 +118,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.info((String)message);
         else
-            _logger.info("{}",message);
+            _logger.info("{}", message);
     }
 
     @Override
     public void info(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.info((String)message,t);
+            _logger.info((String)message, t);
         else
-            _logger.info("{}",message,t);
+            _logger.info("{}", message, t);
     }
 
     @Override
@@ -136,16 +136,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.warn((String)message);
         else
-            _logger.warn("{}",message);
+            _logger.warn("{}", message);
     }
 
     @Override
     public void warn(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.warn((String)message,t);
+            _logger.warn((String)message, t);
         else
-            _logger.warn("{}",message,t);
+            _logger.warn("{}", message, t);
     }
 
     @Override
@@ -154,16 +154,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.warn((String)message);
         else
-            _logger.warn("{}",message);
+            _logger.warn("{}", message);
     }
 
     @Override
     public void error(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.warn((String)message,t);
+            _logger.warn((String)message, t);
         else
-            _logger.warn("{}",message,t);
+            _logger.warn("{}", message, t);
     }
 
     @Override
@@ -172,16 +172,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.warn((String)message);
         else
-            _logger.warn("{}",message);
+            _logger.warn("{}", message);
     }
 
     @Override
     public void fatal(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.warn((String)message,t);
+            _logger.warn((String)message, t);
         else
-            _logger.warn("{}",message,t);
+            _logger.warn("{}", message, t);
     }
 }
 

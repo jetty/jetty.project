@@ -80,8 +80,7 @@ public class TestAnnotationParser
             foundClasses.add(info.getClassName());
         }
     }
-    
-    
+
     public static class DuplicateClassScanHandler extends AnnotationParser.AbstractHandler
     {
         private Map<String, List<String>> _classMap = new ConcurrentHashMap();
@@ -91,21 +90,19 @@ public class TestAnnotationParser
         {
             List<String> list = new CopyOnWriteArrayList<>();
             Resource r = info.getContainingResource();
-            list.add((r==null?"":r.toString()));
-            
+            list.add((r == null ? "" : r.toString()));
+
             List<String> existing = _classMap.putIfAbsent(info.getClassName(), list);
             if (existing != null)
             {
                 existing.addAll(list);
             }
         }
-        
-        
+
         public List<String> getParsedList(String classname)
         {
             return _classMap.get(classname);
         }
-        
     }
 
     public WorkDir testdir;
@@ -114,12 +111,12 @@ public class TestAnnotationParser
     public void testSampleAnnotation() throws Exception
     {
         String[] classNames = new String[]
-        { "org.eclipse.jetty.annotations.ClassA" };
+            {"org.eclipse.jetty.annotations.ClassA"};
         AnnotationParser parser = new AnnotationParser();
 
         class SampleAnnotationHandler extends AnnotationParser.AbstractHandler
         {
-            private List<String> methods = Arrays.asList("a","b","c","d","l");
+            private List<String> methods = Arrays.asList("a", "b", "c", "d", "l");
 
             @Override
             public void handle(ClassInfo info, String annotation)
@@ -127,26 +124,26 @@ public class TestAnnotationParser
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                     return;
 
-                assertEquals("org.eclipse.jetty.annotations.ClassA",info.getClassName());
+                assertEquals("org.eclipse.jetty.annotations.ClassA", info.getClassName());
             }
 
             @Override
             public void handle(FieldInfo info, String annotation)
-            {                
+            {
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                     return;
-                assertEquals("m",info.getFieldName());
-                assertEquals(org.objectweb.asm.Type.OBJECT,org.objectweb.asm.Type.getType(info.getFieldType()).getSort());
+                assertEquals("m", info.getFieldName());
+                assertEquals(org.objectweb.asm.Type.OBJECT, org.objectweb.asm.Type.getType(info.getFieldType()).getSort());
             }
 
             @Override
             public void handle(MethodInfo info, String annotation)
-            {                
+            {
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                     return;
-                assertEquals("org.eclipse.jetty.annotations.ClassA",info.getClassInfo().getClassName());
+                assertEquals("org.eclipse.jetty.annotations.ClassA", info.getClassInfo().getClassName());
                 assertThat(info.getMethodName(), is(in(methods)));
-                assertEquals("org.eclipse.jetty.annotations.Sample",annotation);
+                assertEquals("org.eclipse.jetty.annotations.Sample", annotation);
             }
         }
 
@@ -161,7 +158,7 @@ public class TestAnnotationParser
     public void testMultiAnnotation() throws Exception
     {
         String[] classNames = new String[]
-        { "org.eclipse.jetty.annotations.ClassB" };
+            {"org.eclipse.jetty.annotations.ClassB"};
         AnnotationParser parser = new AnnotationParser();
 
         class MultiAnnotationHandler extends AnnotationParser.AbstractHandler
@@ -169,7 +166,7 @@ public class TestAnnotationParser
             @Override
             public void handle(ClassInfo info, String annotation)
             {
-                if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))
+                if (annotation == null || !"org.eclipse.jetty.annotations.Multi".equals(annotation))
                     return;
                 assertTrue("org.eclipse.jetty.annotations.ClassB".equals(info.getClassName()));
             }
@@ -177,14 +174,14 @@ public class TestAnnotationParser
             @Override
             public void handle(FieldInfo info, String annotation)
             {
-                assertTrue(annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation),
-                        "There should not be any");
+                assertTrue(annotation == null || !"org.eclipse.jetty.annotations.Multi".equals(annotation),
+                    "There should not be any");
             }
 
             @Override
             public void handle(MethodInfo info, String annotation)
-            {  
-                if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))
+            {
+                if (annotation == null || !"org.eclipse.jetty.annotations.Multi".equals(annotation))
                     return;
                 assertTrue("org.eclipse.jetty.annotations.ClassB".equals(info.getClassInfo().getClassName()));
                 assertTrue("a".equals(info.getMethodName()));
@@ -247,22 +244,21 @@ public class TestAnnotationParser
         FS.ensureEmpty(basedir);
 
         // Copy in class that is known to have annotations.
-        copyClass(ClassA.class,basedir);
+        copyClass(ClassA.class, basedir);
 
         // Setup Tracker
         TrackingAnnotationHandler tracker = new TrackingAnnotationHandler(Sample.class.getName());
 
         // Setup annotation scanning
         AnnotationParser parser = new AnnotationParser();
-        
+
         // Parse
         parser.parse(Collections.singleton(tracker), basedir.toURI());
-        
+
         // Validate
         assertThat("Found Class", tracker.foundClasses, contains(ClassA.class.getName()));
     }
-    
-    
+
     @Test
     public void testScanDuplicateClassesInJars() throws Exception
     {
@@ -272,14 +268,13 @@ public class TestAnnotationParser
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<Handler> handlers = Collections.singleton(handler);
         parser.parse(handlers, testJar);
-        parser.parse(handlers, testJar2);        
+        parser.parse(handlers, testJar2);
         List<String> locations = handler.getParsedList("org.acme.ClassOne");
         assertNotNull(locations);
         assertEquals(2, locations.size());
         assertTrue(!(locations.get(0).equals(locations.get(1))));
     }
-    
-    
+
     @Test
     public void testScanDuplicateClasses() throws Exception
     {
@@ -289,14 +284,12 @@ public class TestAnnotationParser
         DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
         Set<Handler> handlers = Collections.singleton(handler);
         parser.parse(handlers, testJar);
-        parser.parse(handlers, Resource.newResource(testClasses));        
-        List<String>locations = handler.getParsedList("org.acme.ClassOne");
+        parser.parse(handlers, Resource.newResource(testClasses));
+        List<String> locations = handler.getParsedList("org.acme.ClassOne");
         assertNotNull(locations);
         assertEquals(2, locations.size());
         assertTrue(!(locations.get(0).equals(locations.get(1))));
     }
-    
-    
 
     private void copyClass(Class<?> clazz, File basedir) throws IOException
     {

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.util.Collection;
@@ -34,9 +33,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-
-
-
 /**
  * MavenServerConnector
  *
@@ -48,11 +44,11 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class MavenServerConnector extends ContainerLifeCycle implements Connector
 {
     public static String PORT_SYSPROPERTY = "jetty.http.port";
-    
+
     public static final int DEFAULT_PORT = 8080;
     public static final String DEFAULT_PORT_STR = String.valueOf(DEFAULT_PORT);
     public static final int DEFAULT_MAX_IDLE_TIME = 30000;
-    
+
     private Server server;
     private volatile ServerConnector delegate;
     private String host;
@@ -63,7 +59,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     public MavenServerConnector()
     {
     }
-    
+
     public void setServer(Server server)
     {
         this.server = server;
@@ -73,7 +69,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     {
         this.host = host;
     }
-   
+
     public String getHost()
     {
         return this.host;
@@ -83,17 +79,17 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     {
         this.port = port;
     }
-    
-    public int getPort ()
+
+    public int getPort()
     {
         return this.port;
     }
 
-    public void setName (String name)
+    public void setName(String name)
     {
         this.name = name;
     }
-    
+
     public void setIdleTimeout(long idleTimeout)
     {
         this.idleTimeout = idleTimeout;
@@ -129,7 +125,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     {
         return checkDelegate().shutdown();
     }
-    
+
     @Override
     public boolean isShutdown()
     {
@@ -148,7 +144,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getExecutor();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getScheduler()
      */
     @Override
@@ -157,7 +153,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getScheduler();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getByteBufferPool()
      */
     @Override
@@ -166,7 +162,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getByteBufferPool();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getConnectionFactory(java.lang.String)
      */
     @Override
@@ -175,7 +171,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getConnectionFactory(nextProtocol);
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getConnectionFactory(java.lang.Class)
      */
     @Override
@@ -184,7 +180,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getConnectionFactory(factoryType);
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getDefaultConnectionFactory()
      */
     @Override
@@ -193,7 +189,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getDefaultConnectionFactory();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getConnectionFactories()
      */
     @Override
@@ -202,7 +198,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getConnectionFactories();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getProtocols()
      */
     @Override
@@ -211,7 +207,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getProtocols();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getIdleTimeout()
      */
     @Override
@@ -221,7 +217,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getIdleTimeout();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getTransport()
      */
     @Override
@@ -230,7 +226,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getTransport();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getConnectedEndPoints()
      */
     @Override
@@ -239,7 +235,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getConnectedEndPoints();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.Connector#getName()
      */
     @Override
@@ -252,12 +248,12 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     {
         return this.delegate.getLocalPort();
     }
-    
+
     private ServerConnector checkDelegate() throws IllegalStateException
     {
         ServerConnector d = this.delegate;
         if (d == null)
-            throw new IllegalStateException ("MavenServerConnector delegate not ready");
+            throw new IllegalStateException("MavenServerConnector delegate not ready");
         return d;
     }
 }

@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
  * This thread listens on the host/port specified by the STOP.HOST/STOP.PORT
  * system parameter (defaults to 127.0.0.1/-1 for not listening) for request
  * authenticated with the key given by the STOP.KEY system parameter
- *  for admin requests.
+ * for admin requests.
  * <p>
  * If the stop port is set to zero, then a random port is assigned and the
  * port number is printed to stdout.
@@ -69,7 +69,7 @@ public class ShutdownMonitor
     {
         Holder.instance = new ShutdownMonitor();
     }
-    
+
     public static void register(LifeCycle... lifeCycles)
     {
         getInstance().addLifeCycles(lifeCycles);

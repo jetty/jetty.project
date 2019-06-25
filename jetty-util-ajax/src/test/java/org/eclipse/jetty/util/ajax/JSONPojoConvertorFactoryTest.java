@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 /**
  * Test to convert POJOs to JSON and vice versa with automatic convertor creation.
  */
@@ -72,10 +71,10 @@ public class JSONPojoConvertorFactoryTest
         Foo f = bz.getFoo();
 
         assertEquals(f, foo);
-        assertTrue(br.getBazs().length==2);
+        assertTrue(br.getBazs().length == 2);
         assertEquals(br.getBazs()[0].getMessage(), "baz0");
         assertEquals(br.getBazs()[1].getMessage(), "baz1");
-        assertEquals(Color.Green,br.getColor());
+        assertEquals(Color.Green, br.getColor());
     }
 
     @Test
@@ -84,9 +83,9 @@ public class JSONPojoConvertorFactoryTest
         JSON jsonOut = new JSON();
         JSON jsonIn = new JSON();
 
-        jsonOut.addConvertor(Object.class, new JSONPojoConvertorFactory(jsonOut,false));
+        jsonOut.addConvertor(Object.class, new JSONPojoConvertorFactory(jsonOut, false));
         jsonOut.addConvertor(Enum.class, new JSONEnumConvertor());
-        jsonIn.addConvertor(Object.class, new JSONPojoConvertorFactory(jsonIn,false));
+        jsonIn.addConvertor(Object.class, new JSONPojoConvertorFactory(jsonIn, false));
         jsonIn.addConvertor(Enum.class, new JSONEnumConvertor());
 
         Foo foo = new Foo();
@@ -107,27 +106,31 @@ public class JSONPojoConvertorFactoryTest
 
         String s = jsonOut.toJSON(bar);
 
-        assertTrue(s.indexOf("class")<0);
+        assertTrue(s.indexOf("class") < 0);
 
         Object obj = jsonIn.parse(new JSON.StringSource(s));
 
         assertTrue(obj instanceof Map);
 
-        Map<String,Object> br = (Map<String,Object>)obj;
+        Map<String, Object> br = (Map<String, Object>)obj;
 
-        Map<String,Object> bz = (Map<String,Object>)br.get("baz");
+        Map<String, Object> bz = (Map<String, Object>)br.get("baz");
 
-        Map<String,Object> f = (Map<String,Object>)bz.get("foo");
+        Map<String, Object> f = (Map<String, Object>)bz.get("foo");
         assertTrue(f != null);
         Object[] bazs = (Object[])br.get("bazs");
-        assertTrue(bazs.length==2);
+        assertTrue(bazs.length == 2);
         assertEquals(((Map)bazs[0]).get("message"), "baz0");
         assertEquals(((Map)bazs[1]).get("message"), "baz1");
-        assertEquals("Green",br.get("color"));
+        assertEquals("Green", br.get("color"));
     }
 
+    enum Color
+    {
+        Red, Green, Blue
+    }
 
-    enum Color { Red, Green, Blue };
+    ;
 
     public static class Bar
     {
@@ -178,7 +181,7 @@ public class JSONPojoConvertorFactoryTest
 
         public void setNullTest(String nullTest)
         {
-            assert(nullTest==null);
+            assert (nullTest == null);
             _nullTest = nullTest;
         }
 
@@ -226,7 +229,6 @@ public class JSONPojoConvertorFactoryTest
         {
             _color = color;
         }
-
     }
 
     public static class Baz
@@ -285,7 +287,6 @@ public class JSONPojoConvertorFactoryTest
         {
             return _boolean2;
         }
-
     }
 
     public static class Foo
@@ -324,17 +325,17 @@ public class JSONPojoConvertorFactoryTest
         @Override
         public boolean equals(Object another)
         {
-            if(another instanceof Foo)
+            if (another instanceof Foo)
             {
                 Foo foo = (Foo)another;
                 return getName().equals(foo.getName())
-                    && getInt1()==foo.getInt1()
+                    && getInt1() == foo.getInt1()
                     && getInt2().equals(foo.getInt2())
-                    && getLong1()==foo.getLong1()
+                    && getLong1() == foo.getLong1()
                     && getLong2().equals(foo.getLong2())
-                    && getFloat1()==foo.getFloat1()
+                    && getFloat1() == foo.getFloat1()
                     && getFloat2().equals(foo.getFloat2())
-                    && getDouble1()==foo.getDouble1()
+                    && getDouble1() == foo.getDouble1()
                     && getDouble2().equals(foo.getDouble2());
             }
 
@@ -345,74 +346,90 @@ public class JSONPojoConvertorFactoryTest
         {
             return _name;
         }
+
         public void setName(String name)
         {
             _name = name;
         }
+
         public int getInt1()
         {
             return _int1;
         }
+
         public void setInt1(int int1)
         {
             _int1 = int1;
         }
+
         public Integer getInt2()
         {
             return _int2;
         }
+
         public void setInt2(Integer int2)
         {
             _int2 = int2;
         }
+
         public long getLong1()
         {
             return _long1;
         }
+
         public void setLong1(long long1)
         {
             _long1 = long1;
         }
+
         public Long getLong2()
         {
             return _long2;
         }
+
         public void setLong2(Long long2)
         {
             _long2 = long2;
         }
+
         public float getFloat1()
         {
             return _float1;
         }
+
         public void setFloat1(float float1)
         {
             _float1 = float1;
         }
+
         public Float getFloat2()
         {
             return _float2;
         }
+
         public void setFloat2(Float float2)
         {
             _float2 = float2;
         }
+
         public double getDouble1()
         {
             return _double1;
         }
+
         public void setDouble1(double double1)
         {
             _double1 = double1;
         }
+
         public Double getDouble2()
         {
             return _double2;
         }
+
         public void setDouble2(Double double2)
         {
             _double2 = double2;
         }
-
     }
 }

@@ -98,7 +98,7 @@ public class ClientConfigTest
         server.stop();
     }
 
-    @WebSocket(idleTimeout=idleTimeout, maxTextMessageSize=maxMessageSize, maxBinaryMessageSize=maxMessageSize, inputBufferSize=inputBufferSize, batchMode=BatchMode.ON)
+    @WebSocket(idleTimeout = idleTimeout, maxTextMessageSize = maxMessageSize, maxBinaryMessageSize = maxMessageSize, inputBufferSize = inputBufferSize, batchMode = BatchMode.ON)
     public class AnnotatedConfigEndpoint extends EventSocket
     {
     }

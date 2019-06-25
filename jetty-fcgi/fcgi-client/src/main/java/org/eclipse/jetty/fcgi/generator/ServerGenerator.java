@@ -92,7 +92,9 @@ public class ServerGenerator extends Generator
         BufferUtil.clearToFill(buffer);
 
         for (int i = 0; i < bytes.size(); i += 2)
+        {
             buffer.put(bytes.get(i)).put(COLON).put(bytes.get(i + 1)).put(EOL);
+        }
         buffer.put(EOL);
 
         BufferUtil.flipToFlush(buffer, 0);

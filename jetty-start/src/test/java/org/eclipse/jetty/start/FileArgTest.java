@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-
 import java.util.stream.Stream;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class FileArgTest
 {
@@ -66,16 +66,15 @@ public class FileArgTest
     @MethodSource("data")
     public void testFileArg(String rawFileRef, String expectedUri, String expectedLocation)
     {
-        FileArg arg = new FileArg(null,rawFileRef);
+        FileArg arg = new FileArg(null, rawFileRef);
         if (expectedUri == null)
         {
-            assertThat("URI",arg.uri,nullValue());
+            assertThat("URI", arg.uri, nullValue());
         }
         else
         {
-            assertThat("URI",arg.uri,is(expectedUri));
+            assertThat("URI", arg.uri, is(expectedUri));
         }
-        assertThat("Location",arg.location,is(expectedLocation));
+        assertThat("Location", arg.location, is(expectedLocation));
     }
-
 }

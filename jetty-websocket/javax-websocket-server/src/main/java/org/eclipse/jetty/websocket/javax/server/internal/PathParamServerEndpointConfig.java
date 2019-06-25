@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.javax.server.internal;
 
+import java.util.HashMap;
+import java.util.Map;
+import javax.websocket.server.ServerEndpointConfig;
+
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.javax.common.PathParamProvider;
-
-import javax.websocket.server.ServerEndpointConfig;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Make {@link javax.websocket.server.PathParam} information from the incoming request available

@@ -99,5 +99,4 @@ public class ArrayUtilTest
 
         assertFalse(resultArray.equals(objectArray));
     }
-
 }

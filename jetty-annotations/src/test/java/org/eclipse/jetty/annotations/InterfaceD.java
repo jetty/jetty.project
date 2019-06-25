@@ -20,8 +20,6 @@ package org.eclipse.jetty.annotations;
 
 /**
  * InterfaceD
- *
- *
  */
 public interface InterfaceD
 {

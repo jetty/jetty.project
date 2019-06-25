@@ -113,7 +113,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
      * <p>
      * For the list of negotiated extensions, use {@link #getNegotiatedExtensions()}
      *
-     * @param offeredConfigs    the configurations being requested by the client
+     * @param offeredConfigs the configurations being requested by the client
      * @param negotiatedConfigs the configurations accepted by the server
      */
     public void negotiate(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, List<ExtensionConfig> offeredConfigs, List<ExtensionConfig> negotiatedConfigs)
@@ -255,7 +255,9 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         }
 
         for (Extension extension : extensions)
+        {
             extension.setWebSocketCoreSession(coreSession);
+        }
     }
 
     public boolean isRsv1Used()
@@ -282,7 +284,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, extensions == null?Collections.emptyList():extensions);
+        Dumpable.dumpObjects(out, indent, this, extensions == null ? Collections.emptyList() : extensions);
     }
 
     @Override
@@ -322,8 +324,8 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             }
             s.append(']');
         }
-        s.append(",incoming=").append((this.incoming == null)?"<null>":this.incoming.getClass().getName());
-        s.append(",outgoing=").append((this.outgoing == null)?"<null>":this.outgoing.getClass().getName());
+        s.append(",incoming=").append((this.incoming == null) ? "<null>" : this.incoming.getClass().getName());
+        s.append(",outgoing=").append((this.outgoing == null) ? "<null>" : this.outgoing.getClass().getName());
         s.append("]");
         return s.toString();
     }

@@ -22,23 +22,21 @@ import org.apache.maven.plugin.logging.Log;
 
 /**
  * PluginLog
- * 
+ *
  * Convenience class to provide access to the plugin
  * Log for non-mojo classes.
- *
  */
 public class PluginLog
 {
     private static Log log = null;
-    
+
     public static void setLog(Log l)
     {
         log = l;
     }
-    
+
     public static Log getLog()
     {
         return log;
     }
-
 }

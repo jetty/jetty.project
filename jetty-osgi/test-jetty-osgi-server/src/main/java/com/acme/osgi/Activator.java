@@ -32,27 +32,24 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * Bootstrap a Server
- * 
- * 
  */
 public class Activator implements BundleActivator
 {
 
     private ServiceRegistration _sr;
-    
+
     /**
-     * 
-     * @param context
+     *
      */
     @Override
     public void start(BundleContext context) throws Exception
-    {    
+    {
         //For test purposes, use a random port
         Server server = new Server(0);
         server.getConnectors()[0].addLifeCycleListener(new AbstractLifeCycleListener()
         {
 
-            /** 
+            /**
              * @see org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener#lifeCycleStarted(org.eclipse.jetty.util.component.LifeCycle)
              */
             @Override
@@ -61,20 +58,18 @@ public class Activator implements BundleActivator
                 System.setProperty("bundle.server.port", String.valueOf(((ServerConnector)event).getLocalPort()));
                 super.lifeCycleStarted(event);
             }
-
-     
-            
         });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
         // server.setDumpAfterStart(true);
 
         String[] list = new String[]{
-                "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
-                "org.eclipse.jetty.webapp.WebXmlConfiguration",
-                "org.eclipse.jetty.webapp.MetaInfConfiguration",
-                "org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"};
+            "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
+            "org.eclipse.jetty.webapp.WebXmlConfiguration",
+            "org.eclipse.jetty.webapp.MetaInfConfiguration",
+            "org.eclipse.jetty.webapp.FragmentConfiguration",
+            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
+        };
         server.setAttribute("org.eclipse.jetty.webapp.configuration", list);
 
         Dictionary serverProps = new Hashtable();
@@ -87,9 +82,8 @@ public class Activator implements BundleActivator
 
     /**
      * Stop the activator.
-     * 
-     * @see
-     * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
+     *
+     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
     @Override
     public void stop(BundleContext context) throws Exception

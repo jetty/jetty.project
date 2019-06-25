@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
+
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -28,10 +32,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -61,18 +61,18 @@ public class WebSocketClientBadUriTest
     {
         return Stream.of(
             // @formatter:off
-                // - not using right scheme
-                Arguments.of("http://localhost"),
-                Arguments.of("https://localhost"),
-                Arguments.of("file://localhost"),
-                Arguments.of("content://localhost"),
-                Arguments.of("jar://localhost"),
-                // - non-absolute uri
-                Arguments.of("/mysocket"),
-                Arguments.of("/sockets/echo"),
-                Arguments.of("#echo"),
-                Arguments.of("localhost:8080/echo")
-                // @formatter:on
+            // - not using right scheme
+            Arguments.of("http://localhost"),
+            Arguments.of("https://localhost"),
+            Arguments.of("file://localhost"),
+            Arguments.of("content://localhost"),
+            Arguments.of("jar://localhost"),
+            // - non-absolute uri
+            Arguments.of("/mysocket"),
+            Arguments.of("/sockets/echo"),
+            Arguments.of("#echo"),
+            Arguments.of("localhost:8080/echo")
+            // @formatter:on
         );
     }
 

@@ -21,7 +21,6 @@ package org.eclipse.jetty.test.jsp;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -29,30 +28,29 @@ import javax.servlet.http.HttpServletResponse;
 
 public class FakeJspServlet extends HttpServlet
 {
-    
-    /* ------------------------------------------------------------ */
-    /* 
+
+    /*
      * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
     {
         String path = req.getServletPath();
-        URL url =getServletContext().getResource(path);
-        if (url==null)
+        URL url = getServletContext().getResource(path);
+        if (url == null)
         {
             response.sendError(404);
             return;
         }
-            
+
         try
         {
-            File file=new File(url.toURI());
+            File file = new File(url.toURI());
             if (file.exists())
             {
-                response.sendError(200,"fake JSP response");
+                response.sendError(200, "fake JSP response");
                 return;
-            }   
+            }
         }
         catch (Exception e)
         {
@@ -61,5 +59,4 @@ public class FakeJspServlet extends HttpServlet
 
         response.sendError(404);
     }
-
 }

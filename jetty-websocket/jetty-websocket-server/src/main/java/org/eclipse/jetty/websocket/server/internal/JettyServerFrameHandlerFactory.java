@@ -58,7 +58,7 @@ public class JettyServerFrameHandlerFactory
     @Override
     public void lifeCycleStopping(LifeCycle context)
     {
-        ContextHandler contextHandler = (ContextHandler) context;
+        ContextHandler contextHandler = (ContextHandler)context;
         JettyServerFrameHandlerFactory factory = contextHandler.getBean(JettyServerFrameHandlerFactory.class);
         if (factory != null)
         {

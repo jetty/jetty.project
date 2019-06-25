@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -51,9 +50,9 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * TestJettyOSGiBootWithBundle
- * 
+ *
  * Tests reading config from a bundle and loading classes from it
- * 
+ *
  * Tests the ServiceContextProvider.
  */
 @RunWith(PaxExam.class)
@@ -85,7 +84,7 @@ public class TestJettyOSGiBootWithBundle
         File etcFolder = new File("src/test/config/etc");
         bundle.add("jettyhome/etc/jetty-http-boot-with-bundle.xml", new FileInputStream(new File(etcFolder, "jetty-http-boot-with-bundle.xml")));
         bundle.add("jettyhome/etc/jetty-with-custom-class.xml", new FileInputStream(new File(etcFolder, "jetty-with-custom-class.xml")));
-		options.add(CoreOptions.streamBundle(bundle.build()).startLevel(1));
+        options.add(CoreOptions.streamBundle(bundle.build()).startLevel(1));
         return options.toArray(new Option[0]);
     }
 

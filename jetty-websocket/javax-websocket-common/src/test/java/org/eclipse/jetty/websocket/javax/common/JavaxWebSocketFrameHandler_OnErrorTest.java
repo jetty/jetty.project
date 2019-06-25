@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.javax.common;
 
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnError;
 import javax.websocket.Session;

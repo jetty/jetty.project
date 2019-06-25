@@ -41,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -173,8 +172,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -226,10 +225,10 @@ public class AsyncMiddleManServletTest
         ContentProvider gzipContent = new BytesContentProvider(gzipBytes);
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .header(HttpHeader.CONTENT_ENCODING, "gzip")
-                .content(gzipContent)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .content(gzipContent)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
@@ -262,8 +261,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
@@ -301,10 +300,10 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .header(HttpHeader.CONTENT_ENCODING, "gzip")
-                .content(new BytesContentProvider(gzip(bytes)))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .content(new BytesContentProvider(gzip(bytes)))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
@@ -348,9 +347,9 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .header(HttpHeader.CONTENT_ENCODING, "gzip")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
 
@@ -363,7 +362,9 @@ public class AsyncMiddleManServletTest
     public void testManySequentialTransformations() throws Exception
     {
         for (int i = 0; i < 8; ++i)
+        {
             testTransformUpstreamAndDownstreamKnownContentLengthGzipped();
+        }
     }
 
     @Test
@@ -392,8 +393,8 @@ public class AsyncMiddleManServletTest
         Request request = client.newRequest("localhost", serverConnector.getLocalPort());
         FutureResponseListener listener = new FutureResponseListener(request);
         request.header(HttpHeader.CONTENT_ENCODING, "gzip")
-                .content(content)
-                .send(listener);
+            .content(content)
+            .send(listener);
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
         content.offer(ByteBuffer.wrap(gzip(bytes)));
         sleep(1000);
@@ -436,10 +437,10 @@ public class AsyncMiddleManServletTest
 
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .header(HttpHeader.CONTENT_ENCODING, "gzip")
-                .content(new BytesContentProvider(gzip(bytes)))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .content(new BytesContentProvider(gzip(bytes)))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
@@ -480,10 +481,10 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .header(HttpHeader.CONTENT_ENCODING, "gzip")
-                .content(new BytesContentProvider(gzip(bytes)))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .content(new BytesContentProvider(gzip(bytes)))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -508,9 +509,9 @@ public class AsyncMiddleManServletTest
 
         byte[] bytes = new byte[1024];
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .content(new BytesContentProvider(bytes))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .content(new BytesContentProvider(bytes))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(500, response.getStatus());
     }
@@ -546,12 +547,12 @@ public class AsyncMiddleManServletTest
             final CountDownLatch latch = new CountDownLatch(1);
             DeferredContentProvider content = new DeferredContentProvider();
             client.newRequest("localhost", serverConnector.getLocalPort())
-                    .content(content)
-                    .send(result ->
-                    {
-                        if (result.isSucceeded() && result.getResponse().getStatus() == 502)
-                            latch.countDown();
-                    });
+                .content(content)
+                .send(result ->
+                {
+                    if (result.isSucceeded() && result.getResponse().getStatus() == 502)
+                        latch.countDown();
+                });
 
             content.offer(ByteBuffer.allocate(512));
             sleep(1000);
@@ -624,8 +625,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(502, response.getStatus());
     }
@@ -684,18 +685,18 @@ public class AsyncMiddleManServletTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
-                .onResponseContent((response, content) ->
-                {
-                    // Slow down the reader so that the
-                    // write from the proxy gets congested.
-                    sleep(1);
-                })
-                .send(result ->
-                {
-                    assertTrue(result.isSucceeded());
-                    assertEquals(200, result.getResponse().getStatus());
-                    latch.countDown();
-                });
+            .onResponseContent((response, content) ->
+            {
+                // Slow down the reader so that the
+                // write from the proxy gets congested.
+                sleep(1);
+            })
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded());
+                assertEquals(200, result.getResponse().getStatus());
+                latch.countDown();
+            });
 
         assertTrue(latch.await(15, TimeUnit.SECONDS));
     }
@@ -733,8 +734,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -756,13 +757,13 @@ public class AsyncMiddleManServletTest
         final CountDownLatch latch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider();
         client.newRequest("localhost", serverConnector.getLocalPort())
-                .content(content)
-                .send(result ->
-                {
-                    System.err.println(result);
-                    if (result.getResponse().getStatus() == 500)
-                        latch.countDown();
-                });
+            .content(content)
+            .send(result ->
+            {
+                System.err.println(result);
+                if (result.getResponse().getStatus() == 500)
+                    latch.countDown();
+            });
         content.offer(ByteBuffer.allocate(512));
         sleep(1000);
         content.offer(ByteBuffer.allocate(512));
@@ -795,12 +796,12 @@ public class AsyncMiddleManServletTest
             final CountDownLatch latch = new CountDownLatch(1);
             DeferredContentProvider content = new DeferredContentProvider();
             client.newRequest("localhost", serverConnector.getLocalPort())
-                    .content(content)
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == 502)
-                            latch.countDown();
-                    });
+                .content(content)
+                .send(result ->
+                {
+                    if (result.getResponse().getStatus() == 502)
+                        latch.countDown();
+                });
             content.offer(ByteBuffer.allocate(512));
             sleep(1000);
             content.offer(ByteBuffer.allocate(512));
@@ -851,8 +852,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(502, response.getStatus());
     }
@@ -901,8 +902,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         @SuppressWarnings("unchecked")
@@ -970,8 +971,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(data, response.getContent());
@@ -1033,8 +1034,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         @SuppressWarnings("unchecked")
@@ -1109,16 +1110,16 @@ public class AsyncMiddleManServletTest
         // Send only part of the content; the proxy will idle timeout.
         final byte[] data = new byte[]{'c', 'a', 'f', 'e'};
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .content(new BytesContentProvider(data)
+            .content(new BytesContentProvider(data)
+            {
+                @Override
+                public long getLength()
                 {
-                    @Override
-                    public long getLength()
-                    {
-                        return data.length + 1;
-                    }
-                })
-                .timeout(5 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send();
+                    return data.length + 1;
+                }
+            })
+            .timeout(5 * idleTimeout, TimeUnit.MILLISECONDS)
+            .send();
 
         assertTrue(destroyLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
         assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
@@ -1177,8 +1178,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertTrue(serviceLatch.await(5, TimeUnit.SECONDS));
         assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
@@ -1241,8 +1242,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         @SuppressWarnings("unchecked")
@@ -1285,8 +1286,8 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
         assertFalse(transformed.get());
@@ -1316,8 +1317,8 @@ public class AsyncMiddleManServletTest
 
         DeferredContentProvider content = new DeferredContentProvider();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .content(content);
+            .timeout(5, TimeUnit.SECONDS)
+            .content(content);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
 
@@ -1364,8 +1365,8 @@ public class AsyncMiddleManServletTest
 
         DeferredContentProvider content = new DeferredContentProvider();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .content(content);
+            .timeout(5, TimeUnit.SECONDS)
+            .content(content);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
 
@@ -1435,8 +1436,8 @@ public class AsyncMiddleManServletTest
 
         DeferredContentProvider content = new DeferredContentProvider();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .content(content);
+            .timeout(5, TimeUnit.SECONDS)
+            .content(content);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
 
@@ -1488,9 +1489,9 @@ public class AsyncMiddleManServletTest
 
         // Make the request to the proxy, it should transparently forward to the server
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
-                .path(target)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .path(target)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(200, response.getStatus());
         assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
     }
@@ -1532,7 +1533,7 @@ public class AsyncMiddleManServletTest
         return out.toByteArray();
     }
 
-    private static abstract class HrefTransformer implements AsyncMiddleManServlet.ContentTransformer
+    private abstract static class HrefTransformer implements AsyncMiddleManServlet.ContentTransformer
     {
         private static final String PREFIX = "http://localhost/q=";
         private final HrefParser parser = new HrefParser();
@@ -1571,7 +1572,9 @@ public class AsyncMiddleManServletTest
                         // Transform the matches.
                         Utf8StringBuilder builder = new Utf8StringBuilder();
                         for (ByteBuffer buffer : matches)
+                        {
                             builder.append(buffer);
+                        }
                         String transformed = transform(builder.toString());
                         output.add(ByteBuffer.wrap(transformed.getBytes(StandardCharsets.UTF_8)));
                         output.add(slice);

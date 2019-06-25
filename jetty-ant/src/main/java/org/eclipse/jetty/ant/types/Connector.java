@@ -20,8 +20,6 @@ package org.eclipse.jetty.ant.types;
 
 /**
  * Connector
- *
- *
  */
 public class Connector
 {
@@ -58,5 +56,4 @@ public class Connector
     {
         this.maxIdleTime = maxIdleTime;
     }
-
 }

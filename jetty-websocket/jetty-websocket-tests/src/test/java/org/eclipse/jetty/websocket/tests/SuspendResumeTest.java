@@ -101,7 +101,7 @@ public class SuspendResumeTest
     @Test
     public void testSuspendWhenProcessingFrame() throws Exception
     {
-        URI uri = new URI("ws://localhost:"+connector.getLocalPort()+"/suspend");
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();
         Future<Session> connect = client.connect(clientSocket, uri);
         connect.get(5, TimeUnit.SECONDS);
@@ -134,7 +134,7 @@ public class SuspendResumeTest
     @Test
     public void testExternalSuspend() throws Exception
     {
-        URI uri = new URI("ws://localhost:"+connector.getLocalPort()+"/suspend");
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();
         Future<Session> connect = client.connect(clientSocket, uri);
         connect.get(5, TimeUnit.SECONDS);
@@ -173,7 +173,7 @@ public class SuspendResumeTest
     @Test
     public void testSuspendAfterClose() throws Exception
     {
-        URI uri = new URI("ws://localhost:"+connector.getLocalPort()+"/suspend");
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();
         Future<Session> connect = client.connect(clientSocket, uri);
         connect.get(5, TimeUnit.SECONDS);

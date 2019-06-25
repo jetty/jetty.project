@@ -61,7 +61,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     {
         this(maxThreads, Math.min(8, maxThreads));
     }
-    
+
     public ExecutorThreadPool(int maxThreads, int minThreads)
     {
         this(maxThreads, minThreads, new LinkedBlockingQueue<>());
@@ -84,7 +84,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
 
     public ExecutorThreadPool(ThreadPoolExecutor executor, int reservedThreads, ThreadGroup group)
     {
-        this( executor, Math.min(ProcessorUtils.availableProcessors(),executor.getCorePoolSize()),reservedThreads,group);
+        this(executor, Math.min(ProcessorUtils.availableProcessors(), executor.getCorePoolSize()), reservedThreads, group);
     }
 
     private ExecutorThreadPool(ThreadPoolExecutor executor, int minThreads, int reservedThreads, ThreadGroup group)
@@ -145,7 +145,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     @Override
     public void setMaxThreads(int threads)
     {
-        if (_budget!=null)
+        if (_budget != null)
             _budget.check(threads);
         _executor.setCorePoolSize(threads);
         _executor.setMaximumPoolSize(threads);
@@ -279,7 +279,9 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
         if (_executor.isShutdown())
             throw new IllegalStateException("This thread pool is not restartable");
         for (int i = 0; i < _minThreads; ++i)
+        {
             _executor.prestartCoreThread();
+        }
 
         _tryExecutor = new ReservedThreadExecutor(this, _reservedThreads);
         addBean(_tryExecutor);
@@ -323,73 +325,72 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     {
         String prefix = getName() + "-";
         List<Dumpable> threads = Thread.getAllStackTraces().entrySet().stream()
-                .filter(entry -> entry.getKey().getName().startsWith(prefix))
-                .map(entry ->
+            .filter(entry -> entry.getKey().getName().startsWith(prefix))
+            .map(entry ->
+            {
+                Thread thread = entry.getKey();
+                StackTraceElement[] frames = entry.getValue();
+                String knownMethod = null;
+                for (StackTraceElement frame : frames)
                 {
-                    Thread thread = entry.getKey();
-                    StackTraceElement[] frames = entry.getValue();
-                    String knownMethod = null;
-                    for (StackTraceElement frame : frames)
+                    if ("getTask".equals(frame.getMethodName()) && frame.getClassName().endsWith("ThreadPoolExecutor"))
                     {
-                        if ("getTask".equals(frame.getMethodName()) && frame.getClassName().endsWith("ThreadPoolExecutor"))
+                        knownMethod = "IDLE ";
+                        break;
+                    }
+                    else if ("reservedWait".equals(frame.getMethodName()) && frame.getClassName().endsWith("ReservedThread"))
+                    {
+                        knownMethod = "RESERVED ";
+                        break;
+                    }
+                    else if ("select".equals(frame.getMethodName()) && frame.getClassName().endsWith("SelectorProducer"))
+                    {
+                        knownMethod = "SELECTING ";
+                        break;
+                    }
+                    else if ("accept".equals(frame.getMethodName()) && frame.getClassName().contains("ServerConnector"))
+                    {
+                        knownMethod = "ACCEPTING ";
+                        break;
+                    }
+                }
+                String known = knownMethod == null ? "" : knownMethod;
+                return new Dumpable()
+                {
+                    @Override
+                    public void dump(Appendable out, String indent) throws IOException
+                    {
+                        StringBuilder b = new StringBuilder();
+                        b.append(String.valueOf(thread.getId()))
+                            .append(" ")
+                            .append(thread.getName())
+                            .append(" p=").append(String.valueOf(thread.getPriority()))
+                            .append(" ")
+                            .append(known)
+                            .append(thread.getState().toString());
+
+                        if (isDetailedDump())
                         {
-                            knownMethod = "IDLE ";
-                            break;
+                            if (known.isEmpty())
+                                Dumpable.dumpObjects(out, indent, b.toString(), (Object[])frames);
+                            else
+                                Dumpable.dumpObject(out, b.toString());
                         }
-                        else if ("reservedWait".equals(frame.getMethodName()) && frame.getClassName().endsWith("ReservedThread"))
+                        else
                         {
-                            knownMethod = "RESERVED ";
-                            break;
-                        }
-                        else if ("select".equals(frame.getMethodName()) && frame.getClassName().endsWith("SelectorProducer"))
-                        {
-                            knownMethod = "SELECTING ";
-                            break;
-                        }
-                        else if ("accept".equals(frame.getMethodName()) && frame.getClassName().contains("ServerConnector"))
-                        {
-                            knownMethod = "ACCEPTING ";
-                            break;
+                            b.append(" @ ").append(frames.length > 0 ? String.valueOf(frames[0]) : "<no_stack_frames>");
+                            Dumpable.dumpObject(out, b.toString());
                         }
                     }
-                    String known = knownMethod == null ? "" : knownMethod;
-                    return new Dumpable()
+
+                    @Override
+                    public String dump()
                     {
-                        @Override
-                        public void dump(Appendable out, String indent) throws IOException
-                        {
-                            StringBuilder b = new StringBuilder();
-                            b.append(String.valueOf(thread.getId()))
-                                    .append(" ")
-                                    .append(thread.getName())
-                                    .append(" p=").append(String.valueOf(thread.getPriority()))
-                                    .append(" ")
-                                    .append(known)
-                                    .append(thread.getState().toString());
-
-
-                            if (isDetailedDump())
-                            {
-                                if (known.isEmpty())
-                                    Dumpable.dumpObjects(out, indent, b.toString(), (Object[])frames);
-                                else
-                                    Dumpable.dumpObject(out, b.toString());
-                            }
-                            else
-                            {
-                                b.append(" @ ").append(frames.length > 0 ? String.valueOf(frames[0]) : "<no_stack_frames>");
-                                Dumpable.dumpObject(out, b.toString());
-                            }
-                        }
-
-                        @Override
-                        public String dump()
-                        {
-                            return null;
-                        }
-                    };
-                })
-                .collect(Collectors.toList());
+                        return null;
+                    }
+                };
+            })
+            .collect(Collectors.toList());
 
         List<Runnable> jobs = Collections.emptyList();
         if (isDetailedDump())
@@ -401,15 +402,15 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     public String toString()
     {
         return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d,%s}",
-                getClass().getSimpleName(),
-                getName(),
-                hashCode(),
-                getState(),
-                getMinThreads(),
-                getThreads(),
-                getMaxThreads(),
-                getIdleThreads(),
-                _executor.getQueue().size(),
-                _tryExecutor);
+            getClass().getSimpleName(),
+            getName(),
+            hashCode(),
+            getState(),
+            getMinThreads(),
+            getThreads(),
+            getMaxThreads(),
+            getIdleThreads(),
+            _executor.getQueue().size(),
+            _tryExecutor);
     }
 }

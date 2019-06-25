@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.javax.common.handlers;
 
-import javax.websocket.MessageHandler;
 import java.io.Reader;
+import javax.websocket.MessageHandler;
 
 public class ReaderWholeHandler implements MessageHandler.Whole<Reader>
 {

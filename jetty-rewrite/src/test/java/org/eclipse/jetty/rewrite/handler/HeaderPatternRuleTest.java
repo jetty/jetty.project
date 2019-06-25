@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.util.Iterator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HeaderPatternRuleTest extends AbstractRuleTestCase
 {
@@ -43,9 +43,9 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
     {
         // different keys
         String headers[][] = {
-                { "hnum#1", "test1" },
-                { "hnum#2", "2test2" },
-                { "hnum#3", "test3" }
+            {"hnum#1", "test1"},
+            {"hnum#2", "2test2"},
+            {"hnum#3", "test3"}
         };
         assertHeaders(headers);
     }
@@ -54,15 +54,15 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
     public void testHeaderWithNumberValues() throws IOException
     {
         String headers[][] = {
-                { "hello", "1" },
-                { "hello", "-1" },
-                { "hello", "100" },
-                { "hello", "100" },
-                { "hello", "100" },
-                { "hello", "100" },
-                { "hello", "100" },
+            {"hello", "1"},
+            {"hello", "-1"},
+            {"hello", "100"},
+            {"hello", "100"},
+            {"hello", "100"},
+            {"hello", "100"},
+            {"hello", "100"},
 
-                { "hello1", "200" }
+            {"hello1", "200"}
         };
         assertHeaders(headers);
     }
@@ -71,18 +71,18 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
     public void testHeaderOverwriteValues() throws IOException
     {
         String headers[][] = {
-                { "size", "100" },
-                { "size", "200" },
-                { "size", "300" },
-                { "size", "400" },
-                { "size", "500" },
-                { "title", "abc" },
-                { "title", "bac" },
-                { "title", "cba" },
-                { "title1", "abba" },
-                { "title1", "abba1" },
-                { "title1", "abba" },
-                { "title1", "abba1" }
+            {"size", "100"},
+            {"size", "200"},
+            {"size", "300"},
+            {"size", "400"},
+            {"size", "500"},
+            {"title", "abc"},
+            {"title", "bac"},
+            {"title", "cba"},
+            {"title1", "abba"},
+            {"title1", "abba1"},
+            {"title1", "abba"},
+            {"title1", "abba1"}
         };
         assertHeaders(headers);
 

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -50,7 +49,7 @@ public class TestMinGzipSizeServlet extends TestDirContentServlet
         byte[] dataBytes = loadContentFileBytes(fileName);
 
         response.setContentLength(dataBytes.length);
-        response.setHeader("ETag","W/etag-"+fileName);
+        response.setHeader("ETag", "W/etag-" + fileName);
         if (fileName.endsWith(".js"))
         {
             // intentionally long-form content type to test ";" splitting in code

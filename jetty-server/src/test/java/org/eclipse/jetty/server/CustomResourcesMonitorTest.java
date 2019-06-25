@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.TimerScheduler;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -37,8 +28,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.TimerScheduler;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CustomResourcesMonitorTest
 {
@@ -54,7 +56,7 @@ public class CustomResourcesMonitorTest
         _server = new Server();
 
         _server.addBean(new TimerScheduler());
-        
+
         _connector = new ServerConnector(_server);
         _connector.setPort(0);
         _connector.setIdleTimeout(35000);
@@ -62,14 +64,14 @@ public class CustomResourcesMonitorTest
 
         _server.setHandler(new DumpHandler());
 
-        _monitoredPath = Files.createTempDirectory( "jetty_test" );
-        _fileOnDirectoryMonitor=new FileOnDirectoryMonitor(_monitoredPath);
+        _monitoredPath = Files.createTempDirectory("jetty_test");
+        _fileOnDirectoryMonitor = new FileOnDirectoryMonitor(_monitoredPath);
         _lowResourceMonitor = new LowResourceMonitor(_server);
-        _server.addBean( _lowResourceMonitor );
-        _lowResourceMonitor.addLowResourceCheck( _fileOnDirectoryMonitor );
+        _server.addBean(_lowResourceMonitor);
+        _lowResourceMonitor.addLowResourceCheck(_fileOnDirectoryMonitor);
         _server.start();
     }
-    
+
     @AfterEach
     public void after() throws Exception
     {
@@ -87,9 +89,9 @@ public class CustomResourcesMonitorTest
         _lowResourceMonitor.setMaxLowResourcesTime(maxLowResourcesTime);
         assertFalse(_fileOnDirectoryMonitor.isLowOnResources());
 
-        try(Socket socket0 = new Socket("localhost",_connector.getLocalPort()))
+        try (Socket socket0 = new Socket("localhost", _connector.getLocalPort()))
         {
-            Path tmpFile = Files.createTempFile( _monitoredPath, "yup", ".tmp" );
+            Path tmpFile = Files.createTempFile(_monitoredPath, "yup", ".tmp");
             // Write a file
             Files.write(tmpFile, "foobar".getBytes());
 
@@ -98,13 +100,12 @@ public class CustomResourcesMonitorTest
             Thread.sleep(2 * monitorPeriod);
             assertTrue(_fileOnDirectoryMonitor.isLowOnResources());
 
-
             // We already waited enough for fileOnDirectoryMonitor to close socket0.
             assertEquals(-1, socket0.getInputStream().read());
 
             // New connections are not affected by the
             // low mode until maxLowResourcesTime elapses.
-            try(Socket socket1 = new Socket("localhost",_connector.getLocalPort()))
+            try (Socket socket1 = new Socket("localhost", _connector.getLocalPort()))
             {
                 // Set a very short read timeout so we can test if the server closed.
                 socket1.setSoTimeout(1);
@@ -120,7 +121,7 @@ public class CustomResourcesMonitorTest
                 assertTrue(_fileOnDirectoryMonitor.isLowOnResources());
                 assertThrows(SocketTimeoutException.class, () -> input1.read());
 
-                Files.delete( tmpFile );
+                Files.delete(tmpFile);
 
                 // Let the maxLowResourcesTime elapse.
                 Thread.sleep(maxLowResourcesTime);
@@ -129,16 +130,15 @@ public class CustomResourcesMonitorTest
         }
     }
 
-
     static class FileOnDirectoryMonitor implements LowResourceMonitor.LowResourceCheck
     {
-        private static final Logger LOG = Log.getLogger( FileOnDirectoryMonitor.class);
+        private static final Logger LOG = Log.getLogger(FileOnDirectoryMonitor.class);
 
         private final Path _pathToMonitor;
 
         private String reason;
 
-        public FileOnDirectoryMonitor(Path pathToMonitor )
+        public FileOnDirectoryMonitor(Path pathToMonitor)
         {
             _pathToMonitor = pathToMonitor;
         }
@@ -148,17 +148,17 @@ public class CustomResourcesMonitorTest
         {
             try
             {
-                Stream<Path> paths = Files.list( _pathToMonitor );
-                List<Path> content = paths.collect( Collectors.toList() );
-                if(!content.isEmpty())
+                Stream<Path> paths = Files.list(_pathToMonitor);
+                List<Path> content = paths.collect(Collectors.toList());
+                if (!content.isEmpty())
                 {
-                    reason= "directory not empty so enable low resources";
+                    reason = "directory not empty so enable low resources";
                     return true;
                 }
             }
-            catch ( IOException e )
+            catch (IOException e)
             {
-                LOG.info( "ignore issue looking at directory content", e );
+                LOG.info("ignore issue looking at directory content", e);
             }
             return false;
         }

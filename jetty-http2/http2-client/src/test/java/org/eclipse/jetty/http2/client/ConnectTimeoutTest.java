@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -34,6 +30,10 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectTimeoutTest extends AbstractTest
 {
@@ -66,7 +66,7 @@ public class ConnectTimeoutTest extends AbstractTest
     private void assumeConnectTimeout(String host, int port, int connectTimeout) throws IOException
     {
         boolean socketTimeout = false;
-        
+
         try (Socket socket = new Socket())
         {
             // Try to connect to a private address in the 10.x.y.z range.
@@ -86,7 +86,7 @@ public class ConnectTimeoutTest extends AbstractTest
             // Useful when debugging
             x.printStackTrace(System.err);
         }
-        
+
         // Abort the test if we can connect.
         Assumptions.assumeTrue(socketTimeout, "Should have seen connect timeout");
     }

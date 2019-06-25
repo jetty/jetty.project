@@ -41,7 +41,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
 
     public AbstractNetworkConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, ConnectionFactory... factories)
     {
-        super(server,executor,scheduler,pool,acceptors,factories);
+        super(server, executor, scheduler, pool, acceptors, factories);
     }
 
     public void setHost(String host)
@@ -97,7 +97,6 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     public void close()
     {
     }
-    
 
     @Override
     public Future<Void> shutdown()
@@ -105,7 +104,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
         close();
         return super.shutdown();
     }
-    
+
     @Override
     protected boolean handleAcceptFailure(Throwable ex)
     {
@@ -119,8 +118,8 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     public String toString()
     {
         return String.format("%s{%s:%d}",
-                super.toString(),
-                getHost() == null ? "0.0.0.0" : getHost(),
-                getLocalPort() <= 0 ? getPort() : getLocalPort());
+            super.toString(),
+            getHost() == null ? "0.0.0.0" : getHost(),
+            getLocalPort() <= 0 ? getPort() : getLocalPort());
     }
 }

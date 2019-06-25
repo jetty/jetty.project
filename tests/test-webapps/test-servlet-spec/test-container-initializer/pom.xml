@@ -14,19 +14,19 @@
   <build>
     <plugins>
       <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <configuration>
-              <instructions>
-                  <Bundle-SymbolicName>org.eclipse.jetty.tests.test-servlet-container-initializer;singleton:=true</Bundle-SymbolicName>
-                  <Bundle-Description>A bundle containing a ServletContainerInitializer for testing</Bundle-Description>
-                  <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-                  <Provide-Capability>osgi.serviceloader; osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
-                  <Export-Package>com.acme.initializer;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-                  <_nouses>true</_nouses>
-              </instructions>
-          </configuration>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>org.eclipse.jetty.tests.test-servlet-container-initializer;singleton:=true</Bundle-SymbolicName>
+            <Bundle-Description>A bundle containing a ServletContainerInitializer for testing</Bundle-Description>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
+            <Export-Package>com.acme.initializer;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
       </plugin>
     </plugins>
   </build>
