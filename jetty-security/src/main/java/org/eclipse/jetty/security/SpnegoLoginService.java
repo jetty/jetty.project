@@ -54,12 +54,12 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
 
     }
 
-    public SpnegoLoginService( String name )
+    public SpnegoLoginService(String name)
     {
         setName(name);
     }
 
-    public SpnegoLoginService( String name, String config )
+    public SpnegoLoginService(String name, String config)
     {
         setName(name);
         setConfig(config);
@@ -86,7 +86,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         return _config;
     }
 
-    public void setConfig( String config )
+    public void setConfig(String config)
     {
         if (isRunning())
         {
@@ -95,8 +95,6 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
 
         _config = config;
     }
-
-
 
     @Override
     protected void doStart() throws Exception
@@ -126,8 +124,8 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         try
         {
             Oid krb5Oid = new Oid("1.3.6.1.5.5.2"); // http://java.sun.com/javase/6/docs/technotes/guides/security/jgss/jgss-features.html
-            GSSName gssName = manager.createName(_targetName,null);
-            GSSCredential serverCreds = manager.createCredential(gssName,GSSCredential.INDEFINITE_LIFETIME,krb5Oid,GSSCredential.ACCEPT_ONLY);
+            GSSName gssName = manager.createName(_targetName, null);
+            GSSCredential serverCreds = manager.createCredential(gssName, GSSCredential.INDEFINITE_LIFETIME, krb5Oid, GSSCredential.ACCEPT_ONLY);
             GSSContext gContext = manager.createContext(serverCreds);
 
             if (gContext == null)
@@ -138,7 +136,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
             {
                 while (!gContext.isEstablished())
                 {
-                    authToken = gContext.acceptSecContext(authToken,0,authToken.length);
+                    authToken = gContext.acceptSecContext(authToken, 0, authToken.length);
                 }
                 if (gContext.isEstablished())
                 {
@@ -150,15 +148,14 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
                     LOG.debug("Server Principal is: " + gContext.getTargName());
                     LOG.debug("Client Default Role: " + role);
 
-                    SpnegoUserPrincipal user = new SpnegoUserPrincipal(clientName,authToken);
+                    SpnegoUserPrincipal user = new SpnegoUserPrincipal(clientName, authToken);
 
                     Subject subject = new Subject();
                     subject.getPrincipals().add(user);
 
-                    return _identityService.newUserIdentity(subject,user, new String[]{role});
+                    return _identityService.newUserIdentity(subject, user, new String[]{role});
                 }
             }
-
         }
         catch (GSSException gsse)
         {
@@ -187,9 +184,8 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
     }
 
     @Override
-    public void logout(UserIdentity user) 
+    public void logout(UserIdentity user)
     {
         // TODO Auto-generated method stub
     }
-
 }

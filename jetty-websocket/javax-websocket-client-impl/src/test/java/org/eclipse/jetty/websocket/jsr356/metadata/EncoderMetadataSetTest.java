@@ -18,15 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.metadata;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.List;
-
 import javax.websocket.Encoder;
 
 import org.eclipse.jetty.websocket.jsr356.MessageType;
@@ -35,29 +27,36 @@ import org.eclipse.jetty.websocket.jsr356.encoders.DateEncoder;
 import org.eclipse.jetty.websocket.jsr356.encoders.IntegerEncoder;
 import org.eclipse.jetty.websocket.jsr356.encoders.TimeEncoder;
 import org.eclipse.jetty.websocket.jsr356.encoders.ValidDualEncoder;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class EncoderMetadataSetTest
 {
     private void assertMetadata(CoderMetadata<?> metadata, Class<?> expectedType, Class<?> expectedCoder, MessageType expectedMessageType)
     {
         assertEquals(expectedCoder, metadata.getCoderClass(), "metadata.coderClass");
-        assertThat("metadata.messageType",metadata.getMessageType(),is(expectedMessageType));
+        assertThat("metadata.messageType", metadata.getMessageType(), is(expectedMessageType));
         assertEquals(expectedType, metadata.getObjectType(), "metadata.objectType");
     }
 
     @Test
     public void testAddBadDualEncoders()
     {
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()->{
+        IllegalStateException e = assertThrows(IllegalStateException.class, () ->
+        {
             EncoderMetadataSet coders = new EncoderMetadataSet();
 
             // has duplicated support for the same target Type
             coders.add(BadDualEncoder.class);
             // Should have thrown IllegalStateException for attempting to register Encoders with duplicate implementation
         });
-        assertThat(e.getMessage(),containsString("Duplicate"));
+        assertThat(e.getMessage(), containsString("Duplicate"));
     }
 
     @Test
@@ -68,12 +67,13 @@ public class EncoderMetadataSetTest
         // Add DateEncoder (decodes java.util.Date)
         coders.add(DateEncoder.class);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()->{
+        IllegalStateException e = assertThrows(IllegalStateException.class, () ->
+        {
             // Add TimeEncoder (which also wants to decode java.util.Date)
             coders.add(TimeEncoder.class);
             // Should have thrown IllegalStateException for attempting to register Encoders with duplicate implementation
         });
-        assertThat(e.getMessage(),containsString("Duplicate"));
+        assertThat(e.getMessage(), containsString("Duplicate"));
     }
 
     @Test
@@ -93,9 +93,9 @@ public class EncoderMetadataSetTest
 
         coders.add(IntegerEncoder.class);
         List<EncoderMetadata> metadatas = coders.getMetadataByImplementation(IntegerEncoder.class);
-        assertThat("Metadatas (by impl) count",metadatas.size(),is(1));
+        assertThat("Metadatas (by impl) count", metadatas.size(), is(1));
         EncoderMetadata metadata = metadatas.get(0);
-        assertMetadata(metadata,Integer.class,IntegerEncoder.class,MessageType.TEXT);
+        assertMetadata(metadata, Integer.class, IntegerEncoder.class, MessageType.TEXT);
     }
 
     @Test
@@ -105,7 +105,7 @@ public class EncoderMetadataSetTest
 
         coders.add(IntegerEncoder.class);
         EncoderMetadata metadata = coders.getMetadataByType(Integer.class);
-        assertMetadata(metadata,Integer.class,IntegerEncoder.class,MessageType.TEXT);
+        assertMetadata(metadata, Integer.class, IntegerEncoder.class, MessageType.TEXT);
     }
 
     @Test
@@ -116,14 +116,14 @@ public class EncoderMetadataSetTest
         coders.add(ValidDualEncoder.class);
 
         List<Class<? extends Encoder>> EncodersList = coders.getList();
-        assertThat("Encoder List",EncodersList,notNullValue());
-        assertThat("Encoder List count",EncodersList.size(),is(2));
+        assertThat("Encoder List", EncodersList, notNullValue());
+        assertThat("Encoder List count", EncodersList.size(), is(2));
 
         EncoderMetadata metadata;
         metadata = coders.getMetadataByType(Integer.class);
-        assertMetadata(metadata,Integer.class,ValidDualEncoder.class,MessageType.TEXT);
+        assertMetadata(metadata, Integer.class, ValidDualEncoder.class, MessageType.TEXT);
 
         metadata = coders.getMetadataByType(Long.class);
-        assertMetadata(metadata,Long.class,ValidDualEncoder.class,MessageType.BINARY);
+        assertMetadata(metadata, Long.class, ValidDualEncoder.class, MessageType.BINARY);
     }
 }

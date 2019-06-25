@@ -35,7 +35,6 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-
 @State(Scope.Benchmark)
 @Threads(4)
 @Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
@@ -45,23 +44,24 @@ public class ByteBufferBenchmark
     public long test(ByteBuffer buffer)
     {
         buffer.clear();
-        while(buffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             int size = ThreadLocalRandom.current().nextInt(1024);
             byte[] bytes = new byte[size];
             ThreadLocalRandom.current().nextBytes(bytes);
-            buffer.put(bytes,0,Math.min(bytes.length,buffer.remaining()));
+            buffer.put(bytes, 0, Math.min(bytes.length, buffer.remaining()));
         }
 
         buffer.flip();
 
         long sum = 0;
-        while(buffer.hasRemaining())
+        while (buffer.hasRemaining())
+        {
             sum += buffer.get();
+        }
 
         return sum;
     }
-
 
     public long testArray(ByteBuffer buffer)
     {
@@ -69,12 +69,12 @@ public class ByteBufferBenchmark
         byte[] array = buffer.array();
         int offset = buffer.arrayOffset();
         int end = offset + buffer.remaining();
-        while(offset<end)
+        while (offset < end)
         {
             int size = ThreadLocalRandom.current().nextInt(1024);
             byte[] bytes = new byte[size];
             ThreadLocalRandom.current().nextBytes(bytes);
-            System.arraycopy(bytes,0,array,offset,Math.min(bytes.length,end-offset));
+            System.arraycopy(bytes, 0, array, offset, Math.min(bytes.length, end - offset));
             offset += bytes.length;
         }
         buffer.position(buffer.limit());
@@ -85,16 +85,16 @@ public class ByteBufferBenchmark
         offset = buffer.arrayOffset();
         end = offset + buffer.remaining();
 
-        while(offset<end)
+        while (offset < end)
+        {
             sum += array[offset++];
+        }
         buffer.position(buffer.limit());
         return sum;
     }
 
-
-
     @Benchmark
-    @BenchmarkMode({ Mode.Throughput})
+    @BenchmarkMode({Mode.Throughput})
     public long testDirect()
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(32768);
@@ -107,9 +107,8 @@ public class ByteBufferBenchmark
         return sum;
     }
 
-
     @Benchmark
-    @BenchmarkMode({ Mode.Throughput})
+    @BenchmarkMode({Mode.Throughput})
     public long testInDirect()
     {
         ByteBuffer buffer = ByteBuffer.allocate(32768);
@@ -123,7 +122,7 @@ public class ByteBufferBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({ Mode.Throughput})
+    @BenchmarkMode({Mode.Throughput})
     public long testInDirectArray()
     {
         ByteBuffer buffer = ByteBuffer.allocate(32768);
@@ -135,7 +134,6 @@ public class ByteBufferBenchmark
         sum ^= testArray(buffer);
         return sum;
     }
-
 
     public static void main(String[] args) throws RunnerException
     {
@@ -150,5 +148,4 @@ public class ByteBufferBenchmark
 
         new Runner(opt).run();
     }
-
 }

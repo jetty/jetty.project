@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.samples;
 
 import java.io.IOException;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.EncodeException;
 import javax.websocket.OnMessage;
@@ -28,7 +27,7 @@ import javax.websocket.Session;
 import org.eclipse.jetty.websocket.jsr356.decoders.BadDualDecoder;
 
 @ClientEndpoint(decoders =
-{ BadDualDecoder.class })
+    {BadDualDecoder.class})
 public class IntSocket
 {
     @OnMessage

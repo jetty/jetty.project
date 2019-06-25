@@ -140,7 +140,7 @@ public class HeadersGenerator extends FrameGenerator
         if (priority != null)
         {
             priorityGenerator.generatePriorityBody(header, priority.getStreamId(),
-                    priority.getParentStreamId(), priority.getWeight(), priority.isExclusive());
+                priority.getParentStreamId(), priority.getWeight(), priority.isExclusive());
         }
     }
 }

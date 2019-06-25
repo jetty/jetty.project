@@ -51,7 +51,7 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
         {
             StringBuilder err = new StringBuilder();
             err.append("Unexpected implementation [");
-            if(session.getRemote() == null)
+            if (session.getRemote() == null)
                 err.append("<null>");
             else
                 err.append(session.getRemote().getClass().getName());
@@ -101,7 +101,7 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
     }
 
     @SuppressWarnings(
-            {"rawtypes", "unchecked"})
+        {"rawtypes", "unchecked"})
     public Future<Void> sendObjectViaFuture(Object data)
     {
         assertMessageNotNull(data);

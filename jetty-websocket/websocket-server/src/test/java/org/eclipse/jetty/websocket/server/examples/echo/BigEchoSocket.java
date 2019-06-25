@@ -69,7 +69,7 @@ public class BigEchoSocket
     @OnWebSocketError
     public void onError(Throwable cause)
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
             LOG.debug("onError()", cause);
         }

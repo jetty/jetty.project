@@ -32,9 +32,9 @@ public class DeflaterPool extends CompressionPool<Deflater>
      * and will be created on acquire and ended on release.
      * If given a negative capacity equal to zero there will be no size restrictions on the DeflaterPool
      *
-     * @param capacity         maximum number of Deflaters which can be contained in the pool
+     * @param capacity maximum number of Deflaters which can be contained in the pool
      * @param compressionLevel the default compression level for new Deflater objects
-     * @param nowrap           if true then use GZIP compatible compression for all new Deflater objects
+     * @param nowrap if true then use GZIP compatible compression for all new Deflater objects
      */
     public DeflaterPool(int capacity, int compressionLevel, boolean nowrap)
     {

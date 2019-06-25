@@ -34,17 +34,17 @@ class XmlBasedHttpClientProvider
         {
             return null;
         }
-        
+
         try
         {
             XmlConfiguration configuration = new XmlConfiguration(resource);
-            return (HttpClient) configuration.configure();
+            return (HttpClient)configuration.configure();
         }
         catch (Throwable t)
         {
             Log.getLogger(XmlBasedHttpClientProvider.class).warn("Unable to load: " + resource, t);
         }
-        
+
         return null;
     }
 }

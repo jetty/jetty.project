@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.nio.ByteBuffer;
 import java.util.Date;
-
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -41,9 +36,12 @@ import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.samples.Fruit;
 import org.eclipse.jetty.websocket.jsr356.samples.FruitDecoder;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DecoderFactoryTest
 {
@@ -54,7 +52,7 @@ public class DecoderFactoryTest
     {
         DecoderMetadata metadata = factory.getMetadataFor(type);
         assertEquals(metadata.getCoderClass(), expectedDecoderClass, "metadata.coderClass");
-        assertThat("metadata.messageType",metadata.getMessageType(),is(expectedType));
+        assertThat("metadata.messageType", metadata.getMessageType(), is(expectedType));
         assertEquals(metadata.getObjectType(), type, "metadata.objectType");
     }
 
@@ -62,53 +60,53 @@ public class DecoderFactoryTest
     public void initDecoderFactory()
     {
         WebSocketContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
-        
-        DecoderFactory primitivesFactory = new DecoderFactory(containerScope,PrimitiveDecoderMetadataSet.INSTANCE);
+
+        DecoderFactory primitivesFactory = new DecoderFactory(containerScope, PrimitiveDecoderMetadataSet.INSTANCE);
         metadatas = new DecoderMetadataSet();
-        factory = new DecoderFactory(containerScope,metadatas,primitivesFactory);
+        factory = new DecoderFactory(containerScope, metadatas, primitivesFactory);
     }
 
     @Test
     public void testGetMetadataForByteArray()
     {
-        assertMetadataFor(byte[].class,ByteArrayDecoder.class,MessageType.BINARY);
+        assertMetadataFor(byte[].class, ByteArrayDecoder.class, MessageType.BINARY);
     }
 
     @Test
     public void testGetMetadataForByteBuffer()
     {
-        assertMetadataFor(ByteBuffer.class,ByteBufferDecoder.class,MessageType.BINARY);
+        assertMetadataFor(ByteBuffer.class, ByteBufferDecoder.class, MessageType.BINARY);
     }
 
     @Test
     public void testGetMetadataForDate()
     {
         metadatas.add(DateDecoder.class);
-        assertMetadataFor(Date.class,DateDecoder.class,MessageType.TEXT);
+        assertMetadataFor(Date.class, DateDecoder.class, MessageType.TEXT);
     }
 
     @Test
     public void testGetMetadataForFruit()
     {
         metadatas.add(FruitDecoder.class);
-        assertMetadataFor(Fruit.class,FruitDecoder.class,MessageType.TEXT);
+        assertMetadataFor(Fruit.class, FruitDecoder.class, MessageType.TEXT);
     }
 
     @Test
     public void testGetMetadataForInteger()
     {
-        assertMetadataFor(Integer.TYPE,IntegerDecoder.class,MessageType.TEXT);
+        assertMetadataFor(Integer.TYPE, IntegerDecoder.class, MessageType.TEXT);
     }
 
     @Test
     public void testGetMetadataForLong()
     {
-        assertMetadataFor(Long.TYPE,LongDecoder.class,MessageType.TEXT);
+        assertMetadataFor(Long.TYPE, LongDecoder.class, MessageType.TEXT);
     }
 
     @Test
     public void testGetStringDecoder()
     {
-        assertMetadataFor(String.class,StringDecoder.class,MessageType.TEXT);
+        assertMetadataFor(String.class, StringDecoder.class, MessageType.TEXT);
     }
 }

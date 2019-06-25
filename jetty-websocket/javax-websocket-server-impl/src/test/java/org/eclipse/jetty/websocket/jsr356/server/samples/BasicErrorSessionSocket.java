@@ -24,12 +24,12 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicErrorSessionSocket extends TrackingSocket
 {
     @OnError
     public void onError(Session session)
     {
-        addEvent("onError(%s)",session);
+        addEvent("onError(%s)", session);
     }
 }

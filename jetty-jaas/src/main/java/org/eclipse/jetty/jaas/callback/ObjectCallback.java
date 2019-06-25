@@ -20,7 +20,7 @@ package org.eclipse.jetty.jaas.callback;
 
 import javax.security.auth.callback.Callback;
 
-/** 
+/**
  * ObjectCallback
  * <p>
  * Can be used as a LoginModule Callback to
@@ -31,18 +31,18 @@ import javax.security.auth.callback.Callback;
 public class ObjectCallback implements Callback
 {
     protected Object _object;
-    
+
     public void setObject(Object o)
     {
         _object = o;
     }
 
-    public Object getObject ()
+    public Object getObject()
     {
         return _object;
     }
 
-    public void clearObject ()
+    public void clearObject()
     {
         _object = null;
     }

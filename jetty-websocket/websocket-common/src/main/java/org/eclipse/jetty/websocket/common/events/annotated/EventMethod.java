@@ -39,8 +39,8 @@ public class EventMethod
         {
             return new Object[0];
         }
-        Object ret[] = new Object[args.length - 1];
-        System.arraycopy(args,1,ret,0,ret.length);
+        Object[] ret = new Object[args.length - 1];
+        System.arraycopy(args, 1, ret, 0, ret.length);
         return ret;
     }
 
@@ -64,12 +64,12 @@ public class EventMethod
         {
             this.pojo = pojo;
             this.paramTypes = paramTypes;
-            this.method = pojo.getMethod(methodName,paramTypes);
+            this.method = pojo.getMethod(methodName, paramTypes);
             identifyPresentParamTypes();
         }
         catch (NoSuchMethodException | SecurityException e)
         {
-            LOG.warn("Cannot use method {}({}): {}",methodName,paramTypes,e.getMessage());
+            LOG.warn("Cannot use method {}({}): {}", methodName, paramTypes, e.getMessage());
             this.method = null;
         }
     }
@@ -78,34 +78,33 @@ public class EventMethod
     {
         if ((this.pojo == null) || (this.method == null))
         {
-            LOG.warn("Cannot execute call: pojo={}, method={}",pojo,method);
+            LOG.warn("Cannot execute call: pojo={}, method={}", pojo, method);
             return; // no call event method determined
         }
         if (obj == null)
         {
-            LOG.warn("Cannot call {} on null object",this.method);
+            LOG.warn("Cannot call {} on null object", this.method);
             return;
         }
         if (args.length > paramTypes.length)
         {
-            Object trimArgs[] = dropFirstArg(args);
-            call(obj,trimArgs);
+            Object[] trimArgs = dropFirstArg(args);
+            call(obj, trimArgs);
             return;
         }
         if (args.length < paramTypes.length)
         {
-            throw new IllegalArgumentException("Call arguments length [" + args.length + "] must always be greater than or equal to captured args length ["
-                    + paramTypes.length + "]");
+            throw new IllegalArgumentException("Call arguments length [" + args.length + "] must always be greater than or equal to captured args length [" + paramTypes.length + "]");
         }
 
         try
         {
-            this.method.invoke(obj,args);
+            this.method.invoke(obj, args);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            String err = String.format("Cannot call method %s on %s with args: %s",method,pojo, QuoteUtil.join(args,","));
-            throw new WebSocketException(err,e);
+            String err = String.format("Cannot call method %s on %s with args: %s", method, pojo, QuoteUtil.join(args, ","));
+            throw new WebSocketException(err, e);
         }
     }
 

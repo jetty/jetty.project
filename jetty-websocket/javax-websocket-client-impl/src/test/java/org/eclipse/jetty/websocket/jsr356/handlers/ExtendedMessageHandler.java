@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.handlers;
 
 import java.nio.ByteBuffer;
-
 import javax.websocket.MessageHandler;
 
 public class ExtendedMessageHandler extends BaseMessageHandler implements MessageHandler.Partial<ByteBuffer>

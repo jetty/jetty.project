@@ -29,6 +29,6 @@ public class ServerConnectorHttpServerTest extends HttpServerTestBase
     public void init() throws Exception
     {
         // Run this test with 0 acceptors. Other tests already check the acceptors >0
-        startServer(new ServerConnector(_server,0,1));
+        startServer(new ServerConnector(_server, 0, 1));
     }
 }

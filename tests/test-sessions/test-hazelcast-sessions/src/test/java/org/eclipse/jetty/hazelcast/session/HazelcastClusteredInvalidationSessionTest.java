@@ -45,6 +45,6 @@ public class HazelcastClusteredInvalidationSessionTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return _testHelper.createSessionDataStoreFactory( false );
+        return _testHelper.createSessionDataStoreFactory(false);
     }
 }

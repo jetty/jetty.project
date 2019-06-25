@@ -39,12 +39,13 @@ public class MavenProjectHelper
     {
         Set<MavenProject> mavenProjects = resolveProjectDependencies(project, new HashSet<>());
         artifactToLocalProjectMap = mavenProjects.stream()
-                .collect(Collectors.toMap(MavenProject::getId, Function.identity()));
+            .collect(Collectors.toMap(MavenProject::getId, Function.identity()));
         artifactToLocalProjectMap.put(project.getArtifact().getId(), project);
     }
 
     /**
      * Gets maven project if referenced in reactor
+     *
      * @param artifact - maven artifact
      * @return {@link MavenProject} if artifact is referenced in reactor, otherwise null
      */
@@ -69,9 +70,12 @@ public class MavenProjectHelper
         MavenProject mavenProject = getMavenProject(artifact);
         if (mavenProject != null)
         {
-            if ( "test-jar".equals( artifact.getType() )) {
+            if ("test-jar".equals(artifact.getType()))
+            {
                 path = Paths.get(mavenProject.getBuild().getTestOutputDirectory());
-            } else {
+            }
+            else
+            {
                 path = Paths.get(mavenProject.getBuild().getOutputDirectory());
             }
         }
@@ -92,5 +96,4 @@ public class MavenProjectHelper
         }
         return availableProjects;
     }
-
 }

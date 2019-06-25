@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
@@ -27,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -54,15 +51,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class ProxyServletLoadTest
 {
     public static Stream<Arguments> data()
     {
         return Arrays.asList(
-                ProxyServlet.class,
-                AsyncProxyServlet.class,
-                AsyncMiddleManServlet.class)
-                .stream().map(Arguments::of);
+            ProxyServlet.class,
+            AsyncProxyServlet.class,
+            AsyncMiddleManServlet.class)
+            .stream().map(Arguments::of);
     }
 
     private static final Logger LOG = Log.getLogger(ProxyServletLoadTest.class);
@@ -207,11 +206,11 @@ public class ProxyServletLoadTest
                     byte[] content = new byte[1024];
                     new Random().nextBytes(content);
                     ContentResponse response = client.newRequest(host, port).method(HttpMethod.POST).content(new BytesContentProvider(content))
-                            .timeout(5, TimeUnit.SECONDS).send();
+                        .timeout(5, TimeUnit.SECONDS).send();
 
                     if (response.getStatus() != 200)
                     {
-                        LOG.warn("Got response <{}>, expecting <{}> iteration=", response.getStatus(), 200,iterations);
+                        LOG.warn("Got response <{}>, expecting <{}> iteration=", response.getStatus(), 200, iterations);
                         // allow all ClientLoops to finish
                         success.set(false);
                     }
@@ -224,7 +223,7 @@ public class ProxyServletLoadTest
             }
             catch (Throwable x)
             {
-                LOG.warn("Error processing request "+iterations, x);
+                LOG.warn("Error processing request " + iterations, x);
                 success.set(false);
             }
             finally

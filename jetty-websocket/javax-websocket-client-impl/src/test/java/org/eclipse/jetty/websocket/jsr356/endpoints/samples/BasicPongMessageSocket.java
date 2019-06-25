@@ -30,7 +30,7 @@ public class BasicPongMessageSocket extends TrackingSocket
     @OnMessage
     public void onPong(PongMessage pong)
     {
-        addEvent("onPong(%s)",pong);
+        addEvent("onPong(%s)", pong);
         dataLatch.countDown();
     }
 }

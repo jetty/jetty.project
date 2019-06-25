@@ -33,9 +33,9 @@ public class IdentityExtension extends AbstractExtension
 
     public String getParam(String key)
     {
-        return getConfig().getParameter(key,"?");
+        return getConfig().getParameter(key, "?");
     }
-    
+
     @Override
     public String getName()
     {
@@ -53,7 +53,7 @@ public class IdentityExtension extends AbstractExtension
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         // pass through
-        nextOutgoingFrame(frame,callback, batchMode);
+        nextOutgoingFrame(frame, callback, batchMode);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class IdentityExtension extends AbstractExtension
             {
                 s.append(';');
             }
-            s.append(param).append('=').append(QuotedStringTokenizer.quoteIfNeeded(config.getParameter(param,""),";="));
+            s.append(param).append('=').append(QuotedStringTokenizer.quoteIfNeeded(config.getParameter(param, ""), ";="));
             delim = true;
         }
         s.append("]");

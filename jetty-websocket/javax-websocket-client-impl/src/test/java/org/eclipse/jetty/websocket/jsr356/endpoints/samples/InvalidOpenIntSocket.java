@@ -28,6 +28,7 @@ public class InvalidOpenIntSocket extends TrackingSocket
 {
     /**
      * Invalid Open Method Declaration (parameter type int)
+     *
      * @param value the open value
      */
     @OnOpen

@@ -25,9 +25,8 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Trie;
 
-
 /**
- * 
+ *
  */
 public enum HttpHeaderValue
 {
@@ -44,60 +43,55 @@ public enum HttpHeaderValue
     UPGRADE("Upgrade"),
     UNKNOWN("::UNKNOWN::");
 
-    /* ------------------------------------------------------------ */
-    public final static Trie<HttpHeaderValue> CACHE= new ArrayTrie<HttpHeaderValue>();
+    public static final Trie<HttpHeaderValue> CACHE = new ArrayTrie<HttpHeaderValue>();
+
     static
     {
         for (HttpHeaderValue value : HttpHeaderValue.values())
-            if (value!=UNKNOWN)
-                CACHE.put(value.toString(),value);
+        {
+            if (value != UNKNOWN)
+                CACHE.put(value.toString(), value);
+        }
     }
 
     private final String _string;
     private final ByteBuffer _buffer;
 
-    /* ------------------------------------------------------------ */
     HttpHeaderValue(String s)
     {
-        _string=s;
-        _buffer=BufferUtil.toBuffer(s);
+        _string = s;
+        _buffer = BufferUtil.toBuffer(s);
     }
 
-    /* ------------------------------------------------------------ */
     public ByteBuffer toBuffer()
     {
         return _buffer.asReadOnlyBuffer();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean is(String s)
     {
         return _string.equalsIgnoreCase(s);
     }
-    
-    /* ------------------------------------------------------------ */
+
     public String asString()
     {
         return _string;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return _string;
     }
 
-    /* ------------------------------------------------------------ */
     private static EnumSet<HttpHeader> __known =
-            EnumSet.of(HttpHeader.CONNECTION,
-                    HttpHeader.TRANSFER_ENCODING,
-                    HttpHeader.CONTENT_ENCODING);
+        EnumSet.of(HttpHeader.CONNECTION,
+            HttpHeader.TRANSFER_ENCODING,
+            HttpHeader.CONTENT_ENCODING);
 
-    /* ------------------------------------------------------------ */
     public static boolean hasKnownValues(HttpHeader header)
     {
-        if (header==null)
+        if (header == null)
             return false;
         return __known.contains(header);
     }

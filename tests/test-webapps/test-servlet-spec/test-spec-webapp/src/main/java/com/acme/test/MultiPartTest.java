@@ -20,7 +20,6 @@ package com.acme.test;
 
 import java.io.IOException;
 import java.util.Collection;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -31,20 +30,18 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.IO;
+
 /**
  * MultiPartTest
- * 
- * Test Servlet 3.0 MultiPart Mime handling.
- * 
  *
+ * Test Servlet 3.0 MultiPart Mime handling.
  */
 
-@MultipartConfig(location="foo/bar", maxFileSize=10240, maxRequestSize=-1, fileSizeThreshold=2048)
-public class MultiPartTest extends HttpServlet 
+@MultipartConfig(location = "foo/bar", maxFileSize = 10240, maxRequestSize = -1, fileSizeThreshold = 2048)
+public class MultiPartTest extends HttpServlet
 {
     private ServletConfig config;
-    
-    
+
     @Override
     public void init(ServletConfig config) throws ServletException
     {
@@ -52,9 +49,6 @@ public class MultiPartTest extends HttpServlet
         this.config = config;
     }
 
-    
-    
-    /* ------------------------------------------------------------ */
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
@@ -70,19 +64,19 @@ public class MultiPartTest extends HttpServlet
             out.println("<p>");
 
             Collection<Part> parts = request.getParts();
-            out.println("<b>Parts:</b>&nbsp;"+parts.size());
-            for (Part p: parts)
+            out.println("<b>Parts:</b>&nbsp;" + parts.size());
+            for (Part p : parts)
             {
-                out.println("<h3>"+p.getName()+"</h3>");
-                out.println("<b>Size:</b>&nbsp;"+p.getSize());
+                out.println("<h3>" + p.getName() + "</h3>");
+                out.println("<b>Size:</b>&nbsp;" + p.getSize());
                 if (p.getContentType() == null || p.getContentType().startsWith("text/plain"))
                 {
                     out.println("<p>");
-                    IO.copy(p.getInputStream(),out);
+                    IO.copy(p.getInputStream(), out);
                     out.println("</p>");
                 }
-            } 
-            out.println("</body>");            
+            }
+            out.println("</body>");
             out.println("</html>");
             out.flush();
         }
@@ -96,10 +90,9 @@ public class MultiPartTest extends HttpServlet
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-    {      
+    {
         try
         {
             response.setContentType("text/html");
@@ -107,7 +100,7 @@ public class MultiPartTest extends HttpServlet
             out.println("<html>");
             out.println("<body>");
             out.println("<h1>Use a POST Instead</h1>");
-            out.println("</body>");            
+            out.println("</body>");
             out.println("</html>");
             out.flush();
         }
@@ -116,8 +109,4 @@ public class MultiPartTest extends HttpServlet
             throw new ServletException(e);
         }
     }
-    
-
-  
-   
 }

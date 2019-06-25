@@ -71,11 +71,11 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     private static final Logger LOG = Log.getLogger(WebSocketRemoteEndpoint.class);
 
-    private final static int ASYNC_MASK = 0x0000FFFF;
-    private final static int BLOCK_MASK = 0x00010000;
-    private final static int STREAM_MASK = 0x00020000;
-    private final static int PARTIAL_TEXT_MASK = 0x00040000;
-    private final static int PARTIAL_BINARY_MASK = 0x00080000;
+    private static final int ASYNC_MASK = 0x0000FFFF;
+    private static final int BLOCK_MASK = 0x00010000;
+    private static final int STREAM_MASK = 0x00020000;
+    private static final int PARTIAL_TEXT_MASK = 0x00040000;
+    private static final int PARTIAL_BINARY_MASK = 0x00080000;
 
     private final LogicalConnection connection;
     private final OutgoingFrames outgoing;
@@ -101,7 +101,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     private void blockingWrite(WebSocketFrame frame) throws IOException
     {
-        try(WriteBlocker b=blocker.acquireWriteBlocker())
+        try (WriteBlocker b = blocker.acquireWriteBlocker())
         {
             uncheckedSendFrame(frame, b);
             b.block();
@@ -211,7 +211,6 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                     if (msgState.compareAndSet(PARTIAL_TEXT_MASK, 0))
                         return;
                     throw new IllegalStateException(String.format("Not Partial Text in state %x", state));
-
             }
         }
     }
@@ -224,7 +223,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public InetSocketAddress getInetSocketAddress()
     {
-        if(connection == null)
+        if (connection == null)
             return null;
         return connection.getRemoteAddress();
     }

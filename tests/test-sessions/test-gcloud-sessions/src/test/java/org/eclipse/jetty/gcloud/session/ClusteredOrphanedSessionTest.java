@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.gcloud.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
@@ -27,8 +26,6 @@ import org.junit.jupiter.api.Test;
 
 /**
  * ClusteredOrphanedSessionTest
- *
- *
  */
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
@@ -36,21 +33,20 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     public static GCloudSessionTestSupport __testSupport;
 
     @BeforeAll
-    public static void setUp () throws Exception
+    public static void setUp() throws Exception
     {
         __testSupport = new GCloudSessionTestSupport();
         __testSupport.setUp();
     }
 
     @AfterAll
-    public static void tearDown () throws Exception
+    public static void tearDown() throws Exception
     {
         __testSupport.deleteSessions();
         __testSupport.tearDown();
     }
 
-
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
@@ -58,7 +54,6 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     {
         return GCloudSessionTestSupport.newSessionDataStoreFactory(__testSupport.getDatastore());
     }
-    
 
     @Test
     @Override

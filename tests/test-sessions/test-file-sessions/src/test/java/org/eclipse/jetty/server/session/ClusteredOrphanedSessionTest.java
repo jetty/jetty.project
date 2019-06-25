@@ -30,17 +30,16 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     @BeforeEach
     public void before() throws Exception
     {
-       FileTestHelper.setup();
+        FileTestHelper.setup();
     }
-    
+
     @AfterEach
     public void after()
     {
-       FileTestHelper.teardown();
+        FileTestHelper.teardown();
     }
- 
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
@@ -48,7 +47,7 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     {
         return FileTestHelper.newSessionDataStoreFactory();
     }
-    
+
     @Test
     @Override
     public void testOrphanedSession() throws Exception

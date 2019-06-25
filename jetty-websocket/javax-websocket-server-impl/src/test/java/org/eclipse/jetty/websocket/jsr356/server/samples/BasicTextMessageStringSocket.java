@@ -23,13 +23,13 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicTextMessageStringSocket extends TrackingSocket
 {
     @OnMessage
     public void onText(String message)
     {
-        addEvent("onText(%s)",message);
+        addEvent("onText(%s)", message);
         dataLatch.countDown();
     }
 }

@@ -46,18 +46,18 @@ public class RFC6455ExamplesGeneratorTest
         ByteBuffer expected1 = ByteBuffer.allocate(5);
 
         expected1.put(new byte[]
-                { (byte)0x01, (byte)0x03, (byte)0x48, (byte)0x65, (byte)0x6c });
+            {(byte)0x01, (byte)0x03, (byte)0x48, (byte)0x65, (byte)0x6c});
 
         ByteBuffer expected2 = ByteBuffer.allocate(4);
 
         expected2.put(new byte[]
-                { (byte)0x80, (byte)0x02, (byte)0x6c, (byte)0x6f });
+            {(byte)0x80, (byte)0x02, (byte)0x6c, (byte)0x6f});
 
         expected1.flip();
         expected2.flip();
 
-        ByteBufferAssert.assertEquals("t1 buffers are not equal",expected1,actual1);
-        ByteBufferAssert.assertEquals("t2 buffers are not equal",expected2,actual2);
+        ByteBufferAssert.assertEquals("t1 buffers are not equal", expected1, actual1);
+        ByteBufferAssert.assertEquals("t2 buffers are not equal", expected2, actual2);
     }
 
     @Test
@@ -65,7 +65,7 @@ public class RFC6455ExamplesGeneratorTest
     {
         PongFrame pong = new PongFrame().setPayload("Hello");
         pong.setMask(new byte[]
-                { 0x37, (byte)0xfa, 0x21, 0x3d });
+            {0x37, (byte)0xfa, 0x21, 0x3d});
 
         ByteBuffer actual = UnitGenerator.generate(pong);
 
@@ -73,10 +73,10 @@ public class RFC6455ExamplesGeneratorTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Pong request
         expected.put(new byte[]
-                { (byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58 });
+            {(byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
         expected.flip(); // make readable
 
-        ByteBufferAssert.assertEquals("pong buffers are not equal",expected,actual);
+        ByteBufferAssert.assertEquals("pong buffers are not equal", expected, actual);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class RFC6455ExamplesGeneratorTest
     {
         WebSocketFrame text = new TextFrame().setPayload("Hello");
         text.setMask(new byte[]
-                { 0x37, (byte)0xfa, 0x21, 0x3d });
+            {0x37, (byte)0xfa, 0x21, 0x3d});
 
         ByteBuffer actual = UnitGenerator.generate(text);
 
@@ -92,10 +92,10 @@ public class RFC6455ExamplesGeneratorTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame masked text message
         expected.put(new byte[]
-                { (byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58 });
+            {(byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
         expected.flip(); // make readable
 
-        ByteBufferAssert.assertEquals("masked text buffers are not equal",expected,actual);
+        ByteBufferAssert.assertEquals("masked text buffers are not equal", expected, actual);
     }
 
     @Test
@@ -105,7 +105,7 @@ public class RFC6455ExamplesGeneratorTest
 
         BinaryFrame binary = new BinaryFrame();
         byte payload[] = new byte[dataSize];
-        Arrays.fill(payload,(byte)0x44);
+        Arrays.fill(payload, (byte)0x44);
         binary.setPayload(ByteBuffer.wrap(payload));
 
         ByteBuffer actual = UnitGenerator.generate(binary);
@@ -114,7 +114,7 @@ public class RFC6455ExamplesGeneratorTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         expected.put(new byte[]
-                { (byte)0x82, (byte)0x7E });
+            {(byte)0x82, (byte)0x7E});
         expected.putShort((short)0x01_00);
 
         for (int i = 0; i < dataSize; i++)
@@ -124,7 +124,7 @@ public class RFC6455ExamplesGeneratorTest
 
         expected.flip();
 
-        ByteBufferAssert.assertEquals("binary buffers are not equal",expected,actual);
+        ByteBufferAssert.assertEquals("binary buffers are not equal", expected, actual);
     }
 
     @Test
@@ -134,7 +134,7 @@ public class RFC6455ExamplesGeneratorTest
 
         BinaryFrame binary = new BinaryFrame();
         byte payload[] = new byte[dataSize];
-        Arrays.fill(payload,(byte)0x44);
+        Arrays.fill(payload, (byte)0x44);
         binary.setPayload(ByteBuffer.wrap(payload));
 
         ByteBuffer actual = UnitGenerator.generate(binary);
@@ -143,7 +143,7 @@ public class RFC6455ExamplesGeneratorTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 64k bytes binary message in a single unmasked frame
         expected.put(new byte[]
-                { (byte)0x82, (byte)0x7F });
+            {(byte)0x82, (byte)0x7F});
         expected.putInt(0x00_00_00_00);
         expected.putInt(0x00_01_00_00);
 
@@ -154,7 +154,7 @@ public class RFC6455ExamplesGeneratorTest
 
         expected.flip();
 
-        ByteBufferAssert.assertEquals("binary buffers are not equal",expected,actual);
+        ByteBufferAssert.assertEquals("binary buffers are not equal", expected, actual);
     }
 
     @Test
@@ -166,10 +166,10 @@ public class RFC6455ExamplesGeneratorTest
 
         ByteBuffer expected = ByteBuffer.allocate(10);
         expected.put(new byte[]
-                { (byte)0x89, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f });
+            {(byte)0x89, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f});
         expected.flip(); // make readable
 
-        ByteBufferAssert.assertEquals("Ping buffers",expected,actual);
+        ByteBufferAssert.assertEquals("Ping buffers", expected, actual);
     }
 
     @Test
@@ -182,10 +182,10 @@ public class RFC6455ExamplesGeneratorTest
         ByteBuffer expected = ByteBuffer.allocate(10);
 
         expected.put(new byte[]
-                { (byte)0x81, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f });
+            {(byte)0x81, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f});
 
         expected.flip();
 
-        ByteBufferAssert.assertEquals("t1 buffers are not equal",expected,actual);
+        ByteBufferAssert.assertEquals("t1 buffers are not equal", expected, actual);
     }
 }

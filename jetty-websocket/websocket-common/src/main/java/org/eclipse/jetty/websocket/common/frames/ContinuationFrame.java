@@ -37,7 +37,7 @@ public class ContinuationFrame extends DataFrame
         return this;
     }
 
-    public ContinuationFrame setPayload(byte buf[])
+    public ContinuationFrame setPayload(byte[] buf)
     {
         return this.setPayload(ByteBuffer.wrap(buf));
     }

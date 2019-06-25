@@ -38,13 +38,13 @@ public class AnnotatedStreamingSocket
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        capture.offer("onClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onClose(%d, %s)", statusCode, capture.q(reason));
     }
 
     @OnWebSocketConnect
     public void onConnect(Session sess)
     {
-        capture.offer("onConnect(%s)",sess);
+        capture.offer("onConnect(%s)", sess);
     }
 
     @OnWebSocketFrame
@@ -75,5 +75,4 @@ public class AnnotatedStreamingSocket
     public void onMessage(String message)
     {
     }
-
 }

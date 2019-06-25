@@ -1,14 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- Add a ContextProvider to the deployment manager                 -->
-<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-<!-- This scans the webapps directory for war files and directories  -->
-<!-- to deploy.                                                      -->
-<!-- This configuration must be used with jetty-deploy.xml, which    -->
-<!-- creates the deployment manager instance                         -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- Add a ContextProvider to the deployment manager                 --><!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --><!-- This scans the webapps directory for war files and directories  --><!-- to deploy.                                                      --><!-- This configuration must be used with jetty-deploy.xml, which    --><!-- creates the deployment manager instance                         --><!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Ref id="DeploymentManager">
     <Call name="addAppProvider">

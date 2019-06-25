@@ -203,7 +203,7 @@ public class HttpRequest implements Request
     {
         if (uri == null)
             uri = buildURI(true);
-        
+
         @SuppressWarnings("ReferenceEquality")
         boolean isNullURI = (uri == NULL_URI);
         return isNullURI ? null : uri;
@@ -300,7 +300,7 @@ public class HttpRequest implements Request
     @Override
     public List<HttpCookie> getCookies()
     {
-        return cookies != null ? cookies : Collections.<HttpCookie>emptyList();
+        return cookies != null ? cookies : Collections.emptyList();
     }
 
     @Override
@@ -324,7 +324,7 @@ public class HttpRequest implements Request
     @Override
     public Map<String, Object> getAttributes()
     {
-        return attributes != null ? attributes : Collections.<String, Object>emptyMap();
+        return attributes != null ? attributes : Collections.emptyMap();
     }
 
     @Override
@@ -340,12 +340,14 @@ public class HttpRequest implements Request
         // This method is invoked often in a request/response conversation,
         // so we avoid allocation if there is no need to filter.
         if (type == null || requestListeners == null)
-            return requestListeners != null ? (List<T>)requestListeners : Collections.<T>emptyList();
+            return requestListeners != null ? (List<T>)requestListeners : Collections.emptyList();
 
         ArrayList<T> result = new ArrayList<>();
         for (RequestListener listener : requestListeners)
+        {
             if (type.isInstance(listener))
                 result.add((T)listener);
+        }
         return result;
     }
 
@@ -683,7 +685,7 @@ public class HttpRequest implements Request
             return listener.get();
         }
         catch (ExecutionException x)
-        {            
+        {
             // Previously this method used a timed get on the future, which was in a race
             // with the timeouts implemented in HttpDestination and HttpConnection. The change to
             // make those timeouts relative to the timestamp taken in sent() has made that race
@@ -695,7 +697,7 @@ public class HttpRequest implements Request
             // Thus for backwards compatibility we unwrap the timeout exception here
             if (x.getCause() instanceof TimeoutException)
             {
-                TimeoutException t = (TimeoutException) (x.getCause());
+                TimeoutException t = (TimeoutException)(x.getCause());
                 abort(t);
                 throw t;
             }
@@ -704,7 +706,7 @@ public class HttpRequest implements Request
             throw x;
         }
         catch (Throwable x)
-        {   
+        {
             // Differently from the Future, the semantic of this method is that if
             // the send() is interrupted or times out, we abort the request.
             abort(x);
@@ -717,7 +719,7 @@ public class HttpRequest implements Request
     {
         send(this, listener);
     }
-    
+
     private void send(HttpRequest request, Response.CompleteListener listener)
     {
         if (listener != null)
@@ -731,7 +733,7 @@ public class HttpRequest implements Request
         long timeout = getTimeout();
         timeoutAt = timeout > 0 ? System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) : -1;
     }
-    
+
     /**
      * @return The nanoTime at which the timeout expires or -1 if there is no timeout.
      * @see #timeout(long, TimeUnit)
@@ -740,7 +742,7 @@ public class HttpRequest implements Request
     {
         return timeoutAt;
     }
-    
+
     protected List<Response.ResponseListener> getResponseListeners()
     {
         return responseListeners;

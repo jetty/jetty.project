@@ -24,7 +24,6 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
-
 import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -55,50 +54,50 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     @Override
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
     {
-        return _delegate.chooseClientAlias(keyType,issuers,socket);
+        return _delegate.chooseClientAlias(keyType, issuers, socket);
     }
 
     @Override
     public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
     {
-        return _delegate.chooseEngineClientAlias(keyType,issuers,engine);
+        return _delegate.chooseEngineClientAlias(keyType, issuers, engine);
     }
 
     protected String chooseServerAlias(String keyType, Principal[] issuers, Collection<SNIMatcher> matchers, SSLSession session)
     {
         // Look for the aliases that are suitable for the keytype and issuers
-        String[] aliases = _delegate.getServerAliases(keyType,issuers);
-        if (aliases==null || aliases.length==0)
+        String[] aliases = _delegate.getServerAliases(keyType, issuers);
+        if (aliases == null || aliases.length == 0)
             return null;
 
         // Look for the SNI information.
-        String host=null;
-        X509 x509=null;
-        if (matchers!=null)
+        String host = null;
+        X509 x509 = null;
+        if (matchers != null)
         {
             for (SNIMatcher m : matchers)
             {
                 if (m instanceof SslContextFactory.AliasSNIMatcher)
                 {
                     SslContextFactory.AliasSNIMatcher matcher = (SslContextFactory.AliasSNIMatcher)m;
-                    host=matcher.getHost();
-                    x509=matcher.getX509();
+                    host = matcher.getHost();
+                    x509 = matcher.getX509();
                     break;
                 }
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Matched {} with {} from {}",host,x509,Arrays.asList(aliases));
+            LOG.debug("Matched {} with {} from {}", host, x509, Arrays.asList(aliases));
 
         // Check if the SNI selected alias is allowable
-        if (x509!=null)
+        if (x509 != null)
         {
-            for (String a:aliases)
+            for (String a : aliases)
             {
                 if (a.equals(x509.getAlias()))
                 {
-                    session.putValue(SNI_X509,x509);
+                    session.putValue(SNI_X509, x509);
                     return a;
                 }
             }
@@ -111,22 +110,22 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {
         SSLSocket sslSocket = (SSLSocket)socket;
-        String alias = socket==null?NO_MATCHERS:chooseServerAlias(keyType,issuers,sslSocket.getSSLParameters().getSNIMatchers(),sslSocket.getHandshakeSession());
-        if (alias==NO_MATCHERS)
-            alias=_delegate.chooseServerAlias(keyType,issuers,socket);
+        String alias = socket == null ? NO_MATCHERS : chooseServerAlias(keyType, issuers, sslSocket.getSSLParameters().getSNIMatchers(), sslSocket.getHandshakeSession());
+        if (alias == NO_MATCHERS)
+            alias = _delegate.chooseServerAlias(keyType, issuers, socket);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose alias {}/{} on {}",alias,keyType,socket);
+            LOG.debug("Chose alias {}/{} on {}", alias, keyType, socket);
         return alias;
     }
 
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
-        String alias = engine==null?NO_MATCHERS:chooseServerAlias(keyType,issuers,engine.getSSLParameters().getSNIMatchers(),engine.getHandshakeSession());
-        if (alias==NO_MATCHERS)
-            alias=_delegate.chooseEngineServerAlias(keyType,issuers,engine);
+        String alias = engine == null ? NO_MATCHERS : chooseServerAlias(keyType, issuers, engine.getSSLParameters().getSNIMatchers(), engine.getHandshakeSession());
+        if (alias == NO_MATCHERS)
+            alias = _delegate.chooseEngineServerAlias(keyType, issuers, engine);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose alias {}/{} on {}",alias,keyType,engine);
+            LOG.debug("Chose alias {}/{} on {}", alias, keyType, engine);
         return alias;
     }
 
@@ -139,7 +138,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     @Override
     public String[] getClientAliases(String keyType, Principal[] issuers)
     {
-        return _delegate.getClientAliases(keyType,issuers);
+        return _delegate.getClientAliases(keyType, issuers);
     }
 
     @Override
@@ -151,6 +150,6 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     @Override
     public String[] getServerAliases(String keyType, Principal[] issuers)
     {
-        return _delegate.getServerAliases(keyType,issuers);
+        return _delegate.getServerAliases(keyType, issuers);
     }
 }

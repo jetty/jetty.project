@@ -123,7 +123,7 @@ public class WebSocketExtensionFactory extends ContainerLifeCycle implements Ext
         }
         catch (Exception e)
         {
-            throw new WebSocketException("Cannot instantiate extension: " + extClass,e);
+            throw new WebSocketException("Cannot instantiate extension: " + extClass, e);
         }
     }
 

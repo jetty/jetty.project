@@ -33,12 +33,12 @@ import org.osgi.service.url.URLStreamHandlerService;
  */
 public class WarUrlActivator implements BundleActivator
 {
-    
+
     private ServiceRegistration _reg;
 
     /**
      * Register the url stream handler factory.
-     * 
+     *
      * @param context the {@link BundleContext} to use
      */
     @SuppressWarnings("unchecked")
@@ -46,11 +46,11 @@ public class WarUrlActivator implements BundleActivator
     public void start(BundleContext context) throws Exception
     {
         Dictionary props = new Hashtable();
-        props.put(URLConstants.URL_HANDLER_PROTOCOL,new String[] {"war"});
+        props.put(URLConstants.URL_HANDLER_PROTOCOL, new String[]{"war"});
         context.registerService(URLStreamHandlerService.class.getName(),
-                new WarUrlStreamHandler(), props);
+            new WarUrlStreamHandler(), props);
     }
-    
+
     /**
      * Remove the url stream handler. (probably not required,
      * as osgi might shutdown every registered service
@@ -71,5 +71,4 @@ public class WarUrlActivator implements BundleActivator
             e.printStackTrace();
         }
     }
-    
 }

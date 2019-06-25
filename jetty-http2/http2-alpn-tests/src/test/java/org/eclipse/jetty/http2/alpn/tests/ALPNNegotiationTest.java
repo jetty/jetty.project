@@ -28,7 +28,6 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -209,8 +208,8 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             // Verify that the server really speaks http/1.1
 
             OutputStream output = client.getOutputStream();
-            output.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            output.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost:" + address.getPort() + "\r\n" +
                     "\r\n" +
                     "").getBytes(StandardCharsets.UTF_8));
@@ -261,8 +260,8 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             // Verify that the server really speaks http/1.1
 
             OutputStream output = client.getOutputStream();
-            output.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            output.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost:" + address.getPort() + "\r\n" +
                     "\r\n" +
                     "").getBytes(StandardCharsets.UTF_8));
@@ -312,8 +311,8 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             // Verify that the server really speaks http/1.1
 
             OutputStream output = client.getOutputStream();
-            output.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            output.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost:" + address.getPort() + "\r\n" +
                     "\r\n" +
                     "").getBytes(StandardCharsets.UTF_8));

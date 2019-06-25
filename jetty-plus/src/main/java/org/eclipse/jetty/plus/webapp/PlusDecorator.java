@@ -28,8 +28,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * PlusDecorator
- *
- *
  */
 public class PlusDecorator implements Decorator
 {
@@ -37,13 +35,13 @@ public class PlusDecorator implements Decorator
 
     protected WebAppContext _context;
 
-    public PlusDecorator (WebAppContext context)
+    public PlusDecorator(WebAppContext context)
     {
         _context = context;
     }
 
     @Override
-    public Object decorate (Object o)
+    public Object decorate(Object o)
     {
 
         RunAsCollection runAses = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
@@ -70,7 +68,7 @@ public class PlusDecorator implements Decorator
     }
 
     @Override
-    public void destroy (Object o)
+    public void destroy(Object o)
     {
         LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
         if (callbacks != null)
@@ -81,7 +79,7 @@ public class PlusDecorator implements Decorator
             }
             catch (Exception e)
             {
-                LOG.warn("Destroying instance of "+o.getClass(), e);
+                LOG.warn("Destroying instance of " + o.getClass(), e);
             }
         }
     }

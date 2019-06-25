@@ -71,8 +71,8 @@ public interface Promise<C>
      * {@link CompletableFuture#completeExceptionally(Throwable)}.</p>
      *
      * @param completable the CompletableFuture to convert into a promise
-     * @return a promise that when completed, completes the given CompletableFuture
      * @param <T> the type of the result
+     * @return a promise that when completed, completes the given CompletableFuture
      */
     static <T> Promise<T> from(CompletableFuture<? super T> completable)
     {

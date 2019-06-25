@@ -29,7 +29,7 @@ public class PongFrame extends ControlFrame
     {
         super(OpCode.PONG);
     }
-    
+
     public PongFrame setPayload(byte[] bytes)
     {
         setPayload(ByteBuffer.wrap(bytes));

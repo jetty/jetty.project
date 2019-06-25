@@ -69,12 +69,12 @@ public interface ContentProvider extends Iterable<ByteBuffer>
      * An extension of {@link ContentProvider} that provides a content type string
      * to be used as a {@code Content-Type} HTTP header in requests.
      */
-    public interface Typed extends ContentProvider
+    interface Typed extends ContentProvider
     {
         /**
          * @return the content type string such as "application/octet-stream" or
          * "application/json;charset=UTF8", or null if no content type must be set
          */
-        public String getContentType();
+        String getContentType();
     }
 }

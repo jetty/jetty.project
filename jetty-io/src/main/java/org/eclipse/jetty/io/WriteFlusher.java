@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  * flush and should organize for the {@link #completeWrite()} method to be called when a subsequent call to flush
  * should  be able to make more progress.
  */
-abstract public class WriteFlusher
+public abstract class WriteFlusher
 {
     private static final Logger LOG = Log.getLogger(WriteFlusher.class);
     private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
@@ -98,7 +98,7 @@ abstract public class WriteFlusher
      * Tries to update the current state to the given new state.
      *
      * @param previous the expected current state
-     * @param next     the desired new state
+     * @param next the desired new state
      * @return the previous state or null if the state transition failed
      * @throws WritePendingException if currentState is WRITING and new state is WRITING (api usage error)
      */
@@ -233,15 +233,15 @@ abstract public class WriteFlusher
     {
         State s = _state.get();
         return (s instanceof PendingState)
-                ? ((PendingState)s).getCallbackInvocationType()
-                : Invocable.InvocationType.BLOCKING;
+            ? ((PendingState)s).getCallbackInvocationType()
+            : Invocable.InvocationType.BLOCKING;
     }
 
     /**
      * Abstract call to be implemented by specific WriteFlushers. It should schedule a call to {@link #completeWrite()}
      * or {@link #onFail(Throwable)} when appropriate.
      */
-    abstract protected void onIncompleteFlush();
+    protected abstract void onIncompleteFlush();
 
     /**
      * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition
@@ -253,14 +253,14 @@ abstract public class WriteFlusher
      * If all buffers have been written it calls callback.complete().
      *
      * @param callback the callback to call on either failed or complete
-     * @param buffers  the buffers to flush to the endpoint
+     * @param buffers the buffers to flush to the endpoint
      * @throws WritePendingException if unable to write due to prior pending write
      */
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
         callback = Objects.requireNonNull(callback);
 
-        if(isFailed())
+        if (isFailed())
         {
             fail(callback);
             return;
@@ -324,7 +324,9 @@ abstract public class WriteFlusher
 
                 case IDLE:
                     for (Throwable t : suppressed)
+                    {
                         LOG.warn(t);
+                    }
                     return;
 
                 default:

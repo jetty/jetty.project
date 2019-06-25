@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -63,7 +62,7 @@ public class AbstractServerTest
 
     protected void startServer(ServerSessionListener listener) throws Exception
     {
-        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(),listener));
+        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener));
         server.start();
     }
 
@@ -90,7 +89,7 @@ public class AbstractServerTest
     @AfterEach
     public void dispose() throws Exception
     {
-        if (server!=null)
+        if (server != null)
             server.stop();
     }
 

@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.websocket.Extension;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -58,7 +57,8 @@ public class JsrExtension implements Extension
 
     /**
      * A configured extension
-     * @param cfg the configuration for the extension 
+     *
+     * @param cfg the configuration for the extension
      */
     public JsrExtension(ExtensionConfig cfg)
     {
@@ -67,13 +67,14 @@ public class JsrExtension implements Extension
         {
             for (Map.Entry<String, String> entry : cfg.getParameters().entrySet())
             {
-                parameters.add(new JsrParameter(entry.getKey(),entry.getValue()));
+                parameters.add(new JsrParameter(entry.getKey(), entry.getValue()));
             }
         }
     }
 
     /**
      * A potential (unconfigured) extension
+     *
      * @param name the name of the extension
      */
     public JsrExtension(String name)
@@ -96,10 +97,12 @@ public class JsrExtension implements Extension
     @Override
     public boolean equals(Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
-        JsrExtension that = (JsrExtension) o;
+        JsrExtension that = (JsrExtension)o;
 
         return name != null ? name.equals(that.name) : that.name == null;
     }
@@ -123,7 +126,7 @@ public class JsrExtension implements Extension
             if (value != null)
             {
                 str.append('=');
-                QuoteUtil.quoteIfNeeded(str,value,";=");
+                QuoteUtil.quoteIfNeeded(str, value, ";=");
             }
         }
         return str.toString();

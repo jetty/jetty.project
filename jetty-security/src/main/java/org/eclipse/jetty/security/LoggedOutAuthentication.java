@@ -34,27 +34,26 @@ public class LoggedOutAuthentication implements Authentication.NonAuthenticated
 {
     private LoginAuthenticator _authenticator;
 
-    public LoggedOutAuthentication (LoginAuthenticator authenticator)
+    public LoggedOutAuthentication(LoginAuthenticator authenticator)
     {
         _authenticator = authenticator;
     }
-    
-    
+
     @Override
     public Authentication login(String username, Object password, ServletRequest request)
     {
         if (username == null)
             return null;
-        
+
         UserIdentity identity = _authenticator.login(username, password, request);
         if (identity != null)
         {
-            IdentityService identity_service = _authenticator.getLoginService().getIdentityService();
-            UserAuthentication authentication = new UserAuthentication("API",identity);
-            if (identity_service != null)
-                identity_service.associate(identity);
+            IdentityService identityService = _authenticator.getLoginService().getIdentityService();
+            UserAuthentication authentication = new UserAuthentication("API", identity);
+            if (identityService != null)
+                identityService.associate(identity);
             return authentication;
         }
         return null;
-    } 
+    }
 }

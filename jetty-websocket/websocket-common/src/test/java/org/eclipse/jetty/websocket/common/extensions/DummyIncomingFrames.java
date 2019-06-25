@@ -39,12 +39,12 @@ public class DummyIncomingFrames implements IncomingFrames
     @Override
     public void incomingFrame(Frame frame)
     {
-        LOG.debug("incomingFrame({})",frame);
+        LOG.debug("incomingFrame({})", frame);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]",this.getClass().getSimpleName(),hashCode(),id);
+        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), hashCode(), id);
     }
 }

@@ -45,13 +45,13 @@ public class DeMaskProcessor implements PayloadProcessor
         {
             if (remaining >= 4 && (offset & 3) == 0)
             {
-                payload.putInt(start,payload.getInt(start) ^ maskInt);
+                payload.putInt(start, payload.getInt(start) ^ maskInt);
                 start += 4;
                 offset += 4;
             }
             else
             {
-                payload.put(start,(byte)(payload.get(start) ^ maskBytes[offset & 3]));
+                payload.put(start, (byte)(payload.get(start) ^ maskBytes[offset & 3]));
                 ++start;
                 ++offset;
             }
@@ -66,7 +66,9 @@ public class DeMaskProcessor implements PayloadProcessor
         if (mask != null)
         {
             for (byte maskByte : mask)
+            {
                 maskInt = (maskInt << 8) + (maskByte & 0xFF);
+            }
         }
         this.maskInt = maskInt;
         this.maskOffset = 0;

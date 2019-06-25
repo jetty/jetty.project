@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.annotations;
 
-
 import javax.annotation.security.DeclareRoles;
 import javax.servlet.Servlet;
 
@@ -44,7 +43,6 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
         _context = context;
     }
 
-
     /**
      * @see org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler#doHandle(java.lang.Class)
      */
@@ -60,7 +58,7 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
             return;
         }
 
-        DeclareRoles declareRoles = (DeclareRoles) clazz.getAnnotation(DeclareRoles.class);
+        DeclareRoles declareRoles = (DeclareRoles)clazz.getAnnotation(DeclareRoles.class);
         if (declareRoles == null)
             return;
 
@@ -68,9 +66,10 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
 
         if (roles != null && roles.length > 0)
         {
-            for (String r:roles)
+            for (String r : roles)
+            {
                 ((ConstraintSecurityHandler)_context.getSecurityHandler()).addRole(r);
+            }
         }
     }
-
 }

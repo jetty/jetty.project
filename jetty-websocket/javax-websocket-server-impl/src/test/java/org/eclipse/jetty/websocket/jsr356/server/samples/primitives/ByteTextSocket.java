@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
 
 import java.io.IOException;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -34,7 +33,7 @@ import org.eclipse.jetty.websocket.common.util.StackUtil;
 public class ByteTextSocket
 {
     private static final Logger LOG = Log.getLogger(ByteTextSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -46,14 +45,14 @@ public class ByteTextSocket
     @OnMessage
     public void onMessage(byte b) throws IOException
     {
-        String msg = String.format("0x%02X",b);
+        String msg = String.format("0x%02X", b);
         session.getAsyncRemote().sendText(msg);
     }
 
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

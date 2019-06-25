@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,6 +36,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletRangesTest
 {
@@ -55,7 +55,7 @@ public class DefaultServletRangesTest
     {
         server = new Server();
 
-        connector = new LocalConnector(server); 
+        connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
         context = new ServletContextHandler();
@@ -64,7 +64,6 @@ public class DefaultServletRangesTest
 
         server.setHandler(context);
         server.addConnector(connector);
-
 
         testdir.ensureEmpty();
         File resBase = testdir.getPathFile("docroot").toFile();
@@ -92,14 +91,14 @@ public class DefaultServletRangesTest
     {
         String response;
 
-        response= connector.getResponse(
-                "GET /context/data.txt HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Connection: close\r\n"+
-                        "\r\n");
+        response = connector.getResponse(
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
         assertResponseContains("200 OK", response);
         assertResponseContains("Accept-Ranges: bytes", response);
-        assertResponseContains(DATA,response);
+        assertResponseContains(DATA, response);
     }
 
     @Test
@@ -108,15 +107,15 @@ public class DefaultServletRangesTest
         String response;
 
         response = connector.getResponse(
-                "GET /context/data.txt HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Connection: close\r\n"+
-                        "Range: bytes=0-9\r\n" +
-                        "\r\n");
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "Range: bytes=0-9\r\n" +
+                "\r\n");
         assertResponseContains("206 Partial", response);
         assertResponseContains("Content-Type: text/plain", response);
         assertResponseContains("Content-Range: bytes 0-9/80", response);
-        assertResponseContains(DATA.substring(0,10), response);
+        assertResponseContains(DATA.substring(0, 10), response);
     }
 
     @Test
@@ -125,15 +124,15 @@ public class DefaultServletRangesTest
         String response;
 
         response = connector.getResponse(
-                "GET /context/data.txt HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Connection: close\r\n"+
-                        "Range: bytes=3-9\r\n" +
-                        "\r\n");
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "Range: bytes=3-9\r\n" +
+                "\r\n");
         assertResponseContains("206 Partial", response);
         assertResponseContains("Content-Type: text/plain", response);
         assertResponseContains("Content-Range: bytes 3-9/80", response);
-        assertResponseContains(DATA.substring(3,10), response);
+        assertResponseContains(DATA.substring(3, 10), response);
     }
 
     @Test
@@ -141,9 +140,9 @@ public class DefaultServletRangesTest
     {
         String response;
         response = connector.getResponse(
-                "GET /context/data.txt HTTP/1.1\r\n" +
+            "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n"+
+                "Connection: close\r\n" +
                 "Range: bytes=0-9,20-29,40-49\r\n" +
                 "\r\n");
         int start = response.indexOf("--jetty");
@@ -154,29 +153,27 @@ public class DefaultServletRangesTest
         assertResponseContains("Content-Range: bytes 0-9/80", response);
         assertResponseContains("Content-Range: bytes 20-29/80", response);
         assertResponseContains("Content-Range: bytes 40-49/80", response);
-        assertResponseContains(DATA.substring(0,10), response);
-        assertResponseContains(DATA.substring(20,30), response);
-        assertResponseContains(DATA.substring(40,50), response);
+        assertResponseContains(DATA.substring(0, 10), response);
+        assertResponseContains(DATA.substring(20, 30), response);
+        assertResponseContains(DATA.substring(40, 50), response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
-
     }
 
     @Test
     public void testMultipleSameRangeRequests() throws Exception
     {
-        StringBuilder stringBuilder = new StringBuilder( );
-        for(int i = 0; i < 1000; i++)
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < 1000; i++)
         {
-            stringBuilder.append( "10-60," );
+            stringBuilder.append("10-60,");
         }
-
 
         String response;
         response = connector.getResponse(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n"+
-                "Range: bytes=" + stringBuilder.toString() +"0-2\r\n" +
+                "Connection: close\r\n" +
+                "Range: bytes=" + stringBuilder.toString() + "0-2\r\n" +
                 "\r\n");
         int start = response.indexOf("--jetty");
         String body = response.substring(start);
@@ -186,30 +183,29 @@ public class DefaultServletRangesTest
 
         assertResponseContains("Content-Range: bytes 10-60/80", response);
         assertResponseContains("Content-Range: bytes 0-2/80", response);
-        assertEquals( 2, response.split( "Content-Range: bytes 10-60/80" ).length, //
-                      "Content range 0-60/80 in response not only 1:" + response );
+        assertEquals(2, response.split("Content-Range: bytes 10-60/80").length, //
+            "Content range 0-60/80 in response not only 1:" + response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
     }
 
     @Test
     public void testMultipleSameRangeRequestsTooLargeHeader() throws Exception
     {
-        StringBuilder stringBuilder = new StringBuilder( );
-        for(int i = 0; i < 2000; i++)
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < 2000; i++)
         {
-            stringBuilder.append( "10-60," );
+            stringBuilder.append("10-60,");
         }
-
 
         String response;
         response = connector.getResponse(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n"+
-                "Range: bytes=" + stringBuilder.toString() +"0-2\r\n" +
+                "Connection: close\r\n" +
+                "Range: bytes=" + stringBuilder.toString() + "0-2\r\n" +
                 "\r\n");
         int start = response.indexOf("--jetty");
-        assertEquals( -1, start );
+        assertEquals(-1, start);
         assertResponseContains("HTTP/1.1 431 Request Header Fields Too Large", response);
     }
 
@@ -218,9 +214,9 @@ public class DefaultServletRangesTest
     {
         String response;
         response = connector.getResponse(
-                "GET /context/data.txt HTTP/1.1\r\n" +
+            "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n"+
+                "Connection: close\r\n" +
                 "Range: bytes=20-\r\n" +
                 "\r\n");
         assertResponseContains("206 Partial", response);
@@ -234,9 +230,9 @@ public class DefaultServletRangesTest
     {
         String response;
         response = connector.getResponse(
-                "GET /context/data.txt HTTP/1.1\r\n" +
+            "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n"+
+                "Connection: close\r\n" +
                 "Range: bytes=-20\r\n" +
                 "\r\n");
         assertResponseContains("206 Partial", response);
@@ -250,20 +246,17 @@ public class DefaultServletRangesTest
     {
         String response;
         response = connector.getResponse(
-                "GET /context/data.txt HTTP/1.1\r\n" +
+            "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n"+
+                "Connection: close\r\n" +
                 "Range: bytes=100-110\r\n" +
                 "\r\n");
         assertResponseContains("416 Range Not Satisfiable", response);
     }
 
-
-
-
     private void createFile(File file, String str) throws IOException
     {
-        try(OutputStream out = Files.newOutputStream( file.toPath()))
+        try (OutputStream out = Files.newOutputStream(file.toPath()))
         {
             out.write(str.getBytes(StandardCharsets.UTF_8));
             out.flush();
@@ -272,12 +265,12 @@ public class DefaultServletRangesTest
 
     private void assertResponseNotContains(String forbidden, String response)
     {
-        assertThat(response,Matchers.not(Matchers.containsString(forbidden)));
+        assertThat(response, Matchers.not(Matchers.containsString(forbidden)));
     }
 
     private int assertResponseContains(String expected, String response)
     {
-        assertThat(response,Matchers.containsString(expected));
+        assertThat(response, Matchers.containsString(expected));
         return response.indexOf(expected);
     }
 }

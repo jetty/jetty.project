@@ -25,12 +25,12 @@ package org.eclipse.jetty.websocket.server.pathmap;
 public abstract class PathSpec
 {
     private final String spec;
-    
+
     protected PathSpec(String spec)
     {
         this.spec = spec;
     }
-    
+
     public String getSpec()
     {
         return spec;

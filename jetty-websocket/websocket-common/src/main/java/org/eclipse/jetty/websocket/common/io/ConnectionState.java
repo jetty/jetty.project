@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * WebSocket Connection State.
  * <p>
- *     {@code State} can only go in one direction from {@code HANDSHAKING} to {@code DISCONNECTED}.
+ * {@code State} can only go in one direction from {@code HANDSHAKING} to {@code DISCONNECTED}.
  * </p>
  */
 public class ConnectionState
@@ -164,7 +164,6 @@ public class ConnectionState
         }
     }
 
-
     private String toString(State state)
     {
         return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), state);
@@ -220,5 +219,4 @@ public class ConnectionState
          */
         DISCONNECTED
     }
-
 }

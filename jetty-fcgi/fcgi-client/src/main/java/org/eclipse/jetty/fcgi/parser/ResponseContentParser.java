@@ -121,8 +121,8 @@ public class ResponseContentParser extends StreamContentParser
                         // and will not parse it even if it is provided,
                         // so we have to parse it raw ourselves here.
                         boolean rawContent = fields.size() == 0 ||
-                                (fields.get(HttpHeader.CONTENT_LENGTH) == null &&
-                                        fields.get(HttpHeader.TRANSFER_ENCODING) == null);
+                            (fields.get(HttpHeader.CONTENT_LENGTH) == null &&
+                                fields.get(HttpHeader.TRANSFER_ENCODING) == null);
                         state = rawContent ? State.RAW_CONTENT : State.HTTP_CONTENT;
                         break;
                     }
@@ -233,7 +233,9 @@ public class ResponseContentParser extends StreamContentParser
             if (fields != null)
             {
                 for (HttpField field : fields)
+                {
                     notifyHeader(field);
+                }
             }
         }
 
@@ -289,7 +291,7 @@ public class ResponseContentParser extends StreamContentParser
         {
             return false;
         }
-        
+
         @Override
         public boolean messageComplete()
         {

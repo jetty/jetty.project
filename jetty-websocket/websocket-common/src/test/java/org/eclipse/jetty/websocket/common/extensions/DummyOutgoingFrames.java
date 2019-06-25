@@ -41,7 +41,7 @@ public class DummyOutgoingFrames implements OutgoingFrames
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        LOG.debug("outgoingFrame({},{})",frame,callback);
+        LOG.debug("outgoingFrame({},{})", frame, callback);
         if (callback != null)
         {
             callback.writeSuccess();
@@ -51,6 +51,6 @@ public class DummyOutgoingFrames implements OutgoingFrames
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]",this.getClass().getSimpleName(),hashCode(),id);
+        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), hashCode(), id);
     }
 }

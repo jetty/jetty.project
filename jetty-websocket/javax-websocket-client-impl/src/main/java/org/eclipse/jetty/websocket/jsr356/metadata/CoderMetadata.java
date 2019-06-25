@@ -22,19 +22,26 @@ import org.eclipse.jetty.websocket.jsr356.MessageType;
 
 /**
  * The immutable base metadata for a coder ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder}
- * 
- * @param <T>
- *            the specific type of coder ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder}
+ *
+ * @param <T> the specific type of coder ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder}
  */
 public abstract class CoderMetadata<T>
 {
-    /** The class for the Coder */
+    /**
+     * The class for the Coder
+     */
     private final Class<? extends T> coderClass;
-    /** The Class that the Decoder declares it decodes */
+    /**
+     * The Class that the Decoder declares it decodes
+     */
     private final Class<?> objType;
-    /** The Basic type of message the decoder handles */
+    /**
+     * The Basic type of message the decoder handles
+     */
     private final MessageType messageType;
-    /** Flag indicating if Decoder is for streaming (or not) */
+    /**
+     * Flag indicating if Decoder is for streaming (or not)
+     */
     private final boolean streamed;
 
     public CoderMetadata(Class<? extends T> coderClass, Class<?> objType, MessageType messageType, boolean streamed)

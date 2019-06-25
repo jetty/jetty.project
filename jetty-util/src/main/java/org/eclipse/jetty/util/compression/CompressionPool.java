@@ -44,7 +44,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
     public CompressionPool(int capacity)
     {
         _capacity = capacity;
-        _pool = (_capacity==0) ? null : new ConcurrentLinkedQueue<>();
+        _pool = (_capacity == 0) ? null : new ConcurrentLinkedQueue<>();
     }
 
     abstract protected T newObject();

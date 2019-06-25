@@ -61,7 +61,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         public String toPath()
         {
             StringBuilder pathlike = new StringBuilder();
-            pathlike.append(groupId.replace('.','/'));
+            pathlike.append(groupId.replace('.', '/'));
             pathlike.append('/').append(artifactId);
             pathlike.append('/').append(version);
             pathlike.append('/').append(artifactId);
@@ -76,7 +76,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
 
         public URI toCentralURI()
         {
-            return URI.create( mavenRepoUri + toPath());
+            return URI.create(mavenRepoUri + toPath());
         }
     }
 
@@ -86,19 +86,19 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
 
     public MavenLocalRepoFileInitializer(BaseHome baseHome)
     {
-        this(baseHome,null,true);
+        this(baseHome, null, true);
     }
 
     public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly)
     {
-        super(baseHome,"maven");
+        super(baseHome, "maven");
         this.localRepositoryDir = localRepoDir;
         this.readonly = readonly;
     }
 
-    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri )
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri)
     {
-        super(baseHome,"maven");
+        super(baseHome, "maven");
         this.localRepositoryDir = localRepoDir;
         this.readonly = readonly;
         this.mavenRepoUri = mavenRepoUri;
@@ -114,31 +114,30 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
             return false;
         }
 
-        Path destination = getDestination(uri,location);
-        
+        Path destination = getDestination(uri, location);
+
         if (isFilePresent(destination))
             return false;
 
-        
         // If using local repository
         if (this.localRepositoryDir != null)
         {
             // Grab copy from local repository (download if needed to local
             // repository)
             Path localRepoFile = getLocalRepoFile(coords);
-            
-            if (localRepoFile!=null)
+
+            if (localRepoFile != null)
             {
                 if (FS.ensureDirectoryExists(destination.getParent()))
-                    StartLog.log("MKDIR",_basehome.toShortForm(destination.getParent()));
-                StartLog.log("COPY ","%s to %s",localRepoFile,_basehome.toShortForm(destination));
-                Files.copy(localRepoFile,destination);
+                    StartLog.log("MKDIR", _basehome.toShortForm(destination.getParent()));
+                StartLog.log("COPY ", "%s to %s", localRepoFile, _basehome.toShortForm(destination));
+                Files.copy(localRepoFile, destination);
                 return true;
             }
         }
 
         // normal non-local repo version
-        download(coords.toCentralURI(),destination);
+        download(coords.toCentralURI(), destination);
         return true;
     }
 
@@ -151,10 +150,10 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         // Download, if needed
         if (!readonly)
         {
-            download(coords.toCentralURI(),localFile);
+            download(coords.toCentralURI(), localFile);
             return localFile;
         }
-        
+
         return null;
     }
 
@@ -172,15 +171,15 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
             ssp = ssp.substring(2);
         }
 
-        String parts[] = ssp.split("/");
+        String[] parts = ssp.split("/");
 
         if (StartLog.isDebugEnabled())
         {
-            StartLog.debug("ssp = %s",ssp);
-            StartLog.debug("parts = %d",parts.length);
+            StartLog.debug("ssp = %s", ssp);
+            StartLog.debug("parts = %d", parts.length);
             for (int i = 0; i < parts.length; i++)
             {
-                StartLog.debug("  part[%2d]: [%s]",i,parts[i]);
+                StartLog.debug("  part[%2d]: [%s]", i, parts[i]);
             }
         }
 
@@ -198,9 +197,10 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         if (this.mavenRepoUri != null)
         {
             coords.mavenRepoUri = this.mavenRepoUri;
-        } else
+        }
+        else
         {
-            coords.mavenRepoUri = System.getProperty( "maven.repo.uri", coords.mavenRepoUri );
+            coords.mavenRepoUri = System.getProperty("maven.repo.uri", coords.mavenRepoUri);
         }
 
         if (parts.length >= 4)
@@ -221,14 +221,14 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
 
     /**
      * protected only for testing purpose
+     *
      * @param uri the the uri to download
      * @param destination the destination File
-     * @throws IOException
      */
     @Override
-    protected void download( URI uri, Path destination )
+    protected void download(URI uri, Path destination)
         throws IOException
     {
-        super.download( uri, destination );
+        super.download(uri, destination);
     }
 }

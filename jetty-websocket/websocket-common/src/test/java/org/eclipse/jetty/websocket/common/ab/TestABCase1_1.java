@@ -51,8 +51,8 @@ public class TestABCase1_1
     {
         int length = 125;
         byte buf[] = new byte[length];
-        Arrays.fill(buf,(byte)'*');
-        String text = new String(buf,StandardCharsets.UTF_8);
+        Arrays.fill(buf, (byte)'*');
+        String text = new String(buf, StandardCharsets.UTF_8);
 
         Frame textFrame = new TextFrame().setPayload(text);
 
@@ -61,7 +61,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= length & 0x7F;
@@ -96,7 +96,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -135,7 +135,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -174,7 +174,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= 0x7E;
@@ -213,13 +213,13 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
         expected.put(new byte[]
-        { (byte)0xff, (byte)0xff });
+            {(byte)0xff, (byte)0xff});
 
         for (int i = 0; i < length; ++i)
         {
@@ -250,13 +250,13 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
 
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
         expected.put(new byte[]
-        { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 });
+            {0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
 
         for (int i = 0; i < length; ++i)
         {
@@ -278,7 +278,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-        { (byte)0x81, (byte)0x00 });
+            {(byte)0x81, (byte)0x00});
 
         expected.flip();
 
@@ -293,7 +293,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
@@ -310,10 +310,10 @@ public class TestABCase1_1
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "TextFrame.payload");
     }
 
@@ -325,7 +325,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -343,10 +343,10 @@ public class TestABCase1_1
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "TextFrame.payload");
     }
 
@@ -358,7 +358,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -376,10 +376,10 @@ public class TestABCase1_1
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "TextFrame.payload");
     }
 
@@ -391,7 +391,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
@@ -409,10 +409,10 @@ public class TestABCase1_1
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // .assertEquals(length, pActual.getPayloadData().length, "TextFrame.payload");
     }
 
@@ -424,12 +424,12 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
         expected.put(new byte[]
-        { (byte)0xff, (byte)0xff });
+            {(byte)0xff, (byte)0xff});
 
         for (int i = 0; i < length; ++i)
         {
@@ -444,10 +444,10 @@ public class TestABCase1_1
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "TextFrame.payload");
     }
 
@@ -459,12 +459,12 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-        { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
         expected.put(new byte[]
-        { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 });
+            {0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
 
         for (int i = 0; i < length; ++i)
         {
@@ -480,10 +480,10 @@ public class TestABCase1_1
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength", pActual.getPayloadLength(), is(length));
         // assertEquals(length, pActual.getPayloadData().length, "TextFrame.payload");
     }
 
@@ -493,7 +493,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-        { (byte)0x81, (byte)0x00 });
+            {(byte)0x81, (byte)0x00});
 
         expected.flip();
 
@@ -502,9 +502,9 @@ public class TestABCase1_1
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        assertThat("TextFrame.payloadLength", pActual.getPayloadLength(), is(0));
     }
 }

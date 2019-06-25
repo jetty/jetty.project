@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -60,9 +59,9 @@ public class ServletUpgradeRequest implements UpgradeRequest
         this.secure = httpRequest.isSecure();
 
         StringBuffer uri = httpRequest.getRequestURL();
-        if (this.queryString!=null)
+        if (this.queryString != null)
             uri.append("?").append(this.queryString);
-        uri.replace(0,uri.indexOf(":"),secure ? "wss" : "ws");        
+        uri.replace(0, uri.indexOf(":"), secure ? "wss" : "ws");
         this.requestURI = new URI(uri.toString());
         this.request = new UpgradeHttpServletRequest(httpRequest);
     }
@@ -99,7 +98,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
     @Override
     public List<HttpCookie> getCookies()
     {
-        if(cookies == null)
+        if (cookies == null)
         {
             Cookie[] requestCookies = request.getCookies();
             if (requestCookies != null)
@@ -113,7 +112,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
                 }
             }
         }
-        
+
         return cookies;
     }
 
@@ -262,12 +261,14 @@ public class ServletUpgradeRequest implements UpgradeRequest
             {
                 parameterMap = new HashMap<>(requestParams.size());
                 for (Map.Entry<String, String[]> entry : requestParams.entrySet())
-                    parameterMap.put(entry.getKey(),Arrays.asList(entry.getValue()));
+                {
+                    parameterMap.put(entry.getKey(), Arrays.asList(entry.getValue()));
+                }
             }
         }
         return parameterMap;
     }
-    
+
     /**
      * @return the principal
      * @deprecated use {@link #getUserPrincipal()} instead
@@ -282,13 +283,13 @@ public class ServletUpgradeRequest implements UpgradeRequest
     public String getProtocolVersion()
     {
         String version = request.getHeader(WebSocketConstants.SEC_WEBSOCKET_VERSION);
-        if(version == null) 
+        if (version == null)
         {
             return Integer.toString(WebSocketConstants.SPEC_VERSION);
         }
         return version;
     }
-    
+
     @Override
     public String getQueryString()
     {
@@ -362,7 +363,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
     {
         return request.getAttributes();
     }
-    
+
     public Map<String, List<String>> getServletParameters()
     {
         return getParameterMap();
@@ -390,7 +391,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
             while (requestProtocols.hasMoreElements())
             {
                 String candidate = requestProtocols.nextElement();
-                Collections.addAll(subprotocols,parseProtocols(candidate));
+                Collections.addAll(subprotocols, parseProtocols(candidate));
             }
             return subprotocols;
         }
@@ -421,7 +422,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
         }
         return false;
     }
-    
+
     @Override
     public boolean isOrigin(String test)
     {

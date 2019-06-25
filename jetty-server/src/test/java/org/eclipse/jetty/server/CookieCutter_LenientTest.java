@@ -18,16 +18,15 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.util.stream.Stream;
-
 import javax.servlet.http.Cookie;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Tests of poor various name=value scenarios and expectations of results
@@ -147,12 +146,12 @@ public class CookieCutter_LenientTest
             Arguments.of("$Version=0; rToken=F_TOKEN''!--\"</a>=&{()}", "rToken", "F_TOKEN''!--\"</a>=&{()}"),
 
             // Commas that were not commas
-            Arguments.of("name=foo,bar","name","foo,bar"),
-            Arguments.of("name=foo , bar","name","foo , bar"),
-            Arguments.of("name=foo , bar, bob","name","foo , bar, bob")
+            Arguments.of("name=foo,bar", "name", "foo,bar"),
+            Arguments.of("name=foo , bar", "name", "foo , bar"),
+            Arguments.of("name=foo , bar, bob", "name", "foo , bar, bob")
         );
     }
-    
+
     @ParameterizedTest
     @MethodSource("data")
     public void testLenientBehavior(String rawHeader, String expectedName, String expectedValue)
@@ -160,7 +159,7 @@ public class CookieCutter_LenientTest
         CookieCutter cutter = new CookieCutter();
         cutter.addCookieField(rawHeader);
         Cookie[] cookies = cutter.getCookies();
-        if (expectedName==null)
+        if (expectedName == null)
             assertThat("Cookies.length", cookies.length, is(0));
         else
         {
@@ -169,5 +168,4 @@ public class CookieCutter_LenientTest
             assertThat("Cookie.value", cookies[0].getValue(), is(expectedValue));
         }
     }
-    
 }

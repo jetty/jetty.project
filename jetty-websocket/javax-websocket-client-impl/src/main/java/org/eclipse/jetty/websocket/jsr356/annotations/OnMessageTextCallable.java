@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
  * Callable for {@link javax.websocket.OnMessage} annotated methods with a whole or partial text messages.
  * <p>
  * Not for use with {@link java.io.Reader} based {@link javax.websocket.OnMessage} method objects.
- * 
+ *
  * @see javax.websocket.Decoder.Text
  */
 public class OnMessageTextCallable extends OnMessageCallable
@@ -38,11 +38,12 @@ public class OnMessageTextCallable extends OnMessageCallable
 
     public OnMessageTextCallable(Class<?> pojo, Method method)
     {
-        super(pojo,method);
+        super(pojo, method);
     }
 
     /**
      * Copy Constructor
+     *
      * @param copy the callable to copy from
      */
     public OnMessageTextCallable(OnMessageCallable copy)
@@ -72,7 +73,7 @@ public class OnMessageTextCallable extends OnMessageCallable
     public void init(JsrSession session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_TEXT);
-        assertRoleRequired(idxMessageObject,"Text Message Object");
+        assertRoleRequired(idxMessageObject, "Text Message Object");
         super.init(session);
         assertDecoderRequired();
         textDecoder = (Decoder.Text<?>)getDecoder();

@@ -54,13 +54,13 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     public AtomicReference<Throwable> error = new AtomicReference<>();
 
     public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher)
-            throws InterruptedException
+        throws InterruptedException
     {
         assertReceivedCloseEvent(clientTimeoutMs, statusCodeMatcher, null);
     }
 
     public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher, Matcher<String> reasonMatcher)
-            throws InterruptedException
+        throws InterruptedException
     {
         assertThat("Client Close Event Occurred", closeLatch.await(clientTimeoutMs, TimeUnit.MILLISECONDS), is(true));
         assertThat("Client Close Event Count", closeCount.get(), is(1));
@@ -115,7 +115,7 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
         Session session = getSession();
         assertThat("Session type", session, instanceOf(WebSocketSession.class));
 
-        WebSocketSession wssession = (WebSocketSession) session;
+        WebSocketSession wssession = (WebSocketSession)session;
         Field fld = wssession.getClass().getDeclaredField("connection");
         fld.setAccessible(true);
         assertThat("Field: connection", fld, notNullValue());
@@ -123,7 +123,7 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
         Object val = fld.get(wssession);
         assertThat("Connection type", val, instanceOf(AbstractWebSocketConnection.class));
         @SuppressWarnings("resource")
-        AbstractWebSocketConnection wsconn = (AbstractWebSocketConnection) val;
+        AbstractWebSocketConnection wsconn = (AbstractWebSocketConnection)val;
         return wsconn.getEndPoint();
     }
 }

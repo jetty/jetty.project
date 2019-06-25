@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 public class InfoContextAltAttributeListener implements WebSocketCreator, ServletContextListener
 {
     private static final String ATTR = "alt.config";
-    
+
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
@@ -37,12 +37,12 @@ public class InfoContextAltAttributeListener implements WebSocketCreator, Servle
         configuration.addMapping("/info/*", this);
         sce.getServletContext().setAttribute(ATTR, configuration);
     }
-    
+
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
     }
-    
+
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {

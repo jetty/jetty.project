@@ -336,7 +336,7 @@ public class TrailersTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap( StringUtil.getUtf8Bytes( "hello"));
+        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         Callback.Completable completable = new Callback.Completable();
         stream.data(new DataFrame(stream.getId(), data, false), completable);
         completable.thenRun(() ->

@@ -13,8 +13,7 @@
   </properties>
   <build>
     <defaultGoal>install</defaultGoal>
-    <plugins>
-    </plugins>
+    <plugins></plugins>
   </build>
   <dependencies>
     <dependency>

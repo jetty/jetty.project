@@ -16,18 +16,14 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
-
 /**
  * TestSessionHandler
- * 
- * For testing convenience, allows access to some protected fields in SessionHandler
  *
+ * For testing convenience, allows access to some protected fields in SessionHandler
  */
 public class TestSessionHandler extends SessionHandler
 {
@@ -35,9 +31,8 @@ public class TestSessionHandler extends SessionHandler
     /**
      * @param size the size of the expiry candidates to check
      */
-    public void assertCandidatesForExpiry (int size)
+    public void assertCandidatesForExpiry(int size)
     {
         assertEquals(size, _candidateSessionIdsForExpiry.size());
     }
-
 }

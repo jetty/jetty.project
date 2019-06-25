@@ -32,7 +32,7 @@ public class InflaterPool extends CompressionPool<Inflater>
      * If given a negative capacity equal to zero there will be no size restrictions on the InflaterPool
      *
      * @param capacity maximum number of Inflaters which can be contained in the pool
-     * @param nowrap   if true then use GZIP compatible compression for all new Inflater objects
+     * @param nowrap if true then use GZIP compatible compression for all new Inflater objects
      */
     public InflaterPool(int capacity, boolean nowrap)
     {

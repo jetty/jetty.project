@@ -52,19 +52,19 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 3, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class ListVsMapBenchmark
 {
-    @Param({ "12" })   // Chrome has 12 for HTTP/1.1 and 16 for HTTP/2 (including meta headers)
+    @Param({"12"})   // Chrome has 12 for HTTP/1.1 and 16 for HTTP/2 (including meta headers)
     public static int size;
 
-    @Param({ "11" })  // average length of known headers in HttpHeader
+    @Param({"11"})  // average length of known headers in HttpHeader
     public static int length;
 
-    @Param({"1", "10", "20", "30" })
+    @Param({"1", "10", "20", "30"})
     public static int lookups;
 
-    @Param({"hits", "misses", "iterate" })
+    @Param({"hits", "misses", "iterate"})
     public static String mostly;
 
-    static final String base = "This-is-the-base-of-All-key-names-and-is-long".substring(0,length);
+    static final String base = "This-is-the-base-of-All-key-names-and-is-long".substring(0, length);
     static final String miss = "X-" + base;
     static final List<String> trials = new ArrayList<>();
     static final Random random = new Random();
@@ -74,23 +74,34 @@ public class ListVsMapBenchmark
     {
         int hits = 1;
         int misses = 1;
-        switch(mostly)
+        switch (mostly)
         {
-            case "hits" : hits = lookups; break;
-            case "misses" : misses = lookups; break;
-            case "iterate" : hits = lookups/2; misses=lookups-hits; break;
-            default : throw new IllegalStateException();
+            case "hits":
+                hits = lookups;
+                break;
+            case "misses":
+                misses = lookups;
+                break;
+            case "iterate":
+                hits = lookups / 2;
+                misses = lookups - hits;
+                break;
+            default:
+                throw new IllegalStateException();
         }
 
-        for (int h = hits; h-->0;)
+        for (int h = hits; h-- > 0; )
+        {
             trials.add(base + "-" + (h % size));
+        }
 
-        for (int m = misses; m-->0; )
+        for (int m = misses; m-- > 0; )
+        {
             trials.add(miss);
+        }
 
         Collections.shuffle(trials);
     }
-
 
     static class Pair
     {
@@ -112,21 +123,22 @@ public class ListVsMapBenchmark
     interface Lookup
     {
         Pair get(String key);
+
         Iterator<Pair> iterate();
     }
 
     private void fill(Fill fill)
     {
-        for (int i=0; i<size-1; i++)
+        for (int i = 0; i < size - 1; i++)
         {
             String key = base + "-" + i;
-            Pair pair = new Pair(key, Long.toString(random.nextLong(),8));
+            Pair pair = new Pair(key, Long.toString(random.nextLong(), 8));
             fill.put(pair);
         }
 
         // double up on header 0
         String key = base + "-0";
-        Pair pair = new Pair(key, Long.toString(random.nextLong(),8));
+        Pair pair = new Pair(key, Long.toString(random.nextLong(), 8));
         fill.put(pair);
     }
 
@@ -136,7 +148,7 @@ public class ListVsMapBenchmark
         if ("iterate".equals(mostly))
         {
             Iterator<String> t = trials.iterator();
-            while(t.hasNext())
+            while (t.hasNext())
             {
                 // Look for 4 headers at once because that is what the common case of a
                 // ResourceService does
@@ -176,11 +188,12 @@ public class ListVsMapBenchmark
 
     private long listLookup(List<Pair> list)
     {
-        return test(new Lookup() {
+        return test(new Lookup()
+        {
             @Override
             public Pair get(String k)
             {
-                for (int i = 0; i<list.size(); i++ )
+                for (int i = 0; i < list.size(); i++)
                 {
                     Pair p = list.get(i);
                     if (p.key.equalsIgnoreCase(k))
@@ -220,12 +233,12 @@ public class ListVsMapBenchmark
     public long testLinkedHashMap() throws Exception
     {
         // This loses the true ordering of fields
-        Map<String,List<Pair>> map = new LinkedHashMap<>(size);
-        fill(p->
+        Map<String, List<Pair>> map = new LinkedHashMap<>(size);
+        fill(p ->
         {
             List<Pair> list = new LinkedList<>();
             list.add(p);
-            map.put(p.key.toLowerCase(),list);
+            map.put(p.key.toLowerCase(), list);
         });
         return test(new Lookup()
         {
@@ -243,14 +256,16 @@ public class ListVsMapBenchmark
             {
                 Iterator<List<Pair>> iter = map.values().iterator();
 
-                return new Iterator<Pair>() {
+                return new Iterator<Pair>()
+                {
                     Iterator<Pair> current;
+
                     @Override
                     public boolean hasNext()
                     {
-                        if (( current==null || !current.hasNext() ) && iter.hasNext())
-                            current=iter.next().iterator();
-                        return current!=null && current.hasNext();
+                        if ((current == null || !current.hasNext()) && iter.hasNext())
+                            current = iter.next().iterator();
+                        return current != null && current.hasNext();
                     }
 
                     @Override
@@ -265,40 +280,37 @@ public class ListVsMapBenchmark
         });
     }
 
-
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
     public long testHashMapAndLinkedList() throws Exception
     {
         // This keeps the true ordering of fields
-        Map<String,List<Pair>> map = new HashMap<>(size);
+        Map<String, List<Pair>> map = new HashMap<>(size);
         List<Pair> order = new LinkedList<>();
 
-        fill(p->
+        fill(p ->
         {
             List<Pair> list = new LinkedList<>();
             list.add(p);
-            map.put(p.key.toLowerCase(),list);
+            map.put(p.key.toLowerCase(), list);
             order.add(p);
         });
         return mapLookup(map, order);
     }
-
-
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
     public long testHashMapAndArrayList() throws Exception
     {
         // This keeps the true ordering of fields
-        Map<String,List<Pair>> map = new HashMap<>(size);
+        Map<String, List<Pair>> map = new HashMap<>(size);
         List<Pair> order = new ArrayList<>();
 
-        fill(p->
+        fill(p ->
         {
             List<Pair> list = new ArrayList<>(2);
             list.add(p);
-            map.put(p.key.toLowerCase(),list);
+            map.put(p.key.toLowerCase(), list);
             order.add(p);
         });
         return mapLookup(map, order);
@@ -324,7 +336,6 @@ public class ListVsMapBenchmark
             }
         });
     }
-
 
     public static void main(String[] args) throws RunnerException
     {

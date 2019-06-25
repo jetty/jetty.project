@@ -37,7 +37,7 @@ public class LongDecoder extends AbstractDecoder implements Decoder.Text<Long>
         }
         catch (NumberFormatException e)
         {
-            throw new DecodeException(s,"Unable to parse Long",e);
+            throw new DecodeException(s, "Unable to parse Long", e);
         }
     }
 

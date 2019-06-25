@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;

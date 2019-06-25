@@ -18,17 +18,9 @@
 
 package org.eclipse.jetty.plus.jndi;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
-
 import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -45,6 +37,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class TestNamingEntries
 {
     public class ScopeA
@@ -52,7 +51,7 @@ public class TestNamingEntries
         @Override
         public String toString()
         {
-            return this.getClass().getName()+"@"+super.hashCode();
+            return this.getClass().getName() + "@" + super.hashCode();
         }
     }
 
@@ -63,10 +62,13 @@ public class TestNamingEntries
     public static class SomeObject
     {
         private int value;
-        public SomeObject (int value)
-        {this.value = value;}
 
-        public int getValue ()
+        public SomeObject(int value)
+        {
+            this.value = value;
+        }
+
+        public int getValue()
         {
             return this.value;
         }
@@ -86,7 +88,7 @@ public class TestNamingEntries
             RefAddr refAddr = ref.get(0);
             String valueName = refAddr.getType();
             if (!valueName.equalsIgnoreCase("val"))
-                throw new RuntimeException("Unrecognized refaddr type = "+valueName);
+                throw new RuntimeException("Unrecognized refaddr type = " + valueName);
 
             String value = (String)refAddr.getContent();
 
@@ -96,7 +98,7 @@ public class TestNamingEntries
 
     public static class SomeOtherObject extends SomeObject implements Referenceable
     {
-        public SomeOtherObject (String value)
+        public SomeOtherObject(String value)
         {
             super(Integer.parseInt(value.trim()));
         }
@@ -123,7 +125,7 @@ public class TestNamingEntries
             RefAddr refAddr = ref.get(0);
             String valueName = refAddr.getType();
             if (!valueName.equalsIgnoreCase("val"))
-                throw new RuntimeException("Unrecognized refaddr type = "+valueName);
+                throw new RuntimeException("Unrecognized refaddr type = " + valueName);
 
             String value = (String)refAddr.getContent();
 
@@ -137,10 +139,6 @@ public class TestNamingEntries
     public void init()
     {
         this.someObject = new SomeObject(4);
-
-
-
-
     }
 
     /**
@@ -177,21 +175,21 @@ public class TestNamingEntries
         assertFalse(list.isEmpty());
         assertEquals(1, list.size());
         Object o = list.get(0);
-        assertTrue (o instanceof EnvEntry);
+        assertTrue(o instanceof EnvEntry);
         EnvEntry eo = (EnvEntry)o;
-        assertEquals ("nameZ", eo.getJndiName());
+        assertEquals("nameZ", eo.getJndiName());
     }
 
     @Test
     public void testEnvEntryOverride() throws Exception
     {
         ScopeA scope = new ScopeA();
-        EnvEntry ee = new EnvEntry (scope, "nameA", someObject, true);
+        EnvEntry ee = new EnvEntry(scope, "nameA", someObject, true);
 
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(scope, "nameA");
         assertNotNull(ne);
         assertTrue(ne instanceof EnvEntry);
-        assertTrue (((EnvEntry)ne).isOverrideWebXml());
+        assertTrue(((EnvEntry)ne).isOverrideWebXml());
 
         Context scopeContext = NamingEntryUtil.getContextForScope(scope);
         assertNotNull(scopeContext);
@@ -204,12 +202,12 @@ public class TestNamingEntries
     public void testEnvEntryNonOverride() throws Exception
     {
         ScopeA scope = new ScopeA();
-        EnvEntry ee = new EnvEntry (scope, "nameA", someObject, false);
+        EnvEntry ee = new EnvEntry(scope, "nameA", someObject, false);
 
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(scope, "nameA");
         assertNotNull(ne);
         assertTrue(ne instanceof EnvEntry);
-        assertFalse (((EnvEntry)ne).isOverrideWebXml());
+        assertFalse(((EnvEntry)ne).isOverrideWebXml());
 
         Context scopeContext = NamingEntryUtil.getContextForScope(scope);
         assertNotNull(scopeContext);
@@ -219,18 +217,18 @@ public class TestNamingEntries
     }
 
     @Test
-    public void testResource () throws Exception
+    public void testResource() throws Exception
     {
         InitialContext icontext = new InitialContext();
 
-        Resource resource = new Resource (null, "resourceA/b/c", someObject);
+        Resource resource = new Resource(null, "resourceA/b/c", someObject);
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(null, "resourceA/b/c");
         assertNotNull(ne);
         assertTrue(ne instanceof Resource);
         assertEquals(icontext.lookup("resourceA/b/c"), someObject);
 
         Object scope = new ScopeA();
-        Resource resource2 = new Resource (scope, "resourceB", someObject);
+        Resource resource2 = new Resource(scope, "resourceB", someObject);
         ne = NamingEntryUtil.lookupNamingEntry(scope, "resourceB");
         assertNotNull(ne);
         assertTrue(ne instanceof Resource);
@@ -243,15 +241,14 @@ public class TestNamingEntries
         testLink();
     }
 
-
     @Test
-    public void testNullJndiName () throws Exception
+    public void testNullJndiName() throws Exception
     {
         try
         {
             InitialContext icontext = new InitialContext();
-            Resource resource = new Resource (null,"foo");
-            fail ("Null jndi name should not be permitted");
+            Resource resource = new Resource(null, "foo");
+            fail("Null jndi name should not be permitted");
         }
         catch (NamingException e)
         {
@@ -260,30 +257,28 @@ public class TestNamingEntries
     }
 
     @Test
-    public void testNullObject () throws Exception
+    public void testNullObject() throws Exception
     {
         InitialContext icontext = new InitialContext();
-        Resource resource = new Resource ("foo/bar", null);
+        Resource resource = new Resource("foo/bar", null);
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(null, "foo/bar");
         assertNotNull(ne);
         Object o = icontext.lookup("foo/bar");
         assertNull(o);
-
     }
 
-
     @Test
-    public void testLink () throws Exception
+    public void testLink() throws Exception
     {
         ScopeA scope = new ScopeA();
         InitialContext icontext = new InitialContext();
-        Link link = new Link ("linked-resourceA", "resourceB");
+        Link link = new Link("linked-resourceA", "resourceB");
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(null, "linked-resourceA");
         assertNotNull(ne);
         assertTrue(ne instanceof Link);
         assertEquals(icontext.lookup("linked-resourceA"), "resourceB");
 
-        link = new Link (scope, "jdbc/linked-resourceX", "jdbc/linked-resourceY");
+        link = new Link(scope, "jdbc/linked-resourceX", "jdbc/linked-resourceY");
         ne = NamingEntryUtil.lookupNamingEntry(scope, "jdbc/linked-resourceX");
         assertNotNull(ne);
         assertTrue(ne instanceof Link);
@@ -297,25 +292,25 @@ public class TestNamingEntries
         Resource res = new Resource("resourceByReferenceable", someOtherObj);
         Object o = icontext.lookup("resourceByReferenceable");
         assertNotNull(o);
-        assertTrue (o instanceof SomeOtherObject);
+        assertTrue(o instanceof SomeOtherObject);
         assertEquals(((SomeOtherObject)o).getValue(), 100);
     }
 
     @Test
-    public void testResourceReference () throws Exception
+    public void testResourceReference() throws Exception
     {
         RefAddr refAddr = new StringRefAddr("val", "10");
         Reference ref = new Reference(SomeObject.class.getName(), refAddr, SomeObjectFactory.class.getName(), null);
 
         InitialContext icontext = new InitialContext();
-        Resource resource = new Resource (null, "resourceByRef", ref);
+        Resource resource = new Resource(null, "resourceByRef", ref);
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(null, "resourceByRef");
         assertNotNull(ne);
-        assertTrue (ne instanceof Resource);
+        assertTrue(ne instanceof Resource);
 
         Object o = icontext.lookup("resourceByRef");
-        assertNotNull (o);
-        assertTrue (o instanceof SomeObject);
+        assertNotNull(o);
+        assertTrue(o instanceof SomeObject);
 
         assertEquals(((SomeObject)o).getValue(), 10);
     }

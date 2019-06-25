@@ -31,7 +31,9 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
  */
 public class HandshakeRFC6455 implements WebSocketHandshake
 {
-    /** RFC 6455 - Sec-WebSocket-Version */
+    /**
+     * RFC 6455 - Sec-WebSocket-Version
+     */
     public static final int VERSION = 13;
 
     @Override
@@ -42,9 +44,9 @@ public class HandshakeRFC6455 implements WebSocketHandshake
             throw new BadMessageException("Missing request header 'Sec-WebSocket-Key'");
 
         // build response
-        response.setHeader("Upgrade","WebSocket");
-        response.addHeader("Connection","Upgrade");
-        response.addHeader("Sec-WebSocket-Accept",AcceptHash.hashKey(key));
+        response.setHeader("Upgrade", "WebSocket");
+        response.addHeader("Connection", "Upgrade");
+        response.addHeader("Sec-WebSocket-Accept", AcceptHash.hashKey(key));
 
         request.complete();
 

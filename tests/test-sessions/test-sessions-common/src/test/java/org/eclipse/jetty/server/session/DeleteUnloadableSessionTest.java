@@ -18,16 +18,10 @@
 
 package org.eclipse.jetty.server.session;
 
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -43,28 +37,26 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * DeleteUnloadableSessionTest
- *
- *
  */
 public class DeleteUnloadableSessionTest
 {
-    
+
     /**
      * DelSessionDataStore
-     *
-     *
      */
     public static class DelSessionDataStore extends AbstractSessionDataStore
     {
         int count = 0;
-        
+
         Object o = new Object();
-        
+
         String unloadableId = null;
-        
 
         @Override
         public boolean isPassivating()
@@ -72,21 +64,18 @@ public class DeleteUnloadableSessionTest
             return true;
         }
 
-
         @Override
         public boolean exists(String id) throws Exception
         {
-            return  o != null;
+            return o != null;
         }
-
 
         @Override
         public SessionData doLoad(String id) throws Exception
         {
             unloadableId = id;
-           throw new UnreadableSessionDataException(id, null, new Exception("fake"));
+            throw new UnreadableSessionDataException(id, null, new Exception("fake"));
         }
-
 
         @Override
         public boolean delete(String id) throws Exception
@@ -99,13 +88,11 @@ public class DeleteUnloadableSessionTest
             return false;
         }
 
-
         @Override
         public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
         {
             //pretend it was saved
         }
-
 
         @Override
         public Set<String> doGetExpired(Set<String> candidates)
@@ -113,12 +100,11 @@ public class DeleteUnloadableSessionTest
             return null;
         }
     }
-    
-    
+
     public static class DelSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     {
 
-        /** 
+        /**
          * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
          */
         @Override
@@ -126,7 +112,6 @@ public class DeleteUnloadableSessionTest
         {
             return new DelSessionDataStore();
         }
-        
     }
 
     public static class TestServlet extends HttpServlet
@@ -140,45 +125,43 @@ public class DeleteUnloadableSessionTest
 
             if ("test".equals(action))
             {
-               HttpSession session = request.getSession(false);
-               assertNull(session);
+                HttpSession session = request.getSession(false);
+                assertNull(session);
             }
         }
     }
-    
-    
+
     /**
      * Test that session data that can't be loaded results in a null Session object
-     * @throws Exception
      */
     @Test
-    public void testDeleteUnloadableSession () throws Exception
-    {        
+    public void testDeleteUnloadableSession() throws Exception
+    {
         String contextPath = "";
         String servletMapping = "/server";
         int inactivePeriod = -1;
         int scavengePeriod = 100;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cacheFactory.setRemoveUnloadableSessions(true);
         SessionDataStoreFactory storeFactory = new DelSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
-        
+
         TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
-        
+
         TestContextScopeListener scopeListener = new TestContextScopeListener();
         context.addEventListener(scopeListener);
-        
+
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         context.addServlet(holder, servletMapping);
-    
+
         try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
         {
             server.start();
-            int port = server.getPort();          
+            int port = server.getPort();
             HttpClient client = new HttpClient();
             client.start();
             try
@@ -186,16 +169,15 @@ public class DeleteUnloadableSessionTest
                 CountDownLatch latch = new CountDownLatch(1);
                 scopeListener.setExitSynchronizer(latch);
                 String sessionCookie = "JSESSIONID=w0rm3zxpa6h1zg1mevtv76b3te00.w0;$Path=/";
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping+ "?action=test");
+                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
                 request.header("Cookie", sessionCookie);
                 ContentResponse response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
                 //ensure request fully finished handlers
                 latch.await(5, TimeUnit.SECONDS);
-                
-                assertFalse(context.getSessionHandler().getSessionCache().getSessionDataStore().exists(TestServer.extractSessionId(sessionCookie)));
 
+                assertFalse(context.getSessionHandler().getSessionCache().getSessionDataStore().exists(TestServer.extractSessionId(sessionCookie)));
             }
             finally
             {

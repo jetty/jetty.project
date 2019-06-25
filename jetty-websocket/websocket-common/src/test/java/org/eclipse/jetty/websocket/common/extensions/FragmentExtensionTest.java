@@ -337,7 +337,7 @@ public class FragmentExtensionTest
     {
         final int largeMessageSize = 60000;
         byte buf[] = new byte[largeMessageSize];
-        Arrays.fill(buf, (byte) 'x');
+        Arrays.fill(buf, (byte)'x');
         String largeMessage = new String(buf, UTF_8);
 
         final int fragmentCount = 10;
@@ -354,7 +354,8 @@ public class FragmentExtensionTest
 
         CompletableFuture<Integer> enqueuedFrameCountFut = new CompletableFuture<>();
 
-        CompletableFuture.runAsync(() -> {
+        CompletableFuture.runAsync(() ->
+        {
             // Run Server Task
             int frameCount = 0;
             BatchMode batchMode = BatchMode.OFF;
@@ -388,8 +389,8 @@ public class FragmentExtensionTest
 
         int enqueuedFrameCount = enqueuedFrameCountFut.get(5, SECONDS);
 
-        int expectedFrameCount = (messageCount/2) * fragmentCount; // large messages
-        expectedFrameCount += (messageCount/2); // + short messages
+        int expectedFrameCount = (messageCount / 2) * fragmentCount; // large messages
+        expectedFrameCount += (messageCount / 2); // + short messages
 
         assertThat("Saw expected frame count", saneFrameOrderingAssertion.frameCount, is(expectedFrameCount));
         assertThat("Enqueued expected frame count", enqueuedFrameCount, is(expectedFrameCount));

@@ -96,8 +96,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     /**
      * Instantiate a WebSocketClient using HttpClient for defaults
      *
-     * @param httpClient
-     *            the HttpClient to base internal defaults off of
+     * @param httpClient the HttpClient to base internal defaults off of
      */
     public WebSocketClient(HttpClient httpClient)
     {
@@ -107,10 +106,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     /**
      * Instantiate a WebSocketClient using HttpClient for defaults
      *
-     * @param httpClient
-     *            the HttpClient to base internal defaults off of
-     * @param objectFactory
-     *            the DecoratedObjectFactory for all client instantiated classes
+     * @param httpClient the HttpClient to base internal defaults off of
+     * @param objectFactory the DecoratedObjectFactory for all client instantiated classes
      */
     public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory objectFactory)
     {
@@ -120,19 +117,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     /**
      * Create a new WebSocketClient
      *
-     * @param sslContextFactory
-     *            ssl context factory to use on the internal {@link HttpClient}
+     * @param sslContextFactory ssl context factory to use on the internal {@link HttpClient}
      */
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory,null, null);
+        this(sslContextFactory, null, null);
     }
 
     /**
      * Create a new WebSocketClient
      *
-     * @param executor
-     *            the executor to use on the internal {@link HttpClient}
+     * @param executor the executor to use on the internal {@link HttpClient}
      */
     public WebSocketClient(Executor executor)
     {
@@ -142,8 +137,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     /**
      * Create a new WebSocketClient
      *
-     * @param bufferPool
-     *            byte buffer pool to use on the internal {@link HttpClient}
+     * @param bufferPool byte buffer pool to use on the internal {@link HttpClient}
      */
     public WebSocketClient(ByteBufferPool bufferPool)
     {
@@ -153,10 +147,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     /**
      * Create a new WebSocketClient
      *
-     * @param sslContextFactory
-     *            ssl context factory to use on the internal {@link HttpClient}
-     * @param executor
-     *            the executor to use on the internal {@link HttpClient}
+     * @param sslContextFactory ssl context factory to use on the internal {@link HttpClient}
+     * @param executor the executor to use on the internal {@link HttpClient}
      */
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
@@ -167,8 +159,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Create WebSocketClient other Container Scope, to allow sharing of
      * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
      *
-     * @param scope
-     *            the Container Scope
+     * @param scope the Container Scope
      */
     public WebSocketClient(WebSocketContainerScope scope)
     {
@@ -179,11 +170,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Create WebSocketClient other Container Scope, to allow sharing of
      * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
      *
-     * @param scope
-     *            the Container Scope
-     * @param sslContextFactory
-     *            SSL ContextFactory to use in preference to one from
-     *            {@link WebSocketContainerScope#getSslContextFactory()}
+     * @param scope the Container Scope
+     * @param sslContextFactory SSL ContextFactory to use in preference to one from
+     * {@link WebSocketContainerScope#getSslContextFactory()}
      */
     public WebSocketClient(WebSocketContainerScope scope, SslContextFactory sslContextFactory)
     {
@@ -194,12 +183,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Create WebSocketClient using sharing instances of SSLContextFactory
      * Executor, and ByteBufferPool
      *
-     * @param sslContextFactory
-     *            shared SSL ContextFactory
-     * @param executor
-     *            shared Executor
-     * @param bufferPool
-     *            shared ByteBufferPool
+     * @param sslContextFactory shared SSL ContextFactory
+     * @param executor shared Executor
+     * @param bufferPool shared ByteBufferPool
      */
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
     {
@@ -210,14 +196,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Create WebSocketClient using sharing instances of SSLContextFactory
      * Executor, and ByteBufferPool
      *
-     * @param sslContextFactory
-     *            shared SSL ContextFactory
-     * @param executor
-     *            shared Executor
-     * @param bufferPool
-     *            shared ByteBufferPool
-     * @param objectFactory
-     *            shared DecoratedObjectFactory
+     * @param sslContextFactory shared SSL ContextFactory
+     * @param executor shared Executor
+     * @param bufferPool shared ByteBufferPool
+     * @param objectFactory shared DecoratedObjectFactory
      */
     private WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
@@ -229,30 +211,23 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Create WebSocketClient based on pre-existing Container Scope, to allow sharing of
      * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
      *
-     * @param scope
-     *            the Container Scope
-     * @param eventDriverFactory
-     *            the EventDriver Factory to use
-     * @param sessionFactory
-     *            the SessionFactory to use
+     * @param scope the Container Scope
+     * @param eventDriverFactory the EventDriver Factory to use
+     * @param sessionFactory the SessionFactory to use
      */
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory)
     {
         this(scope, eventDriverFactory, sessionFactory, null);
     }
-    
+
     /**
      * Create WebSocketClient based on pre-existing Container Scope, to allow sharing of
      * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
      *
-     * @param scope
-     *            the Container Scope
-     * @param eventDriverFactory
-     *            the EventDriver Factory to use
-     * @param sessionFactory
-     *            the SessionFactory to use
-     * @param httpClient
-     *            the httpClient to use
+     * @param scope the Container Scope
+     * @param eventDriverFactory the EventDriver Factory to use
+     * @param sessionFactory the SessionFactory to use
+     * @param httpClient the httpClient to use
      */
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory, HttpClient httpClient)
     {
@@ -286,41 +261,32 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         request.setRequestURI(toUri);
         request.setLocalEndpoint(websocket);
 
-        return connect(websocket,toUri,request);
+        return connect(websocket, toUri, request);
     }
 
     /**
      * Connect to remote websocket endpoint
      *
-     * @param websocket
-     *            the websocket object
-     * @param toUri
-     *            the websocket uri to connect to
-     * @param request
-     *            the upgrade request information
+     * @param websocket the websocket object
+     * @param toUri the websocket uri to connect to
+     * @param request the upgrade request information
      * @return the future for the session, available on success of connect
-     * @throws IOException
-     *             if unable to connect
+     * @throws IOException if unable to connect
      */
     public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request) throws IOException
     {
-        return connect(websocket,toUri,request,(UpgradeListener)null);
+        return connect(websocket, toUri, request, null);
     }
 
     /**
      * Connect to remote websocket endpoint
      *
-     * @param websocket
-     *            the websocket object
-     * @param toUri
-     *            the websocket uri to connect to
-     * @param request
-     *            the upgrade request information
-     * @param upgradeListener
-     *            the upgrade listener
+     * @param websocket the websocket object
+     * @param toUri the websocket uri to connect to
+     * @param request the upgrade request information
+     * @param upgradeListener the upgrade listener
      * @return the future for the session, available on success of connect
-     * @throws IOException
-     *             if unable to connect
+     * @throws IOException if unable to connect
      */
     public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request, UpgradeListener upgradeListener) throws IOException
     {
@@ -371,11 +337,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("connect websocket {} to {}",websocket,toUri);
+            LOG.debug("connect websocket {} to {}", websocket, toUri);
 
         init();
 
-        WebSocketUpgradeRequest wsReq = new WebSocketUpgradeRequest(this,httpClient,request);
+        WebSocketUpgradeRequest wsReq = new WebSocketUpgradeRequest(this, httpClient, request);
 
         wsReq.setUpgradeListener(upgradeListener);
         return wsReq.sendAsync();
@@ -396,7 +362,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     protected void doStop() throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Stopping {}",this);
+            LOG.debug("Stopping {}", this);
 
         ShutdownThread.deregister(this);
 
@@ -405,7 +371,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         super.doStop();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Stopped {}",this);
+            LOG.debug("Stopped {}", this);
     }
 
     @Deprecated
@@ -466,10 +432,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         return extensionRegistry;
     }
-    
+
     /**
-     * @deprecated not used, no replacement
      * @return a {@link RandomMasker} instance
+     * @deprecated not used, no replacement
      */
     @Deprecated
     public Masker getMasker()
@@ -611,8 +577,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * @param bindAddress the address to bind to the internal {@link HttpClient}
-     *
-     * @deprecated (this is a bad bad bad typo, it has 3 {@code "d"} characters in a row) use {@link HttpClient#setBindAddress(SocketAddress)}
+     * @deprecated (this is a bad bad bad typo, it has 3 { @ code " d " } characters in a row) use {@link HttpClient#setBindAddress(SocketAddress)}
      * to the internal {@link #WebSocketClient(HttpClient)}
      */
     @Deprecated
@@ -620,7 +585,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         setBindAddress(bindAddress);
     }
-
 
     /**
      * Sets the Bind Address on the internal {@link HttpClient}.
@@ -661,10 +625,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         this.httpClient.setCookieStore(cookieStore);
     }
-    
+
     /**
-     * @deprecated not used, configure threading in {@link HttpClient} instead
      * @param daemon do nothing
+     * @deprecated not used, configure threading in {@link HttpClient} instead
      */
     @Deprecated
     public void setDaemon(boolean daemon)
@@ -691,7 +655,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         this.httpClient.setExecutor(executor);
     }
-    
+
     /**
      * @param masker does nothing
      * @deprecated not used, no replacement
@@ -728,8 +692,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     /**
      * Get the internal {@link HttpClient}.
      * <p>
-     *     Note: this can result in a {@link LinkageError} if used within a WebApp that runs
-     *     on a server that also has {@link HttpClient} on the server classpath.
+     * Note: this can result in a {@link LinkageError} if used within a WebApp that runs
+     * on a server that also has {@link HttpClient} on the server classpath.
      * </p>
      *
      * @return the internal {@link HttpClient}
@@ -741,6 +705,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Set JVM shutdown behavior.
+     *
      * @param stop If true, this client instance will be explicitly stopped when the
      * JVM is shutdown. Otherwise the application is responsible for maintaining the WebSocketClient lifecycle.
      * @see Runtime#addShutdownHook(Thread)
@@ -767,11 +732,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Override
     public boolean equals(Object o)
     {
-        if (this == o) return true;
-        if (!(o instanceof WebSocketClient)) return false;
-        WebSocketClient that = (WebSocketClient) o;
+        if (this == o)
+            return true;
+        if (!(o instanceof WebSocketClient))
+            return false;
+        WebSocketClient that = (WebSocketClient)o;
         return Objects.equals(this.httpClient, that.httpClient) &&
-                Objects.equals(this.policy, that.policy);
+            Objects.equals(this.policy, that.policy);
     }
 
     @Override

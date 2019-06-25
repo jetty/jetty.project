@@ -23,14 +23,13 @@ package org.eclipse.jetty.util.preventers;
  *
  * Prevent pinning of webapp classloader by pre-loading sun.java2d.Disposer class
  * before webapp classloaders are created.
- * 
- * See https://issues.apache.org/bugzilla/show_bug.cgi?id=51687
  *
+ * See https://issues.apache.org/bugzilla/show_bug.cgi?id=51687
  */
 public class Java2DLeakPreventer extends AbstractLeakPreventer
 {
-    /* ------------------------------------------------------------ */
-    /** 
+
+    /**
      * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
      */
     @Override
@@ -45,5 +44,4 @@ public class Java2DLeakPreventer extends AbstractLeakPreventer
             LOG.ignore(e);
         }
     }
-
 }

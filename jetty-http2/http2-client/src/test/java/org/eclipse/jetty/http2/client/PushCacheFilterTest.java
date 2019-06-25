@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
@@ -29,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -56,8 +51,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.PushCacheFilter;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PushCacheFilterTest extends AbstractTest
 {
@@ -744,7 +742,7 @@ public class PushCacheFilterTest extends AbstractTest
     {
         String name = "foo";
         String value = "bar";
-        final String primaryResource = "/primary.html?"+name + "=" +value;
+        final String primaryResource = "/primary.html?" + name + "=" + value;
         final String secondaryResource = "/secondary.html?" + name + "=" + value;
         start(new HttpServlet()
         {

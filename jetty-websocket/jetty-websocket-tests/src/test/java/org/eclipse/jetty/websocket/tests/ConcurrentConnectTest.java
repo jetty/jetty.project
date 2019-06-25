@@ -80,7 +80,7 @@ public class ConcurrentConnectTest
         List<EventSocket> listeners = new ArrayList();
         final int messages = MAX_CONNECTIONS;
 
-        for (int i=0; i<messages; i++)
+        for (int i = 0; i < messages; i++)
         {
             try
             {
@@ -102,7 +102,7 @@ public class ConcurrentConnectTest
         for (EventSocket l : listeners)
         {
             l.getSession().getRemote().sendString("ping");
-            assertThat(l.receivedMessages.poll(5,TimeUnit.SECONDS), is("ping"));
+            assertThat(l.receivedMessages.poll(5, TimeUnit.SECONDS), is("ping"));
             l.getSession().close(StatusCode.NORMAL, "close from client");
         }
 

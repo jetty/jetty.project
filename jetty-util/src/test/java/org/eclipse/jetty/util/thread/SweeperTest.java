@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SweeperTest
 {
@@ -95,7 +94,7 @@ public class SweeperTest
     @Test
     public void testSweepThrows() throws Exception
     {
-        try(StacklessLogging scope = new StacklessLogging(Sweeper.class))
+        try (StacklessLogging scope = new StacklessLogging(Sweeper.class))
         {
             long period = 500;
             final CountDownLatch taskLatch = new CountDownLatch(2);

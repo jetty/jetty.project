@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.session.SessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
-
 public class OneServletContextWithSession
 {
     public static void main(String[] args) throws Exception
@@ -34,14 +33,14 @@ public class OneServletContextWithSession
 
         // Create a ServletContext, with a session handler enabled.
         ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.setResourceBase(System.getProperty("java.io.tmpdir"));
         server.setHandler(context);
 
         // Access the SessionHandler from the context.
         SessionHandler sessions = context.getSessionHandler();
-        
+
         // Explicitly set Session Cache and null Datastore.
         // This is normally done by default,
         // but is done explicitly here for demonstration.

@@ -22,7 +22,6 @@ import java.net.Socket;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
 
@@ -50,17 +49,19 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
     @Override
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
     {
-        if (_alias==null)
-            return _delegate.chooseClientAlias(keyType,issuers,socket);
+        if (_alias == null)
+            return _delegate.chooseClientAlias(keyType, issuers, socket);
 
         for (String kt : keyType)
         {
-            String[] aliases = _delegate.getClientAliases(kt,issuers);
-            if (aliases!=null)
+            String[] aliases = _delegate.getClientAliases(kt, issuers);
+            if (aliases != null)
             {
-                for (String a:aliases)
+                for (String a : aliases)
+                {
                     if (_alias.equals(a))
                         return _alias;
+                }
             }
         }
 
@@ -70,15 +71,17 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
     @Override
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {
-        if (_alias==null)
-            return _delegate.chooseServerAlias(keyType,issuers,socket);
+        if (_alias == null)
+            return _delegate.chooseServerAlias(keyType, issuers, socket);
 
-        String[] aliases = _delegate.getServerAliases(keyType,issuers);
-        if (aliases!=null)
+        String[] aliases = _delegate.getServerAliases(keyType, issuers);
+        if (aliases != null)
         {
-            for (String a:aliases)
+            for (String a : aliases)
+            {
                 if (_alias.equals(a))
                     return _alias;
+            }
         }
 
         return null;
@@ -111,34 +114,38 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
-        if (_alias==null)
-            return _delegate.chooseEngineServerAlias(keyType,issuers,engine);
+        if (_alias == null)
+            return _delegate.chooseEngineServerAlias(keyType, issuers, engine);
 
-        String[] aliases = _delegate.getServerAliases(keyType,issuers);
-        if (aliases!=null)
+        String[] aliases = _delegate.getServerAliases(keyType, issuers);
+        if (aliases != null)
         {
-            for (String a:aliases)
+            for (String a : aliases)
+            {
                 if (_alias.equals(a))
                     return _alias;
+            }
         }
 
         return null;
     }
 
     @Override
-    public String chooseEngineClientAlias(String keyType[], Principal[] issuers, SSLEngine engine)
+    public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
     {
-        if (_alias==null)
-            return _delegate.chooseEngineClientAlias(keyType,issuers,engine);
+        if (_alias == null)
+            return _delegate.chooseEngineClientAlias(keyType, issuers, engine);
 
         for (String kt : keyType)
         {
-            String[] aliases = _delegate.getClientAliases(kt,issuers);
-            if (aliases!=null)
+            String[] aliases = _delegate.getClientAliases(kt, issuers);
+            if (aliases != null)
             {
-                for (String a:aliases)
+                for (String a : aliases)
+                {
                     if (_alias.equals(a))
                         return _alias;
+                }
             }
         }
 

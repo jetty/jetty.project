@@ -30,6 +30,6 @@ public class BasicErrorSessionSocket extends TrackingSocket
     @OnError
     public void onError(Session session)
     {
-        addEvent("onError(%s)",session);
+        addEvent("onError(%s)", session);
     }
 }

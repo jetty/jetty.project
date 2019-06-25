@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import javax.security.auth.message.MessageInfo;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -81,10 +80,10 @@ public class JaspiMessageInfo implements MessageInfo
         return map.getAuthMethod();
     }
 
-    public boolean isAuthMandatory() {
+    public boolean isAuthMandatory()
+    {
         return map.isAuthMandatory();
     }
-
 
     //TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.
     private static class MIMap implements Map
@@ -101,9 +100,9 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public int size()
         {
-            return (isMandatory? 1:0) +
-                    (authMethod == null? 0: 1) +
-                    (delegate == null? 0: delegate.size());
+            return (isMandatory ? 1 : 0) +
+                (authMethod == null ? 0 : 1) +
+                (delegate == null ? 0 : delegate.size());
         }
 
         @Override
@@ -115,25 +114,32 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public boolean containsKey(Object key)
         {
-            if (MANDATORY_KEY.equals(key)) return isMandatory;
-            if (AUTH_METHOD_KEY.equals(key)) return authMethod != null;
+            if (MANDATORY_KEY.equals(key))
+                return isMandatory;
+            if (AUTH_METHOD_KEY.equals(key))
+                return authMethod != null;
             return delegate != null && delegate.containsKey(key);
         }
 
         @Override
         public boolean containsValue(Object value)
         {
-            if (isMandatory && "true".equals(value)) return true;
-            if (authMethod == value || (authMethod != null && authMethod.equals(value))) return true;
+            if (isMandatory && "true".equals(value))
+                return true;
+            if (authMethod == value || (authMethod != null && authMethod.equals(value)))
+                return true;
             return delegate != null && delegate.containsValue(value);
         }
 
         @Override
         public Object get(Object key)
         {
-            if (MANDATORY_KEY.equals(key)) return isMandatory? "true": null;
-            if (AUTH_METHOD_KEY.equals(key)) return authMethod;
-            if (delegate == null) return null;
+            if (MANDATORY_KEY.equals(key))
+                return isMandatory ? "true" : null;
+            if (AUTH_METHOD_KEY.equals(key))
+                return authMethod;
+            if (delegate == null)
+                return null;
             return delegate.get(key);
         }
 
@@ -147,8 +153,9 @@ public class JaspiMessageInfo implements MessageInfo
             if (AUTH_METHOD_KEY.equals(key))
             {
                 String authMethod = this.authMethod;
-                this.authMethod = (String) value;
-                if (delegate != null) delegate.put(AUTH_METHOD_KEY, value);
+                this.authMethod = (String)value;
+                if (delegate != null)
+                    delegate.put(AUTH_METHOD_KEY, value);
                 return authMethod;
             }
 
@@ -166,10 +173,12 @@ public class JaspiMessageInfo implements MessageInfo
             {
                 String authMethod = this.authMethod;
                 this.authMethod = null;
-                if (delegate != null) delegate.remove(AUTH_METHOD_KEY);
+                if (delegate != null)
+                    delegate.remove(AUTH_METHOD_KEY);
                 return authMethod;
             }
-            if (delegate == null) return null;
+            if (delegate == null)
+                return null;
             return delegate.remove(key);
         }
 
@@ -178,9 +187,9 @@ public class JaspiMessageInfo implements MessageInfo
         {
             if (map != null)
             {
-                for (Object o: map.entrySet())
+                for (Object o : map.entrySet())
                 {
-                    Map.Entry entry = (Entry) o;
+                    Map.Entry entry = (Entry)o;
                     put(entry.getKey(), entry.getValue());
                 }
             }
@@ -213,12 +222,15 @@ public class JaspiMessageInfo implements MessageInfo
 
         private Map getDelegate(boolean create)
         {
-            if (!create || delegate != null) return delegate;
+            if (!create || delegate != null)
+                return delegate;
             if (create)
             {
                 delegate = new HashMap();
-                if (isMandatory) delegate.put(MANDATORY_KEY, "true");
-                if (authMethod != null) delegate.put(AUTH_METHOD_KEY, authMethod);
+                if (isMandatory)
+                    delegate.put(MANDATORY_KEY, "true");
+                if (authMethod != null)
+                    delegate.put(AUTH_METHOD_KEY, authMethod);
             }
             return delegate;
         }

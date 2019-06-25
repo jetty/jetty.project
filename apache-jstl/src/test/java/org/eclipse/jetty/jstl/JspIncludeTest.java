@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.jstl;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,11 +38,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 public class JspIncludeTest
 {
     private static Server server;
     private static URI baseUri;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -55,37 +55,37 @@ public class JspIncludeTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-        
+
         // Setup WebAppContext
         File testWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
-        
+
         // Prepare WebApp libs
         File libDir = new File(testWebAppDir, "WEB-INF/lib");
         FS.ensureDirExists(libDir);
         File testTagLibDir = MavenTestingUtils.getProjectDir("src/test/taglibjar");
         JAR.create(testTagLibDir, new File(libDir, "testtaglib.jar"));
-        
+
         // Configure WebAppContext
 
         Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
+            .setServerDefault(server);
 
         classlist.addBefore(
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
-        
+            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+            "org.eclipse.jetty.annotations.AnnotationConfiguration");
+
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        
+
         File scratchDir = MavenTestingUtils.getTargetFile("tests/" + JspIncludeTest.class.getSimpleName() + "-scratch");
         FS.ensureEmpty(scratchDir);
         JspConfig.init(context, testWebAppDir.toURI(), scratchDir);
-        
+
         server.setHandler(context);
-        
+
         // Start Server
         server.start();
-        
+
         // Figure out Base URI
         String host = connector.getHost();
         if (host == null)
@@ -95,13 +95,13 @@ public class JspIncludeTest
         int port = connector.getLocalPort();
         baseUri = new URI(String.format("http://%s:%d/", host, port));
     }
-    
+
     @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
     public void testTopWithIncluded() throws IOException
     {
@@ -114,13 +114,13 @@ public class JspIncludeTest
 
         try
         {
-            connection = (HttpURLConnection) uri.toURL().openConnection();
+            connection = (HttpURLConnection)uri.toURL().openConnection();
             connection.connect();
             if (HttpURLConnection.HTTP_OK != connection.getResponseCode())
             {
                 String body = getPotentialBody(connection);
                 String err = String.format("GET request failed (%d %s) %s%n%s", connection.getResponseCode(), connection.getResponseMessage(),
-                        uri.toASCIIString(), body);
+                    uri.toASCIIString(), body);
                 throw new IOException(err);
             }
             in = connection.getInputStream();

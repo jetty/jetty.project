@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
 
 import java.io.IOException;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -47,14 +46,14 @@ public class IntParamTextSocket
     @OnMessage
     public void onMessage(int i, @PathParam("a") int param) throws IOException
     {
-        String msg = String.format("%d|%d",i,param);
+        String msg = String.format("%d|%d", i, param);
         session.getAsyncRemote().sendText(msg);
     }
 
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

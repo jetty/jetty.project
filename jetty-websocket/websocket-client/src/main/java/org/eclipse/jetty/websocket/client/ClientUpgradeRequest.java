@@ -80,7 +80,7 @@ public class ClientUpgradeRequest extends UpgradeRequestAdapter
         super(requestURI);
         this.key = genRandomKey();
     }
-    
+
     public ClientUpgradeRequest(WebSocketUpgradeRequest wsRequest)
     {
         this(wsRequest.getURI());
@@ -98,19 +98,19 @@ public class ClientUpgradeRequest extends UpgradeRequestAdapter
                 values = new ArrayList<>();
             }
             values.addAll(Arrays.asList(field.getValues()));
-            headers.put(key,values);
+            headers.put(key, values);
             // sub protocols
-            if(key.equalsIgnoreCase("Sec-WebSocket-Protocol"))
+            if (key.equalsIgnoreCase("Sec-WebSocket-Protocol"))
             {
-                for(String subProtocol: field.getValue().split(","))
+                for (String subProtocol : field.getValue().split(","))
                 {
                     setSubProtocols(subProtocol);
                 }
             }
             // extensions
-            if(key.equalsIgnoreCase("Sec-WebSocket-Extensions"))
+            if (key.equalsIgnoreCase("Sec-WebSocket-Extensions"))
             {
-                for(ExtensionConfig ext: ExtensionConfig.parseList(field.getValues()))
+                for (ExtensionConfig ext : ExtensionConfig.parseList(field.getValues()))
                 {
                     addExtensions(ext);
                 }
@@ -157,21 +157,21 @@ public class ClientUpgradeRequest extends UpgradeRequestAdapter
         if (StringUtil.isNotBlank(query))
         {
             MultiMap<String> params = new MultiMap<String>();
-            UrlEncoded.decodeTo(uri.getQuery(),params,StandardCharsets.UTF_8);
+            UrlEncoded.decodeTo(uri.getQuery(), params, StandardCharsets.UTF_8);
 
             for (String key : params.keySet())
             {
                 List<String> values = params.getValues(key);
                 if (values == null)
                 {
-                    pmap.put(key,new ArrayList<String>());
+                    pmap.put(key, new ArrayList<String>());
                 }
                 else
                 {
                     // break link to original
                     List<String> copy = new ArrayList<>();
                     copy.addAll(values);
-                    pmap.put(key,copy);
+                    pmap.put(key, copy);
                 }
             }
 
@@ -183,7 +183,7 @@ public class ClientUpgradeRequest extends UpgradeRequestAdapter
     {
         this.localEndpoint = websocket;
     }
-    
+
     public Object getLocalEndpoint()
     {
         return localEndpoint;

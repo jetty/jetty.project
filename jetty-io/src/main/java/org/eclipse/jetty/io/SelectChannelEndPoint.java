@@ -21,8 +21,6 @@ package org.eclipse.jetty.io;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -33,7 +31,7 @@ public class SelectChannelEndPoint extends SocketChannelEndPoint
 {
     public SelectChannelEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
     {
-        super(channel,selector,key,scheduler);
+        super(channel, selector, key, scheduler);
         setIdleTimeout(idleTimeout);
     }
 }

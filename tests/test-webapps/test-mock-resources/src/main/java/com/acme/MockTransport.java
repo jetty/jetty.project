@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package com.acme;
 
 import javax.mail.Address;
@@ -32,21 +31,19 @@ import javax.mail.URLName;
 public class MockTransport extends Transport
 {
     /**
-     * @param session
-     * @param urlname
+     *
      */
     public MockTransport(Session session, URLName urlname)
     {
         super(session, urlname);
     }
 
-    /** 
+    /**
      * @see javax.mail.Transport#sendMessage(javax.mail.Message, javax.mail.Address[])
      */
     @Override
     public void sendMessage(Message arg0, Address[] arg1) throws MessagingException
     {
-        System.err.println ("Sending message");
+        System.err.println("Sending message");
     }
-
 }

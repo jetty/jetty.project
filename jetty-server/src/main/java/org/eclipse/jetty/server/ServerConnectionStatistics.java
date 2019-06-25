@@ -28,7 +28,7 @@ public class ServerConnectionStatistics extends ConnectionStatistics
         for (Connector connector : server.getConnectors())
         {
             if (connector instanceof Container)
-                ((Container)connector).addBean(new ConnectionStatistics());
+                connector.addBean(new ConnectionStatistics());
         }
     }
 }

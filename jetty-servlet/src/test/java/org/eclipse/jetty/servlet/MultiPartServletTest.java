@@ -110,7 +110,7 @@ public class MultiPartServletTest
         ServletHolder servletHolder = contextHandler.addServlet(MultiPartServlet.class, "/");
 
         MultipartConfigElement config = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
-                MAX_FILE_SIZE, -1, 1);
+            MAX_FILE_SIZE, -1, 1);
         servletHolder.getRegistration().setMultipartConfig(config);
 
         server.setHandler(contextHandler);
@@ -135,11 +135,13 @@ public class MultiPartServletTest
     public void testTempFilesDeletedOnError(MultiPartFormDataCompliance compliance) throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
-                .setMultiPartFormDataCompliance(compliance);
+            .setMultiPartFormDataCompliance(compliance);
 
         byte[] byteArray = new byte[LARGE_MESSAGE_SIZE];
-        for (int i=0; i<byteArray.length; i++)
+        for (int i = 0; i < byteArray.length; i++)
+        {
             byteArray[i] = 1;
+        }
         BytesContentProvider contentProvider = new BytesContentProvider(byteArray);
 
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
@@ -149,14 +151,14 @@ public class MultiPartServletTest
         try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
         {
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(HttpScheme.HTTP.asString())
-                    .method(HttpMethod.POST)
-                    .content(multiPart)
-                    .send();
+                .scheme(HttpScheme.HTTP.asString())
+                .method(HttpMethod.POST)
+                .content(multiPart)
+                .send();
 
             assertEquals(500, response.getStatus());
             assertThat(response.getContentAsString(),
-                    containsString("Multipart Mime part largePart exceeds max filesize"));
+                containsString("Multipart Mime part largePart exceeds max filesize"));
         }
 
         assertThat(tmpDir.toFile().list().length, is(0));

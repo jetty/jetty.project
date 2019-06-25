@@ -132,7 +132,6 @@ public class ClientGenerator extends Generator
             BufferUtil.flipToFlush(buffer, 0);
         }
 
-
         ByteBuffer lastParamsBuffer = byteBufferPool.acquire(8, false);
         BufferUtil.clearToFill(lastParamsBuffer);
         result = result.append(lastParamsBuffer, true);

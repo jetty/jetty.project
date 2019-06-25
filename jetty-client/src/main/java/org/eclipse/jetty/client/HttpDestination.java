@@ -76,7 +76,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier();
-        
+
         this.timeout = new TimeoutTask(client.getScheduler());
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
@@ -235,7 +235,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     }
 
     protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
-    {        
+    {
         if (!getScheme().equalsIgnoreCase(request.getScheme()))
             throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
         if (!getHost().equalsIgnoreCase(request.getHost()))
@@ -449,7 +449,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         // and we don't want to fail it immediately as if it was queued before the failure.
         // The call to Request.abort() will remove the exchange from the exchanges queue.
         for (HttpExchange exchange : new ArrayList<>(exchanges))
+        {
             exchange.getRequest().abort(cause);
+        }
         if (exchanges.isEmpty())
             tryRemoveIdleDestination();
     }
@@ -483,12 +485,12 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     public String toString()
     {
         return String.format("%s[%s]@%x%s,queue=%d,pool=%s",
-                HttpDestination.class.getSimpleName(),
-                asString(),
-                hashCode(),
-                proxy == null ? "" : "(via " + proxy + ")",
-                exchanges.size(),
-                connectionPool);
+            HttpDestination.class.getSimpleName(),
+            asString(),
+            hashCode(),
+            proxy == null ? "" : "(via " + proxy + ")",
+            exchanges.size(),
+            connectionPool);
     }
 
     /**
@@ -514,7 +516,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             nextTimeout.set(Long.MAX_VALUE);
             long now = System.nanoTime();
             long nextExpiresAt = Long.MAX_VALUE;
-            
+
             // Check all queued exchanges for those that have expired
             // and to determine when the next check must be.
             for (HttpExchange exchange : exchanges)
@@ -528,7 +530,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 else if (expiresAt < nextExpiresAt)
                     nextExpiresAt = expiresAt;
             }
-            
+
             if (nextExpiresAt < Long.MAX_VALUE && client.isRunning())
                 schedule(nextExpiresAt);
         }

@@ -19,10 +19,10 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 //import java.io.IOException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
  * Callable for {@link OnMessage} annotated methods for {@link InputStream} based binary message objects
- * 
+ *
  * @see javax.websocket.Decoder.BinaryStream
  */
 public class OnMessageBinaryStreamCallable extends OnMessageCallable
@@ -41,11 +41,12 @@ public class OnMessageBinaryStreamCallable extends OnMessageCallable
 
     public OnMessageBinaryStreamCallable(Class<?> pojo, Method method)
     {
-        super(pojo,method);
+        super(pojo, method);
     }
 
     /**
      * Copy Constructor
+     *
      * @param copy the callable to copy from
      */
     public OnMessageBinaryStreamCallable(OnMessageCallable copy)
@@ -57,17 +58,17 @@ public class OnMessageBinaryStreamCallable extends OnMessageCallable
     {
         // Bug-430088 - streaming based calls are dispatched.
         // create a copy of the calling args array to prevent concurrency problems.
-        Object copy[] = new Object[super.args.length];
-        System.arraycopy(super.args,0,copy,0,super.args.length);
+        Object[] copy = new Object[super.args.length];
+        System.arraycopy(super.args, 0, copy, 0, super.args.length);
         copy[idxMessageObject] = binaryDecoder.decode(stream);
-        return super.call(endpoint,copy);
+        return super.call(endpoint, copy);
     }
 
     @Override
     public void init(JsrSession session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_BINARY_STREAM);
-        assertRoleRequired(idxMessageObject,"Binary InputStream Message Object");
+        assertRoleRequired(idxMessageObject, "Binary InputStream Message Object");
         super.init(session);
         assertDecoderRequired();
         binaryDecoder = (Decoder.BinaryStream<?>)getDecoder();

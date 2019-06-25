@@ -87,9 +87,9 @@ public class ArrayByteBufferPoolTest
             bufferPool.release(buffer);
 
             int pooled = Arrays.stream(buckets)
-                    .filter(Objects::nonNull)
-                    .mapToInt(Bucket::size)
-                    .sum();
+                .filter(Objects::nonNull)
+                .mapToInt(Bucket::size)
+                .sum();
             assertEquals(size <= 1000, 1 == pooled);
         }
     }
@@ -116,9 +116,9 @@ public class ArrayByteBufferPoolTest
             bufferPool.release(buffer);
 
             int pooled = Arrays.stream(buckets)
-                    .filter(Objects::nonNull)
-                    .mapToInt(Bucket::size)
-                    .sum();
+                .filter(Objects::nonNull)
+                .mapToInt(Bucket::size)
+                .sum();
             assertEquals(1, pooled);
         }
     }
@@ -140,9 +140,9 @@ public class ArrayByteBufferPoolTest
             bufferPool.release(buffer3);
 
             int pooled = Arrays.stream(buckets)
-                    .filter(Objects::nonNull)
-                    .mapToInt(Bucket::size)
-                    .sum();
+                .filter(Objects::nonNull)
+                .mapToInt(Bucket::size)
+                .sum();
             assertEquals(1, pooled);
 
             assertSame(buffer1, buffer2);
@@ -161,15 +161,15 @@ public class ArrayByteBufferPoolTest
 
         Bucket[] buckets = bufferPool.bucketsFor(false);
         Arrays.stream(buckets)
-                .filter(Objects::nonNull)
-                .forEach(b -> assertEquals(0, b.size()));
+            .filter(Objects::nonNull)
+            .forEach(b -> assertEquals(0, b.size()));
 
         bufferPool.release(buffer1);
         Bucket bucket = Arrays.stream(buckets)
-                .filter(Objects::nonNull)
-                .filter(b -> b.size() > 0)
-                .findFirst()
-                .orElseThrow(AssertionError::new);
+            .filter(Objects::nonNull)
+            .filter(b -> b.size() > 0)
+            .findFirst()
+            .orElseThrow(AssertionError::new);
         assertEquals(1, bucket.size());
 
         bufferPool.release(buffer2);

@@ -22,9 +22,8 @@ import javax.servlet.ServletException;
 
 import org.eclipse.jetty.io.QuietException;
 
-
-/* ------------------------------------------------------------ */
-/** A ServletException that is logged less verbosely than
+/**
+ * A ServletException that is logged less verbosely than
  * a normal ServletException.
  * <p>
  * Used for container generated exceptions that need only a message rather
@@ -40,7 +39,7 @@ public class QuietServletException extends ServletException implements QuietExce
 
     public QuietServletException(String message, Throwable rootCause)
     {
-        super(message,rootCause);
+        super(message, rootCause);
     }
 
     public QuietServletException(String message)

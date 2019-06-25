@@ -108,7 +108,9 @@ public class ServerFCGIConnection extends AbstractConnection
     private void parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
+        {
             parser.parse(buffer);
+        }
     }
 
     private void shutdown()
@@ -123,7 +125,7 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
-                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200));
+                new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200));
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();

@@ -27,7 +27,6 @@ import java.util.Map;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 
-/* ------------------------------------------------------------ */
 public class PrecompressedHttpContent implements HttpContent
 {
     private final HttpContent _content;
@@ -66,7 +65,7 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public HttpField getETag()
     {
-        return new HttpField(HttpHeader.ETAG,getETagValue());
+        return new HttpField(HttpHeader.ETAG, getETagValue());
     }
 
     @Override
@@ -168,10 +167,10 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("PrecompressedHttpContent@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",hashCode(),_format._encoding,
-                _content.getResource(),_precompressedContent.getResource(),
-                _content.getResource().lastModified(),_precompressedContent.getResource().lastModified(),
-                getContentType());
+        return String.format("PrecompressedHttpContent@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}", hashCode(), _format._encoding,
+            _content.getResource(), _precompressedContent.getResource(),
+            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
+            getContentType());
     }
 
     @Override

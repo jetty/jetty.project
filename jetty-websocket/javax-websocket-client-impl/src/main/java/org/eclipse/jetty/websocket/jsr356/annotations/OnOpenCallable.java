@@ -19,9 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
-
 import javax.websocket.EndpointConfig;
-import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -35,7 +33,7 @@ public class OnOpenCallable extends JsrCallable
 
     public OnOpenCallable(Class<?> pojo, Method method)
     {
-        super(pojo,method);
+        super(pojo, method);
     }
 
     public OnOpenCallable(OnOpenCallable copy)
@@ -51,7 +49,7 @@ public class OnOpenCallable extends JsrCallable
         {
             super.args[idxEndpointConfig] = config;
         }
-        super.call(endpoint,super.args);
+        super.call(endpoint, super.args);
     }
 
     @Override

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.gcloud.session;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
@@ -25,8 +24,6 @@ import org.eclipse.jetty.server.session.SessionHandler;
 
 /**
  * GCloudSessionDataStoreFactory
- *
- *
  */
 public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
@@ -34,13 +31,12 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
     private int _maxRetries;
     private int _backoffMs;
     private GCloudSessionDataStore.EntityDataModel _model;
-    
-    
+
     public GCloudSessionDataStore.EntityDataModel getEntityDataModel()
     {
         return _model;
     }
-    
+
     public void setEntityDataModel(GCloudSessionDataStore.EntityDataModel model)
     {
         _model = model;
@@ -66,7 +62,6 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         _backoffMs = backoffMs;
     }
 
-    
     /**
      * @return the namespace
      */
@@ -83,7 +78,7 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         _namespace = namespace;
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
@@ -97,5 +92,4 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         ds.setSavePeriodSec(getSavePeriodSec());
         return ds;
     }
-
 }

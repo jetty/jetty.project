@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -183,7 +182,6 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
             else
                 buf.append(" - ");
 
-
             if (_extended)
                 logExtended(buf, request, response);
 
@@ -248,8 +246,8 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
     /**
      * Writes extended request and response information to the output stream.
      *
-     * @param b        StringBuilder to write to
-     * @param request  request object
+     * @param b StringBuilder to write to
+     * @param request request object
      * @param response response object
      * @throws IOException if unable to log the extended information
      */
@@ -300,7 +298,7 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
      * Controls logging of the request cookies.
      *
      * @param logCookies true - values of request cookies will be logged, false - values of request cookies will not be
-     *                   logged
+     * logged
      */
     public void setLogCookies(boolean logCookies)
     {
@@ -341,7 +339,7 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
      * Controls logging of request processing time.
      *
      * @param logLatency true - request processing time will be logged false - request processing time will not be
-     *                   logged
+     * logged
      */
     public void setLogLatency(boolean logLatency)
     {
@@ -382,7 +380,7 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
      * be logged.
      *
      * @param preferProxiedForAddress true - IP address from header will be logged, false - IP address from the
-     *                                connection will be logged
+     * connection will be logged
      */
     public void setPreferProxiedForAddress(boolean preferProxiedForAddress)
     {
@@ -437,7 +435,9 @@ public class AbstractNCSARequestLog extends ContainerLifeCycle implements Reques
         {
             _ignorePathMap = new PathMappings<>();
             for (int i = 0; i < _ignorePaths.length; i++)
+            {
                 _ignorePathMap.put(_ignorePaths[i], _ignorePaths[i]);
+            }
         }
         else
             _ignorePathMap = null;

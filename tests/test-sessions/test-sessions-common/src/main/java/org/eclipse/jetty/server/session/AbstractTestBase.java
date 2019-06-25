@@ -16,15 +16,12 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 /**
  * AbstractTestBase
- *
- *
  */
 public abstract class AbstractTestBase
 {
-    public abstract SessionDataStoreFactory createSessionDataStoreFactory ();
+    public abstract SessionDataStoreFactory createSessionDataStoreFactory();
 }

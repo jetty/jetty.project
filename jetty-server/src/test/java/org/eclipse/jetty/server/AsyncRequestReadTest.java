@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -47,11 +41,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class AsyncRequestReadTest
 {
     private static Server server;
     private static ServerConnector connector;
-    private final static BlockingQueue<Long> __total=new BlockingArrayQueue<>();
+    private static final BlockingQueue<Long> __total = new BlockingArrayQueue<>();
 
     @BeforeEach
     public void startServer() throws Exception
@@ -76,44 +75,43 @@ public class AsyncRequestReadTest
         server.setHandler(new AsyncStreamHandler());
         server.start();
 
-        try (final Socket socket =  new Socket("localhost",connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             socket.setSoTimeout(1000);
 
-            byte[] content = new byte[32*4096];
+            byte[] content = new byte[32 * 4096];
             Arrays.fill(content, (byte)120);
 
             OutputStream out = socket.getOutputStream();
-            String header=
-                "POST / HTTP/1.1\r\n"+
-                    "Host: localhost\r\n"+
-                    "Content-Length: "+content.length+"\r\n"+
-                    "Content-Type: bytes\r\n"+
+            String header =
+                "POST / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: " + content.length + "\r\n" +
+                    "Content-Type: bytes\r\n" +
                     "\r\n";
-            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
+            byte[] h = header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
 
-
-            header=
-                "POST / HTTP/1.1\r\n"+
-                    "Host: localhost\r\n"+
-                    "Content-Length: "+content.length+"\r\n"+
-                    "Content-Type: bytes\r\n"+
-                    "Connection: close\r\n"+
+            header =
+                "POST / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: " + content.length + "\r\n" +
+                    "Content-Type: bytes\r\n" +
+                    "Connection: close\r\n" +
                     "\r\n";
-            h=header.getBytes(StandardCharsets.ISO_8859_1);
+            h = header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             out.flush();
 
             InputStream in = socket.getInputStream();
             String response = IO.toString(in);
-            assertTrue(response.indexOf("200 OK")>0);
+            assertTrue(response.indexOf("200 OK") > 0);
 
-            long total=__total.poll(5,TimeUnit.SECONDS);
+            long total = __total.poll(5, TimeUnit.SECONDS);
             assertEquals(content.length, total);
-            total=__total.poll(5,TimeUnit.SECONDS);
+            total = __total.poll(5, TimeUnit.SECONDS);
             assertEquals(content.length, total);
         }
     }
@@ -124,21 +122,20 @@ public class AsyncRequestReadTest
         server.setHandler(new AsyncStreamHandler());
         server.start();
 
-        asyncReadTest(64,4,4,20);
-        asyncReadTest(256,16,16,50);
-        asyncReadTest(256,1,128,10);
-        asyncReadTest(128*1024,1,64,10);
-        asyncReadTest(256*1024,5321,10,100);
-        asyncReadTest(512*1024,32*1024,10,10);
+        asyncReadTest(64, 4, 4, 20);
+        asyncReadTest(256, 16, 16, 50);
+        asyncReadTest(256, 1, 128, 10);
+        asyncReadTest(128 * 1024, 1, 64, 10);
+        asyncReadTest(256 * 1024, 5321, 10, 100);
+        asyncReadTest(512 * 1024, 32 * 1024, 10, 10);
     }
-
 
     public void asyncReadTest(int contentSize, int chunkSize, int chunks, int delayMS) throws Exception
     {
-        String tst=contentSize+","+chunkSize+","+chunks+","+delayMS;
+        String tst = contentSize + "," + chunkSize + "," + chunks + "," + delayMS;
         //System.err.println(tst);
 
-        try(final Socket socket =  new Socket("localhost",connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
 
             byte[] content = new byte[contentSize];
@@ -147,20 +144,20 @@ public class AsyncRequestReadTest
             OutputStream out = socket.getOutputStream();
             out.write("POST / HTTP/1.1\r\n".getBytes());
             out.write("Host: localhost\r\n".getBytes());
-            out.write(("Content-Length: "+content.length+"\r\n").getBytes());
+            out.write(("Content-Length: " + content.length + "\r\n").getBytes());
             out.write("Content-Type: bytes\r\n".getBytes());
             out.write("Connection: close\r\n".getBytes());
             out.write("\r\n".getBytes());
             out.flush();
 
-            int offset=0;
-            for (int i=0;i<chunks;i++)
+            int offset = 0;
+            for (int i = 0; i < chunks; i++)
             {
-                out.write(content,offset,chunkSize);
-                offset+=chunkSize;
+                out.write(content, offset, chunkSize);
+                offset += chunkSize;
                 Thread.sleep(delayMS);
             }
-            out.write(content,offset,content.length-offset);
+            out.write(content, offset, content.length - offset);
 
             out.flush();
 
@@ -168,11 +165,10 @@ public class AsyncRequestReadTest
             String response = IO.toString(in);
             assertThat(response, containsString("200 OK"));
 
-            long total=__total.poll(30,TimeUnit.SECONDS);
+            long total = __total.poll(30, TimeUnit.SECONDS);
             assertEquals(content.length, total, tst);
         }
     }
-
 
     private static class AsyncStreamHandler extends AbstractHandler
     {
@@ -190,20 +186,22 @@ public class AsyncRequestReadTest
                 @Override
                 public void run()
                 {
-                    long total=0;
-                    try(InputStream in = request.getInputStream();)
+                    long total = 0;
+                    try (InputStream in = request.getInputStream();)
                     {
                         // System.err.println("reading...");
 
-                        byte[] b = new byte[4*4096];
+                        byte[] b = new byte[4 * 4096];
                         int read;
-                        while((read =in.read(b))>=0)
+                        while ((read = in.read(b)) >= 0)
+                        {
                             total += read;
+                        }
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         e.printStackTrace();
-                        total =-1;
+                        total = -1;
                     }
                     finally
                     {
@@ -217,55 +215,53 @@ public class AsyncRequestReadTest
         }
     }
 
-
     @Test
     public void testPartialRead() throws Exception
     {
         server.setHandler(new PartialReaderHandler());
         server.start();
 
-        try (final Socket socket =  new Socket("localhost",connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             socket.setSoTimeout(10000);
 
-            byte[] content = new byte[32*4096];
+            byte[] content = new byte[32 * 4096];
             Arrays.fill(content, (byte)88);
 
             OutputStream out = socket.getOutputStream();
-            String header=
-                "POST /?read=10 HTTP/1.1\r\n"+
-                    "Host: localhost\r\n"+
-                    "Content-Length: "+content.length+"\r\n"+
-                    "Content-Type: bytes\r\n"+
+            String header =
+                "POST /?read=10 HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: " + content.length + "\r\n" +
+                    "Content-Type: bytes\r\n" +
                     "\r\n";
-            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
+            byte[] h = header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
 
-            header= "POST /?read=10 HTTP/1.1\r\n"+
-                    "Host: localhost\r\n"+
-                    "Content-Length: "+content.length+"\r\n"+
-                    "Content-Type: bytes\r\n"+
-                    "Connection: close\r\n"+
-                    "\r\n";
-            h=header.getBytes(StandardCharsets.ISO_8859_1);
+            header = "POST /?read=10 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Length: " + content.length + "\r\n" +
+                "Content-Type: bytes\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+            h = header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             out.flush();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            assertThat(in.readLine(),containsString("HTTP/1.1 200 OK"));
-            assertThat(in.readLine(),containsString("Content-Length: 11"));
-            assertThat(in.readLine(),containsString("Server:"));
+            assertThat(in.readLine(), containsString("HTTP/1.1 200 OK"));
+            assertThat(in.readLine(), containsString("Content-Length: 11"));
+            assertThat(in.readLine(), containsString("Server:"));
             in.readLine();
-            assertThat(in.readLine(),containsString("XXXXXXX"));
-            assertThat(in.readLine(),containsString("HTTP/1.1 200 OK"));
-            assertThat(in.readLine(),containsString("Connection: close"));
-            assertThat(in.readLine(),containsString("Content-Length: 11"));
-            assertThat(in.readLine(),containsString("Server:"));
+            assertThat(in.readLine(), containsString("XXXXXXX"));
+            assertThat(in.readLine(), containsString("HTTP/1.1 200 OK"));
+            assertThat(in.readLine(), containsString("Connection: close"));
+            assertThat(in.readLine(), containsString("Content-Length: 11"));
+            assertThat(in.readLine(), containsString("Server:"));
             in.readLine();
-            assertThat(in.readLine(),containsString("XXXXXXX"));
-
+            assertThat(in.readLine(), containsString("XXXXXXX"));
         }
     }
 
@@ -275,33 +271,33 @@ public class AsyncRequestReadTest
         server.setHandler(new PartialReaderHandler());
         server.start();
 
-        try (final Socket socket =  new Socket("localhost",connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             socket.setSoTimeout(10000);
 
-            byte[] content = new byte[32*4096];
+            byte[] content = new byte[32 * 4096];
             Arrays.fill(content, (byte)88);
 
             OutputStream out = socket.getOutputStream();
-            String header=
-                "POST /?read=10 HTTP/1.1\r\n"+
-                    "Host: localhost\r\n"+
-                    "Content-Length: "+content.length+"\r\n"+
-                    "Content-Type: bytes\r\n"+
+            String header =
+                "POST /?read=10 HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: " + content.length + "\r\n" +
+                    "Content-Type: bytes\r\n" +
                     "\r\n";
-            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
+            byte[] h = header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
-            out.write(content,0,4096);
+            out.write(content, 0, 4096);
             out.flush();
             socket.shutdownOutput();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            assertThat(in.readLine(),containsString("HTTP/1.1 200 OK"));
-            assertThat(in.readLine(),containsString("Content-Length:"));
-            assertThat(in.readLine(),containsString("Connection: close"));
-            assertThat(in.readLine(),containsString("Server:"));
+            assertThat(in.readLine(), containsString("HTTP/1.1 200 OK"));
+            assertThat(in.readLine(), containsString("Content-Length:"));
+            assertThat(in.readLine(), containsString("Connection: close"));
+            assertThat(in.readLine(), containsString("Server:"));
             in.readLine();
-            assertThat(in.readLine(),containsString("XXXXXXX"));
+            assertThat(in.readLine(), containsString("XXXXXXX"));
         }
     }
 
@@ -311,31 +307,31 @@ public class AsyncRequestReadTest
         server.setHandler(new PartialReaderHandler());
         server.start();
 
-        try (final Socket socket =  new Socket("localhost",connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             socket.setSoTimeout(1000);
 
-            byte[] content = new byte[32*4096];
+            byte[] content = new byte[32 * 4096];
             Arrays.fill(content, (byte)88);
 
             OutputStream out = socket.getOutputStream();
-            String header=
-                "POST /?read=10 HTTP/1.1\r\n"+
-                    "Host: localhost\r\n"+
-                    "Content-Length: "+content.length+"\r\n"+
-                    "Content-Type: bytes\r\n"+
+            String header =
+                "POST /?read=10 HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: " + content.length + "\r\n" +
+                    "Content-Type: bytes\r\n" +
                     "\r\n";
-            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
+            byte[] h = header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
-            out.write(content,0,4096);
+            out.write(content, 0, 4096);
             out.flush();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            assertThat(in.readLine(),containsString("HTTP/1.1 200 OK"));
-            assertThat(in.readLine(),containsString("Content-Length:"));
-            assertThat(in.readLine(),containsString("Server:"));
+            assertThat(in.readLine(), containsString("HTTP/1.1 200 OK"));
+            assertThat(in.readLine(), containsString("Content-Length:"));
+            assertThat(in.readLine(), containsString("Server:"));
             in.readLine();
-            assertThat(in.readLine(),containsString("XXXXXXX"));
+            assertThat(in.readLine(), containsString("XXXXXXX"));
 
             socket.close();
         }
@@ -350,14 +346,14 @@ public class AsyncRequestReadTest
             request.setHandled(true);
 
             BufferedReader in = request.getReader();
-            PrintWriter out =httpResponse.getWriter();
-            int read=Integer.parseInt(request.getParameter("read"));
+            PrintWriter out = httpResponse.getWriter();
+            int read = Integer.parseInt(request.getParameter("read"));
             // System.err.println("read="+read);
-            for (int i=read;i-->0;)
+            for (int i = read; i-- > 0; )
             {
-                int c=in.read();
+                int c = in.read();
                 // System.err.println("in="+c);
-                if (c<0)
+                if (c < 0)
                     break;
                 out.write(c);
             }

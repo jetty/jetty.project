@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.lang.reflect.Method;
 import java.util.Date;
 
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.decoders.DateDecoder;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class JsrParamIdDecoderTest
 {
@@ -38,7 +37,7 @@ public class JsrParamIdDecoderTest
         {
             if (method.getName().equals(methodName))
             {
-                return new OnMessageCallable(clazz,method);
+                return new OnMessageCallable(clazz, method);
             }
         }
         return null;
@@ -47,12 +46,12 @@ public class JsrParamIdDecoderTest
     @Test
     public void testMatchDateDecoder()
     {
-        DecoderMetadata metadata = new DecoderMetadata(DateDecoder.class,Date.class,MessageType.TEXT,false);
+        DecoderMetadata metadata = new DecoderMetadata(DateDecoder.class, Date.class, MessageType.TEXT, false);
         JsrParamIdDecoder paramId = new JsrParamIdDecoder(metadata);
 
-        JsrCallable callable = getOnMessageCallableFrom(DateTextSocket.class,"onMessage");
-        Param param = new Param(0,Date.class,null);
+        JsrCallable callable = getOnMessageCallableFrom(DateTextSocket.class, "onMessage");
+        Param param = new Param(0, Date.class, null);
 
-        assertThat("Match for Decoder",paramId.process(param,callable),is(true));
+        assertThat("Match for Decoder", paramId.process(param, callable), is(true));
     }
 }

@@ -23,7 +23,6 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.ServletContext;
 
 import org.apache.jasper.servlet.JasperInitializer;
@@ -37,7 +36,8 @@ import org.xml.sax.SAXException;
  */
 public class JettyJasperInitializer extends JasperInitializer
 {
-   private static final Log LOG = LogFactory.getLog(JasperInitializer.class);
+    private static final Log LOG = LogFactory.getLog(JasperInitializer.class);
+
     /**
      * NullTldScanner
      *
@@ -47,10 +47,7 @@ public class JettyJasperInitializer extends JasperInitializer
     private final class NullTldScanner extends TldScanner
     {
         /**
-         * @param context
-         * @param namespaceAware
-         * @param validation
-         * @param blockExternal
+         *
          */
         private NullTldScanner(ServletContext context, boolean namespaceAware, boolean validation, boolean blockExternal)
         {
@@ -81,7 +78,7 @@ public class JettyJasperInitializer extends JasperInitializer
         @Override
         public void scanJars()
         {
-           return; //do nothing
+            return; //do nothing
         }
     }
 
@@ -91,22 +88,25 @@ public class JettyJasperInitializer extends JasperInitializer
      */
     @Override
     public TldScanner newTldScanner(ServletContext context, boolean namespaceAware, boolean validate, boolean blockExternal)
-    {  
+    {
         String tmp = context.getInitParameter("org.eclipse.jetty.jsp.precompiled");
-        if (tmp!=null && !tmp.equals("") && Boolean.valueOf(tmp))
+        if (tmp != null && !tmp.equals("") && Boolean.valueOf(tmp))
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Jsp precompilation detected");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Jsp precompilation detected");
             return new NullTldScanner(context, namespaceAware, validate, blockExternal);
         }
-        
+
         Collection<URL> tldUrls = (Collection<URL>)context.getAttribute("org.eclipse.jetty.tlds");
         if (tldUrls != null)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Tld pre-scan detected");
-            return new JettyTldPreScanned(context,namespaceAware,validate,blockExternal,tldUrls);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Tld pre-scan detected");
+            return new JettyTldPreScanned(context, namespaceAware, validate, blockExternal, tldUrls);
         }
-        
-        if (LOG.isDebugEnabled()) LOG.debug("Defaulting to jasper tld scanning");
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Defaulting to jasper tld scanning");
         return super.newTldScanner(context, namespaceAware, validate, blockExternal);
     }
 }

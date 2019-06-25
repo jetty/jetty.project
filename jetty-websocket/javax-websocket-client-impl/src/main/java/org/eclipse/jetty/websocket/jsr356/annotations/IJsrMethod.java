@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
-
 import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
 
@@ -34,51 +33,50 @@ public interface IJsrMethod
 
     /**
      * Get the fully qualifed method name {classname}.{methodname}({params}) suitable for using in error messages.
-     * 
+     *
      * @return the fully qualified method name for end users
      */
     String getFullyQualifiedMethodName();
 
     /**
      * Get the Decoder to use for message decoding
-     * 
+     *
      * @return the decoder class to use for message decoding
      */
     Class<? extends Decoder> getMessageDecoder();
 
     /**
      * The type of message this method can handle
-     * 
+     *
      * @return the message type if &#064;{@link OnMessage} annotated, null if unknown/unspecified
      */
     MessageType getMessageType();
 
     /**
      * The reflected method
-     * 
+     *
      * @return the method itself
      */
     Method getMethod();
 
     /**
      * Indicator that partial message support is enabled
-     * 
+     *
      * @return true if enabled
      */
     boolean isPartialMessageSupportEnabled();
 
     /**
      * The message decoder class to use.
-     * 
+     *
      * @param decoderClass the {@link Decoder} implementation to use
      */
     void setMessageDecoder(Class<? extends Decoder> decoderClass);
 
     /**
      * The type of message this method can handle
-     * 
-     * @param type
-     *            the type of message
+     *
+     * @param type the type of message
      */
     void setMessageType(MessageType type);
 }

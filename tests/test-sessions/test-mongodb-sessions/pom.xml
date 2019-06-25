@@ -59,37 +59,37 @@
     </plugins>
   </build>
   <dependencies>
-       <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-client</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.tests</groupId>
-            <artifactId>test-sessions-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-nosql</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-jmx</artifactId>
-          <version>${project.version}</version>
-          <optional>true</optional>
-        </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-sessions-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-nosql</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${project.version}</version>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
@@ -97,68 +97,68 @@
     </dependency>
   </dependencies>
   <profiles>
-      <profile>
-        <id>mongodb</id>
-        <activation>
-          <property>
-            <name>mongodb.enabled</name>
-            <value>true</value>
-          </property>
-        </activation>
-        <build>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <systemPropertyVariables>
-                  <embedmongoPort>${embedmongo.port}</embedmongoPort>
-                  <embedmongoHost>${embedmongo.host}</embedmongoHost>
-                </systemPropertyVariables>
-                <skipTests>false</skipTests>
-              </configuration>
-            </plugin>
-            <plugin>
-              <groupId>com.github.joelittlejohn.embedmongo</groupId>
-              <artifactId>embedmongo-maven-plugin</artifactId>
-              <version>0.4.1</version>
-              <configuration>
-                <!--port>37017</port-->
-                <!-- allocates a random port and overrides embedmongo.port -->
-                <randomPort>true</randomPort>
+    <profile>
+      <id>mongodb</id>
+      <activation>
+        <property>
+          <name>mongodb.enabled</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+                <embedmongoPort>${embedmongo.port}</embedmongoPort>
+                <embedmongoHost>${embedmongo.host}</embedmongoHost>
+              </systemPropertyVariables>
+              <skipTests>false</skipTests>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>com.github.joelittlejohn.embedmongo</groupId>
+            <artifactId>embedmongo-maven-plugin</artifactId>
+            <version>0.4.1</version>
+            <configuration>
+              <!--port>37017</port-->
+              <!-- allocates a random port and overrides embedmongo.port -->
+              <randomPort>true</randomPort>
 
-                <databaseDirectory>${project.build.directory}/mongotest</databaseDirectory>
+              <databaseDirectory>${project.build.directory}/mongotest</databaseDirectory>
 
-                <!-- optional (file|console|none), default console -->
-                <logging>file</logging>
-                <!-- optional, can be used when logging=file, default is ./embedmongo.log -->
-                <logFile>${project.build.directory}/embedmongo.log</logFile>
-                <!--optional, one of wiredTiger or mmapv1 (default is mmapv1) -->
-                <!--storageEngine>wiredTiger</storageEngine-->
-                <!-- optional, skips this plugin entirely, use on the command line like -Dembedmongo.skip -->
-                <skip>false</skip>
-                <downloadPath>https://jenkins.webtide.net/userContent/</downloadPath>
-                <version>2.2.1</version>
-              </configuration>
-              <executions>
-                <execution>
-                  <id>start</id>
-                  <phase>process-test-classes</phase>
-                  <goals>
-                    <goal>start</goal>
-                  </goals>
-                </execution>
-                <execution>
-                  <id>stop</id>
-                  <phase>test</phase>
-                  <goals>
-                    <goal>stop</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </build>
-      </profile>
+              <!-- optional (file|console|none), default console -->
+              <logging>file</logging>
+              <!-- optional, can be used when logging=file, default is ./embedmongo.log -->
+              <logFile>${project.build.directory}/embedmongo.log</logFile>
+              <!--optional, one of wiredTiger or mmapv1 (default is mmapv1) -->
+              <!--storageEngine>wiredTiger</storageEngine-->
+              <!-- optional, skips this plugin entirely, use on the command line like -Dembedmongo.skip -->
+              <skip>false</skip>
+              <downloadPath>https://jenkins.webtide.net/userContent/</downloadPath>
+              <version>2.2.1</version>
+            </configuration>
+            <executions>
+              <execution>
+                <id>start</id>
+                <phase>process-test-classes</phase>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop</id>
+                <phase>test</phase>
+                <goals>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>

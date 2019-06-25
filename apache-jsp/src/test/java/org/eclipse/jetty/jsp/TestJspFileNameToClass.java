@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.jsp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.eclipse.jetty.servlet.ServletHolder;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestJspFileNameToClass
 {
@@ -33,18 +32,17 @@ public class TestJspFileNameToClass
         ServletHolder h = new ServletHolder();
         h.setName("test");
 
+        assertEquals(null, h.getClassNameForJsp(null));
 
-        assertEquals(null,  h.getClassNameForJsp(null));
+        assertEquals(null, h.getClassNameForJsp(""));
 
-        assertEquals(null,  h.getClassNameForJsp(""));
+        assertEquals(null, h.getClassNameForJsp("/blah/"));
 
-        assertEquals(null,  h.getClassNameForJsp("/blah/"));
+        assertEquals(null, h.getClassNameForJsp("//blah///"));
 
-        assertEquals(null,  h.getClassNameForJsp("//blah///"));
+        assertEquals(null, h.getClassNameForJsp("/a/b/c/blah/"));
 
-        assertEquals(null,  h.getClassNameForJsp("/a/b/c/blah/"));
-
-        assertEquals("org.apache.jsp.a.b.c.blah",  h.getClassNameForJsp("/a/b/c/blah"));
+        assertEquals("org.apache.jsp.a.b.c.blah", h.getClassNameForJsp("/a/b/c/blah"));
 
         assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("/blah.jsp"));
 
@@ -56,5 +54,4 @@ public class TestJspFileNameToClass
 
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("a/b/c/blah.jsp"));
     }
-    
 }

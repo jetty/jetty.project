@@ -19,7 +19,6 @@
 package org.eclipse.jetty.jmx;
 
 import java.lang.management.ManagementFactory;
-
 import javax.management.Attribute;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;

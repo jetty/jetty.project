@@ -77,10 +77,10 @@ public class GoAwayFrame extends Frame
     public String toString()
     {
         return String.format("%s,%d/%s/%s/%s",
-                super.toString(),
-                lastStreamId,
-                ErrorCode.toString(error, null),
-                tryConvertPayload(),
-                closeState);
+            super.toString(),
+            lastStreamId,
+            ErrorCode.toString(error, null),
+            tryConvertPayload(),
+            closeState);
     }
 }

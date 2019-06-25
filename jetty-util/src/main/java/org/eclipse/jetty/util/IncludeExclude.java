@@ -21,15 +21,16 @@ package org.eclipse.jetty.util;
 import java.util.Set;
 import java.util.function.Predicate;
 
-
-/** Utility class to maintain a set of inclusions and exclusions.
+/**
+ * Utility class to maintain a set of inclusions and exclusions.
  * <p>This extension of the {@link IncludeExcludeSet} class is used
- * when the type of the set elements is the same as the type of 
+ * when the type of the set elements is the same as the type of
  * the predicate test.
  * <p>
+ *
  * @param <ITEM> The type of element
  */
-public class IncludeExclude<ITEM> extends IncludeExcludeSet<ITEM,ITEM>
+public class IncludeExclude<ITEM> extends IncludeExcludeSet<ITEM, ITEM>
 {
     public IncludeExclude()
     {
@@ -42,8 +43,8 @@ public class IncludeExclude<ITEM> extends IncludeExcludeSet<ITEM,ITEM>
     }
 
     public <SET extends Set<ITEM>> IncludeExclude(Set<ITEM> includeSet, Predicate<ITEM> includePredicate, Set<ITEM> excludeSet,
-            Predicate<ITEM> excludePredicate)
+                                                  Predicate<ITEM> excludePredicate)
     {
-        super(includeSet,includePredicate,excludeSet,excludePredicate);
+        super(includeSet, includePredicate, excludeSet, excludePredicate);
     }
 }

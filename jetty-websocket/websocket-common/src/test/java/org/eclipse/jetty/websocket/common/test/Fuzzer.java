@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.io.IOException;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
@@ -44,6 +39,10 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Fuzzing utility for the AB tests.
@@ -64,7 +63,7 @@ public class Fuzzer implements AutoCloseable
 
     // Client side framing mask
     protected static final byte[] MASK =
-    { 0x11, 0x22, 0x33, 0x44 };
+        {0x11, 0x22, 0x33, 0x44};
 
     private final Fuzzed testcase;
     private final BlockheadClient client;
@@ -103,12 +102,12 @@ public class Fuzzer implements AutoCloseable
         for (WebSocketFrame f : send)
         {
             setClientMask(f);
-            generator.generateWholeFrame(f,buf);
+            generator.generateWholeFrame(f, buf);
         }
         buf.flip();
         return buf;
     }
-    
+
     @Override
     public void close()
     {
@@ -168,34 +167,34 @@ public class Fuzzer implements AutoCloseable
     public void expect(List<WebSocketFrame> expect, long duration, TimeUnit unit) throws Exception
     {
         int expectedCount = expect.size();
-        LOG.debug("expect() {} frame(s)",expect.size());
+        LOG.debug("expect() {} frame(s)", expect.size());
 
         // Read frames
         LinkedBlockingQueue<WebSocketFrame> frames = clientConnection.getFrameQueue();
-        
+
         String prefix = "";
         for (int i = 0; i < expectedCount; i++)
         {
             WebSocketFrame expected = expect.get(i);
-            WebSocketFrame actual = frames.poll(duration,unit);
+            WebSocketFrame actual = frames.poll(duration, unit);
 
             prefix = "Frame[" + i + "]";
 
-            LOG.debug("{} {}",prefix,actual);
+            LOG.debug("{} {}", prefix, actual);
 
             assertThat(prefix, actual, is(notNullValue()));
-            assertThat(prefix + ".opcode",OpCode.name(actual.getOpCode()),is(OpCode.name(expected.getOpCode())));
+            assertThat(prefix + ".opcode", OpCode.name(actual.getOpCode()), is(OpCode.name(expected.getOpCode())));
             prefix += "/" + actual.getOpCode();
             if (expected.getOpCode() == OpCode.CLOSE)
             {
                 CloseInfo expectedClose = new CloseInfo(expected);
                 CloseInfo actualClose = new CloseInfo(actual);
-                assertThat(prefix + ".statusCode",actualClose.getStatusCode(),is(expectedClose.getStatusCode()));
+                assertThat(prefix + ".statusCode", actualClose.getStatusCode(), is(expectedClose.getStatusCode()));
             }
             else
             {
-                assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.getPayloadLength()));
-                ByteBufferAssert.assertEquals(prefix + ".payload",expected.getPayload(),actual.getPayload());
+                assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.getPayloadLength()));
+                ByteBufferAssert.assertEquals(prefix + ".payload", expected.getPayload(), actual.getPayload());
             }
         }
     }
@@ -222,11 +221,11 @@ public class Fuzzer implements AutoCloseable
 
     public void send(ByteBuffer buf) throws IOException
     {
-        assertThat("Client connected",clientConnection.isOpen(),is(true));
-        LOG.debug("Sending bytes {}",BufferUtil.toDetailString(buf));
+        assertThat("Client connected", clientConnection.isOpen(), is(true));
+        LOG.debug("Sending bytes {}", BufferUtil.toDetailString(buf));
         if (sendMode == SendMode.SLOW)
         {
-            clientConnection.writeRawSlowly(buf,slowSendSegmentSize);
+            clientConnection.writeRawSlowly(buf, slowSendSegmentSize);
         }
         else
         {
@@ -241,8 +240,8 @@ public class Fuzzer implements AutoCloseable
 
     public void send(List<WebSocketFrame> send) throws IOException
     {
-        assertThat("Client connected",clientConnection.isOpen(),is(true));
-        LOG.debug("Sending {} frames (mode {})",send.size(),sendMode);
+        assertThat("Client connected", clientConnection.isOpen(), is(true));
+        LOG.debug("Sending {} frames (mode {})", send.size(), sendMode);
         if ((sendMode == SendMode.BULK) || (sendMode == SendMode.SLOW))
         {
             int buflen = 0;
@@ -262,7 +261,7 @@ public class Fuzzer implements AutoCloseable
                     buf.put(f.getPayload());
                 }
             }
-            BufferUtil.flipToFlush(buf,0);
+            BufferUtil.flipToFlush(buf, 0);
 
             // Write Data Frame
             switch (sendMode)
@@ -271,7 +270,7 @@ public class Fuzzer implements AutoCloseable
                     clientConnection.writeRaw(buf);
                     break;
                 case SLOW:
-                    clientConnection.writeRawSlowly(buf,slowSendSegmentSize);
+                    clientConnection.writeRawSlowly(buf, slowSendSegmentSize);
                     break;
                 default:
                     throw new RuntimeException("Whoops, unsupported sendMode: " + sendMode);
@@ -285,8 +284,8 @@ public class Fuzzer implements AutoCloseable
                 // Using lax generator, generate and send
                 ByteBuffer fullframe = ByteBuffer.allocate(f.getPayloadLength() + Generator.MAX_HEADER_LENGTH);
                 BufferUtil.clearToFill(fullframe);
-                generator.generateWholeFrame(f,fullframe);
-                BufferUtil.flipToFlush(fullframe,0);
+                generator.generateWholeFrame(f, fullframe);
+                BufferUtil.flipToFlush(fullframe, 0);
                 clientConnection.writeRaw(fullframe);
             }
         }
@@ -315,7 +314,7 @@ public class Fuzzer implements AutoCloseable
             // early socket close can propagate back to the client
             // before it has a chance to finish writing out the
             // remaining frame octets
-            assertThat("Allowed to be a broken pipe",ignore.getMessage().toLowerCase(Locale.ENGLISH),containsString("broken pipe"));
+            assertThat("Allowed to be a broken pipe", ignore.getMessage().toLowerCase(Locale.ENGLISH), containsString("broken pipe"));
         }
     }
 
@@ -324,7 +323,7 @@ public class Fuzzer implements AutoCloseable
         if (LOG.isDebugEnabled())
         {
             f.setMask(new byte[]
-            { 0x00, 0x00, 0x00, 0x00 });
+                {0x00, 0x00, 0x00, 0x00});
         }
         else
         {

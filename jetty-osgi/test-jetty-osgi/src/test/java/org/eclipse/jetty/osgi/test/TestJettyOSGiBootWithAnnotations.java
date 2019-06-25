@@ -61,11 +61,11 @@ public class TestJettyOSGiBootWithAnnotations
         options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-annotations.xml"));
-        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
-     
+        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*", "javax.activation.*"));
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+
         options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
@@ -75,7 +75,6 @@ public class TestJettyOSGiBootWithAnnotations
         return options.toArray(new Option[options.size()]);
     }
 
-
     public static List<Option> jspDependencies()
     {
         return TestOSGiUtil.jspDependencies();
@@ -84,8 +83,8 @@ public class TestJettyOSGiBootWithAnnotations
     public static List<Option> annotationDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId( "com.sun.activation" ).artifactId( "javax.activation" ).version( "1.2.0" ).noStart());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.mail.glassfish" ).version( "1.4.1.v201005082020" ).noStart());
+        res.add(mavenBundle().groupId("com.sun.activation").artifactId("javax.activation").version("1.2.0").noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.mail.glassfish").version("1.4.1.v201005082020").noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-container-initializer").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
         //test webapp bundle
@@ -93,40 +92,37 @@ public class TestJettyOSGiBootWithAnnotations
         return res;
     }
 
-
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
-
-
     @Test
     public void testIndex() throws Exception
     {
-        
+
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             assertAllBundlesActiveOrResolved();
-            
+
         HttpClient client = new HttpClient();
         try
         {
             client.start();
             String port = System.getProperty("boot.annotations.port");
             assertNotNull(port);
-            
+
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = response.getContentAsString();
             assertTrue(content.contains("<h1>Servlet 3.1 Test WebApp</h1>"));
-            
+
             Request req = client.POST("http://127.0.0.1:" + port + "/test");
             response = req.send();
             content = response.getContentAsString();
             assertTrue(content.contains("<p><b>Result: <span class=\"pass\">PASS</span></p>"));
-            
+
             response = client.GET("http://127.0.0.1:" + port + "/frag.html");
             content = response.getContentAsString();
             assertTrue(content.contains("<h1>FRAGMENT</h1>"));
@@ -136,5 +132,4 @@ public class TestJettyOSGiBootWithAnnotations
             client.stop();
         }
     }
-
 }

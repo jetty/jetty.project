@@ -44,20 +44,22 @@ public class MultiReleaseJarFile implements Closeable
     private final boolean multiRelease;
 
     /* Map to hold unversioned name to VersionedJarEntry */
-    private final Map<String,VersionedJarEntry> entries;
+    private final Map<String, VersionedJarEntry> entries;
 
     /**
      * Construct a multi release jar file for the current JVM version, ignoring directories.
+     *
      * @param file The file to open
      * @throws IOException if the jar file cannot be read
      */
     public MultiReleaseJarFile(File file) throws IOException
     {
-        this(file,JavaVersion.VERSION.getPlatform(),false);
+        this(file, JavaVersion.VERSION.getPlatform(), false);
     }
 
     /**
      * Construct a multi release jar file
+     *
      * @param file The file to open
      * @param javaPlatform The  JVM platform to apply when selecting a version.
      * @param includeDirectories true if any directory entries should not be ignored
@@ -65,32 +67,32 @@ public class MultiReleaseJarFile implements Closeable
      */
     public MultiReleaseJarFile(File file, int javaPlatform, boolean includeDirectories) throws IOException
     {
-        if (file==null || !file.exists() || !file.canRead() || file.isDirectory())
-            throw new IllegalArgumentException("bad jar file: "+file);
+        if (file == null || !file.exists() || !file.canRead() || file.isDirectory())
+            throw new IllegalArgumentException("bad jar file: " + file);
 
-        jarFile = new JarFile(file,true,JarFile.OPEN_READ);
+        jarFile = new JarFile(file, true, JarFile.OPEN_READ);
         this.platform = javaPlatform;
 
         Manifest manifest = jarFile.getManifest();
-        if (manifest==null)
+        if (manifest == null)
             multiRelease = false;
         else
             multiRelease = Boolean.parseBoolean(String.valueOf(manifest.getMainAttributes().getValue("Multi-Release")));
 
-        Map<String,VersionedJarEntry> map = new TreeMap<>();
+        Map<String, VersionedJarEntry> map = new TreeMap<>();
         jarFile.stream()
-                .map(VersionedJarEntry::new)
-                .filter(e->(includeDirectories||!e.isDirectory()) && e.isApplicable())
-                .forEach(e->map.compute(e.name, (k, v) -> v==null || v.isReplacedBy(e) ? e : v));
+            .map(VersionedJarEntry::new)
+            .filter(e -> (includeDirectories || !e.isDirectory()) && e.isApplicable())
+            .forEach(e -> map.compute(e.name, (k, v) -> v == null || v.isReplacedBy(e) ? e : v));
 
-        for (Iterator<Map.Entry<String,VersionedJarEntry>> i = map.entrySet().iterator();i.hasNext();)
+        for (Iterator<Map.Entry<String, VersionedJarEntry>> i = map.entrySet().iterator(); i.hasNext(); )
         {
-            Map.Entry<String,VersionedJarEntry> e = i.next();
+            Map.Entry<String, VersionedJarEntry> e = i.next();
             VersionedJarEntry entry = e.getValue();
             if (entry.inner)
             {
-                VersionedJarEntry outer = entry.outer==null?null:map.get(entry.outer);
-                if (outer==null || outer.version!=entry.version)
+                VersionedJarEntry outer = entry.outer == null ? null : map.get(entry.outer);
+                if (outer == null || outer.version != entry.version)
                     i.remove();
             }
         }
@@ -122,7 +124,9 @@ public class MultiReleaseJarFile implements Closeable
         return entries.values().stream();
     }
 
-    /** Get a versioned resource entry by name
+    /**
+     * Get a versioned resource entry by name
+     *
      * @param name The unversioned name of the resource
      * @return The versioned entry of the resource
      */
@@ -134,14 +138,14 @@ public class MultiReleaseJarFile implements Closeable
     @Override
     public void close() throws IOException
     {
-        if (jarFile!=null)
+        if (jarFile != null)
             jarFile.close();
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s[%b,%d]",jarFile.getName(),isMultiRelease(),getVersion());
+        return String.format("%s[%b,%d]", jarFile.getName(), isMultiRelease(), getVersion());
     }
 
     /**
@@ -172,7 +176,7 @@ public class MultiReleaseJarFile implements Closeable
                     }
                     catch (NumberFormatException x)
                     {
-                        throw new RuntimeException("illegal version in "+jarFile,x);
+                        throw new RuntimeException("illegal version in " + jarFile, x);
                     }
                 }
             }
@@ -209,7 +213,6 @@ public class MultiReleaseJarFile implements Closeable
         }
 
         /**
-         *
          * @return True iff the entry is not from the base version
          */
         public boolean isVersioned()
@@ -218,7 +221,6 @@ public class MultiReleaseJarFile implements Closeable
         }
 
         /**
-         *
          * @return True iff the entry is a directory
          */
         public boolean isDirectory()
@@ -238,21 +240,21 @@ public class MultiReleaseJarFile implements Closeable
         boolean isApplicable()
         {
             if (multiRelease)
-               return ( this.version==0 || this.version == platform ) && name.length()>0;
-            return this.version==0;
+                return (this.version == 0 || this.version == platform) && name.length() > 0;
+            return this.version == 0;
         }
 
         boolean isReplacedBy(VersionedJarEntry entry)
         {
             if (isDirectory())
-                return entry.version==0;
-            return this.name.equals(entry.name) && entry.version>version;
+                return entry.version == 0;
+            return this.name.equals(entry.name) && entry.version > version;
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s->%s[%d]",name,entry.getName(),version);
+            return String.format("%s->%s[%d]", name, entry.getName(), version);
         }
     }
 }

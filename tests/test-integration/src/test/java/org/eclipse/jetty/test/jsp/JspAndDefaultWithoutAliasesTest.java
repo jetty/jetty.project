@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.test.jsp;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +41,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 /**
  * Test various paths for JSP resources that tickle various java.io.File bugs to get around the JspServlet matching, that then flows to the DefaultServlet to be
@@ -59,16 +58,16 @@ public class JspAndDefaultWithoutAliasesTest
     public static Stream<Arguments> aliases()
     {
         List<Arguments> data = new ArrayList<>();
-        
-        data.add(Arguments.of( "/dump.jsp" ));
-        data.add(Arguments.of( "/dump.jsp/" ));
-        data.add(Arguments.of( "/dump.jsp%00" ));
-        data.add(Arguments.of( "/dump.jsp%00x" ));
-        data.add(Arguments.of( "/dump.jsp%00x/dump.jsp" ));
-        data.add(Arguments.of( "/dump.jsp%00/dump.jsp" ));
-        data.add(Arguments.of( "/dump.jsp%00/index.html" ));
-        data.add(Arguments.of( "/dump.jsp%00/" ));
-        data.add(Arguments.of( "/dump.jsp%00x/" ));
+
+        data.add(Arguments.of("/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp/"));
+        data.add(Arguments.of("/dump.jsp%00"));
+        data.add(Arguments.of("/dump.jsp%00x"));
+        data.add(Arguments.of("/dump.jsp%00x/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp%00/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp%00/index.html"));
+        data.add(Arguments.of("/dump.jsp%00/"));
+        data.add(Arguments.of("/dump.jsp%00x/"));
 
         return data.stream();
     }
@@ -93,19 +92,19 @@ public class JspAndDefaultWithoutAliasesTest
         context.setClassLoader(Thread.currentThread().getContextClassLoader());
 
         // add default servlet
-        ServletHolder defaultServHolder = context.addServlet(DefaultServlet.class,"/");
-        defaultServHolder.setInitParameter("aliases","false"); // important! must be FALSE
+        ServletHolder defaultServHolder = context.addServlet(DefaultServlet.class, "/");
+        defaultServHolder.setInitParameter("aliases", "false"); // important! must be FALSE
 
         // add jsp
         ServletHolder jsp = new ServletHolder(new FakeJspServlet());
-        context.addServlet(jsp,"*.jsp");        
-        jsp.setInitParameter("classpath",context.getClassPath());
+        context.addServlet(jsp, "*.jsp");
+        jsp.setInitParameter("classpath", context.getClassPath());
 
         // add context
         server.setHandler(context);
 
         server.start();
-        
+
         int port = ((NetworkConnector)server.getConnectors()[0]).getLocalPort();
         serverURI = new URI("http://localhost:" + port + "/");
     }
@@ -121,8 +120,8 @@ public class JspAndDefaultWithoutAliasesTest
         // make sure that jsp actually ran, and didn't just get passed onto
         // the default servlet to return the jsp source
         String body = getResponseBody(conn);
-        assertThat("Body",body,not(containsString("<%@")));
-        assertThat("Body",body,not(containsString("<jsp:")));
+        assertThat("Body", body, not(containsString("<%@")));
+        assertThat("Body", body, not(containsString("<jsp:")));
     }
 
     private void assertResponse(HttpURLConnection conn) throws IOException
@@ -135,7 +134,7 @@ public class JspAndDefaultWithoutAliasesTest
         }
 
         // Of other possible paths, only 404 Not Found is expected
-        assertThat("Response Code",conn.getResponseCode(),is(404));
+        assertThat("Response Code", conn.getResponseCode(), is(404));
     }
 
     @ParameterizedTest

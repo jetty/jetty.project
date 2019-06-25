@@ -18,38 +18,37 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.File;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class JarVersionTest
 {
     private void assertJarVersion(String jarname, String expectedVersion)
     {
         File jarfile = MavenTestingUtils.getTestResourceFile(jarname);
-        assertThat("Jar: " + jarname,JarVersion.getVersion(jarfile),containsString(expectedVersion));
+        assertThat("Jar: " + jarname, JarVersion.getVersion(jarfile), containsString(expectedVersion));
     }
 
     @Test
     public void testNoManifestJar()
     {
-        assertJarVersion("bad-libs/no-manifest.jar","(none specified)");
+        assertJarVersion("bad-libs/no-manifest.jar", "(none specified)");
     }
 
     @Test
     public void testNotAJar()
     {
-        assertJarVersion("bad-libs/not-a.jar","(error: ZipException ");
+        assertJarVersion("bad-libs/not-a.jar", "(error: ZipException ");
     }
 
     @Test
     public void testZeroLengthJar()
     {
-        assertJarVersion("bad-libs/zero-length.jar","(error: ZipException ");
+        assertJarVersion("bad-libs/zero-length.jar", "(error: ZipException ");
     }
 }

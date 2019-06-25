@@ -33,34 +33,33 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class QuickStartWebApp extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(QuickStartWebApp.class);
-    
-    public static final String[] __configurationClasses = new String[] 
-            {
-                org.eclipse.jetty.quickstart.QuickStartConfiguration.class.getCanonicalName(),
-                org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
-                org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
-                org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName()
-            };
-    
-    private boolean _preconfigure=false;
-    private boolean _autoPreconfigure=false;
-    private boolean _startWebapp=false;
+
+    public static final String[] __configurationClasses =
+        {
+            org.eclipse.jetty.quickstart.QuickStartConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName()
+        };
+
+    private boolean _preconfigure = false;
+    private boolean _autoPreconfigure = false;
+    private boolean _startWebapp = false;
     private PreconfigureDescriptorProcessor _preconfigProcessor;
     private String _originAttribute;
     private boolean _generateOrigin;
-    
-    
-    public static final String[] __preconfigurationClasses = new String[]
-    { 
-        org.eclipse.jetty.webapp.WebInfConfiguration.class.getCanonicalName(), 
-        org.eclipse.jetty.webapp.WebXmlConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.webapp.MetaInfConfiguration.class.getCanonicalName(), 
-        org.eclipse.jetty.webapp.FragmentConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(), 
-        org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
-        org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName(),
-    };
-    
+
+    public static final String[] __preconfigurationClasses =
+        {
+            org.eclipse.jetty.webapp.WebInfConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.WebXmlConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.MetaInfConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.FragmentConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName()
+        };
+
     public QuickStartWebApp()
     {
         super();
@@ -72,9 +71,10 @@ public class QuickStartWebApp extends WebAppContext
         return _preconfigure;
     }
 
-    /** 
+    /**
      * Preconfigure webapp
-     * @param preconfigure  If true, then starting the webapp will generate 
+     *
+     * @param preconfigure If true, then starting the webapp will generate
      * the WEB-INF/quickstart-web.xml rather than start the webapp.
      */
     public void setPreconfigure(boolean preconfigure)
@@ -86,17 +86,17 @@ public class QuickStartWebApp extends WebAppContext
     {
         return _autoPreconfigure;
     }
-    
+
     public void setAutoPreconfigure(boolean autoPrecompile)
     {
         _autoPreconfigure = autoPrecompile;
     }
-    
-    public void setOriginAttribute (String name)
+
+    public void setOriginAttribute(String name)
     {
         _originAttribute = name;
     }
-    
+
     /**
      * @return the originAttribute
      */
@@ -126,20 +126,20 @@ public class QuickStartWebApp extends WebAppContext
     {
         if (isPreconfigure())
             generateQuickstartWebXml(_preconfigProcessor.getXML());
-        
+
         if (_startWebapp)
             super.startWebapp();
     }
-    
+
     @Override
     protected void stopWebapp() throws Exception
     {
         if (!_startWebapp)
             return;
-        
+
         super.stopWebapp();
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
@@ -148,19 +148,19 @@ public class QuickStartWebApp extends WebAppContext
         Resource dir = null;
 
         Resource base = getBaseResource();
-        if (base==null)
-            base=Resource.newResource(getWar());
+        if (base == null)
+            base = Resource.newResource(getWar());
 
         if (base.isDirectory())
-            dir=base;
+            dir = base;
         else if (base.toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
         {
-            war=base;
-            String w=war.toString();
-            dir=Resource.newResource(w.substring(0,w.length()-4));
+            war = base;
+            String w = war.toString();
+            dir = Resource.newResource(w.substring(0, w.length() - 4));
 
             if (!dir.exists())
-            {                       
+            {
                 LOG.info("Quickstart Extract " + war + " to " + dir);
                 dir.getFile().mkdirs();
                 JarResource.newJarResource(war).copyTo(dir.getFile());
@@ -169,35 +169,34 @@ public class QuickStartWebApp extends WebAppContext
             setWar(null);
             setBaseResource(dir);
         }
-        else 
+        else
             throw new IllegalArgumentException();
 
+        Resource qswebxml = dir.addPath("/WEB-INF/quickstart-web.xml");
 
-        Resource qswebxml=dir.addPath("/WEB-INF/quickstart-web.xml");
-        
         if (isPreconfigure())
         {
             _preconfigProcessor = new PreconfigureDescriptorProcessor();
             getMetaData().addDescriptorProcessor(_preconfigProcessor);
-            _startWebapp=false;
+            _startWebapp = false;
         }
         else if (qswebxml.exists())
         {
             setConfigurationClasses(__configurationClasses);
-            _startWebapp=true;
+            _startWebapp = true;
         }
         else if (_autoPreconfigure)
-        {   
-            LOG.info("Quickstart preconfigure: {}(war={},dir={})",this,war,dir);
+        {
+            LOG.info("Quickstart preconfigure: {}(war={},dir={})", this, war, dir);
 
-            _preconfigProcessor = new PreconfigureDescriptorProcessor();    
+            _preconfigProcessor = new PreconfigureDescriptorProcessor();
             getMetaData().addDescriptorProcessor(_preconfigProcessor);
             setPreconfigure(true);
-            _startWebapp=true;
+            _startWebapp = true;
         }
         else
-            _startWebapp=true;
-            
+            _startWebapp = true;
+
         super.doStart();
     }
 
@@ -211,5 +210,5 @@ public class QuickStartWebApp extends WebAppContext
         {
             generator.generateQuickStartWebXml(fos);
         }
-    } 
+    }
 }

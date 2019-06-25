@@ -32,7 +32,7 @@ public class AcceptHashTest
     public void testHash()
     {
         byte key[] = TypeUtil.fromHexString("00112233445566778899AABBCCDDEEFF");
-        assertThat("Key size",key.length,is(16));
+        assertThat("Key size", key.length, is(16));
 
         // what the client sends
         String clientKey = Base64.getEncoder().encodeToString(key);
@@ -40,7 +40,7 @@ public class AcceptHashTest
         String serverHash = AcceptHash.hashKey(clientKey);
 
         // how the client validates
-        assertThat(serverHash,is("mVL6JKtNRC4tluIaFAW2hhMffgE="));
+        assertThat(serverHash, is("mVL6JKtNRC4tluIaFAW2hhMffgE="));
     }
 
     /**
@@ -58,6 +58,6 @@ public class AcceptHashTest
         String serverAccept = AcceptHash.hashKey(clientKey);
         String expectedHash = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=";
 
-        assertThat(serverAccept,is(expectedHash));
+        assertThat(serverAccept, is(expectedHash));
     }
 }

@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 
@@ -46,6 +42,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class OnCloseTest
 {
     public static Stream<Arguments> closeCases()
@@ -67,7 +66,7 @@ public class OnCloseTest
     public void testOnCloseCall(Class<?> closeClass, String expectedCloseEvent) throws Exception
     {
         // Scan annotations
-        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,closeClass);
+        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container, closeClass);
         AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 
@@ -75,17 +74,17 @@ public class OnCloseTest
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ClientEndpointConfig config = metadata.getConfig();
         TrackingSocket endpoint = (TrackingSocket)closeClass.getDeclaredConstructor().newInstance();
-        EndpointInstance ei = new EndpointInstance(endpoint,config,metadata);
+        EndpointInstance ei = new EndpointInstance(endpoint, config, metadata);
         JsrEvents<ClientEndpoint, ClientEndpointConfig> jsrevents = new JsrEvents<>(metadata);
 
-        EventDriver driver = new JsrAnnotatedEventDriver(policy,ei,jsrevents);
+        EventDriver driver = new JsrAnnotatedEventDriver(policy, ei, jsrevents);
 
         // Execute onClose call
-        driver.onClose(new CloseInfo(StatusCode.NORMAL,"normal"));
+        driver.onClose(new CloseInfo(StatusCode.NORMAL, "normal"));
 
         // Test captured event
         LinkedBlockingQueue<String> events = endpoint.eventQueue;
         String closeEvent = events.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-        assertThat("Close Event",closeEvent,is(expectedCloseEvent));
+        assertThat("Close Event", closeEvent, is(expectedCloseEvent));
     }
 }

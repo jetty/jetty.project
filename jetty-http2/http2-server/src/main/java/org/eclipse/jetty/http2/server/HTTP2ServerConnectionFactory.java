@@ -54,7 +54,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
 
     public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
-        super(httpConfiguration,protocols);
+        super(httpConfiguration, protocols);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         // Implement 9.2.2 for draft 14
         boolean acceptable = "h2-14".equals(protocol) || !(HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher));
         if (LOG.isDebugEnabled())
-            LOG.debug("proto={} tls={} cipher={} 9.2.2-acceptable={}",protocol,tlsProtocol,tlsCipher,acceptable);
+            LOG.debug("proto={} tls={} cipher={} 9.2.2-acceptable={}", protocol, tlsProtocol, tlsCipher, acceptable);
         return acceptable;
     }
 

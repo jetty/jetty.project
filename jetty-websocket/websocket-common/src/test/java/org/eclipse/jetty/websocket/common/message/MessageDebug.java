@@ -25,7 +25,7 @@ public class MessageDebug
     public static String toDetailHint(byte[] data, int offset, int len)
     {
         StringBuilder buf = new StringBuilder();
-        ByteBuffer buffer = ByteBuffer.wrap(data,offset,len);
+        ByteBuffer buffer = ByteBuffer.wrap(data, offset, len);
 
         buf.append("byte[").append(data.length);
         buf.append("](o=").append(offset);

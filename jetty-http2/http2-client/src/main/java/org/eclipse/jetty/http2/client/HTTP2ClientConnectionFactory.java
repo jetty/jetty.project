@@ -72,7 +72,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
-                parser, session, client.getInputBufferSize(), promise, listener);
+            parser, session, client.getInputBufferSize(), promise, listener);
         connection.addListener(connectionListener);
         return customize(connection, context);
     }

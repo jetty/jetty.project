@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.BufferUtil;
 
 class ReadState
 {
-    public final static ByteBuffer NO_ACTION = BufferUtil.EMPTY_BUFFER;
+    public static final ByteBuffer NO_ACTION = BufferUtil.EMPTY_BUFFER;
 
     private State state = State.READING;
     private ByteBuffer buffer;
@@ -99,8 +99,8 @@ class ReadState
                 case READING:
                     return false;
                 case SUSPENDING:
-                   state = State.SUSPENDED;
-                   return true;
+                    state = State.SUSPENDED;
+                    return true;
                 case SUSPENDED:
                     if (buffer == null)
                         throw new IllegalStateException();

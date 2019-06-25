@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.beans;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -32,7 +31,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.util.StackUtil;
 
-@ServerEndpoint(value = "/echo/beans/date", decoders = { DateDecoder.class }, encoders = { DateEncoder.class })
+@ServerEndpoint(value = "/echo/beans/date", decoders = {DateDecoder.class}, encoders = {DateEncoder.class})
 public class DateTextSocket
 {
     private static final Logger LOG = Log.getLogger(DateTextSocket.class);
@@ -64,7 +63,7 @@ public class DateTextSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

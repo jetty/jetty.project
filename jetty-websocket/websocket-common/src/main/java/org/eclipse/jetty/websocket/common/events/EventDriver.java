@@ -35,7 +35,7 @@ public interface EventDriver extends IncomingFrames
     WebSocketPolicy getPolicy();
 
     WebSocketSession getSession();
-    
+
     BatchMode getBatchMode();
 
     void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException;
@@ -55,7 +55,7 @@ public interface EventDriver extends IncomingFrames
     void onInputStream(InputStream stream) throws IOException;
 
     void onPing(ByteBuffer buffer);
-    
+
     void onPong(ByteBuffer buffer);
 
     void onReader(Reader reader) throws IOException;

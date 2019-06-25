@@ -24,7 +24,6 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
-
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-@ServerEndpoint(value = "/", subprotocols = { "tool" }, configurator = JsrBrowserConfigurator.class)
+@ServerEndpoint(value = "/", subprotocols = {"tool"}, configurator = JsrBrowserConfigurator.class)
 public class JsrBrowserSocket
 {
     private static class WriteMany implements Runnable
@@ -69,7 +68,7 @@ public class JsrBrowserSocket
                 {
                     randomText[i] = letters[rand.nextInt(lettersLen)];
                 }
-                msg = String.format("ManyThreads [%s]",String.valueOf(randomText));
+                msg = String.format("ManyThreads [%s]", String.valueOf(randomText));
                 remote.sendText(msg);
             }
         }
@@ -84,7 +83,7 @@ public class JsrBrowserSocket
     @OnOpen
     public void onOpen(Session session)
     {
-        LOG.info("Open: {}",session);
+        LOG.info("Open: {}", session);
         this.session = session;
         this.remote = session.getAsyncRemote();
         this.userAgent = (String)session.getUserProperties().get("userAgent");
@@ -94,19 +93,19 @@ public class JsrBrowserSocket
     @OnClose
     public void onClose(CloseReason close)
     {
-        LOG.info("Close: {}: {}",close.getCloseCode(),close.getReasonPhrase());
+        LOG.info("Close: {}: {}", close.getCloseCode(), close.getReasonPhrase());
         this.session = null;
     }
 
     @OnMessage
     public void onMessage(String message)
     {
-        LOG.info("onTextMessage({})",message);
+        LOG.info("onTextMessage({})", message);
 
         int idx = message.indexOf(':');
         if (idx > 0)
         {
-            String key = message.substring(0,idx).toLowerCase(Locale.ENGLISH);
+            String key = message.substring(0, idx).toLowerCase(Locale.ENGLISH);
             String val = message.substring(idx + 1);
             switch (key)
             {
@@ -146,7 +145,7 @@ public class JsrBrowserSocket
                     int size = Integer.parseInt(parts[0]);
                     int count = Integer.parseInt(parts[1]);
 
-                    writeManyAsync(size,count);
+                    writeManyAsync(size, count);
                     break;
                 }
                 case "manythreads":
@@ -161,7 +160,7 @@ public class JsrBrowserSocket
                     // Setup threads
                     for (int n = 0; n < threadCount; n++)
                     {
-                        threads[n] = new Thread(new WriteMany(remote,size,count),"WriteMany[" + n + "]");
+                        threads[n] = new Thread(new WriteMany(remote, size, count), "WriteMany[" + n + "]");
                     }
 
                     // Execute threads
@@ -176,13 +175,13 @@ public class JsrBrowserSocket
                 case "time":
                 {
                     Calendar now = Calendar.getInstance();
-                    DateFormat sdf = SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.FULL,SimpleDateFormat.FULL);
-                    writeMessage("Server time: %s",sdf.format(now.getTime()));
+                    DateFormat sdf = SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.FULL, SimpleDateFormat.FULL);
+                    writeMessage("Server time: %s", sdf.format(now.getTime()));
                     break;
                 }
                 default:
                 {
-                    writeMessage("key[%s] val[%s]",key,val);
+                    writeMessage("key[%s] val[%s]", key, val);
                 }
             }
         }
@@ -207,7 +206,7 @@ public class JsrBrowserSocket
             {
                 randomText[i] = letters[rand.nextInt(lettersLen)];
             }
-            writeMessage("Many [%s]",String.valueOf(randomText));
+            writeMessage("Many [%s]", String.valueOf(randomText));
         }
     }
 
@@ -233,6 +232,6 @@ public class JsrBrowserSocket
 
     private void writeMessage(String format, Object... args)
     {
-        writeMessage(String.format(format,args));
+        writeMessage(String.format(format, args));
     }
 }

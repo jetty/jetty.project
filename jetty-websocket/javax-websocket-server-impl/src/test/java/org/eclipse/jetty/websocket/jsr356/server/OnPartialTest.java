@@ -55,25 +55,24 @@ public class OnPartialTest
         policy.setMaxBinaryMessageBufferSize(1024);
         policy.setMaxTextMessageBufferSize(1024);
 
-
         // Create EventDriver
         EventDriverImpl driverImpl = new JsrServerEndpointImpl();
         Class<?> endpoint = websocket.getClass();
         ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
-        assertThat("Endpoint: " + endpoint + " should be annotated with @ServerEndpoint",anno,notNullValue());
-        
+        assertThat("Endpoint: " + endpoint + " should be annotated with @ServerEndpoint", anno, notNullValue());
+
         WebSocketContainerScope containerScope = new SimpleContainerScope(policy);
         // Event Driver Factory
         EventDriverFactory factory = new EventDriverFactory(containerScope);
         factory.addImplementation(new JsrServerEndpointImpl());
-        
-        ServerEndpointConfig config = new BasicServerEndpointConfig(containerScope,endpoint,"/");
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(containerScope,endpoint,config);
+
+        ServerEndpointConfig config = new BasicServerEndpointConfig(containerScope, endpoint, "/");
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(containerScope, endpoint, config);
         AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
-        EndpointInstance ei = new EndpointInstance(websocket,config,metadata);
-        EventDriver driver = driverImpl.create(ei,policy);
-        assertThat("EventDriver",driver,notNullValue());
+        EndpointInstance ei = new EndpointInstance(websocket, config, metadata);
+        EventDriver driver = driverImpl.create(ei, policy);
+        assertThat("EventDriver", driver, notNullValue());
 
         // Create Local JsrSession
         String id = "testSession";
@@ -81,7 +80,7 @@ public class OnPartialTest
         LocalWebSocketConnection connection = new LocalWebSocketConnection(id, new MappedByteBufferPool());
         ClientContainer container = new ClientContainer();
         container.start();
-        
+
         @SuppressWarnings("resource")
         JsrSession session = new JsrSession(container, id, requestURI, driver, connection);
         session.start();
@@ -108,9 +107,9 @@ public class OnPartialTest
             driver.incomingFrame(frame);
         }
 
-        assertThat("Captured Event Queue size",socket.eventQueue.size(),is(3));
-        assertThat("Event[0]",socket.eventQueue.poll(),is("onPartial(\"Saved\",false)"));
-        assertThat("Event[1]",socket.eventQueue.poll(),is("onPartial(\" by \",false)"));
-        assertThat("Event[2]",socket.eventQueue.poll(),is("onPartial(\"zero\",true)"));
+        assertThat("Captured Event Queue size", socket.eventQueue.size(), is(3));
+        assertThat("Event[0]", socket.eventQueue.poll(), is("onPartial(\"Saved\",false)"));
+        assertThat("Event[1]", socket.eventQueue.poll(), is("onPartial(\" by \",false)"));
+        assertThat("Event[2]", socket.eventQueue.poll(), is("onPartial(\"zero\",true)"));
     }
 }

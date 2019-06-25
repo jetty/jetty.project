@@ -35,7 +35,7 @@ public class LogSocket implements WebSocketListener
     {
         if (verbose)
         {
-            System.err.printf("onWebSocketBinary(byte[%d] payload, %d, %d)%n",payload.length,offset,len);
+            System.err.printf("onWebSocketBinary(byte[%d] payload, %d, %d)%n", payload.length, offset, len);
         }
     }
 
@@ -44,7 +44,7 @@ public class LogSocket implements WebSocketListener
     {
         if (verbose)
         {
-            System.err.printf("onWebSocketClose(%d, %s)%n",statusCode,quote(reason));
+            System.err.printf("onWebSocketClose(%d, %s)%n", statusCode, quote(reason));
         }
     }
 
@@ -53,7 +53,7 @@ public class LogSocket implements WebSocketListener
     {
         if (verbose)
         {
-            System.err.printf("onWebSocketConnect(%s)%n",session);
+            System.err.printf("onWebSocketConnect(%s)%n", session);
         }
     }
 
@@ -62,7 +62,7 @@ public class LogSocket implements WebSocketListener
     {
         if (verbose)
         {
-            System.err.printf("onWebSocketError((%s) %s)%n",cause.getClass().getName(),cause.getMessage());
+            System.err.printf("onWebSocketError((%s) %s)%n", cause.getClass().getName(), cause.getMessage());
             cause.printStackTrace(System.err);
         }
     }
@@ -72,7 +72,7 @@ public class LogSocket implements WebSocketListener
     {
         if (verbose)
         {
-            System.err.printf("onWebSocketText(%s)%n",quote(message));
+            System.err.printf("onWebSocketText(%s)%n", quote(message));
         }
     }
 
@@ -89,5 +89,4 @@ public class LogSocket implements WebSocketListener
     {
         this.verbose = verbose;
     }
-
 }

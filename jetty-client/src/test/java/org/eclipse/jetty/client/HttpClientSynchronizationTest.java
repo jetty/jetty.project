@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.ConnectException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +28,10 @@ import org.eclipse.jetty.client.api.Result;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Verifies that synchronization performed from outside HttpClient does not cause deadlocks
@@ -51,7 +51,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
         for (int i = 0; i < count; ++i)
         {
             Request request = client.newRequest("localhost", port)
-                    .scheme(scenario.getScheme());
+                .scheme(scenario.getScheme());
 
             synchronized (this)
             {
@@ -84,7 +84,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
         for (int i = 0; i < count; ++i)
         {
             Request request = client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme());
+                .scheme(scenario.getScheme());
 
             synchronized (this)
             {

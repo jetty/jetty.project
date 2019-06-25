@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -43,6 +37,11 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.hamcrest.Matchers;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigurationAssert
 {
@@ -86,7 +85,7 @@ public class ConfigurationAssert
      */
     public static void assertConfiguration(BaseHome baseHome, StartArgs args, String output, File file) throws FileNotFoundException, IOException
     {
-        if(output != null)
+        if (output != null)
         {
             System.err.println(output);
         }
@@ -158,9 +157,9 @@ public class ConfigurationAssert
         {
             if (line.startsWith("SYS|"))
             {
-                String[] expected = getValue(line).split("=",2);
+                String[] expected = getValue(line).split("=", 2);
                 String actual = System.getProperty(expected[0]);
-                assertThat("System property "+expected[0],actual,Matchers.equalTo(expected[1]));
+                assertThat("System property " + expected[0], actual, Matchers.equalTo(expected[1]));
             }
         }
 
@@ -182,7 +181,7 @@ public class ConfigurationAssert
             }
         }
         assertContainsUnordered("Downloads", expectedDownloads, actualDownloads);
-        
+
         // File / Path Existence Checks
         streamOf(textFile, "EXISTS").forEach(f ->
         {
@@ -202,7 +201,7 @@ public class ConfigurationAssert
         {
             Pattern pat = Pattern.compile(regex);
             Matcher mat = pat.matcher(output);
-            assertTrue(mat.find(),"Output [\n" + output + "]\nContains Regex Match: " + pat.pattern());
+            assertTrue(mat.find(), "Output [\n" + output + "]\nContains Regex Match: " + pat.pattern());
         });
     }
 
@@ -221,7 +220,7 @@ public class ConfigurationAssert
         }
         return value;
     }
-    
+
     public static void assertContainsUnordered(String msg, Collection<String> expectedSet, Collection<String> actualSet)
     {
         try
@@ -236,7 +235,6 @@ public class ConfigurationAssert
             System.err.println("Actual  : " + actualSet.stream().sorted().collect(Collectors.toList()));
             throw e;
         }
-
     }
 
     @SuppressWarnings("Duplicates")
@@ -259,7 +257,7 @@ public class ConfigurationAssert
     private static Stream<String> streamOf(TextFile textFile, String key)
     {
         return textFile.stream()
-                .filter(s -> s.startsWith(key + "|")).map(f -> getValue(f));
+            .filter(s -> s.startsWith(key + "|")).map(f -> getValue(f));
     }
 
     private static String getValue(String arg)

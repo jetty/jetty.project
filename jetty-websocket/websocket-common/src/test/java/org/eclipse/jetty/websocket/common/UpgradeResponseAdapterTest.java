@@ -60,5 +60,4 @@ public class UpgradeResponseAdapterTest
         assertEquals("", upgradeResponseAdapter.getHeader(""));
         assertEquals("b", upgradeResponseAdapter.getHeader("a"));
     }
-
 }

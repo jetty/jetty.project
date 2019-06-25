@@ -27,7 +27,7 @@ public interface WebSocketFrameListener extends WebSocketConnectionListener
 {
     /**
      * A WebSocket frame has been received.
-     * 
+     *
      * @param frame the immutable frame received
      */
     void onWebSocketFrame(Frame frame);

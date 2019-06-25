@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.hazelcast.session.client;
 
 import org.eclipse.jetty.hazelcast.session.HazelcastTestHelper;
@@ -48,5 +47,4 @@ public class ClientOrphanedSessionTest
     {
         _testHelper.tearDown();
     }
-
 }

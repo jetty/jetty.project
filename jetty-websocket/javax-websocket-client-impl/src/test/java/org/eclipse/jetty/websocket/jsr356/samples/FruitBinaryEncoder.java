@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.samples;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
@@ -48,8 +47,8 @@ public class FruitBinaryEncoder implements Encoder.Binary<Fruit>
         ByteBuffer buf = ByteBuffer.allocate(len + 64);
         buf.flip();
         buf.put(FRUIT_ID_BYTE);
-        putString(buf,fruit.name);
-        putString(buf,fruit.color);
+        putString(buf, fruit.name);
+        putString(buf, fruit.color);
         buf.flip();
 
         return buf;
@@ -63,6 +62,6 @@ public class FruitBinaryEncoder implements Encoder.Binary<Fruit>
     private void putString(ByteBuffer buf, String str)
     {
         buf.putInt(str.length());
-        BufferUtil.toBuffer(str,Charset.forName("UTF-8"));
+        BufferUtil.toBuffer(str, Charset.forName("UTF-8"));
     }
 }

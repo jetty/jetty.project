@@ -215,7 +215,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         if (cause instanceof CloseException)
         {
-            statusCode = ((CloseException) cause).getStatusCode();
+            statusCode = ((CloseException)cause).getStatusCode();
         }
         String reason = cause.getMessage();
         if (StringUtil.isBlank(reason))
@@ -311,7 +311,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
              * the local initiated, but the remote never responded.
              */
             CloseInfo closeInfo = fatalCloseInfo;
-            if(closeInfo == null)
+            if (closeInfo == null)
             {
                 closeInfo = new CloseInfo(StatusCode.ABNORMAL, "Disconnected");
             }
@@ -447,7 +447,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             bufferPool.release(buffer);
             throw t;
         }
-
 
         if (readMode == ReadMode.EOF)
         {
@@ -672,7 +671,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         Object endpRef = endp.toString();
         if (endp instanceof AbstractEndPoint)
         {
-            endpRef = ((AbstractEndPoint) endp).toEndPointString();
+            endpRef = ((AbstractEndPoint)endp).toEndPointString();
         }
         Dumpable.dumpObjects(out, indent, this, endpRef, flusher, generator, parser);
     }
@@ -681,10 +680,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public String toConnectionString()
     {
         return String.format("%s@%x[s=%s,f=%s,g=%s,p=%s]",
-                getClass().getSimpleName(),
-                hashCode(),
-                connectionState,
-                flusher, generator, parser);
+            getClass().getSimpleName(),
+            hashCode(),
+            connectionState,
+            flusher, generator, parser);
     }
 
     /**

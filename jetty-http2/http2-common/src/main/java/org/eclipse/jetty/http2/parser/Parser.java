@@ -249,29 +249,29 @@ public class Parser
 
     public interface Listener
     {
-        public void onData(DataFrame frame);
+        void onData(DataFrame frame);
 
-        public void onHeaders(HeadersFrame frame);
+        void onHeaders(HeadersFrame frame);
 
-        public void onPriority(PriorityFrame frame);
+        void onPriority(PriorityFrame frame);
 
-        public void onReset(ResetFrame frame);
+        void onReset(ResetFrame frame);
 
-        public void onSettings(SettingsFrame frame);
+        void onSettings(SettingsFrame frame);
 
-        public void onPushPromise(PushPromiseFrame frame);
+        void onPushPromise(PushPromiseFrame frame);
 
-        public void onPing(PingFrame frame);
+        void onPing(PingFrame frame);
 
-        public void onGoAway(GoAwayFrame frame);
+        void onGoAway(GoAwayFrame frame);
 
-        public void onWindowUpdate(WindowUpdateFrame frame);
+        void onWindowUpdate(WindowUpdateFrame frame);
 
-        public void onStreamFailure(int streamId, int error, String reason);
+        void onStreamFailure(int streamId, int error, String reason);
 
-        public void onConnectionFailure(int error, String reason);
+        void onConnectionFailure(int error, String reason);
 
-        public static class Adapter implements Listener
+        class Adapter implements Listener
         {
             @Override
             public void onData(DataFrame frame)
@@ -330,7 +330,7 @@ public class Parser
             }
         }
 
-        public static class Wrapper implements Listener
+        class Wrapper implements Listener
         {
             private final Parser.Listener listener;
 

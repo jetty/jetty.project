@@ -48,20 +48,19 @@ public class HttpTesting
     private InetAddress serverHost;
     private int serverPort;
     private int timeoutMillis = 5000;
-    
-    
-    public static List<HttpTester.Response> getParts (String boundary, HttpTester.Response response) throws IOException
+
+    public static List<HttpTester.Response> getParts(String boundary, HttpTester.Response response) throws IOException
     {
         // TODO This method appears to be broken in how it uses the HttpParser
         // Should use MultiPartInputStreamParser ??
-        
+
         List<HttpTester.Response> parts = new ArrayList<HttpTester.Response>();
 
         BufferedReader buf = new BufferedReader(new StringReader(response.getContent()));
         String line;
         String startBoundary = "--" + boundary;
         String endBoundary = "--" + boundary + "--";
-      
+
         StringBuffer partBuff = null;
         boolean parsingHeader = true;
         boolean previousBodyLine = false;
@@ -114,7 +113,6 @@ public class HttpTesting
         }
 
         return parts;
-
     }
 
     public static List<HttpTester.Response> readResponses(String string) throws IOException
@@ -122,7 +120,7 @@ public class HttpTesting
         List<HttpTester.Response> list = new ArrayList<>();
 
         ByteBuffer buffer = BufferUtil.toBuffer(string);
-        while(BufferUtil.hasContent(buffer))
+        while (BufferUtil.hasContent(buffer))
         {
             HttpTester.Response response = HttpTester.parseResponse(buffer);
             if (response == null)
@@ -141,12 +139,12 @@ public class HttpTesting
 
     public HttpTesting(HttpSocket socket, int port) throws UnknownHostException
     {
-        this(socket,InetAddress.getLocalHost(),port);
+        this(socket, InetAddress.getLocalHost(), port);
     }
 
     public HttpTesting(HttpSocket socket, String host, int port) throws UnknownHostException
     {
-        this(socket,InetAddress.getByName(host),port);
+        this(socket, InetAddress.getByName(host), port);
     }
 
     public void close(Socket sock)
@@ -185,57 +183,51 @@ public class HttpTesting
 
     /**
      * Open a socket.
-     * 
+     *
      * @return the open socket.
-     * @throws IOException
      */
     public Socket open() throws IOException
     {
-        Socket sock = httpSocket.connect(serverHost,serverPort);
+        Socket sock = httpSocket.connect(serverHost, serverPort);
         sock.setSoTimeout(timeoutMillis);
         return sock;
     }
 
     /**
      * Read a response from a socket.
-     * 
-     * @param sock
-     *            the socket to read from.
+     *
+     * @param sock the socket to read from.
      * @return the response object
-     * @throws IOException
      */
     public HttpTester.Response read(Socket sock) throws IOException
     {
-       return HttpTester.parseResponse(readRaw(sock));
+        return HttpTester.parseResponse(readRaw(sock));
     }
 
-    
-    public  List<HttpTester.Response> readResponses(Socket sock) throws IOException
+    public List<HttpTester.Response> readResponses(Socket sock) throws IOException
     {
-       List<HttpTester.Response> list = new ArrayList<>();
-       String r = readRaw(sock);
-       ByteBuffer buffer = BufferUtil.toBuffer(r);
-       while(BufferUtil.hasContent(buffer))
-       {
-           HttpTester.Response response = HttpTester.parseResponse(buffer);
-           if (response == null)
-               break;
-           list.add(response);
-       }
-       return list;
+        List<HttpTester.Response> list = new ArrayList<>();
+        String r = readRaw(sock);
+        ByteBuffer buffer = BufferUtil.toBuffer(r);
+        while (BufferUtil.hasContent(buffer))
+        {
+            HttpTester.Response response = HttpTester.parseResponse(buffer);
+            if (response == null)
+                break;
+            list.add(response);
+        }
+        return list;
     }
 
     /**
      * Read any available response from a socket.
-     * 
-     * @param sock
-     *            the socket to read from.
+     *
+     * @param sock the socket to read from.
      * @return the response object
-     * @throws IOException
      */
     public HttpTester.Response readAvailable(Socket sock) throws IOException
     {
-        
+
         String rawResponse = readRawAvailable(sock);
         if (StringUtil.isBlank(rawResponse))
         {
@@ -246,10 +238,8 @@ public class HttpTesting
 
     /**
      * Read the raw response from the socket.
-     * 
-     * @param sock
+     *
      * @return all of the the data from the socket as a String
-     * @throws IOException
      */
     public String readRaw(Socket sock) throws IOException
     {
@@ -261,13 +251,11 @@ public class HttpTesting
     }
 
     /**
-     * Read the raw response from the socket, reading whatever is available. 
+     * Read the raw response from the socket, reading whatever is available.
      * Any {@link SocketTimeoutException} is consumed and just stops the reading.
-     * 
-     * @param sock
-     * @return the raw data from the socket in string form, reading whatever is available.  
-     *          a {@link SocketTimeoutException} will result in the read stopping.
-     * @throws IOException
+     *
+     * @return the raw data from the socket in string form, reading whatever is available.
+     * a {@link SocketTimeoutException} will result in the read stopping.
      */
     public String readRawAvailable(Socket sock) throws IOException
     {
@@ -279,7 +267,7 @@ public class HttpTesting
 
         try
         {
-            IO.copy(reader,writer);
+            IO.copy(reader, writer);
         }
         catch (SocketTimeoutException e)
         {
@@ -293,20 +281,18 @@ public class HttpTesting
 
     /**
      * Initiate a standard HTTP request, parse the response.
-     * 
+     *
      * Note: not for HTTPS requests.
-     * 
-     * @param rawRequest
-     *            the request
+     *
+     * @param rawRequest the request
      * @return the response
-     * @throws IOException
      */
     public HttpTester.Response request(CharSequence rawRequest) throws IOException
     {
         Socket sock = open();
         try
         {
-            send(sock,rawRequest);
+            send(sock, rawRequest);
             return read(sock);
         }
         finally
@@ -317,13 +303,11 @@ public class HttpTesting
 
     /**
      * Initiate a standard HTTP request, parse the response.
-     * 
+     *
      * Note: not for HTTPS requests.
-     * 
-     * @param request
-     *            the request
+     *
+     * @param request the request
      * @return the response
-     * @throws IOException
      */
     public HttpTester.Response request(HttpTester.Request request) throws IOException
     {
@@ -333,18 +317,16 @@ public class HttpTesting
 
     /**
      * Initiate multiple raw HTTP requests, parse the responses.
-     * 
-     * @param rawRequests
-     *            the raw HTTP requests.
+     *
+     * @param rawRequests the raw HTTP requests.
      * @return the responses.
-     * @throws IOException
      */
-   public List<HttpTester.Response> requests(CharSequence rawRequests) throws IOException
+    public List<HttpTester.Response> requests(CharSequence rawRequests) throws IOException
     {
         Socket sock = open();
         try
         {
-            send(sock,rawRequests);
+            send(sock, rawRequests);
 
             // Collect response
             String rawResponses = IO.toString(sock.getInputStream());
@@ -357,15 +339,11 @@ public class HttpTesting
         }
     }
 
-
     /**
      * Send a data (as request) to open socket.
-     * 
-     * @param sock
-     *            the socket to send the request to
-     * @param rawData
-     *            the raw data to send.
-     * @throws IOException
+     *
+     * @param sock the socket to send the request to
+     * @param rawData the raw data to send.
      */
     public void send(Socket sock, CharSequence rawData) throws IOException
     {
@@ -375,7 +353,7 @@ public class HttpTesting
         InputStream in = new ByteArrayInputStream(rawData.toString().getBytes());
 
         // Send request
-        IO.copy(in,sock.getOutputStream());
+        IO.copy(in, sock.getOutputStream());
     }
 
     public void setTimeoutMillis(int timeoutMillis)

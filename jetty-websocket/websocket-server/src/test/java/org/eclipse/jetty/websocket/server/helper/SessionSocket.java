@@ -47,7 +47,7 @@ public class SessionSocket
     @OnWebSocketMessage
     public void onText(String message)
     {
-        LOG.debug("onText({})",message);
+        LOG.debug("onText({})", message);
         if (message == null)
         {
             return;
@@ -89,14 +89,14 @@ public class SessionSocket
 
             if ("session.isSecure".equals(message))
             {
-                String issecure = String.format("session.isSecure=%b",session.isSecure());
+                String issecure = String.format("session.isSecure=%b", session.isSecure());
                 sendString(issecure);
                 return;
             }
 
             if ("session.upgradeRequest.requestURI".equals(message))
             {
-                String response = String.format("session.upgradeRequest.requestURI=%s",session.getUpgradeRequest().getRequestURI().toASCIIString());
+                String response = String.format("session.upgradeRequest.requestURI=%s", session.getUpgradeRequest().getRequestURI().toASCIIString());
                 sendString(response);
                 return;
             }
@@ -119,7 +119,7 @@ public class SessionSocket
     @OnWebSocketError
     public void onError(Throwable cause)
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
             LOG.debug("onError()", cause);
         }

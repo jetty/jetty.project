@@ -158,7 +158,8 @@ public abstract class HttpReceiver
      */
     protected boolean responseHeader(HttpExchange exchange, HttpField field)
     {
-        out: while (true)
+        out:
+        while (true)
         {
             ResponseState current = responseState.get();
             switch (current)
@@ -240,7 +241,8 @@ public abstract class HttpReceiver
      */
     protected boolean responseHeaders(HttpExchange exchange)
     {
-        out: while (true)
+        out:
+        while (true)
         {
             ResponseState current = responseState.get();
             switch (current)
@@ -266,9 +268,9 @@ public abstract class HttpReceiver
         List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
         notifier.notifyHeaders(responseListeners, response);
         contentListeners = responseListeners.stream()
-                .filter(Response.AsyncContentListener.class::isInstance)
-                .map(Response.AsyncContentListener.class::cast)
-                .collect(Collectors.toList());
+            .filter(Response.AsyncContentListener.class::isInstance)
+            .map(Response.AsyncContentListener.class::cast)
+            .collect(Collectors.toList());
 
         Enumeration<String> contentEncodings = response.getHeaders().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
         if (contentEncodings != null)
@@ -305,7 +307,8 @@ public abstract class HttpReceiver
      */
     protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, Callback callback)
     {
-        out: while (true)
+        out:
+        while (true)
         {
             ResponseState current = responseState.get();
             switch (current)
@@ -483,7 +486,8 @@ public abstract class HttpReceiver
     {
         // Update the state to avoid more response processing.
         boolean terminate;
-        out: while (true)
+        out:
+        while (true)
         {
             ResponseState current = responseState.get();
             switch (current)
@@ -546,10 +550,10 @@ public abstract class HttpReceiver
     public String toString()
     {
         return String.format("%s@%x(rsp=%s,failure=%s)",
-                getClass().getSimpleName(),
-                hashCode(),
-                responseState,
-                failure);
+            getClass().getSimpleName(),
+            hashCode(),
+            responseState,
+            failure);
     }
 
     /**

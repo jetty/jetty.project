@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -37,6 +35,8 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.EchoReturnEndpoint;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(WorkDirExtension.class)
 public class OnMessageReturnTest

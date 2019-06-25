@@ -18,18 +18,17 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -41,8 +40,8 @@ public class CheckReverseProxyHeadersTest
     {
         // Classic ProxyPass from example.com:80 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                    "X-Forwarded-For: 10.20.30.40\n" +
-                    "X-Forwarded-Host: example.com", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40\n" +
+            "X-Forwarded-Host: example.com", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)
@@ -52,15 +51,15 @@ public class CheckReverseProxyHeadersTest
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
                 assertEquals("example.com", request.getHeader("Host"));
-                assertEquals("http",request.getScheme());
+                assertEquals("http", request.getScheme());
                 assertFalse(request.isSecure());
             }
         });
-        
+
         // IPv6 ProxyPass from example.com:80 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                    "X-Forwarded-For: 10.20.30.40\n" +
-                    "X-Forwarded-Host: [::1]", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40\n" +
+            "X-Forwarded-Host: [::1]", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)
@@ -70,15 +69,15 @@ public class CheckReverseProxyHeadersTest
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
                 assertEquals("[::1]", request.getHeader("Host"));
-                assertEquals("http",request.getScheme());
+                assertEquals("http", request.getScheme());
                 assertFalse(request.isSecure());
             }
         });
-        
+
         // IPv6 ProxyPass from example.com:80 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                    "X-Forwarded-For: 10.20.30.40\n" +
-                    "X-Forwarded-Host: [::1]:8888", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40\n" +
+            "X-Forwarded-Host: [::1]:8888", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)
@@ -88,17 +87,17 @@ public class CheckReverseProxyHeadersTest
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
                 assertEquals("[::1]:8888", request.getHeader("Host"));
-                assertEquals("http",request.getScheme());
+                assertEquals("http", request.getScheme());
                 assertFalse(request.isSecure());
             }
         });
 
         // ProxyPass from example.com:81 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                    "X-Forwarded-For: 10.20.30.40\n" +
-                    "X-Forwarded-Host: example.com:81\n" +
-                    "X-Forwarded-Server: example.com\n"+
-                    "X-Forwarded-Proto: https", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40\n" +
+            "X-Forwarded-Host: example.com:81\n" +
+            "X-Forwarded-Server: example.com\n" +
+            "X-Forwarded-Proto: https", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)
@@ -108,17 +107,17 @@ public class CheckReverseProxyHeadersTest
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
                 assertEquals("example.com:81", request.getHeader("Host"));
-                assertEquals("https",request.getScheme());
+                assertEquals("https", request.getScheme());
                 assertTrue(request.isSecure());
             }
         });
 
         // Multiple ProxyPass from example.com:80 to rp.example.com:82 to localhost:8080
         testRequest("Host: localhost:8080\n" +
-                    "X-Forwarded-For: 10.20.30.40, 10.0.0.1\n" +
-                    "X-Forwarded-Host: example.com, rp.example.com:82\n" +
-                    "X-Forwarded-Server: example.com, rp.example.com\n"+
-                    "X-Forwarded-Proto: https, http", new RequestValidator()
+            "X-Forwarded-For: 10.20.30.40, 10.0.0.1\n" +
+            "X-Forwarded-Host: example.com, rp.example.com:82\n" +
+            "X-Forwarded-Server: example.com, rp.example.com\n" +
+            "X-Forwarded-Proto: https, http", new RequestValidator()
         {
             @Override
             public void validate(HttpServletRequest request)
@@ -128,7 +127,7 @@ public class CheckReverseProxyHeadersTest
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
                 assertEquals("example.com", request.getHeader("Host"));
-                assertEquals("https",request.getScheme());
+                assertEquals("https", request.getScheme());
                 assertTrue(request.isSecure());
             }
         });
@@ -141,16 +140,16 @@ public class CheckReverseProxyHeadersTest
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
 
-        LocalConnector connector = new LocalConnector(server,http);
+        LocalConnector connector = new LocalConnector(server, http);
 
-        server.setConnectors(new Connector[] {connector});
+        server.setConnectors(new Connector[]{connector});
         ValidationHandler validationHandler = new ValidationHandler(requestValidator);
         server.setHandler(validationHandler);
 
         try
         {
             server.start();
-            connector.getResponse("GET / HTTP/1.1\r\n" +"Connection: close\r\n" + headers + "\r\n\r\n");
+            connector.getResponse("GET / HTTP/1.1\r\n" + "Connection: close\r\n" + headers + "\r\n\r\n");
             Error error = validationHandler.getError();
 
             if (error != null)
@@ -171,6 +170,7 @@ public class CheckReverseProxyHeadersTest
     {
         /**
          * Validate the current request.
+         *
          * @param request the request.
          */
         void validate(HttpServletRequest request);
@@ -191,6 +191,7 @@ public class CheckReverseProxyHeadersTest
 
         /**
          * Retrieve the validation error.
+         *
          * @return the validation error or <code>null</code> if there was no error.
          */
         public Error getError()

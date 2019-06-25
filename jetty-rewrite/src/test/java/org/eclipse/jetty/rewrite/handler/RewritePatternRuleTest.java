@@ -30,13 +30,13 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
 {
     // TODO: Parameterize
     private String[][] _tests =
-            {
-                    {"/foo/bar", "/", "/replace"},
-                    {"/foo/bar", "/*", "/replace/foo/bar"},
-                    {"/foo/bar", "/foo/*", "/replace/bar"},
-                    {"/foo/bar", "/foo/bar", "/replace"},
-                    {"/foo/bar.txt", "*.txt", "/replace"},
-                    {"/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"},
+        {
+            {"/foo/bar", "/", "/replace"},
+            {"/foo/bar", "/*", "/replace/foo/bar"},
+            {"/foo/bar", "/foo/*", "/replace/bar"},
+            {"/foo/bar", "/foo/bar", "/replace"},
+            {"/foo/bar.txt", "*.txt", "/replace"},
+            {"/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"},
             };
     private RewritePatternRule _rule;
 
@@ -80,7 +80,6 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
         rewritePatternRule.applyURI(_request, null, result);
         assertThat("queryString matches expected", _request.getQueryString(), is(queryString));
         assertThat("request URI matches expected", _request.getRequestURI(), is(path));
-
     }
 
     @Test
@@ -123,8 +122,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
 
         rewritePatternRule.applyURI(_request, null, result);
         assertThat("queryString matches expected", _request.getQueryString(),
-                is(requestQueryString + "&" + queryString));
+            is(requestQueryString + "&" + queryString));
         assertThat("request URI matches expected", _request.getRequestURI(), is(path));
     }
-
 }

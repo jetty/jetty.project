@@ -104,15 +104,15 @@ public class BaseHome
         public String toShortForm(Path path)
         {
             Path relative = dir.relativize(path);
-            return String.format("${%s}%c%s",name,File.separatorChar,relative.toString());
+            return String.format("${%s}%c%s", name, File.separatorChar, relative.toString());
         }
     }
 
     public static final String JETTY_BASE = "jetty.base";
     public static final String JETTY_HOME = "jetty.home";
-    private final static EnumSet<FileVisitOption> SEARCH_VISIT_OPTIONS = EnumSet.of(FileVisitOption.FOLLOW_LINKS);
+    private static final EnumSet<FileVisitOption> SEARCH_VISIT_OPTIONS = EnumSet.of(FileVisitOption.FOLLOW_LINKS);
 
-    private final static int MAX_SEARCH_DEPTH = Integer.getInteger("org.eclipse.jetty.start.searchDepth",10);
+    private static final int MAX_SEARCH_DEPTH = Integer.getInteger("org.eclipse.jetty.start.searchDepth", 10);
 
     private final ConfigSources sources;
     private final Path homeDir;
@@ -123,7 +123,7 @@ public class BaseHome
         this(new String[0]);
     }
 
-    public BaseHome(String cmdLine[]) throws IOException
+    public BaseHome(String[] cmdLine) throws IOException
     {
         this(new CommandLineConfigSource(cmdLine));
     }
@@ -137,13 +137,13 @@ public class BaseHome
 
         // TODO this is cyclic construction as start log uses BaseHome, but BaseHome constructor
         // calls other constructors that log.   This appears to be a workable sequence.
-        StartLog.getInstance().initialize(this,cmdLineSource);
-        
+        StartLog.getInstance().initialize(this, cmdLineSource);
+
         sources.add(new JettyBaseConfigSource(cmdLineSource.getBasePath()));
         sources.add(new JettyHomeConfigSource(cmdLineSource.getHomePath()));
 
-        System.setProperty(JETTY_HOME,homeDir.toAbsolutePath().toString());
-        System.setProperty(JETTY_BASE,baseDir.toAbsolutePath().toString());
+        System.setProperty(JETTY_HOME, homeDir.toAbsolutePath().toString());
+        System.setProperty(JETTY_BASE, baseDir.toAbsolutePath().toString());
     }
 
     public BaseHome(ConfigSources sources)
@@ -169,12 +169,12 @@ public class BaseHome
             }
         }
 
-        Objects.requireNonNull(home,"jetty.home cannot be null");
+        Objects.requireNonNull(home, "jetty.home cannot be null");
         this.homeDir = home;
-        this.baseDir = (base != null)?base:home;
+        this.baseDir = (base != null) ? base : home;
 
-        System.setProperty(JETTY_HOME,homeDir.toAbsolutePath().toString());
-        System.setProperty(JETTY_BASE,baseDir.toAbsolutePath().toString());
+        System.setProperty(JETTY_HOME, homeDir.toAbsolutePath().toString());
+        System.setProperty(JETTY_BASE, baseDir.toAbsolutePath().toString());
     }
 
     public String getBase()
@@ -193,9 +193,8 @@ public class BaseHome
 
     /**
      * Create a {@link Path} reference to some content in <code>"${jetty.base}"</code>
-     * 
-     * @param path
-     *            the path to reference
+     *
+     * @param path the path to reference
      * @return the file reference
      */
     public Path getBasePath(String path)
@@ -229,9 +228,8 @@ public class BaseHome
      * <li>If exists relative to <code>${jetty.home}</code>, return that reference</li>
      * <li>Return standard {@link Path} reference obtained from {@link java.nio.file.FileSystem#getPath(String, String...)} (no exists check performed)</li>
      * </ol>
-     * 
-     * @param path
-     *            the path to get.
+     *
+     * @param path the path to get.
      * @return the path reference.
      */
     public Path getPath(final String path)
@@ -265,16 +263,12 @@ public class BaseHome
 
     /**
      * Search specified Path with pattern and return hits
-     * 
-     * @param dir
-     *            the path to a directory to start search from
-     * @param searchDepth
-     *            the number of directories deep to perform the search
-     * @param pattern
-     *            the raw pattern to use for the search (must be relative)
+     *
+     * @param dir the path to a directory to start search from
+     * @param searchDepth the number of directories deep to perform the search
+     * @param pattern the raw pattern to use for the search (must be relative)
      * @return the list of Paths found
-     * @throws IOException
-     *             if unable to search the path
+     * @throws IOException if unable to search the path
      */
     public List<Path> getPaths(Path dir, int searchDepth, String pattern) throws IOException
     {
@@ -291,9 +285,9 @@ public class BaseHome
             finder.setFileMatcher(matcher);
             finder.setBase(dir);
             finder.setIncludeDirsInResults(true);
-            Files.walkFileTree(dir,SEARCH_VISIT_OPTIONS,searchDepth,finder);
+            Files.walkFileTree(dir, SEARCH_VISIT_OPTIONS, searchDepth, finder);
             hits.addAll(finder.getHits());
-            Collections.sort(hits,new NaturalSort.Paths());
+            Collections.sort(hits, new NaturalSort.Paths());
         }
         return hits;
     }
@@ -319,19 +313,19 @@ public class BaseHome
      * <dl>
      * <dt><code>lib/logging/*.jar</code></dt>
      * <dd>Relative pattern, not recursive, search <code>${jetty.home}</code> then <code>${jetty.base}</code> for lib/logging/*.jar content</dd>
-     * 
+     *
      * <dt><code>lib/**&#47;*-dev.jar</code></dt>
      * <dd>Relative pattern, recursive search <code>${jetty.home}</code> then <code>${jetty.base}</code> for files under <code>lib</code> ending in
      * <code>-dev.jar</code></dd>
-     * 
+     *
      * <dt><code>etc/jetty.xml</code></dt>
      * <dd>Relative pattern, no glob, search for <code>${jetty.home}/etc/jetty.xml</code> then <code>${jetty.base}/etc/jetty.xml</code></dd>
-     * 
+     *
      * <dt><code>glob:/opt/app/common/*-corp.jar</code></dt>
      * <dd>PathMapper pattern, glob, search <code>/opt/app/common/</code> for <code>*-corp.jar</code></dd>
-     * 
+     *
      * </dl>
-     * 
+     *
      * <p>
      * Notes:
      * <ul>
@@ -341,16 +335,14 @@ public class BaseHome
      * <li>Recursive searching is limited to 30 levels deep (not configurable)</li>
      * <li>File System loops are detected and skipped</li>
      * </ul>
-     * 
-     * @param pattern
-     *            the pattern to search.
+     *
+     * @param pattern the pattern to search.
      * @return the collection of paths found
-     * @throws IOException
-     *             if error during search operation
+     * @throws IOException if error during search operation
      */
     public List<Path> getPaths(String pattern) throws IOException
     {
-        StartLog.debug("getPaths('%s')",pattern);
+        StartLog.debug("getPaths('%s')", pattern);
         List<Path> hits = new ArrayList<>();
 
         if (PathMatchers.isAbsolute(pattern))
@@ -368,7 +360,7 @@ public class BaseHome
                 finder.setIncludeDirsInResults(true);
                 finder.setFileMatcher(matcher);
                 finder.setBase(root);
-                Files.walkFileTree(root,SEARCH_VISIT_OPTIONS,MAX_SEARCH_DEPTH,finder);
+                Files.walkFileTree(root, SEARCH_VISIT_OPTIONS, MAX_SEARCH_DEPTH, finder);
                 hits.addAll(finder.getHits());
             }
         }
@@ -394,7 +386,7 @@ public class BaseHome
                     if (FS.isValidDirectory(deepDir))
                     {
                         finder.setBase(dir);
-                        Files.walkFileTree(deepDir,SEARCH_VISIT_OPTIONS,MAX_SEARCH_DEPTH,finder);
+                        Files.walkFileTree(deepDir, SEARCH_VISIT_OPTIONS, MAX_SEARCH_DEPTH, finder);
                     }
                 }
             }
@@ -402,7 +394,7 @@ public class BaseHome
             hits.addAll(finder.getHits());
         }
 
-        Collections.sort(hits,new NaturalSort.Paths());
+        Collections.sort(hits, new NaturalSort.Paths());
         return hits;
     }
 
@@ -413,6 +405,7 @@ public class BaseHome
 
     /**
      * Convenience method for <code>toShortForm(file.toPath())</code>
+     *
      * @param path the path to shorten
      * @return the short form of the path as a String
      */
@@ -423,9 +416,8 @@ public class BaseHome
 
     /**
      * Replace/Shorten arbitrary path with property strings <code>"${jetty.home}"</code> or <code>"${jetty.base}"</code> where appropriate.
-     * 
-     * @param path
-     *            the path to shorten
+     *
+     * @param path the path to shorten
      * @return the potentially shortened path
      */
     public String toShortForm(final Path path)
@@ -443,7 +435,7 @@ public class BaseHome
                     if (dirsource.isPropertyBased())
                     {
                         Path relative = dir.relativize(apath);
-                        return String.format("%s%c%s",dirsource.getId(),File.separatorChar,relative.toString());
+                        return String.format("%s%c%s", dirsource.getId(), File.separatorChar, relative.toString());
                     }
                     else
                     {
@@ -458,9 +450,8 @@ public class BaseHome
 
     /**
      * Replace/Shorten arbitrary path with property strings <code>"${jetty.home}"</code> or <code>"${jetty.base}"</code> where appropriate.
-     * 
-     * @param path
-     *            the path to shorten
+     *
+     * @param path the path to shorten
      * @return the potentially shortened path
      */
     public String toShortForm(final String path)

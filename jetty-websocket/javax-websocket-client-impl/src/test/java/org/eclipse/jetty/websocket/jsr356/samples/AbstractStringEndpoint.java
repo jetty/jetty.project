@@ -35,12 +35,12 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
     private static final Logger LOG = Log.getLogger(AbstractStringEndpoint.class);
     protected Session session;
     protected EndpointConfig config;
-    
+
     @Override
     public void onOpen(Session session, EndpointConfig config)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onOpen({}, {})",session,config);
+            LOG.debug("onOpen({}, {})", session, config);
         session.addMessageHandler(this);
         this.session = session;
         this.config = config;
@@ -50,13 +50,13 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
     public void onClose(Session session, CloseReason closeReason)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onClose({}, {})",session,closeReason);
+            LOG.debug("onClose({}, {})", session, closeReason);
         this.session = null;
     }
 
     @Override
     public void onError(Session session, Throwable thr)
     {
-        LOG.warn("onError()",thr);
+        LOG.warn("onError()", thr);
     }
 }

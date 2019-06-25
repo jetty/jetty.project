@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.util;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.Locale;
 import java.util.MissingResourceException;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,5 +51,4 @@ public class LoaderTest
     {
         assertEquals(LazyList.class, Loader.loadClass(Object.class, "org.eclipse.jetty.util.LazyList"));
     }
-
 }

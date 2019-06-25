@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -32,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -49,10 +44,13 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class QoSFilterTest
 {
@@ -75,7 +73,9 @@ public class QoSFilterTest
 
         _connectors = new LocalConnector[NUM_CONNECTIONS];
         for (int i = 0; i < _connectors.length; ++i)
+        {
             _connectors[i] = _tester.createLocalConnector();
+        }
 
         _tester.start();
     }
@@ -183,7 +183,7 @@ public class QoSFilterTest
 
                 request.setMethod("GET");
                 request.setHeader("host", "tester");
-                request.setURI("/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY));
+                request.setURI("/context/test?priority=" + (_num % QoSFilter.DEFAULT_MAX_PRIORITY));
                 request.setHeader("num", _num + "");
 
                 String responseString = _connectors[_num].getResponse(BufferUtil.toString(request.generate()));
@@ -213,7 +213,7 @@ public class QoSFilterTest
                 String addr = _tester.createConnector(true);
                 for (int i = 0; i < NUM_LOOPS; i++)
                 {
-                    url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
+                    url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
                     url.getContent();
                 }
             }

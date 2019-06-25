@@ -22,8 +22,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.ProtocolException;
@@ -38,12 +38,12 @@ public class CloseInfo
 
     public CloseInfo()
     {
-        this(StatusCode.NO_CODE,null);
+        this(StatusCode.NO_CODE, null);
     }
 
     /**
      * Parse the Close Frame payload.
-     * 
+     *
      * @param payload the raw close frame payload.
      * @param validate true if payload should be validated per WebSocket spec.
      */
@@ -79,20 +79,20 @@ public class CloseInfo
                 // Reason (trimmed to max reason size)
                 int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
                 reasonBytes = new byte[len];
-                data.get(reasonBytes,0,len);
-                
+                data.get(reasonBytes, 0, len);
+
                 // Spec Requirement : throw BadPayloadException on invalid UTF8
-                if(validate)
+                if (validate)
                 {
                     try
                     {
                         Utf8StringBuilder utf = new Utf8StringBuilder();
                         // if this throws, we know we have bad UTF8
-                        utf.append(reasonBytes,0,reasonBytes.length);
+                        utf.append(reasonBytes, 0, reasonBytes.length);
                     }
                     catch (NotUtf8Exception e)
                     {
-                        throw new BadPayloadException("Invalid Close Reason",e);
+                        throw new BadPayloadException("Invalid Close Reason", e);
                     }
                 }
             }
@@ -101,22 +101,22 @@ public class CloseInfo
 
     public CloseInfo(Frame frame)
     {
-        this(frame.getPayload(),false);
+        this(frame.getPayload(), false);
     }
 
     public CloseInfo(Frame frame, boolean validate)
     {
-        this(frame.getPayload(),validate);
+        this(frame.getPayload(), validate);
     }
 
     public CloseInfo(int statusCode)
     {
-        this(statusCode,null);
+        this(statusCode, null);
     }
 
     /**
      * Create a CloseInfo, trimming the reason to {@link CloseStatus#MAX_REASON_PHRASE} UTF-8 bytes if needed.
-     * 
+     *
      * @param statusCode the status code
      * @param reason the raw reason code
      */
@@ -129,7 +129,7 @@ public class CloseInfo
             if (utf8Bytes.length > CloseStatus.MAX_REASON_PHRASE)
             {
                 this.reasonBytes = new byte[CloseStatus.MAX_REASON_PHRASE];
-                System.arraycopy(utf8Bytes,0,this.reasonBytes,0,CloseStatus.MAX_REASON_PHRASE);
+                System.arraycopy(utf8Bytes, 0, this.reasonBytes, 0, CloseStatus.MAX_REASON_PHRASE);
             }
             else
             {
@@ -181,9 +181,9 @@ public class CloseInfo
 
         if (hasReason)
         {
-            buf.put(this.reasonBytes,0,this.reasonBytes.length);
+            buf.put(this.reasonBytes, 0, this.reasonBytes.length);
         }
-        BufferUtil.flipToFlush(buf,0);
+        BufferUtil.flipToFlush(buf, 0);
 
         return buf;
     }
@@ -207,7 +207,7 @@ public class CloseInfo
         {
             return null;
         }
-        return new String(this.reasonBytes,StandardCharsets.UTF_8);
+        return new String(this.reasonBytes, StandardCharsets.UTF_8);
     }
 
     public int getStatusCode()
@@ -228,6 +228,6 @@ public class CloseInfo
     @Override
     public String toString()
     {
-        return String.format("CloseInfo[code=%d,reason=%s]",statusCode,getReason());
+        return String.format("CloseInfo[code=%d,reason=%s]", statusCode, getReason());
     }
 }

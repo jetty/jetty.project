@@ -25,7 +25,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -36,7 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/** 
+/**
  * Dump Servlet Request.
  */
 @SuppressWarnings("serial")
@@ -44,21 +43,18 @@ public class SecureModeServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(SecureModeServlet.class);
 
-    /* ------------------------------------------------------------ */
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
@@ -91,7 +87,7 @@ public class SecureModeServlet extends HttpServlet
         }
         catch (InterruptedException e)
         {
-            getServletContext().log("exception",e);
+            getServletContext().log("exception", e);
         }
     }
 
@@ -105,7 +101,7 @@ public class SecureModeServlet extends HttpServlet
         {
             out.println("check ability to create classloader<br/>");
             URL url = new URL("http://not.going.to.work");
-            new URLClassLoader(new URL[] { url });
+            new URLClassLoader(new URL[]{url});
             out.println("status: <b>SUCCESS - unexpected</b><br/>");
         }
         catch (SecurityException e)
@@ -301,7 +297,7 @@ public class SecureModeServlet extends HttpServlet
         try
         {
             out.println("check write permission for __ALLOWED_READ_PROPERTY<br/>");
-            System.setProperty("__ALLOWED_READ_PROPERTY","SUCCESS - unexpected");
+            System.setProperty("__ALLOWED_READ_PROPERTY", "SUCCESS - unexpected");
             String value = System.getProperty("__ALLOWED_READ_PROPERTY");
             out.println("status: <b>" + value + "</b><br/>");
         }
@@ -333,7 +329,7 @@ public class SecureModeServlet extends HttpServlet
         try
         {
             out.println("check write permission for __ALLOWED_WRITE_PROPERTY<br/>");
-            System.setProperty("__ALLOWED_WRITE_PROPERTY","SUCCESS - expected");
+            System.setProperty("__ALLOWED_WRITE_PROPERTY", "SUCCESS - expected");
             String value = System.getProperty("__ALLOWED_WRITE_PROPERTY");
             out.println("status: <b>" + value + "</b><br/>");
         }
@@ -365,7 +361,7 @@ public class SecureModeServlet extends HttpServlet
         try
         {
             out.println("check write permission for __UNDECLARED_PROPERTY: <br/>");
-            System.setProperty("__UNDECLARED_PROPERTY","SUCCESS - unexpected");
+            System.setProperty("__UNDECLARED_PROPERTY", "SUCCESS - unexpected");
             String value = System.getProperty("__UNDECLARED_PROPERTY");
             out.println("status: <b>" + value + "</b><br/>");
         }
@@ -376,6 +372,4 @@ public class SecureModeServlet extends HttpServlet
 
         out.println("      </p><br/><br/>");
     }
-
-
 }

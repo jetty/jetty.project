@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
@@ -67,19 +66,19 @@ public class JsrCreator implements WebSocketCreator
 
         // Get raw config, as defined when the endpoint was added to the container
         ServerEndpointConfig config = metadata.getConfig();
-        
+
         // Establish a copy of the config, so that the UserProperties are unique
         // per upgrade request.
         config = new BasicServerEndpointConfig(containerScope, config);
-        
+
         // Bug 444617 - Expose localAddress and remoteAddress for jsr modify handshake to use
         // This is being implemented as an optional set of userProperties so that
         // it is not JSR api breaking.  A few users on #jetty and a few from cometd
         // have asked for access to this information.
         Map<String, Object> userProperties = config.getUserProperties();
-        userProperties.put(PROP_LOCAL_ADDRESS,req.getLocalSocketAddress());
-        userProperties.put(PROP_REMOTE_ADDRESS,req.getRemoteSocketAddress());
-        userProperties.put(PROP_LOCALES,Collections.list(req.getLocales()));
+        userProperties.put(PROP_LOCAL_ADDRESS, req.getLocalSocketAddress());
+        userProperties.put(PROP_REMOTE_ADDRESS, req.getRemoteSocketAddress());
+        userProperties.put(PROP_LOCALES, Collections.list(req.getLocales()));
 
         // Get Configurator from config object (not guaranteed to be unique per endpoint upgrade)
         ServerEndpointConfig.Configurator configurator = config.getConfigurator();
@@ -94,7 +93,7 @@ public class JsrCreator implements WebSocketCreator
             catch (IOException e)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to send error response",e);
+                    LOG.debug("Unable to send error response", e);
             }
             return null;
         }
@@ -102,7 +101,7 @@ public class JsrCreator implements WebSocketCreator
         // [JSR] Step 2: deal with sub protocols
         List<String> supported = config.getSubprotocols();
         List<String> requested = req.getSubProtocols();
-        String subprotocol = configurator.getNegotiatedSubprotocol(supported,requested);
+        String subprotocol = configurator.getNegotiatedSubprotocol(supported, requested);
         if (StringUtil.isNotBlank(subprotocol))
         {
             resp.setAcceptedSubProtocol(subprotocol);
@@ -119,7 +118,7 @@ public class JsrCreator implements WebSocketCreator
         {
             requestedExts.add(new JsrExtension(reqCfg));
         }
-        List<Extension> usedExtensions = configurator.getNegotiatedExtensions(installedExtensions,requestedExts);
+        List<Extension> usedExtensions = configurator.getNegotiatedExtensions(installedExtensions, requestedExts);
         List<ExtensionConfig> configs = new ArrayList<>();
         if (usedExtensions != null)
         {
@@ -128,7 +127,7 @@ public class JsrCreator implements WebSocketCreator
                 ExtensionConfig ecfg = new ExtensionConfig(used.getName());
                 for (Parameter param : used.getParameters())
                 {
-                    ecfg.setParameter(param.getName(),param.getValue());
+                    ecfg.setParameter(param.getName(), param.getValue());
                 }
                 configs.add(ecfg);
             }
@@ -143,11 +142,11 @@ public class JsrCreator implements WebSocketCreator
             UriTemplatePathSpec wspathSpec = (UriTemplatePathSpec)pathSpec;
             String requestPath = req.getRequestPath();
             // Wrap the config with the path spec information
-            config = new PathParamServerEndpointConfig(containerScope,config,wspathSpec,requestPath);
+            config = new PathParamServerEndpointConfig(containerScope, config, wspathSpec, requestPath);
         }
 
         // [JSR] Step 5: Call modifyHandshake
-        configurator.modifyHandshake(config,jsrHandshakeRequest,jsrHandshakeResponse);
+        configurator.modifyHandshake(config, jsrHandshakeRequest, jsrHandshakeResponse);
 
         try
         {
@@ -156,12 +155,12 @@ public class JsrCreator implements WebSocketCreator
             Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
             // Do not decorate here (let the Connection and Session start first)
             // This will allow CDI to see Session for injection into Endpoint classes.
-            return new EndpointInstance(endpoint,config,metadata);
+            return new EndpointInstance(endpoint, config, metadata);
         }
         catch (InstantiationException e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to create websocket: " + config.getEndpointClass().getName(),e);
+                LOG.debug("Unable to create websocket: " + config.getEndpointClass().getName(), e);
             return null;
         }
     }
@@ -169,6 +168,6 @@ public class JsrCreator implements WebSocketCreator
     @Override
     public String toString()
     {
-        return String.format("%s[metadata=%s]",this.getClass().getName(),metadata);
+        return String.format("%s[metadata=%s]", this.getClass().getName(), metadata);
     }
 }

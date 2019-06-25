@@ -109,7 +109,7 @@ public class DelayedStartClientOnServerTest
             }
         }
     }
-    
+
     /**
      * Using the Server specific techniques of JSR356, connect to the echo socket
      * and perform an echo request.
@@ -121,8 +121,8 @@ public class DelayedStartClientOnServerTest
         {
             // Server specific technique
             javax.websocket.server.ServerContainer container =
-                    (javax.websocket.server.ServerContainer)
-                            req.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
+                (javax.websocket.server.ServerContainer)
+                    req.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
             try
             {
                 URI wsURI = WSURI.toWebsocket(req.getRequestURL()).resolve("/echo");
@@ -146,7 +146,7 @@ public class DelayedStartClientOnServerTest
             }
         }
     }
-    
+
     /**
      * Using the Client specific techniques of JSR356, configure the WebSocketContainer.
      */
@@ -157,7 +157,7 @@ public class DelayedStartClientOnServerTest
         {
             // Client specific technique
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            
+
             try
             {
                 container.setAsyncSendTimeout(5000);
@@ -171,7 +171,7 @@ public class DelayedStartClientOnServerTest
             }
         }
     }
-    
+
     private void assertNoHttpClientPoolThreads(List<String> threadNames)
     {
         for (String threadName : threadNames)
@@ -179,12 +179,12 @@ public class DelayedStartClientOnServerTest
             if (threadName.startsWith("HttpClient@") && !threadName.endsWith("-scheduler"))
             {
                 throw new AssertionError("Found non-scheduler HttpClient thread in <" +
-                        threadNames.stream().collect(Collectors.joining("[", ", ", "]"))
-                        + ">");
+                    threadNames.stream().collect(Collectors.joining("[", ", ", "]"))
+                    + ">");
             }
         }
     }
-    
+
     /**
      * Using the Server specific techniques of JSR356, configure the WebSocketContainer.
      */
@@ -195,8 +195,8 @@ public class DelayedStartClientOnServerTest
         {
             // Server specific technique
             javax.websocket.server.ServerContainer container =
-                    (javax.websocket.server.ServerContainer)
-                            req.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
+                (javax.websocket.server.ServerContainer)
+                    req.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
             try
             {
                 container.setAsyncSendTimeout(5000);
@@ -210,7 +210,7 @@ public class DelayedStartClientOnServerTest
             }
         }
     }
-    
+
     @Test
     public void testNoExtraHttpClientThreads() throws Exception
     {
@@ -230,7 +230,7 @@ public class DelayedStartClientOnServerTest
             server.stop();
         }
     }
-    
+
     @Test
     public void testHttpClientThreads_AfterClientConnectTo() throws Exception
     {
@@ -255,11 +255,12 @@ public class DelayedStartClientOnServerTest
             server.stop();
         }
     }
-    
+
     @Test
     public void testHttpClientThreads_AfterServerConnectTo() throws Exception
     {
-        assertTimeoutPreemptively(ofSeconds(5),() -> {
+        assertTimeoutPreemptively(ofSeconds(5), () ->
+        {
             Server server = new Server(0);
             ServletContextHandler contextHandler = new ServletContextHandler();
             server.setHandler(contextHandler);
@@ -280,10 +281,9 @@ public class DelayedStartClientOnServerTest
             {
                 server.stop();
             }
-        } );
-
+        });
     }
-    
+
     @Test
     public void testHttpClientThreads_AfterClientConfigure() throws Exception
     {
@@ -309,7 +309,7 @@ public class DelayedStartClientOnServerTest
             server.stop();
         }
     }
-    
+
     @Test
     public void testHttpClientThreads_AfterServerConfigure() throws Exception
     {
@@ -334,10 +334,10 @@ public class DelayedStartClientOnServerTest
             server.stop();
         }
     }
-    
+
     private String GET(URI destURI) throws IOException
     {
-        HttpURLConnection http = (HttpURLConnection) destURI.toURL().openConnection();
+        HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
         assertThat("HTTP GET (" + destURI + ") Response Code", http.getResponseCode(), is(200));
         try (InputStream in = http.getInputStream();
              InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
@@ -347,7 +347,7 @@ public class DelayedStartClientOnServerTest
             return writer.toString();
         }
     }
-    
+
     public static List<String> getThreadNames(ContainerLifeCycle... containers)
     {
         List<String> threadNames = new ArrayList<>();
@@ -358,14 +358,14 @@ public class DelayedStartClientOnServerTest
             {
                 continue;
             }
-            
+
             findConfiguredThreadNames(seen, threadNames, container);
         }
         seen.clear();
         // System.out.println("Threads: " + threadNames.stream().collect(Collectors.joining(", ", "[", "]")));
         return threadNames;
     }
-    
+
     private static void findConfiguredThreadNames(Set<Object> seen, List<String> threadNames, ContainerLifeCycle container)
     {
         if (seen.contains(container))
@@ -373,19 +373,19 @@ public class DelayedStartClientOnServerTest
             // skip
             return;
         }
-        
+
         seen.add(container);
-        
+
         Collection<Executor> executors = container.getBeans(Executor.class);
         for (Executor executor : executors)
         {
             if (executor instanceof QueuedThreadPool)
             {
-                QueuedThreadPool qtp = (QueuedThreadPool) executor;
+                QueuedThreadPool qtp = (QueuedThreadPool)executor;
                 threadNames.add(qtp.getName());
             }
         }
-        
+
         for (ContainerLifeCycle child : container.getBeans(ContainerLifeCycle.class))
         {
             findConfiguredThreadNames(seen, threadNames, child);

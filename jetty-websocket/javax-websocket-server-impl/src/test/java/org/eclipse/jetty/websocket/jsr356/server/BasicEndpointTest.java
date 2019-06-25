@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,6 +36,8 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpointC
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Example of an {@link javax.websocket.Endpoint} extended echo server added programmatically via the
  * {@link ServerContainer#addEndpoint(javax.websocket.server.ServerEndpointConfig)}
@@ -52,7 +52,7 @@ public class BasicEndpointTest
     @Test
     public void testEcho() throws Exception
     {
-        WSServer wsb = new WSServer(testdir,"app");
+        WSServer wsb = new WSServer(testdir, "app");
         wsb.copyWebInf("basic-echo-endpoint-config-web.xml");
         // the endpoint (extends javax.websocket.Endpoint)
         wsb.copyClass(BasicEchoEndpoint.class);
@@ -72,12 +72,12 @@ public class BasicEndpointTest
             {
                 client.start();
                 JettyEchoSocket clientEcho = new JettyEchoSocket();
-                Future<Session> future = client.connect(clientEcho,uri.resolve("echo"));
+                Future<Session> future = client.connect(clientEcho, uri.resolve("echo"));
                 // wait for connect
-                future.get(1,TimeUnit.SECONDS);
+                future.get(1, TimeUnit.SECONDS);
                 clientEcho.sendMessage("Hello World");
                 LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
-                assertEquals("Hello World",msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), "Expected message");
+                assertEquals("Hello World", msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), "Expected message");
             }
             finally
             {

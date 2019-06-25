@@ -18,14 +18,7 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.util.ArrayList;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -42,19 +35,23 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 /**
  * TestJettyOSGiBootContextAsService
- * 
+ *
  * Tests deployment of a ContextHandler as an osgi Service.
- * 
+ *
  * Tests the ServiceContextProvider.
- * 
  */
 @RunWith(PaxExam.class)
 public class TestJettyOSGiBootContextAsService
 {
     private static final String LOG_LEVEL = "WARN";
-
 
     @Inject
     BundleContext bundleContext = null;
@@ -73,21 +70,20 @@ public class TestJettyOSGiBootContextAsService
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-context").versionAsInProject().start());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
-        options.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( System.getProperty( "mavenRepoPath" ) ) );
-        
+        options.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(System.getProperty("mavenRepoPath")));
+
         return options.toArray(new Option[options.size()]);
     }
 
-
-
     /**
+     *
      */
     @Test
     public void testContextHandlerAsOSGiService() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-        
+
         // now test the context
         HttpClient client = new HttpClient();
         try
@@ -110,7 +106,7 @@ public class TestJettyOSGiBootContextAsService
         ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
         assertNotNull(refs);
         assertEquals(1, refs.length);
-        ContextHandler ch = (ContextHandler) bundleContext.getService(refs[0]);
+        ContextHandler ch = (ContextHandler)bundleContext.getService(refs[0]);
         assertEquals("/acme", ch.getContextPath());
 
         // Stop the bundle with the ContextHandler in it and check the jetty

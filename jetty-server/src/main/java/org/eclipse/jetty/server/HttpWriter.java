@@ -24,42 +24,38 @@ import java.io.Writer;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 
 /**
- * 
+ *
  */
 public abstract class HttpWriter extends Writer
 {
-    public static final int MAX_OUTPUT_CHARS = 512; 
-    
+    public static final int MAX_OUTPUT_CHARS = 512;
+
     final HttpOutput _out;
     final ByteArrayOutputStream2 _bytes;
     final char[] _chars;
 
-    /* ------------------------------------------------------------ */
     public HttpWriter(HttpOutput out)
     {
-        _out=out;
-        _chars=new char[MAX_OUTPUT_CHARS];
-        _bytes = new ByteArrayOutputStream2(MAX_OUTPUT_CHARS);   
+        _out = out;
+        _chars = new char[MAX_OUTPUT_CHARS];
+        _bytes = new ByteArrayOutputStream2(MAX_OUTPUT_CHARS);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void close() throws IOException
     {
         _out.close();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void flush() throws IOException
     {
         _out.flush();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
-    public void write (String s,int offset, int length) throws IOException
-    {   
+    public void write(String s, int offset, int length) throws IOException
+    {
         while (length > MAX_OUTPUT_CHARS)
         {
             write(s, offset, MAX_OUTPUT_CHARS);
@@ -71,10 +67,9 @@ public abstract class HttpWriter extends Writer
         write(_chars, 0, length);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
-    public void write (char[] s,int offset, int length) throws IOException
-    {         
+    public void write(char[] s, int offset, int length) throws IOException
+    {
         throw new AbstractMethodError();
     }
 }

@@ -20,7 +20,8 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
-/** OutputWriter.
+/**
+ * OutputWriter.
  * A writer that can wrap a {@link HttpOutput} stream and provide
  * character encodings.
  *
@@ -30,150 +31,148 @@ import java.io.IOException;
  */
 public class Utf8HttpWriter extends HttpWriter
 {
-    int _surrogate=0;
+    int _surrogate = 0;
 
-    /* ------------------------------------------------------------ */
     public Utf8HttpWriter(HttpOutput out)
     {
         super(out);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
-    public void write (char[] s,int offset, int length) throws IOException
+    public void write(char[] s, int offset, int length) throws IOException
     {
         HttpOutput out = _out;
-        if (length==0 && out.isAllContentWritten())
+        if (length == 0 && out.isAllContentWritten())
         {
             close();
             return;
         }
-        
+
         while (length > 0)
         {
             _bytes.reset();
-            int chars = length>MAX_OUTPUT_CHARS?MAX_OUTPUT_CHARS:length;
+            int chars = length > MAX_OUTPUT_CHARS ? MAX_OUTPUT_CHARS : length;
 
-            byte[] buffer=_bytes.getBuf();
-            int bytes=_bytes.getCount();
+            byte[] buffer = _bytes.getBuf();
+            int bytes = _bytes.getCount();
 
-            if (bytes+chars>buffer.length)
-                chars=buffer.length-bytes;
+            if (bytes + chars > buffer.length)
+                chars = buffer.length - bytes;
 
             for (int i = 0; i < chars; i++)
             {
-                int code = s[offset+i];
+                int code = s[offset + i];
 
                 // Do we already have a surrogate?
-                if(_surrogate==0)
+                if (_surrogate == 0)
                 {
                     // No - is this char code a surrogate?
-                    if(Character.isHighSurrogate((char)code))
+                    if (Character.isHighSurrogate((char)code))
                     {
-                        _surrogate=code; // UCS-?
+                        _surrogate = code; // UCS-?
                         continue;
                     }
                 }
                 // else handle a low surrogate
-                else if(Character.isLowSurrogate((char)code))
+                else if (Character.isLowSurrogate((char)code))
                 {
                     code = Character.toCodePoint((char)_surrogate, (char)code); // UCS-4
                 }
                 // else UCS-2
                 else
                 {
-                    code=_surrogate; // UCS-2
-                    _surrogate=0; // USED
+                    code = _surrogate; // UCS-2
+                    _surrogate = 0; // USED
                     i--;
                 }
 
                 if ((code & 0xffffff80) == 0)
                 {
                     // 1b
-                    if (bytes>=buffer.length)
+                    if (bytes >= buffer.length)
                     {
-                        chars=i;
+                        chars = i;
                         break;
                     }
-                    buffer[bytes++]=(byte)(code);
+                    buffer[bytes++] = (byte)(code);
                 }
                 else
                 {
-                    if((code&0xfffff800)==0)
+                    if ((code & 0xfffff800) == 0)
                     {
                         // 2b
-                        if (bytes+2>buffer.length)
+                        if (bytes + 2 > buffer.length)
                         {
-                            chars=i;
+                            chars = i;
                             break;
                         }
-                        buffer[bytes++]=(byte)(0xc0|(code>>6));
-                        buffer[bytes++]=(byte)(0x80|(code&0x3f));
+                        buffer[bytes++] = (byte)(0xc0 | (code >> 6));
+                        buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
                     }
-                    else if((code&0xffff0000)==0)
+                    else if ((code & 0xffff0000) == 0)
                     {
                         // 3b
-                        if (bytes+3>buffer.length)
+                        if (bytes + 3 > buffer.length)
                         {
-                            chars=i;
+                            chars = i;
                             break;
                         }
-                        buffer[bytes++]=(byte)(0xe0|(code>>12));
-                        buffer[bytes++]=(byte)(0x80|((code>>6)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|(code&0x3f));
+                        buffer[bytes++] = (byte)(0xe0 | (code >> 12));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 6) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
                     }
-                    else if((code&0xff200000)==0)
+                    else if ((code & 0xff200000) == 0)
                     {
                         // 4b
-                        if (bytes+4>buffer.length)
+                        if (bytes + 4 > buffer.length)
                         {
-                            chars=i;
+                            chars = i;
                             break;
                         }
-                        buffer[bytes++]=(byte)(0xf0|(code>>18));
-                        buffer[bytes++]=(byte)(0x80|((code>>12)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|((code>>6)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|(code&0x3f));
+                        buffer[bytes++] = (byte)(0xf0 | (code >> 18));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 12) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 6) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
                     }
-                    else if((code&0xf4000000)==0)
+                    else if ((code & 0xf4000000) == 0)
                     {
                         // 5b
-                        if (bytes+5>buffer.length)
+                        if (bytes + 5 > buffer.length)
                         {
-                            chars=i;
+                            chars = i;
                             break;
                         }
-                        buffer[bytes++]=(byte)(0xf8|(code>>24));
-                        buffer[bytes++]=(byte)(0x80|((code>>18)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|((code>>12)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|((code>>6)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|(code&0x3f));
+                        buffer[bytes++] = (byte)(0xf8 | (code >> 24));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 18) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 12) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 6) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
                     }
-                    else if((code&0x80000000)==0)
+                    else if ((code & 0x80000000) == 0)
                     {
                         // 6b
-                        if (bytes+6>buffer.length)
+                        if (bytes + 6 > buffer.length)
                         {
-                            chars=i;
+                            chars = i;
                             break;
                         }
-                        buffer[bytes++]=(byte)(0xfc|(code>>30));
-                        buffer[bytes++]=(byte)(0x80|((code>>24)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|((code>>18)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|((code>>12)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|((code>>6)&0x3f));
-                        buffer[bytes++]=(byte)(0x80|(code&0x3f));
+                        buffer[bytes++] = (byte)(0xfc | (code >> 30));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 24) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 18) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 12) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | ((code >> 6) & 0x3f));
+                        buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
                     }
                     else
                     {
-                        buffer[bytes++]=(byte)('?');
+                        buffer[bytes++] = (byte)('?');
                     }
 
-                    _surrogate=0; // USED
+                    _surrogate = 0; // USED
 
-                    if (bytes==buffer.length)
+                    if (bytes == buffer.length)
                     {
-                        chars=i+1;
+                        chars = i + 1;
                         break;
                     }
                 }
@@ -181,8 +180,8 @@ public class Utf8HttpWriter extends HttpWriter
             _bytes.setCount(bytes);
 
             _bytes.writeTo(out);
-            length-=chars;
-            offset+=chars;
+            length -= chars;
+            offset += chars;
         }
     }
 }
