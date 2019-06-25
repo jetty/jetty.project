@@ -132,7 +132,7 @@ public class WebSocketSessionState
                     return false;
 
                 default:
-                    if (_closeStatus == null || CloseStatus.isOrdinary(_closeStatus))
+                    if (_closeStatus == null || CloseStatus.isOrdinary(_closeStatus.getCode()))
                         _closeStatus = new CloseStatus(CloseStatus.NO_CLOSE, "Session Closed");
                     _sessionState = State.CLOSED;
                     return true;
@@ -153,7 +153,7 @@ public class WebSocketSessionState
             if (opcode == OpCode.CLOSE)
             {
                 _closeStatus = CloseStatus.getCloseStatus(frame);
-                if (_closeStatus instanceof WebSocketCoreSession.AbnormalCloseStatus)
+                if (_closeStatus.isAbnormal())
                 {
                     _sessionState = State.CLOSED;
                     return true;

@@ -114,11 +114,38 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                     throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
                 break;
         }
+
+        /*
+         * RFC 6455 Section 5.5.1
+         * close frame payload is specially formatted which is checked in CloseStatus
+         */
+        if (frame.getOpCode() == OpCode.CLOSE)
+        {
+            if (!(frame instanceof ParsedFrame)) // already check in parser
+                CloseStatus.getCloseStatus(frame); // return ignored as get used to validate there is a closeStatus
+        }
     }
 
     public void assertValidOutgoing(Frame frame) throws CloseException
     {
         assertValidFrame(frame);
+
+        /*
+         * RFC 6455 Section 5.5.1
+         * close frame payload is specially formatted which is checked in CloseStatus
+         */
+        if (frame.getOpCode() == OpCode.CLOSE)
+        {
+            if (!(frame instanceof ParsedFrame)) // already check in parser
+            {
+                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+                if (!CloseStatus.isTransmittableStatusCode(closeStatus.getCode()) && (closeStatus.getCode()!=CloseStatus.NO_CODE))
+                {
+                    throw new ProtocolException("Frame has non-transmittable status code");
+                }
+            }
+
+        }
     }
 
     public void assertValidFrame(Frame frame)
@@ -141,16 +168,6 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 throw new ProtocolException("Cannot have RSV2==true on Control frames");
             if (frame.isRsv3())
                 throw new ProtocolException("Cannot have RSV3==true on Control frames");
-
-            /*
-             * RFC 6455 Section 5.5.1
-             * close frame payload is specially formatted which is checked in CloseStatus
-             */
-            if (frame.getOpCode() == OpCode.CLOSE)
-            {
-                if (!(frame instanceof ParsedFrame)) // already check in parser
-                    CloseStatus.getCloseStatus(frame); // return ignored as get used to validate there is a closeStatus
-            }
         }
         else
         {
@@ -362,7 +379,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         else
             code = CloseStatus.NO_CLOSE;
 
-        AbnormalCloseStatus closeStatus = new AbnormalCloseStatus(code, cause);
+        CloseStatus closeStatus = new CloseStatus(code, cause);
         if (CloseStatus.isTransmittableStatusCode(code))
             close(closeStatus, callback);
         else
@@ -396,7 +413,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         else
             code = CloseStatus.SERVER_ERROR;
 
-        close(new AbnormalCloseStatus(code, cause), callback);
+        close(new CloseStatus(code, cause), callback);
     }
 
     /**
@@ -492,7 +509,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.warn("Invalid outgoing frame: {}", frame);
+                LOG.warn("Invalid outgoing frame: " + frame, t);
 
             callback.failed(t);
             return;
@@ -508,11 +525,17 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 boolean closeConnection = sessionState.onOutgoingFrame(frame);
                 if (closeConnection)
                 {
-                    Throwable cause = AbnormalCloseStatus.getCause(CloseStatus.getCloseStatus(frame));
-
                     Callback closeConnectionCallback = Callback.from(
-                        () -> closeConnection(cause, sessionState.getCloseStatus(), callback),
-                        t -> closeConnection(cause, sessionState.getCloseStatus(), Callback.from(callback, t)));
+                        () ->
+                        {
+                            CloseStatus closeStatus = sessionState.getCloseStatus();
+                            closeConnection(closeStatus.getCause(), closeStatus, callback);
+                        },
+                        t ->
+                        {
+                            CloseStatus closeStatus = sessionState.getCloseStatus();
+                            closeConnection(closeStatus.getCause(), closeStatus, Callback.from(callback, t));
+                        });
 
                     flusher.queue.offer(new FrameEntry(frame, closeConnectionCallback, false));
                 }
@@ -531,8 +554,8 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             if (frame.getOpCode() == OpCode.CLOSE)
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                if (closeStatus instanceof AbnormalCloseStatus && sessionState.onClosed(closeStatus))
-                    closeConnection(AbnormalCloseStatus.getCause(closeStatus), closeStatus, Callback.from(callback, t));
+                if (closeStatus.isAbnormal() && sessionState.onClosed(closeStatus))
+                    closeConnection(closeStatus.getCause(), closeStatus, Callback.from(callback, t));
                 else
                     callback.failed(t);
             }
@@ -771,35 +794,6 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             outputBufferSize,
             maxFrameSize,
             handler);
-    }
-
-    static class AbnormalCloseStatus extends CloseStatus
-    {
-        final Throwable cause;
-
-        public AbnormalCloseStatus(int statusCode, Throwable cause)
-        {
-            super(statusCode, cause.getMessage());
-            this.cause = cause;
-        }
-
-        public Throwable getCause()
-        {
-            return cause;
-        }
-
-        public static Throwable getCause(CloseStatus status)
-        {
-            if (status instanceof AbnormalCloseStatus)
-                return ((AbnormalCloseStatus)status).getCause();
-            return null;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Abnormal" + super.toString() + ":" + cause;
-        }
     }
 
     private class Flusher extends IteratingCallback
