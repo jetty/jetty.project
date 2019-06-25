@@ -1111,6 +1111,8 @@
               <version>3.0.0</version>
               <configuration>
                 <configLocation>jetty-checkstyle.xml</configLocation>
+                <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
+                <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
               </configuration>
               <dependencies>
                 <dependency>
