@@ -108,10 +108,10 @@ public class SslContextFactoryReloadTest
             String serverDN1 = client1.getSession().getPeerPrincipal().getName();
             assertThat(serverDN1, Matchers.startsWith("CN=localhost1"));
 
-            String request = "" +
+            String request =
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+                    "Host: localhost\r\n" +
+                    "\r\n";
 
             OutputStream output1 = client1.getOutputStream();
             output1.write(request.getBytes(StandardCharsets.UTF_8));
@@ -215,11 +215,11 @@ public class SslContextFactoryReloadTest
                     // use session resumption and fallback to the normal TLS handshake.
                     client.getSession().invalidate();
 
-                    String request1 = "" +
+                    String request1 =
                         "POST / HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Content-Length: " + content.length + "\r\n" +
-                        "\r\n";
+                            "Host: localhost\r\n" +
+                            "Content-Length: " + content.length + "\r\n" +
+                            "\r\n";
                     OutputStream outputStream = client.getOutputStream();
                     outputStream.write(request1.getBytes(StandardCharsets.UTF_8));
                     outputStream.write(content);
@@ -230,11 +230,11 @@ public class SslContextFactoryReloadTest
                     assertNotNull(response1);
                     assertThat(response1.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
 
-                    String request2 = "" +
+                    String request2 =
                         "GET / HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
+                            "Host: localhost\r\n" +
+                            "Connection: close\r\n" +
+                            "\r\n";
                     outputStream.write(request2.getBytes(StandardCharsets.UTF_8));
                     outputStream.flush();
 

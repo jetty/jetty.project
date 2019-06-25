@@ -36,7 +36,8 @@ public class FutureCallback implements Future<Void>, Callback
     private Throwable _cause;
 
     public FutureCallback()
-    {}
+    {
+    }
 
     public FutureCallback(boolean completed)
     {

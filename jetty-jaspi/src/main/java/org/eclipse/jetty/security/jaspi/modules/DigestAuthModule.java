@@ -161,9 +161,9 @@ public class DigestAuthModule extends BaseAuthModule
             if (domain == null)
                 domain = "/";
             response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + realmName +
-                                                                           "\", domain=\"" + domain +
-                                                                           "\", nonce=\"" + newNonce(timestamp) +
-                                                                           "\", algorithm=MD5, qop=\"auth\"" + (useStale ? (" stale=" + stale) : ""));
+                "\", domain=\"" + domain +
+                "\", nonce=\"" + newNonce(timestamp) +
+                "\", algorithm=MD5, qop=\"auth\"" + (useStale ? (" stale=" + stale) : ""));
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;
         }

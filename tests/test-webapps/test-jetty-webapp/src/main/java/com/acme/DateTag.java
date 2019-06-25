@@ -36,27 +36,49 @@ public class DateTag extends BodyTagSupport
     String tz = "GMT";
 
     @Override
-    public void setParent(Tag parent) {this.parent = parent;}
+    public void setParent(Tag parent)
+    {
+        this.parent = parent;
+    }
 
     @Override
-    public Tag getParent() {return parent;}
+    public Tag getParent()
+    {
+        return parent;
+    }
 
     @Override
-    public void setBodyContent(BodyContent content) {body = content;}
+    public void setBodyContent(BodyContent content)
+    {
+        body = content;
+    }
 
     @Override
-    public void setPageContext(PageContext pageContext) {}
+    public void setPageContext(PageContext pageContext)
+    {
+    }
 
-    public void setTz(String value) {tz = value;}
+    public void setTz(String value)
+    {
+        tz = value;
+    }
 
     @Override
-    public int doStartTag() throws JspException {return EVAL_BODY_BUFFERED;}
+    public int doStartTag() throws JspException
+    {
+        return EVAL_BODY_BUFFERED;
+    }
 
     @Override
-    public int doEndTag() throws JspException {return EVAL_PAGE;}
+    public int doEndTag() throws JspException
+    {
+        return EVAL_PAGE;
+    }
 
     @Override
-    public void doInitBody() throws JspException {}
+    public void doInitBody() throws JspException
+    {
+    }
 
     @Override
     public int doAfterBody() throws JspException

@@ -120,13 +120,13 @@ public class HTTP2CServerTest extends AbstractServerTest
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = client.getOutputStream();
-            output.write(("" +
+            output.write((
                 "GET /one HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: something, else, upgrade, HTTP2-Settings\r\n" +
-                "Upgrade: h2c\r\n" +
-                "HTTP2-Settings: \r\n" +
-                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                    "Host: localhost\r\n" +
+                    "Connection: something, else, upgrade, HTTP2-Settings\r\n" +
+                    "Upgrade: h2c\r\n" +
+                    "HTTP2-Settings: \r\n" +
+                    "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             output.flush();
 
             InputStream input = client.getInputStream();

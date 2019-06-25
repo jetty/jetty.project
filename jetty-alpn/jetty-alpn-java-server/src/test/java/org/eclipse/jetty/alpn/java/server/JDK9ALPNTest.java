@@ -99,12 +99,12 @@ public class JDK9ALPNTest
             client.startHandshake();
 
             OutputStream output = client.getOutputStream();
-            output.write(("" +
+            output.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                "").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n" +
+                    "").getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             InputStream input = client.getInputStream();
@@ -144,12 +144,12 @@ public class JDK9ALPNTest
             client.startHandshake();
 
             OutputStream output = client.getOutputStream();
-            output.write(("" +
+            output.write((
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                "").getBytes(StandardCharsets.UTF_8));
+                    "Host: localhost\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n" +
+                    "").getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             InputStream input = client.getInputStream();

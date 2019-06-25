@@ -210,5 +210,4 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     {
         return _sections;
     }
-
 }

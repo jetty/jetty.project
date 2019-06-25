@@ -168,9 +168,9 @@ public class ProxyServletFailureTest
         try (Socket socket = new Socket("localhost", proxyConnector.getLocalPort()))
         {
             String serverHostPort = "localhost:" + serverConnector.getLocalPort();
-            String request = "" +
+            String request =
                 "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
-                "Host: " + serverHostPort + "\r\n";
+                    "Host: " + serverHostPort + "\r\n";
             // Don't sent the \r\n that would signal the end of the headers.
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes("UTF-8"));
@@ -197,11 +197,11 @@ public class ProxyServletFailureTest
         try (Socket socket = new Socket("localhost", proxyConnector.getLocalPort()))
         {
             String serverHostPort = "localhost:" + serverConnector.getLocalPort();
-            String request = "" +
+            String request =
                 "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
-                "Host: " + serverHostPort + "\r\n" +
-                "Content-Length: 1\r\n" +
-                "\r\n";
+                    "Host: " + serverHostPort + "\r\n" +
+                    "Content-Length: 1\r\n" +
+                    "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();
@@ -232,12 +232,12 @@ public class ProxyServletFailureTest
         try (Socket socket = new Socket("localhost", proxyConnector.getLocalPort()))
         {
             String serverHostPort = "localhost:" + serverConnector.getLocalPort();
-            String request = "" +
+            String request =
                 "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
-                "Host: " + serverHostPort + "\r\n" +
-                "Content-Length: 2\r\n" +
-                "\r\n" +
-                "Z";
+                    "Host: " + serverHostPort + "\r\n" +
+                    "Content-Length: 2\r\n" +
+                    "\r\n" +
+                    "Z";
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();

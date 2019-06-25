@@ -135,11 +135,11 @@ public class SSLAsyncIOServletTest
 
         try (Socket client = scenario.newClient())
         {
-            String request = "" +
+            String request =
                 "GET " + scenario.getServletPath() + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+                    "Host: localhost\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();

@@ -384,8 +384,8 @@ public class Modules implements Iterable<Module>
             {
                 // Is there an obvious default?
                 Optional<Module> dftProvider = (providers.size() == 1)
-                                                   ? providers.stream().findFirst()
-                                                   : providers.stream().filter(m -> m.getName().equals(dependsOn)).findFirst();
+                    ? providers.stream().findFirst()
+                    : providers.stream().filter(m -> m.getName().equals(dependsOn)).findFirst();
 
                 if (dftProvider.isPresent())
                     enable(newlyEnabled, dftProvider.get(), "transitive provider of " + dependsOn + " for " + module.getName(), true);

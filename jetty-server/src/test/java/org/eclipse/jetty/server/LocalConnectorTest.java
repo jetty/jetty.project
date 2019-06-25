@@ -79,11 +79,11 @@ public class LocalConnectorTest
             }
         });
 
-        _connector.getResponse("" +
+        _connector.getResponse(
             "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         assertTrue(openLatch.await(5, TimeUnit.SECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));

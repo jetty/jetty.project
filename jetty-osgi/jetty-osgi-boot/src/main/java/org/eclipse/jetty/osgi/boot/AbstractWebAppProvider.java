@@ -214,8 +214,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             String overrideBundleInstallLocation = (String)_properties.get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
             File bundleInstallLocation =
                 (overrideBundleInstallLocation == null
-                     ? BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle)
-                     : new File(overrideBundleInstallLocation));
+                    ? BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle)
+                    : new File(overrideBundleInstallLocation));
 
             if (LOG.isDebugEnabled())
             {
@@ -371,8 +371,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 if (bs == null || bs.length == 0)
                 {
                     throw new IllegalArgumentException("Unable to locate the bundle '" + symbName +
-                                                           "' specified by " + OSGiWebappConstants.REQUIRE_TLD_BUNDLE + " in manifest of " +
-                                                           (_bundle == null ? "unknown" : _bundle.getSymbolicName()));
+                        "' specified by " + OSGiWebappConstants.REQUIRE_TLD_BUNDLE + " in manifest of " +
+                        (_bundle == null ? "unknown" : _bundle.getSymbolicName()));
                 }
 
                 File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bs[0]);

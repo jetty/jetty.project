@@ -236,7 +236,9 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Test
     @Disabled("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
         "but shutdownOutput() is needed by the test.")
-    public void testInterruptedRequest() {}
+    public void testInterruptedRequest()
+    {
+    }
 
     @Override
     @Disabled

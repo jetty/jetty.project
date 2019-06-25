@@ -238,13 +238,13 @@ public class PrefaceTest extends AbstractTest
         {
             socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
-            String upgradeRequest = "" +
+            String upgradeRequest =
                 "GET /one HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: Upgrade, HTTP2-Settings\r\n" +
-                "Upgrade: h2c\r\n" +
-                "HTTP2-Settings: \r\n" +
-                "\r\n";
+                    "Host: localhost\r\n" +
+                    "Connection: Upgrade, HTTP2-Settings\r\n" +
+                    "Upgrade: h2c\r\n" +
+                    "HTTP2-Settings: \r\n" +
+                    "\r\n";
             ByteBuffer upgradeBuffer = ByteBuffer.wrap(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
             socket.write(upgradeBuffer);
 

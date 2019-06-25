@@ -493,19 +493,29 @@ public class IO
     private static class NullOS extends OutputStream
     {
         @Override
-        public void close() {}
+        public void close()
+        {
+        }
 
         @Override
-        public void flush() {}
+        public void flush()
+        {
+        }
 
         @Override
-        public void write(byte[] b) {}
+        public void write(byte[] b)
+        {
+        }
 
         @Override
-        public void write(byte[] b, int i, int l) {}
+        public void write(byte[] b, int i, int l)
+        {
+        }
 
         @Override
-        public void write(int b) {}
+        public void write(int b)
+        {
+        }
     }
 
     private static NullOS __nullStream = new NullOS();
@@ -540,25 +550,39 @@ public class IO
     private static class NullWrite extends Writer
     {
         @Override
-        public void close() {}
+        public void close()
+        {
+        }
 
         @Override
-        public void flush() {}
+        public void flush()
+        {
+        }
 
         @Override
-        public void write(char[] b) {}
+        public void write(char[] b)
+        {
+        }
 
         @Override
-        public void write(char[] b, int o, int l) {}
+        public void write(char[] b, int o, int l)
+        {
+        }
 
         @Override
-        public void write(int b) {}
+        public void write(int b)
+        {
+        }
 
         @Override
-        public void write(String s) {}
+        public void write(String s)
+        {
+        }
 
         @Override
-        public void write(String s, int o, int l) {}
+        public void write(String s, int o, int l)
+        {
+        }
     }
 
     private static NullWrite __nullWriter = new NullWrite();

@@ -173,10 +173,10 @@ public class ServletContextHandler extends ContextHandler
     {
         super.addEventListener(listener);
         if ((listener instanceof HttpSessionActivationListener) ||
-                (listener instanceof HttpSessionAttributeListener) ||
-                (listener instanceof HttpSessionBindingListener) ||
-                (listener instanceof HttpSessionListener) ||
-                (listener instanceof HttpSessionIdListener))
+            (listener instanceof HttpSessionAttributeListener) ||
+            (listener instanceof HttpSessionBindingListener) ||
+            (listener instanceof HttpSessionListener) ||
+            (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler != null)
                 _sessionHandler.addEventListener(listener);
@@ -1000,7 +1000,9 @@ public class ServletContextHandler extends ContextHandler
         private List<TaglibDescriptor> _taglibs = new ArrayList<TaglibDescriptor>();
         private List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<JspPropertyGroupDescriptor>();
 
-        public JspConfig() {}
+        public JspConfig()
+        {
+        }
 
         /**
          * @see javax.servlet.descriptor.JspConfigDescriptor#getTaglibs()

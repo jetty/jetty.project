@@ -419,7 +419,7 @@ public class ServletHandler extends ScopedHandler
         {
             Class<? extends Servlet> held = holder.getHeldClass();
             if ((held == null && holder.getClassName() != null && holder.getClassName().equals(clazz.getName())) ||
-                    (held != null && clazz.isAssignableFrom(holder.getHeldClass())))
+                (held != null && clazz.isAssignableFrom(holder.getHeldClass())))
             {
                 if (holders == null)
                     holders = new ArrayList<>();
@@ -1386,9 +1386,9 @@ public class ServletHandler extends ScopedHandler
                             {
                                 ServletHolder finalMappedServlet = _servletNameMap.get(finalMapping.getServletName());
                                 throw new IllegalStateException("Multiple servlets map to path " +
-                                                                    pathSpec + ": " + finalMappedServlet.getName() +
-                                                                    "[mapped:" + finalMapping.getSource() + "]," +
-                                                                    mapping.getServletName() + "[mapped:" + mapping.getSource() + "]");
+                                    pathSpec + ": " + finalMappedServlet.getName() +
+                                    "[mapped:" + finalMapping.getSource() + "]," +
+                                    mapping.getServletName() + "[mapped:" + mapping.getSource() + "]");
                             }
                         }
                     }

@@ -124,7 +124,7 @@ public class Parser
             case OpCode.PONG:
                 if (len > ControlFrame.MAX_CONTROL_PAYLOAD)
                 {
-                    throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["                        + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
+                    throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
                 }
                 break;
             case OpCode.TEXT:

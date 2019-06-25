@@ -64,7 +64,9 @@ public class TestNamingEntries
         private int value;
 
         public SomeObject(int value)
-        {this.value = value;}
+        {
+            this.value = value;
+        }
 
         public int getValue()
         {

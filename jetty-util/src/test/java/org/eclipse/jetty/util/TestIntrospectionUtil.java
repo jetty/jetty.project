@@ -68,24 +68,40 @@ public class TestIntrospectionUtil
 
     public class ServletC
     {
-        private void setPrivateC(Integer c) {}
+        private void setPrivateC(Integer c)
+        {
+        }
 
-        protected void setProtectedC(Integer c) {}
+        protected void setProtectedC(Integer c)
+        {
+        }
 
-        public void setPublicC(Integer c) {}
+        public void setPublicC(Integer c)
+        {
+        }
 
-        void setDefaultC(Integer c) {}
+        void setDefaultC(Integer c)
+        {
+        }
     }
 
     public class ServletD extends ServletC
     {
-        private void setPrivateD(Integer d) {}
+        private void setPrivateD(Integer d)
+        {
+        }
 
-        protected void setProtectedD(Integer d) {}
+        protected void setProtectedD(Integer d)
+        {
+        }
 
-        public void setPublicD(Integer d) {}
+        public void setPublicD(Integer d)
+        {
+        }
 
-        void setDefaultD(Integer d) {}
+        void setDefaultD(Integer d)
+        {
+        }
     }
 
     @BeforeAll

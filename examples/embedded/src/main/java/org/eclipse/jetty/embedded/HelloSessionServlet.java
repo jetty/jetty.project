@@ -29,7 +29,9 @@ import javax.servlet.http.HttpSession;
 @SuppressWarnings("serial")
 public class HelloSessionServlet extends HttpServlet
 {
-    public HelloSessionServlet() {}
+    public HelloSessionServlet()
+    {
+    }
 
     @Override
     protected void doGet(HttpServletRequest request,

@@ -91,7 +91,7 @@ public class VirtualHostRuleContainer extends RuleContainer
             for (String ruleHost : _virtualHosts)
             {
                 if (ruleHost == null || ruleHost.equalsIgnoreCase(requestHost) ||
-                        (ruleHost.startsWith("*.") && ruleHost.regionMatches(true, 2, requestHost, requestHost.indexOf(".") + 1, ruleHost.length() - 2)))
+                    (ruleHost.startsWith("*.") && ruleHost.regionMatches(true, 2, requestHost, requestHost.indexOf(".") + 1, ruleHost.length() - 2)))
                     return apply(target, request, response);
             }
         }

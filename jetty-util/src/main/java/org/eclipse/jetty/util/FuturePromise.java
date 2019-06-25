@@ -36,7 +36,8 @@ public class FuturePromise<C> implements Future<C>, Promise<C>
     private C _result;
 
     public FuturePromise()
-    {}
+    {
+    }
 
     public FuturePromise(C result)
     {

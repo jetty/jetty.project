@@ -169,9 +169,9 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         throws IOException
     {
         super(new URL[]{}, parent != null ? parent
-                               : (Thread.currentThread().getContextClassLoader() != null ? Thread.currentThread().getContextClassLoader()
-                                      : (WebAppClassLoader.class.getClassLoader() != null ? WebAppClassLoader.class.getClassLoader()
-                                             : ClassLoader.getSystemClassLoader())));
+            : (Thread.currentThread().getContextClassLoader() != null ? Thread.currentThread().getContextClassLoader()
+            : (WebAppClassLoader.class.getClassLoader() != null ? WebAppClassLoader.class.getClassLoader()
+            : ClassLoader.getSystemClassLoader())));
         _parent = getParent();
         _context = context;
         if (_parent == null)
@@ -413,8 +413,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
             // return if we have a url the webapp is allowed to see
             if (parentUrl != null &&
-                    (Boolean.TRUE.equals(__loadServerClasses.get()) ||
-                         !_context.isServerResource(name, parentUrl)))
+                (Boolean.TRUE.equals(__loadServerClasses.get()) ||
+                    !_context.isServerResource(name, parentUrl)))
                 resource = parentUrl;
             else
             {
@@ -441,8 +441,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 // Couldn't find or see a webapp resource, so try a parent
                 URL parentUrl = _parent.getResource(name);
                 if (parentUrl != null &&
-                        (Boolean.TRUE.equals(__loadServerClasses.get()) ||
-                             !_context.isServerResource(name, parentUrl)))
+                    (Boolean.TRUE.equals(__loadServerClasses.get()) ||
+                        !_context.isServerResource(name, parentUrl)))
                     resource = parentUrl;
                     // We couldn't find a parent resource, so OK to return a webapp one if it exists
                     // and we just couldn't see it before

@@ -82,8 +82,8 @@ public class HazelcastSessionDataStoreFactory
                     {
                         ClientConfig config = new ClientConfig();
                         SerializerConfig sc = new SerializerConfig()
-                                                  .setImplementation(new SessionDataSerializer())
-                                                  .setTypeClass(SessionData.class);
+                            .setImplementation(new SessionDataSerializer())
+                            .setTypeClass(SessionData.class);
                         config.getSerializationConfig().addSerializerConfig(sc);
                         hazelcastInstance = HazelcastClient.newHazelcastClient(config);
                     }
@@ -100,8 +100,8 @@ public class HazelcastSessionDataStoreFactory
                     {
 
                         SerializerConfig sc = new SerializerConfig()
-                                                  .setImplementation(new SessionDataSerializer())
-                                                  .setTypeClass(SessionData.class);
+                            .setImplementation(new SessionDataSerializer())
+                            .setTypeClass(SessionData.class);
                         config = new Config();
                         config.getSerializationConfig().addSerializerConfig(sc);
                         // configure a default Map if null

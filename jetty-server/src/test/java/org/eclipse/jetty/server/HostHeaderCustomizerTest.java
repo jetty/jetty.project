@@ -65,9 +65,9 @@ public class HostHeaderCustomizerTest
             {
                 try (OutputStream output = socket.getOutputStream())
                 {
-                    String request = "" +
+                    String request =
                         "GET / HTTP/1.0\r\n" +
-                        "\r\n";
+                            "\r\n";
                     output.write(request.getBytes(StandardCharsets.UTF_8));
                     output.flush();
 

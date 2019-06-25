@@ -135,21 +135,21 @@ public class JDBCLoginService extends AbstractLoginService
         String userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
 
         if (_jdbcDriver == null || _jdbcDriver.equals("") ||
-                _url == null ||
-                _url.equals("") ||
-                _userName == null ||
-                _userName.equals("") ||
-                _password == null)
+            _url == null ||
+            _url.equals("") ||
+            _userName == null ||
+            _userName.equals("") ||
+            _password == null)
         {
             LOG.warn("UserRealm " + getName() + " has not been properly configured");
         }
 
         _userSql = "select " + _userTableKey + "," + _userTablePasswordField + " from " + userTable + " where " + userTableUserField + " = ?";
         _roleSql = "select r." + _roleTableRoleField +
-                       " from " + roleTable +
-                       " r, " + userRoleTable +
-                       " u where u." + userRoleTableUserKey + " = ?" +
-                       " and r." + roleTableKey + " = u." + userRoleTableRoleKey;
+            " from " + roleTable +
+            " r, " + userRoleTable +
+            " u where u." + userRoleTableUserKey + " = ?" +
+            " and r." + roleTableKey + " = u." + userRoleTableRoleKey;
 
         Loader.loadClass(_jdbcDriver).getDeclaredConstructor().newInstance();
         super.doStart();
