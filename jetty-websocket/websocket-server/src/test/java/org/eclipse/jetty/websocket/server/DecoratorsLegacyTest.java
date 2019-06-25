@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -49,6 +45,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 @Disabled("Unstable - see Issue #1815")
 public class DecoratorsLegacyTest
@@ -94,7 +93,7 @@ public class DecoratorsLegacyTest
         public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
         {
             ServletContext servletContext = req.getHttpServletRequest().getServletContext();
-            DecoratedObjectFactory objFactory = (DecoratedObjectFactory) servletContext.getAttribute(DecoratedObjectFactory.ATTR);
+            DecoratedObjectFactory objFactory = (DecoratedObjectFactory)servletContext.getAttribute(DecoratedObjectFactory.ATTR);
             return new DecoratorsSocket(objFactory);
         }
     }

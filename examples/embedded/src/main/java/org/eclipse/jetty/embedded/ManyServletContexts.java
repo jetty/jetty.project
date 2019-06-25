@@ -29,13 +29,13 @@ import org.eclipse.jetty.servlet.ServletHolder;
 
 public class ManyServletContexts
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
 
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(
-                ManagementFactory.getPlatformMBeanServer());
+            ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer, true);
 
         // Declare server handler collection
@@ -44,7 +44,7 @@ public class ManyServletContexts
 
         // Configure context "/" (root) for servlets
         ServletContextHandler root = new ServletContextHandler(contexts, "/",
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         // Add servlets to root context
         root.addServlet(new ServletHolder(new HelloServlet("Hello")), "/");
         root.addServlet(new ServletHolder(new HelloServlet("Ciao")), "/it/*");
@@ -52,7 +52,7 @@ public class ManyServletContexts
 
         // Configure context "/other" for servlets
         ServletContextHandler other = new ServletContextHandler(contexts,
-                "/other", ServletContextHandler.SESSIONS);
+            "/other", ServletContextHandler.SESSIONS);
         // Add servlets to /other context
         other.addServlet(DefaultServlet.class.getCanonicalName(), "/");
         other.addServlet(new ServletHolder(new HelloServlet("YO!")), "*.yo");

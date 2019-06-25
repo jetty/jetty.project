@@ -11,14 +11,13 @@ import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 
 /**
  * InfinispanSessionData
- * 
+ *
  * Specialization of SessionData to hold the attributes as a serialized byte
  * array. This is necessary because to deserialize the attributes correctly, we
  * need to know which classloader to use, which is normally provided as the
  * thread context classloader. However, infinispan marshalling uses a thread
  * pool and thus these threads have no knowledge of the correct classloader to
  * use.
- *
  */
 public class InfinispanSessionData extends SessionData
 {
@@ -47,7 +46,8 @@ public class InfinispanSessionData extends SessionData
 
     public void deserializeAttributes() throws ClassNotFoundException, IOException
     {
-        if (_serializedAttributes == null) return;
+        if (_serializedAttributes == null)
+            return;
 
         try (ByteArrayInputStream bais = new ByteArrayInputStream(_serializedAttributes);
              ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais))

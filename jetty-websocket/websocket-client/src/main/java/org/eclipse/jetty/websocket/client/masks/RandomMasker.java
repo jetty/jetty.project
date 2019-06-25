@@ -39,7 +39,7 @@ public class RandomMasker implements Masker
     @Override
     public void setMask(WebSocketFrame frame)
     {
-        byte mask[] = new byte[4];
+        byte[] mask = new byte[4];
         random.nextBytes(mask);
         frame.setMask(mask);
     }

@@ -41,7 +41,7 @@ public class HttpResponseHeaderParser
 
         public ParseException(String message, Throwable cause)
         {
-            super(message,cause);
+            super(message, cause);
         }
     }
 
@@ -53,7 +53,7 @@ public class HttpResponseHeaderParser
     }
 
     private static final Pattern PAT_HEADER = Pattern.compile("([^:]+):\\s*(.*)");
-    private static final Pattern PAT_STATUS_LINE = Pattern.compile("^HTTP/1.[01]\\s+(\\d+)\\s+(.*)",Pattern.CASE_INSENSITIVE);
+    private static final Pattern PAT_STATUS_LINE = Pattern.compile("^HTTP/1.[01]\\s+(\\d+)\\s+(.*)", Pattern.CASE_INSENSITIVE);
 
     private final HttpResponseHeaderParseListener listener;
     private final Utf8LineParser lineParser;
@@ -82,10 +82,10 @@ public class HttpResponseHeaderParser
                 {
                     // Now finished with parsing the entire response header
                     // Save the remaining bytes for WebSocket to process.
-                    
+
                     ByteBuffer copy = ByteBuffer.allocate(buf.remaining());
-                    BufferUtil.put(buf,copy);
-                    BufferUtil.flipToFlush(copy,0);
+                    BufferUtil.put(buf, copy);
+                    BufferUtil.flipToFlush(copy, 0);
                     this.listener.setRemainingBuffer(copy);
                     return listener;
                 }
@@ -112,7 +112,7 @@ public class HttpResponseHeaderParser
                 }
                 catch (NumberFormatException e)
                 {
-                    throw new ParseException("Unexpected HTTP response status code",e);
+                    throw new ParseException("Unexpected HTTP response status code", e);
                 }
                 listener.setStatusReason(mat.group(2));
                 state = State.HEADER;
@@ -132,7 +132,7 @@ public class HttpResponseHeaderParser
                     String headerName = header.group(1);
                     String headerValue = header.group(2);
                     // do need to split header/value if comma delimited?
-                    listener.addHeader(headerName,headerValue);
+                    listener.addHeader(headerName, headerValue);
                 }
                 break;
             }

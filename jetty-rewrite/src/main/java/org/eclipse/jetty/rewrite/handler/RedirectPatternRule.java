@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -37,10 +36,10 @@ public class RedirectPatternRule extends PatternRule
 {
     private String _location;
     private int _statusCode = HttpStatus.FOUND_302;
-    
+
     public RedirectPatternRule()
     {
-        this(null,null);
+        this(null, null);
     }
 
     public RedirectPatternRule(@Name("pattern") String pattern, @Name("location") String location)
@@ -48,22 +47,22 @@ public class RedirectPatternRule extends PatternRule
         super(pattern);
         _handling = true;
         _terminating = true;
-        _location=location;
+        _location = location;
     }
-    
+
     /**
      * Sets the redirect location.
-     * 
+     *
      * @param value the location to redirect.
      */
     public void setLocation(String value)
     {
         _location = value;
     }
-    
+
     /**
      * Sets the redirect status code.
-     * 
+     *
      * @param statusCode the 3xx redirect status code
      */
     public void setStatusCode(int statusCode)
@@ -82,7 +81,7 @@ public class RedirectPatternRule extends PatternRule
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         String location = response.encodeRedirectURL(_location);
-        response.setHeader("Location",RedirectUtil.toRedirectURL(request,location));
+        response.setHeader("Location", RedirectUtil.toRedirectURL(request, location));
         response.setStatus(_statusCode);
         response.getOutputStream().flush(); // no output / content
         response.getOutputStream().close();

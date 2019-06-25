@@ -25,21 +25,20 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
-
 /**
- *  <p>
- *  This goal is similar to the jetty:run goal, EXCEPT that it is designed to be bound to an execution inside your pom, rather
- *  than being run from the command line. 
- *  </p>
- *  <p>
- *  When using it, be careful to ensure that you bind it to a phase in which all necessary generated files and classes for the webapp
- *  will have been created. If you run it from the command line, then also ensure that all necessary generated files and classes for
- *  the webapp already exist.
- *  </p>
- * 
- *  Runs jetty directly from a maven project from a binding to an execution in your pom
+ * <p>
+ * This goal is similar to the jetty:run goal, EXCEPT that it is designed to be bound to an execution inside your pom, rather
+ * than being run from the command line.
+ * </p>
+ * <p>
+ * When using it, be careful to ensure that you bind it to a phase in which all necessary generated files and classes for the webapp
+ * will have been created. If you run it from the command line, then also ensure that all necessary generated files and classes for
+ * the webapp already exist.
+ * </p>
+ *
+ * Runs jetty directly from a maven project from a binding to an execution in your pom
  */
-@Mojo( name = "start", requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "start", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.VALIDATE)
 public class JettyStartMojo extends JettyRunMojo
 {
@@ -50,12 +49,11 @@ public class JettyStartMojo extends JettyRunMojo
         nonBlocking = true; //ensure that starting jetty won't hold up the thread
         super.execute();
     }
-    
+
     @Override
     public void finishConfigurationBeforeStart() throws Exception
     {
         super.finishConfigurationBeforeStart();
         server.setStopAtShutdown(false); //as we will normally be stopped with a cntrl-c, ensure server stopped 
     }
-    
 }

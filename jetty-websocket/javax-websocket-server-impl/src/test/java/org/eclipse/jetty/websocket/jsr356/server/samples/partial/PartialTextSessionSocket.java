@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.partial;
 
 import java.io.IOException;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
@@ -49,7 +48,7 @@ public class PartialTextSessionSocket
     @OnError
     public void onError(Throwable cause, Session session) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

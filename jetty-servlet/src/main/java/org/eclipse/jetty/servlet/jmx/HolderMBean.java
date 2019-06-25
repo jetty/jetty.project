@@ -28,15 +28,14 @@ public class HolderMBean extends ObjectMBean
         super(managedObject);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String getObjectNameBasis()
     {
-        if (_managed!=null && _managed instanceof Holder)
+        if (_managed != null && _managed instanceof Holder)
         {
             Holder holder = (Holder)_managed;
             String name = holder.getName();
-            if (name!=null)
+            if (name != null)
                 return name;
         }
         return super.getObjectNameBasis();

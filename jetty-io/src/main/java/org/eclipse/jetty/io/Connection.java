@@ -38,32 +38,32 @@ public interface Connection extends Closeable
      *
      * @param listener the listener to add
      */
-    public void addListener(Listener listener);
+    void addListener(Listener listener);
 
     /**
      * <p>Removes a listener of connection events.</p>
      *
      * @param listener the listener to remove
      */
-    public void removeListener(Listener listener);
+    void removeListener(Listener listener);
 
     /**
      * <p>Callback method invoked when this connection is opened.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
      */
-    public void onOpen();
+    void onOpen();
 
     /**
      * <p>Callback method invoked when this connection is closed.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
      */
-    public void onClose();
+    void onClose();
 
     /**
      * @return the {@link EndPoint} associated with this Connection.
      */
-    public EndPoint getEndPoint();
-    
+    EndPoint getEndPoint();
+
     /**
      * <p>Performs a logical close of this connection.</p>
      * <p>For simple connections, this may just mean to delegate the close to the associated
@@ -71,7 +71,7 @@ public interface Connection extends Closeable
      * before closing the associated {@link EndPoint}.</p>
      */
     @Override
-    public void close();
+    void close();
 
     /**
      * <p>Callback method invoked upon an idle timeout event.</p>
@@ -82,17 +82,21 @@ public interface Connection extends Closeable
      * immediately and the EndPoint left in the state it was before the idle timeout event.</p>
      *
      * @return true to let the EndPoint handle the idle timeout,
-     *         false to tell the EndPoint to halt the handling of the idle timeout.
+     * false to tell the EndPoint to halt the handling of the idle timeout.
      */
-    public boolean onIdleExpired();
+    boolean onIdleExpired();
 
-    public long getMessagesIn();
-    public long getMessagesOut();
-    public long getBytesIn();
-    public long getBytesOut();
-    public long getCreatedTimeStamp();
-    
-    public interface UpgradeFrom
+    long getMessagesIn();
+
+    long getMessagesOut();
+
+    long getBytesIn();
+
+    long getBytesOut();
+
+    long getCreatedTimeStamp();
+
+    interface UpgradeFrom
     {
         /**
          * <p>Takes the input buffer from the connection on upgrade.</p>
@@ -104,12 +108,13 @@ public interface Connection extends Closeable
          */
         ByteBuffer onUpgradeFrom();
     }
-    
-    public interface UpgradeTo
+
+    interface UpgradeTo
     {
         /**
          * <p>Callback method invoked when this connection is upgraded.</p>
          * <p>This must be called before {@link #onOpen()}.</p>
+         *
          * @param prefilled An optional buffer that can contain prefilled data. Typically this
          * results from an upgrade of one protocol to the other where the old connection has buffered
          * data destined for the new connection.  The new connection must take ownership of the buffer
@@ -117,8 +122,8 @@ public interface Connection extends Closeable
          */
         void onUpgradeTo(ByteBuffer prefilled);
     }
-    
-    /** 
+
+    /**
      * <p>A Listener for connection events.</p>
      * <p>Listeners can be added to a {@link Connection} to get open and close events.
      * The AbstractConnectionFactory implements a pattern where objects implement
@@ -126,13 +131,13 @@ public interface Connection extends Closeable
      * the Connector or ConnectionFactory are added as listeners to all new connections
      * </p>
      */
-    public interface Listener
+    interface Listener
     {
-        public void onOpened(Connection connection);
+        void onOpened(Connection connection);
 
-        public void onClosed(Connection connection);
+        void onClosed(Connection connection);
 
-        public static class Adapter implements Listener
+        class Adapter implements Listener
         {
             @Override
             public void onOpened(Connection connection)

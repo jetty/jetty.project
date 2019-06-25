@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpointConfig;
@@ -32,16 +31,16 @@ public class SessionAltConfig implements ServerApplicationConfig
     {
         Set<ServerEndpointConfig> configs = new HashSet<>();
         Class<?> endpointClass = SessionInfoSocket.class;
-        configs.add(ServerEndpointConfig.Builder.create(endpointClass,"/info/{a}/").build());
-        configs.add(ServerEndpointConfig.Builder.create(endpointClass,"/info/{a}/{b}/").build());
-        configs.add(ServerEndpointConfig.Builder.create(endpointClass,"/info/{a}/{b}/{c}/").build());
-        configs.add(ServerEndpointConfig.Builder.create(endpointClass,"/info/{a}/{b}/{c}/{d}/").build());
+        configs.add(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/").build());
+        configs.add(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/{b}/").build());
+        configs.add(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/{b}/{c}/").build());
+        configs.add(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/{b}/{c}/{d}/").build());
         endpointClass = SessionInfoEndpoint.class;
-        configs.add(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/").build());
-        configs.add(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/").build());
-        configs.add(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/{b}/").build());
-        configs.add(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/{b}/{c}/").build());
-        configs.add(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/{b}/{c}/{d}/").build());
+        configs.add(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/").build());
+        configs.add(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/").build());
+        configs.add(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/{b}/").build());
+        configs.add(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/{b}/{c}/").build());
+        configs.add(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/{b}/{c}/{d}/").build());
         return configs;
     }
 

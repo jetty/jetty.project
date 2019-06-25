@@ -16,14 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.webapp;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
@@ -35,10 +28,14 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * WebInfConfigurationTest
- *
- *
  */
 public class WebInfConfigurationTest
 {
@@ -47,12 +44,11 @@ public class WebInfConfigurationTest
      * Assume target < jdk9. In this case, we should be able to extract
      * the urls from the application classloader, and we should not look
      * at the java.class.path property.
-     * @throws Exception
      */
     @Test
     @EnabledOnJre(JRE.JAVA_8)
     public void testFindAndFilterContainerPaths()
-    throws Exception
+        throws Exception
     {
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
@@ -65,17 +61,16 @@ public class WebInfConfigurationTest
         assertEquals(1, containerResources.size());
         assertThat(containerResources.get(0).toString(), containsString("jetty-util"));
     }
-    
+
     /**
      * Assume target jdk9 or above. In this case we should extract what we need
      * from the java.class.path. We should also examine the module path.
-     * @throws Exception
      */
     @Test
     @DisabledOnJre(JRE.JAVA_8)
-    @EnabledIfSystemProperty(named="jdk.module.path", matches=".*")
+    @EnabledIfSystemProperty(named = "jdk.module.path", matches = ".*")
     public void testFindAndFilterContainerPathsJDK9()
-    throws Exception
+        throws Exception
     {
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
@@ -85,26 +80,24 @@ public class WebInfConfigurationTest
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
         assertEquals(2, containerResources.size());
-        for (Resource r:containerResources)
+        for (Resource r : containerResources)
         {
             String s = r.toString();
             assertThat(s, anyOf(endsWith("foo-bar-janb.jar"), containsString("jetty-util")));
         }
     }
-    
-    
+
     /**
      * Assume runtime is jdk9 or above. Target is jdk 8. In this
      * case we must extract from the java.class.path (because jdk 9
      * has no url based application classloader), but we should
      * ignore the module path.
-     * @throws Exception
      */
     @Test
     @DisabledOnJre(JRE.JAVA_8)
-    @EnabledIfSystemProperty(named="jdk.module.path", matches=".*")
+    @EnabledIfSystemProperty(named = "jdk.module.path", matches = ".*")
     public void testFindAndFilterContainerPathsTarget8()
-    throws Exception
+        throws Exception
     {
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
@@ -117,5 +110,4 @@ public class WebInfConfigurationTest
         assertEquals(1, containerResources.size());
         assertThat(containerResources.get(0).toString(), containsString("jetty-util"));
     }
-
 }

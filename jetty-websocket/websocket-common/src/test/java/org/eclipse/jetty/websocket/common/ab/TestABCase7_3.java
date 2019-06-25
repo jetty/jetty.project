@@ -56,11 +56,11 @@ public class TestABCase7_3
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x88, (byte)0x00 });
+            {(byte)0x88, (byte)0x00});
 
         expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
     }
 
     @Test
@@ -69,7 +69,7 @@ public class TestABCase7_3
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x88, (byte)0x00 });
+            {(byte)0x88, (byte)0x00});
 
         expected.flip();
 
@@ -78,12 +78,11 @@ public class TestABCase7_3
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.CLOSE,1);
+        capture.assertHasFrame(OpCode.CLOSE, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(0));
     }
-
 
     @Test
     public void testCase7_3_2Generate1BytePayloadClose()
@@ -115,11 +114,11 @@ public class TestABCase7_3
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x88, (byte)0x02, 0x03, (byte)0xe8 });
+            {(byte)0x88, (byte)0x02, 0x03, (byte)0xe8});
 
         expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
     }
 
     @Test
@@ -128,7 +127,7 @@ public class TestABCase7_3
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x88, (byte)0x02, 0x03, (byte)0xe8  });
+            {(byte)0x88, (byte)0x02, 0x03, (byte)0xe8});
 
         expected.flip();
 
@@ -137,13 +136,11 @@ public class TestABCase7_3
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.CLOSE,1);
+        capture.assertHasFrame(OpCode.CLOSE, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(2));
-
+        assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(2));
     }
-
 
     @Test
     public void testCase7_3_4GenerateCloseWithStatusReason()
@@ -151,14 +148,14 @@ public class TestABCase7_3
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
 
-        CloseInfo close = new CloseInfo(1000,message);
+        CloseInfo close = new CloseInfo(1000, message);
 
         ByteBuffer actual = UnitGenerator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-                { (byte)0x88 });
+            {(byte)0x88});
 
         byte b = 0x00; // no masking
         b |= (message.length() + 2) & 0x7F;
@@ -168,7 +165,7 @@ public class TestABCase7_3
 
         expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
     }
 
     @Test
@@ -180,7 +177,7 @@ public class TestABCase7_3
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-                { (byte)0x88 });
+            {(byte)0x88});
         byte b = 0x00; // no masking
         b |= (messageBytes.length + 2) & 0x7F;
         expected.put(b);
@@ -193,24 +190,22 @@ public class TestABCase7_3
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.CLOSE,1);
+        capture.assertHasFrame(OpCode.CLOSE, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
-
+        assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(messageBytes.length + 2));
     }
-
 
     @Test
     public void testCase7_3_5GenerateCloseWithStatusMaxReason()
     {
         StringBuilder message = new StringBuilder();
-        for ( int i = 0 ; i < 123 ; ++i )
+        for (int i = 0; i < 123; ++i)
         {
             message.append("*");
         }
 
-        CloseInfo close = new CloseInfo(1000,message.toString());
+        CloseInfo close = new CloseInfo(1000, message.toString());
 
         ByteBuffer actual = UnitGenerator.generate(close.asFrame());
         ByteBuffer expected = ByteBuffer.allocate(132);
@@ -218,7 +213,7 @@ public class TestABCase7_3
         byte messageBytes[] = message.toString().getBytes(StandardCharsets.UTF_8);
 
         expected.put(new byte[]
-                { (byte)0x88 });
+            {(byte)0x88});
 
         byte b = 0x00; // no masking
         b |= (messageBytes.length + 2) & 0x7F;
@@ -229,14 +224,14 @@ public class TestABCase7_3
 
         expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
     }
 
     @Test
     public void testCase7_3_5ParseCloseWithStatusMaxReason()
     {
         StringBuilder message = new StringBuilder();
-        for ( int i = 0 ; i < 123 ; ++i )
+        for (int i = 0; i < 123; ++i)
         {
             message.append("*");
         }
@@ -246,7 +241,7 @@ public class TestABCase7_3
         ByteBuffer expected = ByteBuffer.allocate(132);
 
         expected.put(new byte[]
-                { (byte)0x88 });
+            {(byte)0x88});
         byte b = 0x00; // no masking
 
         b |= (messageBytes.length + 2) & 0x7F;
@@ -261,18 +256,17 @@ public class TestABCase7_3
         parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
-        capture.assertHasFrame(OpCode.CLOSE,1);
+        capture.assertHasFrame(OpCode.CLOSE, 1);
 
         Frame pActual = capture.getFrames().poll();
-        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(125));
-
+        assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(125));
     }
 
     @Test
     public void testCase7_3_6GenerateCloseWithInvalidStatusReason()
     {
         StringBuilder message = new StringBuilder();
-        for ( int i = 0 ; i < 124 ; ++i )
+        for (int i = 0; i < 124; ++i)
         {
             message.append("*");
         }
@@ -286,9 +280,10 @@ public class TestABCase7_3
         bb.putChar((char)1000);
         bb.put(messageBytes);
 
-        BufferUtil.flipToFlush(bb,0);
+        BufferUtil.flipToFlush(bb, 0);
 
-        assertThrows(ProtocolException.class, () -> {
+        assertThrows(ProtocolException.class, () ->
+        {
             closeFrame.setPayload(bb);
             UnitGenerator.generate(closeFrame);
         });
@@ -298,7 +293,7 @@ public class TestABCase7_3
     public void testCase7_3_6ParseCloseWithInvalidStatusReason()
     {
         byte[] messageBytes = new byte[124];
-        Arrays.fill(messageBytes,(byte)'*');
+        Arrays.fill(messageBytes, (byte)'*');
 
         ByteBuffer expected = ByteBuffer.allocate(256);
 

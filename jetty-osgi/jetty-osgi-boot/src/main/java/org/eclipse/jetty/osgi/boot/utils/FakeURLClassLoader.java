@@ -35,18 +35,16 @@ import java.net.URLClassLoader;
 public class FakeURLClassLoader extends URLClassLoader
 {
     private URL[] _jars;
-    
-    /* ------------------------------------------------------------ */
+
     public FakeURLClassLoader(ClassLoader osgiClassLoader, URL[] jars)
     {
-        super(new URL[] {},osgiClassLoader);
+        super(new URL[]{}, osgiClassLoader);
         _jars = jars;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return the jars that contains tlds so that TldLocationsCache or
-     *         TldScanner can find them.
+     * TldScanner can find them.
      */
     @Override
     public URL[] getURLs()
@@ -54,9 +52,7 @@ public class FakeURLClassLoader extends URLClassLoader
         return _jars;
     }
 
-    
-    /* ------------------------------------------------------------ */
-    /** 
+    /**
      * @see java.lang.Object#toString()
      */
     @Override
@@ -66,8 +62,10 @@ public class FakeURLClassLoader extends URLClassLoader
 
         if (_jars != null)
         {
-            for (URL u:_jars)
-                builder.append(" "+u.toString());
+            for (URL u : _jars)
+            {
+                builder.append(" " + u.toString());
+            }
             return builder.toString();
         }
         else

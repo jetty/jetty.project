@@ -28,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -117,8 +116,8 @@ public class BlockheadServer
      * Set PRE-Request Handling function.
      *
      * @param requestFunction the function to handle the request (before upgrade), do whatever you want.
-     *      Note that if you return true, the request will not process into the default Upgrade flow,
-     *      false will allow the default Upgrade flow.
+     * Note that if you return true, the request will not process into the default Upgrade flow,
+     * false will allow the default Upgrade flow.
      */
     public void setRequestHandling(BiFunction<Request, Response, Boolean> requestFunction)
     {
@@ -173,10 +172,10 @@ public class BlockheadServer
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            Response baseResponse = (Response) response;
-            if(requestFunction != null)
+            Response baseResponse = (Response)response;
+            if (requestFunction != null)
             {
-                if(requestFunction.apply(baseRequest, baseResponse))
+                if (requestFunction.apply(baseRequest, baseResponse))
                 {
                     baseRequest.setHandled(true);
                     return;
@@ -212,7 +211,7 @@ public class BlockheadServer
                     // Use pre-negotiated extension list from response
                     List<ExtensionConfig> extensionConfigs = new ArrayList<>();
                     response.getHeaders(SEC_WEBSOCKET_EXTENSIONS).forEach(
-                            (value) -> extensionConfigs.addAll(ExtensionConfig.parseList(value)));
+                        (value) -> extensionConfigs.addAll(ExtensionConfig.parseList(value)));
                     extensionStack.negotiate(extensionConfigs);
                 }
                 else
@@ -229,7 +228,7 @@ public class BlockheadServer
                 WebSocketPolicy policy = this.container.getPolicy().clonePolicy();
 
                 // Get original HTTP connection
-                HttpConnection http = (HttpConnection) request.getAttribute("org.eclipse.jetty.server.HttpConnection");
+                HttpConnection http = (HttpConnection)request.getAttribute("org.eclipse.jetty.server.HttpConnection");
 
                 EndPoint endp = http.getEndPoint();
                 Connector connector = http.getConnector();
@@ -238,12 +237,12 @@ public class BlockheadServer
 
                 // Setup websocket connection
                 BlockheadServerConnection wsConnection = new BlockheadServerConnection(
-                        policy,
-                        bufferPool,
-                        extensionStack,
-                        connFut,
-                        endp,
-                        executor);
+                    policy,
+                    bufferPool,
+                    extensionStack,
+                    connFut,
+                    endp,
+                    executor);
 
                 if (LOG.isDebugEnabled())
                 {
@@ -260,9 +259,9 @@ public class BlockheadServer
                 if (LOG.isDebugEnabled())
                     LOG.debug("Websocket upgrade {} {}", request.getRequestURI(), wsConnection);
             }
-            catch(Throwable cause)
+            catch (Throwable cause)
             {
-                if(connFut != null)
+                if (connFut != null)
                     connFut.completeExceptionally(cause);
                 LOG.warn(cause);
             }

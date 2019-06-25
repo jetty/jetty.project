@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.4.19-SNAPSHOT</version>
+    <version>9.4.20-SNAPSHOT</version>
   </parent>
 
   <name>Jetty Tests :: WebApp :: Servlet Spec :: Fragment Jar</name>
@@ -15,16 +15,16 @@
   </properties>
 
   <dependencies>
-      <dependency>
-         <groupId>javax.servlet</groupId>
-         <artifactId>javax.servlet-api</artifactId>
-      </dependency>
-
-<!--
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
     </dependency>
--->
+
+    <!--
+        <dependency>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </dependency>
+    -->
   </dependencies>
 </project>

@@ -47,7 +47,9 @@ public class ByteBufferContentProvider extends AbstractTypedContentProvider
         this.buffers = buffers;
         int length = 0;
         for (ByteBuffer buffer : buffers)
+        {
             length += buffer.remaining();
+        }
         this.length = length;
     }
 

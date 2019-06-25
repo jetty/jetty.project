@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.demo;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -38,14 +37,14 @@ public class ExampleSocket
     @OnClose
     public void onClose(CloseReason close)
     {
-        System.out.printf("Closed: %d, \"%s\"%n",close.getCloseCode().getCode(),close.getReasonPhrase());
+        System.out.printf("Closed: %d, \"%s\"%n", close.getCloseCode().getCode(), close.getReasonPhrase());
         closeLatch.countDown();
     }
 
     @OnMessage
     public void onMessage(String message)
     {
-        System.out.printf("Received: \"%s\"%n",message);
+        System.out.printf("Received: \"%s\"%n", message);
         messageLatch.countDown();
     }
 
@@ -58,7 +57,7 @@ public class ExampleSocket
 
     public void writeMessage(String message)
     {
-        System.out.printf("Writing: \"%s\"%n",message);
+        System.out.printf("Writing: \"%s\"%n", message);
         try
         {
             session.getBasicRemote().sendText(message);

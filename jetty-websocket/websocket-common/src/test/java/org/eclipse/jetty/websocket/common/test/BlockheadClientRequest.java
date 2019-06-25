@@ -220,12 +220,12 @@ public class BlockheadClientRequest extends HttpRequest implements Response.Comp
         extensionStack.negotiate(extensions);
 
         BlockheadClientConnection connection = new BlockheadClientConnection(
-                client.getPolicy(),
-                client.getBufferPool(),
-                extensionStack,
-                fut,
-                endp,
-                client.getExecutor());
+            client.getPolicy(),
+            client.getBufferPool(),
+            extensionStack,
+            fut,
+            endp,
+            client.getExecutor());
 
         endp.setIdleTimeout(client.getIdleTimeout());
 

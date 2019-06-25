@@ -24,8 +24,8 @@ public class TestXml
 {
     public static void main(String[] args) throws Exception
     {
-        System.setProperty("jetty.home","../jetty-distribution/target/distribution");
+        System.setProperty("jetty.home", "../jetty-distribution/target/distribution");
         XmlConfiguration.main("../jetty-jmx/src/main/config/etc/jetty-jmx.xml",
-                "../jetty-server/src/main/config/etc/jetty.xml");
+            "../jetty-server/src/main/config/etc/jetty.xml");
     }
 }

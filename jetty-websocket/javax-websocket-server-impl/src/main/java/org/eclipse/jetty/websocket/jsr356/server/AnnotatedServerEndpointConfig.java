@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 import javax.websocket.Encoder;
@@ -48,7 +47,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 
     public AnnotatedServerEndpointConfig(WebSocketContainerScope containerScope, Class<?> endpointClass, ServerEndpoint anno) throws DeploymentException
     {
-        this(containerScope,endpointClass,anno,null);
+        this(containerScope, endpointClass, anno, null);
     }
 
     public AnnotatedServerEndpointConfig(WebSocketContainerScope containerScope, Class<?> endpointClass, ServerEndpoint anno, ServerEndpointConfig baseConfig) throws DeploymentException
@@ -112,11 +111,11 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         {
             userProperties.putAll(baseConfig.getUserProperties());
         }
-        
+
         ServerEndpointConfig.Configurator resolvedConfigurator;
 
         // Use ServerEndpointConfig provided configurator if declared
-        if ( (manualConfigurator != null) && !(manualConfigurator instanceof ContainerDefaultConfigurator) )
+        if ((manualConfigurator != null) && !(manualConfigurator instanceof ContainerDefaultConfigurator))
         {
             resolvedConfigurator = manualConfigurator;
         }
@@ -130,7 +129,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         {
             try
             {
-                resolvedConfigurator = anno.configurator().getDeclaredConstructor( ).newInstance();
+                resolvedConfigurator = anno.configurator().getDeclaredConstructor().newInstance();
             }
             catch (Exception e)
             {
@@ -139,10 +138,10 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
                 err.append(anno.configurator().getName());
                 err.append(" defined as annotation in ");
                 err.append(anno.getClass().getName());
-                throw new DeploymentException(err.toString(),e);
+                throw new DeploymentException(err.toString(), e);
             }
         }
-        
+
         // Make sure all Configurators obtained are decorated
         this.configurator = containerScope.getObjectFactory().decorate(resolvedConfigurator);
     }

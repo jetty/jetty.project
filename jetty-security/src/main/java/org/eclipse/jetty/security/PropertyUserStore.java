@@ -137,14 +137,15 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     {
         String uri = configResource.getURI().toASCIIString();
         int colon = uri.lastIndexOf(":");
-        int bang_slash = uri.indexOf("!/");
-        if (colon < 0 || bang_slash < 0 || colon > bang_slash)
+        int bangSlash = uri.indexOf("!/");
+        if (colon < 0 || bangSlash < 0 || colon > bangSlash)
             throw new IllegalArgumentException("Not resolved JarFile resource: " + uri);
-        String entry_path = uri.substring(colon + 2).replace("!/", "__").replace('/', '_').replace('.', '_');
+
+        String entryPath = StringUtil.sanitizeFileSystemName(uri.substring(colon + 2));
 
         Path tmpDirectory = Files.createTempDirectory("users_store");
         tmpDirectory.toFile().deleteOnExit();
-        Path extractedPath = Paths.get(tmpDirectory.toString(), entry_path);
+        Path extractedPath = Paths.get(tmpDirectory.toString(), entryPath);
         Files.deleteIfExists(extractedPath);
         extractedPath.toFile().deleteOnExit();
         IO.copy(configResource.getInputStream(), new FileOutputStream(extractedPath.toFile()));
@@ -224,14 +225,12 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         this._hotReload = enable;
     }
 
-
     @Override
     public String toString()
     {
         return String.format("%s@%x[users.count=%d,identityService=%s]", getClass().getSimpleName(), hashCode(), getKnownUserIdentities().size(), getIdentityService());
     }
 
-    /* ------------------------------------------------------------ */
     protected void loadUsers() throws IOException
     {
         if (_configPath == null)
@@ -352,8 +351,10 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     {
         if (_listeners != null)
         {
-            for (UserListener _listener : _listeners)
-                _listener.update(username, credential, roleArray);
+            for (UserListener listener : _listeners)
+            {
+                listener.update(username, credential, roleArray);
+            }
         }
     }
 
@@ -366,8 +367,10 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     {
         if (_listeners != null)
         {
-            for (UserListener _listener : _listeners)
-                _listener.remove(username);
+            for (UserListener listener : _listeners)
+            {
+                listener.remove(username);
+            }
         }
     }
 
@@ -385,8 +388,8 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
     public interface UserListener
     {
-        public void update(String username, Credential credential, String[] roleArray);
+        void update(String username, Credential credential, String[] roleArray);
 
-        public void remove(String username);
+        void remove(String username);
     }
 }

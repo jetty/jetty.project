@@ -47,8 +47,8 @@ public class PriorityFrame extends Frame
     }
 
     /**
-     * @deprecated use {@link #getParentStreamId()} instead.
      * @return <code>int</code> of the Parent Stream
+     * @deprecated use {@link #getParentStreamId()} instead.
      */
     @Deprecated
     public int getDependentStreamId()

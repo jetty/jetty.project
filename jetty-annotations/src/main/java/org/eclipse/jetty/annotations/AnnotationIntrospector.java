@@ -25,7 +25,6 @@ import java.util.Set;
 
 /**
  * AnnotationIntrospector
- *
  * Introspects a class to find various types of
  * annotations as defined by the servlet specification.
  */
@@ -33,7 +32,7 @@ public class AnnotationIntrospector
 {
     private final Set<Class<?>> _introspectedClasses = new HashSet<>();
     private final List<IntrospectableAnnotationHandler> _handlers = new ArrayList<IntrospectableAnnotationHandler>();
-    
+
     /**
      * IntrospectableAnnotationHandler
      *
@@ -41,59 +40,56 @@ public class AnnotationIntrospector
      */
     public interface IntrospectableAnnotationHandler
     {
-        public void handle(Class<?> clazz);
+        void handle(Class<?> clazz);
     }
-    
-    
-    
+
     /**
      * AbstractIntrospectableAnnotationHandler
      *
      * Base class for handlers that introspect a class to find a particular annotation.
      * A handler can optionally introspect the parent hierarchy of a class.
      */
-    public static abstract class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
+    public abstract static class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
     {
         private boolean _introspectAncestors;
-        
+
         public abstract void doHandle(Class<?> clazz);
-        
-        
+
         public AbstractIntrospectableAnnotationHandler(boolean introspectAncestors)
         {
             _introspectAncestors = introspectAncestors;
         }
-        
+
         @Override
         public void handle(Class<?> clazz)
         {
             Class<?> c = clazz;
-            
+
             //process the whole inheritance hierarchy for the class
-            while (c!=null && (!c.equals(Object.class)))
+            while (c != null && (!c.equals(Object.class)))
             {
                 doHandle(c);
                 if (!_introspectAncestors)
                     break;
-                
+
                 c = c.getSuperclass();
-            }   
+            }
         }
     }
-    
-    public void registerHandler (IntrospectableAnnotationHandler handler)
+
+    public void registerHandler(IntrospectableAnnotationHandler handler)
     {
         _handlers.add(handler);
     }
-    
-    public void introspect (Class<?> clazz)
+
+    public void introspect(Class<?> clazz)
     {
         if (_handlers == null)
             return;
         if (clazz == null)
             return;
-        
-        synchronized(_introspectedClasses)
+
+        synchronized (_introspectedClasses)
         {
             //Synchronize on the set of already introspected classes.
             //This ensures that only 1 thread can be introspecting, and that
@@ -103,7 +99,7 @@ public class AnnotationIntrospector
             //reprocessing the same class.
             if (_introspectedClasses.add(clazz))
             {
-                for (IntrospectableAnnotationHandler handler:_handlers)
+                for (IntrospectableAnnotationHandler handler : _handlers)
                 {
                     try
                     {

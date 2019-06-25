@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.nosql.mongodb;
 
 import java.io.ByteArrayInputStream;
@@ -27,20 +26,19 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * MongoUtils
  *
  * Some utility methods for manipulating mongo data. This class facilitates testing.
- *
  */
 public class MongoUtils
 {
-    
+
     public static Object decodeValue(final Object valueToDecode) throws IOException, ClassNotFoundException
     {
         if (valueToDecode == null || valueToDecode instanceof Number || valueToDecode instanceof String || valueToDecode instanceof Boolean || valueToDecode instanceof Date)
@@ -60,7 +58,7 @@ public class MongoUtils
             for (String name : ((DBObject)valueToDecode).keySet())
             {
                 String attr = decodeName(name);
-                map.put(attr,decodeValue(((DBObject)valueToDecode).get(name)));
+                map.put(attr, decodeValue(((DBObject)valueToDecode).get(name)));
             }
             return map;
         }
@@ -69,23 +67,17 @@ public class MongoUtils
             throw new IllegalStateException(valueToDecode.getClass().toString());
         }
     }
-   
-    
-    
+
     public static String decodeName(String name)
     {
-        return name.replace("%2E",".").replace("%25","%");
+        return URIUtil.decodeSpecific(name, ".%");
     }
-    
 
-    
     public static String encodeName(String name)
     {
-        return name.replace("%","%25").replace(".","%2E");
+        return URIUtil.encodeSpecific(name, ".%");
     }
 
-
-    
     public static Object encodeName(Object value) throws IOException
     {
         if (value instanceof Number || value instanceof String || value instanceof Boolean || value instanceof Date)
@@ -102,13 +94,13 @@ public class MongoUtils
                     o = null;
                     break;
                 }
-                o.append(encodeName(entry.getKey().toString()),encodeName(entry.getValue()));
+                o.append(encodeName(entry.getKey().toString()), encodeName(entry.getValue()));
             }
 
             if (o != null)
                 return o;
         }
-        
+
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(bout);
         out.reset();
@@ -116,15 +108,12 @@ public class MongoUtils
         out.flush();
         return bout.toByteArray();
     }
-    
-
 
     /**
      * Dig through a given dbObject for the nested value
-     * 
+     *
      * @param dbObject the mongo object to search
      * @param nestedKey the field key to find
-     * 
      * @return the value of the field key
      */
     public static Object getNestedValue(DBObject dbObject, String nestedKey)
@@ -137,7 +126,7 @@ public class MongoUtils
         {
             temp = (DBObject)temp.get(keyChain[i]);
 
-            if ( temp == null )
+            if (temp == null)
             {
                 return null;
             }
@@ -145,6 +134,4 @@ public class MongoUtils
 
         return temp.get(keyChain[keyChain.length - 1]);
     }
-
-    
 }

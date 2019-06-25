@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -35,6 +33,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 // TODO: Review - this is a HIGH_CPU, HIGH_MEMORY test that takes 20 minutes to execute.
 // perhaps this should not be a normal every day testcase?
 // Move to a different module? make it not a junit testcase?
@@ -42,8 +42,12 @@ import org.junit.jupiter.api.Test;
 public class QueueBenchmarkTest
 {
     private static final Logger logger = Log.getLogger(QueueBenchmarkTest.class);
-    private static final Runnable ELEMENT = () -> {};
-    private static final Runnable END = () -> {};
+    private static final Runnable ELEMENT = () ->
+    {
+    };
+    private static final Runnable END = () ->
+    {
+    };
 
     @Test
     public void testQueues() throws Exception
@@ -144,9 +148,13 @@ public class QueueBenchmarkTest
     private static void produce(Queue<Runnable> queue, int readers, int iterations)
     {
         for (int i = 0; i < iterations; ++i)
+        {
             append(queue, ELEMENT);
+        }
         for (int i = 0; i < readers; ++i)
+        {
             append(queue, END);
+        }
     }
 
     private static void append(Queue<Runnable> queue, Runnable element)

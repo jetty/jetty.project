@@ -51,7 +51,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 
     public JettyListenerEventDriver(WebSocketPolicy policy, WebSocketConnectionListener listener)
     {
-        super(policy,listener);
+        super(policy, listener);
         this.listener = listener;
     }
 
@@ -65,12 +65,12 @@ public class JettyListenerEventDriver extends AbstractEventDriver
                 activeMessage = new SimpleBinaryMessage(this);
             }
 
-            appendMessage(buffer,fin);
+            appendMessage(buffer, fin);
         }
 
         if (listener instanceof WebSocketPartialListener)
         {
-            ((WebSocketPartialListener)listener).onWebSocketPartialBinary(buffer.slice().asReadOnlyBuffer(),fin);
+            ((WebSocketPartialListener)listener).onWebSocketPartialBinary(buffer.slice().asReadOnlyBuffer(), fin);
         }
     }
 
@@ -79,7 +79,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (listener instanceof WebSocketListener)
         {
-            ((WebSocketListener)listener).onWebSocketBinary(data,0,data.length);
+            ((WebSocketListener)listener).onWebSocketBinary(data, 0, data.length);
         }
     }
 
@@ -95,7 +95,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 
         int statusCode = close.getStatusCode();
         String reason = close.getReason();
-        listener.onWebSocketClose(statusCode,reason);
+        listener.onWebSocketClose(statusCode, reason);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
                 activeMessage = new SimpleTextMessage(this);
             }
 
-            appendMessage(buffer,fin);
+            appendMessage(buffer, fin);
         }
 
         if (listener instanceof WebSocketPartialListener)
@@ -164,11 +164,11 @@ public class JettyListenerEventDriver extends AbstractEventDriver
             {
                 utf8Partial = new Utf8PartialBuilder();
             }
-            
+
             String partial = utf8Partial.toPartialString(buffer);
-            
-            ((WebSocketPartialListener)listener).onWebSocketPartialText(partial,fin);
-            
+
+            ((WebSocketPartialListener)listener).onWebSocketPartialText(partial, fin);
+
             if (fin)
             {
                 partial = null;
@@ -178,7 +178,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 
     /**
      * Whole Message event.
-     * 
+     *
      * @param message the whole message
      */
     @Override
@@ -193,6 +193,6 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public String toString()
     {
-        return String.format("%s[%s]",JettyListenerEventDriver.class.getSimpleName(),listener.getClass().getName());
+        return String.format("%s[%s]", JettyListenerEventDriver.class.getSimpleName(), listener.getClass().getName());
     }
 }

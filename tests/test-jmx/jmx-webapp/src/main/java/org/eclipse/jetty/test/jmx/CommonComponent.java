@@ -28,12 +28,12 @@ import org.eclipse.jetty.util.log.Logger;
 public class CommonComponent extends AbstractLifeCycle
 {
     private static final Logger LOG = Log.getLogger(CommonComponent.class);
-    
+
     public CommonComponent()
     {
         LOG.info("Created " + this.getClass().getName());
     }
-    
+
     private String name = "i am common";
 
     @ManagedAttribute("The name being tracked")

@@ -31,7 +31,7 @@ public class CloseException extends WebSocketException
 
     public CloseException(int closeCode, String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
         this.statusCode = closeCode;
     }
 
@@ -45,5 +45,4 @@ public class CloseException extends WebSocketException
     {
         return statusCode;
     }
-
 }

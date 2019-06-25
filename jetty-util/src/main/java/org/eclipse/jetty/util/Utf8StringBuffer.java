@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-/* ------------------------------------------------------------ */
 /**
  * UTF-8 StringBuffer.
  *

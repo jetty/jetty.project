@@ -27,7 +27,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -68,9 +67,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(data, response.getContent());
@@ -105,8 +104,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send();
+            .scheme(scenario.getScheme())
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(data, response.getContent());
@@ -139,8 +138,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send();
+            .scheme(scenario.getScheme())
+            .send();
 
         assertEquals(200, response.getStatus());
 
@@ -196,8 +195,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send();
+            .scheme(scenario.getScheme())
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(data, response.getContent());
@@ -220,12 +219,12 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        latch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .send(result ->
+            {
+                if (result.isFailed())
+                    latch.countDown();
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -238,7 +237,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         Random random = new Random();
         byte[] content = new byte[1024 * 1024];
         for (int i = 0; i < content.length; ++i)
+        {
             content[i] = (byte)digits.charAt(random.nextInt(digits.length()));
+        }
         start(scenario, new EmptyServerHandler()
         {
             @Override
@@ -257,9 +258,9 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         MappedByteBufferPool bufferPool = (MappedByteBufferPool)pool;
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(content, response.getContent());

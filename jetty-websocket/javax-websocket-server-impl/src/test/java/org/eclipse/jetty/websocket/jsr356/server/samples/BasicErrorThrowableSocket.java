@@ -23,13 +23,13 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicErrorThrowableSocket extends TrackingSocket
 {
     @OnError
     public void onError(Throwable t)
     {
-        addEvent("onError(%s)",t);
+        addEvent("onError(%s)", t);
         addError(t);
     }
 }

@@ -68,11 +68,11 @@ public abstract class AbstractABCase implements Fuzzed
             return false;
         }
     }
-    
+
     protected static final byte FIN = (byte)0x80;
     protected static final byte NOFIN = 0x00;
     protected static final byte[] MASK =
-    { 0x12, 0x34, 0x56, 0x78 };
+        {0x12, 0x34, 0x56, 0x78};
 
     protected Generator strictGenerator;
     protected Generator laxGenerator;
@@ -84,8 +84,8 @@ public abstract class AbstractABCase implements Fuzzed
     public void initGenerators()
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        strictGenerator = new Generator(policy,bufferPool,true);
-        laxGenerator = new Generator(policy,bufferPool,false);
+        strictGenerator = new Generator(policy, bufferPool, true);
+        laxGenerator = new Generator(policy, bufferPool, false);
     }
 
     @BeforeAll
@@ -100,27 +100,27 @@ public abstract class AbstractABCase implements Fuzzed
     {
         server.stop();
     }
-    
+
     /**
      * Make a copy of a byte buffer.
      * <p>
      * This is important in some tests, as the underlying byte buffer contained in a Frame can be modified through
-     * masking and make it difficult to compare the results in the fuzzer. 
-     * 
+     * masking and make it difficult to compare the results in the fuzzer.
+     *
      * @param payload the payload to copy
      * @return a new byte array of the payload contents
      */
     protected ByteBuffer copyOf(byte[] payload)
     {
-        return ByteBuffer.wrap(Arrays.copyOf(payload,payload.length));
+        return ByteBuffer.wrap(Arrays.copyOf(payload, payload.length));
     }
-    
+
     /**
      * Make a copy of a byte buffer.
      * <p>
      * This is important in some tests, as the underlying byte buffer contained in a Frame can be modified through
-     * masking and make it difficult to compare the results in the fuzzer. 
-     * 
+     * masking and make it difficult to compare the results in the fuzzer.
+     *
      * @param payload the payload to copy
      * @return a new byte array of the payload contents
      */
@@ -131,13 +131,13 @@ public abstract class AbstractABCase implements Fuzzed
         copy.flip();
         return copy;
     }
-    
+
     /**
      * Make a copy of a byte buffer.
      * <p>
      * This is important in some tests, as the underlying byte buffer contained in a Frame can be modified through
-     * masking and make it difficult to compare the results in the fuzzer. 
-     * 
+     * masking and make it difficult to compare the results in the fuzzer.
+     *
      * @param payload the payload to copy
      * @return a new byte array of the payload contents
      */
@@ -145,14 +145,14 @@ public abstract class AbstractABCase implements Fuzzed
     {
         ByteBuffer copy = ByteBuffer.allocate(payload.remaining());
         BufferUtil.clearToFill(copy);
-        BufferUtil.put(payload,copy);
-        BufferUtil.flipToFlush(copy,0);
+        BufferUtil.put(payload, copy);
+        BufferUtil.flipToFlush(copy, 0);
         return copy;
     }
 
     public static String toUtf8String(byte[] buf)
     {
-        String raw = StringUtil.toUTF8String(buf,0,buf.length);
+        String raw = StringUtil.toUTF8String(buf, 0, buf.length);
         StringBuilder ret = new StringBuilder();
         int len = raw.length();
         for (int i = 0; i < len; i++)
@@ -160,7 +160,7 @@ public abstract class AbstractABCase implements Fuzzed
             int codepoint = raw.codePointAt(i);
             if (Character.isUnicodeIdentifierPart(codepoint))
             {
-                ret.append(String.format("\\u%04X",codepoint));
+                ret.append(String.format("\\u%04X", codepoint));
             }
             else
             {
@@ -192,21 +192,21 @@ public abstract class AbstractABCase implements Fuzzed
     {
         return server;
     }
-    
+
     @Override
     public URI getServerURI()
     {
         return server.getServerUri();
     }
-    
+
     public static byte[] masked(final byte[] data)
     {
-        return RawFrameBuilder.mask(data,MASK);
+        return RawFrameBuilder.mask(data, MASK);
     }
 
     public static void putLength(ByteBuffer buf, int length, boolean masked)
     {
-        RawFrameBuilder.putLength(buf,length,masked);
+        RawFrameBuilder.putLength(buf, length, masked);
     }
 
     public static void putMask(ByteBuffer buf)
@@ -216,6 +216,6 @@ public abstract class AbstractABCase implements Fuzzed
 
     public static void putPayloadLength(ByteBuffer buf, int length)
     {
-        putLength(buf,length,true);
+        putLength(buf, length, true);
     }
 }

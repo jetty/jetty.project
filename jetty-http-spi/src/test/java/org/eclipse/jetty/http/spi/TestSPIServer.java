@@ -18,46 +18,34 @@
 
 package org.eclipse.jetty.http.spi;
 
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import javax.servlet.http.HttpServletResponse;
+
+import com.sun.net.httpserver.BasicAuthenticator;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpServer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletResponse;
-
-import com.sun.net.httpserver.BasicAuthenticator;
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-
-import org.junit.jupiter.api.Test;
-
-
-
-
 public class TestSPIServer
 {
-    
+
     /**
      * Create a server that has a null InetSocketAddress, then
      * bind before using.
-     * 
-     * @throws Exception
      */
     @Test
     public void testUnboundHttpServer() throws Exception
@@ -71,10 +59,11 @@ public class TestSPIServer
             server = new JettyHttpServerProvider().createHttpServer(null, 10);
 
             final HttpContext httpContext = server.createContext("/",
-                exchange -> {
+                exchange ->
+                {
                     Headers responseHeaders = exchange.getResponseHeaders();
-                    responseHeaders.set("Content-Type","text/plain");
-                    exchange.sendResponseHeaders(200,0);
+                    responseHeaders.set("Content-Type", "text/plain");
+                    exchange.sendResponseHeaders(200, 0);
 
                     OutputStream responseBody = exchange.getResponseBody();
                     Headers requestHeaders = exchange.getRequestHeaders();
@@ -88,7 +77,7 @@ public class TestSPIServer
                         responseBody.write(s.getBytes());
                     }
                     responseBody.close();
-            });
+                });
 
             httpContext.setAuthenticator(new BasicAuthenticator("Test")
             {
@@ -105,23 +94,23 @@ public class TestSPIServer
             //address to bind so this test isn't port-specific
             //and thus is portable and can be run concurrently on CI
             //environments
-            server.bind(new InetSocketAddress("localhost", 0), 10);     
-            
+            server.bind(new InetSocketAddress("localhost", 0), 10);
+
             server.start();
 
             //find out the port jetty picked
             Server jetty = ((JettyHttpServer)server).getServer();
-            int port =  ((NetworkConnector)jetty.getConnectors()[0]).getLocalPort();
-            
+            int port = ((NetworkConnector)jetty.getConnectors()[0]).getLocalPort();
+
             HttpClient client = new HttpClient();
             client.start();
 
             try
             {
                 Request request = client.newRequest("http://localhost:" + port + "/");
-                client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:"+port), "Test", "username", "password"));
+                client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:" + port), "Test", "username", "password"));
                 ContentResponse response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {
@@ -137,11 +126,10 @@ public class TestSPIServer
 
     /**
      * Test using a server that is created with a given InetSocketAddress
-     * @throws Exception
      */
     @Test
     public void testBoundHttpServer() throws Exception
-    { 
+    {
 
         HttpServer server = null;
 
@@ -151,13 +139,14 @@ public class TestSPIServer
             //jetty to pick a free port. Ensures test is not tied to specific port number
             //for test portability and concurrency.
             server = new JettyHttpServerProvider().createHttpServer(new
-                                                                    InetSocketAddress("localhost", 0), 10);
+                InetSocketAddress("localhost", 0), 10);
 
             final HttpContext httpContext = server.createContext("/",
-                exchange -> {
+                exchange ->
+                {
                     Headers responseHeaders = exchange.getResponseHeaders();
-                    responseHeaders.set("Content-Type","text/plain");
-                    exchange.sendResponseHeaders(200,0);
+                    responseHeaders.set("Content-Type", "text/plain");
+                    exchange.sendResponseHeaders(200, 0);
 
                     OutputStream responseBody = exchange.getResponseBody();
                     Headers requestHeaders = exchange.getRequestHeaders();
@@ -171,7 +160,7 @@ public class TestSPIServer
                         responseBody.write(s.getBytes());
                     }
                     responseBody.close();
-            });
+                });
 
             httpContext.setAuthenticator(new BasicAuthenticator("Test")
             {
@@ -188,7 +177,7 @@ public class TestSPIServer
 
             //find out the port jetty picked
             Server jetty = ((JettyHttpServer)server).getServer();
-            int port =  ((NetworkConnector)jetty.getConnectors()[0]).getLocalPort();
+            int port = ((NetworkConnector)jetty.getConnectors()[0]).getLocalPort();
 
             HttpClient client = new HttpClient();
             client.start();
@@ -196,9 +185,9 @@ public class TestSPIServer
             try
             {
                 Request request = client.newRequest("http://localhost:" + port + "/");
-                client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:"+port), "Test", "username", "password"));
+                client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:" + port), "Test", "username", "password"));
                 ContentResponse response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
             finally
             {

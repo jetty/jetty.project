@@ -39,14 +39,14 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 public class RebuildTestResources
 {
     public static final String JETTY_VERSION = "9.3";
-    
+
     public static void main(String[] args)
     {
         File realDistHome = MavenTestingUtils.getProjectDir("../jetty-distribution/target/distribution");
         File outputDir = MavenTestingUtils.getTestResourceDir("dist-home");
         try
         {
-            new RebuildTestResources(realDistHome,outputDir).rebuild();
+            new RebuildTestResources(realDistHome, outputDir).rebuild();
         }
         catch (Throwable t)
         {
@@ -64,7 +64,7 @@ public class RebuildTestResources
         @Override
         public void copy(Path from, Path to) throws IOException
         {
-            Files.copy(from,to,StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -73,7 +73,7 @@ public class RebuildTestResources
         @Override
         public void copy(Path from, Path to) throws IOException
         {
-            if(Files.exists(to)) 
+            if (Files.exists(to))
             {
                 // skip if it exists
                 return;
@@ -131,9 +131,9 @@ public class RebuildTestResources
         FS.ensureDirExists(libsDir.toFile());
 
         PathMatcher matcher = getPathMatcher("glob:**.jar");
-        Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?","-" + JETTY_VERSION);
+        Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?", "-" + JETTY_VERSION);
         FileCopier copier = new TouchFileCopier();
-        copyDir(srcDir.resolve("lib"),libsDir,matcher,renamer,copier);
+        copyDir(srcDir.resolve("lib"), libsDir, matcher, renamer, copier);
     }
 
     private void copyModules() throws IOException
@@ -145,7 +145,7 @@ public class RebuildTestResources
         PathMatcher matcher = getPathMatcher("glob:**.mod");
         Renamer renamer = new NoRenamer();
         FileCopier copier = new NormalFileCopier();
-        copyDir(srcDir.resolve("modules"),modulesDir,matcher,renamer,copier);
+        copyDir(srcDir.resolve("modules"), modulesDir, matcher, renamer, copier);
     }
 
     private void copyXmls() throws IOException
@@ -157,7 +157,7 @@ public class RebuildTestResources
         PathMatcher matcher = getPathMatcher("glob:**.xml");
         Renamer renamer = new NoRenamer();
         FileCopier copier = new TouchFileCopier();
-        copyDir(srcDir.resolve("etc"),xmlDir,matcher,renamer,copier);
+        copyDir(srcDir.resolve("etc"), xmlDir, matcher, renamer, copier);
     }
 
     private void rebuild() throws IOException
@@ -183,13 +183,13 @@ public class RebuildTestResources
             Path dest = to.resolve(name);
             if (Files.isDirectory(path))
             {
-                copyDir(path,dest,fileMatcher,renamer,copier);
+                copyDir(path, dest, fileMatcher, renamer, copier);
             }
             else
             {
                 if (fileMatcher.matches(path))
                 {
-                    copier.copy(path,dest);
+                    copier.copy(path, dest);
                 }
             }
         }

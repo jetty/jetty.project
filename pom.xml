@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.19-SNAPSHOT</version>
+  <version>9.4.20-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -81,6 +79,7 @@
   </scm>
 
   <modules>
+    <module>build-resources</module>
     <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
@@ -283,7 +282,7 @@
           <autoVersionSubmodules>true</autoVersionSubmodules>
           <useReleaseProfile>false</useReleaseProfile>
           <goals>javadoc:aggregate-jar deploy</goals>
-          <arguments>-Peclipse-release -Paggregate-javadoc-jar</arguments>
+          <arguments>-Peclipse-release</arguments>
           <preparationGoals>clean install</preparationGoals>
           <mavenExecutorId>forked-path</mavenExecutorId>
         </configuration>
@@ -534,20 +533,18 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>3.1.0</version>
           <configuration>
             <source>8</source>
-            <target>8</target>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
-            <additionalparam>-html5</additionalparam>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>false</detectJavaApiLink>
             <show>protected</show>
             <attach>true</attach>
-            <excludePackageNames>com.acme,org.slf4j*,org.mortbay*,*.jmh*,org.eclipse.jetty.embedded*,org.eclipse.jetty.example.asyncrest*,org.eclipse.jetty.test*</excludePackageNames>
+            <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
           </configuration>
         </plugin>
         <plugin>
@@ -908,14 +905,14 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-         <groupId>javax.servlet</groupId>
-         <artifactId>javax.servlet-api</artifactId>
-         <version>${javax.servlet.api.version}</version>
+        <groupId>javax.servlet</groupId>
+        <artifactId>javax.servlet-api</artifactId>
+        <version>${javax.servlet.api.version}</version>
       </dependency>
       <dependency>
-         <groupId>javax.websocket</groupId>
-         <artifactId>javax.websocket-api</artifactId>
-         <version>1.0</version>
+        <groupId>javax.websocket</groupId>
+        <artifactId>javax.websocket-api</artifactId>
+        <version>1.0</version>
       </dependency>
       <dependency>
         <groupId>javax.websocket</groupId>
@@ -1101,6 +1098,76 @@
       </build>
     </profile>
     <profile>
+      <id>checkstyle</id>
+      <reporting>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-project-info-reports-plugin</artifactId>
+            <version>3.0.0</version>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jxr-plugin</artifactId>
+            <version>3.0.0</version>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-checkstyle-plugin</artifactId>
+            <reportSets>
+              <reportSet>
+                <reports>
+                  <report>checkstyle</report>
+                </reports>
+              </reportSet>
+            </reportSets>
+          </plugin>
+        </plugins>
+      </reporting>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-checkstyle-plugin</artifactId>
+              <version>3.0.0</version>
+              <configuration>
+                <configLocation>jetty-checkstyle.xml</configLocation>
+              </configuration>
+              <dependencies>
+                <dependency>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>build-resources</artifactId>
+                  <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                  <groupId>com.puppycrawl.tools</groupId>
+                  <artifactId>checkstyle</artifactId>
+                  <version>8.20</version>
+                </dependency>
+              </dependencies>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-site-plugin</artifactId>
+            <version>3.7.1</version>
+            <executions>
+              <execution>
+                <id>build-site</id>
+                <goals>
+                  <goal>site</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>jdk8</id>
       <activation>
         <jdk>[1.8,1.9)</jdk>
@@ -1122,6 +1189,27 @@
                 <minSeverity>info</minSeverity>
                 <comparisonVersion>9.4.6.v20170531</comparisonVersion>
                 <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>jdk11</id>
+      <activation>
+        <jdk>[11,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <additionalJOption>--no-module-directories</additionalJOption>
+                <additionalOptions>-html5</additionalOptions>
+                <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
               </configuration>
             </plugin>
           </plugins>
@@ -1319,7 +1407,7 @@
           <plugin>
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
             <artifactId>eclipse-jarsigner-plugin</artifactId>
-	          <version>${cbi-plugins.version}</version>
+            <version>${cbi-plugins.version}</version>
             <executions>
               <execution>
                 <id>sign</id>

@@ -25,12 +25,12 @@ public class Attributes
 {
 
     List<Attribute> _attributes = new ArrayList<Attribute>();
-    
-    public void addAttribute(Attribute attr )
+
+    public void addAttribute(Attribute attr)
     {
         _attributes.add(attr);
     }
-    
+
     public List<Attribute> getAttributes()
     {
         return _attributes;

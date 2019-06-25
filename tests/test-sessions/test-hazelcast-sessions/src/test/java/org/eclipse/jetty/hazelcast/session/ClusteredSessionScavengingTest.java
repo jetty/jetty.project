@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.hazelcast.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
@@ -55,5 +54,4 @@ public class ClusteredSessionScavengingTest
     {
         return _testHelper.createSessionDataStoreFactory(false);
     }
-
 }

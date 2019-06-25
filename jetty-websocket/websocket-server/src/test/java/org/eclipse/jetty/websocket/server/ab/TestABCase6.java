@@ -44,6 +44,7 @@ public class TestABCase6 extends AbstractABCase
 {
     /**
      * Split a message byte array into a series of fragments (frames + continuations) of 1 byte message contents each.
+     *
      * @param frames the frames
      * @param msg the message
      */
@@ -75,6 +76,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, 1 frame, 0 length
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -99,6 +101,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, 0 length, 3 fragments
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -125,6 +128,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, small length, 3 fragments (only middle frame has payload)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -151,6 +155,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * valid utf8 text message, 2 fragments (on UTF8 code point boundary)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -186,6 +191,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * valid utf8 text message, many fragments (1 byte each)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -195,7 +201,7 @@ public class TestABCase6 extends AbstractABCase
         byte msg[] = StringUtil.getUtf8Bytes(utf8);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        fragmentText(send,msg);
+        fragmentText(send, msg);
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -213,6 +219,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * valid utf8 text message, many fragments (1 byte each)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -221,7 +228,7 @@ public class TestABCase6 extends AbstractABCase
         byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
 
         List<WebSocketFrame> send = new ArrayList<>();
-        fragmentText(send,msg);
+        fragmentText(send, msg);
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -239,6 +246,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * invalid utf8 text message, many fragments (1 byte each)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -247,7 +255,7 @@ public class TestABCase6 extends AbstractABCase
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
 
         List<WebSocketFrame> send = new ArrayList<>();
-        fragmentText(send,invalid);
+        fragmentText(send, invalid);
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -268,6 +276,7 @@ public class TestABCase6 extends AbstractABCase
      * fragment #1 and fragment #3 are both valid in themselves.
      * <p>
      * fragment #2 contains the invalid utf8 code point.
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -307,6 +316,7 @@ public class TestABCase6 extends AbstractABCase
      * fragment #2 finishes the UTF8 code point but it is invalid
      * <p>
      * fragment #3 contains the remainder of the message.
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -340,6 +350,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -353,7 +364,7 @@ public class TestABCase6 extends AbstractABCase
             payload.put(TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5")); // good
             payload.put(TypeUtil.fromHexString("f4908080")); // INVALID
             payload.put(TypeUtil.fromHexString("656469746564")); // good
-            BufferUtil.flipToFlush(payload,0);
+            BufferUtil.flipToFlush(payload, 0);
 
             List<WebSocketFrame> send = new ArrayList<>();
             send.add(new TextFrame().setPayload(payload));
@@ -368,7 +379,7 @@ public class TestABCase6 extends AbstractABCase
 
                 ByteBuffer net = fuzzer.asNetworkBuffer(send);
 
-                int splits[] = { 17, 21, net.limit() };
+                int splits[] = {17, 21, net.limit()};
 
                 ByteBuffer part1 = net.slice(); // Header + good UTF
                 part1.limit(splits[0]);
@@ -390,6 +401,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -404,15 +416,16 @@ public class TestABCase6 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging scope = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging scope = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
 
             ByteBuffer net = fuzzer.asNetworkBuffer(send);
-            fuzzer.send(net,6);
-            fuzzer.send(net,11);
-            fuzzer.send(net,1);
-            fuzzer.send(net,100); // the rest
+            fuzzer.send(net, 6);
+            fuzzer.send(net, 11);
+            fuzzer.send(net, 1);
+            fuzzer.send(net, 100); // the rest
 
             fuzzer.expect(expect);
         }

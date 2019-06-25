@@ -19,7 +19,6 @@
 package org.eclipse.jetty.annotations;
 
 import java.io.IOException;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
@@ -37,17 +36,22 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @DeclareRoles({"alice"})
-@WebServlet(urlPatterns = { "/foo/*", "/bah/*" }, name="CServlet", initParams={@WebInitParam(name="x", value="y")}, loadOnStartup=2, asyncSupported=false)
-@MultipartConfig(fileSizeThreshold=1000, maxFileSize=2000, maxRequestSize=3000)
+@WebServlet(urlPatterns = {"/foo/*", "/bah/*"}, name = "CServlet", initParams = {
+    @WebInitParam(name = "x", value = "y")
+}, loadOnStartup = 2, asyncSupported = false)
+@MultipartConfig(fileSizeThreshold = 1000, maxFileSize = 2000, maxRequestSize = 3000)
 @RunAs("admin")
-@ServletSecurity(value=@HttpConstraint(rolesAllowed={"fred", "bill", "dorothy"}), httpMethodConstraints={@HttpMethodConstraint(value="GET", rolesAllowed={"bob", "carol", "ted"})})
+@ServletSecurity(value = @HttpConstraint(rolesAllowed = {"fred", "bill", "dorothy"}), httpMethodConstraints = {
+    @HttpMethodConstraint(value = "GET", rolesAllowed =
+    {"bob", "carol", "ted"})
+})
 public class ServletC extends HttpServlet
 {
-    @Resource (mappedName="foo", type=Double.class)
+    @Resource(mappedName = "foo", type = Double.class)
     private Double foo;
 
     @PreDestroy
-    public void pre ()
+    public void pre()
     {
 
     }

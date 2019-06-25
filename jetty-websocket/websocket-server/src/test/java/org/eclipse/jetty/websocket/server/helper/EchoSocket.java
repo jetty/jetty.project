@@ -43,10 +43,10 @@ public class EchoSocket
     @OnWebSocketMessage
     public void onBinary(byte buf[], int offset, int len) throws IOException
     {
-        LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
+        LOG.debug("onBinary(byte[{}],{},{})", buf.length, offset, len);
 
         // echo the message back.
-        ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
+        ByteBuffer data = ByteBuffer.wrap(buf, offset, len);
         RemoteEndpoint remote = this.session.getRemote();
         remote.sendBytes(data, null);
         if (remote.getBatchMode() == BatchMode.ON)
@@ -62,7 +62,7 @@ public class EchoSocket
     @OnWebSocketMessage
     public void onText(String message) throws IOException
     {
-        LOG.debug("onText({})",message);
+        LOG.debug("onText({})", message);
 
         // echo the message back.
         RemoteEndpoint remote = session.getRemote();

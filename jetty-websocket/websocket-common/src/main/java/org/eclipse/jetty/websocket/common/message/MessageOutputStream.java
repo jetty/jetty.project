@@ -143,7 +143,7 @@ public class MessageOutputStream extends OutputStream
             frame.setPayload(buffer);
             frame.setFin(fin);
 
-            try(WriteBlocker b=blocker.acquireWriteBlocker())
+            try (WriteBlocker b = blocker.acquireWriteBlocker())
             {
                 outgoing.outgoingFrame(frame, b, BatchMode.OFF);
                 b.block();

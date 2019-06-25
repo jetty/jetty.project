@@ -48,13 +48,12 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-
 /**
  * This goal is used to deploy your unassembled webapp into a forked JVM.
  * <p>
  * You need to define a jetty.xml file to configure connectors etc. You can use the normal setters of o.e.j.webapp.WebAppContext on the <b>webApp</b>
  * configuration element for this plugin. You may also need context xml file for any particularly complex webapp setup.
- * 
+ *
  * <p>
  * Unlike the other jetty goals, this does NOT support the <b>scanIntervalSeconds</b> parameter: the webapp will be deployed only once.
  * <p>
@@ -64,86 +63,75 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * you can use the <b>jetty:stop</b> goal to terminate the process.
  * <p>
  * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
- * 
- * Runs Jetty in forked JVM on an unassembled webapp
  *
+ * Runs Jetty in forked JVM on an unassembled webapp
  */
-@Mojo( name = "run-forked", requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "run-forked", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class JettyRunForkedMojo extends JettyRunMojo
-{    
+{
     /**
      * The target directory
      */
-    @Parameter(defaultValue="${project.build.directory}", readonly = true, required = true)
+    @Parameter(defaultValue = "${project.build.directory}", readonly = true, required = true)
     protected File target;
-    
+
     /**
      * The file into which to generate the quickstart web xml for the forked process to use
-     *
      */
-    @Parameter(defaultValue="${project.build.directory}/fork-web.xml")
+    @Parameter(defaultValue = "${project.build.directory}/fork-web.xml")
     protected File forkWebXml;
-    
-    
+
     /**
      * Arbitrary jvm args to pass to the forked process
-     *
      */
-    @Parameter(property="jetty.jvmArgs")
+    @Parameter(property = "jetty.jvmArgs")
     private String jvmArgs;
-    
-    
+
     /**
      * Optional list of jetty properties to put on the command line
-     *
      */
     @Parameter
     private String[] jettyProperties;
-    
-    @Parameter(defaultValue="${plugin.artifacts}",readonly = true)
+
+    @Parameter(defaultValue = "${plugin.artifacts}", readonly = true)
     private List<Artifact> pluginArtifacts;
 
-    @Parameter(defaultValue="${plugin}", readonly = true)
+    @Parameter(defaultValue = "${plugin}", readonly = true)
     private PluginDescriptor plugin;
 
-    @Parameter(defaultValue="true")
+    @Parameter(defaultValue = "true")
     private boolean waitForChild;
 
-    
     /**
      * Max number of times to try checking if the
      * child has started successfully.
-     *
      */
-    @Parameter(alias="maxStartupLines", defaultValue="50")
+    @Parameter(alias = "maxStartupLines", defaultValue = "50")
     private int maxChildChecks;
-    
+
     /**
      * Millisecs to wait between each
      * check to see if the child started successfully.
      */
-    @Parameter(defaultValue="100")
+    @Parameter(defaultValue = "100")
     private long maxChildCheckInterval;
-    
+
     /**
      * Extra environment variables to be passed to the forked process
-     * 
      */
     @Parameter
-    private Map<String,String> env = new HashMap<>();
+    private Map<String, String> env = new HashMap<>();
 
     /**
      * The forked jetty instance
      */
     private Process forkedProcess;
-    
-    
+
     /**
      * Random number generator
      */
-    private Random random;    
-    
+    private Random random;
 
     /**
      * Whether or not the plugin has explicit slf4j dependencies.
@@ -158,8 +146,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
     /**
      * ShutdownThread
-     *
-     *
      */
     public class ShutdownThread extends Thread
     {
@@ -167,9 +153,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
         {
             super("RunForkedShutdown");
         }
-        
+
         @Override
-        public void run ()
+        public void run()
         {
             if (forkedProcess != null && waitForChild)
             {
@@ -177,11 +163,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             }
         }
     }
-    
-    
-    
-    
-    
+
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
      */
@@ -190,9 +172,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
     {
         Runtime.getRuntime().addShutdownHook(new ShutdownThread());
         random = new Random();
-        
+
         List<Dependency> deps = plugin.getPlugin().getDependencies();
-        for (Dependency d:deps)
+        for (Dependency d : deps)
         {
             if (d.getGroupId().contains("slf4j"))
             {
@@ -200,12 +182,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 break;
             }
         }
-        
+
         super.execute();
     }
-    
-    
-
 
     @Override
     public void startJetty() throws MojoExecutionException
@@ -223,9 +202,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
             //ensure handler structure enabled
             ServerSupport.configureHandlers(server, null);
-            
+
             ServerSupport.configureDefaultConfigurationClasses(server);
-                   
+
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
 
@@ -237,7 +216,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             if (webApp.getQuickStartWebDescriptor() == null)
             {
                 if (forkWebXml == null)
-                    forkWebXml = new File (target, "fork-web.xml");
+                    forkWebXml = new File(target, "fork-web.xml");
 
                 if (!forkWebXml.getParentFile().exists())
                     forkWebXml.getParentFile().mkdirs();
@@ -246,10 +225,10 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
                 webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
             }
-            
+
             //add webapp to our fake server instance
             ServerSupport.addWebApplication(server, webApp);
-                       
+
             //if our server has a thread pool associated we can do annotation scanning multithreaded,
             //otherwise scanning will be single threaded
             QueuedThreadPool tpool = server.getBean(QueuedThreadPool.class);
@@ -260,39 +239,37 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
             //leave everything unpacked for the forked process to use
             webApp.setPersistTempDirectory(true);
-            
+
             webApp.start(); //just enough to generate the quickstart
-           
+
             //save config of the webapp BEFORE we stop
             File props = prepareConfiguration();
-            
+
             webApp.stop();
-            
-            
-            
+
             if (tpool != null)
                 tpool.stop();
-            
+
             List<String> cmd = new ArrayList<>();
-            if( StringUtil.isNotBlank( javaPath ))
+            if (StringUtil.isNotBlank(javaPath))
             {
-                cmd.add( javaPath );
+                cmd.add(javaPath);
             }
             else
             {
-                cmd.add( getJavaBin() );
+                cmd.add(getJavaBin());
             }
-            
+
             if (jvmArgs != null)
             {
                 String[] args = jvmArgs.split(" ");
-                for (int i=0;args != null && i<args.length;i++)
+                for (int i = 0; args != null && i < args.length; i++)
                 {
-                    if (args[i] !=null && !"".equals(args[i]))
+                    if (args[i] != null && !"".equals(args[i]))
                         cmd.add(args[i].trim());
                 }
             }
-            
+
             String classPath = getContainerClassPath();
             if (classPath != null && classPath.length() > 0)
             {
@@ -300,7 +277,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 cmd.add(classPath);
             }
             cmd.add(Starter.class.getCanonicalName());
-            
+
             if (stopPort > 0 && stopKey != null)
             {
                 cmd.add("--stop-port");
@@ -313,36 +290,36 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 cmd.add("--jetty-xml");
                 cmd.add(jettyXml);
             }
-            
+
             cmd.add("--props");
             cmd.add(props.getAbsolutePath());
-            
-            Path tokenFile = target.toPath().resolve(createToken()+".txt");
+
+            Path tokenFile = target.toPath().resolve(createToken() + ".txt");
             cmd.add("--token");
             cmd.add(tokenFile.toAbsolutePath().toString());
-            
+
             if (jettyProperties != null)
             {
-                for (String jettyProp:jettyProperties)
+                for (String jettyProp : jettyProperties)
                 {
                     cmd.add(jettyProp);
                 }
             }
-            
+
             ProcessBuilder builder = new ProcessBuilder(cmd);
             builder.directory(project.getBasedir());
-            
+
             if (PluginLog.getLog().isDebugEnabled())
-                PluginLog.getLog().debug("Forked cli:"+Arrays.toString(cmd.toArray()));
-            
+                PluginLog.getLog().debug("Forked cli:" + Arrays.toString(cmd.toArray()));
+
             PluginLog.getLog().info("Forked process starting");
-            
+
             //set up extra environment vars if there are any
             if (!env.isEmpty())
             {
                 builder.environment().putAll(env);
             }
-            
+
             if (waitForChild)
             {
                 builder.inheritIO();
@@ -352,24 +329,24 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 builder.redirectOutput(new File(target, "jetty.out"));
                 builder.redirectErrorStream(true);
             }
-            
+
             forkedProcess = builder.start();
-            
+
             if (waitForChild)
             {
-                int exitcode = forkedProcess.waitFor();            
-                PluginLog.getLog().info("Forked execution exit: "+exitcode);
+                int exitcode = forkedProcess.waitFor();
+                PluginLog.getLog().info("Forked execution exit: " + exitcode);
             }
             else
-            {  
+            {
                 //just wait until the child has started successfully
                 int attempts = maxChildChecks;
                 while (!Files.exists(tokenFile) && attempts > 0)
                 {
-                    Thread.currentThread().sleep(maxChildCheckInterval);
+                    Thread.sleep(maxChildCheckInterval);
                     --attempts;
                 }
-                if (attempts <=0 )
+                if (attempts <= 0)
                     getLog().info("Couldn't verify success of child startup");
             }
         }
@@ -377,49 +354,51 @@ public class JettyRunForkedMojo extends JettyRunMojo
         {
             if (forkedProcess != null && waitForChild)
                 forkedProcess.destroy();
-            
+
             throw new MojoExecutionException("Failed to start Jetty within time limit");
         }
         catch (Exception ex)
         {
             if (forkedProcess != null && waitForChild)
                 forkedProcess.destroy();
-            
+
             throw new MojoExecutionException("Failed to create Jetty process", ex);
         }
     }
 
     public List<String> getProvidedJars() throws MojoExecutionException
-    {  
+    {
         //if we are configured to include the provided dependencies on the plugin's classpath
         //(which mimics being on jetty's classpath vs being on the webapp's classpath), we first
         //try and filter out ones that will clash with jars that are plugin dependencies, then
         //create a new classloader that we setup in the parent chain.
         if (useProvidedScope)
         {
-            
+
             List<String> provided = new ArrayList<>();
-            for ( Artifact artifact : project.getArtifacts())
+            for (Artifact artifact : project.getArtifacts())
             {
                 if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()) && !isPluginArtifact(artifact))
                 {
                     provided.add(artifact.getFile().getAbsolutePath());
-                    if (getLog().isDebugEnabled()) { getLog().debug("Adding provided artifact: "+artifact);}
+                    if (getLog().isDebugEnabled())
+                    {
+                        getLog().debug("Adding provided artifact: " + artifact);
+                    }
                 }
             }
             return provided;
-
         }
         else
             return null;
     }
-    
+
     public File prepareConfiguration() throws MojoExecutionException
     {
         try
-        {   
+        {
             //work out the configuration based on what is configured in the pom
-            File propsFile = new File (target, "fork.props");
+            File propsFile = new File(target, "fork.props");
             WebAppPropertyConverter.toProperties(webApp, propsFile, contextXml);
             return propsFile;
         }
@@ -428,31 +407,31 @@ public class JettyRunForkedMojo extends JettyRunMojo
             throw new MojoExecutionException("Prepare webapp configuration", e);
         }
     }
-    
 
-    
     @Override
     public boolean isPluginArtifact(Artifact artifact)
     {
         if (pluginArtifacts == null || pluginArtifacts.isEmpty())
             return false;
-        
+
         for (Artifact pluginArtifact : pluginArtifacts)
         {
-            if (getLog().isDebugEnabled()) { getLog().debug("Checking "+pluginArtifact);}
+            if (getLog().isDebugEnabled())
+            {
+                getLog().debug("Checking " + pluginArtifact);
+            }
             if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
                 return true;
         }
-        
+
         return false;
     }
-    
+
     private Set<Artifact> getExtraJars()
-    throws Exception
+        throws Exception
     {
         Set<Artifact> extraJars = new HashSet<>();
-  
-        
+
         List l = pluginArtifacts;
         Artifact pluginArtifact = null;
 
@@ -461,7 +440,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
             Iterator itor = l.iterator();
             while (itor.hasNext() && pluginArtifact == null)
-            {              
+            {
                 Artifact a = (Artifact)itor.next();
                 if (a.getArtifactId().equals(plugin.getArtifactId())) //get the jetty-maven-plugin jar
                 {
@@ -482,42 +461,38 @@ public class JettyRunForkedMojo extends JettyRunMojo
             {
                 //ignore slf4j from inside maven
                 if (artifact.getGroupId().contains("slf4j") && !hasSlf4jDeps)
-                        continue;
+                    continue;
                 if (classPath.length() > 0)
                 {
                     classPath.append(File.pathSeparator);
                 }
                 classPath.append(artifact.getFile().getAbsolutePath());
-
             }
         }
 
-        
         //Any jars that we need from the plugin environment (like the ones containing Starter class)
         Set<Artifact> extraJars = getExtraJars();
-        for (Artifact a:extraJars)
-        { 
+        for (Artifact a : extraJars)
+        {
             classPath.append(File.pathSeparator);
             classPath.append(a.getFile().getAbsolutePath());
         }
-        
-        
+
         //Any jars that we need from the project's dependencies because we're useProvided
         List<String> providedJars = getProvidedJars();
         if (providedJars != null && !providedJars.isEmpty())
         {
-            for (String jar:providedJars)
+            for (String jar : providedJars)
             {
                 classPath.append(File.pathSeparator);
                 classPath.append(jar);
-                if (getLog().isDebugEnabled()) getLog().debug("Adding provided jar: "+jar);
+                if (getLog().isDebugEnabled())
+                    getLog().debug("Adding provided jar: " + jar);
             }
         }
 
         return classPath.toString();
     }
-
-
 
     public static String pathSeparators(String path)
     {
@@ -536,8 +511,8 @@ public class JettyRunForkedMojo extends JettyRunMojo
         return ret.toString();
     }
 
-    private String createToken ()
+    private String createToken()
     {
-        return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
+        return Long.toString(random.nextLong() ^ System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
     }
 }

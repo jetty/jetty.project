@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -43,29 +42,26 @@ public class ValidUrlRule extends Rule
 
     String _code = "400";
     String _reason = "Illegal Url";
-    
+
     public ValidUrlRule()
     {
         _handling = true;
         _terminating = true;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the response status code.
-     * 
-     * @param code
-     *            response code
+     *
+     * @param code response code
      */
     public void setCode(String code)
     {
         _code = code;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the reason for the response status code. Reasons will only reflect if the code value is greater or equal to 400.
-     * 
+     *
      * @param reason the reason
      */
     public void setReason(String reason)
@@ -80,7 +76,7 @@ public class ValidUrlRule extends Rule
         // String uri = request.getRequestURI();
         String uri = URIUtil.decodePath(request.getRequestURI());
 
-        for (int i = 0; i < uri.length();)
+        for (int i = 0; i < uri.length(); )
         {
             int codepoint = uri.codePointAt(i);
 
@@ -92,7 +88,7 @@ public class ValidUrlRule extends Rule
                 // status code 400 and up are error codes so include a reason
                 if (code >= 400)
                 {
-                    response.sendError(code,_reason);
+                    response.sendError(code, _reason);
                 }
                 else
                 {
@@ -112,10 +108,10 @@ public class ValidUrlRule extends Rule
     protected boolean isValidChar(int codepoint)
     {
         Character.UnicodeBlock block = Character.UnicodeBlock.of(codepoint);
-        
+
         LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
-        
-        return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);       
+
+        return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);
     }
 
     @Override

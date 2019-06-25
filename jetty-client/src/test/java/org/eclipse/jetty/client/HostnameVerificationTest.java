@@ -21,7 +21,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
-
 import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -111,7 +110,8 @@ public class HostnameVerificationTest
         clientSslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         String uri = "https://localhost:" + connector.getLocalPort() + "/";
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             client.GET(uri);
         });
         Throwable cause = x.getCause();
@@ -125,7 +125,6 @@ public class HostnameVerificationTest
      * work fine.
      *
      * @throws Exception on test failure
-     *
      */
     @Test
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception

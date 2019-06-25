@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client.http;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -39,9 +36,17 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 {
@@ -51,7 +56,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
+        try (HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
@@ -71,7 +76,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
+        try (HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
 
@@ -153,7 +158,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
+        try (HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
@@ -163,14 +168,14 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
                 connection1 = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
                 assertNotNull(connection1);
                 // Acquire the connection to make it active.
-                assertSame(connection1, connectionPool.acquire(),"From idle");
+                assertSame(connection1, connectionPool.acquire(), "From idle");
             }
 
             destination.process(connection1);
             destination.release(connection1);
 
             Connection connection2 = connectionPool.acquire();
-            assertSame(connection1, connection2,"After release");
+            assertSame(connection1, connection2, "After release");
         }
     }
 
@@ -214,34 +219,34 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         // Make one request to open the connection and be sure everything is setup properly
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .send();
+            .scheme(scheme)
+            .send();
         assertEquals(200, response.getStatus());
 
         // Send another request that is sent immediately
         CountDownLatch successLatch = new CountDownLatch(1);
         CountDownLatch failureLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .path("/one")
-                .onRequestQueued(request ->
-                {
-                    // This request exceeds the maximum queued, should fail
-                    client.newRequest("localhost", connector.getLocalPort())
-                            .scheme(scheme)
-                            .path("/two")
-                            .send(result ->
-                            {
-                                assertTrue(result.isFailed());
-                                assertThat(result.getRequestFailure(), Matchers.instanceOf(RejectedExecutionException.class));
-                                failureLatch.countDown();
-                            });
-                })
-                .send(result ->
-                {
-                    if (result.isSucceeded())
-                        successLatch.countDown();
-                });
+            .scheme(scheme)
+            .path("/one")
+            .onRequestQueued(request ->
+            {
+                // This request exceeds the maximum queued, should fail
+                client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path("/two")
+                    .send(result ->
+                    {
+                        assertTrue(result.isFailed());
+                        assertThat(result.getRequestFailure(), Matchers.instanceOf(RejectedExecutionException.class));
+                        failureLatch.countDown();
+                    });
+            })
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    successLatch.countDown();
+            });
 
         assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(successLatch.await(5, TimeUnit.SECONDS));
@@ -258,9 +263,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         Destination destinationBefore = client.getDestination(scenario.getScheme(), host, port);
 
         ContentResponse response = client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-                .send();
+            .scheme(scenario.getScheme())
+            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .send();
 
         assertEquals(200, response.getStatus());
 
@@ -270,9 +275,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         client.setRemoveIdleDestinations(true);
 
         response = client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-                .send();
+            .scheme(scenario.getScheme())
+            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .send();
 
         assertEquals(200, response.getStatus());
 

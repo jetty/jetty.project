@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
 
 import java.io.IOException;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -34,7 +33,7 @@ import org.eclipse.jetty.websocket.common.util.StackUtil;
 public class LongTextSocket
 {
     private static final Logger LOG = Log.getLogger(LongTextSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -53,7 +52,7 @@ public class LongTextSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

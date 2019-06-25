@@ -39,7 +39,7 @@ public class JsrClientEndpointImpl implements EventDriverImpl
     {
         if (!(websocket instanceof EndpointInstance))
         {
-            throw new IllegalStateException(String.format("Websocket %s must be an %s",websocket.getClass().getName(),EndpointInstance.class.getName()));
+            throw new IllegalStateException(String.format("Websocket %s must be an %s", websocket.getClass().getName(), EndpointInstance.class.getName()));
         }
 
         EndpointInstance ei = (EndpointInstance)websocket;
@@ -47,13 +47,13 @@ public class JsrClientEndpointImpl implements EventDriverImpl
         JsrEvents<ClientEndpoint, ClientEndpointConfig> events = new JsrEvents<>(metadata);
 
         // Handle @OnMessage maxMessageSizes
-        int maxBinaryMessage = getMaxMessageSize(policy.getMaxBinaryMessageSize(),metadata.maxBinaryMessageSize());
-        int maxTextMessage = getMaxMessageSize(policy.getMaxTextMessageSize(),metadata.maxTextMessageSize());
+        int maxBinaryMessage = getMaxMessageSize(policy.getMaxBinaryMessageSize(), metadata.maxBinaryMessageSize());
+        int maxTextMessage = getMaxMessageSize(policy.getMaxTextMessageSize(), metadata.maxTextMessageSize());
 
         policy.setMaxBinaryMessageSize(maxBinaryMessage);
         policy.setMaxTextMessageSize(maxTextMessage);
 
-        return new JsrAnnotatedEventDriver(policy,ei,events);
+        return new JsrAnnotatedEventDriver(policy, ei, events);
     }
 
     @Override
@@ -66,7 +66,7 @@ public class JsrClientEndpointImpl implements EventDriverImpl
     {
         if (maxMessageSize >= 1)
         {
-            return (int) maxMessageSize;
+            return (int)maxMessageSize;
         }
         return defaultMaxMessageSize;
     }

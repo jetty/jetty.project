@@ -37,19 +37,18 @@ public class RunAs
         _className = Objects.requireNonNull(className);
         _roleName = Objects.requireNonNull(roleName);
     }
-    
+
     public String getTargetClassName()
     {
         return _className;
     }
 
-
-    public String getRoleName ()
+    public String getRoleName()
     {
         return _roleName;
     }
 
-    public void setRunAs (ServletHolder holder)
+    public void setRunAs(ServletHolder holder)
     {
         if (holder == null)
             return;

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.extensions.fragment;
 
-
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -176,7 +175,7 @@ public class FragmentExtension extends AbstractExtension
         {
             // This IteratingCallback never completes.
         }
-        
+
         @Override
         protected void onCompleteFailure(Throwable x)
         {
@@ -184,7 +183,7 @@ public class FragmentExtension extends AbstractExtension
             // The callback are those provided by WriteCallback (implemented
             // below) and even in case of writeFailed() we call succeeded().
         }
-        
+
         @Override
         public void writeSuccess()
         {

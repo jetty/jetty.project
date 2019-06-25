@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -43,9 +35,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteFlusherTest
 {
@@ -110,7 +110,8 @@ public class WriteFlusherTest
         assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
 
-        ExecutionException e = assertThrows(ExecutionException.class, ()->{
+        ExecutionException e = assertThrows(ExecutionException.class, () ->
+        {
             callback.get();
         });
         assertThat(e.getCause(), instanceOf(IOException.class));
@@ -143,7 +144,8 @@ public class WriteFlusherTest
 
         assertTrue(incompleteFlush.get());
 
-        assertThrows(TimeoutException.class, ()->{
+        assertThrows(TimeoutException.class, () ->
+        {
             callback.get(100, TimeUnit.MILLISECONDS);
         });
 
@@ -155,6 +157,43 @@ public class WriteFlusherTest
 
         assertTrue(callback.isDone());
         assertEquals("own cow!", endPoint.takeOutputString());
+        assertFalse(incompleteFlush.get());
+        assertTrue(flusher.isIdle());
+    }
+
+    @Test
+    public void testCallbackThrows() throws Exception
+    {
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 100);
+
+        AtomicBoolean incompleteFlush = new AtomicBoolean(false);
+        WriteFlusher flusher = new WriteFlusher(endPoint)
+        {
+            @Override
+            protected void onIncompleteFlush()
+            {
+                incompleteFlush.set(true);
+            }
+        };
+
+        FutureCallback callback = new FutureCallback()
+        {
+            @Override
+            public void succeeded()
+            {
+                super.succeeded();
+                throw new IllegalStateException();
+            }
+        };
+
+        try (StacklessLogging stacklessLogging = new StacklessLogging(WriteFlusher.class))
+        {
+            flusher.write(callback, BufferUtil.toBuffer("How now brown cow!"));
+            callback.get(100, TimeUnit.MILLISECONDS);
+        }
+
+        assertEquals("How now brown cow!", endPoint.takeOutputString());
+        assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
         assertTrue(flusher.isIdle());
     }
@@ -191,7 +230,7 @@ public class WriteFlusherTest
         assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
 
-        ExecutionException e = assertThrows(ExecutionException.class, ()-> callback.get());
+        ExecutionException e = assertThrows(ExecutionException.class, () -> callback.get());
         assertThat(e.getCause(), instanceOf(IOException.class));
         assertThat(e.getCause().getMessage(), containsString("CLOSED"));
 
@@ -232,7 +271,7 @@ public class WriteFlusherTest
         assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
 
-        ExecutionException e = assertThrows(ExecutionException.class, ()-> callback.get());
+        ExecutionException e = assertThrows(ExecutionException.class, () -> callback.get());
         assertThat(e.getCause(), instanceOf(IOException.class));
         assertThat(e.getCause().getMessage(), containsString(reason));
 
@@ -311,7 +350,6 @@ public class WriteFlusherTest
             }
         };
 
-
         flusher.write(Callback.NOOP, buffer1, buffer2);
         assertTrue(incompleteFlush.get());
         assertFalse(buffer1.hasRemaining());
@@ -362,7 +400,8 @@ public class WriteFlusherTest
         new Thread(() -> flusher.write(Callback.NOOP, BufferUtil.toBuffer("foo"))).start();
         assertTrue(flushLatch.await(1, TimeUnit.SECONDS));
 
-        assertThrows(WritePendingException.class, ()->{
+        assertThrows(WritePendingException.class, () ->
+        {
             // The second write throws WritePendingException.
             flusher.write(Callback.NOOP, BufferUtil.toBuffer("bar"));
         });
@@ -371,18 +410,19 @@ public class WriteFlusherTest
     @Test
     public void testConcurrentWriteAndOnFail() throws Exception
     {
-        assertThrows( ExecutionException.class , () -> {
-            ByteArrayEndPoint endPoint = new ByteArrayEndPoint( new byte[0], 16 );
+        assertThrows(ExecutionException.class, () ->
+        {
+            ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16);
 
-            WriteFlusher flusher = new WriteFlusher( endPoint )
+            WriteFlusher flusher = new WriteFlusher(endPoint)
             {
                 @Override
-                protected ByteBuffer[] flush( ByteBuffer[] buffers )
+                protected ByteBuffer[] flush(ByteBuffer[] buffers)
                     throws IOException
                 {
-                    ByteBuffer[] result = super.flush( buffers );
-                    boolean notified = onFail( new Throwable() );
-                    assertTrue( notified );
+                    ByteBuffer[] result = super.flush(buffers);
+                    boolean notified = onFail(new Throwable());
+                    assertTrue(notified);
                     return result;
                 }
 
@@ -393,11 +433,11 @@ public class WriteFlusherTest
             };
 
             FutureCallback callback = new FutureCallback();
-            flusher.write( callback, BufferUtil.toBuffer( "foo" ) );
+            flusher.write(callback, BufferUtil.toBuffer("foo"));
 
-            assertTrue( flusher.isFailed() );
+            assertTrue(flusher.isFailed());
 
-            callback.get( 1, TimeUnit.SECONDS );
+            callback.get(1, TimeUnit.SECONDS);
         });
     }
 

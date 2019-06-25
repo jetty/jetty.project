@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -36,6 +33,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class FirefoxTest
 {
     private static BlockheadClient client;
@@ -47,7 +47,7 @@ public class FirefoxTest
         server = new SimpleServletServer(new MyEchoServlet());
         server.start();
 
-        client  = new BlockheadClient();
+        client = new BlockheadClient();
         client.start();
     }
 
@@ -68,7 +68,7 @@ public class FirefoxTest
 
         Future<BlockheadConnection> connFut = request.sendAsync();
 
-        try(BlockheadConnection conn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        try (BlockheadConnection conn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";

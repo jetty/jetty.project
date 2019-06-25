@@ -133,9 +133,9 @@ public abstract class Parser
 
     public interface Listener
     {
-        public void onHeader(int request, HttpField field);
+        void onHeader(int request, HttpField field);
 
-        public void onHeaders(int request);
+        void onHeaders(int request);
 
         /**
          * @param request the request id
@@ -144,13 +144,13 @@ public abstract class Parser
          * @return true to signal to the parser to stop parsing, false to continue parsing
          * @see Parser#parse(java.nio.ByteBuffer)
          */
-        public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer);
+        boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer);
 
-        public void onEnd(int request);
+        void onEnd(int request);
 
-        public void onFailure(int request, Throwable failure);
+        void onFailure(int request, Throwable failure);
 
-        public static class Adapter implements Listener
+        class Adapter implements Listener
         {
             @Override
             public void onHeader(int request, HttpField field)

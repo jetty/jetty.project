@@ -18,20 +18,8 @@
 
 package org.eclipse.jetty.plus.webapp;
 
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
@@ -45,6 +33,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * PlusDescriptorProcessorTest
  */
@@ -56,7 +54,7 @@ public class PlusDescriptorProcessorTest
     protected FragmentDescriptor fragDescriptor3;
     protected FragmentDescriptor fragDescriptor4;
     protected WebAppContext context;
-    
+
     @BeforeEach
     public void setUp() throws Exception
     {
@@ -65,11 +63,11 @@ public class PlusDescriptorProcessorTest
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         Context icontext = new InitialContext();
-        Context compCtx =  (Context)icontext.lookup ("java:comp");
+        Context compCtx = (Context)icontext.lookup("java:comp");
         compCtx.createSubcontext("env");
         Thread.currentThread().setContextClassLoader(oldLoader);
 
-        org.eclipse.jetty.plus.jndi.Resource ds = new org.eclipse.jetty.plus.jndi.Resource (context, "jdbc/mydatasource", new Object());
+        org.eclipse.jetty.plus.jndi.Resource ds = new org.eclipse.jetty.plus.jndi.Resource(context, "jdbc/mydatasource", new Object());
 
         URL webXml = Thread.currentThread().getContextClassLoader().getResource("web.xml");
         webDescriptor = new WebDescriptor(org.eclipse.jetty.util.resource.Resource.newResource(webXml));
@@ -95,19 +93,20 @@ public class PlusDescriptorProcessorTest
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         Context ic = new InitialContext();
-        Context compCtx =  (Context)ic.lookup ("java:comp");
+        Context compCtx = (Context)ic.lookup("java:comp");
         compCtx.destroySubcontext("env");
         Thread.currentThread().setContextClassLoader(oldLoader);
     }
 
     @Test
     public void testMissingResourceDeclaration()
-    throws Exception
+        throws Exception
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
 
-        InvocationTargetException x = assertThrows(InvocationTargetException.class, ()->{
+        InvocationTargetException x = assertThrows(InvocationTargetException.class, () ->
+        {
             PlusDescriptorProcessor pdp = new PlusDescriptorProcessor();
             pdp.process(context, fragDescriptor4);
             fail("Expected missing resource declaration");
@@ -116,12 +115,11 @@ public class PlusDescriptorProcessorTest
 
         assertThat(x.getCause(), is(notNullValue()));
         assertThat(x.getCause().getMessage(), containsString("jdbc/mymissingdatasource"));
-
     }
 
     @Test
     public void testWebXmlResourceDeclarations()
-    throws Exception
+        throws Exception
     {
         //if declared in web.xml, fragment declarations ignored
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
@@ -143,10 +141,9 @@ public class PlusDescriptorProcessorTest
         }
     }
 
-
     @Test
-    public void testMismatchedFragmentResourceDeclarations ()
-    throws Exception
+    public void testMismatchedFragmentResourceDeclarations()
+        throws Exception
     {
         //if declared in more than 1 fragment, declarations must be the same
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
@@ -174,8 +171,8 @@ public class PlusDescriptorProcessorTest
     }
 
     @Test
-    public void testMatchingFragmentResourceDeclarations ()
-    throws Exception
+    public void testMatchingFragmentResourceDeclarations()
+        throws Exception
     {
         //if declared in more than 1 fragment, declarations must be the same
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();

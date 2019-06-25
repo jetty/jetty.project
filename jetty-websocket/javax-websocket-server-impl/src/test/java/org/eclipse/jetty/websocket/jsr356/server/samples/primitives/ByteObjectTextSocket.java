@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
 
 import java.io.IOException;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -52,7 +51,7 @@ public class ByteObjectTextSocket
         }
         else
         {
-            String msg = String.format("0x%02X",b);
+            String msg = String.format("0x%02X", b);
             session.getAsyncRemote().sendText(msg);
         }
     }
@@ -60,7 +59,7 @@ public class ByteObjectTextSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

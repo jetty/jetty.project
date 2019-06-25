@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.ant.types;
 
 import java.util.ArrayList;
@@ -33,7 +32,8 @@ public class Connectors
     /**
      * Default constructor.
      */
-    public Connectors() {
+    public Connectors()
+    {
         this(8080, 30000);
     }
 
@@ -78,5 +78,4 @@ public class Connectors
     {
         return defaultConnectors;
     }
-
 }

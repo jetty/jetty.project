@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import javax.websocket.Encoder;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -35,9 +31,12 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.samples.Fruit;
 import org.eclipse.jetty.websocket.jsr356.samples.FruitBinaryEncoder;
 import org.eclipse.jetty.websocket.jsr356.samples.FruitTextEncoder;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests against the Encoders class
@@ -51,7 +50,7 @@ public class EncoderFactoryTest
     {
         EncoderMetadata metadata = factory.getMetadataFor(type);
         assertEquals(metadata.getCoderClass(), expectedEncoderClass, "metadata.coderClass");
-        assertThat("metadata.messageType",metadata.getMessageType(),is(expectedType));
+        assertThat("metadata.messageType", metadata.getMessageType(), is(expectedType));
         assertEquals(metadata.getObjectType(), type, "metadata.objectType");
     }
 
@@ -59,35 +58,35 @@ public class EncoderFactoryTest
     public void initEncoderFactory()
     {
         WebSocketContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
-        
-        EncoderFactory primitivesFactory = new EncoderFactory(containerScope,PrimitiveEncoderMetadataSet.INSTANCE);
+
+        EncoderFactory primitivesFactory = new EncoderFactory(containerScope, PrimitiveEncoderMetadataSet.INSTANCE);
         metadatas = new EncoderMetadataSet();
-        factory = new EncoderFactory(containerScope,metadatas,primitivesFactory);
+        factory = new EncoderFactory(containerScope, metadatas, primitivesFactory);
     }
 
     @Test
     public void testGetMetadataForFruitBinary()
     {
         metadatas.add(FruitBinaryEncoder.class);
-        assertMetadataFor(Fruit.class,FruitBinaryEncoder.class,MessageType.BINARY);
+        assertMetadataFor(Fruit.class, FruitBinaryEncoder.class, MessageType.BINARY);
     }
 
     @Test
     public void testGetMetadataForFruitText()
     {
         metadatas.add(FruitTextEncoder.class);
-        assertMetadataFor(Fruit.class,FruitTextEncoder.class,MessageType.TEXT);
+        assertMetadataFor(Fruit.class, FruitTextEncoder.class, MessageType.TEXT);
     }
 
     @Test
     public void testGetMetadataForInteger()
     {
-        assertMetadataFor(Integer.TYPE,IntegerEncoder.class,MessageType.TEXT);
+        assertMetadataFor(Integer.TYPE, IntegerEncoder.class, MessageType.TEXT);
     }
 
     @Test
     public void testGetMetadataForLong()
     {
-        assertMetadataFor(Long.TYPE,LongEncoder.class,MessageType.TEXT);
+        assertMetadataFor(Long.TYPE, LongEncoder.class, MessageType.TEXT);
     }
 }

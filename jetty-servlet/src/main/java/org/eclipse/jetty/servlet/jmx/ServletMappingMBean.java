@@ -39,7 +39,7 @@ public class ServletMappingMBean extends ObjectMBean
             if (name != null)
                 return name;
         }
-        
+
         return super.getObjectNameBasis();
     }
 }

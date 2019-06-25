@@ -58,8 +58,10 @@ public class Origin
     @Override
     public boolean equals(Object obj)
     {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
         Origin that = (Origin)obj;
         return scheme.equals(that.scheme) && address.equals(that.address);
     }
@@ -96,8 +98,10 @@ public class Origin
         @Override
         public boolean equals(Object obj)
         {
-            if (this == obj) return true;
-            if (obj == null || getClass() != obj.getClass()) return false;
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
             Address that = (Address)obj;
             return host.equals(that.host) && port == that.port;
         }

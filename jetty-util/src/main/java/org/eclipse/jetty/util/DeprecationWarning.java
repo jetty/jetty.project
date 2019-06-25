@@ -40,7 +40,7 @@ public class DeprecationWarning implements Decorator
             Deprecated depr = clazz.getAnnotation(Deprecated.class);
             if (depr != null)
             {
-                LOG.warn("Using @Deprecated Class {}",clazz.getName());
+                LOG.warn("Using @Deprecated Class {}", clazz.getName());
             }
         }
         catch (Throwable t)
@@ -48,10 +48,10 @@ public class DeprecationWarning implements Decorator
             LOG.ignore(t);
         }
 
-        verifyIndirectTypes(clazz.getSuperclass(),clazz,"Class");
+        verifyIndirectTypes(clazz.getSuperclass(), clazz, "Class");
         for (Class<?> ifaceClazz : clazz.getInterfaces())
         {
-            verifyIndirectTypes(ifaceClazz,clazz,"Interface");
+            verifyIndirectTypes(ifaceClazz, clazz, "Interface");
         }
 
         return o;
@@ -67,7 +67,7 @@ public class DeprecationWarning implements Decorator
                 Deprecated supDepr = superClazz.getAnnotation(Deprecated.class);
                 if (supDepr != null)
                 {
-                    LOG.warn("Using indirect @Deprecated {} {} - (seen from {})",typeName,superClazz.getName(),clazz);
+                    LOG.warn("Using indirect @Deprecated {} {} - (seen from {})", typeName, superClazz.getName(), clazz);
                 }
 
                 superClazz = superClazz.getSuperclass();

@@ -39,6 +39,7 @@ public class TestABCase2 extends AbstractABCase
 {
     /**
      * Ping without payload
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -59,6 +60,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * 10 pings
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -76,7 +78,7 @@ public class TestABCase2 extends AbstractABCase
 
         for (int i = 0; i < pingCount; i++)
         {
-            String payload = String.format("ping-%d[%X]",i,i);
+            String payload = String.format("ping-%d[%X]", i, i);
             send.add(new PingFrame().setPayload(payload));
             expect.add(new PongFrame().setPayload(payload));
         }
@@ -94,6 +96,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * 10 pings, sent slowly
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -111,7 +114,7 @@ public class TestABCase2 extends AbstractABCase
 
         for (int i = 0; i < pingCount; i++)
         {
-            String payload = String.format("ping-%d[%X]",i,i);
+            String payload = String.format("ping-%d[%X]", i, i);
             send.add(new PingFrame().setPayload(payload));
             expect.add(new PongFrame().setPayload(payload));
         }
@@ -130,6 +133,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with small text payload
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -156,12 +160,13 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with small binary (non-utf8) payload
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase2_3() throws Exception
     {
-        byte payload[] = new byte[] { 0x00, (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC, (byte)0xFB, 0x00, (byte)0xFF };
+        byte payload[] = new byte[]{0x00, (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC, (byte)0xFB, 0x00, (byte)0xFF};
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
@@ -182,13 +187,14 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with 125 byte binary payload
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase2_4() throws Exception
     {
         byte payload[] = new byte[125];
-        Arrays.fill(payload,(byte)0xFE);
+        Arrays.fill(payload, (byte)0xFE);
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
@@ -209,6 +215,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with 126 byte binary payload
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -217,13 +224,13 @@ public class TestABCase2 extends AbstractABCase
         try (StacklessLogging scope = new StacklessLogging(Parser.class))
         {
             byte payload[] = new byte[126]; // intentionally too big
-            Arrays.fill(payload,(byte)'5');
+            Arrays.fill(payload, (byte)'5');
             ByteBuffer buf = ByteBuffer.wrap(payload);
 
             List<WebSocketFrame> send = new ArrayList<>();
             // trick websocket frame into making extra large payload for ping
             send.add(new BadFrame(OpCode.PING).setPayload(buf));
-            send.add(new CloseInfo(StatusCode.NORMAL,"Test 2.5").asFrame());
+            send.add(new CloseInfo(StatusCode.NORMAL, "Test 2.5").asFrame());
 
             List<WebSocketFrame> expect = new ArrayList<>();
             expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -240,21 +247,22 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with 125 byte binary payload (slow send)
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase2_6() throws Exception
     {
         byte payload[] = new byte[125];
-        Arrays.fill(payload,(byte)'6');
+        Arrays.fill(payload, (byte)'6');
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
-        send.add(new CloseInfo(StatusCode.NORMAL,"Test 2.6").asFrame());
+        send.add(new CloseInfo(StatusCode.NORMAL, "Test 2.6").asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload(copyOf(payload)));
-        expect.add(new CloseInfo(StatusCode.NORMAL,"Test 2.6").asFrame());
+        expect.add(new CloseInfo(StatusCode.NORMAL, "Test 2.6").asFrame());
 
         try (Fuzzer fuzzer = new Fuzzer(this))
         {
@@ -268,6 +276,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Unsolicited pong frame without payload
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -291,6 +300,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Unsolicited pong frame with basic payload
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -314,6 +324,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Unsolicited pong frame, then ping with basic payload
+     *
      * @throws Exception on test failure
      */
     @Test

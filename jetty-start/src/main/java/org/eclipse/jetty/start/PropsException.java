@@ -26,7 +26,7 @@ public class PropsException extends RuntimeException
 {
     public PropsException(String message, Throwable cause)
     {
-        super(message,cause);
+        super(message, cause);
     }
 
     public PropsException(String message)

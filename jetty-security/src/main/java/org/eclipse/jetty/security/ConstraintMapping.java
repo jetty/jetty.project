@@ -29,7 +29,6 @@ public class ConstraintMapping
 
     Constraint _constraint;
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the constraint.
      */
@@ -38,7 +37,6 @@ public class ConstraintMapping
         return _constraint;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param constraint The constraint to set.
      */
@@ -47,7 +45,6 @@ public class ConstraintMapping
         this._constraint = constraint;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the method.
      */
@@ -56,7 +53,6 @@ public class ConstraintMapping
         return _method;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param method The method to set.
      */
@@ -65,7 +61,6 @@ public class ConstraintMapping
         this._method = method;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the pathSpec.
      */
@@ -74,7 +69,6 @@ public class ConstraintMapping
         return _pathSpec;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param pathSpec The pathSpec to set.
      */
@@ -82,8 +76,7 @@ public class ConstraintMapping
     {
         this._pathSpec = pathSpec;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param omissions The http-method-omission
      */
@@ -91,8 +84,7 @@ public class ConstraintMapping
     {
         _methodOmissions = omissions;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public String[] getMethodOmissions()
     {
         return _methodOmissions;

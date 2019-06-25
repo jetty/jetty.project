@@ -30,6 +30,6 @@ public class HttpSocketImpl implements HttpSocket
     @Override
     public Socket connect(InetAddress host, int port) throws IOException
     {
-        return new Socket(host,port);
+        return new Socket(host, port);
     }
 }

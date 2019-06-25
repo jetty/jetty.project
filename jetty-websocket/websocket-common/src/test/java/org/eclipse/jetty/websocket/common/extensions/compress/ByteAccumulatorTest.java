@@ -70,7 +70,7 @@ public class ByteAccumulatorTest
         assertThat("Length", accumulator.getLength(), is(length));
 
         ByteBuffer out = ByteBuffer.allocate(length - 2); // intentionally too small ByteBuffer
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, ()->accumulator.transferTo(out));
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> accumulator.transferTo(out));
         assertThat(e.getMessage(), containsString("Not enough space in ByteBuffer"));
     }
 
@@ -88,7 +88,7 @@ public class ByteAccumulatorTest
         accumulator.copyChunk(hello, 0, hello.length);
         accumulator.copyChunk(space, 0, space.length);
 
-        MessageTooLargeException e = assertThrows(MessageTooLargeException.class, ()->accumulator.copyChunk(world, 0, world.length));
+        MessageTooLargeException e = assertThrows(MessageTooLargeException.class, () -> accumulator.copyChunk(world, 0, world.length));
         assertThat(e.getMessage(), containsString("too large for configured max"));
     }
 }

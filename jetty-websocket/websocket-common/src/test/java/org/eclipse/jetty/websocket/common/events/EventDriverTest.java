@@ -52,9 +52,9 @@ import static org.hamcrest.Matchers.startsWith;
 public class EventDriverTest
 {
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
-    
+
     private WebSocketContainerScope container;
-    
+
     @BeforeEach
     public void initContainer()
     {
@@ -72,7 +72,7 @@ public class EventDriverTest
         AdapterConnectCloseSocket socket = new AdapterConnectCloseSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testInfo.getDisplayName(),driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container, testInfo.getDisplayName(), driver))
         {
             conn.open();
             driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -88,10 +88,10 @@ public class EventDriverTest
         AnnotatedBinaryArraySocket socket = new AnnotatedBinaryArraySocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testInfo.getDisplayName(),driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container, testInfo.getDisplayName(), driver))
         {
             conn.open();
-            driver.incomingFrame(makeBinaryFrame("Hello World",true));
+            driver.incomingFrame(makeBinaryFrame("Hello World", true));
             driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
             assertThat(socket.capture.safePoll(), startsWith("onConnect"));
@@ -106,7 +106,7 @@ public class EventDriverTest
         AnnotatedTextSocket socket = new AnnotatedTextSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testInfo.getDisplayName(),driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container, testInfo.getDisplayName(), driver))
         {
             conn.open();
             driver.onError(new WebSocketException("oof"));
@@ -124,13 +124,13 @@ public class EventDriverTest
         AnnotatedFramesSocket socket = new AnnotatedFramesSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testInfo.getDisplayName(),driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container, testInfo.getDisplayName(), driver))
         {
             conn.open();
             driver.incomingFrame(new PingFrame().setPayload("PING"));
             driver.incomingFrame(new TextFrame().setPayload("Text Me"));
             driver.incomingFrame(new BinaryFrame().setPayload("Hello Bin"));
-            driver.incomingFrame(new CloseInfo(StatusCode.SHUTDOWN,"testcase").asFrame());
+            driver.incomingFrame(new CloseInfo(StatusCode.SHUTDOWN, "testcase").asFrame());
 
             assertThat(socket.capture.safePoll(), startsWith("onConnect("));
             assertThat(socket.capture.safePoll(), startsWith("onFrame(PING["));
@@ -147,10 +147,10 @@ public class EventDriverTest
         AnnotatedBinaryStreamSocket socket = new AnnotatedBinaryStreamSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testInfo.getDisplayName(),driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container, testInfo.getDisplayName(), driver))
         {
             conn.open();
-            driver.incomingFrame(makeBinaryFrame("Hello World",true));
+            driver.incomingFrame(makeBinaryFrame("Hello World", true));
             driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
             assertThat(socket.capture.safePoll(), startsWith("onConnect"));
@@ -165,7 +165,7 @@ public class EventDriverTest
         ListenerBasicSocket socket = new ListenerBasicSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testInfo.getDisplayName(),driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container, testInfo.getDisplayName(), driver))
         {
             conn.start();
             conn.open();
@@ -184,7 +184,7 @@ public class EventDriverTest
         ListenerPingPongSocket socket = new ListenerPingPongSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testInfo.getDisplayName(),driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container, testInfo.getDisplayName(), driver))
         {
             conn.start();
             conn.open();
@@ -205,7 +205,7 @@ public class EventDriverTest
         ListenerPingPongSocket socket = new ListenerPingPongSocket();
         EventDriver driver = wrap(socket);
 
-        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testInfo.getDisplayName(),driver))
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container, testInfo.getDisplayName(), driver))
         {
             conn.start();
             conn.open();

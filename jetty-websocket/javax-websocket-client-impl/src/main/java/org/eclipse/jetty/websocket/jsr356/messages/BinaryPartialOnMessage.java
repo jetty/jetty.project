@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -50,11 +49,11 @@ public class BinaryPartialOnMessage implements MessageAppender
         }
         if (payload == null)
         {
-            driver.onPartialBinaryMessage(BufferUtil.EMPTY_BUFFER,isLast);
+            driver.onPartialBinaryMessage(BufferUtil.EMPTY_BUFFER, isLast);
         }
         else
         {
-            driver.onPartialBinaryMessage(payload,isLast);
+            driver.onPartialBinaryMessage(payload, isLast);
         }
     }
 

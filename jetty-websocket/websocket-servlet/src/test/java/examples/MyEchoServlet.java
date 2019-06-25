@@ -24,7 +24,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 @SuppressWarnings("serial")
-@WebServlet(name = "MyEcho WebSocket Servlet", urlPatterns = { "/echo" })
+@WebServlet(name = "MyEcho WebSocket Servlet", urlPatterns = {"/echo"})
 public class MyEchoServlet extends WebSocketServlet
 {
     @Override

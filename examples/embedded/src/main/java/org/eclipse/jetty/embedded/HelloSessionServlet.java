@@ -20,7 +20,6 @@ package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,21 +29,23 @@ import javax.servlet.http.HttpSession;
 @SuppressWarnings("serial")
 public class HelloSessionServlet extends HttpServlet
 {
-    public HelloSessionServlet() {}
+    public HelloSessionServlet()
+    {
+    }
 
     @Override
-    protected void doGet( HttpServletRequest request,
-                          HttpServletResponse response ) throws ServletException,
-            IOException
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response) throws ServletException,
+        IOException
     {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.addHeader("Cache-Control","no-cache");
-        
+        response.addHeader("Cache-Control", "no-cache");
+
         HttpSession session = request.getSession();
         String message;
         String link;
-        
+
         String greeting = request.getParameter("greeting");
         if (greeting != null)
         {
@@ -56,7 +57,7 @@ public class HelloSessionServlet extends HttpServlet
         {
             greeting = (String)session.getAttribute("greeting");
 
-            if (greeting != null) 
+            if (greeting != null)
             {
                 message = "Greeting '" + greeting + "' set from session.";
             }
@@ -68,17 +69,15 @@ public class HelloSessionServlet extends HttpServlet
 
             link = "Click <a href=\"/?greeting=Hola\">here</a> to set a new greeting.";
         }
-        
+
         PrintWriter out = response.getWriter();
         out.println("<h1>" + greeting + " from HelloSessionServlet</h1>");
         out.println("<p>" + message + "</p>");
         out.println("<pre>");
-        out.println("session.getId() = " +session.getId());
-        out.println("session.isNew() = " +session.isNew());
+        out.println("session.getId() = " + session.getId());
+        out.println("session.isNew() = " + session.isNew());
         out.println("</pre>");
         out.println("<p>" + link + "</p>");
-        
     }
-
 }
 

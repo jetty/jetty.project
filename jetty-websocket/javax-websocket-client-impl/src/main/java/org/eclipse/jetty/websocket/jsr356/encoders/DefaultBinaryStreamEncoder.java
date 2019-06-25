@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.encoders;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 
@@ -32,6 +31,6 @@ public class DefaultBinaryStreamEncoder extends AbstractEncoder implements Encod
     @Override
     public void encode(ByteBuffer message, OutputStream out) throws EncodeException, IOException
     {
-        BufferUtil.writeTo(message,out);
+        BufferUtil.writeTo(message, out);
     }
 }

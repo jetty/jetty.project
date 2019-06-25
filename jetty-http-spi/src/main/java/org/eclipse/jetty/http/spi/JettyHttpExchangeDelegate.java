@@ -27,7 +27,6 @@ import java.net.URISyntaxException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -86,7 +85,7 @@ public class JettyHttpExchangeDelegate extends HttpExchange
             while (en2.hasMoreElements())
             {
                 String value = (String)en2.nextElement();
-                headers.add(name,value);
+                headers.add(name, value);
             }
         }
         return headers;
@@ -166,12 +165,12 @@ public class JettyHttpExchangeDelegate extends HttpExchange
 
             for (String value : values)
             {
-                _resp.setHeader(name,value);
+                _resp.setHeader(name, value);
             }
         }
         if (responseLength > 0)
         {
-            _resp.setHeader("content-length","" + responseLength);
+            _resp.setHeader("content-length", "" + responseLength);
         }
         _resp.setStatus(rCode);
     }
@@ -179,7 +178,7 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return new InetSocketAddress(_req.getRemoteAddr(),_req.getRemotePort());
+        return new InetSocketAddress(_req.getRemoteAddr(), _req.getRemotePort());
     }
 
     @Override
@@ -191,7 +190,7 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        return new InetSocketAddress(_req.getLocalAddr(),_req.getLocalPort());
+        return new InetSocketAddress(_req.getLocalAddr(), _req.getLocalPort());
     }
 
     @Override
@@ -209,7 +208,7 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     @Override
     public void setAttribute(String name, Object value)
     {
-        _req.setAttribute(name,value);
+        _req.setAttribute(name, value);
     }
 
     @Override
@@ -229,5 +228,4 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     {
         this._httpPrincipal = principal;
     }
-
 }

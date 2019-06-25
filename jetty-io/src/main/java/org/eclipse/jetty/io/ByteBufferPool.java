@@ -41,12 +41,12 @@ public interface ByteBufferPool
      * <p>The returned buffer may have a bigger capacity than the size being
      * requested but it will have the limit set to the given size.</p>
      *
-     * @param size   the size of the buffer
+     * @param size the size of the buffer
      * @param direct whether the buffer must be direct or not
      * @return the requested buffer
      * @see #release(ByteBuffer)
      */
-    public ByteBuffer acquire(int size, boolean direct);
+    ByteBuffer acquire(int size, boolean direct);
 
     /**
      * <p>Returns a {@link ByteBuffer}, usually obtained with {@link #acquire(int, boolean)}
@@ -55,13 +55,13 @@ public interface ByteBufferPool
      * @param buffer the buffer to return
      * @see #acquire(int, boolean)
      */
-    public void release(ByteBuffer buffer);
+    void release(ByteBuffer buffer);
 
     /**
      * <p>Creates a new ByteBuffer of the given capacity and the given directness.</p>
      *
      * @param capacity the ByteBuffer capacity
-     * @param direct   the ByteBuffer directness
+     * @param direct the ByteBuffer directness
      * @return a newly allocated ByteBuffer
      */
     default ByteBuffer newByteBuffer(int capacity, boolean direct)
@@ -69,7 +69,7 @@ public interface ByteBufferPool
         return direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
     }
 
-    public static class Lease
+    class Lease
     {
         private final ByteBufferPool byteBufferPool;
         private final List<ByteBuffer> buffers;
@@ -110,7 +110,9 @@ public interface ByteBufferPool
         {
             long length = 0;
             for (ByteBuffer buffer : buffers)
+            {
                 length += buffer.remaining();
+            }
             return length;
         }
 
@@ -132,7 +134,7 @@ public interface ByteBufferPool
         }
     }
 
-    public static class Bucket
+    class Bucket
     {
         private final Deque<ByteBuffer> _queue = new ConcurrentLinkedDeque<>();
         private final ByteBufferPool _pool;

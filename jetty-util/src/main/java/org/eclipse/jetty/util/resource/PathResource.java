@@ -51,13 +51,13 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(PathResource.class);
-    private final static LinkOption NO_FOLLOW_LINKS[] = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
-    private final static LinkOption FOLLOW_LINKS[] = new LinkOption[] {};
-    
+    private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+    private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
+
     private final Path path;
     private final Path alias;
     private final URI uri;
-    
+
     private final Path checkAliasPath()
     {
         Path abs = path;
@@ -71,7 +71,7 @@ public class PathResource extends Resource
          * alias reference Path.
          */
 
-        if(!URIUtil.equalsIgnoreEncodings(uri,path.toUri()))
+        if (!URIUtil.equalsIgnoreEncodings(uri, path.toUri()))
         {
             try
             {
@@ -98,7 +98,7 @@ public class PathResource extends Resource
             if (Files.exists(path))
             {
                 Path real = abs.toRealPath(FOLLOW_LINKS);
-                
+
                 /*
                  * If the real path is not the same as the absolute path
                  * then we know that the real path is the alias for the
@@ -109,30 +109,30 @@ public class PathResource extends Resource
                  * of the path.
                  *
                  * We have to be careful on Windows and OSX.
-                 * 
+                 *
                  * Assume we have the following scenario
                  *   Path a = new File("foo").toPath();
                  *   Files.createFile(a);
                  *   Path b = new File("FOO").toPath();
-                 * 
+                 *
                  * There now exists a file called "foo" on disk.
                  * Using Windows or OSX, with a Path reference of
                  * "FOO", "Foo", "fOO", etc.. means the following
-                 * 
+                 *
                  *                        |  OSX    |  Windows   |  Linux
                  * -----------------------+---------+------------+---------
                  * Files.exists(a)        |  True   |  True      |  True
                  * Files.exists(b)        |  True   |  True      |  False
                  * Files.isSameFile(a,b)  |  True   |  True      |  False
                  * a.equals(b)            |  False  |  True      |  False
-                 * 
+                 *
                  * See the javadoc for Path.equals() for details about this FileSystem
                  * behavior difference
-                 * 
+                 *
                  * We also cannot rely on a.compareTo(b) as this is roughly equivalent
                  * in implementation to a.equals(b)
                  */
-                
+
                 int absCount = abs.getNameCount();
                 int realCount = real.getNameCount();
                 if (absCount != realCount)
@@ -140,9 +140,9 @@ public class PathResource extends Resource
                     // different number of segments
                     return real;
                 }
-                
+
                 // compare each segment of path, backwards
-                for (int i = realCount-1; i >= 0; i--)
+                for (int i = realCount - 1; i >= 0; i--)
                 {
                     if (!abs.getName(i).toString().equals(real.getName(i).toString()))
                     {
@@ -157,7 +157,7 @@ public class PathResource extends Resource
         }
         catch (Exception e)
         {
-            LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(),path);
+            LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
         }
         return null;
     }
@@ -176,7 +176,7 @@ public class PathResource extends Resource
      * <pre>
      * new PathResource(file.toPath());
      * </pre>
-
+     *
      * @param file the file to use
      */
     public PathResource(File file)
@@ -249,7 +249,7 @@ public class PathResource extends Resource
         catch (Exception e)
         {
             LOG.ignore(e);
-            throw new IOException("Unable to build Path from: " + uri,e);
+            throw new IOException("Unable to build Path from: " + uri, e);
         }
 
         this.path = path.toAbsolutePath();
@@ -305,7 +305,7 @@ public class PathResource extends Resource
         // TODO merged from 9.2, check if necessary
         String str = path.toString();
         int idx = StringUtil.indexOfControlChars(str);
-        if(idx >= 0)
+        if (idx >= 0)
         {
             throw new InvalidPathException(str, "Invalid Character at index " + idx);
         }
@@ -349,22 +349,16 @@ public class PathResource extends Resource
         PathResource other = (PathResource)obj;
         if (path == null)
         {
-            if (other.path != null)
-            {
-                return false;
-            }
+            return other.path == null;
         }
-        else if (!path.equals(other.path))
-        {
-            return false;
-        }
-        return true;
+        else
+            return path.equals(other.path);
     }
 
     @Override
     public boolean exists()
     {
-        return Files.exists(path,NO_FOLLOW_LINKS);
+        return Files.exists(path, NO_FOLLOW_LINKS);
     }
 
     @Override
@@ -391,7 +385,7 @@ public class PathResource extends Resource
         if (Files.isDirectory(path))
             throw new IOException(path + " is a directory");
 
-        return Files.newInputStream(path,StandardOpenOption.READ);
+        return Files.newInputStream(path, StandardOpenOption.READ);
     }
 
     @Override
@@ -403,7 +397,7 @@ public class PathResource extends Resource
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        return FileChannel.open(path,StandardOpenOption.READ);
+        return FileChannel.open(path, StandardOpenOption.READ);
     }
 
     @Override
@@ -430,7 +424,7 @@ public class PathResource extends Resource
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((path == null)?0:path.hashCode());
+        result = (prime * result) + ((path == null) ? 0 : path.hashCode());
         return result;
     }
 
@@ -444,7 +438,7 @@ public class PathResource extends Resource
     @Override
     public boolean isDirectory()
     {
-        return Files.isDirectory(path,FOLLOW_LINKS);
+        return Files.isDirectory(path, FOLLOW_LINKS);
     }
 
     @Override
@@ -452,7 +446,7 @@ public class PathResource extends Resource
     {
         try
         {
-            FileTime ft = Files.getLastModifiedTime(path,FOLLOW_LINKS);
+            FileTime ft = Files.getLastModifiedTime(path, FOLLOW_LINKS);
             return ft.toMillis();
         }
         catch (IOException e)
@@ -479,14 +473,14 @@ public class PathResource extends Resource
     @Override
     public boolean isAlias()
     {
-        return this.alias!=null;
+        return this.alias != null;
     }
 
     /**
      * The Alias as a Path.
      * <p>
-     *     Note: this cannot return the alias as a DIFFERENT path in 100% of situations,
-     *     due to Java's internal Path/File normalization.
+     * Note: this cannot return the alias as a DIFFERENT path in 100% of situations,
+     * due to Java's internal Path/File normalization.
      * </p>
      *
      * @return the alias as a path.
@@ -499,7 +493,7 @@ public class PathResource extends Resource
     @Override
     public URI getAlias()
     {
-        return this.alias==null?null:this.alias.toUri();
+        return this.alias == null ? null : this.alias.toUri();
     }
 
     @Override
@@ -541,8 +535,8 @@ public class PathResource extends Resource
             PathResource destRes = (PathResource)dest;
             try
             {
-                Path result = Files.move(path,destRes.path);
-                return Files.exists(result,NO_FOLLOW_LINKS);
+                Path result = Files.move(path, destRes.path);
+                return Files.exists(result, NO_FOLLOW_LINKS);
             }
             catch (IOException e)
             {
@@ -561,11 +555,11 @@ public class PathResource extends Resource
     {
         if (isDirectory())
         {
-            IO.copyDir(this.path.toFile(),destination);
+            IO.copyDir(this.path.toFile(), destination);
         }
         else
         {
-            Files.copy(this.path,destination.toPath());
+            Files.copy(this.path, destination.toPath());
         }
     }
 

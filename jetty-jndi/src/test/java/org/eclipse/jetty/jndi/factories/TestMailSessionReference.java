@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.jndi.factories;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.Properties;
-
 import javax.mail.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -34,19 +29,23 @@ import javax.naming.NameParser;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  */
 public class TestMailSessionReference
 {
     @Test
-    public void testMailSessionReference () throws Exception
+    public void testMailSessionReference() throws Exception
     {
         InitialContext icontext = new InitialContext();
         MailSessionReference sref = new MailSessionReference();
         sref.setUser("janb");
         sref.setPassword("OBF:1xmk1w261z0f1w1c1xmq");
-        Properties props = new Properties ();
+        Properties props = new Properties();
         props.put("mail.smtp.host", "xxx");
         props.put("mail.debug", "true");
         sref.setProperties(props);
@@ -55,9 +54,9 @@ public class TestMailSessionReference
         assertNotNull(x);
         assertTrue(x instanceof javax.mail.Session);
         javax.mail.Session session = (javax.mail.Session)x;
-        Properties sessionProps =  session.getProperties();
+        Properties sessionProps = session.getProperties();
         assertEquals(props, sessionProps);
-        assertTrue (session.getDebug());
+        assertTrue(session.getDebug());
 
         Context foo = icontext.createSubcontext("foo");
         NameParser parser = icontext.getNameParser("");

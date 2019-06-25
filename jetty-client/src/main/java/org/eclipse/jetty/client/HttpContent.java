@@ -78,11 +78,10 @@ public class HttpContent implements Callback, Closeable
     public HttpContent(ContentProvider provider)
     {
         this.provider = provider;
-        this.iterator = provider == null ? Collections.<ByteBuffer>emptyIterator() : provider.iterator();
+        this.iterator = provider == null ? Collections.emptyIterator() : provider.iterator();
     }
 
     /**
-     * @param buffer
      * @return true if the buffer is the sentinel instance {@link CLOSE}
      */
     private static boolean isTheCloseBuffer(ByteBuffer buffer)
@@ -91,7 +90,7 @@ public class HttpContent implements Callback, Closeable
         boolean isTheCloseBuffer = (buffer == CLOSE);
         return isTheCloseBuffer;
     }
-    
+
     /**
      * @return whether there is any content at all
      */
@@ -234,11 +233,11 @@ public class HttpContent implements Callback, Closeable
     public String toString()
     {
         return String.format("%s@%x - has=%b,last=%b,consumed=%b,buffer=%s",
-                getClass().getSimpleName(),
-                hashCode(),
-                hasContent(),
-                isLast(),
-                isConsumed(),
-                BufferUtil.toDetailString(getContent()));
+            getClass().getSimpleName(),
+            hashCode(),
+            hasContent(),
+            isLast(),
+            isConsumed(),
+            BufferUtil.toDetailString(getContent()));
     }
 }

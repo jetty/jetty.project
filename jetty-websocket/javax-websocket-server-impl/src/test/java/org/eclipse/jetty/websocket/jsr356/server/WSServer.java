@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -38,9 +35,8 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
@@ -51,6 +47,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Utility to build out exploded directory WebApps, in the /target/tests/ directory, for testing out servers that use javax.websocket endpoints.
@@ -70,7 +68,7 @@ public class WSServer
 
     public WSServer(WorkDir testdir, String contextName)
     {
-        this(testdir.getPath(),contextName);
+        this(testdir.getPath(), contextName);
     }
 
     public WSServer(File testdir, String contextName)
@@ -88,13 +86,13 @@ public class WSServer
     public void copyClass(Class<?> clazz) throws Exception
     {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        String endpointPath = clazz.getName().replace('.','/') + ".class";
+        String endpointPath = TypeUtil.toClassReference(clazz);
         URL classUrl = cl.getResource(endpointPath);
-        assertThat("Class URL for: " + clazz,classUrl,notNullValue());
-        File destFile = Paths.get( classesDir.toString(), FS.separators( endpointPath)).toFile();
+        assertThat("Class URL for: " + clazz, classUrl, notNullValue());
+        File destFile = Paths.get(classesDir.toString(), FS.separators(endpointPath)).toFile();
         FS.ensureDirExists(destFile.getParentFile());
         File srcFile = new File(classUrl.toURI());
-        IO.copy(srcFile,destFile);
+        IO.copy(srcFile, destFile);
     }
 
     public void copyEndpoint(Class<?> endpointClass) throws Exception
@@ -110,7 +108,7 @@ public class WSServer
         FS.ensureDirExists(classesDir);
         Path webxml = webinf.resolve("web.xml");
         Path testWebXml = MavenTestingUtils.getTestResourcePath(testResourceName);
-        IO.copy(testWebXml.toFile(),webxml.toFile());
+        IO.copy(testWebXml.toFile(), webxml.toFile());
     }
 
     public WebAppContext createWebAppContext()
@@ -118,16 +116,17 @@ public class WSServer
         WebAppContext context = new WebAppContext();
         context.setContextPath(this.contextPath);
         context.setBaseResource(new PathResource(this.contextDir));
-        context.setAttribute("org.eclipse.jetty.websocket.jsr356",Boolean.TRUE);
+        context.setAttribute("org.eclipse.jetty.websocket.jsr356", Boolean.TRUE);
 
-        context.setConfigurations(new Configuration[] {
-                new AnnotationConfiguration(),
-                new WebXmlConfiguration(),
-                new WebInfConfiguration(),
-                new PlusConfiguration(), 
-                new MetaInfConfiguration(),
-                new FragmentConfiguration(), 
-                new EnvConfiguration()});
+        context.setConfigurations(new Configuration[]{
+            new AnnotationConfiguration(),
+            new WebXmlConfiguration(),
+            new WebInfConfiguration(),
+            new PlusConfiguration(),
+            new MetaInfConfiguration(),
+            new FragmentConfiguration(),
+            new EnvConfiguration()
+        });
 
         return context;
     }
@@ -157,7 +156,7 @@ public class WSServer
     {
         return serverUri;
     }
-    
+
     public Server getServer()
     {
         return server;
@@ -188,9 +187,9 @@ public class WSServer
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d%s/",host,port,contextPath));
+        serverUri = new URI(String.format("ws://%s:%d%s/", host, port, contextPath));
         if (LOG.isDebugEnabled())
-            LOG.debug("Server started on {}",serverUri);
+            LOG.debug("Server started on {}", serverUri);
     }
 
     public void stop()

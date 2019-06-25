@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Get name="serverClasspathPattern">
+    <Call name="add">
+      <Arg>-org.eclipse.jetty.util.Decorator</Arg>
+    </Call>
+    <Call name="add">
+      <Arg>-org.eclipse.jetty.util.DecoratedObjectFactory</Arg>
+    </Call>
+    <Call name="add">
+      <Arg>-org.eclipse.jetty.server.handler.ContextHandler.</Arg>
+    </Call>
+    <Call name="add">
+      <Arg>-org.eclipse.jetty.server.handler.ContextHandler</Arg>
+    </Call>
+    <Call name="add">
+      <Arg>-org.eclipse.jetty.servlet.ServletContextHandler</Arg>
+    </Call>
+  </Get>
+</Configure>

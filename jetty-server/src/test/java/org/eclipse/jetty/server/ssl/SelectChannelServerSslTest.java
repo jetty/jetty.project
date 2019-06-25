@@ -75,7 +75,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
 
     public SelectChannelServerSslTest()
     {
-        _scheme="https";
+        _scheme = "https";
     }
 
     @BeforeEach
@@ -116,7 +116,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             sc.init(null, SslContextFactory.TRUST_ALL_CERTS, null);
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
@@ -125,7 +125,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     protected Socket newSocket(String host, int port) throws Exception
     {
-        Socket socket = _sslContext.getSocketFactory().createSocket(host,port);
+        Socket socket = _sslContext.getSocketFactory().createSocket(host, port);
         socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
         return socket;
@@ -191,42 +191,40 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     {
         configureServer(new EchoHandler());
 
-        byte[] bytes=REQUEST2.getBytes();
-        int[] points=new int[]{74,325};
+        byte[] bytes = REQUEST2.getBytes();
+        int[] points = new int[]{74, 325};
 
         // Sort the list
         Arrays.sort(points);
 
-        URI uri=_server.getURI();
-        Socket client=newSocket(uri.getHost(),uri.getPort());
+        URI uri = _server.getURI();
+        Socket client = newSocket(uri.getHost(), uri.getPort());
         try
         {
-            OutputStream os=client.getOutputStream();
+            OutputStream os = client.getOutputStream();
 
-            int last=0;
+            int last = 0;
 
             // Write out the fragments
-            for (int j=0; j<points.length; ++j)
+            for (int j = 0; j < points.length; ++j)
             {
-                int point=points[j];
-                os.write(bytes,last,point-last);
-                last=point;
+                int point = points[j];
+                os.write(bytes, last, point - last);
+                last = point;
                 os.flush();
                 Thread.sleep(PAUSE);
-
             }
 
             // Write the last fragment
-            os.write(bytes,last,bytes.length-last);
+            os.write(bytes, last, bytes.length - last);
             os.flush();
             Thread.sleep(PAUSE);
 
-
             // Read the response
-            String response=readResponse(client);
+            String response = readResponse(client);
 
             // Check the response
-            assertEquals(RESPONSE2,response);
+            assertEquals(RESPONSE2, response);
         }
         finally
         {
@@ -237,8 +235,10 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     @Test
     @Disabled("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
-            "but shutdownOutput() is needed by the test.")
-    public void testInterruptedRequest(){}
+        "but shutdownOutput() is needed by the test.")
+    public void testInterruptedRequest()
+    {
+    }
 
     @Override
     @Disabled
@@ -260,28 +260,28 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
 
             // Read the response.
             String response = readResponse(client);
-            
+
             assertThat(response, containsString("HTTP/1.1 200 OK"));
             assertThat(response, containsString("Hello world"));
             assertThat(response, containsString("scheme='https'"));
             assertThat(response, containsString("isSecure='true'"));
             assertThat(response, containsString("X509Certificate='null'"));
 
-            Matcher matcher=Pattern.compile("cipher_suite='([^']*)'").matcher(response);
+            Matcher matcher = Pattern.compile("cipher_suite='([^']*)'").matcher(response);
             matcher.find();
-            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString()))),not(is("null")));
-           
-            matcher=Pattern.compile("key_size='([^']*)'").matcher(response);
+            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString()))), not(is("null")));
+
+            matcher = Pattern.compile("key_size='([^']*)'").matcher(response);
             matcher.find();
-            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString())),not(is("null"))));
-            
-            matcher=Pattern.compile("ssl_session_id='([^']*)'").matcher(response);
+            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString())), not(is("null"))));
+
+            matcher = Pattern.compile("ssl_session_id='([^']*)'").matcher(response);
             matcher.find();
-            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString())),not(is("null"))));
-            
-            matcher=Pattern.compile("ssl_session='([^']*)'").matcher(response);
+            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString())), not(is("null"))));
+
+            matcher = Pattern.compile("ssl_session='([^']*)'").matcher(response);
             matcher.find();
-            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString())),not(is("null"))));
+            assertThat(matcher.group(1), Matchers.allOf(not(is(emptyOrNullString())), not(is("null"))));
         }
     }
 
@@ -294,17 +294,14 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             baseRequest.setHandled(true);
             response.setStatus(200);
             response.getOutputStream().println("Hello world");
-            response.getOutputStream().println("scheme='"+request.getScheme()+"'");
-            response.getOutputStream().println("isSecure='"+request.isSecure()+"'");
-            response.getOutputStream().println("X509Certificate='"+request.getAttribute("javax.servlet.request.X509Certificate")+"'");
-            response.getOutputStream().println("cipher_suite='"+request.getAttribute("javax.servlet.request.cipher_suite")+"'");
-            response.getOutputStream().println("key_size='"+request.getAttribute("javax.servlet.request.key_size")+"'");
-            response.getOutputStream().println("ssl_session_id='"+request.getAttribute("javax.servlet.request.ssl_session_id")+"'");
-            SSLSession sslSession=(SSLSession)request.getAttribute("SSL_SESSION");
-            response.getOutputStream().println("ssl_session='"+sslSession+"'");
-            
+            response.getOutputStream().println("scheme='" + request.getScheme() + "'");
+            response.getOutputStream().println("isSecure='" + request.isSecure() + "'");
+            response.getOutputStream().println("X509Certificate='" + request.getAttribute("javax.servlet.request.X509Certificate") + "'");
+            response.getOutputStream().println("cipher_suite='" + request.getAttribute("javax.servlet.request.cipher_suite") + "'");
+            response.getOutputStream().println("key_size='" + request.getAttribute("javax.servlet.request.key_size") + "'");
+            response.getOutputStream().println("ssl_session_id='" + request.getAttribute("javax.servlet.request.ssl_session_id") + "'");
+            SSLSession sslSession = (SSLSession)request.getAttribute("SSL_SESSION");
+            response.getOutputStream().println("ssl_session='" + sslSession + "'");
         }
-        
     }
-    
 }

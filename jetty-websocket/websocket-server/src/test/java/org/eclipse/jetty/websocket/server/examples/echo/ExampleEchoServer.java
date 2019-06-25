@@ -134,7 +134,7 @@ public class ExampleEchoServer
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        System.err.printf("Echo Server started on ws://%s:%d/%n",host,port);
+        System.err.printf("Echo Server started on ws://%s:%d/%n", host, port);
         System.err.println(server.dump());
         server.join();
     }

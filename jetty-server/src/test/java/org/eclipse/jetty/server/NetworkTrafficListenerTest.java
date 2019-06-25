@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -42,6 +38,9 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NetworkTrafficListenerTest
 {
@@ -128,26 +127,26 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
+                incomingData.set(BufferUtil.toString(bytes, StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
                 outgoingLatch.countDown();
             }
         });
         int port = connector.getLocalPort();
 
-        String request = "" +
-                "GET / HTTP/1.1\r\n" +
+        String request =
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost:" + port + "\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String expectedResponse = "" +
-                "HTTP/1.1 200 OK\r\n" +
+        String expectedResponse =
+            "HTTP/1.1 200 OK\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
 
@@ -194,25 +193,25 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
+                incomingData.set(BufferUtil.toString(bytes, StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
                 outgoingLatch.countDown();
             }
         });
         int port = connector.getLocalPort();
 
-        String request = "" +
-                "GET / HTTP/1.1\r\n" +
+        String request =
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost:" + port + "\r\n" +
                 "\r\n";
-        String expectedResponse = "" +
-                "HTTP/1.1 200 OK\r\n" +
+        String expectedResponse =
+            "HTTP/1.1 200 OK\r\n" +
                 "Content-Length: " + (responseContent.length() + 1) + "\r\n" +
                 "\r\n" +
                 "" + responseContent + (char)END_OF_CONTENT;
@@ -264,26 +263,26 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
+                incomingData.set(BufferUtil.toString(bytes, StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));                
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
                 if (outgoingData.get().endsWith("\r\n0\r\n\r\n"))
                     outgoingLatch.countDown();
             }
         });
         int port = connector.getLocalPort();
 
-        String request = "" +
-                "GET / HTTP/1.1\r\n" +
+        String request =
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost:" + port + "\r\n" +
                 "\r\n";
-        String expectedResponse = "" +
-                "HTTP/1.1 200 OK\r\n" +
+        String expectedResponse =
+            "HTTP/1.1 200 OK\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
                 "\r\n" +
                 responseChunk1.length() + "\r\n" +
@@ -334,29 +333,29 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
+                incomingData.set(BufferUtil.toString(bytes, StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
                 outgoingLatch.countDown();
             }
         });
         int port = connector.getLocalPort();
 
         String requestContent = "a=1&b=2";
-        String request = "" +
-                "POST / HTTP/1.1\r\n" +
+        String request =
+            "POST / HTTP/1.1\r\n" +
                 "Host: localhost:" + port + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
                 "Content-Length: " + requestContent.length() + "\r\n" +
                 "\r\n" +
                 requestContent;
-        String expectedResponse = "" +
-                "HTTP/1.1 302 Found\r\n" +
+        String expectedResponse =
+            "HTTP/1.1 302 Found\r\n" +
                 "Location: http://localhost:" + port + location + "\r\n" +
                 "Content-Length: 0\r\n" +
                 "\r\n";
@@ -410,13 +409,13 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(incomingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
+                incomingData.set(incomingData.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
                 outgoingLatch.countDown();
             }
         });
@@ -425,16 +424,18 @@ public class NetworkTrafficListenerTest
         // Generate 32 KiB of request content
         String requestContent = "0123456789ABCDEF";
         for (int i = 0; i < 11; ++i)
+        {
             requestContent += requestContent;
-        String request = "" +
-                "POST / HTTP/1.1\r\n" +
+        }
+        String request =
+            "POST / HTTP/1.1\r\n" +
                 "Host: localhost:" + port + "\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + requestContent.length() + "\r\n" +
                 "\r\n" +
                 requestContent;
-        String expectedResponse = "" +
-                "HTTP/1.1 200 OK\r\n" +
+        String expectedResponse =
+            "HTTP/1.1 200 OK\r\n" +
                 "Content-Length: 0\r\n" +
                 "\r\n";
 

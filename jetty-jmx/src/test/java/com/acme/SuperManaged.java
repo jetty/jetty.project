@@ -25,5 +25,4 @@ public class SuperManaged extends Managed
     {
         return "super";
     }
-
 }

@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.server.jmh;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -37,14 +43,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
 import static java.lang.invoke.MethodType.methodType;
-
 
 @State(Scope.Benchmark)
 @Threads(4)
@@ -53,6 +52,7 @@ import static java.lang.invoke.MethodType.methodType;
 public class ForwardBenchmark
 {
     static HttpFields __fields = new HttpFields();
+
     static
     {
         Arrays.stream(new String[][]
@@ -68,17 +68,15 @@ public class ForwardBenchmark
                 {"user-agent", "Mozilla/5.0"},
                 {"x-client-data", "CLK1yQEIkLbJAQiltskBCKmdygEIoZ7KAQioo8oBCL+nygEI4qjKAQ=="},
                 {"Forwarded", "for=192.0.2.43,for=198.51.100.17;by=203.0.113.60;proto=http;host=example.com"}
-            }).map(a->new HttpField(a[0],a[1])).forEach(__fields::add);
+            }).map(a -> new HttpField(a[0], a[1])).forEach(__fields::add);
     }
 
     public ForwardBenchmark()
     {
     }
 
-
-
     @Benchmark
-    @BenchmarkMode({ Mode.Throughput})
+    @BenchmarkMode({Mode.Throughput})
     public String testStringCompare()
     {
         String forwardedFor = null;
@@ -99,16 +97,14 @@ public class ForwardBenchmark
                 forwardedServer = field.getValue();
         }
 
-        if (forwardedFor!=null)
+        if (forwardedFor != null)
             return forwardedFor;
-        if (forwardedHost!=null)
+        if (forwardedHost != null)
             return forwardedHost;
-        if (forwardedServer!=null)
+        if (forwardedServer != null)
             return forwardedServer;
         return forwarded;
     }
-
-
 
     static class Forwarded
     {
@@ -116,12 +112,13 @@ public class ForwardBenchmark
 
         public void getHost(HttpField field)
         {
-            if (host==null)
+            if (host == null)
                 host = field.getValue();
         }
     }
 
     static Trie<MethodHandle> __handles = new ArrayTrie<>(1024);
+
     static
     {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -140,9 +137,8 @@ public class ForwardBenchmark
         }
     }
 
-
     @Benchmark
-    @BenchmarkMode({ Mode.Throughput})
+    @BenchmarkMode({Mode.Throughput})
     public String testTrieMethodHandle()
     {
         Forwarded forwarded = new Forwarded();
@@ -163,7 +159,6 @@ public class ForwardBenchmark
 
         return forwarded.host;
     }
-
 
     public static void main(String[] args) throws RunnerException
     {

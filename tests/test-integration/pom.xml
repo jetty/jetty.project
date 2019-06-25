@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.4.19-SNAPSHOT</version>
+    <version>9.4.20-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-integration</artifactId>
@@ -99,7 +99,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-distribution</artifactId>
-      <version>${project.version}</version> 
+      <version>${project.version}</version>
       <type>pom</type>
     </dependency>
     <dependency>

@@ -34,21 +34,21 @@ class DefaultHttpClientProvider
         SslContextFactory sslContextFactory = null;
         Executor executor = null;
         ByteBufferPool bufferPool = null;
-        
+
         if (scope != null)
         {
             sslContextFactory = scope.getSslContextFactory();
             executor = scope.getExecutor();
             bufferPool = scope.getBufferPool();
         }
-        
+
         if (sslContextFactory == null)
         {
             sslContextFactory = new SslContextFactory.Client();
             sslContextFactory.setTrustAll(false);
             sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         }
-        
+
         HttpClient client = new HttpClient(sslContextFactory);
         if (executor == null)
         {

@@ -31,6 +31,7 @@ public class BadDuplicateBinarySocket
 {
     /**
      * First method
+     *
      * @param payload the payload
      * @param offset the offset
      * @param len the len
@@ -43,6 +44,7 @@ public class BadDuplicateBinarySocket
 
     /**
      * Second method
+     *
      * @param stream the input stream
      */
     @OnWebSocketMessage

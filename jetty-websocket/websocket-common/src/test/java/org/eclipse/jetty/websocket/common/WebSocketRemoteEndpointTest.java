@@ -45,46 +45,47 @@ public class WebSocketRemoteEndpointTest
     public void testTextBinaryText(TestInfo testinfo) throws IOException
     {
         String id = testinfo.getDisplayName();
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(id,bufferPool);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(id, bufferPool);
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
-        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
+        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn, outgoing);
         conn.opening();
         conn.opened();
 
         // Start text message
-        remote.sendPartialString("Hello ",false);
+        remote.sendPartialString("Hello ", false);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()->{
+        IllegalStateException e = assertThrows(IllegalStateException.class, () ->
+        {
             // Attempt to start Binary Message
             ByteBuffer bytes = ByteBuffer.wrap(new byte[]
-                    { 0, 1, 2 });
-            remote.sendPartialBytes(bytes,false);
+                {0, 1, 2});
+            remote.sendPartialBytes(bytes, false);
         });
-        assertThat("Exception",e.getMessage(),containsString("Cannot send"));
+        assertThat("Exception", e.getMessage(), containsString("Cannot send"));
 
         // End text message
-        remote.sendPartialString("World!",true);
+        remote.sendPartialString("World!", true);
     }
 
     @Test
     public void testTextPingText(TestInfo testinfo) throws IOException
     {
         String id = testinfo.getDisplayName();
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(id,bufferPool);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(id, bufferPool);
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
-        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
+        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn, outgoing);
         conn.opening();
         conn.opened();
 
         // Start text message
-        remote.sendPartialString("Hello ",false);
+        remote.sendPartialString("Hello ", false);
 
         // Attempt to send Ping Message
         remote.sendPing(ByteBuffer.wrap(new byte[]
-                { 0 }));
+            {0}));
 
         // End text message
-        remote.sendPartialString("World!",true);
+        remote.sendPartialString("World!", true);
     }
 
     /**
@@ -103,7 +104,7 @@ public class WebSocketRemoteEndpointTest
 
         int largeMessageSize = 60000;
         byte buf[] = new byte[largeMessageSize];
-        Arrays.fill(buf, (byte) 'x');
+        Arrays.fill(buf, (byte)'x');
         String largeMessage = new String(buf, UTF_8);
 
         int messageCount = 10000;
@@ -118,5 +119,4 @@ public class WebSocketRemoteEndpointTest
             fut.get();
         }
     }
-
 }

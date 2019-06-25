@@ -20,5 +20,5 @@ package org.eclipse.jetty.util;
 
 public interface Retainable
 {
-    public void retain();
+    void retain();
 }

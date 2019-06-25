@@ -38,7 +38,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     private static final Logger LOG = Log.getLogger(AbstractConnectionPool.class);
 
     private final AtomicBoolean closed = new AtomicBoolean();
-    
+
     /**
      * The connectionCount encodes both the total connections plus the pending connection counts, so both can be atomically changed.
      * The bottom 32 bits represent the total connections and the top 32 bits represent the pending connections.
@@ -106,18 +106,18 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             int total = AtomicBiInteger.getLo(encoded);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("tryCreate {}/{} connections {}/{} pending",total,maxConnections,pending,maxPending);
-            
+                LOG.debug("tryCreate {}/{} connections {}/{} pending", total, maxConnections, pending, maxPending);
+
             if (total >= maxConnections)
                 return;
 
-            if (maxPending>=0 && pending>=maxPending)
+            if (maxPending >= 0 && pending >= maxPending)
                 return;
-            
-            if (connections.compareAndSet(encoded,pending+1,total+1))
+
+            if (connections.compareAndSet(encoded, pending + 1, total + 1))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("newConnection {}/{} connections {}/{} pending", total+1, maxConnections, pending+1, maxPending);
+                    LOG.debug("newConnection {}/{} connections {}/{} pending", total + 1, maxConnections, pending + 1, maxPending);
 
                 destination.newConnection(new Promise<Connection>()
                 {
@@ -125,8 +125,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                     public void succeeded(Connection connection)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Connection {}/{} creation succeeded {}", total+1, maxConnections, connection);
-                        connections.add(-1,0);
+                            LOG.debug("Connection {}/{} creation succeeded {}", total + 1, maxConnections, connection);
+                        connections.add(-1, 0);
                         onCreated(connection);
                         proceed();
                     }
@@ -135,8 +135,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                     public void failed(Throwable x)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Connection " + (total+1) + "/" + maxConnections + " creation failed", x);
-                        connections.add(-1,-1);
+                            LOG.debug("Connection " + (total + 1) + "/" + maxConnections + " creation failed", x);
+                        connections.add(-1, -1);
                         requester.failed(x);
                     }
                 });
@@ -199,7 +199,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     {
         if (closed.compareAndSet(false, true))
         {
-            connections.set(0,0);
+            connections.set(0, 0);
         }
     }
 

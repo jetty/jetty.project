@@ -35,7 +35,8 @@ public class JsrSessionFactory implements SessionFactory
 
     public JsrSessionFactory(ClientContainer container)
     {
-        if(LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled())
+        {
             LOG.debug("Container: {}", container);
         }
         this.container = container;
@@ -44,7 +45,7 @@ public class JsrSessionFactory implements SessionFactory
     @Override
     public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
-        return new JsrSession(container,connection.getId(),requestURI,websocket,connection);
+        return new JsrSession(container, connection.getId(), requestURI, websocket, connection);
     }
 
     @Override

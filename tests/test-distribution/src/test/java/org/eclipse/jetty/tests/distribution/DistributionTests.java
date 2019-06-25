@@ -51,9 +51,9 @@ public class DistributionTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         try (DistributionTester.Run run1 = distribution.start("--add-to-start=http"))
         {
@@ -80,14 +80,14 @@ public class DistributionTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         String[] args1 = {
-                "--create-startd",
-                "--approve-all-licenses",
-                "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
         };
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
@@ -117,14 +117,14 @@ public class DistributionTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         String[] args1 = {
-                "--create-startd",
-                "--approve-all-licenses",
-                "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
         };
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
@@ -136,8 +136,8 @@ public class DistributionTests extends AbstractDistributionTest
 
             int port = distribution.freePort();
             String[] args2 = {
-                    "--jpms",
-                    "jetty.http.port=" + port
+                "--jpms",
+                "jetty.http.port=" + port
             };
             try (DistributionTester.Run run2 = distribution.start(args2))
             {
@@ -158,13 +158,13 @@ public class DistributionTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         String[] args1 = {
-                "--create-startd",
-                "--add-to-start=http2c,jsp,deploy"
+            "--create-startd",
+            "--add-to-start=http2c,jsp,deploy"
         };
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
@@ -209,14 +209,14 @@ public class DistributionTests extends AbstractDistributionTest
 
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         String[] args1 = {
-                "--create-startd",
-                "--add-to-start=unixsocket-http,deploy,jsp",
-                "--approve-all-licenses"
+            "--create-startd",
+            "--add-to-start=unixsocket-http,deploy,jsp",
+            "--approve-all-licenses"
         };
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
@@ -247,7 +247,7 @@ public class DistributionTests extends AbstractDistributionTest
     @Test
     public void testLog4j2ModuleWithSimpleWebAppWithJSP() throws Exception
     {
-        Path jettyBase = Files.createTempDirectory( "jetty_base");
+        Path jettyBase = Files.createTempDirectory("jetty_base");
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
@@ -281,7 +281,8 @@ public class DistributionTests extends AbstractDistributionTest
                 assertThat(response.getContentAsString(), not(containsString("<%")));
                 assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
             }
-        } finally
+        }
+        finally
         {
             IO.delete(jettyBase.toFile());
         }

@@ -28,6 +28,7 @@ public class InvalidCloseIntSocket extends TrackingSocket
 {
     /**
      * Invalid Close Method Declaration (parameter type int)
+     *
      * @param statusCode the status code
      */
     @OnClose

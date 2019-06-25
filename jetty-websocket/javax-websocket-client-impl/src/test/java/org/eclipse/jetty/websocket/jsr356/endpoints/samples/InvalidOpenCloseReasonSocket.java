@@ -29,6 +29,7 @@ public class InvalidOpenCloseReasonSocket extends TrackingSocket
 {
     /**
      * Invalid Open Method Declaration (parameter type CloseReason)
+     *
      * @param reason the close reason
      */
     @OnOpen

@@ -20,7 +20,6 @@ package org.eclipse.jetty.alpn.conscrypt.server;
 
 import java.security.Security;
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
@@ -76,7 +75,6 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
     private final class ALPNCallback extends ApplicationProtocolSelector implements SslHandshakeListener
     {
         private final ALPNServerConnection alpnConnection;
-
 
         private ALPNCallback(ALPNServerConnection connection)
         {

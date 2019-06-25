@@ -33,8 +33,6 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * InjectionCollection
- *
- *
  * Map of classname to all injections requested on that class,
  * whether by declaration in web.xml or via equivalent annotations.
  * 
@@ -63,7 +61,7 @@ public class InjectionCollection
         Set<Injection> injections = _injectionMap.get(name);
         if (injections == null)
         {
-            injections =  new CopyOnWriteArraySet<>();
+            injections = new CopyOnWriteArraySet<>();
             Set<Injection> tmp = _injectionMap.putIfAbsent(name, injections);
             if (tmp != null)
                 injections = tmp;
@@ -137,7 +135,9 @@ public class InjectionCollection
             if (injections != null)
             {
                 for (Injection i : injections)
+                {
                     i.inject(injectable);
+                }
             }
 
             clazz = clazz.getSuperclass();

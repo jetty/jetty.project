@@ -29,7 +29,7 @@ public class SimpleServerEndpointMetadata extends SimpleEndpointMetadata impleme
 
     public SimpleServerEndpointMetadata(Class<? extends Endpoint> endpointClass, ServerEndpointConfig config)
     {
-        super(endpointClass,config);
+        super(endpointClass, config);
         this.config = config;
     }
 

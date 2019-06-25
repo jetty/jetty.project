@@ -20,7 +20,6 @@ package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.annotation.WebFilter;
@@ -49,7 +48,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
     {
         super(context, className);
     }
-    
+
     public WebFilterAnnotation(WebAppContext context, String className, Resource resource)
     {
         super(context, className, resource);
@@ -66,15 +65,14 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         Class clazz = getTargetClass();
         if (clazz == null)
         {
-            LOG.warn(_className+" cannot be loaded");
+            LOG.warn(_className + " cannot be loaded");
             return;
         }
-
 
         //Servlet Spec 8.1.2
         if (!Filter.class.isAssignableFrom(clazz))
         {
-            LOG.warn(clazz.getName()+" is not assignable from javax.servlet.Filter");
+            LOG.warn(clazz.getName() + " is not assignable from javax.servlet.Filter");
             return;
         }
         MetaData metaData = _context.getMetaData();
@@ -83,11 +81,11 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
 
         if (filterAnnotation.value().length > 0 && filterAnnotation.urlPatterns().length > 0)
         {
-            LOG.warn(clazz.getName()+" defines both @WebFilter.value and @WebFilter.urlPatterns");
+            LOG.warn(clazz.getName() + " defines both @WebFilter.value and @WebFilter.urlPatterns");
             return;
         }
 
-        String name = (filterAnnotation.filterName().equals("")?clazz.getName():filterAnnotation.filterName());
+        String name = (filterAnnotation.filterName().equals("") ? clazz.getName() : filterAnnotation.filterName());
         String[] urlPatterns = filterAnnotation.value();
         if (urlPatterns.length == 0)
             urlPatterns = filterAnnotation.urlPatterns();
@@ -96,19 +94,19 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         if (holder == null)
         {
             //Filter with this name does not already exist, so add it
-            holder = _context.getServletHandler().newFilterHolder(new Source (Source.Origin.ANNOTATION, clazz.getName()));
+            holder = _context.getServletHandler().newFilterHolder(new Source(Source.Origin.ANNOTATION, clazz.getName()));
             holder.setName(name);
 
             holder.setHeldClass(clazz);
-            metaData.setOrigin(name+".filter.filter-class",filterAnnotation,clazz);
+            metaData.setOrigin(name + ".filter.filter-class", filterAnnotation, clazz);
 
             holder.setDisplayName(filterAnnotation.displayName());
-            metaData.setOrigin(name+".filter.display-name",filterAnnotation,clazz);
+            metaData.setOrigin(name + ".filter.display-name", filterAnnotation, clazz);
 
-            for (WebInitParam ip:  filterAnnotation.initParams())
+            for (WebInitParam ip : filterAnnotation.initParams())
             {
                 holder.setInitParameter(ip.name(), ip.value());
-                metaData.setOrigin(name+".filter.init-param."+ip.name(),ip,clazz);
+                metaData.setOrigin(name + ".filter.init-param." + ip.name(), ip, clazz);
             }
 
             FilterMapping mapping = new FilterMapping();
@@ -117,7 +115,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             if (urlPatterns.length > 0)
             {
                 ArrayList<String> paths = new ArrayList<String>();
-                for (String s:urlPatterns)
+                for (String s : urlPatterns)
                 {
                     paths.add(ServletPathSpec.normalize(s));
                 }
@@ -140,10 +138,10 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 dispatcherSet.add(d);
             }
             mapping.setDispatcherTypes(dispatcherSet);
-            metaData.setOrigin(name+".filter.mappings",filterAnnotation,clazz);
+            metaData.setOrigin(name + ".filter.mappings", filterAnnotation, clazz);
 
             holder.setAsyncSupported(filterAnnotation.asyncSupported());
-            metaData.setOrigin(name+".filter.async-supported",filterAnnotation,clazz);
+            metaData.setOrigin(name + ".filter.async-supported", filterAnnotation, clazz);
 
             _context.getServletHandler().addFilter(holder);
             _context.getServletHandler().addFilterMapping(mapping);
@@ -155,13 +153,13 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             //they override the annotation. If it already has DispatcherType set, that
             //also overrides the annotation. Init-params are additive, but web.xml overrides
             //init-params of the same name.
-            for (WebInitParam ip:  filterAnnotation.initParams())
+            for (WebInitParam ip : filterAnnotation.initParams())
             {
                 //if (holder.getInitParameter(ip.name()) == null)
-                if (metaData.getOrigin(name+".filter.init-param."+ip.name())==Origin.NotSet)
+                if (metaData.getOrigin(name + ".filter.init-param." + ip.name()) == Origin.NotSet)
                 {
                     holder.setInitParameter(ip.name(), ip.value());
-                    metaData.setOrigin(name+".filter.init-param."+ip.name(),ip,clazz);
+                    metaData.setOrigin(name + ".filter.init-param." + ip.name(), ip, clazz);
                 }
             }
 
@@ -169,7 +167,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             boolean mappingExists = false;
             if (mappings != null)
             {
-                for (FilterMapping m:mappings)
+                for (FilterMapping m : mappings)
                 {
                     if (m.getFilterName().equals(name))
                     {
@@ -188,7 +186,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 if (urlPatterns.length > 0)
                 {
                     ArrayList<String> paths = new ArrayList<String>();
-                    for (String s:urlPatterns)
+                    for (String s : urlPatterns)
                     {
                         paths.add(ServletPathSpec.normalize(s));
                     }
@@ -211,9 +209,8 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 }
                 mapping.setDispatcherTypes(dispatcherSet);
                 _context.getServletHandler().addFilterMapping(mapping);
-                metaData.setOrigin(name+".filter.mappings",filterAnnotation,clazz);
+                metaData.setOrigin(name + ".filter.mappings", filterAnnotation, clazz);
             }
         }
     }
-
 }

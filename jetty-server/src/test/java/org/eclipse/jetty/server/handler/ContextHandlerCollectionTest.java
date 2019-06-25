@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -52,13 +51,13 @@ public class ContextHandlerCollectionTest
         LocalConnector connector0 = new LocalConnector(server);
         LocalConnector connector1 = new LocalConnector(server);
         connector1.setName("connector1");
-        
+
         server.setConnectors(new Connector[]
-        { connector0,connector1});
+            {connector0, connector1});
 
         ContextHandler contextA = new ContextHandler("/ctx");
         contextA.setVirtualHosts(new String[]
-        { "www.example.com", "alias.example.com" });
+            {"www.example.com", "alias.example.com"});
         IsHandledHandler handlerA = new IsHandledHandler("A");
         contextA.setHandler(handlerA);
         contextA.setAllowNullPathInfo(true);
@@ -67,7 +66,7 @@ public class ContextHandlerCollectionTest
         IsHandledHandler handlerB = new IsHandledHandler("B");
         contextB.setHandler(handlerB);
         contextB.setVirtualHosts(new String[]
-        { "*.other.com" , "@connector1"});
+            {"*.other.com", "@connector1"});
 
         ContextHandler contextC = new ContextHandler("/ctx");
         IsHandledHandler handlerC = new IsHandledHandler("C");
@@ -76,11 +75,11 @@ public class ContextHandlerCollectionTest
         ContextHandler contextD = new ContextHandler("/");
         IsHandledHandler handlerD = new IsHandledHandler("D");
         contextD.setHandler(handlerD);
-        
+
         ContextHandler contextE = new ContextHandler("/ctx/foo");
         IsHandledHandler handlerE = new IsHandledHandler("E");
         contextE.setHandler(handlerE);
-        
+
         ContextHandler contextF = new ContextHandler("/ctxlong");
         IsHandledHandler handlerF = new IsHandledHandler("F");
         contextF.setHandler(handlerF);
@@ -89,47 +88,47 @@ public class ContextHandlerCollectionTest
         c.addHandler(contextA);
         c.addHandler(contextB);
         c.addHandler(contextC);
-        
+
         HandlerList list = new HandlerList();
         list.addHandler(contextE);
         list.addHandler(contextF);
         list.addHandler(contextD);
         c.addHandler(list);
-        
+
         server.setHandler(c);
 
         try
         {
             server.start();
-            
-            Object[][] tests = new Object[][] {
-                {connector0,"www.example.com.", "/ctx",    handlerA},
-                {connector0,"www.example.com.", "/ctx/",    handlerA},
-                {connector0,"www.example.com.", "/ctx/info",    handlerA},
-                {connector0,"www.example.com",  "/ctx/info",    handlerA},
-                {connector0,"alias.example.com",  "/ctx/info",    handlerA},
-                {connector1,"www.example.com.", "/ctx/info",    handlerA},
-                {connector1,"www.example.com",  "/ctx/info",    handlerA},
-                {connector1,"alias.example.com",  "/ctx/info",    handlerA},
 
-                {connector1,"www.other.com",  "/ctx",    null},
-                {connector1,"www.other.com",  "/ctx/",    handlerB},
-                {connector1,"www.other.com",  "/ctx/info",    handlerB},
-                {connector0,"www.other.com",  "/ctx/info",    handlerC},
-                
-                {connector0,"www.example.com",  "/ctxinfo",    handlerD},
-                {connector1,"unknown.com",  "/unknown",    handlerD},
-                
-                {connector0,"alias.example.com",  "/ctx/foo/info",    handlerE},
-                {connector0,"alias.example.com",  "/ctxlong/info",    handlerF},
-            };
-            
-            for (int i=0;i<tests.length;i++)
+            Object[][] tests = new Object[][]{
+                {connector0, "www.example.com.", "/ctx", handlerA},
+                {connector0, "www.example.com.", "/ctx/", handlerA},
+                {connector0, "www.example.com.", "/ctx/info", handlerA},
+                {connector0, "www.example.com", "/ctx/info", handlerA},
+                {connector0, "alias.example.com", "/ctx/info", handlerA},
+                {connector1, "www.example.com.", "/ctx/info", handlerA},
+                {connector1, "www.example.com", "/ctx/info", handlerA},
+                {connector1, "alias.example.com", "/ctx/info", handlerA},
+
+                {connector1, "www.other.com", "/ctx", null},
+                {connector1, "www.other.com", "/ctx/", handlerB},
+                {connector1, "www.other.com", "/ctx/info", handlerB},
+                {connector0, "www.other.com", "/ctx/info", handlerC},
+
+                {connector0, "www.example.com", "/ctxinfo", handlerD},
+                {connector1, "unknown.com", "/unknown", handlerD},
+
+                {connector0, "alias.example.com", "/ctx/foo/info", handlerE},
+                {connector0, "alias.example.com", "/ctxlong/info", handlerF},
+                };
+
+            for (int i = 0; i < tests.length; i++)
             {
-                Object[] test=tests[i];
+                Object[] test = tests[i];
                 LocalConnector connector = (LocalConnector)test[0];
-                String host=(String)test[1];
-                String uri=(String)test[2];
+                String host = (String)test[1];
+                String uri = (String)test[2];
                 IsHandledHandler handler = (IsHandledHandler)test[3];
 
                 handlerA.reset();
@@ -139,23 +138,22 @@ public class ContextHandlerCollectionTest
                 handlerE.reset();
                 handlerF.reset();
 
-                String t = String.format("test   %d %s@%s --> %s | %s%n",i,uri,host,connector.getName(),handler);
-                String response = connector.getResponse("GET "+uri+" HTTP/1.0\nHost: "+host+"\n\n");
-                
-                if (handler==null)
+                String t = String.format("test   %d %s@%s --> %s | %s%n", i, uri, host, connector.getName(), handler);
+                String response = connector.getResponse("GET " + uri + " HTTP/1.0\nHost: " + host + "\n\n");
+
+                if (handler == null)
                 {
-                    assertThat(t,response,Matchers.containsString(" 302 "));
+                    assertThat(t, response, Matchers.containsString(" 302 "));
                 }
                 else
                 {
-                    assertThat(t,response,endsWith(handler.toString()));
+                    assertThat(t, response, endsWith(handler.toString()));
                     if (!handler.isHandled())
                     {
                         fail("FAILED " + t + "\n" + response);
                     }
                 }
             }
-
         }
         finally
         {
@@ -168,7 +166,7 @@ public class ContextHandlerCollectionTest
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
 
         ContextHandler context = new ContextHandler("/");
 
@@ -183,21 +181,35 @@ public class ContextHandlerCollectionTest
         try
         {
             server.start();
-            checkWildcardHost(true,server,null,new String[] {"example.com", ".example.com", "vhost.example.com"});
-            checkWildcardHost(false,server,new String[] {null},new String[] {"example.com", ".example.com", "vhost.example.com"});
+            checkWildcardHost(true, server, null, new String[]{"example.com", ".example.com", "vhost.example.com"});
+            checkWildcardHost(false, server, new String[]{null}, new String[]{
+                "example.com", ".example.com", "vhost.example.com"
+            });
 
-            checkWildcardHost(true,server,new String[] {"example.com", "*.example.com"}, new String[] {"example.com", ".example.com", "vhost.example.com"});
-            checkWildcardHost(false,server,new String[] {"example.com", "*.example.com"}, new String[] {"badexample.com", ".badexample.com", "vhost.badexample.com"});
+            checkWildcardHost(true, server, new String[]{"example.com", "*.example.com"}, new String[]{
+                "example.com", ".example.com", "vhost.example.com"
+            });
+            checkWildcardHost(false, server, new String[]{"example.com", "*.example.com"}, new String[]{
+                "badexample.com", ".badexample.com", "vhost.badexample.com"
+            });
 
-            checkWildcardHost(false,server,new String[] {"*."}, new String[] {"anything.anything"});
+            checkWildcardHost(false, server, new String[]{"*."}, new String[]{"anything.anything"});
 
-            checkWildcardHost(true,server,new String[] {"*.example.com"}, new String[] {"vhost.example.com", ".example.com"});
-            checkWildcardHost(false,server,new String[] {"*.example.com"}, new String[] {"vhost.www.example.com", "example.com", "www.vhost.example.com"});
+            checkWildcardHost(true, server, new String[]{"*.example.com"}, new String[]{"vhost.example.com", ".example.com"});
+            checkWildcardHost(false, server, new String[]{"*.example.com"}, new String[]{
+                "vhost.www.example.com", "example.com", "www.vhost.example.com"
+            });
 
-            checkWildcardHost(true,server,new String[] {"*.sub.example.com"}, new String[] {"vhost.sub.example.com", ".sub.example.com"});
-            checkWildcardHost(false,server,new String[] {"*.sub.example.com"}, new String[] {".example.com", "sub.example.com", "vhost.example.com"});
+            checkWildcardHost(true, server, new String[]{"*.sub.example.com"}, new String[]{
+                "vhost.sub.example.com", ".sub.example.com"
+            });
+            checkWildcardHost(false, server, new String[]{"*.sub.example.com"}, new String[]{
+                ".example.com", "sub.example.com", "vhost.example.com"
+            });
 
-            checkWildcardHost(false,server,new String[] {"example.*.com","example.com.*"}, new String[] {"example.vhost.com", "example.com.vhost", "example.com"});
+            checkWildcardHost(false, server, new String[]{"example.*.com", "example.com.*"}, new String[]{
+                "example.vhost.com", "example.com.vhost", "example.com"
+            });
         }
         finally
         {
@@ -216,21 +228,19 @@ public class ContextHandlerCollectionTest
         // trigger this manually
         handlerCollection.mapContexts();
 
-        for(String host : requestHosts)
+        for (String host : requestHosts)
         {
             // System.err.printf("host=%s in %s%n",host,contextHosts==null?Collections.emptyList():Arrays.asList(contextHosts));
-            
-            String response=connector.getResponse("GET / HTTP/1.0\n" + "Host: "+host+"\nConnection:close\n\n");
+
+            String response = connector.getResponse("GET / HTTP/1.0\n" + "Host: " + host + "\nConnection:close\n\n");
             // System.err.println(response);
-            if(succeed)
-                assertTrue(handler.isHandled(),"'"+host+"' should have been handled.");
+            if (succeed)
+                assertTrue(handler.isHandled(), "'" + host + "' should have been handled.");
             else
-                assertFalse(handler.isHandled(),"'"+host + "' should not have been handled.");
+                assertFalse(handler.isHandled(), "'" + host + "' should not have been handled.");
             handler.reset();
         }
-
     }
-
 
     @Test
     public void testFindContainer() throws Exception
@@ -261,144 +271,141 @@ public class ContextHandlerCollectionTest
         wrapper.setHandler(collection);
         server.setHandler(wrapper);
 
-        assertEquals(wrapper,AbstractHandlerContainer.findContainerOf(server,HandlerWrapper.class,handlerA));
-        assertEquals(contextA,AbstractHandlerContainer.findContainerOf(server,ContextHandler.class,handlerA));
-        assertEquals(contextB,AbstractHandlerContainer.findContainerOf(server,ContextHandler.class,handlerB));
-        assertEquals(wrapper,AbstractHandlerContainer.findContainerOf(server,HandlerWrapper.class,handlerB));
-        assertEquals(contextB,AbstractHandlerContainer.findContainerOf(collection,HandlerWrapper.class,handlerB));
-        assertEquals(wrapperB,AbstractHandlerContainer.findContainerOf(contextB,HandlerWrapper.class,handlerB));
-
+        assertEquals(wrapper, AbstractHandlerContainer.findContainerOf(server, HandlerWrapper.class, handlerA));
+        assertEquals(contextA, AbstractHandlerContainer.findContainerOf(server, ContextHandler.class, handlerA));
+        assertEquals(contextB, AbstractHandlerContainer.findContainerOf(server, ContextHandler.class, handlerB));
+        assertEquals(wrapper, AbstractHandlerContainer.findContainerOf(server, HandlerWrapper.class, handlerB));
+        assertEquals(contextB, AbstractHandlerContainer.findContainerOf(collection, HandlerWrapper.class, handlerB));
+        assertEquals(wrapperB, AbstractHandlerContainer.findContainerOf(contextB, HandlerWrapper.class, handlerB));
     }
-    
+
     @Test
     public void testWrappedContext() throws Exception
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
 
         ContextHandler root = new ContextHandler("/");
         root.setHandler(new IsHandledHandler("root"));
-        
+
         ContextHandler left = new ContextHandler("/left");
         left.setHandler(new IsHandledHandler("left"));
-        
+
         HandlerList centre = new HandlerList();
         ContextHandler centreLeft = new ContextHandler("/leftcentre");
         centreLeft.setHandler(new IsHandledHandler("left of centre"));
         ContextHandler centreRight = new ContextHandler("/rightcentre");
         centreRight.setHandler(new IsHandledHandler("right of centre"));
-        centre.setHandlers(new Handler[]{centreLeft,new WrappedHandler(centreRight)});
-        
+        centre.setHandlers(new Handler[]{centreLeft, new WrappedHandler(centreRight)});
+
         ContextHandler right = new ContextHandler("/right");
         right.setHandler(new IsHandledHandler("right"));
-        
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        contexts.setHandlers(new Handler[]{root,left,centre,new WrappedHandler(right)});
-        
+        contexts.setHandlers(new Handler[]{root, left, centre, new WrappedHandler(right)});
+
         server.setHandler(contexts);
         server.start();
-        
-        String response=connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+
+        String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponse("GET /foobar/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /foobar/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponse("GET /left/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /left/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponse("GET /leftcentre/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /leftcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left of centre"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponse("GET /rightcentre/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /rightcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right of centre"));
         assertThat(response, containsString("Wrapped: TRUE"));
 
-        response=connector.getResponse("GET /right/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /right/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right"));
         assertThat(response, containsString("Wrapped: TRUE"));
     }
-
 
     @Test
     public void testAsyncWrappedContext() throws Exception
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
 
         ContextHandler root = new ContextHandler("/");
         root.setHandler(new AsyncHandler("root"));
-        
+
         ContextHandler left = new ContextHandler("/left");
         left.setHandler(new AsyncHandler("left"));
-        
+
         HandlerList centre = new HandlerList();
         ContextHandler centreLeft = new ContextHandler("/leftcentre");
         centreLeft.setHandler(new AsyncHandler("left of centre"));
         ContextHandler centreRight = new ContextHandler("/rightcentre");
         centreRight.setHandler(new AsyncHandler("right of centre"));
-        centre.setHandlers(new Handler[]{centreLeft,new WrappedHandler(centreRight)});
-        
+        centre.setHandlers(new Handler[]{centreLeft, new WrappedHandler(centreRight)});
+
         ContextHandler right = new ContextHandler("/right");
         right.setHandler(new AsyncHandler("right"));
-        
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        contexts.setHandlers(new Handler[]{root,left,centre,new WrappedHandler(right)});
-        
+        contexts.setHandlers(new Handler[]{root, left, centre, new WrappedHandler(right)});
+
         server.setHandler(contexts);
         server.start();
-        
-        String response=connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+
+        String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponse("GET /foobar/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /foobar/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponse("GET /left/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /left/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponse("GET /leftcentre/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /leftcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left of centre"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponse("GET /rightcentre/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /rightcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right of centre"));
         assertThat(response, containsString("Wrapped: ASYNC"));
 
-        response=connector.getResponse("GET /right/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /right/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right"));
         assertThat(response, containsString("Wrapped: ASYNC"));
     }
-    
-    
+
     private static final class WrappedHandler extends HandlerWrapper
     {
         WrappedHandler(Handler handler)
         {
             setHandler(handler);
         }
-        
+
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
@@ -407,10 +414,9 @@ public class ContextHandlerCollectionTest
             else
                 response.setHeader("Wrapped", "TRUE");
             super.handle(target, baseRequest, request, response);
-        }   
+        }
     }
-    
-    
+
     private static final class IsHandledHandler extends AbstractHandler
     {
         private boolean handled;
@@ -418,7 +424,7 @@ public class ContextHandlerCollectionTest
 
         public IsHandledHandler(String string)
         {
-            name=string;
+            name = string;
         }
 
         public boolean isHandled()
@@ -438,7 +444,7 @@ public class ContextHandlerCollectionTest
         {
             handled = false;
         }
-        
+
         @Override
         public String toString()
         {
@@ -446,26 +452,24 @@ public class ContextHandlerCollectionTest
         }
     }
 
-
-    
     private static final class AsyncHandler extends AbstractHandler
     {
         private final String name;
 
         public AsyncHandler(String string)
         {
-            name=string;
+            name = string;
         }
 
         @Override
         public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            
+
             String n = (String)baseRequest.getAttribute("async");
-            if (n==null)
+            if (n == null)
             {
-                AsyncContext async=baseRequest.startAsync();
+                AsyncContext async = baseRequest.startAsync();
                 async.setTimeout(1000);
                 baseRequest.setAttribute("async", name);
                 async.dispatch();
@@ -475,13 +479,11 @@ public class ContextHandlerCollectionTest
                 response.getWriter().print(n);
             }
         }
-        
+
         @Override
         public String toString()
         {
             return name;
         }
     }
-
-
 }

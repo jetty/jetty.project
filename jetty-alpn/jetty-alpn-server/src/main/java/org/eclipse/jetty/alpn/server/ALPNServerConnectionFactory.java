@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -45,21 +44,21 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
     {
         this(protocols.trim().split(",", 0));
     }
-    
+
     public ALPNServerConnectionFactory(@Name("protocols") String... protocols)
     {
         super("alpn", protocols);
 
         IllegalStateException failure = new IllegalStateException("No Server ALPNProcessors!");
         // Use a for loop on iterator so load exceptions can be caught and ignored
-        for (Iterator<Server> i = ServiceLoader.load(Server.class).iterator(); i.hasNext();)
+        for (Iterator<Server> i = ServiceLoader.load(Server.class).iterator(); i.hasNext(); )
         {
             Server processor;
             try
             {
                 processor = i.next();
             }
-            catch(Throwable x)
+            catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug(x);
@@ -81,7 +80,7 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
                     failure.addSuppressed(x);
             }
         }
-        
+
         if (LOG.isDebugEnabled())
         {
             LOG.debug("protocols: {}", Arrays.asList(protocols));
@@ -106,9 +105,9 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
                 return connection;
             }
         }
-        
+
         if (LOG.isDebugEnabled())
-            LOG.debug("No ALPNProcessor: {} {}",engine,endPoint);
+            LOG.debug("No ALPNProcessor: {} {}", engine, endPoint);
         throw new IllegalStateException("Connection rejected: No ALPN Processor for " + engine.getClass().getName() + " from " + processors);
     }
 }

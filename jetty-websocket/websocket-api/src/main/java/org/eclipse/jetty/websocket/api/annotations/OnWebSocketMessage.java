@@ -54,7 +54,7 @@ import org.eclipse.jetty.websocket.api.Session;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value =
-{ ElementType.METHOD })
+    {ElementType.METHOD})
 public @interface OnWebSocketMessage
 {
     /* no config */

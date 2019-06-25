@@ -40,10 +40,9 @@ public interface AuthorizationService
      * <p>Wraps a {@link LoginService} as an AuthorizationService</p>
      *
      * @param loginService the {@link LoginService} to wrap
-     * @param credentials
      * @return an AuthorizationService that delegates the query for roles to the given {@link LoginService}
      */
-    public static AuthorizationService from(LoginService loginService, Object credentials)
+    static AuthorizationService from(LoginService loginService, Object credentials)
     {
         return (request, name) -> loginService.login(name, credentials, request);
     }

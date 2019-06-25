@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http2.server;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
@@ -40,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -73,15 +66,20 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.StacklessLogging;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HTTP2ServerTest extends AbstractServerTest
 {
     @Test
     public void testNoPrefaceBytes() throws Exception
     {
-        startServer(new HttpServlet(){});
+        startServer(new HttpServlet() {});
 
         // No preface bytes.
         MetaData.Request metaData = newRequest("GET", new HttpFields());
@@ -242,7 +240,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testBadPingWrongPayload() throws Exception
     {
-        startServer(new HttpServlet(){});
+        startServer(new HttpServlet() {});
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
@@ -280,7 +278,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testBadPingWrongStreamId() throws Exception
     {
-        startServer(new HttpServlet(){});
+        startServer(new HttpServlet() {});
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
@@ -344,7 +342,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             @Override
             protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                return new SocketChannelEndPoint(channel,selectSet,key,getScheduler())
+                return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
                     public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
@@ -369,7 +367,9 @@ public class HTTP2ServerTest extends AbstractServerTest
         {
             OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
+            {
                 output.write(BufferUtil.toArray(buffer));
+            }
 
             // The server will close the connection abruptly since it
             // cannot write and therefore cannot even send the GO_AWAY.
@@ -405,7 +405,9 @@ public class HTTP2ServerTest extends AbstractServerTest
             {
                 OutputStream output = client.getOutputStream();
                 for (ByteBuffer buffer : lease.getByteBuffers())
+                {
                     output.write(BufferUtil.toArray(buffer));
+                }
                 output.flush();
 
                 Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
@@ -529,10 +531,10 @@ public class HTTP2ServerTest extends AbstractServerTest
             continuationFrameHeader.put(4, (byte)0);
             // Add a last, empty, CONTINUATION frame.
             ByteBuffer last = ByteBuffer.wrap(new byte[]{
-                    0, 0, 0, // Length
-                    (byte)FrameType.CONTINUATION.getType(),
-                    (byte)Flags.END_HEADERS,
-                    0, 0, 0, 1 // Stream ID
+                0, 0, 0, // Length
+                (byte)FrameType.CONTINUATION.getType(),
+                (byte)Flags.END_HEADERS,
+                0, 0, 0, 1 // Stream ID
             });
             lease.append(last, false);
             return lease;
@@ -573,7 +575,9 @@ public class HTTP2ServerTest extends AbstractServerTest
         {
             OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
+            {
                 output.write(BufferUtil.toArray(buffer));
+            }
             output.flush();
 
             assertTrue(serverLatch.await(5, TimeUnit.SECONDS));

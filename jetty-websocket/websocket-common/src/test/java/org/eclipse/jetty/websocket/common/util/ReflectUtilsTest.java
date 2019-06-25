@@ -87,5 +87,4 @@ public class ReflectUtilsTest
     {
         assertNull(ReflectUtils.findGenericClassFor(String.class, String.class));
     }
-
 }

@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
@@ -50,9 +49,9 @@ public class TextPartialOnMessage implements MessageAppender
         {
             throw new IOException("Cannot append to finished buffer");
         }
-        
+
         String text = utf8Partial.toPartialString(payload);
-        driver.onPartialTextMessage(text,isLast);
+        driver.onPartialTextMessage(text, isLast);
     }
 
     @Override

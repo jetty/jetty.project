@@ -28,17 +28,17 @@ public interface AuthenticationStore
     /**
      * @param authentication the {@link Authentication} to add
      */
-    public void addAuthentication(Authentication authentication);
+    void addAuthentication(Authentication authentication);
 
     /**
      * @param authentication the {@link Authentication} to remove
      */
-    public void removeAuthentication(Authentication authentication);
+    void removeAuthentication(Authentication authentication);
 
     /**
      * Removes all {@link Authentication}s stored
      */
-    public void clearAuthentications();
+    void clearAuthentications();
 
     /**
      * Returns the authentication that matches the given type (for example, "Basic" or "Digest"),
@@ -50,22 +50,22 @@ public interface AuthenticationStore
      * @param realm the authentication realm
      * @return the authentication that matches the given parameters, or null
      */
-    public Authentication findAuthentication(String type, URI uri, String realm);
+    Authentication findAuthentication(String type, URI uri, String realm);
 
     /**
      * @param result the {@link Authentication.Result} to add
      */
-    public void addAuthenticationResult(Authentication.Result result);
+    void addAuthenticationResult(Authentication.Result result);
 
     /**
      * @param result the {@link Authentication.Result} to remove
      */
-    public void removeAuthenticationResult(Authentication.Result result);
+    void removeAuthenticationResult(Authentication.Result result);
 
     /**
      * Removes all authentication results stored
      */
-    public void clearAuthenticationResults();
+    void clearAuthenticationResults();
 
     /**
      * Returns an {@link Authentication.Result} that matches the given URI, or null if no
@@ -74,5 +74,5 @@ public interface AuthenticationStore
      * @param uri the request URI
      * @return the {@link Authentication.Result} that matches the given URI, or null
      */
-    public Authentication.Result findAuthenticationResult(URI uri);
+    Authentication.Result findAuthenticationResult(URI uri);
 }

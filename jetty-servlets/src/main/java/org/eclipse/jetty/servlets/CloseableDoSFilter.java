@@ -33,7 +33,7 @@ public class CloseableDoSFilter extends DoSFilter
     @Override
     protected void onRequestTimeout(HttpServletRequest request, HttpServletResponse response, Thread handlingThread)
     {
-        Request base_request=Request.getBaseRequest(request);
-        base_request.getHttpChannel().getEndPoint().close();
+        Request baseRequest = Request.getBaseRequest(request);
+        baseRequest.getHttpChannel().getEndPoint().close();
     }
 }

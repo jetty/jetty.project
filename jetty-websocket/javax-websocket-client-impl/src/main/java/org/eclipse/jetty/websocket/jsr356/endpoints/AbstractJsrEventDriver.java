@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
 import java.util.Map;
-
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCode;
 import javax.websocket.CloseReason.CloseCodes;
@@ -43,7 +42,7 @@ public abstract class AbstractJsrEventDriver extends AbstractEventDriver
 
     public AbstractJsrEventDriver(WebSocketPolicy policy, EndpointInstance endpointInstance)
     {
-        super(policy,endpointInstance.getEndpoint());
+        super(policy, endpointInstance.getEndpoint());
         this.config = endpointInstance.getConfig();
         this.metadata = endpointInstance.getMetadata();
     }
@@ -76,7 +75,7 @@ public abstract class AbstractJsrEventDriver extends AbstractEventDriver
         hasCloseBeenCalled = true;
 
         CloseCode closecode = CloseCodes.getCloseCode(close.getStatusCode());
-        CloseReason closereason = new CloseReason(closecode,close.getReason());
+        CloseReason closereason = new CloseReason(closecode, close.getReason());
         onClose(closereason);
     }
 

@@ -21,7 +21,6 @@ package com.acme;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
-
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.JspTagException;
 import javax.servlet.jsp.PageContext;
@@ -34,30 +33,56 @@ public class DateTag extends BodyTagSupport
 {
     Tag parent;
     BodyContent body;
-    String tz="GMT";
+    String tz = "GMT";
 
     @Override
-    public void setParent(Tag parent) {this.parent=parent;}
-    @Override
-    public Tag getParent() {return parent;}
-    @Override
-    public void setBodyContent(BodyContent content) {body=content;}
-    @Override
-    public void setPageContext(PageContext pageContext) {}
-
-    public void setTz(String value) {tz=value;}
+    public void setParent(Tag parent)
+    {
+        this.parent = parent;
+    }
 
     @Override
-    public int doStartTag() throws JspException {return EVAL_BODY_BUFFERED;}
+    public Tag getParent()
+    {
+        return parent;
+    }
 
     @Override
-    public int doEndTag() throws JspException {return EVAL_PAGE;}
+    public void setBodyContent(BodyContent content)
+    {
+        body = content;
+    }
 
     @Override
-    public void doInitBody() throws JspException {}
+    public void setPageContext(PageContext pageContext)
+    {
+    }
+
+    public void setTz(String value)
+    {
+        tz = value;
+    }
 
     @Override
-    public int doAfterBody() throws JspException {
+    public int doStartTag() throws JspException
+    {
+        return EVAL_BODY_BUFFERED;
+    }
+
+    @Override
+    public int doEndTag() throws JspException
+    {
+        return EVAL_PAGE;
+    }
+
+    @Override
+    public void doInitBody() throws JspException
+    {
+    }
+
+    @Override
+    public int doAfterBody() throws JspException
+    {
         try
         {
             SimpleDateFormat format = new SimpleDateFormat(body.getString());
@@ -65,7 +90,8 @@ public class DateTag extends BodyTagSupport
             body.getEnclosingWriter().write(format.format(new Date()));
             return SKIP_BODY;
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             ex.printStackTrace();
             throw new JspTagException(ex.toString());
         }
@@ -74,7 +100,7 @@ public class DateTag extends BodyTagSupport
     @Override
     public void release()
     {
-        body=null;
+        body = null;
     }
 }
 

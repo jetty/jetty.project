@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -46,9 +42,13 @@ import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.examples.echo.BigEchoSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class AnnotatedMaxMessageSizeTest
 {
@@ -82,7 +82,7 @@ public class AnnotatedMaxMessageSizeTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
+        serverUri = new URI(String.format("ws://%s:%d/", host, port));
     }
 
     @AfterAll
@@ -122,10 +122,10 @@ public class AnnotatedMaxMessageSizeTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+            assertThat("Text Frame.status code", tf.getPayloadAsUTF8(), is(msg));
         }
     }
-    
+
     @Test
     public void testEchoTooBig() throws Exception
     {
@@ -135,13 +135,14 @@ public class AnnotatedMaxMessageSizeTest
         Future<BlockheadConnection> connFut = request.sendAsync();
 
         try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
-            StacklessLogging ignore = new StacklessLogging(Parser.class))
+             StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            Assertions.assertTimeoutPreemptively(ofSeconds(8), ()-> {
+            Assertions.assertTimeoutPreemptively(ofSeconds(8), () ->
+            {
                 // Generate text frame
                 int size = 120 * 1024;
                 byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
-                Arrays.fill(buf, (byte) 'x');
+                Arrays.fill(buf, (byte)'x');
                 clientConn.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
 
                 // Read frame (hopefully close frame saying its too large)

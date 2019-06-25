@@ -18,24 +18,24 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-import org.junit.jupiter.api.Test;
 
 public class RegexPathSpecTest
 {
     public static void assertMatches(PathSpec spec, String path)
     {
-        String msg = String.format("Spec(\"%s\").matches(\"%s\")",spec.getDeclaration(),path);
-        assertThat(msg,spec.matches(path),is(true));
+        String msg = String.format("Spec(\"%s\").matches(\"%s\")", spec.getDeclaration(), path);
+        assertThat(msg, spec.matches(path), is(true));
     }
 
     public static void assertNotMatches(PathSpec spec, String path)
     {
-        String msg = String.format("!Spec(\"%s\").matches(\"%s\")",spec.getDeclaration(),path);
-        assertThat(msg,spec.matches(path),is(false));
+        String msg = String.format("!Spec(\"%s\").matches(\"%s\")", spec.getDeclaration(), path);
+        assertThat(msg, spec.matches(path), is(false));
     }
 
     @Test
@@ -47,10 +47,10 @@ public class RegexPathSpecTest
         assertEquals(1, spec.getPathDepth(), "Spec.pathDepth");
         assertEquals(PathSpecGroup.EXACT, spec.group, "Spec.group");
 
-        assertMatches(spec,"/a");
+        assertMatches(spec, "/a");
 
-        assertNotMatches(spec,"/aa");
-        assertNotMatches(spec,"/a/");
+        assertNotMatches(spec, "/aa");
+        assertNotMatches(spec, "/a/");
     }
 
     @Test
@@ -62,16 +62,16 @@ public class RegexPathSpecTest
         assertEquals(3, spec.getPathDepth(), "Spec.pathDepth");
         assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.group, "Spec.group");
 
-        assertMatches(spec,"/rest/api/list");
-        assertMatches(spec,"/rest/1.0/list");
-        assertMatches(spec,"/rest/2.0/list");
-        assertMatches(spec,"/rest/accounts/list");
+        assertMatches(spec, "/rest/api/list");
+        assertMatches(spec, "/rest/1.0/list");
+        assertMatches(spec, "/rest/2.0/list");
+        assertMatches(spec, "/rest/accounts/list");
 
-        assertNotMatches(spec,"/a");
-        assertNotMatches(spec,"/aa");
-        assertNotMatches(spec,"/aa/bb");
-        assertNotMatches(spec,"/rest/admin/delete");
-        assertNotMatches(spec,"/rest/list");
+        assertNotMatches(spec, "/a");
+        assertNotMatches(spec, "/aa");
+        assertNotMatches(spec, "/aa/bb");
+        assertNotMatches(spec, "/rest/admin/delete");
+        assertNotMatches(spec, "/rest/list");
     }
 
     @Test
@@ -83,16 +83,16 @@ public class RegexPathSpecTest
         assertEquals(3, spec.getPathDepth(), "Spec.pathDepth");
         assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.group, "Spec.group");
 
-        assertMatches(spec,"/rest/api/list");
-        assertMatches(spec,"/rest/1.0/list");
-        assertMatches(spec,"/rest/2.0/list");
-        assertMatches(spec,"/rest/accounts/list");
+        assertMatches(spec, "/rest/api/list");
+        assertMatches(spec, "/rest/1.0/list");
+        assertMatches(spec, "/rest/2.0/list");
+        assertMatches(spec, "/rest/accounts/list");
 
-        assertNotMatches(spec,"/a");
-        assertNotMatches(spec,"/aa");
-        assertNotMatches(spec,"/aa/bb");
-        assertNotMatches(spec,"/rest/admin/delete");
-        assertNotMatches(spec,"/rest/list");
+        assertNotMatches(spec, "/a");
+        assertNotMatches(spec, "/aa");
+        assertNotMatches(spec, "/aa/bb");
+        assertNotMatches(spec, "/rest/admin/delete");
+        assertNotMatches(spec, "/rest/list");
     }
 
     @Test
@@ -104,13 +104,13 @@ public class RegexPathSpecTest
         assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
         assertEquals(PathSpecGroup.PREFIX_GLOB, spec.group, "Spec.group");
 
-        assertMatches(spec,"/a/");
-        assertMatches(spec,"/a/b");
-        assertMatches(spec,"/a/b/c/d/e");
+        assertMatches(spec, "/a/");
+        assertMatches(spec, "/a/b");
+        assertMatches(spec, "/a/b/c/d/e");
 
-        assertNotMatches(spec,"/a");
-        assertNotMatches(spec,"/aa");
-        assertNotMatches(spec,"/aa/bb");
+        assertNotMatches(spec, "/a");
+        assertNotMatches(spec, "/aa");
+        assertNotMatches(spec, "/aa/bb");
     }
 
     @Test
@@ -122,14 +122,14 @@ public class RegexPathSpecTest
         assertEquals(0, spec.getPathDepth(), "Spec.pathDepth");
         assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.group, "Spec.group");
 
-        assertMatches(spec,"/a.do");
-        assertMatches(spec,"/a/b/c.do");
-        assertMatches(spec,"/abcde.do");
-        assertMatches(spec,"/abc/efg.do");
+        assertMatches(spec, "/a.do");
+        assertMatches(spec, "/a/b/c.do");
+        assertMatches(spec, "/abcde.do");
+        assertMatches(spec, "/abc/efg.do");
 
-        assertNotMatches(spec,"/a");
-        assertNotMatches(spec,"/aa");
-        assertNotMatches(spec,"/aa/bb");
-        assertNotMatches(spec,"/aa/bb.do/more");
+        assertNotMatches(spec, "/a");
+        assertNotMatches(spec, "/aa");
+        assertNotMatches(spec, "/aa/bb");
+        assertNotMatches(spec, "/aa/bb.do/more");
     }
 }

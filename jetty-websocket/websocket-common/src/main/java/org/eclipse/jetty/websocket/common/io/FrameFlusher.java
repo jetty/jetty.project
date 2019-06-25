@@ -253,7 +253,7 @@ public class FrameFlusher extends IteratingCallback
 
         int i = 0;
         int bytes = 0;
-        ByteBuffer bufferArray[] = new ByteBuffer[buffers.size()];
+        ByteBuffer[] bufferArray = new ByteBuffer[buffers.size()];
         for (ByteBuffer bb : buffers)
         {
             bytes += bb.limit() - bb.position();
@@ -308,7 +308,8 @@ public class FrameFlusher extends IteratingCallback
 
         synchronized (this)
         {
-            if (terminated == null) {
+            if (terminated == null)
+            {
                 terminated = failure;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Write flush failure", failure);
@@ -399,10 +400,10 @@ public class FrameFlusher extends IteratingCallback
         if (agg != null)
             aggSize = agg.position();
         return String.format("%s[queueSize=%d,aggregateSize=%d,terminated=%s]",
-                super.toString(),
-                getQueueSize(),
-                aggSize,
-                terminated);
+            super.toString(),
+            getQueueSize(),
+            aggSize,
+            terminated);
     }
 
     private class FrameEntry

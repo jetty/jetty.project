@@ -28,20 +28,17 @@ public interface MessageAppender
 {
     /**
      * Append the frame payload to the message.
-     * 
-     * @param framePayload
-     *            the frame payload to append.
-     * @param isLast
-     *            flag indicating if this is the last part of the message or not.
-     * @throws IOException
-     *             if unable to append the frame payload
+     *
+     * @param framePayload the frame payload to append.
+     * @param isLast flag indicating if this is the last part of the message or not.
+     * @throws IOException if unable to append the frame payload
      */
-    abstract void appendFrame(ByteBuffer framePayload, boolean isLast) throws IOException;
+    void appendFrame(ByteBuffer framePayload, boolean isLast) throws IOException;
 
     /**
      * Notification that message is to be considered complete.
      * <p>
      * Any cleanup or final actions should be taken here.
      */
-    abstract void messageComplete();
+    void messageComplete();
 }

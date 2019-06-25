@@ -28,7 +28,7 @@ public class JettyListenerImpl implements EventDriverImpl
     public EventDriver create(Object websocket, WebSocketPolicy policy)
     {
         WebSocketConnectionListener listener = (WebSocketConnectionListener)websocket;
-        return new JettyListenerEventDriver(policy,listener);
+        return new JettyListenerEventDriver(policy, listener);
     }
 
     @Override

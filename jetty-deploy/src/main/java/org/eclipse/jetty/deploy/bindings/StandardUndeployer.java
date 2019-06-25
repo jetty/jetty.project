@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
@@ -32,7 +31,7 @@ public class StandardUndeployer implements AppLifeCycle.Binding
     public String[] getBindingTargets()
     {
         return new String[]
-        { "undeploying" };
+            {"undeploying"};
     }
 
     @Override

@@ -28,7 +28,7 @@ import java.util.Objects;
  */
 public final class Syntax
 {
-    
+
     /**
      * Per RFC2616: Section 2.2, a token follows these syntax rules
      * <pre>
@@ -49,30 +49,30 @@ public final class Syntax
     public static void requireValidRFC2616Token(String value, String msg)
     {
         Objects.requireNonNull(msg, "msg cannot be null");
-        
+
         if (value == null)
         {
             return;
         }
-        
+
         int valueLen = value.length();
         if (valueLen == 0)
         {
             return;
         }
-        
+
         for (int i = 0; i < valueLen; i++)
         {
             char c = value.charAt(i);
-            
+
             // 0x00 - 0x1F are low order control characters
             // 0x7F is the DEL control character
             if ((c <= 0x1F) || (c == 0x7F))
                 throw new IllegalArgumentException(msg + ": RFC2616 tokens may not contain control characters");
-            if (c == '(' || c == ')' || c == '<' || c == '>' || c == '@'
-                    || c == ',' || c == ';' || c == ':' || c == '\\' || c == '"'
-                    || c == '/' || c == '[' || c == ']' || c == '?' || c == '='
-                    || c == '{' || c == '}' || c == ' ')
+            if (c == '(' || c == ')' || c == '<' || c == '>' || c == '@' ||
+                c == ',' || c == ';' || c == ':' || c == '\\' || c == '"' ||
+                c == '/' || c == '[' || c == ']' || c == '?' || c == '=' ||
+                c == '{' || c == '}' || c == ' ')
             {
                 throw new IllegalArgumentException(msg + ": RFC2616 tokens may not contain separator character: [" + c + "]");
             }
@@ -80,7 +80,7 @@ public final class Syntax
                 throw new IllegalArgumentException(msg + ": RFC2616 tokens characters restricted to US-ASCII: 0x" + Integer.toHexString(c));
         }
     }
-    
+
     /**
      * Per RFC6265, Cookie.value follows these syntax rules
      * <pre>
@@ -100,13 +100,13 @@ public final class Syntax
         {
             return;
         }
-        
+
         int valueLen = value.length();
         if (valueLen == 0)
         {
             return;
         }
-        
+
         int i = 0;
         if (value.charAt(0) == '"')
         {
@@ -115,7 +115,7 @@ public final class Syntax
             {
                 throw new IllegalArgumentException("RFC6265 Cookie values must have balanced DQUOTES (if used)");
             }
-            
+
             // adjust search range to exclude DQUOTES
             i++;
             valueLen--;
@@ -123,15 +123,15 @@ public final class Syntax
         for (; i < valueLen; i++)
         {
             char c = value.charAt(i);
-            
+
             // 0x00 - 0x1F are low order control characters
             // 0x7F is the DEL control character
             if ((c <= 0x1F) || (c == 0x7F))
                 throw new IllegalArgumentException("RFC6265 Cookie values may not contain control characters");
             if ((c == ' ' /* 0x20 */) ||
-                    (c == '"' /* 0x2C */) ||
-                    (c == ';' /* 0x3B */) ||
-                    (c == '\\' /* 0x5C */))
+                (c == '"' /* 0x2C */) ||
+                (c == ';' /* 0x3B */) ||
+                (c == '\\' /* 0x5C */))
             {
                 throw new IllegalArgumentException("RFC6265 Cookie values may not contain character: [" + c + "]");
             }

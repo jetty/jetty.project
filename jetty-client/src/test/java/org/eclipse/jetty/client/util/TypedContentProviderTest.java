@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.client.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,6 +36,10 @@ import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TypedContentProviderTest extends AbstractHttpClientServerTest
 {
@@ -106,11 +105,11 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(new FormContentProvider(fields))
-                .header(HttpHeader.CONTENT_TYPE, contentType)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(new FormContentProvider(fields))
+            .header(HttpHeader.CONTENT_TYPE, contentType)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -134,9 +133,9 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .content(new StringContentProvider(null, content, StandardCharsets.UTF_8))
-                .send();
+            .scheme(scenario.getScheme())
+            .content(new StringContentProvider(null, content, StandardCharsets.UTF_8))
+            .send();
 
         assertEquals(200, response.getStatus());
     }

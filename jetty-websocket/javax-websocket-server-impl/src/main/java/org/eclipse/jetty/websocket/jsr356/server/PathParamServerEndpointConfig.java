@@ -20,10 +20,8 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 

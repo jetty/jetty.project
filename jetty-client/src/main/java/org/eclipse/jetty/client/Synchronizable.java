@@ -41,5 +41,5 @@ public interface Synchronizable
     /**
      * @return the lock object to synchronize on
      */
-    public Object getLock();
+    Object getLock();
 }

@@ -46,19 +46,22 @@ public class URLEncodedTest
     {
         List<DynamicTest> tests = new ArrayList<>();
 
-        tests.add(dynamicTest("Initially not empty", () -> {
+        tests.add(dynamicTest("Initially not empty", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             assertEquals(0, url_encoded.size());
         }));
 
-        tests.add(dynamicTest("Not empty after decode(\"\")", () -> {
+        tests.add(dynamicTest("Not empty after decode(\"\")", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("");
             assertEquals(0, url_encoded.size());
         }));
 
-        tests.add(dynamicTest("Simple encode", () -> {
+        tests.add(dynamicTest("Simple encode", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("Name1=Value1");
@@ -67,7 +70,8 @@ public class URLEncodedTest
             assertEquals("Value1", url_encoded.getString("Name1"), "simple get");
         }));
 
-        tests.add(dynamicTest("Dangling param", () -> {
+        tests.add(dynamicTest("Dangling param", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("Name2=");
@@ -76,7 +80,8 @@ public class URLEncodedTest
             assertEquals("", url_encoded.getString("Name2"), "dangling get");
         }));
 
-        tests.add(dynamicTest("noValue param", () -> {
+        tests.add(dynamicTest("noValue param", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("Name3");
@@ -85,7 +90,8 @@ public class URLEncodedTest
             assertEquals("", url_encoded.getString("Name3"), "noValue get");
         }));
 
-        tests.add(dynamicTest("badly encoded param", () -> {
+        tests.add(dynamicTest("badly encoded param", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("Name4=V\u0629lue+4%21");
@@ -94,7 +100,8 @@ public class URLEncodedTest
             assertEquals("V\u0629lue 4!", url_encoded.getString("Name4"), "encoded get");
         }));
 
-        tests.add(dynamicTest("encoded param 1", () -> {
+        tests.add(dynamicTest("encoded param 1", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("Name4=Value%2B4%21");
@@ -103,7 +110,8 @@ public class URLEncodedTest
             assertEquals("Value+4!", url_encoded.getString("Name4"), "encoded get");
         }));
 
-        tests.add(dynamicTest("encoded param 2", () -> {
+        tests.add(dynamicTest("encoded param 2", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("Name4=Value+4%21%20%214");
@@ -112,19 +120,21 @@ public class URLEncodedTest
             assertEquals("Value 4! !4", url_encoded.getString("Name4"), "encoded get");
         }));
 
-        tests.add(dynamicTest("multi param", () -> {
+        tests.add(dynamicTest("multi param", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("Name5=aaa&Name6=bbb");
             assertEquals(2, url_encoded.size(), "multi param size");
             assertTrue(url_encoded.encode().equals("Name5=aaa&Name6=bbb") ||
-                            url_encoded.encode().equals("Name6=bbb&Name5=aaa"),
-                    "multi encode " + url_encoded.encode());
+                    url_encoded.encode().equals("Name6=bbb&Name5=aaa"),
+                "multi encode " + url_encoded.encode());
             assertEquals("aaa", url_encoded.getString("Name5"), "multi get");
             assertEquals("bbb", url_encoded.getString("Name6"), "multi get");
         }));
 
-        tests.add(dynamicTest("multiple value encoded", () -> {
+        tests.add(dynamicTest("multiple value encoded", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("Name7=aaa&Name7=b%2Cb&Name7=ccc");
@@ -135,7 +145,8 @@ public class URLEncodedTest
             assertEquals("ccc", url_encoded.getValues("Name7").get(2), "list get");
         }));
 
-        tests.add(dynamicTest("encoded param", () -> {
+        tests.add(dynamicTest("encoded param", () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.clear();
             url_encoded.decode("Name8=xx%2C++yy++%2Czz");
@@ -151,60 +162,59 @@ public class URLEncodedTest
     public Iterator<DynamicTest> testUrlEncodedStream()
     {
         String[][] charsets = new String[][]
-                {
-                        {StringUtil.__UTF8, null, "%30"},
-                        {StringUtil.__ISO_8859_1, StringUtil.__ISO_8859_1, "%30"},
-                        {StringUtil.__UTF8, StringUtil.__UTF8, "%30"},
-                        {StringUtil.__UTF16, StringUtil.__UTF16, "%00%30"},
+            {
+                {StringUtil.__UTF8, null, "%30"},
+                {StringUtil.__ISO_8859_1, StringUtil.__ISO_8859_1, "%30"},
+                {StringUtil.__UTF8, StringUtil.__UTF8, "%30"},
+                {StringUtil.__UTF16, StringUtil.__UTF16, "%00%30"},
                 };
 
         // Note: "%30" -> decode -> "0"
 
         List<DynamicTest> tests = new ArrayList<>();
 
-        for(String[] params: charsets)
+        for (String[] params : charsets)
         {
             tests.add(dynamicTest(params[0] + ">" + params[1] + "|" + params[2],
-                    () -> {
-                        try (ByteArrayInputStream in = new ByteArrayInputStream(("name\n=value+" + params[2] + "&name1=&name2&n\u00e3me3=value+3").getBytes(params[0])))
-                        {
-                            MultiMap<String> m = new MultiMap<>();
-                            UrlEncoded.decodeTo(in, m, params[1] == null ? null : Charset.forName(params[1]), -1, -1);
-                            assertEquals(4, m.size(), params[1] + " stream length");
-                            assertThat(params[1] + " stream name\\n", m.getString("name\n"), is("value 0"));
-                            assertThat(params[1] + " stream name1", m.getString("name1"), is(""));
-                            assertThat(params[1] + " stream name2", m.getString("name2"), is(""));
-                            assertThat(params[1] + " stream n\u00e3me3", m.getString("n\u00e3me3"), is("value 3"));
-                        }
+                () ->
+                {
+                    try (ByteArrayInputStream in = new ByteArrayInputStream(("name\n=value+" + params[2] + "&name1=&name2&n\u00e3me3=value+3").getBytes(params[0])))
+                    {
+                        MultiMap<String> m = new MultiMap<>();
+                        UrlEncoded.decodeTo(in, m, params[1] == null ? null : Charset.forName(params[1]), -1, -1);
+                        assertEquals(4, m.size(), params[1] + " stream length");
+                        assertThat(params[1] + " stream name\\n", m.getString("name\n"), is("value 0"));
+                        assertThat(params[1] + " stream name1", m.getString("name1"), is(""));
+                        assertThat(params[1] + " stream name2", m.getString("name2"), is(""));
+                        assertThat(params[1] + " stream n\u00e3me3", m.getString("n\u00e3me3"), is("value 3"));
                     }
+                }
             ));
         }
-
 
         if (java.nio.charset.Charset.isSupported("Shift_JIS"))
         {
             tests.add(dynamicTest("Shift_JIS",
-                    () -> {
-                        try(ByteArrayInputStream in2 = new ByteArrayInputStream("name=%83e%83X%83g".getBytes(StandardCharsets.ISO_8859_1)))
-                        {
-                            MultiMap<String> m2 = new MultiMap<>();
-                            UrlEncoded.decodeTo(in2, m2, Charset.forName("Shift_JIS"), -1, -1);
-                            assertEquals(1, m2.size(), "stream length");
-                            assertEquals("\u30c6\u30b9\u30c8", m2.getString("name"), "stream name");
-                        }
+                () ->
+                {
+                    try (ByteArrayInputStream in2 = new ByteArrayInputStream("name=%83e%83X%83g".getBytes(StandardCharsets.ISO_8859_1)))
+                    {
+                        MultiMap<String> m2 = new MultiMap<>();
+                        UrlEncoded.decodeTo(in2, m2, Charset.forName("Shift_JIS"), -1, -1);
+                        assertEquals(1, m2.size(), "stream length");
+                        assertEquals("\u30c6\u30b9\u30c8", m2.getString("name"), "stream name");
                     }
+                }
             ));
         }
 
         return tests.iterator();
     }
 
-
-    /* -------------------------------------------------------------- */
     @Test
     @EnabledIfSystemProperty(named = "org.eclipse.jetty.util.UrlEncoding.charset", matches = "\\p{Alnum}")
     public void testCharsetViaSystemProperty()
-            throws Exception
+        throws Exception
     {
         try (ByteArrayInputStream in3 = new ByteArrayInputStream("name=libell%E9".getBytes(StringUtil.__ISO_8859_1)))
         {
@@ -215,10 +225,9 @@ public class URLEncodedTest
         }
     }
 
-    /* -------------------------------------------------------------- */
     @Test
     public void testUtf8()
-            throws Exception
+        throws Exception
     {
         UrlEncoded url_encoded = new UrlEncoded();
         assertEquals(0, url_encoded.size(), "Empty");

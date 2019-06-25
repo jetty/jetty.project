@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -36,10 +33,12 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SelectorManagerTest
 {
@@ -76,10 +75,10 @@ public class SelectorManagerTest
             protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
             {
                 SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
-                endp.setIdleTimeout(connectTimeout/2);
+                endp.setIdleTimeout(connectTimeout / 2);
                 return endp;
             }
-            
+
             @Override
             protected boolean doFinishConnect(SelectableChannel channel) throws IOException
             {

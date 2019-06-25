@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import static java.nio.file.StandardOpenOption.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -41,6 +39,9 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 public class FrameCaptureExtension extends AbstractExtension
 {
     private static final Logger LOG = Log.getLogger(FrameCaptureExtension.class);
@@ -51,7 +52,7 @@ public class FrameCaptureExtension extends AbstractExtension
     private String prefix = "frame";
     private Path incomingFramesPath;
     private Path outgoingFramesPath;
-    
+
     private AtomicInteger incomingCount = new AtomicInteger(0);
     private AtomicInteger outgoingCount = new AtomicInteger(0);
 
@@ -67,7 +68,7 @@ public class FrameCaptureExtension extends AbstractExtension
     @Override
     public void incomingFrame(Frame frame)
     {
-        saveFrame(frame,false);
+        saveFrame(frame, false);
         try
         {
             nextIncomingFrame(frame);
@@ -83,10 +84,10 @@ public class FrameCaptureExtension extends AbstractExtension
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        saveFrame(frame,true);
+        saveFrame(frame, true);
         try
         {
-            nextOutgoingFrame(frame,callback,batchMode);
+            nextOutgoingFrame(frame, callback, batchMode);
         }
         catch (Throwable t)
         {
@@ -105,31 +106,31 @@ public class FrameCaptureExtension extends AbstractExtension
 
         @SuppressWarnings("resource")
         SeekableByteChannel channel = (outgoing) ? outgoingChannel : incomingChannel;
-        
+
         if (channel == null)
         {
             return;
         }
 
-        ByteBuffer buf = getBufferPool().acquire(BUFSIZE,false);
+        ByteBuffer buf = getBufferPool().acquire(BUFSIZE, false);
 
         try
         {
             WebSocketFrame f = WebSocketFrame.copy(frame);
             f.setMasked(false);
-            generator.generateHeaderBytes(f,buf);
+            generator.generateHeaderBytes(f, buf);
             channel.write(buf);
             if (frame.hasPayload())
             {
                 channel.write(frame.getPayload().slice());
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("Saved {} frame #{}",(outgoing) ? "outgoing" : "incoming",
-                        (outgoing) ? outgoingCount.incrementAndGet() : incomingCount.incrementAndGet());
+                LOG.debug("Saved {} frame #{}", (outgoing) ? "outgoing" : "incoming",
+                    (outgoing) ? outgoingCount.incrementAndGet() : incomingCount.incrementAndGet());
         }
         catch (IOException e)
         {
-            LOG.warn("Unable to save frame: " + frame,e);
+            LOG.warn("Unable to save frame: " + frame, e);
         }
         finally
         {
@@ -142,7 +143,7 @@ public class FrameCaptureExtension extends AbstractExtension
     {
         super.setConfig(config);
 
-        String cfgOutputDir = config.getParameter("output-dir",null);
+        String cfgOutputDir = config.getParameter("output-dir", null);
         if (StringUtil.isNotBlank(cfgOutputDir))
         {
             Path path = new File(cfgOutputDir).toPath();
@@ -152,11 +153,11 @@ public class FrameCaptureExtension extends AbstractExtension
             }
             else
             {
-                LOG.warn("Unable to configure {}: not a valid output directory",path.toAbsolutePath().toString());
+                LOG.warn("Unable to configure {}: not a valid output directory", path.toAbsolutePath().toString());
             }
         }
 
-        String cfgPrefix = config.getParameter("prefix","frame");
+        String cfgPrefix = config.getParameter("prefix", "frame");
         if (StringUtil.isNotBlank(cfgPrefix))
         {
             this.prefix = cfgPrefix;
@@ -169,18 +170,18 @@ public class FrameCaptureExtension extends AbstractExtension
                 Path dir = this.outputDir.toRealPath();
 
                 // create a non-validating, read-only generator
-                String tstamp = String.format("%1$tY%1$tm%1$td-%1$tH%1$tM%1$tS",Calendar.getInstance());
-                incomingFramesPath = dir.resolve(String.format("%s-%s-incoming.dat",this.prefix,tstamp));
-                outgoingFramesPath = dir.resolve(String.format("%s-%s-outgoing.dat",this.prefix,tstamp));
+                String tstamp = String.format("%1$tY%1$tm%1$td-%1$tH%1$tM%1$tS", Calendar.getInstance());
+                incomingFramesPath = dir.resolve(String.format("%s-%s-incoming.dat", this.prefix, tstamp));
+                outgoingFramesPath = dir.resolve(String.format("%s-%s-outgoing.dat", this.prefix, tstamp));
 
-                incomingChannel = Files.newByteChannel(incomingFramesPath,CREATE,WRITE);
-                outgoingChannel = Files.newByteChannel(outgoingFramesPath,CREATE,WRITE);
+                incomingChannel = Files.newByteChannel(incomingFramesPath, CREATE, WRITE);
+                outgoingChannel = Files.newByteChannel(outgoingFramesPath, CREATE, WRITE);
 
-                this.generator = new Generator(WebSocketPolicy.newServerPolicy(),getBufferPool(),false,true);
+                this.generator = new Generator(WebSocketPolicy.newServerPolicy(), getBufferPool(), false, true);
             }
             catch (IOException e)
             {
-                LOG.warn("Unable to create capture file(s)",e);
+                LOG.warn("Unable to create capture file(s)", e);
             }
         }
     }

@@ -1,9 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- Mixin the Thread Limit Handler to the entire server             -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- Mixin the Thread Limit Handler to the entire server             --><!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="insertHandler">

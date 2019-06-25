@@ -30,7 +30,7 @@ public class BasicErrorSessionThrowableSocket extends TrackingSocket
     @OnError
     public void onError(Session session, Throwable t)
     {
-        addEvent("onError(%s,%s)",session,t);
+        addEvent("onError(%s,%s)", session, t);
         addError(t);
     }
 }

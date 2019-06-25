@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -55,14 +54,14 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
         IllegalStateException failure = new IllegalStateException("No Client ALPNProcessors!");
 
         // Use a for loop on iterator so load exceptions can be caught and ignored
-        for (Iterator<Client> i = ServiceLoader.load(Client.class).iterator(); i.hasNext();)
+        for (Iterator<Client> i = ServiceLoader.load(Client.class).iterator(); i.hasNext(); )
         {
             Client processor;
             try
             {
                 processor = i.next();
             }
-            catch(Throwable x)
+            catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug(x);
@@ -104,7 +103,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} for {} on {}", processor, engine, endPoint);
                 ALPNClientConnection connection = new ALPNClientConnection(endPoint, executor, getClientConnectionFactory(),
-                        engine, context, protocols);
+                    engine, context, protocols);
                 processor.configure(engine, connection);
                 return customize(connection, context);
             }

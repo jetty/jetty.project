@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.util;
 
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
-import org.junit.jupiter.api.Test;
-
 
 public class IPAddressMapTest
 {
@@ -32,7 +31,7 @@ public class IPAddressMapTest
     {
         IPAddressMap<String> map = new IPAddressMap<>();
 
-        map.put("10.5.2.1","1");
+        map.put("10.5.2.1", "1");
 
         assertNotNull(map.match("10.5.2.1"));
 
@@ -42,13 +41,12 @@ public class IPAddressMapTest
         assertNull(map.match("10.5.2.0"));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testOneRange()
     {
         IPAddressMap<String> map = new IPAddressMap<>();
 
-        map.put("1-15.16-31.32-63.64-127","1");
+        map.put("1-15.16-31.32-63.64-127", "1");
 
         assertNotNull(map.match("7.23.39.71"));
         assertNotNull(map.match("1.16.32.64"));
@@ -61,26 +59,24 @@ public class IPAddressMapTest
         assertNull(map.match("0.16.32.64"));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testOneMissing()
     {
         IPAddressMap<String> map = new IPAddressMap<>();
 
-        map.put("10.5.2.","1");
+        map.put("10.5.2.", "1");
 
         assertNotNull(map.match("10.5.2.0"));
         assertNotNull(map.match("10.5.2.128"));
         assertNotNull(map.match("10.5.2.255"));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testTwoMissing()
     {
         IPAddressMap<String> map = new IPAddressMap<>();
 
-        map.put("10.5.","1");
+        map.put("10.5.", "1");
 
         assertNotNull(map.match("10.5.2.0"));
         assertNotNull(map.match("10.5.2.128"));
@@ -90,13 +86,12 @@ public class IPAddressMapTest
         assertNotNull(map.match("10.5.255.1"));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testThreeMissing()
     {
         IPAddressMap<String> map = new IPAddressMap<>();
 
-        map.put("10.","1");
+        map.put("10.", "1");
 
         assertNotNull(map.match("10.5.2.0"));
         assertNotNull(map.match("10.5.2.128"));
@@ -109,13 +104,12 @@ public class IPAddressMapTest
         assertNotNull(map.match("10.255.1.1"));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testOneMixed()
     {
         IPAddressMap<String> map = new IPAddressMap<>();
 
-        map.put("0-15,21.10,16-31.0-15,32-63.-95,128-","1");
+        map.put("0-15,21.10,16-31.0-15,32-63.-95,128-", "1");
 
         assertNotNull(map.match("7.23.39.46"));
         assertNotNull(map.match("10.20.10.150"));
@@ -129,18 +123,17 @@ public class IPAddressMapTest
         assertNull(map.match("16.31.63.128"));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testManyMixed()
     {
         IPAddressMap<String> map = new IPAddressMap<>();
 
-        map.put("10.5.2.1","1");
-        map.put("1-15.16-31.32-63.64-127","2");
-        map.put("1-15,21.10,16-31.0-15,32-63.-55,195-","3");
-        map.put("44.99.99.","4");
-        map.put("55.99.","5");
-        map.put("66.","6");
+        map.put("10.5.2.1", "1");
+        map.put("1-15.16-31.32-63.64-127", "2");
+        map.put("1-15,21.10,16-31.0-15,32-63.-55,195-", "3");
+        map.put("44.99.99.", "4");
+        map.put("55.99.", "5");
+        map.put("66.", "6");
 
         assertEquals("1", map.match("10.5.2.1"));
 

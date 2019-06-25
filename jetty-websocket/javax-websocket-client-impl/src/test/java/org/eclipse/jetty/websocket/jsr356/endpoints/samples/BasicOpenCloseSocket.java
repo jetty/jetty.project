@@ -29,12 +29,14 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 public class BasicOpenCloseSocket extends TrackingSocket
 {
     @OnOpen
-    public void onOpen() {
+    public void onOpen()
+    {
         openLatch.countDown();
     }
-    
+
     @OnClose
-    public void onClose(CloseReason close) {
+    public void onClose(CloseReason close)
+    {
         this.closeReason = close;
         closeLatch.countDown();
     }

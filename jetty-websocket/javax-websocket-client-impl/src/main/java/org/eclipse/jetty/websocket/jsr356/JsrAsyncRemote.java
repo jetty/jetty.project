@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.RemoteEndpoint;
@@ -61,7 +60,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
         assertMessageNotNull(data);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendBinary({})",BufferUtil.toDetailString(data));
+            LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
         return jettyRemote.sendBytesByFuture(data);
     }
@@ -73,10 +72,10 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendBinary({},{})",BufferUtil.toDetailString(data),handler);
+            LOG.debug("sendBinary({},{})", BufferUtil.toDetailString(data), handler);
         }
         WebSocketFrame frame = new BinaryFrame().setPayload(data).setFin(true);
-        jettyRemote.uncheckedSendFrame(frame,new SendHandlerWriteCallback(handler));
+        jettyRemote.uncheckedSendFrame(frame, new SendHandlerWriteCallback(handler));
     }
 
     @Override
@@ -86,7 +85,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
     }
 
     @SuppressWarnings(
-    { "rawtypes", "unchecked" })
+        {"rawtypes", "unchecked"})
     @Override
     public void sendObject(Object data, SendHandler handler)
     {
@@ -94,7 +93,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendObject({},{})",data,handler);
+            LOG.debug("sendObject({},{})", data, handler);
         }
 
         Encoder encoder = encoders.getEncoderFor(data.getClass());
@@ -109,7 +108,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
             try
             {
                 String msg = etxt.encode(data);
-                sendText(msg,handler);
+                sendText(msg, handler);
                 return;
             }
             catch (EncodeException e)
@@ -124,7 +123,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
             try (MessageWriter writer = new MessageWriter(session))
             {
                 writer.setCallback(callback);
-                etxt.encode(data,writer);
+                etxt.encode(data, writer);
                 return;
             }
             catch (EncodeException | IOException e)
@@ -138,7 +137,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
             try
             {
                 ByteBuffer buf = ebin.encode(data);
-                sendBinary(buf,handler);
+                sendBinary(buf, handler);
                 return;
             }
             catch (EncodeException e)
@@ -153,7 +152,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
             try (MessageOutputStream out = new MessageOutputStream(session))
             {
                 out.setCallback(callback);
-                ebin.encode(data,out);
+                ebin.encode(data, out);
                 return;
             }
             catch (EncodeException | IOException e)
@@ -171,7 +170,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
         assertMessageNotNull(text);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({})",TextUtil.hint(text));
+            LOG.debug("sendText({})", TextUtil.hint(text));
         }
         return jettyRemote.sendStringByFuture(text);
     }
@@ -183,10 +182,10 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({},{})",TextUtil.hint(text),handler);
+            LOG.debug("sendText({},{})", TextUtil.hint(text), handler);
         }
         WebSocketFrame frame = new TextFrame().setPayload(text).setFin(true);
-        jettyRemote.uncheckedSendFrame(frame,new SendHandlerWriteCallback(handler));
+        jettyRemote.uncheckedSendFrame(frame, new SendHandlerWriteCallback(handler));
     }
 
     @Override

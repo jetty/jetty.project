@@ -30,10 +30,10 @@ public class AnnotationDecorator implements Decorator
 
     public AnnotationDecorator(WebAppContext context)
     {
-       registerHandlers(context);
+        registerHandlers(context);
     }
-    
-    public void registerHandlers (WebAppContext context)
+
+    public void registerHandlers(WebAppContext context)
     {
         _introspector.registerHandler(new ResourceAnnotationHandler(context));
         _introspector.registerHandler(new ResourcesAnnotationHandler(context));
@@ -54,9 +54,10 @@ public class AnnotationDecorator implements Decorator
      * <li> PreDestroy </li>
      * <li> ServletSecurity? </li>
      * </ul>
+     *
      * @param o the object ot introspect
      */
-    protected void introspect (Object o)
+    protected void introspect(Object o)
     {
         _introspector.introspect(o.getClass());
     }
@@ -64,13 +65,13 @@ public class AnnotationDecorator implements Decorator
     @Override
     public Object decorate(Object o)
     {
-       introspect(o);
-       return o;
+        introspect(o);
+        return o;
     }
 
     @Override
     public void destroy(Object o)
     {
-        
+
     }
 }

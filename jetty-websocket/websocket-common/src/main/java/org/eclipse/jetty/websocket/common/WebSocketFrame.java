@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
- * 
+ *
  * <pre>
  *    0                   1                   2                   3
  *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -96,7 +96,7 @@ public abstract class WebSocketFrame implements Frame
 
     /**
      * Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.
-     * 
+     *
      * <pre>
      *   1000_0000 (0x80) = fin
      *   0100_0000 (0x40) = rsv1
@@ -108,7 +108,7 @@ public abstract class WebSocketFrame implements Frame
     protected byte finRsvOp;
     protected boolean masked = false;
 
-    protected byte mask[];
+    protected byte[] mask;
     /**
      * The payload data.
      * <p>
@@ -118,6 +118,7 @@ public abstract class WebSocketFrame implements Frame
 
     /**
      * Construct form opcode
+     *
      * @param opcode the opcode the frame is based on
      */
     protected WebSocketFrame(byte opcode)
@@ -131,10 +132,10 @@ public abstract class WebSocketFrame implements Frame
     protected void copyHeaders(Frame frame)
     {
         finRsvOp = 0x00;
-        finRsvOp |= frame.isFin()?0x80:0x00;
-        finRsvOp |= frame.isRsv1()?0x40:0x00;
-        finRsvOp |= frame.isRsv2()?0x20:0x00;
-        finRsvOp |= frame.isRsv3()?0x10:0x00;
+        finRsvOp |= frame.isFin() ? 0x80 : 0x00;
+        finRsvOp |= frame.isRsv1() ? 0x40 : 0x00;
+        finRsvOp |= frame.isRsv2() ? 0x20 : 0x00;
+        finRsvOp |= frame.isRsv3() ? 0x10 : 0x00;
         finRsvOp |= frame.getOpCode() & 0x0F;
 
         masked = frame.isMasked();
@@ -188,15 +189,11 @@ public abstract class WebSocketFrame implements Frame
         {
             return false;
         }
-        if (!Arrays.equals(mask,other.mask))
+        if (!Arrays.equals(mask, other.mask))
         {
             return false;
         }
-        if (masked != other.masked)
-        {
-            return false;
-        }
-        return true;
+        return masked == other.masked;
     }
 
     @Override
@@ -246,7 +243,7 @@ public abstract class WebSocketFrame implements Frame
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((data == null)?0:data.hashCode());
+        result = (prime * result) + ((data == null) ? 0 : data.hashCode());
         result = (prime * result) + finRsvOp;
         result = (prime * result) + Arrays.hashCode(mask);
         return result;
@@ -309,7 +306,7 @@ public abstract class WebSocketFrame implements Frame
     public WebSocketFrame setFin(boolean fin)
     {
         // set bit 1
-        this.finRsvOp = (byte)((finRsvOp & 0x7F) | (fin?0x80:0x00));
+        this.finRsvOp = (byte)((finRsvOp & 0x7F) | (fin ? 0x80 : 0x00));
         return this;
     }
 
@@ -338,9 +335,8 @@ public abstract class WebSocketFrame implements Frame
      * The provided buffer will be used as is, no copying of bytes performed.
      * <p>
      * The provided buffer should be flipped and ready to READ from.
-     * 
-     * @param buf
-     *            the bytebuffer to set
+     *
+     * @param buf the bytebuffer to set
      * @return the frame itself
      */
     public WebSocketFrame setPayload(ByteBuffer buf)
@@ -352,21 +348,21 @@ public abstract class WebSocketFrame implements Frame
     public WebSocketFrame setRsv1(boolean rsv1)
     {
         // set bit 2
-        this.finRsvOp = (byte)((finRsvOp & 0xBF) | (rsv1?0x40:0x00));
+        this.finRsvOp = (byte)((finRsvOp & 0xBF) | (rsv1 ? 0x40 : 0x00));
         return this;
     }
 
     public WebSocketFrame setRsv2(boolean rsv2)
     {
         // set bit 3
-        this.finRsvOp = (byte)((finRsvOp & 0xDF) | (rsv2?0x20:0x00));
+        this.finRsvOp = (byte)((finRsvOp & 0xDF) | (rsv2 ? 0x20 : 0x00));
         return this;
     }
 
     public WebSocketFrame setRsv3(boolean rsv3)
     {
         // set bit 4
-        this.finRsvOp = (byte)((finRsvOp & 0xEF) | (rsv3?0x10:0x00));
+        this.finRsvOp = (byte)((finRsvOp & 0xEF) | (rsv3 ? 0x10 : 0x00));
         return this;
     }
 
@@ -379,9 +375,9 @@ public abstract class WebSocketFrame implements Frame
         b.append("len=").append(getPayloadLength());
         b.append(",fin=").append((finRsvOp & 0x80) != 0);
         b.append(",rsv=");
-        b.append(((finRsvOp & 0x40) != 0)?'1':'.');
-        b.append(((finRsvOp & 0x20) != 0)?'1':'.');
-        b.append(((finRsvOp & 0x10) != 0)?'1':'.');
+        b.append(((finRsvOp & 0x40) != 0) ? '1' : '.');
+        b.append(((finRsvOp & 0x20) != 0) ? '1' : '.');
+        b.append(((finRsvOp & 0x10) != 0) ? '1' : '.');
         b.append(",masked=").append(masked);
         b.append(']');
         return b.toString();

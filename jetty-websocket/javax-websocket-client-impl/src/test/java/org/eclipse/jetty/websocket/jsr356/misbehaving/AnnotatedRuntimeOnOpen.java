@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.misbehaving;
 
 import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.security.authentication;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -38,10 +34,15 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test class for {@link SpnegoAuthenticator}.
  */
-public class SpnegoAuthenticatorTest {
+public class SpnegoAuthenticatorTest
+{
     private SpnegoAuthenticator _authenticator;
 
     @BeforeEach
@@ -74,7 +75,7 @@ public class SpnegoAuthenticatorTest {
         MetaData.Request metadata = new MetaData.Request(new HttpFields());
         metadata.setURI(new HttpURI("http://localhost"));
         req.setMetaData(metadata);
-        
+
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());

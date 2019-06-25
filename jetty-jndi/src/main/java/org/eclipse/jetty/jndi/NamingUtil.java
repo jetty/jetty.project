@@ -31,7 +31,6 @@ import javax.naming.NamingException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 /**
  * Naming Utility Methods
  */
@@ -41,10 +40,9 @@ public class NamingUtil
      * @deprecated no replacement, use a logger-per-class idiom instead.
      */
     @Deprecated
-    public final static Logger __log = Log.getLogger("jndi");
+    public static final Logger __log = Log.getLogger("jndi");
     private static final Logger LOG = Log.getLogger(NamingUtil.class);
 
-    /* ------------------------------------------------------------ */
     /**
      * Bind an object to a context ensuring all sub-contexts
      * are created if necessary
@@ -53,9 +51,9 @@ public class NamingUtil
      * @param nameStr the name relative to context to bind
      * @param obj the object to be bound
      * @return the bound context
-     * @exception NamingException if an error occurs
+     * @throws NamingException if an error occurs
      */
-    public static Context bind (Context ctx, String nameStr, Object obj)
+    public static Context bind(Context ctx, String nameStr, Object obj)
         throws NamingException
     {
         Name name = ctx.getNameParser("").parse(nameStr);
@@ -67,30 +65,30 @@ public class NamingUtil
         Context subCtx = ctx;
 
         //last component of the name will be the name to bind
-        for (int i=0; i < name.size() - 1; i++)
+        for (int i = 0; i < name.size() - 1; i++)
         {
             try
             {
-                subCtx = (Context)subCtx.lookup (name.get(i));
-                if(LOG.isDebugEnabled())
-                    LOG.debug("Subcontext "+name.get(i)+" already exists");
+                subCtx = (Context)subCtx.lookup(name.get(i));
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Subcontext " + name.get(i) + " already exists");
             }
             catch (NameNotFoundException e)
             {
                 subCtx = subCtx.createSubcontext(name.get(i));
-                if(LOG.isDebugEnabled())
-                    LOG.debug("Subcontext "+name.get(i)+" created");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Subcontext " + name.get(i) + " created");
             }
         }
 
-        subCtx.rebind (name.get(name.size() - 1), obj);
-        if(LOG.isDebugEnabled())
-            LOG.debug("Bound object to "+name.get(name.size() - 1));
+        subCtx.rebind(name.get(name.size() - 1), obj);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Bound object to " + name.get(name.size() - 1));
         return subCtx;
     }
 
-    public static void unbind (Context ctx)
-    throws NamingException
+    public static void unbind(Context ctx)
+        throws NamingException
     {
         //unbind everything in the context and all of its subdirectories
         NamingEnumeration ne = ctx.listBindings(ctx.getNameInNamespace());
@@ -109,18 +107,19 @@ public class NamingUtil
 
     /**
      * Do a deep listing of the bindings for a context.
+     *
      * @param ctx the context containing the name for which to list the bindings
      * @param name the name in the context to list
      * @return map: key is fully qualified name, value is the bound object
      * @throws NamingException if unable to flatten bindings
      */
-    public static Map flattenBindings (Context ctx, String name)
-    throws NamingException
+    public static Map flattenBindings(Context ctx, String name)
+        throws NamingException
     {
         HashMap map = new HashMap();
 
         //the context representation of name arg
-        Context c = (Context)ctx.lookup (name);
+        Context c = (Context)ctx.lookup(name);
         NameParser parser = c.getNameParser("");
         NamingEnumeration enm = ctx.listBindings(name);
         while (enm.hasMore())
@@ -129,18 +128,16 @@ public class NamingUtil
 
             if (b.getObject() instanceof Context)
             {
-                map.putAll(flattenBindings (c, b.getName()));
+                map.putAll(flattenBindings(c, b.getName()));
             }
             else
             {
-                Name compoundName = parser.parse (c.getNameInNamespace());
+                Name compoundName = parser.parse(c.getNameInNamespace());
                 compoundName.add(b.getName());
-                map.put (compoundName.toString(), b.getObject());
+                map.put(compoundName.toString(), b.getObject());
             }
-
         }
 
         return map;
     }
-
 }

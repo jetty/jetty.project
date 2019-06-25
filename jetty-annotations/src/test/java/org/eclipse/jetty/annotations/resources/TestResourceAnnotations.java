@@ -18,13 +18,9 @@
 
 package org.eclipse.jetty.annotations.resources;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
@@ -38,6 +34,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestResourceAnnotations
 {
@@ -69,8 +68,8 @@ public class TestResourceAnnotations
     }
 
     @Test
-    public void testResourceAnnotations ()
-    throws Exception
+    public void testResourceAnnotations()
+        throws Exception
     {
         new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
         new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
@@ -107,7 +106,7 @@ public class TestResourceAnnotations
         //only 1 field injection because the other has no Resource mapping
         assertEquals(1, resBInjections.size());
         Injection fi = resBInjections.iterator().next();
-        assertEquals ("f", fi.getTarget().getName());
+        assertEquals("f", fi.getTarget().getName());
 
         //3 method injections on class ResourceA, 4 field injections
         Set<Injection> resAInjections = injections.getInjections(ResourceA.class.getName());
@@ -130,9 +129,9 @@ public class TestResourceAnnotations
         injections.inject(binst);
 
         //check injected values
-        Field f = ResourceB.class.getDeclaredField ("f");
+        Field f = ResourceB.class.getDeclaredField("f");
         f.setAccessible(true);
-        assertEquals(objB , f.get(binst));
+        assertEquals(objB, f.get(binst));
 
         //@Resource(mappedName="resA") //test the default naming scheme but using a mapped name from the environment
         f = ResourceA.class.getDeclaredField("g");
@@ -151,8 +150,8 @@ public class TestResourceAnnotations
     }
 
     @Test
-    public void testResourcesAnnotation ()
-    throws Exception
+    public void testResourcesAnnotation()
+        throws Exception
     {
         new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
         new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);

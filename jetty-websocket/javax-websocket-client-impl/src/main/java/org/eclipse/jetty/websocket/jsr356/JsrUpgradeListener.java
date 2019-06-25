@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.List;
 import java.util.Map;
-
 import javax.websocket.ClientEndpointConfig.Configurator;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;

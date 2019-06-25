@@ -93,7 +93,6 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         return bytesOut.longValue();
     }
 
-
     protected void addBytesOut(long bytesOut)
     {
         this.bytesOut.add(bytesOut);
@@ -209,9 +208,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         if (!closed.get())
             return false;
-        if (sweeps.incrementAndGet() < 4)
-            return false;
-        return true;
+        return sweeps.incrementAndGet() >= 4;
     }
 
     public void remove()

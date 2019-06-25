@@ -38,7 +38,7 @@ public class FramePipes
         @Override
         public void incomingFrame(Frame frame)
         {
-            this.outgoing.outgoingFrame(frame,null, BatchMode.OFF);
+            this.outgoing.outgoingFrame(frame, null, BatchMode.OFF);
         }
     }
 

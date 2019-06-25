@@ -39,13 +39,12 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
-/** File Resource.
+/**
+ * File Resource.
  *
  * Handle resources of implied or explicit file type.
  * This class can check for aliasing in the filesystem (eg case
- * insensitivity).  By default this is turned on, or it can be controlled 
+ * insensitivity).  By default this is turned on, or it can be controlled
  * by calling the static method @see FileResource#setCheckAliases(boolean)
  *
  * @deprecated Use {@link PathResource}
@@ -55,20 +54,18 @@ public class FileResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(FileResource.class);
 
-    /* ------------------------------------------------------------ */
     private final File _file;
     private final URI _uri;
     private final URI _alias;
-    
-    /* -------------------------------------------------------- */
+
     public FileResource(URL url)
-            throws IOException, URISyntaxException
+        throws IOException, URISyntaxException
     {
         File file;
         try
         {
             // Try standard API to convert URL to file.
-            file =new File(url.toURI());
+            file = new File(url.toURI());
             assertValidPath(file.toString());
         }
         catch (URISyntaxException e)
@@ -79,46 +76,45 @@ public class FileResource extends Resource
         {
             if (!url.toString().startsWith("file:"))
                 throw new IllegalArgumentException("!file:");
-            
+
             LOG.ignore(e);
             try
             {
                 // Assume that File.toURL produced unencoded chars. So try encoding them.
-                String file_url="file:"+URIUtil.encodePath(url.toString().substring(5));
-                URI uri = new URI(file_url);
-                if (uri.getAuthority()==null)
+                String fileUrl = "file:" + URIUtil.encodePath(url.toString().substring(5));
+                URI uri = new URI(fileUrl);
+                if (uri.getAuthority() == null)
                     file = new File(uri);
                 else
-                    file = new File("//"+uri.getAuthority()+URIUtil.decodePath(url.getFile()));
+                    file = new File("//" + uri.getAuthority() + URIUtil.decodePath(url.getFile()));
             }
-            catch (Exception e2)
+            catch (Exception ex2)
             {
-                LOG.ignore(e2);
+                LOG.ignore(ex2);
                 // Still can't get the file.  Doh! try good old hack!
-                URLConnection connection=url.openConnection();
+                URLConnection connection = url.openConnection();
                 Permission perm = connection.getPermission();
-                file = new File(perm==null?url.getFile():perm.getName());
+                file = new File(perm == null ? url.getFile() : perm.getName());
             }
         }
-        
-        _file=file;
-        _uri=normalizeURI(_file,url.toURI());
-        _alias=checkFileAlias(_uri,_file);
+
+        _file = file;
+        _uri = normalizeURI(_file, url.toURI());
+        _alias = checkFileAlias(_uri, _file);
     }
 
-    /* -------------------------------------------------------- */
     public FileResource(URI uri)
     {
-        File file=new File(uri);
-        _file=file;
+        File file = new File(uri);
+        _file = file;
         try
         {
-            URI file_uri = _file.toURI();
+            URI fileUri = _file.toURI();
             _uri = normalizeURI(_file, uri);
             assertValidPath(file.toString());
 
             // Is it a URI alias?
-            if (!URIUtil.equalsIgnoreEncodings(_uri.toASCIIString(), file_uri.toString()))
+            if (!URIUtil.equalsIgnoreEncodings(_uri.toASCIIString(), fileUri.toString()))
                 _alias = _file.toURI();
             else
                 _alias = checkFileAlias(_uri, _file);
@@ -134,11 +130,10 @@ public class FileResource extends Resource
         }
     }
 
-    /* -------------------------------------------------------- */
     public FileResource(File file)
     {
         assertValidPath(file.toString());
-        _file=file;
+        _file = file;
         try
         {
             _uri = normalizeURI(_file, _file.toURI());
@@ -152,10 +147,9 @@ public class FileResource extends Resource
                 }
             };
         }
-        _alias=checkFileAlias(_uri,_file);
+        _alias = checkFileAlias(_uri, _file);
     }
 
-    /* -------------------------------------------------------- */
     public FileResource(File base, String childPath)
     {
         String encoded = URIUtil.encodePath(childPath);
@@ -169,11 +163,11 @@ public class FileResource extends Resource
             if (base.isDirectory())
             {
                 // treat all paths being added as relative
-                uri=new URI(URIUtil.addEncodedPaths(base.toURI().toASCIIString(),encoded));
+                uri = new URI(URIUtil.addEncodedPaths(base.toURI().toASCIIString(), encoded));
             }
             else
             {
-                uri=new URI(base.toURI().toASCIIString()+encoded);
+                uri = new URI(base.toURI().toASCIIString() + encoded);
             }
         }
         catch (final URISyntaxException e)
@@ -186,76 +180,74 @@ public class FileResource extends Resource
             };
         }
 
-        _uri=uri;
-        _alias=checkFileAlias(_uri,_file);
+        _uri = uri;
+        _alias = checkFileAlias(_uri, _file);
     }
 
-    /* -------------------------------------------------------- */
-    private static URI normalizeURI(File file, URI uri) throws URISyntaxException {
-        String u =uri.toASCIIString();
+    private static URI normalizeURI(File file, URI uri) throws URISyntaxException
+    {
+        String u = uri.toASCIIString();
         if (file.isDirectory())
         {
-            if(!u.endsWith("/"))
-                u+="/";
+            if (!u.endsWith("/"))
+                u += "/";
         }
         else if (file.exists() && u.endsWith("/"))
-            u=u.substring(0,u.length()-1);
+            u = u.substring(0, u.length() - 1);
         return new URI(u);
     }
 
-    /* -------------------------------------------------------- */
     private static URI checkFileAlias(final URI uri, final File file)
     {
         try
         {
-            if (!URIUtil.equalsIgnoreEncodings(uri,file.toURI()))
+            if (!URIUtil.equalsIgnoreEncodings(uri, file.toURI()))
             {
                 // Return alias pointing to Java File normalized URI
                 return new File(uri).getAbsoluteFile().toURI();
             }
 
-            String abs=file.getAbsolutePath();
-            String can=file.getCanonicalPath();
+            String abs = file.getAbsolutePath();
+            String can = file.getCanonicalPath();
 
             if (!abs.equals(can))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("ALIAS abs={} can={}",abs,can);
+                    LOG.debug("ALIAS abs={} can={}", abs, can);
 
-                URI alias=new File(can).toURI();
+                URI alias = new File(can).toURI();
                 // Have to encode the path as File.toURI does not!
-                return new URI("file://"+URIUtil.encodePath(alias.getPath()));
+                return new URI("file://" + URIUtil.encodePath(alias.getPath()));
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            LOG.warn("bad alias for {}: {}",file,e.toString());
+            LOG.warn("bad alias for {}: {}", file, e.toString());
             LOG.debug(e);
             try
             {
                 return new URI("http://eclipse.org/bad/canonical/alias");
             }
-            catch(Exception e2)
+            catch (Exception ex2)
             {
-                LOG.ignore(e2);
+                LOG.ignore(ex2);
                 throw new RuntimeException(e);
             }
         }
 
         return null;
     }
-    
-    /* -------------------------------------------------------- */
+
     @Override
     public Resource addPath(String path)
-            throws IOException, MalformedURLException
+        throws IOException
     {
         assertValidPath(path);
         path = org.eclipse.jetty.util.URIUtil.canonicalPath(path);
 
-        if (path==null)
+        if (path == null)
             throw new MalformedURLException();
-        
+
         if ("/".equals(path))
             return this;
 
@@ -271,14 +263,12 @@ public class FileResource extends Resource
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public URI getAlias()
     {
         return _alias;
     }
-    
-    /* -------------------------------------------------------- */
+
     /**
      * Returns true if the resource exists.
      */
@@ -287,8 +277,7 @@ public class FileResource extends Resource
     {
         return _file.exists();
     }
-        
-    /* -------------------------------------------------------- */
+
     /**
      * Returns the last modified time
      */
@@ -298,7 +287,6 @@ public class FileResource extends Resource
         return _file.lastModified();
     }
 
-    /* -------------------------------------------------------- */
     /**
      * Returns true if the resource is a container/directory.
      */
@@ -308,7 +296,6 @@ public class FileResource extends Resource
         return _file.exists() && _file.isDirectory() || _uri.toASCIIString().endsWith("/");
     }
 
-    /* --------------------------------------------------------- */
     /**
      * Return the length of the resource
      */
@@ -317,9 +304,7 @@ public class FileResource extends Resource
     {
         return _file.length();
     }
-        
 
-    /* --------------------------------------------------------- */
     /**
      * Returns the name of the resource
      */
@@ -328,8 +313,7 @@ public class FileResource extends Resource
     {
         return _file.getAbsolutePath();
     }
-        
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns an File representing the given resource or NULL if this
      * is not possible.
@@ -339,8 +323,7 @@ public class FileResource extends Resource
     {
         return _file;
     }
-        
-    /* --------------------------------------------------------- */
+
     /**
      * Returns an input stream to the resource
      */
@@ -350,77 +333,71 @@ public class FileResource extends Resource
         return new FileInputStream(_file);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        return FileChannel.open(_file.toPath(),StandardOpenOption.READ);
+        return FileChannel.open(_file.toPath(), StandardOpenOption.READ);
     }
-        
-    /* --------------------------------------------------------- */
+
     /**
      * Deletes the given resource
      */
     @Override
     public boolean delete()
-            throws SecurityException
+        throws SecurityException
     {
         return _file.delete();
     }
 
-    /* --------------------------------------------------------- */
     /**
      * Rename the given resource
      */
     @Override
-    public boolean renameTo( Resource dest)
-            throws SecurityException
+    public boolean renameTo(Resource dest)
+        throws SecurityException
     {
-        if( dest instanceof FileResource)
-            return _file.renameTo( ((FileResource)dest)._file);
+        if (dest instanceof FileResource)
+            return _file.renameTo(((FileResource)dest)._file);
         else
             return false;
     }
 
-    /* --------------------------------------------------------- */
     /**
      * Returns a list of resources contained in the given resource
      */
     @Override
     public String[] list()
     {
-        String[] list =_file.list();
-        if (list==null)
+        String[] list = _file.list();
+        if (list == null)
             return null;
-        for (int i=list.length;i-->0;)
+        for (int i = list.length; i-- > 0; )
         {
-            if (new File(_file,list[i]).isDirectory() &&
-                    !list[i].endsWith("/"))
-                list[i]+="/";
+            if (new File(_file, list[i]).isDirectory() &&
+                !list[i].endsWith("/"))
+                list[i] += "/";
         }
         return list;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param o the object to compare against this instance
-     * @return <code>true</code> of the object <code>o</code> is a {@link FileResource} pointing to the same file as this resource. 
+     * @return <code>true</code> of the object <code>o</code> is a {@link FileResource} pointing to the same file as this resource.
      */
     @Override
     @SuppressWarnings("ReferenceEquality")
-    public boolean equals( Object o)
+    public boolean equals(Object o)
     {
         if (this == o)
             return true;
 
-        if (null == o || ! (o instanceof FileResource))
+        if (null == o || !(o instanceof FileResource))
             return false;
 
-        FileResource f=(FileResource)o;
-        return f._file==_file || (null != _file && _file.equals(f._file));
+        FileResource f = (FileResource)o;
+        return f._file == _file || (null != _file && _file.equals(f._file));
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return the hashcode.
      */
@@ -429,21 +406,20 @@ public class FileResource extends Resource
     {
         return null == _file ? super.hashCode() : _file.hashCode();
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public void copyTo(File destination)
-            throws IOException
+        throws IOException
     {
         if (isDirectory())
         {
-            IO.copyDir(getFile(),destination);
+            IO.copyDir(getFile(), destination);
         }
         else
         {
             if (destination.exists())
-                throw new IllegalArgumentException(destination+" exists");
-            IO.copy(getFile(),destination);
+                throw new IllegalArgumentException(destination + " exists");
+            IO.copy(getFile(), destination);
         }
     }
 
@@ -470,7 +446,7 @@ public class FileResource extends Resource
             throw new IllegalStateException(e);
         }
     }
-    
+
     @Override
     public URI getURI()
     {

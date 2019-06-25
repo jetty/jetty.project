@@ -18,15 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
@@ -40,6 +34,11 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 
 public class LargeMessageTest
 {
@@ -87,12 +86,12 @@ public class LargeMessageTest
         container.setDefaultMaxTextMessageBufferSize(LARGER_THAN_DEFAULT_SIZE);
 
         EndpointEchoClient echoer = new EndpointEchoClient();
-        assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
+        assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
 
         URI wsUri = WSURI.toWebsocket(server.getURI()).resolve("/");
 
         // Issue connect using instance of class that extends Endpoint
-        Session session = container.connectToServer(echoer,wsUri);
+        Session session = container.connectToServer(echoer, wsUri);
         byte buf[] = new byte[LARGER_THAN_DEFAULT_SIZE];
         Arrays.fill(buf, (byte)'x');
         String message = new String(buf, UTF_8);

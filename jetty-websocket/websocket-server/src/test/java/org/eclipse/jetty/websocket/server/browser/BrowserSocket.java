@@ -73,8 +73,8 @@ public class BrowserSocket
                 {
                     randomText[i] = letters[rand.nextInt(lettersLen)];
                 }
-                msg = String.format("ManyThreads [%s]",String.valueOf(randomText));
-                remote.sendString(msg,null);
+                msg = String.format("ManyThreads [%s]", String.valueOf(randomText));
+                remote.sendString(msg, null);
             }
         }
     }
@@ -94,7 +94,7 @@ public class BrowserSocket
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
-        LOG.info("Connect [{}]",session);
+        LOG.info("Connect [{}]", session);
         this.session = session;
     }
 
@@ -102,14 +102,14 @@ public class BrowserSocket
     public void onDisconnect(int statusCode, String reason)
     {
         this.session = null;
-        LOG.info("Closed [{}, {}]",statusCode,reason);
+        LOG.info("Closed [{}, {}]", statusCode, reason);
     }
 
     @OnWebSocketError
     public void onError(Throwable cause)
     {
         this.session = null;
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
     }
 
     @OnWebSocketMessage
@@ -118,11 +118,11 @@ public class BrowserSocket
         if (message.length() > 300)
         {
             int len = message.length();
-            LOG.info("onTextMessage({} ... {}) size:{}",message.substring(0,15),message.substring(len - 15,len).replaceAll("[\r\n]*",""),len);
+            LOG.info("onTextMessage({} ... {}) size:{}", message.substring(0, 15), message.substring(len - 15, len).replaceAll("[\r\n]*", ""), len);
         }
         else
         {
-            LOG.info("onTextMessage({})",message);
+            LOG.info("onTextMessage({})", message);
         }
 
         // Is multi-line?
@@ -151,7 +151,7 @@ public class BrowserSocket
             catch (IOException e)
             {
                 writeMessage("Unable to read resource: " + name);
-                LOG.warn("Unable to read resource: " + name,e);
+                LOG.warn("Unable to read resource: " + name, e);
             }
             return;
         }
@@ -160,7 +160,7 @@ public class BrowserSocket
         int idx = message.indexOf(':');
         if (idx > 0)
         {
-            String key = message.substring(0,idx).toLowerCase(Locale.ENGLISH);
+            String key = message.substring(0, idx).toLowerCase(Locale.ENGLISH);
             String val = message.substring(idx + 1);
             switch (key)
             {
@@ -193,7 +193,7 @@ public class BrowserSocket
                     int size = Integer.parseInt(parts[0]);
                     int count = Integer.parseInt(parts[1]);
 
-                    writeManyAsync(size,count);
+                    writeManyAsync(size, count);
                     break;
                 }
                 case "manythreads":
@@ -208,7 +208,7 @@ public class BrowserSocket
                     // Setup threads
                     for (int n = 0; n < threadCount; n++)
                     {
-                        threads[n] = new Thread(new WriteMany(session.getRemote(),size,count),"WriteMany[" + n + "]");
+                        threads[n] = new Thread(new WriteMany(session.getRemote(), size, count), "WriteMany[" + n + "]");
                     }
 
                     // Execute threads
@@ -223,8 +223,8 @@ public class BrowserSocket
                 case "time":
                 {
                     Calendar now = Calendar.getInstance();
-                    DateFormat sdf = SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.FULL,SimpleDateFormat.FULL);
-                    writeMessage("Server time: %s",sdf.format(now.getTime()));
+                    DateFormat sdf = SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.FULL, SimpleDateFormat.FULL);
+                    writeMessage("Server time: %s", sdf.format(now.getTime()));
                     break;
                 }
                 case "dump":
@@ -234,7 +234,7 @@ public class BrowserSocket
                 }
                 default:
                 {
-                    writeMessage("key[%s] val[%s]",key,val);
+                    writeMessage("key[%s] val[%s]", key, val);
                 }
             }
             return;
@@ -258,7 +258,7 @@ public class BrowserSocket
             {
                 randomText[i] = letters[rand.nextInt(lettersLen)];
             }
-            writeMessage("Many [%s]",String.valueOf(randomText));
+            writeMessage("Many [%s]", String.valueOf(randomText));
         }
     }
 
@@ -277,11 +277,11 @@ public class BrowserSocket
         }
 
         // Async write
-        session.getRemote().sendString(message,null);
+        session.getRemote().sendString(message, null);
     }
 
     private void writeMessage(String format, Object... args)
     {
-        writeMessage(String.format(format,args));
+        writeMessage(String.format(format, args));
     }
 }

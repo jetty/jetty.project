@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.handlers;
 
 import java.io.Reader;
-
 import javax.websocket.MessageHandler;
 
 public class ReaderWholeHandler implements MessageHandler.Whole<Reader>

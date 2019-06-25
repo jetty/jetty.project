@@ -69,8 +69,8 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             connection = activate();
         }
         return connection;
-    }    
-    
+    }
+
     protected void lock()
     {
         lock.lock();
@@ -117,9 +117,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         {
             if (muxedConnections.containsKey(connection))
                 return true;
-            if (busyConnections.containsKey(connection))
-                return true;
-            return false;
+            return busyConnections.containsKey(connection);
         }
         finally
         {
@@ -262,7 +260,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             if (holder == null)
             {
                 activeRemoved = false;
-                for (Iterator<Holder> iterator = idleConnections.iterator(); iterator.hasNext();)
+                for (Iterator<Holder> iterator = idleConnections.iterator(); iterator.hasNext(); )
                 {
                     holder = iterator.next();
                     if (holder.connection == connection)
@@ -337,13 +335,13 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         try
         {
             busyConnections.values().stream()
-                    .map(holder -> holder.connection)
-                    .filter(connection -> connection instanceof Sweeper.Sweepable)
-                    .collect(Collectors.toCollection(() -> toSweep));
+                .map(holder -> holder.connection)
+                .filter(connection -> connection instanceof Sweeper.Sweepable)
+                .collect(Collectors.toCollection(() -> toSweep));
             muxedConnections.values().stream()
-                    .map(holder -> holder.connection)
-                    .filter(connection -> connection instanceof Sweeper.Sweepable)
-                    .collect(Collectors.toCollection(() -> toSweep));
+                .map(holder -> holder.connection)
+                .filter(connection -> connection instanceof Sweeper.Sweepable)
+                .collect(Collectors.toCollection(() -> toSweep));
         }
         finally
         {
@@ -356,11 +354,11 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             {
                 boolean removed = remove(connection, true);
                 LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                        connection,
-                        System.lineSeparator(),
-                        removed ? "Removed" : "Not removed",
-                        System.lineSeparator(),
-                        dump());
+                    connection,
+                    System.lineSeparator(),
+                    removed ? "Removed" : "Not removed",
+                    System.lineSeparator(),
+                    dump());
             }
         }
 
@@ -385,13 +383,13 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             unlock();
         }
         return String.format("%s@%x[c=%d/%d,b=%d,m=%d,i=%d]",
-                getClass().getSimpleName(),
-                hashCode(),
-                getConnectionCount(),
-                getMaxConnectionCount(),
-                busySize,
-                muxedSize,
-                idleSize);
+            getClass().getSimpleName(),
+            hashCode(),
+            getConnectionCount(),
+            getMaxConnectionCount(),
+            busySize,
+            muxedSize,
+            idleSize);
     }
 
     private static class Holder

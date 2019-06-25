@@ -32,39 +32,38 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
-
 public class OutgoingFramesCapture implements OutgoingFrames
 {
     private LinkedBlockingDeque<WebSocketFrame> frames = new LinkedBlockingDeque<>();
 
     public void assertFrameCount(int expectedCount)
     {
-        assertThat("Captured frame count",frames.size(),is(expectedCount));
+        assertThat("Captured frame count", frames.size(), is(expectedCount));
     }
 
     public void assertHasFrame(byte op)
     {
-        assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
+        assertThat(OpCode.name(op), getFrameCount(op), greaterThanOrEqualTo(1));
     }
 
     public void assertHasFrame(byte op, int expectedCount)
     {
-        assertThat(OpCode.name(op),getFrameCount(op),is(expectedCount));
+        assertThat(OpCode.name(op), getFrameCount(op), is(expectedCount));
     }
 
     public void assertHasNoFrames()
     {
-        assertThat("Has no frames",frames.size(),is(0));
+        assertThat("Has no frames", frames.size(), is(0));
     }
 
     public void dump()
     {
-        System.out.printf("Captured %d outgoing writes%n",frames.size());
-        int i=0;
-        for (WebSocketFrame frame: frames)
+        System.out.printf("Captured %d outgoing writes%n", frames.size());
+        int i = 0;
+        for (WebSocketFrame frame : frames)
         {
-            System.out.printf("[%3d] %s%n",i,frame);
-            System.out.printf("      %s%n",BufferUtil.toDetailString(frame.getPayload()));
+            System.out.printf("[%3d] %s%n", i, frame);
+            System.out.printf("      %s%n", BufferUtil.toDetailString(frame.getPayload()));
             i++;
         }
     }

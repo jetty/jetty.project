@@ -243,7 +243,7 @@ public interface Request
 
     /**
      * @param accepts the media types that are acceptable in the response, such as
-     *                "text/plain;q=0.5" or "text/html" (corresponds to the {@code Accept} header)
+     * "text/plain;q=0.5" or "text/html" (corresponds to the {@code Accept} header)
      * @return this request object
      */
     Request accept(String... accepts);
@@ -268,7 +268,7 @@ public interface Request
 
     /**
      * @param timeout the total timeout for the request/response conversation;
-     *                use zero or a negative value to disable the timeout
+     * use zero or a negative value to disable the timeout
      * @param unit the timeout unit
      * @return this request object
      */
@@ -287,8 +287,8 @@ public interface Request
 
     /**
      * @param listenerClass the class of the listener, or null for all listeners classes
-     * @return the listeners for request events of the given class
      * @param <T> the type of listener class
+     * @return the listeners for request events of the given class
      */
     <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass);
 
@@ -437,27 +437,27 @@ public interface Request
     /**
      * Common, empty, super-interface for request listeners.
      */
-    public interface RequestListener extends EventListener
+    interface RequestListener extends EventListener
     {
     }
 
     /**
      * Listener for the request queued event.
      */
-    public interface QueuedListener extends RequestListener
+    interface QueuedListener extends RequestListener
     {
         /**
          * Callback method invoked when the request is queued, waiting to be sent
          *
          * @param request the request being queued
          */
-        public void onQueued(Request request);
+        void onQueued(Request request);
     }
 
     /**
      * Listener for the request begin event.
      */
-    public interface BeginListener extends RequestListener
+    interface BeginListener extends RequestListener
     {
         /**
          * Callback method invoked when the request begins being processed in order to be sent.
@@ -465,86 +465,90 @@ public interface Request
          *
          * @param request the request that begins being processed
          */
-        public void onBegin(Request request);
+        void onBegin(Request request);
     }
 
     /**
      * Listener for the request headers event.
      */
-    public interface HeadersListener extends RequestListener
+    interface HeadersListener extends RequestListener
     {
         /**
          * Callback method invoked when the request headers (and perhaps small content) are ready to be sent.
          * The request has been converted into bytes, but not yet sent to the server, and further modifications
          * to the request may have no effect.
+         *
          * @param request the request that is about to be committed
          */
-        public void onHeaders(Request request);
+        void onHeaders(Request request);
     }
 
     /**
      * Listener for the request committed event.
      */
-    public interface CommitListener extends RequestListener
+    interface CommitListener extends RequestListener
     {
         /**
          * Callback method invoked when the request headers (and perhaps small content) have been sent.
          * The request is now committed, and in transit to the server, and further modifications to the
          * request may have no effect.
+         *
          * @param request the request that has been committed
          */
-        public void onCommit(Request request);
+        void onCommit(Request request);
     }
 
     /**
      * Listener for the request content event.
      */
-    public interface ContentListener extends RequestListener
+    interface ContentListener extends RequestListener
     {
         /**
          * Callback method invoked when a chunk of request content has been sent successfully.
          * Changes to bytes in the given buffer have no effect, as the content has already been sent.
+         *
          * @param request the request that has been committed
          * @param content the content
          */
-        public void onContent(Request request, ByteBuffer content);
+        void onContent(Request request, ByteBuffer content);
     }
 
     /**
      * Listener for the request succeeded event.
      */
-    public interface SuccessListener extends RequestListener
+    interface SuccessListener extends RequestListener
     {
         /**
          * Callback method invoked when the request has been successfully sent.
          *
          * @param request the request sent
          */
-        public void onSuccess(Request request);
+        void onSuccess(Request request);
     }
 
     /**
      * Listener for the request failed event.
      */
-    public interface FailureListener extends RequestListener
+    interface FailureListener extends RequestListener
     {
         /**
          * Callback method invoked when the request has failed to be sent
+         *
          * @param request the request that failed
          * @param failure the failure
          */
-        public void onFailure(Request request, Throwable failure);
+        void onFailure(Request request, Throwable failure);
     }
 
     /**
      * Listener for all request events.
      */
-    public interface Listener extends QueuedListener, BeginListener, HeadersListener, CommitListener, ContentListener, SuccessListener, FailureListener
+    interface Listener extends QueuedListener, BeginListener, HeadersListener, CommitListener, ContentListener, SuccessListener, FailureListener
     {
         /**
          * An empty implementation of {@link Listener}
          */
-        public static class Adapter implements Listener
+        class Adapter implements Listener
         {
             @Override
             public void onQueued(Request request)

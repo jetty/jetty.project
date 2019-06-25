@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
 import java.util.Arrays;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -41,6 +36,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 public class MessageOutputStreamTest
 {
@@ -67,11 +67,11 @@ public class MessageOutputStreamTest
         policy.setMaxBinaryMessageBufferSize(1024);
 
         // Container
-        WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
-    
+        WebSocketContainerScope containerScope = new SimpleContainerScope(policy, bufferPool);
+
         // Event Driver factory
         EventDriverFactory factory = new EventDriverFactory(containerScope);
-    
+
         // local socket
         EventDriver driver = factory.wrap(new TrackingSocket("local"));
 
@@ -80,7 +80,7 @@ public class MessageOutputStreamTest
         OutgoingFrames socketPipe = FramePipes.to(factory.wrap(socket));
 
         String id = testInfo.getDisplayName();
-        session = new LocalWebSocketSession(containerScope,id,driver);
+        session = new LocalWebSocketSession(containerScope, id, driver);
 
         session.setPolicy(policy);
         // talk to our remote socket
@@ -101,9 +101,9 @@ public class MessageOutputStreamTest
             stream.write("World".getBytes("UTF-8"));
         }
 
-        assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
+        assertThat("Socket.messageQueue.size", socket.messageQueue.size(), is(1));
         String msg = socket.messageQueue.poll();
-        assertThat("Message",msg,allOf(containsString("byte[11]"),containsString("Hello World")));
+        assertThat("Message", msg, allOf(containsString("byte[11]"), containsString("Hello World")));
     }
 
     @Test
@@ -114,9 +114,9 @@ public class MessageOutputStreamTest
             stream.write("Hello World".getBytes("UTF-8"));
         }
 
-        assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
+        assertThat("Socket.messageQueue.size", socket.messageQueue.size(), is(1));
         String msg = socket.messageQueue.poll();
-        assertThat("Message",msg,allOf(containsString("byte[11]"),containsString("Hello World")));
+        assertThat("Message", msg, allOf(containsString("byte[11]"), containsString("Hello World")));
     }
 
     @Test
@@ -124,8 +124,8 @@ public class MessageOutputStreamTest
     {
         int bufsize = (int)(policy.getMaxBinaryMessageBufferSize() * 2.5);
         byte buf[] = new byte[bufsize];
-        LOG.debug("Buffer sizes: max:{}, test:{}",policy.getMaxBinaryMessageBufferSize(),bufsize);
-        Arrays.fill(buf,(byte)'x');
+        LOG.debug("Buffer sizes: max:{}, test:{}", policy.getMaxBinaryMessageBufferSize(), bufsize);
+        Arrays.fill(buf, (byte)'x');
         buf[bufsize - 1] = (byte)'o'; // mark last entry for debugging
 
         try (MessageOutputStream stream = new MessageOutputStream(session))
@@ -133,8 +133,8 @@ public class MessageOutputStreamTest
             stream.write(buf);
         }
 
-        assertThat("Socket.messageQueue.size",socket.messageQueue.size(),is(1));
+        assertThat("Socket.messageQueue.size", socket.messageQueue.size(), is(1));
         String msg = socket.messageQueue.poll();
-        assertThat("Message",msg,allOf(containsString("byte[" + bufsize + "]"),containsString("xxxo>>>")));
+        assertThat("Message", msg, allOf(containsString("byte[" + bufsize + "]"), containsString("xxxo>>>")));
     }
 }

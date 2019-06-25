@@ -18,13 +18,9 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -36,6 +32,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
 {
@@ -71,12 +70,12 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
 
         final CountDownLatch latch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .path("/timeout")
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        latch.countDown();
-                });
+            .path("/timeout")
+            .send(result ->
+            {
+                if (result.isFailed())
+                    latch.countDown();
+            });
 
         assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
@@ -106,13 +105,13 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
 
         final CountDownLatch latch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .path("/timeout")
-                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        latch.countDown();
-                });
+            .path("/timeout")
+            .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+            .send(result ->
+            {
+                if (result.isFailed())
+                    latch.countDown();
+            });
 
         assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 

@@ -58,22 +58,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
-    
+
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString(hexStr));
-        assertThat("endsWithTail([" + hexStr + "])",CompressExtension.endsWithTail(buf),is(expectedResult));
+        assertThat("endsWithTail([" + hexStr + "])", CompressExtension.endsWithTail(buf), is(expectedResult));
     }
-    
+
     @Test
     public void testEndsWithTailBytes()
     {
-        assertEndsWithTail("11223344",false);
-        assertEndsWithTail("00",false);
-        assertEndsWithTail("0000",false);
-        assertEndsWithTail("FFFF0000",false);
-        assertEndsWithTail("880000FFFF",true);
-        assertEndsWithTail("0000FFFF",true);
+        assertEndsWithTail("11223344", false);
+        assertEndsWithTail("00", false);
+        assertEndsWithTail("0000", false);
+        assertEndsWithTail("FFFF0000", false);
+        assertEndsWithTail("880000FFFF", true);
+        assertEndsWithTail("0000FFFF", true);
     }
 
     /**
@@ -89,9 +89,9 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         tester.parseIncomingHex(
-                // basic, 1 block, compressed with 0 compression level (aka, uncompressed).
-                "0xc1 0x07",  // (HEADER added for this test)
-                "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00" // example frame from RFC
+            // basic, 1 block, compressed with 0 compression level (aka, uncompressed).
+            "0xc1 0x07",  // (HEADER added for this test)
+            "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00" // example frame from RFC
         );
 
         tester.assertHasFrames("Hello");
@@ -110,14 +110,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         tester.parseIncomingHex(// basic, 1 block, compressed with 0 compression level (aka, uncompressed).
-                // Fragment 1
-                "0x41 0x03 0xf2 0x48 0xcd",
-                // Fragment 2
-                "0x80 0x04 0xc9 0xc9 0x07 0x00");
+            // Fragment 1
+            "0x41 0x03 0xf2 0x48 0xcd",
+            // Fragment 2
+            "0x80 0x04 0xc9 0xc9 0x07 0x00");
 
         tester.assertHasFrames(
-                new TextFrame().setPayload("He").setFin(false),
-                new ContinuationFrame().setPayload("llo").setFin(true));
+            new TextFrame().setPayload("He").setFin(false),
+            new ContinuationFrame().setPayload("llo").setFin(true));
     }
 
     /**
@@ -133,12 +133,12 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         tester.parseIncomingHex( // context takeover (2 messages)
-                // message 1
-                "0xc1 0x07", // (HEADER added for this test)
-                "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00",
-                // message 2
-                "0xc1 0x07", // (HEADER added for this test)
-                "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00");
+            // message 1
+            "0xc1 0x07", // (HEADER added for this test)
+            "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00",
+            // message 2
+            "0xc1 0x07", // (HEADER added for this test)
+            "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00");
 
         tester.assertHasFrames("Hello", "Hello");
     }
@@ -156,12 +156,12 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         tester.parseIncomingHex(// 2 message, shared LZ77 window
-                // message 1
-                "0xc1 0x07", // (HEADER added for this test)
-                "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00",
-                // message 2
-                "0xc1 0x05", // (HEADER added for this test)
-                "0xf2 0x00 0x11 0x00 0x00"
+            // message 1
+            "0xc1 0x07", // (HEADER added for this test)
+            "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00",
+            // message 2
+            "0xc1 0x05", // (HEADER added for this test)
+            "0xf2 0x00 0x11 0x00 0x00"
         );
 
         tester.assertHasFrames("Hello", "Hello");
@@ -180,7 +180,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         tester.parseIncomingHex(// 1 message / no compression
-                "0xc1 0x0b 0x00 0x05 0x00 0xfa 0xff 0x48 0x65 0x6c 0x6c 0x6f 0x00" // example frame
+            "0xc1 0x0b 0x00 0x05 0x00 0xfa 0xff 0x48 0x65 0x6c 0x6c 0x6f 0x00" // example frame
         );
 
         tester.assertHasFrames("Hello");
@@ -199,8 +199,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         tester.parseIncomingHex(// 1 message
-                "0xc1 0x08", // header
-                "0xf3 0x48 0xcd 0xc9 0xc9 0x07 0x00 0x00" // example payload 
+            "0xc1 0x08", // header
+            "0xf3 0x48 0xcd 0xc9 0xc9 0x07 0x00 0x00" // example payload
         );
 
         tester.assertHasFrames("Hello");
@@ -219,8 +219,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         tester.parseIncomingHex(// 1 message, 1 frame, 2 deflate blocks
-                "0xc1 0x0d", // (HEADER added for this test)
-                "0xf2 0x48 0x05 0x00 0x00 0x00 0xff 0xff 0xca 0xc9 0xc9 0x07 0x00"
+            "0xc1 0x0d", // (HEADER added for this test)
+            "0xf2 0x48 0x05 0x00 0x00 0x00 0xff 0xff 0xca 0xc9 0xc9 0x07 0x00"
         );
 
         tester.assertHasFrames("Hello");
@@ -237,12 +237,12 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         tester.parseIncomingHex(// 1 message, 3 frame
-                "410C", // HEADER TEXT / fin=false / rsv1=true
-                "F248CDC9C95700000000FFFF",
-                "000B", // HEADER CONTINUATION / fin=false / rsv1=false
-                "0ACF2FCA4901000000FFFF",
-                "8003", // HEADER CONTINUATION / fin=true / rsv1=false
-                "520400"
+            "410C", // HEADER TEXT / fin=false / rsv1=true
+            "F248CDC9C95700000000FFFF",
+            "000B", // HEADER CONTINUATION / fin=false / rsv1=false
+            "0ACF2FCA4901000000FFFF",
+            "8003", // HEADER CONTINUATION / fin=true / rsv1=false
+            "520400"
         );
 
         Frame txtFrame = new TextFrame().setPayload("Hello ").setFin(false);
@@ -255,7 +255,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     /**
      * Decode fragmented message (3 parts: TEXT, CONTINUATION, CONTINUATION)
      * <p>
-     *     Continuation frames have RSV1 set, which MUST result in Failure
+     * Continuation frames have RSV1 set, which MUST result in Failure
      * </p>
      */
     @Test
@@ -266,14 +266,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         assertThrows(ProtocolException.class, () ->
-                tester.parseIncomingHex(// 1 message, 3 frame
-                        "410C", // Header TEXT / fin=false / rsv1=true
-                        "F248CDC9C95700000000FFFF", // Payload
-                        "400B", // Header CONTINUATION / fin=false / rsv1=true
-                        "0ACF2FCA4901000000FFFF", // Payload
-                        "C003", // Header CONTINUATION / fin=true / rsv1=true
-                        "520400" // Payload
-                ));
+            tester.parseIncomingHex(// 1 message, 3 frame
+                "410C", // Header TEXT / fin=false / rsv1=true
+                "F248CDC9C95700000000FFFF", // Payload
+                "400B", // Header CONTINUATION / fin=false / rsv1=true
+                "0ACF2FCA4901000000FFFF", // Payload
+                "C003", // Header CONTINUATION / fin=true / rsv1=true
+                "520400" // Payload
+            ));
     }
 
     /**
@@ -350,7 +350,6 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 
-
     /**
      * Verify that incoming uncompressed frames are properly passed through
      */
@@ -408,6 +407,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Outgoing PING (Control Frame) should pass through extension unmodified
+     *
      * @throws IOException on test failure
      */
     @Test
@@ -448,6 +448,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Outgoing Fragmented Message
+     *
      * @throws IOException on test failure
      */
     @Test
@@ -508,9 +509,9 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         // Captured from Pywebsocket (r790) - 3 messages with similar parts.
 
         tester.parseIncomingHex( // context takeover (3 messages)
-                "c1 09 0a c9 2f 4a 0c 01  62 00 00", // ToraTora
-                "c1 0b 72 2c c9 2f 4a 74  cb 01 12 00 00", // AtoraFlora
-                "c1 0b 0a c8 c8 c9 2f 4a  0c 01 62 00 00" // PhloraTora
+            "c1 09 0a c9 2f 4a 0c 01  62 00 00", // ToraTora
+            "c1 0b 72 2c c9 2f 4a 74  cb 01 12 00 00", // AtoraFlora
+            "c1 0b 0a c8 c8 c9 2f 4a  0c 01 62 00 00" // PhloraTora
         );
 
         tester.assertHasFrames("ToraTora", "AtoraFlora", "PhloraTora");
@@ -526,9 +527,9 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         // Captured from Pywebsocket (r790) - "tora" sent 3 times.
 
         tester.parseIncomingHex( // context takeover (3 messages)
-                "c1 06 2a c9 2f 4a 04 00", // tora 1
-                "c1 05 2a 01 62 00 00", // tora 2
-                "c1 04 02 61 00 00" // tora 3
+            "c1 06 2a c9 2f 4a 04 00", // tora 1
+            "c1 05 2a 01 62 00 00", // tora 2
+            "c1 04 02 61 00 00" // tora 3
         );
 
         tester.assertHasFrames("tora", "tora", "tora");
@@ -544,9 +545,9 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         // Captured from Pywebsocket (r790) - 3 messages with similar parts.
 
         tester.parseIncomingHex( // context takeover (3 messages)
-                "c1 89 88 bc 1b b1 82 75  34 fb 84 bd 79 b1 88", // ToraTora
-                "c1 8b 50 86 88 b2 22 aa  41 9d 1a f2 43 b3 42 86 88", // AtoraFlora
-                "c1 8b e2 3e 05 53 e8 f6  cd 9a cd 74 09 52 80 3e 05" // PhloraTora
+            "c1 89 88 bc 1b b1 82 75  34 fb 84 bd 79 b1 88", // ToraTora
+            "c1 8b 50 86 88 b2 22 aa  41 9d 1a f2 43 b3 42 86 88", // AtoraFlora
+            "c1 8b e2 3e 05 53 e8 f6  cd 9a cd 74 09 52 80 3e 05" // PhloraTora
         );
 
         tester.assertHasFrames("ToraTora", "AtoraFlora", "PhloraTora");
@@ -562,9 +563,9 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         // Captured from Pywebsocket (r790) - "tora" sent 3 times.
 
         tester.parseIncomingHex( // context takeover (3 messages)
-                "c1 86 69 39 fe 91 43 f0  d1 db 6d 39", // tora 1
-                "c1 85 2d f3 eb 96 07 f2  89 96 2d", // tora 2
-                "c1 84 53 ad a5 34 51 cc  a5 34" // tora 3
+            "c1 86 69 39 fe 91 43 f0  d1 db 6d 39", // tora 1
+            "c1 85 2d f3 eb 96 07 f2  89 96 2d", // tora 2
+            "c1 84 53 ad a5 34 51 cc  a5 34" // tora 3
         );
 
         tester.assertHasFrames("tora", "tora", "tora");

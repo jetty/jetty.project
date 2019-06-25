@@ -31,43 +31,43 @@ public class DelegatedContainerScope implements WebSocketContainerScope
 {
     private final WebSocketPolicy policy;
     private final WebSocketContainerScope delegate;
-    
+
     public DelegatedContainerScope(WebSocketPolicy policy, WebSocketContainerScope parentScope)
     {
         this.policy = policy;
         this.delegate = parentScope;
     }
-    
+
     @Override
     public ByteBufferPool getBufferPool()
     {
         return this.delegate.getBufferPool();
     }
-    
+
     @Override
     public Executor getExecutor()
     {
         return this.delegate.getExecutor();
     }
-    
+
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
         return this.delegate.getObjectFactory();
     }
-    
+
     @Override
     public WebSocketPolicy getPolicy()
     {
         return this.policy;
     }
-    
+
     @Override
     public SslContextFactory getSslContextFactory()
     {
         return this.delegate.getSslContextFactory();
     }
-    
+
     @Override
     public boolean isRunning()
     {

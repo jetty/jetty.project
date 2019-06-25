@@ -27,7 +27,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 public class OneWebApp
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         // Create a basic jetty server object that will listen on port 8080.
         // Note that if you set this to port 0 then a randomly available port
@@ -37,7 +37,7 @@ public class OneWebApp
 
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(
-                ManagementFactory.getPlatformMBeanServer());
+            ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
 
         // The WebAppContext is the entity that controls the environment in
@@ -49,8 +49,7 @@ public class OneWebApp
         // PlusConfiguration) to choosing where the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        File warFile = new File(
-                "../../tests/test-jmx/jmx-webapp/target/jmx-webapp");
+        File warFile = JettyDistribution.resolve("demo-base/webapps/async-rest.war").toFile();
         webapp.setWar(warFile.getAbsolutePath());
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.plus.annotation;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,10 +32,9 @@ import java.lang.reflect.Method;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-
 public class LifeCycleCallbackCollectionTest
 {
-    
+
     /**
      * An unsupported lifecycle callback type
      *
@@ -60,7 +58,6 @@ public class LifeCycleCallbackCollectionTest
         }
     }
 
-    
     /**
      * A class that we can use to simulate having PostConstruct and
      * PreDestroy annotations on.
@@ -73,8 +70,7 @@ public class LifeCycleCallbackCollectionTest
             //Empty method, we just want to refer to its name
         }
     }
-    
-    
+
     @Test
     public void testAddForPostConstruct() throws Exception
     {
@@ -85,38 +81,37 @@ public class LifeCycleCallbackCollectionTest
         try
         {
             pc1 = new PostConstructCallback(nullName, null);
-            fail ("Null class arg should not be allowed");
+            fail("Null class arg should not be allowed");
         }
         catch (NullPointerException e)
         {
             //expected
         }
-        
+
         try
         {
             pc1 = new PostConstructCallback(clazz, null);
-            fail ("Null class arg should not be allowed");
+            fail("Null class arg should not be allowed");
         }
         catch (NullPointerException e)
         {
             //expected
         }
-        
-        
+
         try
         {
             pc1 = new PostConstructCallback(SomeTestClass.class, null);
-            fail ("Null method arg should not be allowed");
+            fail("Null method arg should not be allowed");
         }
         catch (NullPointerException e)
         {
             //expected
         }
-        
+
         try
         {
-            pc1 = new PostConstructCallback("foo", null);  
-            fail ("Null method arg should not be allowed");
+            pc1 = new PostConstructCallback("foo", null);
+            fail("Null method arg should not be allowed");
         }
         catch (NullPointerException e)
         {
@@ -133,7 +128,7 @@ public class LifeCycleCallbackCollectionTest
         collection.add(pc3);
         assertThat(collection.getPostConstructCallbackMap().get("foo"), Matchers.contains(pc2));
         assertThat(collection.getPostConstructCallbackMap().values(), hasSize(1));
-        
+
         //test ignoring duplicate adds by class and method name
         collection = new LifeCycleCallbackCollection();
 
@@ -141,15 +136,15 @@ public class LifeCycleCallbackCollectionTest
         collection.add(pc4);
         assertThat(collection.getPostConstructCallbackMap().get(SomeTestClass.class.getName()), Matchers.contains(pc4));
         assertThat(collection.getPostConstructCallbackMap().values(), hasSize(1));
-        
+
         PostConstructCallback pc5 = new PostConstructCallback(SomeTestClass.class, "afterConstruct");
         collection.add(pc5);
         assertThat(collection.getPostConstructCallbackMap().get(SomeTestClass.class.getName()), Matchers.contains(pc4));
         assertThat(collection.getPostConstructCallbackMap().values(), hasSize(1));
     }
-    
+
     @Test
-    public void testUnsupportedType () throws Exception
+    public void testUnsupportedType() throws Exception
     {
         //test that we currently only support PostConstruct and PreDestroy
         LifeCycleCallbackCollection collection = new LifeCycleCallbackCollection();
@@ -175,44 +170,42 @@ public class LifeCycleCallbackCollectionTest
         try
         {
             pc1 = new PreDestroyCallback(nullName, null);
-            fail ("Null class arg should not be allowed");
-        }
-        catch (NullPointerException e)
-        {
-            //expected
-        }
-        
-        try
-        {
-            pc1 = new PreDestroyCallback(clazz, null);
-            fail ("Null class arg should not be allowed");
-        }
-        catch (NullPointerException e)
-        {
-            //expected
-        }
-        
-        
-        try
-        {
-            pc1 = new PreDestroyCallback(SomeTestClass.class, null);
-            fail ("Null method arg should not be allowed");
-        }
-        catch (NullPointerException e)
-        {
-            //expected
-        }
-        
-        try
-        {
-            pc1 = new PreDestroyCallback("foo", null);  
-            fail ("Null method arg should not be allowed");
+            fail("Null class arg should not be allowed");
         }
         catch (NullPointerException e)
         {
             //expected
         }
 
+        try
+        {
+            pc1 = new PreDestroyCallback(clazz, null);
+            fail("Null class arg should not be allowed");
+        }
+        catch (NullPointerException e)
+        {
+            //expected
+        }
+
+        try
+        {
+            pc1 = new PreDestroyCallback(SomeTestClass.class, null);
+            fail("Null method arg should not be allowed");
+        }
+        catch (NullPointerException e)
+        {
+            //expected
+        }
+
+        try
+        {
+            pc1 = new PreDestroyCallback("foo", null);
+            fail("Null method arg should not be allowed");
+        }
+        catch (NullPointerException e)
+        {
+            //expected
+        }
 
         LifeCycleCallbackCollection collection = new LifeCycleCallbackCollection();
         //test ignoring duplicate adds for callbacks for same classname and method
@@ -224,7 +217,7 @@ public class LifeCycleCallbackCollectionTest
         collection.add(pc3);
         assertThat(collection.getPreDestroyCallbackMap().get("foo"), Matchers.contains(pc2));
         assertThat(collection.getPreDestroyCallbackMap().values(), hasSize(1));
-        
+
         //test ignoring duplicate adds by class and method name
         collection = new LifeCycleCallbackCollection();
 
@@ -232,7 +225,7 @@ public class LifeCycleCallbackCollectionTest
         collection.add(pc4);
         assertThat(collection.getPreDestroyCallbackMap().get(SomeTestClass.class.getName()), Matchers.contains(pc4));
         assertThat(collection.getPreDestroyCallbackMap().values(), hasSize(1));
-        
+
         PreDestroyCallback pc5 = new PreDestroyCallback(SomeTestClass.class, "afterConstruct");
         collection.add(pc5);
         assertThat(collection.getPreDestroyCallbackMap().get(SomeTestClass.class.getName()), Matchers.contains(pc4));

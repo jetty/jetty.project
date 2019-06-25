@@ -16,9 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.gcloud.session;
-
 
 import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
@@ -27,8 +25,6 @@ import org.junit.jupiter.api.BeforeAll;
 
 /**
  * InvalidationSessionTest
- *
- *
  */
 public class InvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
@@ -36,21 +32,20 @@ public class InvalidationSessionTest extends AbstractClusteredInvalidationSessio
     public static GCloudSessionTestSupport __testSupport;
 
     @BeforeAll
-    public static void setUp () throws Exception
+    public static void setUp() throws Exception
     {
         __testSupport = new GCloudSessionTestSupport();
         __testSupport.setUp();
     }
 
     @AfterAll
-    public static void tearDown () throws Exception
+    public static void tearDown() throws Exception
     {
         __testSupport.deleteSessions();
         __testSupport.tearDown();
     }
 
-
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override

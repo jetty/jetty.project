@@ -25,13 +25,13 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicCloseSessionReasonSocket extends TrackingSocket
 {
     @OnClose
     public void onClose(Session session, CloseReason reason)
     {
-        addEvent("onClose(%s,%s)",session,reason);
+        addEvent("onClose(%s,%s)", session, reason);
         closeLatch.countDown();
     }
 }

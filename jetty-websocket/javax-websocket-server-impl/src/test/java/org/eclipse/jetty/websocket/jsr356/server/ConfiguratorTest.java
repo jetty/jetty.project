@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
@@ -41,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -72,9 +67,12 @@ import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.jupiter.api.AfterAll;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ConfiguratorTest
 {
@@ -117,8 +115,8 @@ public class ConfiguratorTest
             else
             {
                 return "negotiatedExtensions=" + negotiatedExtensions.stream()
-                        .map((ext) -> ext.getName())
-                        .collect(Collectors.joining(",", "[", "]"));
+                    .map((ext) -> ext.getName())
+                    .collect(Collectors.joining(",", "[", "]"));
             }
         }
     }
@@ -143,7 +141,7 @@ public class ConfiguratorTest
 
             response.append("Request Header [").append(headerKey).append("]: ");
             @SuppressWarnings("unchecked")
-            Map<String, List<String>> headers = (Map<String, List<String>>) session.getUserProperties().get("request-headers");
+            Map<String, List<String>> headers = (Map<String, List<String>>)session.getUserProperties().get("request-headers");
             if (headers == null)
             {
                 response.append("<no headers found in session.getUserProperties()>");
@@ -168,13 +166,13 @@ public class ConfiguratorTest
     public static class ProtocolsConfigurator extends ServerEndpointConfig.Configurator
     {
         public static AtomicReference<String> seenProtocols = new AtomicReference<>();
-        
+
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
             super.modifyHandshake(sec, request, response);
         }
-        
+
         @Override
         public String getNegotiatedSubprotocol(List<String> supported, List<String> requested)
         {
@@ -195,11 +193,11 @@ public class ConfiguratorTest
             return response.toString();
         }
     }
-    
+
     public static class UniqueUserPropsConfigurator extends ServerEndpointConfig.Configurator
     {
         private AtomicInteger upgradeCount = new AtomicInteger(0);
-        
+
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
@@ -221,18 +219,18 @@ public class ConfiguratorTest
                     sec.getUserProperties().put("fruit" + upgradeNum, "placeholder");
                     break;
             }
-            
+
             super.modifyHandshake(sec, request, response);
         }
     }
-    
+
     @ServerEndpoint(value = "/unique-user-props", configurator = UniqueUserPropsConfigurator.class)
     public static class UniqueUserPropsSocket
     {
         @OnMessage
         public String onMessage(Session session, String msg)
         {
-            String value = (String) session.getUserProperties().get(msg);
+            String value = (String)session.getUserProperties().get(msg);
             StringBuilder response = new StringBuilder();
             response.append("Requested User Property: [").append(msg).append("] = ");
             if (value == null)
@@ -246,22 +244,22 @@ public class ConfiguratorTest
             return response.toString();
         }
     }
-    
+
     public static class AddrConfigurator extends ServerEndpointConfig.Configurator
     {
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            InetSocketAddress local = (InetSocketAddress) sec.getUserProperties().get(JsrCreator.PROP_LOCAL_ADDRESS);
-            InetSocketAddress remote = (InetSocketAddress) sec.getUserProperties().get(JsrCreator.PROP_REMOTE_ADDRESS);
-            
+            InetSocketAddress local = (InetSocketAddress)sec.getUserProperties().get(JsrCreator.PROP_LOCAL_ADDRESS);
+            InetSocketAddress remote = (InetSocketAddress)sec.getUserProperties().get(JsrCreator.PROP_REMOTE_ADDRESS);
+
             sec.getUserProperties().put("found.local", local);
             sec.getUserProperties().put("found.remote", remote);
-            
+
             super.modifyHandshake(sec, request, response);
         }
     }
-    
+
     @ServerEndpoint(value = "/addr", configurator = AddrConfigurator.class)
     public static class AddressSocket
     {
@@ -278,7 +276,7 @@ public class ConfiguratorTest
 
         private void appendPropValue(Session session, StringBuilder response, String key)
         {
-            InetSocketAddress value = (InetSocketAddress) session.getUserProperties().get(key);
+            InetSocketAddress value = (InetSocketAddress)session.getUserProperties().get(key);
 
             response.append("[").append(key).append("] = ");
             response.append(toSafeAddr(value));
@@ -343,9 +341,9 @@ public class ConfiguratorTest
     }
 
     @ServerEndpoint(value = "/timedecoder",
-            subprotocols = { "time", "gmt" },
-            configurator = SelectedProtocolConfigurator.class,
-            decoders = {GmtTimeDecoder.class})
+        subprotocols = {"time", "gmt"},
+        configurator = SelectedProtocolConfigurator.class,
+        decoders = {GmtTimeDecoder.class})
     public static class TimeDecoderSocket
     {
         private TimeZone TZ = TimeZone.getTimeZone("GMT+0");
@@ -383,7 +381,7 @@ public class ConfiguratorTest
     }
 
     @ServerEndpoint(value = "/config-normal",
-            configurator = ConfigNormalConfigurator.class)
+        configurator = ConfigNormalConfigurator.class)
     public static class ConfigNormalSocket
     {
         @OnMessage
@@ -422,9 +420,9 @@ public class ConfiguratorTest
 
         container.addEndpoint(ConfigNormalSocket.class);
         ServerEndpointConfig overrideEndpointConfig = ServerEndpointConfig.Builder
-                .create(ConfigNormalSocket.class, "/config-override")
-                .configurator(new ConfigOverrideConfigurator())
-                .build();
+            .create(ConfigNormalSocket.class, "/config-override")
+            .configurator(new ConfigOverrideConfigurator())
+            .build();
         container.addEndpoint(overrideEndpointConfig);
 
         handlers.addHandler(new DefaultHandler());
@@ -504,7 +502,7 @@ public class ConfiguratorTest
             HttpFields responseHeaders = clientConn.getUpgradeResponseHeaders();
             HttpField extensionHeader = responseHeaders.getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
             assertThat("response.extensions", extensionHeader, is(nullValue()));
-    
+
             clientConn.write(new TextFrame().setPayload("NegoExts"));
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
@@ -530,7 +528,7 @@ public class ConfiguratorTest
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Request Header [X-Dummy]: \"Bogus\""));
         }
     }
-    
+
     @Test
     public void testUniqueUserPropsConfigurator() throws Exception
     {
@@ -547,7 +545,7 @@ public class ConfiguratorTest
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = \"fruit from tree\""));
         }
-        
+
         // Second request
 
         request = client.newWsRequest(uri);
@@ -561,12 +559,12 @@ public class ConfiguratorTest
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             // should have no value
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = <null>"));
-            
+
             frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [blueberry] = \"fruit from bush\""));
         }
     }
-    
+
     @Test
     public void testUserPropsAddress() throws Exception
     {
@@ -583,7 +581,7 @@ public class ConfiguratorTest
             clientConn.write(new TextFrame().setPayload("addr"));
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            
+
             StringWriter expected = new StringWriter();
             PrintWriter out = new PrintWriter(expected);
             // local <-> remote are opposite on server (duh)
@@ -591,13 +589,14 @@ public class ConfiguratorTest
             out.printf("[javax.websocket.endpoint.remoteAddress] = %s%n", toSafeAddr(expectedLocal));
             out.printf("[found.local] = %s%n", toSafeAddr(expectedRemote));
             out.printf("[found.remote] = %s%n", toSafeAddr(expectedLocal));
-            
+
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is(expected.toString()));
         }
     }
-    
+
     /**
      * Test of Sec-WebSocket-Protocol, as seen in RFC-6455, 1 protocol
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -618,9 +617,10 @@ public class ConfiguratorTest
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\"]"));
         }
     }
-    
+
     /**
      * Test of Sec-WebSocket-Protocol, as seen in RFC-6455, 3 protocols
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -641,9 +641,10 @@ public class ConfiguratorTest
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
     }
-    
+
     /**
      * Test of Sec-WebSocket-Protocol, using all lowercase header
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -664,9 +665,10 @@ public class ConfiguratorTest
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
     }
-    
+
     /**
      * Test of Sec-WebSocket-Protocol, using non-spec case header
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -713,7 +715,6 @@ public class ConfiguratorTest
 
     /**
      * Test that a Configurator declared in the annotation is used
-     * @throws Exception
      */
     @Test
     public void testAnnotationConfigurator() throws Exception
@@ -733,7 +734,6 @@ public class ConfiguratorTest
 
     /**
      * Test that a provided ServerEndpointConfig can override the annotation Configurator
-     * @throws Exception
      */
     @Test
     public void testOverrideConfigurator() throws Exception

@@ -18,19 +18,10 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,12 +35,20 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class PostServletTest
 {
     private static final Logger LOG = Log.getLogger(PostServletTest.class);
     private static final AtomicBoolean posted = new AtomicBoolean(false);
-    private static final AtomicReference<Throwable> ex0=new AtomicReference<>();
-    private static final AtomicReference<Throwable> ex1=new AtomicReference<>();
+    private static final AtomicReference<Throwable> ex0 = new AtomicReference<>();
+    private static final AtomicReference<Throwable> ex1 = new AtomicReference<>();
     private static CountDownLatch complete;
 
     public static class BasicReadPostServlet extends HttpServlet
@@ -61,10 +60,10 @@ public class PostServletTest
             byte[] buffer = new byte[1024];
             try
             {
-                int len=request.getInputStream().read(buffer);
-                while(len>0)
+                int len = request.getInputStream().read(buffer);
+                while (len > 0)
                 {
-                    response.getOutputStream().println("read "+len);
+                    response.getOutputStream().println("read " + len);
                     response.getOutputStream().flush();
                     len = request.getInputStream().read(buffer);
                 }
@@ -96,7 +95,7 @@ public class PostServletTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        complete=new CountDownLatch(1);
+        complete = new CountDownLatch(1);
         ex0.set(null);
         ex1.set(null);
         posted.set(false);
@@ -144,62 +143,65 @@ public class PostServletTest
         assertThat("resp", resp, containsString("read 7"));
         assertThat("resp", resp, containsString("\r\n0\r\n"));
 
-        assertThat(ex0.get(),nullValue());
-        assertThat(ex1.get(),nullValue());
+        assertThat(ex0.get(), nullValue());
+        assertThat(ex1.get(), nullValue());
     }
 
     @Test
     public void testBadPost() throws Exception
     {
-        StringBuilder req = new StringBuilder(16*1024);
+        StringBuilder req = new StringBuilder(16 * 1024);
         req.append("POST /post HTTP/1.1\r\n");
         req.append("Host: localhost\r\n");
         req.append("Transfer-Encoding: chunked\r\n");
         req.append("\r\n");
         // intentionally bad (not a valid chunked char here)
-        for (int i=1024;i-->0;)
+        for (int i = 1024; i-- > 0; )
+        {
             req.append("xxxxxxxxxxxx");
+        }
         req.append("\r\n");
         req.append("\r\n");
 
         String resp = connector.getResponse(req.toString());
-        assertThat(resp,startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
-        assertTrue(complete.await(5,TimeUnit.SECONDS));
-        assertThat(ex0.get(),not(nullValue()));
-        assertThat(ex1.get(),not(nullValue()));
+        assertThat(resp, startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
+        assertTrue(complete.await(5, TimeUnit.SECONDS));
+        assertThat(ex0.get(), not(nullValue()));
+        assertThat(ex1.get(), not(nullValue()));
     }
 
     @Test
     public void testDeferredBadPost() throws Exception
     {
-        StringBuilder req = new StringBuilder(16*1024);
+        StringBuilder req = new StringBuilder(16 * 1024);
         req.append("POST /post HTTP/1.1\r\n");
         req.append("Host: localhost\r\n");
         req.append("Transfer-Encoding: chunked\r\n");
         req.append("\r\n");
 
-        LocalConnector.LocalEndPoint endp=connector.executeRequest(req.toString());
+        LocalConnector.LocalEndPoint endp = connector.executeRequest(req.toString());
         Thread.sleep(1000);
         assertFalse(posted.get());
 
         req.setLength(0);
         // intentionally bad (not a valid chunked char here)
-        for (int i=1024;i-->0;)
+        for (int i = 1024; i-- > 0; )
+        {
             req.append("xxxxxxxxxxxx");
+        }
         req.append("\r\n");
         req.append("\r\n");
 
         endp.addInput(req.toString());
 
-        endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
+        endp.waitUntilClosedOrIdleFor(1, TimeUnit.SECONDS);
         String resp = endp.takeOutputString();
 
-        assertThat(resp,startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
-        assertTrue(complete.await(5,TimeUnit.SECONDS));
-        assertThat(ex0.get(),not(nullValue()));
-        assertThat(ex1.get(),not(nullValue()));
+        assertThat(resp, startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
+        assertTrue(complete.await(5, TimeUnit.SECONDS));
+        assertThat(ex0.get(), not(nullValue()));
+        assertThat(ex1.get(), not(nullValue()));
     }
-
 
     @Test
     public void testBadSplitPost() throws Exception
@@ -216,11 +218,13 @@ public class PostServletTest
 
         try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
         {
-            LocalConnector.LocalEndPoint endp=connector.executeRequest(req.toString());
+            LocalConnector.LocalEndPoint endp = connector.executeRequest(req.toString());
             req.setLength(0);
 
-            while(!posted.get())
+            while (!posted.get())
+            {
                 Thread.sleep(100);
+            }
             Thread.sleep(100);
             req.append("x\r\n");
             req.append("World\n");
@@ -229,14 +233,13 @@ public class PostServletTest
             req.append("\r\n");
             endp.addInput(req.toString());
 
-            endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
+            endp.waitUntilClosedOrIdleFor(1, TimeUnit.SECONDS);
             String resp = endp.takeOutputString();
             assertThat("resp", resp, containsString("HTTP/1.1 200 "));
             assertThat("resp", resp, not(containsString("\r\n0\r\n"))); // aborted
         }
-        assertTrue(complete.await(5,TimeUnit.SECONDS));
-        assertThat(ex0.get(),not(nullValue()));
-        assertThat(ex1.get(),not(nullValue()));
+        assertTrue(complete.await(5, TimeUnit.SECONDS));
+        assertThat(ex0.get(), not(nullValue()));
+        assertThat(ex1.get(), not(nullValue()));
     }
-
 }

@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 /**
  * Deprecated ConnectionManager
+ *
  * @deprecated use {@link HttpClient} with WebSocketClient directly
  */
 @Deprecated
@@ -61,7 +62,7 @@ public class ConnectionManager extends ContainerLifeCycle
             throw new IllegalArgumentException("Only support ws:// and wss:// URIs");
         }
 
-        return new InetSocketAddress(uri.getHost(),port);
+        return new InetSocketAddress(uri.getHost(), port);
     }
 
     public ConnectionManager(WebSocketClient client)

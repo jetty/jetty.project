@@ -31,39 +31,35 @@ import org.eclipse.jetty.ant.utils.TaskLog;
 
 /**
  * JettyStopTask
- *
- *
  */
 public class JettyStopTask extends Task
 {
 
     private int stopPort;
-    
+
     private String stopKey;
-    
+
     private int stopWait;
-    
-    
-    
+
     /**
-     * 
+     *
      */
     public JettyStopTask()
     {
         TaskLog.setTask(this);
     }
 
-    /** 
+    /**
      * @see org.apache.tools.ant.Task#execute()
      */
     @Override
     public void execute() throws BuildException
     {
         try
-        {        
-            Socket s = new Socket(InetAddress.getByName("127.0.0.1"),stopPort);
+        {
+            Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort);
             if (stopWait > 0)
-                s.setSoTimeout(stopWait*1000);
+                s.setSoTimeout(stopWait * 1000);
             try
             {
                 OutputStream out = s.getOutputStream();
@@ -72,9 +68,9 @@ public class JettyStopTask extends Task
 
                 if (stopWait > 0)
                 {
-                    TaskLog.log("Waiting"+(stopWait > 0 ? (" "+stopWait+"sec") : "")+" for jetty to stop");
+                    TaskLog.log("Waiting" + (stopWait > 0 ? (" " + stopWait + "sec") : "") + " for jetty to stop");
                     LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
-                    String response=lin.readLine();
+                    String response = lin.readLine();
                     if ("Stopped".equals(response))
                         System.err.println("Stopped");
                 }
@@ -82,7 +78,7 @@ public class JettyStopTask extends Task
             finally
             {
                 s.close();
-            }  
+            }
         }
         catch (ConnectException e)
         {
@@ -94,22 +90,22 @@ public class JettyStopTask extends Task
         }
     }
 
-    public int getStopPort() 
+    public int getStopPort()
     {
         return stopPort;
     }
 
-    public void setStopPort(int stopPort) 
+    public void setStopPort(int stopPort)
     {
         this.stopPort = stopPort;
     }
 
-    public String getStopKey() 
+    public String getStopKey()
     {
         return stopKey;
     }
 
-    public void setStopKey(String stopKey) 
+    public void setStopKey(String stopKey)
     {
         this.stopKey = stopKey;
     }
@@ -123,6 +119,4 @@ public class JettyStopTask extends Task
     {
         this.stopWait = stopWait;
     }
-    
-    
 }

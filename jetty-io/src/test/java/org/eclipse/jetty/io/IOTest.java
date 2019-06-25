@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -52,9 +43,17 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class IOTest
 {
@@ -227,7 +226,7 @@ public class IOTest
                     catch (Exception e)
                     {
                         e.printStackTrace();
-                        assertTrue( OS.MAC.isCurrentOs());
+                        assertTrue(OS.MAC.isCurrentOs());
                     }
                 }
             }
@@ -289,10 +288,13 @@ public class IOTest
                     client.getOutputStream().write(1);
 
                     // Client eventually sees Broken Pipe
-                    assertThrows(IOException.class, ()->{
+                    assertThrows(IOException.class, () ->
+                    {
                         int i = 0;
                         for (i = 0; i < 100000; i++)
+                        {
                             client.getOutputStream().write(1);
+                        }
                     });
                 }
             }
@@ -342,7 +344,9 @@ public class IOTest
                     });
                     acceptor.start();
                     while (latch.getCount() == 2)
+                    {
                         Thread.sleep(10);
+                    }
 
                     // interrupt the acceptor
                     acceptor.interrupt();
@@ -371,14 +375,12 @@ public class IOTest
         }
     }
 
-
-
     @Test
     public void testReset() throws Exception
     {
         try (ServerSocket connector = new ServerSocket(0);
-            Socket client = new Socket("127.0.0.1", connector.getLocalPort());
-            Socket server = connector.accept())
+             Socket client = new Socket("127.0.0.1", connector.getLocalPort());
+             Socket server = connector.accept())
         {
             client.setTcpNoDelay(true);
             client.setSoLinger(true, 0);
@@ -417,12 +419,12 @@ public class IOTest
     {
         AsynchronousServerSocketChannel connector = AsynchronousServerSocketChannel.open();
         connector.bind(null);
-        InetSocketAddress addr=(InetSocketAddress)connector.getLocalAddress();
+        InetSocketAddress addr = (InetSocketAddress)connector.getLocalAddress();
         Future<AsynchronousSocketChannel> acceptor = connector.accept();
 
         AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
 
-        client.connect(new InetSocketAddress("127.0.0.1",addr.getPort())).get(5, TimeUnit.SECONDS);
+        client.connect(new InetSocketAddress("127.0.0.1", addr.getPort())).get(5, TimeUnit.SECONDS);
 
         AsynchronousSocketChannel server = acceptor.get(5, TimeUnit.SECONDS);
 
@@ -447,31 +449,32 @@ public class IOTest
         if (!dir.exists())
             dir.mkdir();
 
-        File file = File.createTempFile("test",".txt",dir);
+        File file = File.createTempFile("test", ".txt", dir);
         file.deleteOnExit();
         FileChannel out = FileChannel.open(file.toPath(),
-                StandardOpenOption.CREATE,
-                StandardOpenOption.READ,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.DELETE_ON_CLOSE);
+            StandardOpenOption.CREATE,
+            StandardOpenOption.READ,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.DELETE_ON_CLOSE);
 
         ByteBuffer[] buffers = new ByteBuffer[4096];
-        long expected=0;
-        for (int i=0;i<buffers.length;i++)
+        long expected = 0;
+        for (int i = 0; i < buffers.length; i++)
         {
-            buffers[i]=BufferUtil.toBuffer(i);
-            expected+=buffers[i].remaining();
+            buffers[i] = BufferUtil.toBuffer(i);
+            expected += buffers[i].remaining();
         }
 
-        long wrote = IO.write(out,buffers,0,buffers.length);
+        long wrote = IO.write(out, buffers, 0, buffers.length);
 
-        assertEquals(expected,wrote);
+        assertEquals(expected, wrote);
 
         for (ByteBuffer buffer : buffers)
+        {
             assertEquals(0, buffer.remaining());
+        }
     }
-    
-    
+
     @Test
     public void testSelectorWakeup() throws Exception
     {

@@ -24,12 +24,12 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public class ZeroMasker implements Masker
 {
-    private final byte mask[];
+    private final byte[] mask;
 
     public ZeroMasker()
     {
         this.mask = new byte[4];
-        Arrays.fill(mask,(byte)0);
+        Arrays.fill(mask, (byte)0);
     }
 
     @Override

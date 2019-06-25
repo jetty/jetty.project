@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.nio.ByteBuffer;
-
 import javax.websocket.PongMessage;
 
 import org.eclipse.jetty.util.BufferUtil;

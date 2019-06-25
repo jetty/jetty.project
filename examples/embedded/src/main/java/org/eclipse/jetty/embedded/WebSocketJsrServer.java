@@ -41,26 +41,26 @@ public class WebSocketJsrServer
     public static class EchoJsrSocket
     {
         @OnMessage
-        public void onMessage( Session session, String message )
+        public void onMessage(Session session, String message)
         {
             session.getAsyncRemote().sendText(message);
         }
     }
 
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
 
         HandlerList handlers = new HandlerList();
 
         ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         handlers.addHandler(context);
 
         // Enable javax.websocket configuration for the context
         ServerContainer wsContainer = WebSocketServerContainerInitializer
-                .configureContext(context);
+            .configureContext(context);
 
         // Add your websockets to the container
         wsContainer.addEndpoint(EchoJsrSocket.class);

@@ -42,11 +42,11 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.beans.TimeEncoder;
  * Annotated echo socket, using all of the annotation configurations
  */
 @ServerEndpoint(
-        value = "/echo",
-        decoders = { DateDecoder.class },
-        encoders = { TimeEncoder.class },
-        subprotocols = { "test", "echo", "chat" },
-        configurator = EchoSocketConfigurator.class)
+    value = "/echo",
+    decoders = {DateDecoder.class},
+    encoders = {TimeEncoder.class},
+    subprotocols = {"test", "echo", "chat"},
+    configurator = EchoSocketConfigurator.class)
 public class ConfiguredEchoSocket
 {
     private static final Logger LOG = Log.getLogger(ConfiguredEchoSocket.class);
@@ -68,7 +68,7 @@ public class ConfiguredEchoSocket
     @OnError
     public void onError(Throwable cause)
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
             LOG.debug(cause);
         }
@@ -80,13 +80,13 @@ public class ConfiguredEchoSocket
         switch (msg)
         {
             case "text-max":
-                return String.format(Locale.US, "%,d",session.getMaxTextMessageBufferSize());
+                return String.format(Locale.US, "%,d", session.getMaxTextMessageBufferSize());
             case "binary-max":
-                return String.format(Locale.US, "%,d",session.getMaxBinaryMessageBufferSize());
+                return String.format(Locale.US, "%,d", session.getMaxBinaryMessageBufferSize());
             case "decoders":
-                return join(config.getDecoders(),", ");
+                return join(config.getDecoders(), ", ");
             case "encoders":
-                return join(config.getEncoders(),", ");
+                return join(config.getEncoders(), ", ");
             case "subprotocols":
                 if (serverConfig == null)
                 {
@@ -97,7 +97,7 @@ public class ConfiguredEchoSocket
                     List<String> protocols = new ArrayList<>();
                     protocols.addAll(serverConfig.getSubprotocols());
                     Collections.sort(protocols);
-                    return join(protocols,", ");
+                    return join(protocols, ", ");
                 }
             case "configurator":
                 if (serverConfig == null)

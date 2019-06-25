@@ -25,7 +25,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
-
 /**
  * This configuration object provides additional way to inject application
  * properties into the configured web application. The list of classpath files,
@@ -36,14 +35,15 @@ public class AntWebXmlConfiguration extends WebXmlConfiguration
 {
     private static final Logger LOG = Log.getLogger(WebXmlConfiguration.class);
 
-
-
-    /** List of classpath files. */
+    /**
+     * List of classpath files.
+     */
     private List classPathFiles;
 
-    /** Web application root directory. */
+    /**
+     * Web application root directory.
+     */
     private File webAppBaseDir;
-
 
     public AntWebXmlConfiguration()
     {
@@ -59,7 +59,4 @@ public class AntWebXmlConfiguration extends WebXmlConfiguration
     {
         this.webAppBaseDir = webAppBaseDir;
     }
-
-
-
 }

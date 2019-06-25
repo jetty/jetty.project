@@ -53,9 +53,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
 
     /**
      * Request a local close.
-     *
-     * @param closeInfo
-     * @param callback
      */
     void close(CloseInfo closeInfo, Callback callback);
 
@@ -66,18 +63,21 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
 
     /**
      * Get the ByteBufferPool in use by the connection
+     *
      * @return the buffer pool
      */
     ByteBufferPool getBufferPool();
 
     /**
      * Get the Executor used by this connection.
+     *
      * @return the executor
      */
     Executor getExecutor();
 
     /**
      * Get Unique ID for the Connection
+     *
      * @return the unique ID for the connection
      */
     String getId();
@@ -97,9 +97,10 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return the local address.
      */
     InetSocketAddress getLocalAddress();
-    
+
     /**
      * Set the maximum number of milliseconds of idleness before the connection is closed/disconnected, (ie no frames are either sent or received)
+     *
      * @return the idle timeout in milliseconds
      */
     long getMaxIdleTimeout();
@@ -110,13 +111,13 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * This idle timeout cannot be garunteed to take immediate effect for any active read/write actions.
      * New read/write actions will have this new idle timeout.
      *
-     * @param ms
-     *            the number of milliseconds of idle timeout
+     * @param ms the number of milliseconds of idle timeout
      */
     void setMaxIdleTimeout(long ms);
 
     /**
      * The policy that the connection is running under.
+     *
      * @return the policy for the connection
      */
     WebSocketPolicy getPolicy();
@@ -133,7 +134,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     /**
      * Test if logical connection is still open
      *
-     *  @return true if connection is open
+     * @return true if connection is open
      */
     boolean isOpen();
 
@@ -147,7 +148,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     /**
      * Set the state to opened (the application onOpen() method has been called successfully).
      * <p>
-     *     Reads from network begin here.
+     * Reads from network begin here.
      * </p>
      *
      * @return true if state is OPENED, false otherwise
@@ -163,6 +164,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
 
     /**
      * Report that the Remote Endpoint CLOSE Frame has been received
+     *
      * @param close the close frame details
      */
     void remoteClose(CloseInfo close);
@@ -171,9 +173,8 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * Set where the connection should send the incoming frames to.
      * <p>
      * Often this is from the Parser to the start of the extension stack, and eventually on to the session.
-     * 
-     * @param incoming
-     *            the incoming frames handler
+     *
+     * @param incoming the incoming frames handler
      */
     void setNextIncomingFrames(IncomingFrames incoming);
 
@@ -186,6 +187,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
 
     /**
      * Suspend a the incoming read events on the connection.
+     *
      * @return the suspend token
      */
     SuspendToken suspend();

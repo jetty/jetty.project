@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.beans;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;

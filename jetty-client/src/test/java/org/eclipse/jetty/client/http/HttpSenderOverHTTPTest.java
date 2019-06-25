@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client.http;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -39,10 +36,12 @@ import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpSenderOverHTTPTest
 {
@@ -257,7 +256,7 @@ public class HttpSenderOverHTTPTest
 
         String requestString = endPoint.takeOutputString();
         assertTrue(requestString.startsWith("GET "));
-        assertThat(requestString,Matchers.endsWith("\r\n\r\n" + content1 + content2));
+        assertThat(requestString, Matchers.endsWith("\r\n\r\n" + content1 + content2));
         assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
         assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }

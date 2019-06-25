@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>9.4.19-SNAPSHOT</version>
+    <version>9.4.20-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-common</artifactId>
@@ -11,7 +11,6 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.common</bundle-symbolic-name>
   </properties>
-
 
   <build>
     <defaultGoal>install</defaultGoal>
@@ -37,22 +36,22 @@
   </build>
   <dependencies>
     <dependency>
-         <groupId>org.infinispan</groupId>
-         <artifactId>infinispan-core</artifactId>
-         <version>${infinispan.version}</version>
-         <optional>true</optional>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-core</artifactId>
+      <version>${infinispan.version}</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
-         <groupId>org.infinispan.protostream</groupId>
-         <artifactId>protostream</artifactId>
-         <version>4.2.2.Final</version>
-         <optional>true</optional>
-         <scope>provided</scope>
+      <groupId>org.infinispan.protostream</groupId>
+      <artifactId>protostream</artifactId>
+      <version>4.2.2.Final</version>
+      <optional>true</optional>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-       <groupId>org.eclipse.jetty</groupId>
-       <artifactId>jetty-server</artifactId>
-       <version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>

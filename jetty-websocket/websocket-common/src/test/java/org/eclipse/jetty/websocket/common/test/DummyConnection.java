@@ -169,7 +169,7 @@ public class DummyConnection implements LogicalConnection
     public void setNextIncomingFrames(IncomingFrames incoming)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("setNextIncomingFrames({})",incoming);
+            LOG.debug("setNextIncomingFrames({})", incoming);
     }
 
     @Override

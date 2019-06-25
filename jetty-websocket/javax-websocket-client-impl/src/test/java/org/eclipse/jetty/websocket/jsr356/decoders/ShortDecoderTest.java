@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
-import org.junit.jupiter.api.Test;
-
 import javax.websocket.DecodeException;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -49,7 +49,5 @@ public class ShortDecoderTest
     public void testDecodeThrowsDecodeException() throws DecodeException
     {
         assertThrows(DecodeException.class, () -> ShortDecoder.INSTANCE.decode("$Yta3*m*%"));
-
     }
-
 }

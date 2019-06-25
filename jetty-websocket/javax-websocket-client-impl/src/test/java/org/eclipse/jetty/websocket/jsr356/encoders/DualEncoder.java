@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.encoders;
 
 import java.io.IOException;
 import java.io.Writer;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
@@ -40,7 +39,7 @@ public class DualEncoder implements Encoder.Text<Fruit>, Encoder.TextStream<Frui
     @Override
     public String encode(Fruit fruit) throws EncodeException
     {
-        return String.format("%s|%s",fruit.name,fruit.color);
+        return String.format("%s|%s", fruit.name, fruit.color);
     }
 
     @Override

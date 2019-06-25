@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -29,7 +25,6 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -50,6 +45,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 {
@@ -81,29 +80,29 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .onRequestSuccess(request -> successLatch.countDown())
-                .onResponseHeaders(response ->
+            .scheme(scenario.getScheme())
+            .onRequestSuccess(request -> successLatch.countDown())
+            .onResponseHeaders(response ->
+            {
+                assertEquals(0, idleConnections.size());
+                assertEquals(1, activeConnections.size());
+                headersLatch.countDown();
+            })
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onSuccess(Response response)
                 {
-                    assertEquals(0, idleConnections.size());
-                    assertEquals(1, activeConnections.size());
-                    headersLatch.countDown();
-                })
-                .send(new Response.Listener.Adapter()
-                {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        successLatch.countDown();
-                    }
+                    successLatch.countDown();
+                }
 
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertFalse(result.isFailed());
-                        successLatch.countDown();
-                    }
-                });
+                @Override
+                public void onComplete(Result result)
+                {
+                    assertFalse(result.isFailed());
+                    successLatch.countDown();
+                }
+            });
 
         assertTrue(headersLatch.await(30, TimeUnit.SECONDS));
         assertTrue(successLatch.await(30, TimeUnit.SECONDS));
@@ -183,40 +182,40 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .listener(new Request.Listener.Adapter()
+            .scheme(scenario.getScheme())
+            .listener(new Request.Listener.Adapter()
+            {
+                @Override
+                public void onBegin(Request request)
                 {
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        // Remove the host header, this will make the request invalid
-                        request.header(HttpHeader.HOST, null);
-                    }
+                    // Remove the host header, this will make the request invalid
+                    request.header(HttpHeader.HOST, null);
+                }
 
-                    @Override
-                    public void onSuccess(Request request)
-                    {
-                        successLatch.countDown();
-                    }
-                })
-                .send(new Response.Listener.Adapter()
+                @Override
+                public void onSuccess(Request request)
                 {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        assertEquals(400, response.getStatus());
-                        // 400 response also come with a Connection: close,
-                        // so the connection is closed and removed
-                        successLatch.countDown();
-                    }
+                    successLatch.countDown();
+                }
+            })
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onSuccess(Response response)
+                {
+                    assertEquals(400, response.getStatus());
+                    // 400 response also come with a Connection: close,
+                    // so the connection is closed and removed
+                    successLatch.countDown();
+                }
 
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertFalse(result.isFailed());
-                        successLatch.countDown();
-                    }
-                });
+                @Override
+                public void onComplete(Result result)
+                {
+                    assertFalse(result.isFailed());
+                    successLatch.countDown();
+                }
+            });
 
         assertTrue(successLatch.await(30, TimeUnit.SECONDS));
 
@@ -246,53 +245,53 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final long delay = 1000;
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .listener(new Request.Listener.Adapter()
+            .scheme(scenario.getScheme())
+            .listener(new Request.Listener.Adapter()
+            {
+                @Override
+                public void onBegin(Request request)
                 {
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        // Remove the host header, this will make the request invalid
-                        request.header(HttpHeader.HOST, null);
-                    }
+                    // Remove the host header, this will make the request invalid
+                    request.header(HttpHeader.HOST, null);
+                }
 
-                    @Override
-                    public void onHeaders(Request request)
-                    {
-                        try
-                        {
-                            TimeUnit.MILLISECONDS.sleep(delay);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onSuccess(Request request)
-                    {
-                        successLatch.countDown();
-                    }
-                })
-                .send(new Response.Listener.Adapter()
+                @Override
+                public void onHeaders(Request request)
                 {
-                    @Override
-                    public void onSuccess(Response response)
+                    try
                     {
-                        assertEquals(400, response.getStatus());
-                        // 400 response also come with a Connection: close,
-                        // so the connection is closed and removed
-                        successLatch.countDown();
+                        TimeUnit.MILLISECONDS.sleep(delay);
                     }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
 
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertFalse(result.isFailed());
-                        successLatch.countDown();
-                    }
-                });
+                @Override
+                public void onSuccess(Request request)
+                {
+                    successLatch.countDown();
+                }
+            })
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onSuccess(Response response)
+                {
+                    assertEquals(400, response.getStatus());
+                    // 400 response also come with a Connection: close,
+                    // so the connection is closed and removed
+                    successLatch.countDown();
+                }
+
+                @Override
+                public void onComplete(Result result)
+                {
+                    assertFalse(result.isFailed());
+                    successLatch.countDown();
+                }
+            });
 
         assertTrue(successLatch.await(delay * 30, TimeUnit.MILLISECONDS));
 
@@ -321,13 +320,13 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch failureLatch = new CountDownLatch(2);
         client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .onRequestFailure((request, failure) -> failureLatch.countDown())
-                .send(result ->
-                {
-                    assertTrue(result.isFailed());
-                    failureLatch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .onRequestFailure((request, failure) -> failureLatch.countDown())
+            .send(result ->
+            {
+                assertTrue(result.isFailed());
+                failureLatch.countDown();
+            });
 
         assertTrue(failureLatch.await(30, TimeUnit.SECONDS));
 
@@ -362,18 +361,18 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .send(new Response.Listener.Adapter()
+            .scheme(scenario.getScheme())
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertFalse(result.isFailed());
-                        assertEquals(0, idleConnections.size());
-                        assertEquals(0, activeConnections.size());
-                        latch.countDown();
-                    }
-                });
+                    assertFalse(result.isFailed());
+                    assertEquals(0, idleConnections.size());
+                    assertEquals(0, activeConnections.size());
+                    latch.countDown();
+                }
+            });
 
         assertTrue(latch.await(30, TimeUnit.SECONDS));
 
@@ -413,21 +412,21 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
             final CountDownLatch latch = new CountDownLatch(1);
             ByteBuffer buffer = ByteBuffer.allocate(16 * 1024 * 1024);
-            Arrays.fill(buffer.array(),(byte)'x');
+            Arrays.fill(buffer.array(), (byte)'x');
             client.newRequest(host, port)
-                    .scheme(scenario.getScheme())
-                    .content(new ByteBufferContentProvider(buffer))
-                    .send(new Response.Listener.Adapter()
+                .scheme(scenario.getScheme())
+                .content(new ByteBufferContentProvider(buffer))
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onComplete(Result result)
                     {
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                            assertEquals(1, latch.getCount());
-                            assertEquals(0, idleConnections.size());
-                            assertEquals(0, activeConnections.size());
-                            latch.countDown();
-                        }
-                    });
+                        assertEquals(1, latch.getCount());
+                        assertEquals(0, idleConnections.size());
+                        assertEquals(0, activeConnections.size());
+                        latch.countDown();
+                    }
+                });
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));
 
@@ -458,9 +457,9 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         assertEquals(0, activeConnections.size());
 
         ContentResponse response = client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .timeout(30, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(30, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
 
@@ -492,13 +491,13 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         client.setStrictEventOrdering(false);
         ContentResponse response = client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .onResponseBegin(response1 ->
-                {
-                    // Simulate a HTTP 1.0 response has been received.
-                    ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
-                })
-                .send();
+            .scheme(scenario.getScheme())
+            .onResponseBegin(response1 ->
+            {
+                // Simulate a HTTP 1.0 response has been received.
+                ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
+            })
+            .send();
 
         assertEquals(200, response.getStatus());
 

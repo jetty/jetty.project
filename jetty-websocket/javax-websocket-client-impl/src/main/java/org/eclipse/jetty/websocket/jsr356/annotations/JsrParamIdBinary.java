@@ -21,8 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import javax.websocket.OnMessage;
-
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
@@ -36,7 +34,7 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (super.process(param,callable))
+        if (super.process(param, callable))
         {
             // Found common roles
             return true;
@@ -59,7 +57,7 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
         // Streaming
         if (param.type.isAssignableFrom(InputStream.class))
         {
-            assertPartialMessageSupportDisabled(param,callable);
+            assertPartialMessageSupportDisabled(param, callable);
             param.bind(Role.MESSAGE_BINARY_STREAM);
             callable.setDecodingType(InputStream.class);
             return true;

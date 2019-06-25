@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +26,6 @@ import java.net.URI;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ContainerProvider;
 import javax.websocket.OnMessage;
@@ -43,9 +39,11 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BinaryStreamTest
 {
@@ -63,9 +61,11 @@ public class BinaryStreamTest
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
-        ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
-        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ServerBinaryStreamer.class, PATH).build();
-        container.addEndpoint(config);
+        WebSocketServerContainerInitializer.configure(context, (servletContext, container) ->
+        {
+            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ServerBinaryStreamer.class, PATH).build();
+            container.addEndpoint(config);
+        });
 
         server.start();
 
@@ -99,7 +99,7 @@ public class BinaryStreamTest
 
         try (OutputStream output = session.getBasicRemote().getSendStream())
         {
-             output.write(data);
+            output.write(data);
         }
 
         assertTrue(client.await(5, TimeUnit.SECONDS));
@@ -118,7 +118,9 @@ public class BinaryStreamTest
         try (OutputStream output = session.getBasicRemote().getSendStream())
         {
             for (int i = 0; i < size; ++i)
+            {
                 output.write(data[i]);
+            }
         }
 
         assertTrue(client.await(5, TimeUnit.SECONDS));
@@ -173,7 +175,9 @@ public class BinaryStreamTest
             {
                 int read;
                 while ((read = input.read(buffer)) >= 0)
+                {
                     output.write(buffer, 0, read);
+                }
             }
         }
     }
