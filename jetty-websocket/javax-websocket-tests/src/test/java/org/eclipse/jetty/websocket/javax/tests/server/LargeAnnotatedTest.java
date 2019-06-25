@@ -82,11 +82,11 @@ public class LargeAnnotatedTest
                 client.start();
 
                 FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-                clientSocket.setMaxTextMessageSize(128 * 1024);
 
                 Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
                 // wait for connect
                 FrameHandler.CoreSession coreSession = clientConnectFuture.get(1, TimeUnit.SECONDS);
+                coreSession.setMaxTextMessageSize(128 * 1024);
                 try
                 {
 

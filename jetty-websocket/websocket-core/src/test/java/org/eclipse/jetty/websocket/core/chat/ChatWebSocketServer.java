@@ -72,7 +72,7 @@ public class ChatWebSocketServer
             public void onOpen(CoreSession coreSession, Callback callback)
             {
                 LOG.debug("onOpen {}", coreSession);
-                setMaxTextMessageSize(2 * 1024);
+                coreSession.setMaxTextMessageSize(2 * 1024);
                 super.onOpen(coreSession, Callback.from(()->{members.add(this); callback.succeeded();},x->callback.failed(x)));
             }
 

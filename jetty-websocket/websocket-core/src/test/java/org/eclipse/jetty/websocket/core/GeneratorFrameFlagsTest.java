@@ -65,7 +65,7 @@ public class GeneratorFrameFlagsTest
     {
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
-        this.coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.CLIENT, Negotiated.from(exStack));
+        this.coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.CLIENT, Negotiated.from(exStack));
     }
 
     @ParameterizedTest

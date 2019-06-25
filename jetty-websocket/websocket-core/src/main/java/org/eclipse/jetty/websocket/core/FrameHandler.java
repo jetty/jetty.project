@@ -326,7 +326,7 @@ public interface FrameHandler extends IncomingFrames
          */
         void demand(long n);
 
-        class Empty implements CoreSession
+        class Empty extends ConfigurationCustomizer implements CoreSession
         {
             @Override
             public String getNegotiatedSubProtocol()
@@ -400,28 +400,6 @@ public interface FrameHandler extends IncomingFrames
             }
 
             @Override
-            public Duration getIdleTimeout()
-            {
-                return Duration.ZERO;
-            }
-
-            @Override
-            public Duration getWriteTimeout()
-            {
-                return Duration.ZERO;
-            }
-
-            @Override
-            public void setIdleTimeout(Duration timeout)
-            {
-            }
-
-            @Override
-            public void setWriteTimeout(Duration timeout)
-            {
-            }
-
-            @Override
             public void flush(Callback callback)
             {
             }
@@ -442,73 +420,7 @@ public interface FrameHandler extends IncomingFrames
             }
 
             @Override
-            public boolean isAutoFragment()
-            {
-                return false;
-            }
-
-            @Override
-            public void setAutoFragment(boolean autoFragment)
-            {
-            }
-
-            @Override
-            public long getMaxFrameSize()
-            {
-                return 0;
-            }
-
-            @Override
-            public void setMaxFrameSize(long maxFrameSize)
-            {
-            }
-
-            @Override
-            public int getOutputBufferSize()
-            {
-                return 0;
-            }
-
-            @Override
-            public void setOutputBufferSize(int outputBufferSize)
-            {
-            }
-
-            @Override
-            public int getInputBufferSize()
-            {
-                return 0;
-            }
-
-            @Override
-            public void setInputBufferSize(int inputBufferSize)
-            {
-            }
-
-            @Override
             public void sendFrame(Frame frame, Callback callback, boolean batch)
-            {
-            }
-
-            @Override
-            public long getMaxBinaryMessageSize()
-            {
-                return 0;
-            }
-
-            @Override
-            public void setMaxBinaryMessageSize(long maxSize)
-            {
-            }
-
-            @Override
-            public long getMaxTextMessageSize()
-            {
-                return 0;
-            }
-
-            @Override
-            public void setMaxTextMessageSize(long maxSize)
             {
             }
         }

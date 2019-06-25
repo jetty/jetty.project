@@ -28,6 +28,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -343,6 +344,8 @@ public class MessageReceivingTest
 
     public static class ServerMessageNegotiator extends CoreServer.BaseNegotiator
     {
+        private static final int MAX_MESSAGE_SIZE = (1024 * 1024) + 2;
+
         public ServerMessageNegotiator()
         {
             super();
@@ -363,7 +366,6 @@ public class MessageReceivingTest
             {
                 negotiation.setSubprotocol("partial-binary");
                 SendPartialBinaryFrameHandler frameHandler = new SendPartialBinaryFrameHandler();
-                frameHandler.setMaxBinaryMessageSize((1024 * 1024) + 2);
                 return frameHandler;
             }
 
@@ -371,11 +373,17 @@ public class MessageReceivingTest
             {
                 negotiation.setSubprotocol("echo");
                 EchoWholeMessageFrameHandler frameHandler = new EchoWholeMessageFrameHandler();
-                frameHandler.setMaxTextMessageSize((1024 * 1024) + 2);
                 return frameHandler;
             }
 
             return null;
+        }
+
+        @Override
+        public void customize(FrameHandler.Configuration configurable)
+        {
+            configurable.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            configurable.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
         }
     }
 
