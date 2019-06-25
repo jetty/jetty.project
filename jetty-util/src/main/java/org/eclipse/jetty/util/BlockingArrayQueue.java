@@ -759,9 +759,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         }
     }
 
-
-    /* Additional methods */
-
     /**
      * @return the current capacity of this queue
      */
@@ -785,9 +782,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     {
         return _maxCapacity;
     }
-
-
-    /* Implementation methods */
 
     private boolean grow()
     {

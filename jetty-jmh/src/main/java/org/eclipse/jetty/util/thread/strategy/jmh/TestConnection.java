@@ -25,6 +25,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.ExecutionStrategy.Producer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.openjdk.jmh.infra.Blackhole;
@@ -124,6 +125,7 @@ public class TestConnection implements Producer
                         }
                         catch (InterruptedException e)
                         {
+                            Log.getLogger(TestConnection.class).ignore(e);
                         }
                     }
                     else

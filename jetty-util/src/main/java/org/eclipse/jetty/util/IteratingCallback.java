@@ -288,8 +288,9 @@ public abstract class IteratingCallback implements Callback
                             }
 
                             default:
-                                throw new IllegalStateException(String.format("%s[action=%s]", this, action));
+                                break;
                         }
+                        throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                     }
 
                     case CALLED:
