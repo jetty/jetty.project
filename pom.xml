@@ -454,11 +454,6 @@
             <configLocation>jetty-checkstyle.xml</configLocation>
             <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
             <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
-            <!-- we only check our sources and not generated sources -->
-            <sourceDirectories>
-              <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-              <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
-            </sourceDirectories>
           </configuration>
           <dependencies>
             <dependency>
