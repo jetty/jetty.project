@@ -6,7 +6,7 @@
 
 <suppressions>
   <!-- all /target/ directories -->
-  <suppress files="[/\\]jetty-jmh[/\\]" />
+  <suppress files="[/\\]target[/\\]" />
 
   <!-- General JUnit Test Cases -->
   <suppress checks="AbbreviationAsWordInNameCheck"
