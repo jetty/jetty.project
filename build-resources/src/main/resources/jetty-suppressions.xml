@@ -6,7 +6,7 @@
 
 <suppressions>
   <!-- all /target/ directories -->
-  <suppress files="[/\\]target[/\\]" />
+  <suppress checks=".*" files="[/\\]target[/\\]" />
 
   <!-- General JUnit Test Cases -->
   <suppress checks="AbbreviationAsWordInNameCheck"
