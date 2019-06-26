@@ -82,6 +82,15 @@ public class DecoratingListener implements ServletContextAttributeListener
     {
         _context = context == null ? WebAppContext.getCurrentWebAppContext() : context;
         _attributeName = attributeName == null ? DecoratingListener.class.getPackageName() + ".Decorator" : attributeName;
+        Object decorator = _context.getAttribute(_attributeName);
+        if (decorator != null)
+        {
+            _decorator = asDecorator(decorator);
+            if (_decorator == null)
+                LOG.warn("Could not create decorator from {}={}", attributeName, decorator);
+            else
+                _context.getObjectFactory().addDecorator(_decorator);
+        }
     }
 
     private Decorator asDecorator(Object object)
