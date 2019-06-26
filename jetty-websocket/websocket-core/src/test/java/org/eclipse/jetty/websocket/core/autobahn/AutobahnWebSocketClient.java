@@ -19,21 +19,13 @@
 package org.eclipse.jetty.websocket.core.autobahn;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
-import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -106,7 +98,7 @@ public class AutobahnWebSocketClient
         AutobahnWebSocketClient client = null;
         try
         {
-            String userAgent = "JettyWebsocketClient/" + getJettyVersion();
+            String userAgent = "JettyWebsocketClient/" + Jetty.VERSION;
             client = new AutobahnWebSocketClient(hostname, port, userAgent);
 
             LOG.info("Running test suite...");
@@ -166,7 +158,7 @@ public class AutobahnWebSocketClient
 
         if (waitForUpgrade(wsUri, response))
         {
-            String msg = onCaseCount.textMessages.poll(2, TimeUnit.SECONDS);
+            String msg = onCaseCount.textMessages.poll(10, TimeUnit.SECONDS);
             onCaseCount.getCoreSession().abort(); // Don't expect normal close
             assertTrue(onCaseCount.closeLatch.await(2, TimeUnit.SECONDS));
             assertNotNull(msg);
@@ -184,6 +176,7 @@ public class AutobahnWebSocketClient
         Future<FrameHandler.CoreSession> response = client.connect(echoHandler, wsUri);
         if (waitForUpgrade(wsUri, response))
         {
+            // Wait up to 5 min as some of the tests can take a while
             if (!echoHandler.closeLatch.await(5, TimeUnit.MINUTES))
             {
                 LOG.warn("could not close {}, aborting session", echoHandler);
@@ -226,31 +219,6 @@ public class AutobahnWebSocketClient
         {
             LOG.warn("Unable to connect to: " + wsUri, t);
             return false;
-        }
-    }
-
-    private static String getJettyVersion() throws IOException
-    {
-        String resource = "META-INF/maven/org.eclipse.jetty.websocket/websocket-core/pom.properties";
-        URL url = Thread.currentThread().getContextClassLoader().getResource(resource);
-        if (url == null)
-        {
-            if (AutobahnWebSocketClient.class.getPackage() != null)
-            {
-                Package pkg = AutobahnWebSocketClient.class.getPackage();
-                if (pkg.getImplementationVersion() != null)
-                {
-                    return pkg.getImplementationVersion();
-                }
-            }
-            return "GitMaster";
-        }
-
-        try (InputStream in = url.openStream())
-        {
-            Properties props = new Properties();
-            props.load(in);
-            return props.getProperty("version");
         }
     }
 }
