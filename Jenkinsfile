@@ -11,7 +11,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk11", "-Pautobahn -Pmongodb install", "maven3", true)
+            mavenBuild("jdk11", "-Pmongodb install", "maven3", true) // -Pautobahn 
             // Collect up the jacoco execution results (only on main build)
             jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                 exclusionPattern: '' +
