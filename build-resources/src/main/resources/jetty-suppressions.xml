@@ -5,6 +5,9 @@
   "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
+  <!-- all /target/ directories -->
+  <suppress checks=".*" files="[/\\]target[/\\]" />
+
   <!-- General JUnit Test Cases -->
   <suppress checks="AbbreviationAsWordInNameCheck"
     files="[/\\]src[/\\]test[/\\]java[/\\]" />
