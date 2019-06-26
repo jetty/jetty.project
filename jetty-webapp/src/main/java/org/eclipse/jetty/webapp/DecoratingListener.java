@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.plus.webapp;
+package org.eclipse.jetty.webapp;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -27,8 +27,15 @@ import javax.servlet.ServletContextAttributeListener;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.WebAppContext;
 
+/**
+ * A ServletContextAttributeListener that listens for a specific attribute
+ * name (default "org.eclipse.jetty.webapp.Decorator") to obtain a
+ * decorator instance from the webapp.  The instance is then either coerced
+ * to a Decorator or reflected for decorator compatible methods so it can
+ * be added to the {@link WebAppContext#getObjectFactory()} as a
+ * {@link Decorator}.
+ */
 public class DecoratingListener implements ServletContextAttributeListener
 {
     private static final Logger LOG = Log.getLogger(DecoratingListener.class);
@@ -56,6 +63,16 @@ public class DecoratingListener implements ServletContextAttributeListener
     private final String _attributeName;
     private Decorator _decorator;
 
+    public DecoratingListener()
+    {
+        this(null, null);
+    }
+
+    public DecoratingListener(String attributeName)
+    {
+        this(null, attributeName);
+    }
+
     public DecoratingListener(WebAppContext context)
     {
         this(context, null);
@@ -63,7 +80,7 @@ public class DecoratingListener implements ServletContextAttributeListener
 
     public DecoratingListener(WebAppContext context, String attributeName)
     {
-        _context = context;
+        _context = context == null ? WebAppContext.getCurrentWebAppContext() : context;
         _attributeName = attributeName == null ? DecoratingListener.class.getPackageName() + ".Decorator" : attributeName;
     }
 
@@ -88,7 +105,7 @@ public class DecoratingListener implements ServletContextAttributeListener
                 {
                     try
                     {
-                        return (T)decorate.invoke(o);
+                        return (T)decorate.invoke(object, o);
                     }
                     catch (Throwable t)
                     {
@@ -101,7 +118,7 @@ public class DecoratingListener implements ServletContextAttributeListener
                 {
                     try
                     {
-                        destroy.invoke(o);
+                        destroy.invoke(object, o);
                     }
                     catch (Throwable t)
                     {

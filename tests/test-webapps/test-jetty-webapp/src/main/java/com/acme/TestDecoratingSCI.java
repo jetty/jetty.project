@@ -16,29 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.plus.webapp;
+package com.acme;
 
-import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.WebAppContext;
+import java.util.Set;
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 
-public class DecoratingConfiguration extends AbstractConfiguration
+public class TestDecoratingSCI implements ServletContainerInitializer
 {
-    private final String _attributeName;
-
-    public DecoratingConfiguration()
-    {
-        this("org.eclipse.jetty.plus.webapp.Decorator");
-    }
-
-    public DecoratingConfiguration(String attributeName)
-    {
-        super(true);
-        _attributeName = attributeName;
-    }
-
     @Override
-    public void preConfigure(WebAppContext context)
+    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
-        context.addEventListener(new DecoratingListener(context, _attributeName));
+        ctx.setAttribute("test.decorator.attribute.name", this);
+    }
+
+    public Object decorate(Object o)
+    {
+        if (o instanceof Dump)
+            ((Dump)o).setDecorated(true);
+        return o;
+    }
+
+    public void destroy(Object o)
+    {
     }
 }
