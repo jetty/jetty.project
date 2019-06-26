@@ -4,9 +4,7 @@
   },
   "url": "ws://127.0.0.1:9001",
   "outdir": "./target/reports/clients",
-  "cases": [
-    "*"
-  ],
+  "cases": ["*"],
   "exclude-cases": [],
   "exclude-agent-cases": {}
 }
