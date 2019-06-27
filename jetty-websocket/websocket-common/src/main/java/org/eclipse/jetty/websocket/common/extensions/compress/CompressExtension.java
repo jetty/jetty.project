@@ -430,6 +430,8 @@ public abstract class CompressExtension extends AbstractExtension
         public void failed(Throwable x)
         {
             notifyCallbackFailure(current.callback, x);
+            // If something went wrong, very likely the compression context
+            // will be invalid, so we need to fail this IteratingCallback.
             LOG.warn(x);
             super.failed(x);
         }
@@ -597,9 +599,6 @@ public abstract class CompressExtension extends AbstractExtension
         @Override
         public void writeFailed(Throwable x)
         {
-            notifyCallbackFailure(current.callback, x);
-            // If something went wrong, very likely the compression context
-            // will be invalid, so we need to fail this IteratingCallback.
             failed(x);
         }
     }
