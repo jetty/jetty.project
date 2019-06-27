@@ -429,6 +429,7 @@ public abstract class CompressExtension extends AbstractExtension
         @Override
         public void failed(Throwable x)
         {
+            notifyCallbackFailure(current.callback, x);
             LOG.warn(x);
             super.failed(x);
         }
