@@ -837,6 +837,7 @@ public class JSON
                     case '\r':
                     case '\n':
                         commentState = 0;
+                        break;
                     default:
                         break;
                 }

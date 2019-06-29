@@ -1285,8 +1285,8 @@ public class HttpParser
                             _string.setLength(0);
                             _string.append(t.getChar());
                             _length = 1;
+                            break;
                         }
-                        break;
 
                         default:
                             throw new IllegalCharacterException(_state, t, buffer);
