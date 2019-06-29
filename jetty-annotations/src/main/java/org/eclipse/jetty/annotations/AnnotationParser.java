@@ -584,8 +584,10 @@ public class AnnotationParser
     public void addParsedClass(String classname, Resource location)
     {
         Resource existing = _parsedClassNames.putIfAbsent(classname, location);
-        if (existing != null)
+        if (existing != null && !existing.equals(location))
+        {
             LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
+        }
     }
 
     /**
