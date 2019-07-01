@@ -18,25 +18,48 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EventListener;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.Servlet;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletContextAttributeEvent;
+import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequestAttributeEvent;
+import javax.servlet.ServletRequestAttributeListener;
+import javax.servlet.ServletRequestEvent;
+import javax.servlet.ServletRequestListener;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -60,15 +83,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletContextHandlerTest
 {
@@ -157,8 +171,7 @@ public class ServletContextHandlerTest
     }
 
     public static class MyTestSessionListener implements HttpSessionAttributeListener, HttpSessionListener
-    {
-
+    {        
         @Override
         public void sessionCreated(HttpSessionEvent se)
         {
@@ -183,6 +196,187 @@ public class ServletContextHandlerTest
         public void attributeReplaced(HttpSessionBindingEvent event)
         {
         }
+    }
+    
+    public static class MySCAListener implements ServletContextAttributeListener
+    {
+        public static int adds = 0;
+        public static int removes = 0;
+        public static int replaces = 0;
+        
+        @Override
+        public void attributeAdded(ServletContextAttributeEvent event)
+        {
+            ++adds;
+        }
+
+        @Override
+        public void attributeRemoved(ServletContextAttributeEvent event)
+        {
+            ++removes;
+        }
+
+        @Override
+        public void attributeReplaced(ServletContextAttributeEvent event)
+        {
+            ++replaces;
+        }
+    }
+
+    public static class MyRequestListener implements ServletRequestListener
+    {
+        public static int destroys = 0;
+        public static int inits = 0;
+
+        @Override
+        public void requestDestroyed(ServletRequestEvent sre)
+        { 
+            ++destroys;
+        }
+
+        @Override
+        public void requestInitialized(ServletRequestEvent sre)
+        {
+            ++inits;
+        }
+    }
+    
+    public static class MyRAListener implements ServletRequestAttributeListener
+    {
+        public static int adds = 0;
+        public static int removes = 0;
+        public static int replaces = 0;
+        
+        @Override
+        public void attributeAdded(ServletRequestAttributeEvent srae)
+        {
+            ++adds;
+        }
+
+        @Override
+        public void attributeRemoved(ServletRequestAttributeEvent srae)
+        {
+            ++removes;
+        }
+
+        @Override
+        public void attributeReplaced(ServletRequestAttributeEvent srae)
+        {
+            ++replaces;
+        }
+    }
+    
+    public static class MySListener implements HttpSessionListener
+    {
+       public static int creates = 0;
+       public static int destroys = 0;
+
+        @Override
+        public void sessionCreated(HttpSessionEvent se)
+        {
+            ++creates;
+        }
+
+        @Override
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+            ++destroys;
+        }
+        
+    }
+    
+    public static class MySAListener implements HttpSessionAttributeListener
+    {
+        public static int adds = 0;
+        public static int removes = 0;
+        public static int replaces = 0;
+        
+        @Override
+        public void attributeAdded(HttpSessionBindingEvent event)
+        {
+            ++adds;
+        }
+
+        @Override
+        public void attributeRemoved(HttpSessionBindingEvent event)
+        {
+            ++removes;
+        }
+
+        @Override
+        public void attributeReplaced(HttpSessionBindingEvent event)
+        {
+            ++replaces;
+        }   
+    }
+    
+    
+    public static class MySIListener implements HttpSessionIdListener
+    {
+        public static int changes = 0;
+        
+        @Override
+        public void sessionIdChanged(HttpSessionEvent event, String oldSessionId)
+        {
+            ++changes;
+        }
+    }
+    
+    public class InitialListener implements ServletContextListener
+    {
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            //Add all of the sorts of listeners that are allowed
+            try
+            {
+                MySCAListener mySCAListener = sce.getServletContext().createListener(MySCAListener.class);
+                sce.getServletContext().addListener(mySCAListener);
+
+                MyRequestListener myRequestListener = sce.getServletContext().createListener(MyRequestListener.class);
+                sce.getServletContext().addListener(myRequestListener);
+
+                MyRAListener myRAListener = sce.getServletContext().createListener(MyRAListener.class);
+                sce.getServletContext().addListener(myRAListener);
+
+                MySListener mySListener = sce.getServletContext().createListener(MySListener.class);
+                sce.getServletContext().addListener(mySListener);
+
+                MySAListener mySAListener = sce.getServletContext().createListener(MySAListener.class);
+                sce.getServletContext().addListener(mySAListener);
+
+                MySIListener mySIListener = sce.getServletContext().createListener(MySIListener.class);
+                sce.getServletContext().addListener(mySIListener);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+            //And also test you can't add a ServletContextListener from a ServletContextListener
+            try
+            {
+                MyContextListener contextListener = sce.getServletContext().createListener(MyContextListener.class);
+                sce.getServletContext().addListener(contextListener);
+                fail("Adding SCI from an SCI!");
+            }
+            catch (IllegalArgumentException e)
+            {
+                //expected
+            }
+            catch (Exception x)
+            {
+                fail(x);
+            }
+            
+            sce.getServletContext().setAttribute("foo", "bar");
+        }
+
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+            
+        }
+        
     }
 
     @BeforeEach
@@ -231,6 +425,114 @@ public class ServletContextHandlerTest
         _server.start();
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.startup"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.contextInitialized"));
+    }
+    
+    @Test
+    public void testListenersFromContextListener() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ListenerHolder initialListener = new ListenerHolder();
+        initialListener.setListener(new InitialListener());
+        root.getServletHandler().addListener(initialListener);
+        ServletHolder holder0 = root.addServlet(TestServlet.class, "/test");
+        _server.start();
+        
+        ListenerHolder[] listenerHolders = root.getServletHandler().getListeners();
+        assertNotNull(listenerHolders);
+        for (ListenerHolder l : listenerHolders)
+        {
+            assertTrue(l.isStarted());
+            assertNotNull(l.getListener());
+            //all listeners except the first should be programmatic
+            if (!"org.eclipse.jetty.servlet.ServletContextHandlerTest$InitialListener".equals(l.getClassName()))
+            {
+                assertFalse(root.isDurableListener(l.getListener()));
+                assertTrue(root.isProgrammaticListener(l.getListener()));
+            }
+        }
+        
+        EventListener[] listeners = root.getEventListeners();
+        assertNotNull(listeners);
+        List<String> listenerClassNames = new ArrayList<>();
+        for (EventListener l : listeners)
+            listenerClassNames.add(l.getClass().getName());
+ 
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySCAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MyRequestListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MyRAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySIListener"));
+        
+        //test ServletRequestAttributeListener
+        String response = _connector.getResponse("GET /test?req=all HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals(1, MyRAListener.adds);
+        assertEquals(1, MyRAListener.replaces);
+        assertEquals(1, MyRAListener.removes);
+        
+        //test HttpSessionAttributeListener
+        response = _connector.getResponse("GET /test?session=create HTTP/1.0\r\n\r\n");
+        String sessionid = response.substring(response.indexOf("JSESSIONID"), response.indexOf(";"));
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals(1, MySListener.creates);
+        assertEquals(1, MySAListener.adds);
+        assertEquals(0, MySAListener.replaces);
+        assertEquals(0, MySAListener.removes);
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test?session=replace HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("Cookie: "+sessionid+"\n");
+        request.append("\n");
+        response = _connector.getResponse(request.toString());
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals(1, MySListener.creates);
+        assertEquals(1, MySAListener.adds);
+        assertEquals(1, MySAListener.replaces);
+        assertEquals(0, MySAListener.removes);
+        request = new StringBuffer();
+        request.append("GET /test?session=remove HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("Cookie: "+sessionid+"\n");
+        request.append("\n");
+        response = _connector.getResponse(request.toString());
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals(1, MySListener.creates);
+        assertEquals(1, MySAListener.adds);
+        assertEquals(1, MySAListener.replaces);
+        assertEquals(1, MySAListener.removes);
+        
+        //test HttpSessionIdListener.sessionIdChanged
+        request = new StringBuffer();
+        request.append("GET /test?session=change HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("Cookie: "+sessionid+"\n");
+        request.append("\n");
+        response = _connector.getResponse(request.toString());
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals(1, MySIListener.changes);
+        sessionid = response.substring(response.indexOf("JSESSIONID"), response.indexOf(";"));
+        
+        //test HttpServletListener.sessionDestroyed
+        request = new StringBuffer();
+        request.append("GET /test?session=delete HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("Cookie: "+sessionid+"\n");
+        request.append("\n");
+        response = _connector.getResponse(request.toString());
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals(1, MySListener.destroys);
+        
+        //test ServletContextAttributeListener
+        //attribute was set when context listener registered
+        assertEquals(1, MySCAListener.adds);
+        response = _connector.getResponse("GET /test?ctx=all HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertEquals(1, MySCAListener.replaces);
+        assertEquals(1, MySCAListener.removes);
     }
 
     @Test
@@ -670,6 +972,62 @@ public class ServletContextHandlerTest
             resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter writer = resp.getWriter();
             writer.write("Test");
+            
+            String action = req.getParameter("session");
+            if (!Objects.isNull(action))
+            {
+                if ("create".equalsIgnoreCase(action))
+                {
+                    //Make a session
+                    HttpSession session = req.getSession(true);
+                    session.setAttribute("some", "thing");
+                }
+                else if ("change".equalsIgnoreCase(action))
+                {
+                    HttpSession session = req.getSession(true);
+                    req.changeSessionId();
+                }
+                else if ("replace".equalsIgnoreCase(action))
+                {
+                    HttpSession session = req.getSession(false);
+                    session.setAttribute("some", "other");
+                }
+                else if ("remove".equalsIgnoreCase(action))
+                {
+                    HttpSession session = req.getSession(false);
+                    session.removeAttribute("some");
+                }
+                else if ("delete".equalsIgnoreCase(action))
+                {
+                    HttpSession session = req.getSession(false);
+                    session.invalidate();
+                }
+                else
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                
+                return;
+            }
+
+            action = req.getParameter("req");
+            if (!Objects.isNull(action))
+            {
+                //test all attribute ops
+                req.setAttribute("some", "value");
+                req.setAttribute("some", "other");
+                req.removeAttribute("some");
+                
+                return;
+            }
+           
+            action = req.getParameter("ctx");
+            if (!Objects.isNull(action))
+            {
+                //change and remove context attribute
+                req.getServletContext().setAttribute("foo", "foo");
+                req.getServletContext().removeAttribute("foo");
+                
+                return;
+            }
         }
     }
 }
