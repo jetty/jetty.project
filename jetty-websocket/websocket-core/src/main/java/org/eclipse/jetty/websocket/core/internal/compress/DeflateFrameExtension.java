@@ -20,14 +20,13 @@ package org.eclipse.jetty.websocket.core.internal.compress;
 
 import java.util.zip.DataFormatException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 /**
  * Implementation of the
@@ -85,10 +84,10 @@ public class DeflateFrameExtension extends CompressExtension
     }
 
     @Override
-    public void init(ExtensionConfig config, ByteBufferPool bufferPool)
+    public void setWebSocketCoreSession(WebSocketCoreSession coreSession)
     {
         // Frame auto-fragmentation must not be used with DeflateFrameExtension
-        getWebSocketCoreSession().setAutoFragment(false);
-        super.init(config, bufferPool);
+        coreSession.setAutoFragment(false);
+        super.setWebSocketCoreSession(coreSession);
     }
 }
