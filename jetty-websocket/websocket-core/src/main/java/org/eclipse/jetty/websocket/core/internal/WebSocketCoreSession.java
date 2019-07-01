@@ -52,6 +52,7 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
+import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 
@@ -570,6 +571,8 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void setAutoFragment(boolean autoFragment)
     {
+        if (autoFragment && getExtensionStack().getRsv1User() instanceof DeflateFrameExtension)
+            LOG.warn("Frame auto-fragmentation must not be used with DeflateFrameExtension");
         this.autoFragment = autoFragment;
     }
 
