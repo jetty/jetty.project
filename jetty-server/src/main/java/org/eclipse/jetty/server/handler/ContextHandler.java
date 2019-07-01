@@ -62,6 +62,9 @@ import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionIdListener;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
@@ -110,12 +113,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final int SERVLET_MAJOR_VERSION = 3;
     public static final int SERVLET_MINOR_VERSION = 1;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
-        {
-            ServletContextListener.class,
-            ServletContextAttributeListener.class,
-            ServletRequestListener.class,
-            ServletRequestAttributeListener.class
-        };
+    {
+        ServletContextListener.class,
+        ServletContextAttributeListener.class,
+        ServletRequestListener.class,
+        ServletRequestAttributeListener.class,
+        HttpSessionIdListener.class,
+        HttpSessionListener.class,
+        HttpSessionAttributeListener.class
+    };
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
     public static final int EXTENDED_LISTENER_TYPE_INDEX = 0;
@@ -639,7 +645,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _eventListeners.add(listener);
 
         if (!(isStarted() || isStarting()))
+        {
             _durableListeners.add(listener);
+        }
 
         if (listener instanceof ContextScopeListener)
         {
@@ -700,9 +708,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _programmaticListeners.add(listener);
     }
 
-    protected boolean isProgrammaticListener(EventListener listener)
+    public boolean isProgrammaticListener(EventListener listener)
     {
         return _programmaticListeners.contains(listener);
+    }
+    
+    public boolean isDurableListener(EventListener listener)
+    {
+        return _durableListeners.contains(listener);
     }
 
     /**

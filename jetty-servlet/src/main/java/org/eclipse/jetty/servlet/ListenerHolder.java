@@ -22,6 +22,8 @@ import java.util.EventListener;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
+
 /**
  * ListenerHolder
  *
@@ -32,7 +34,6 @@ import javax.servlet.ServletException;
 public class ListenerHolder extends BaseHolder<EventListener>
 {
     private EventListener _listener;
-    private boolean _initialized = false;
 
     public ListenerHolder()
     {
@@ -68,35 +69,6 @@ public class ListenerHolder extends BaseHolder<EventListener>
         setHeldClass(_listener.getClass());
     }
 
-    public void initialize(ServletContext context) throws Exception
-    {
-        if (!_initialized)
-        {
-            initialize();
-
-            if (_listener == null)
-            {
-                //create an instance of the listener and decorate it
-                try
-                {
-                    _listener = (context instanceof ServletContextHandler.Context)
-                        ? ((ServletContextHandler.Context)context).createListener(getHeldClass())
-                        : getHeldClass().getDeclaredConstructor().newInstance();
-                }
-                catch (ServletException ex)
-                {
-                    Throwable cause = ex.getRootCause();
-                    if (cause instanceof InstantiationException)
-                        throw (InstantiationException)cause;
-                    if (cause instanceof IllegalAccessException)
-                        throw (IllegalAccessException)cause;
-                    throw ex;
-                }
-            }
-            _initialized = true;
-        }
-    }
-
     @Override
     public void doStart() throws Exception
     {
@@ -107,6 +79,29 @@ public class ListenerHolder extends BaseHolder<EventListener>
             super.stop();
             throw new IllegalStateException(msg);
         }
+        
+        ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
+        if (_listener == null)
+        {
+            //create an instance of the listener and decorate it
+            try
+            {
+                ServletContext scontext = contextHandler.getServletContext();
+                _listener = (scontext instanceof ServletContextHandler.Context)
+                    ? scontext.createListener(getHeldClass())
+                    : getHeldClass().getDeclaredConstructor().newInstance();
+            }
+            catch (ServletException ex)
+            {
+                Throwable cause = ex.getRootCause();
+                if (cause instanceof InstantiationException)
+                    throw (InstantiationException)cause;
+                if (cause instanceof IllegalAccessException)
+                    throw (IllegalAccessException)cause;
+                throw ex;
+            }
+        }
+        contextHandler.addEventListener(_listener);
     }
 
     @Override
@@ -115,7 +110,6 @@ public class ListenerHolder extends BaseHolder<EventListener>
         super.doStop();
         if (!_extInstance)
             _listener = null;
-        _initialized = false;
     }
 
     @Override
