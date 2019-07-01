@@ -64,7 +64,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk11", "install javadoc:javadoc -DskipTests", "maven3", true)
+            mavenBuild("jdk11", "install javadoc:javadoc javadoc:aggregate-jar -DskipTests", "maven3", true)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
           }
         }
@@ -92,7 +92,6 @@ pipeline {
       }
     }
   }
-  /*
   post {
     failure {
       slackNotif()
@@ -104,24 +103,29 @@ pipeline {
       slackNotif()
     }
   }
-  */
 }
 
-/*
+
 def slackNotif() {
     script {
-      if (env.BRANCH_NAME=='jetty-10.0.x' ||
-          env.BRANCH_NAME=='jetty-9.4.x') {
+      try
+      {
+        if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-9.4.x' )
+        {
           //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
           // by ${BUILD_USER}
           COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
           slackSend channel: '#jenkins',
-                  color: COLOR_MAP[currentBuild.currentResult],
-                  message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} - ${env.BUILD_URL}"
+                    color: COLOR_MAP[currentBuild.currentResult],
+                    message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} - ${env.BUILD_URL}"
+        }
+      } catch (Exception e) {
+        e.printStackTrace()
+        echo "skip failure slack notification: " + e.getMessage()
       }
     }
 }
-*/
+
 
 /**
  * To other developers, if you are using this method above, please use the following syntax.
