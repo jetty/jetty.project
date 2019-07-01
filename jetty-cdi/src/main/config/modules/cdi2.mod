@@ -9,9 +9,7 @@ can enable itself as a decorator for Filters, Servlets and Listeners.
 This modules uses the deprecated technique of exposing private Jetty APIs to the CDI implementation in the webapp.
 This should be used for Weld implementations prior to 3.1.2, otherwise module cdi should be used.
 TODO Add other implementation versions.
-
-[provides]
-cdi
+TODO Somehow warn that cdi module is better
 
 [depend]
 deploy
