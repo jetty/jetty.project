@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -252,17 +251,13 @@ public class WebSocketProxyTest
         CloseStatus closeStatus = CloseStatus.getCloseStatus(proxyClientSide.receivedFrames.poll());
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
         assertThat(closeStatus.getReason(), containsString("simulated client onOpen error"));
-        assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.CLOSED));
-
-        closeStatus = CloseStatus.getCloseStatus(proxyServerSide.receivedFrames.poll());
-        assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
-        assertThat(closeStatus.getReason(), containsString("simulated client onOpen error"));
-        assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.CLOSED));
+        assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.FAILED));
 
         closeStatus = CloseStatus.getCloseStatus(serverFrameHandler.receivedFrames.poll());
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
         assertThat(closeStatus.getReason(), containsString("simulated client onOpen error"));
 
+        assertNull(proxyServerSide.receivedFrames.poll());
         assertNull(clientFrameHandler.receivedFrames.poll());
     }
 
@@ -311,17 +306,14 @@ public class WebSocketProxyTest
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
         assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
 
-        // Client2Proxy receiving close response from Client
-        frame = proxyClientSide.receivedFrames.poll();
-        closeStatus = CloseStatus.getCloseStatus(frame);
-        assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
-        assertThat(closeStatus.getReason(), is("intentionally throwing in server onFrame()"));
+        // Client2Proxy receives no close response because is error close
+        assertNull(proxyClientSide.receivedFrames.poll());
 
         // Check Proxy is in expected final state
         assertNull(proxyClientSide.receivedFrames.poll());
         assertNull(proxyServerSide.receivedFrames.poll());
-        assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.CLOSED));
-        assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.CLOSED));
+        assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.FAILED));
+        assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.FAILED));
     }
 
     @Test
