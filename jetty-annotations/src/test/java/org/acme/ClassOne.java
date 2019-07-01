@@ -1,4 +1,3 @@
-package org.acme;
 //
 //  ========================================================================
 //  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
@@ -16,6 +15,8 @@ package org.acme;
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
+//
+package org.acme;
 
 /**
  * ClassOne

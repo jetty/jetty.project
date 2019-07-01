@@ -20,4 +20,3 @@
  * Jetty Annotations : Support for Servlet Annotations
  */
 package org.eclipse.jetty.annotations;
-

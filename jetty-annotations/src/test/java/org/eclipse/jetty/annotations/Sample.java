@@ -29,4 +29,3 @@ public @interface Sample
 {
     int value();
 }
-
