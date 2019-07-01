@@ -571,6 +571,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void setAutoFragment(boolean autoFragment)
     {
+        // TODO: consider adding extensible/generic mechanism for extensions to validate configuration changes if more examples occur
         if (autoFragment && getExtensionStack().getRsv1User() instanceof DeflateFrameExtension)
             LOG.warn("Frame auto-fragmentation must not be used with DeflateFrameExtension");
         this.autoFragment = autoFragment;
