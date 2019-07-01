@@ -17,8 +17,3 @@ lib/apache-jsp/org.mortbay.jasper.apache-el-*.jar
 
 [xml]
 etc/cdi/jetty-cdi.xml
-
-[license]
-Weld is an open source project hosted on Github and released under the Apache 2.0 license.
-http://weld.cdi-spec.org/
-http://www.apache.org/licenses/LICENSE-2.0.html

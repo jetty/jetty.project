@@ -21,8 +21,11 @@ package org.eclipse.jetty.test;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Set;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.InjectionPoint;
+import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -43,10 +46,12 @@ public class InfoServlet extends HttpServlet
 
         PrintWriter out = resp.getWriter();
         out.println("Bean Manager: " + beanManager);
-        Set<Bean<?>> beans = beanManager.getBeans("");
+        Set<Bean<?>> beans = beanManager.getBeans(Object.class,new AnnotationLiteral<Any>() {});
         for (Bean<?> bean : beans)
         {
-            out.println("  " + bean);
+            out.printf("%16s => %s%n", bean.getName(), bean);
+            for (InjectionPoint ij : bean.getInjectionPoints())
+            out.printf("%16s -> %s%n", "", ij);
         }
     }
 }
