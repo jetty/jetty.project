@@ -55,7 +55,7 @@ public class CDITests extends AbstractDistributionTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-cdi2-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-cdi-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "demo");
 
             distribution.installBaseResource("cdi/demo_context.xml", "webapps/demo.xml");
@@ -116,7 +116,7 @@ public class CDITests extends AbstractDistributionTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-cdi2-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-cdi-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "demo");
 
             int port = distribution.freePort();

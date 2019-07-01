@@ -76,7 +76,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-cdi2-webapp</artifactId>
+      <artifactId>test-cdi-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
