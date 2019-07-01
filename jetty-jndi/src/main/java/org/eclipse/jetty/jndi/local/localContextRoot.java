@@ -81,7 +81,6 @@ public class localContextRoot implements Context
         }
     }
 
-
     /*
      * Root has to use the localContextRoot's  env for all operations.
      * So, if createSubcontext in the root, use the env of the localContextRoot.

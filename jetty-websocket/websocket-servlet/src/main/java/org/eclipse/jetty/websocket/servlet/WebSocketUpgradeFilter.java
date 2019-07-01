@@ -102,7 +102,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
      *
      * @param servletContext the {@link ServletContext} to use
      * @return the configured default {@link WebSocketUpgradeFilter} instance
-     * @throws ServletException if the filer cannot be configured
      */
     public static FilterHolder ensureFilter(ServletContext servletContext)
     {
