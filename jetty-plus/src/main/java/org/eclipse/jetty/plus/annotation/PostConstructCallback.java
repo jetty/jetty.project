@@ -29,6 +29,24 @@ public class PostConstructCallback extends LifeCycleCallback
 {
 
     /**
+     * @param clazz the class object to be injected
+     * @param methodName the name of the method to be injected
+     */
+    public PostConstructCallback(Class<?> clazz, String methodName)
+    {
+        super(clazz, methodName);
+    }
+
+    /**
+     * @param className the name of the class to be injected
+     * @param methodName the name of the method to be injected
+     */
+    public PostConstructCallback(String className, String methodName)
+    {
+        super(className, methodName);
+    }
+
+    /** 
      * Commons Annotation Specification section 2.5
      * - no params
      * - must be void return

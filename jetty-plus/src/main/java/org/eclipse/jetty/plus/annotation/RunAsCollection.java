@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.plus.annotation;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
@@ -32,7 +33,7 @@ public class RunAsCollection
     private static final Logger LOG = Log.getLogger(RunAsCollection.class);
 
     public static final String RUNAS_COLLECTION = "org.eclipse.jetty.runAsCollection";
-    private HashMap<String, RunAs> _runAsMap = new HashMap<String, RunAs>();//map of classname to run-as
+    private ConcurrentMap<String, RunAs> _runAsMap = new ConcurrentHashMap<String, RunAs>();//map of classname to run-as
 
     public void add(RunAs runAs)
     {
@@ -41,7 +42,9 @@ public class RunAsCollection
 
         if (LOG.isDebugEnabled())
             LOG.debug("Adding run-as for class=" + runAs.getTargetClassName());
-        _runAsMap.put(runAs.getTargetClassName(), runAs);
+        RunAs prev = _runAsMap.putIfAbsent(runAs.getTargetClassName(), runAs);
+        if (prev != null)
+            LOG.warn("Run-As {} on class {} ignored, already run-as {}", runAs.getRoleName(), runAs.getTargetClassName(), prev.getRoleName());
     }
 
     public RunAs getRunAs(Object o)
@@ -49,7 +52,7 @@ public class RunAsCollection
         if (o == null)
             return null;
 
-        return (RunAs)_runAsMap.get(o.getClass().getCanonicalName());
+        return (RunAs)_runAsMap.get(o.getClass().getName());
     }
 
     public void setRunAs(Object o)

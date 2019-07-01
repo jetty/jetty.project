@@ -1170,5 +1170,3 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
     }
 }
-
-

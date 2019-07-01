@@ -32,6 +32,24 @@ public class PreDestroyCallback extends LifeCycleCallback
     private static final Logger LOG = Log.getLogger(PreDestroyCallback.class);
 
     /**
+     * @param clazz the class object to be injected
+     * @param methodName the name of the method to inject
+     */
+    public PreDestroyCallback(Class<?> clazz, String methodName)
+    {
+        super(clazz, methodName);
+    }
+
+    /**
+     * @param className the name of the class to inject
+     * @param methodName the name of the method to inject
+     */
+    public PreDestroyCallback(String className, String methodName)
+    {
+        super(className, methodName);
+    }
+
+    /** 
      * Commons Annotations Specification section 2.6:
      * - no params to method
      * - returns void
