@@ -56,7 +56,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     private List<Extension> extensions;
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
-    private String[] rsvClaims = new String[3];
+    private Extension[] rsvClaims = new Extension[3];
 
     public ExtensionStack(WebSocketExtensionRegistry factory, Behavior behavior)
     {
@@ -199,11 +199,11 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
             // Record RSV Claims
             if (ext.isRsv1User())
-                rsvClaims[0] = ext.getName();
+                rsvClaims[0] = ext;
             if (ext.isRsv2User())
-                rsvClaims[1] = ext.getName();
+                rsvClaims[1] = ext;
             if (ext.isRsv3User())
-                rsvClaims[2] = ext.getName();
+                rsvClaims[2] = ext;
         }
 
         // Wire up Extensions
@@ -258,6 +258,21 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         {
             extension.setWebSocketCoreSession(coreSession);
         }
+    }
+
+    public Extension getRsv1User()
+    {
+        return rsvClaims[0];
+    }
+
+    public Extension getRsv2User()
+    {
+        return rsvClaims[1];
+    }
+
+    public Extension getRsv3User()
+    {
+        return rsvClaims[2];
     }
 
     public boolean isRsv1Used()

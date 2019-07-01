@@ -37,7 +37,6 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.FrameEntry;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 public abstract class CompressExtension extends AbstractExtension
 {
@@ -98,12 +97,6 @@ public abstract class CompressExtension extends AbstractExtension
     {
         tailDrop = getTailDropMode();
         rsvUse = getRsvUseMode();
-    }
-
-    @Override
-    public void setWebSocketCoreSession(WebSocketCoreSession coreSession)
-    {
-        super.setWebSocketCoreSession(coreSession);
     }
 
     public Deflater getDeflater()

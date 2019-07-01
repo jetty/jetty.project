@@ -310,7 +310,7 @@ public class Parser
                     ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, buffer.slice(), false);
                     buffer.position(buffer.limit());
                     mask = nextMask;
-                    firstByte = (byte)(0xFF & (firstByte & 0xF0 | OpCode.CONTINUATION));
+                    firstByte = (byte)((firstByte & 0x80) | OpCode.CONTINUATION);
                     state = State.FRAGMENT;
                     return frame;
                 }
