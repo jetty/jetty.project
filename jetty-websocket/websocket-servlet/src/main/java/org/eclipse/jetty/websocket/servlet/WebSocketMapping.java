@@ -200,6 +200,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
      * Get the matching {@link MappedResource} for the provided target.
      *
      * @param target the target path
+     * @param pathSpecConsumer the path
      * @return the matching resource, or null if no match.
      */
     public WebSocketNegotiator getMatchedNegotiator(String target, Consumer<PathSpec> pathSpecConsumer)

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -71,7 +72,7 @@ public class ChatWebSocketServer
             public void onOpen(CoreSession coreSession, Callback callback)
             {
                 LOG.debug("onOpen {}", coreSession);
-                setMaxTextMessageSize(2 * 1024);
+                coreSession.setMaxTextMessageSize(2 * 1024);
                 super.onOpen(coreSession, Callback.from(() ->
                 {
                     members.add(this);
@@ -123,7 +124,7 @@ public class ChatWebSocketServer
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException, ServletException
+                    throws IOException, ServletException
             {
                 response.setStatus(200);
                 response.setContentType("text/plain");

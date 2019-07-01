@@ -56,7 +56,7 @@ public class GeneratorTest
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
-        return new WebSocketCoreSession(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
+        return new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack));
     }
 
     /**

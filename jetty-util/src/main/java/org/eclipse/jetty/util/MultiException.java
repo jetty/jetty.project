@@ -117,6 +117,7 @@ public class MultiException extends Exception
                     throw (Error)th;
                 if (th instanceof Exception)
                     throw (Exception)th;
+                throw new MultiException(nested);
             default:
                 throw new MultiException(nested);
         }
