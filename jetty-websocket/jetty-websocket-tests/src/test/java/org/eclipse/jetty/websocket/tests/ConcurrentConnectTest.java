@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.tests;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
@@ -28,6 +29,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -78,6 +81,8 @@ public class ConcurrentConnectTest
     public void testConcurrentConnect() throws Exception
     {
         List<EventSocket> listeners = new ArrayList();
+        CloseListener closeListener = new CloseListener();
+        client.addSessionListener(closeListener);
         final int messages = MAX_CONNECTIONS;
 
         for (int i = 0; i < messages; i++)
@@ -112,6 +117,33 @@ public class ConcurrentConnectTest
             assertThat(l.closeCode, is(StatusCode.NORMAL));
             assertThat(l.closeReason, is("close from client"));
             //assertNull(l.failure); //TODO: we can get failures after close??
+        }
+
+        closeListener.closeLatch.await(5, TimeUnit.SECONDS);
+        for (EventSocket l : listeners)
+        {
+            assertTrue(((WebSocketSession)l.session).isStopped());
+        }
+    }
+
+    public static class CloseListener implements WebSocketSessionListener
+    {
+        public CountDownLatch closeLatch = new CountDownLatch(MAX_CONNECTIONS);
+
+        @Override
+        public void onSessionCreated(WebSocketSession session)
+        {
+        }
+
+        @Override
+        public void onSessionOpened(WebSocketSession session)
+        {
+        }
+
+        @Override
+        public void onSessionClosed(WebSocketSession session)
+        {
+            closeLatch.countDown();
         }
     }
 

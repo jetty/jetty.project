@@ -140,6 +140,11 @@ public class BadNetworkTest
         wssf.addSessionListener(new WebSocketSessionListener()
         {
             @Override
+            public void onSessionCreated(WebSocketSession session)
+            {
+            }
+
+            @Override
             public void onSessionOpened(WebSocketSession session)
             {
                 serverSessionRef.set(session);

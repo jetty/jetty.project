@@ -64,6 +64,11 @@ public class ClientOpenSessionTracker implements Connection.Listener, WebSocketS
     }
 
     @Override
+    public void onSessionCreated(WebSocketSession session)
+    {
+    }
+
+    @Override
     public void onSessionOpened(WebSocketSession session)
     {
     }

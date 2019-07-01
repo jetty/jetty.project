@@ -101,6 +101,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
         addBean(this.connection);
         addBean(this.websocket);
+
+        notifySessionListeners(containerScope, (listener) -> listener.onSessionCreated(this));
     }
 
     /**

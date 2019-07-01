@@ -525,6 +525,11 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         }
 
         @Override
+        public void onSessionCreated(WebSocketSession session)
+        {
+        }
+
+        @Override
         public void onSessionOpened(WebSocketSession session)
         {
             if (session instanceof JsrSession)

@@ -663,7 +663,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         // Start Components
         session.addManaged(extensionStack);
-        this.addManaged(session);
 
         if (session.isFailed())
         {

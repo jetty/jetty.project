@@ -103,6 +103,11 @@ public class ClientSessionsTest
         client.addSessionListener(new WebSocketSessionListener()
         {
             @Override
+            public void onSessionCreated(WebSocketSession session)
+            {
+            }
+
+            @Override
             public void onSessionOpened(WebSocketSession session)
             {
             }
@@ -134,7 +139,7 @@ public class ClientSessionsTest
                 assertThat("Session.upgradeRequest", sess.getUpgradeRequest(), notNullValue());
                 assertThat("Session.upgradeResponse", sess.getUpgradeResponse(), notNullValue());
 
-                Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
+                Collection<WebSocketSession> sessions = client.getOpenSessions();
                 assertThat("client.connectionManager.sessions.size", sessions.size(), is(1));
 
                 RemoteEndpoint remote = sess.getRemote();
