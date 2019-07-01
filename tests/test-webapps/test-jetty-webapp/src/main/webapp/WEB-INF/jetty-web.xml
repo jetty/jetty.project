@@ -15,4 +15,13 @@ org.eclipse.jetty.servlet.WebApplicationContext object
   <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
     <Call name="warn"><Arg>test webapp is deployed. DO NOT USE IN PRODUCTION!</Arg></Call>
   </Get>
+
+  <Call name="addEventListener">
+    <Arg>
+      <New class="org.eclipse.jetty.webapp.DecoratingListener">
+        <Arg type="String">test.decorator.attribute.name</Arg>
+      </New>
+    </Arg>
+  </Call>
+
 </Configure>

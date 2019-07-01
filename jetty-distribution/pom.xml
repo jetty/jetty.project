@@ -140,6 +140,16 @@
                   <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>async-rest.war</destFileName>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.tests</groupId>
+                  <artifactId>test-cdi-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <type>war</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
+                  <destFileName>test-cdi.war</destFileName>
+                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
@@ -348,7 +358,8 @@
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}/demo-base</argument>
-                <argument>--add-to-startd=server,continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets,jsp,jstl,http,https,threadpool</argument>
+                <argument>--add-to-startd=server,continuation,deploy,websocket,ext,resources,client,annotations,cdi,jndi,servlets,jsp,jstl,http,https,threadpool</argument>
+                <argument>--approve-all-licenses</argument>
               </arguments>
             </configuration>
             <goals>
@@ -445,6 +456,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-spec-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-cdi-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <optional>true</optional>

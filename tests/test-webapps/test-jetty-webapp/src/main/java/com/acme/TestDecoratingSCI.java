@@ -16,27 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.test;
+package com.acme;
 
-import java.io.IOException;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Set;
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 
-@WebServlet("/greetings")
-public class GreetingsServlet extends HttpServlet
+public class TestDecoratingSCI implements ServletContainerInitializer
 {
-    @Inject
-    @Named("friendly")
-    public Greetings greetings;
-
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
-        resp.setContentType("text/plain");
-        resp.getWriter().println("[" + greetings.getGreeting() + "]");
+        ctx.setAttribute("test.decorator.attribute.name", this);
+    }
+
+    public Object decorate(Object o)
+    {
+        if (o instanceof Dump)
+            ((Dump)o).setDecorated(true);
+        return o;
+    }
+
+    public void destroy(Object o)
+    {
     }
 }

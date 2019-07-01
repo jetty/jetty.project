@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext" id="cdi-context">
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.cdi</Arg>
+    <Arg>DecoratingListener</Arg>
+  </Call>
+  <Call name="addEventListener">
+    <Arg>
+      <New class="org.eclipse.jetty.webapp.DecoratingListener">
+        <Arg>
+          <Ref refid="cdi-context" />
+        </Arg>
+        <Arg type="String">org.eclipse.jetty.cdi.decorator</Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

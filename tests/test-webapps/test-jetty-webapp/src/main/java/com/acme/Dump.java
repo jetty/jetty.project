@@ -69,6 +69,7 @@ public class Dump extends HttpServlet
      */
     private static final String ZWSP = "&#8203;";
     boolean fixed;
+    boolean decorated;
     Timer _timer;
 
     @Override
@@ -440,7 +441,7 @@ public class Dump extends HttpServlet
         try
         {
             pout.write("<html>\n<body>\n");
-            pout.write("<h1>Dump Servlet</h1>\n");
+            pout.write("<h1>Dump Servlet (decorated=" + decorated + ")</h1>\n");
             pout.write("<table width=\"95%\">");
             pout.write("<tr>\n");
             pout.write("<th align=\"right\">getContentLength:&nbsp;</th>");
@@ -922,6 +923,11 @@ public class Dump extends HttpServlet
     public synchronized void destroy()
     {
         _timer.cancel();
+    }
+
+    public void setDecorated(boolean b)
+    {
+        decorated = b;
     }
 
     private String getURI(HttpServletRequest request)
