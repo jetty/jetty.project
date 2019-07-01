@@ -300,20 +300,20 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             LOG.debug("onEof() {}", this);
 
         if (sessionState.onEof())
-            closeConnection(new ClosedChannelException(), sessionState.getCloseStatus(), Callback.NOOP);
+            closeConnection(sessionState.getCloseStatus(), Callback.NOOP);
     }
 
-    public void closeConnection(Throwable cause, CloseStatus closeStatus, Callback callback)
+    public void closeConnection(CloseStatus closeStatus, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closeConnection() {} {} {}", closeStatus, this, cause);
+            LOG.debug("closeConnection() {} {} {}", closeStatus, this);
 
         connection.cancelDemand();
         if (connection.getEndPoint().isOpen())
             connection.close();
 
         // Forward Errors to Local WebSocket EndPoint
-        if (cause != null)
+        if (closeStatus.isAbnormal())
         {
             Callback errorCallback = Callback.from(() ->
             {
@@ -328,6 +328,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 }
             });
 
+            Throwable cause = closeStatus.getCause() != null ? closeStatus.getCause() : new ClosedChannelException();
             try
             {
                 handler.onError(cause, errorCallback);
@@ -385,7 +386,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         else
         {
             if (sessionState.onClosed(closeStatus))
-                closeConnection(cause, closeStatus, callback);
+                closeConnection(closeStatus, callback);
         }
     }
 
@@ -526,16 +527,8 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 if (closeConnection)
                 {
                     Callback closeConnectionCallback = Callback.from(
-                        () ->
-                        {
-                            CloseStatus closeStatus = sessionState.getCloseStatus();
-                            closeConnection(closeStatus.getCause(), closeStatus, callback);
-                        },
-                        t ->
-                        {
-                            CloseStatus closeStatus = sessionState.getCloseStatus();
-                            closeConnection(closeStatus.getCause(), closeStatus, Callback.from(callback, t));
-                        });
+                        () -> closeConnection(sessionState.getCloseStatus(), callback),
+                        t -> closeConnection(sessionState.getCloseStatus(), Callback.from(callback, t)));
 
                     flusher.queue.offer(new FrameEntry(frame, closeConnectionCallback, false));
                 }
@@ -555,7 +548,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                 if (closeStatus.isAbnormal() && sessionState.onClosed(closeStatus))
-                    closeConnection(closeStatus.getCause(), closeStatus, Callback.from(callback, t));
+                    closeConnection(closeStatus, Callback.from(callback, t));
                 else
                     callback.failed(t);
             }
@@ -683,7 +676,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
                 if (closeConnection)
                 {
-                    closeCallback = Callback.from(() -> closeConnection(null, sessionState.getCloseStatus(), callback));
+                    closeCallback = Callback.from(() -> closeConnection(sessionState.getCloseStatus(), callback));
                 }
                 else
                 {
