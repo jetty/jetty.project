@@ -17,26 +17,25 @@
 //
 
 package org.eclipse.jetty.annotations.resources;
+
 import javax.annotation.Resource;
 import javax.annotation.Resources;
 
 /**
  * ResourceB
- *
- *
  */
 @Resources({
-    @Resource(name="peach", mappedName="resA"),
-    @Resource(name="pear", mappedName="resB")
+    @Resource(name = "peach", mappedName = "resA"),
+    @Resource(name = "pear", mappedName = "resB")
 })
 public class ResourceB extends ResourceA
 {
-    @Resource(mappedName="resB")
+    @Resource(mappedName = "resB")
     private Integer f;//test no inheritance of private fields
-    
+
     @Resource
     private Integer p = 8; //test no injection because no value
-    
+
     //test no annotation
     public void z()
     {

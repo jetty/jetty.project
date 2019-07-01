@@ -44,8 +44,8 @@ public class ScanningAppProviderStartupTest
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");
 
         // Setup initial context
-        jetty.copyWebapp("foo.xml","foo.xml");
-        jetty.copyWebapp("foo-webapp-1.war","foo.war");
+        jetty.copyWebapp("foo.xml", "foo.xml");
+        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
 
         // Should not throw an Exception
         jetty.load();

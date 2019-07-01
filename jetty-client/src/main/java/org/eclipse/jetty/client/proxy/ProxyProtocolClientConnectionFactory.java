@@ -61,7 +61,7 @@ public class ProxyProtocolClientConnectionFactory implements ClientConnectionFac
 
     private class ProxyProtocolConnection extends AbstractConnection implements Callback
     {
-        private final Logger LOG = Log.getLogger(ProxyProtocolConnection.class);
+        private final Logger log = Log.getLogger(ProxyProtocolConnection.class);
         private final Map<String, Object> context;
 
         public ProxyProtocolConnection(EndPoint endPoint, Executor executor, Map<String, Object> context)
@@ -76,6 +76,8 @@ public class ProxyProtocolClientConnectionFactory implements ClientConnectionFac
             super.onOpen();
             writePROXYLine();
         }
+
+        // @checkstyle-disable-check : MethodNameCheck
 
         protected void writePROXYLine()
         {
@@ -93,12 +95,14 @@ public class ProxyProtocolClientConnectionFactory implements ClientConnectionFac
             int serverPort = serverSocketAddress.getPort();
 
             boolean ipv6 = serverAddress instanceof Inet6Address;
-            String line = String.format("PROXY %s %s %s %d %d\r\n", ipv6 ? "TCP6" : "TCP4" , proxiedIP, serverIP, proxiedPort, serverPort);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Writing PROXY line: {}", line.trim());
+            String line = String.format("PROXY %s %s %s %d %d\r\n", ipv6 ? "TCP6" : "TCP4", proxiedIP, serverIP, proxiedPort, serverPort);
+            if (log.isDebugEnabled())
+                log.debug("Writing PROXY line: {}", line.trim());
             ByteBuffer buffer = ByteBuffer.wrap(line.getBytes(StandardCharsets.US_ASCII));
             getEndPoint().write(this, buffer);
         }
+
+        // @checkstyle-enable-check : MethodNameCheck
 
         @Override
         public void succeeded()
@@ -107,8 +111,8 @@ public class ProxyProtocolClientConnectionFactory implements ClientConnectionFac
             {
                 EndPoint endPoint = getEndPoint();
                 org.eclipse.jetty.io.Connection connection = connectionFactory.newConnection(endPoint, context);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Written PROXY line, upgrading to {}", connection);
+                if (log.isDebugEnabled())
+                    log.debug("Written PROXY line, upgrading to {}", connection);
                 endPoint.upgrade(connection);
             }
             catch (Throwable x)

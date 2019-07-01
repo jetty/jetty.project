@@ -187,9 +187,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             Origin.Address proxyAddress = destination.getConnectAddress();
             HttpClient httpClient = destination.getHttpClient();
             HttpRequest connect = (HttpRequest)httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
-                    .method(HttpMethod.CONNECT)
-                    .path(target)
-                    .header(HttpHeader.HOST, target);
+                .method(HttpMethod.CONNECT)
+                .path(target)
+                .header(HttpHeader.HOST, target);
             ProxyConfiguration.Proxy proxy = destination.getProxy();
             if (proxy.isSecure())
                 connect.scheme(HttpScheme.HTTPS.asString());

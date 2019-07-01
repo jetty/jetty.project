@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import org.junit.jupiter.api.AfterEach;
@@ -24,26 +23,21 @@ import org.junit.jupiter.api.BeforeEach;
 
 /**
  * JDBCSessionDataStoreTest
- *
- *
  */
 public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-    
+
     @BeforeEach
     public void setUp() throws Exception
     {
         JdbcTestHelper.prepareTables();
     }
-    
-    
+
     @AfterEach
-    public void tearDown() throws Exception 
+    public void tearDown() throws Exception
     {
         JdbcTestHelper.shutdown(null);
     }
-
-
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
@@ -51,32 +45,24 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
         return JdbcTestHelper.newSessionDataStoreFactory();
     }
 
-
     @Override
     public void persistSession(SessionData data)
-    throws Exception
+        throws Exception
     {
-        JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), 
-                                     data.getCreated(), data.getAccessed(), data.getLastAccessed(), 
-                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), 
-                                     data.getLastSaved(), data.getAllAttributes());
-
+        JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(),
+            data.getCreated(), data.getAccessed(), data.getLastAccessed(),
+            data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(),
+            data.getLastSaved(), data.getAllAttributes());
     }
-
-
 
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), 
-                                     data.getCreated(), data.getAccessed(), data.getLastAccessed(), 
-                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), 
-                                     data.getLastSaved(), null);
-        
+        JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(),
+            data.getCreated(), data.getAccessed(), data.getLastAccessed(),
+            data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(),
+            data.getLastSaved(), null);
     }
-
-    
-    
 
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
@@ -84,22 +70,18 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
         return JdbcTestHelper.existsInSessionTable(data.getId(), false);
     }
 
-
-
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader (_contextClassLoader); 
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
             return JdbcTestHelper.checkSessionPersisted(data);
         }
         finally
         {
-            Thread.currentThread().setContextClassLoader(old); 
+            Thread.currentThread().setContextClassLoader(old);
         }
-
     }
-
 }

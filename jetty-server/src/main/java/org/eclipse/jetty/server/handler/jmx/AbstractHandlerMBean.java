@@ -32,26 +32,24 @@ public class AbstractHandlerMBean extends ObjectMBean
 {
     private static final Logger LOG = Log.getLogger(AbstractHandlerMBean.class);
 
-    /* ------------------------------------------------------------ */
     public AbstractHandlerMBean(Object managedObject)
     {
         super(managedObject);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String getObjectContextBasis()
     {
-        if (_managed != null )
+        if (_managed != null)
         {
             String basis = null;
             if (_managed instanceof ContextHandler)
             {
                 ContextHandler handler = (ContextHandler)_managed;
                 String context = getContextName(handler);
-                if (context==null)
-                    context=handler.getDisplayName();
-                if (context!=null)
+                if (context == null)
+                    context = handler.getDisplayName();
+                if (context != null)
                     return context;
             }
             else if (_managed instanceof AbstractHandler)
@@ -60,10 +58,10 @@ public class AbstractHandlerMBean extends ObjectMBean
                 Server server = handler.getServer();
                 if (server != null)
                 {
-                    ContextHandler context = 
+                    ContextHandler context =
                         AbstractHandlerContainer.findContainerOf(server,
-                                ContextHandler.class, handler);
-                    
+                            ContextHandler.class, handler);
+
                     if (context != null)
                         basis = getContextName(context);
                 }
@@ -74,36 +72,35 @@ public class AbstractHandlerMBean extends ObjectMBean
         return super.getObjectContextBasis();
     }
 
-    /* ------------------------------------------------------------ */
     protected String getContextName(ContextHandler context)
     {
         String name = null;
-        
-        if (context.getContextPath()!=null && context.getContextPath().length()>0)
+
+        if (context.getContextPath() != null && context.getContextPath().length() > 0)
         {
             int idx = context.getContextPath().lastIndexOf('/');
             name = idx < 0 ? context.getContextPath() : context.getContextPath().substring(++idx);
-            if (name==null || name.length()==0)
-                name= "ROOT";
+            if (name == null || name.length() == 0)
+                name = "ROOT";
         }
-        
-        if (name==null && context.getBaseResource()!=null)
+
+        if (name == null && context.getBaseResource() != null)
         {
             try
             {
-                if (context.getBaseResource().getFile()!=null)
+                if (context.getBaseResource().getFile() != null)
                     name = context.getBaseResource().getFile().getName();
             }
-            catch(IOException e)
+            catch (IOException e)
             {
                 LOG.ignore(e);
-                name=context.getBaseResource().getName();
+                name = context.getBaseResource().getName();
             }
         }
-        
-        if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-            name='"'+name+"@"+context.getVirtualHosts()[0]+'"';
-        
+
+        if (context.getVirtualHosts() != null && context.getVirtualHosts().length > 0)
+            name = '"' + name + "@" + context.getVirtualHosts()[0] + '"';
+
         return name;
     }
 }

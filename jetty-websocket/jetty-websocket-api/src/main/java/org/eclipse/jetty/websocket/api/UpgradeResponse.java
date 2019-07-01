@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.api;
 
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
  * The HTTP Upgrade to WebSocket Response
@@ -33,7 +33,7 @@ public interface UpgradeResponse
     /**
      * Add a header value to the response.
      *
-     * @param name  the header name
+     * @param name the header name
      * @param value the header value
      */
     void addHeader(String name, String value);
@@ -130,7 +130,7 @@ public interface UpgradeResponse
      * <p>
      * Overrides previous value of header (if set)
      *
-     * @param name  the header name
+     * @param name the header name
      * @param value the header value
      */
     void setHeader(String name, String value);

@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.javax.tests.framehandlers;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.MessageHandler;
-
-import java.nio.ByteBuffer;
 
 public class WholeMessageEcho extends MessageHandler
 {

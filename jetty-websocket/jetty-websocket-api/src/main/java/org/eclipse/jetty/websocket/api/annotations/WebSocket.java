@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value =
-    { ElementType.TYPE })
+    {ElementType.TYPE})
 public @interface WebSocket
 {
     /**
@@ -47,13 +47,6 @@ public @interface WebSocket
      * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      */
     int maxBinaryMessageSize() default -1;
-
-    /**
-     * The time in ms (milliseconds) that a websocket may be idle before closing.
-     * @deprecated use {@link #idleTimeout()} instead
-     */
-    @Deprecated
-    int maxIdleTime() default -1;
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.

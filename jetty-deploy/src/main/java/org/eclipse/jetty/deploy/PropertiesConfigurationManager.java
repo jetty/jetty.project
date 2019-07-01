@@ -33,19 +33,19 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * FileConfigurationManager
- * 
+ *
  * Supplies properties defined in a file.
  */
 @ManagedObject("Configure deployed webapps via properties")
 public class PropertiesConfigurationManager implements ConfigurationManager
 {
     private String _properties;
-    private final Map<String,String> _map = new HashMap<String,String>();
+    private final Map<String, String> _map = new HashMap<String, String>();
 
     public PropertiesConfigurationManager(String properties)
     {
     }
-    
+
     public PropertiesConfigurationManager()
     {
     }
@@ -53,7 +53,7 @@ public class PropertiesConfigurationManager implements ConfigurationManager
     @ManagedAttribute("A file or URL of properties")
     public void setFile(String resource) throws MalformedURLException, IOException
     {
-        _properties=resource;
+        _properties = resource;
         _map.clear();
         loadProperties(_properties);
     }
@@ -62,13 +62,13 @@ public class PropertiesConfigurationManager implements ConfigurationManager
     {
         return _properties;
     }
-    
+
     @ManagedOperation("Set a property")
-    public void put(@Name("name")String name, @Name("value")String value)
+    public void put(@Name("name") String name, @Name("value") String value)
     {
-        _map.put(name,value);
+        _map.put(name, value);
     }
-    
+
     /**
      * @see org.eclipse.jetty.deploy.ConfigurationManager#getProperties()
      */
@@ -79,14 +79,16 @@ public class PropertiesConfigurationManager implements ConfigurationManager
     }
 
     private void loadProperties(String resource) throws FileNotFoundException, IOException
-    {   
-        Resource file=Resource.newResource(resource);
-        if (file!=null && file.exists())
+    {
+        Resource file = Resource.newResource(resource);
+        if (file != null && file.exists())
         {
             Properties properties = new Properties();
             properties.load(file.getInputStream());
             for (Map.Entry<Object, Object> entry : properties.entrySet())
-                _map.put(entry.getKey().toString(),String.valueOf(entry.getValue()));
+            {
+                _map.put(entry.getKey().toString(), String.valueOf(entry.getValue()));
+            }
         }
     }
 }

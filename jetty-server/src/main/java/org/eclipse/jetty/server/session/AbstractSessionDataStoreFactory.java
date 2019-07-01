@@ -16,22 +16,17 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 /**
  * AbstractSessionDataStoreFactory
- *
- *
  */
 public abstract class AbstractSessionDataStoreFactory implements SessionDataStoreFactory
 {
 
     int _gracePeriodSec;
     int _savePeriodSec;
-    
-    
-    
+
     /**
      * @return the gracePeriodSec
      */
@@ -39,7 +34,6 @@ public abstract class AbstractSessionDataStoreFactory implements SessionDataStor
     {
         return _gracePeriodSec;
     }
-
 
     /**
      * @param gracePeriodSec the gracePeriodSec to set
@@ -49,7 +43,6 @@ public abstract class AbstractSessionDataStoreFactory implements SessionDataStor
         _gracePeriodSec = gracePeriodSec;
     }
 
-
     /**
      * @return the savePeriodSec
      */
@@ -58,7 +51,6 @@ public abstract class AbstractSessionDataStoreFactory implements SessionDataStor
         return _savePeriodSec;
     }
 
-
     /**
      * @param savePeriodSec the savePeriodSec to set
      */
@@ -66,6 +58,4 @@ public abstract class AbstractSessionDataStoreFactory implements SessionDataStor
     {
         _savePeriodSec = savePeriodSec;
     }
-   
-
 }

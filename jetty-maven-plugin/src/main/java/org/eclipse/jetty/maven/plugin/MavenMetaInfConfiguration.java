@@ -30,11 +30,9 @@ import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-
-
 /**
  * MavenWebInfConfiguration
- * 
+ *
  * WebInfConfiguration to take account of overlaid wars expressed as project dependencies and
  * potential configured via the maven-war-plugin.
  */
@@ -42,7 +40,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
 {
     private static final Logger LOG = Log.getLogger(MavenMetaInfConfiguration.class);
 
-    protected static int COUNTER = 0; 
+    protected static int COUNTER = 0;
 
     @Override
     public Class<? extends Configuration> replaces()
@@ -54,25 +52,26 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
      * Get the jars to examine from the files from which we have
      * synthesized the classpath. Note that the classpath is not
      * set at this point, so we cannot get them from the classpath.
+     *
      * @param context the web app context
      * @return the list of jars found
      */
     @Override
-    protected List<Resource> findJars (WebAppContext context)
-    throws Exception
+    protected List<Resource> findJars(WebAppContext context)
+        throws Exception
     {
         List<Resource> list = new ArrayList<>();
         JettyWebAppContext jwac = (JettyWebAppContext)context;
         List<File> files = jwac.getWebInfLib();
         if (files != null)
         {
-            files.forEach( file -> {
-                if (file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar")
-                    || file.isDirectory())
+            files.forEach(file ->
+            {
+                if (file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar") || file.isDirectory())
                 {
                     try
                     {
-                        LOG.debug( " add  resource to resources to examine {}", file );
+                        LOG.debug(" add  resource to resources to examine {}", file);
                         list.add(Resource.newResource(file.toURI()));
                     }
                     catch (Exception e)
@@ -80,32 +79,31 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
                         LOG.warn("Bad url ", e);
                     }
                 }
-            } );
+            });
         }
 
         List<Resource> superList = super.findJars(context);
         if (superList != null)
             list.addAll(superList);
-        return list; 
+        return list;
     }
-    
-    
 
-        
-    /** 
+    /**
      * Add in the classes dirs from test/classes and target/classes
+     *
      * @see org.eclipse.jetty.webapp.MetaInfConfiguration#findClassDirs(org.eclipse.jetty.webapp.WebAppContext)
      */
     @Override
     protected List<Resource> findClassDirs(WebAppContext context) throws Exception
-    {        
+    {
         List<Resource> list = new ArrayList<>();
-        
+
         JettyWebAppContext jwac = (JettyWebAppContext)context;
         List<File> files = jwac.getWebInfClasses();
         if (files != null)
         {
-            files.forEach( file -> {
+            files.forEach(file ->
+            {
                 if (file.exists() && file.isDirectory())
                 {
                     try
@@ -117,10 +115,9 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
                         LOG.warn("Bad url ", e);
                     }
                 }
-            } );
-
+            });
         }
-        
+
         List<Resource> classesDirs = super.findClassDirs(context);
         if (classesDirs != null)
             list.addAll(classesDirs);

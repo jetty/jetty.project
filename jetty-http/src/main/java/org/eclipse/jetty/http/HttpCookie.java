@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 // TODO consider replacing this with java.net.HttpCookie
 public class HttpCookie
 {
-    private static final String __COOKIE_DELIM="\",;\\ \t";
+    private static final String __COOKIE_DELIM = "\",;\\ \t";
     private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
 
     private final String _name;
@@ -77,7 +77,7 @@ public class HttpCookie
     public HttpCookie(String setCookie)
     {
         List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookie);
-        if (cookies.size()!=1)
+        if (cookies.size() != 1)
             throw new IllegalStateException();
 
         java.net.HttpCookie cookie = cookies.get(0);
@@ -93,7 +93,6 @@ public class HttpCookie
         _version = cookie.getVersion();
         _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
     }
-
 
     /**
      * @return the cookie name
@@ -190,35 +189,36 @@ public class HttpCookie
         return builder.toString();
     }
 
-
     private static void quoteOnlyOrAppend(StringBuilder buf, String s, boolean quote)
     {
         if (quote)
-            QuotedStringTokenizer.quoteOnly(buf,s);
+            QuotedStringTokenizer.quoteOnly(buf, s);
         else
             buf.append(s);
     }
 
-    /** Does a cookie value need to be quoted?
+    /**
+     * Does a cookie value need to be quoted?
+     *
      * @param s value string
      * @return true if quoted;
      * @throws IllegalArgumentException If there a control characters in the string
      */
     private static boolean isQuoteNeededForCookie(String s)
     {
-        if (s==null || s.length()==0)
+        if (s == null || s.length() == 0)
             return true;
 
         if (QuotedStringTokenizer.isQuoted(s))
             return false;
 
-        for (int i=0;i<s.length();i++)
+        for (int i = 0; i < s.length(); i++)
         {
             char c = s.charAt(i);
-            if (__COOKIE_DELIM.indexOf(c)>=0)
+            if (__COOKIE_DELIM.indexOf(c) >= 0)
                 return true;
 
-            if (c<0x20 || c>=0x7f)
+            if (c < 0x20 || c >= 0x7f)
                 throw new IllegalArgumentException("Illegal character in cookie value");
         }
 
@@ -245,46 +245,46 @@ public class HttpCookie
         StringBuilder buf = new StringBuilder();
 
         // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
-        boolean quote_name=isQuoteNeededForCookie(_name);
-        quoteOnlyOrAppend(buf,_name,quote_name);
+        boolean quoteName = isQuoteNeededForCookie(_name);
+        quoteOnlyOrAppend(buf, _name, quoteName);
 
         buf.append('=');
 
         // Append the value
-        boolean quote_value=isQuoteNeededForCookie(_value);
-        quoteOnlyOrAppend(buf,_value,quote_value);
+        boolean quoteValue = isQuoteNeededForCookie(_value);
+        quoteOnlyOrAppend(buf, _value, quoteValue);
 
         // Look for domain and path fields and check if they need to be quoted
-        boolean has_domain = _domain!=null && _domain.length()>0;
-        boolean quote_domain = has_domain && isQuoteNeededForCookie(_domain);
-        boolean has_path = _path!=null && _path.length()>0;
-        boolean quote_path = has_path && isQuoteNeededForCookie(_path);
+        boolean hasDomain = _domain != null && _domain.length() > 0;
+        boolean quoteDomain = hasDomain && isQuoteNeededForCookie(_domain);
+        boolean hasPath = _path != null && _path.length() > 0;
+        boolean quotePath = hasPath && isQuoteNeededForCookie(_path);
 
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
         int version = _version;
-        if (version==0 && ( _comment!=null || quote_name || quote_value || quote_domain || quote_path ||
+        if (version == 0 && (_comment != null || quoteName || quoteValue || quoteDomain || quotePath ||
             QuotedStringTokenizer.isQuoted(_name) || QuotedStringTokenizer.isQuoted(_value) ||
             QuotedStringTokenizer.isQuoted(_path) || QuotedStringTokenizer.isQuoted(_domain)))
-            version=1;
+            version = 1;
 
         // Append version
-        if (version==1)
-            buf.append (";Version=1");
-        else if (version>1)
-            buf.append (";Version=").append(version);
+        if (version == 1)
+            buf.append(";Version=1");
+        else if (version > 1)
+            buf.append(";Version=").append(version);
 
         // Append path
-        if (has_path)
+        if (hasPath)
         {
             buf.append(";Path=");
-            quoteOnlyOrAppend(buf,_path,quote_path);
+            quoteOnlyOrAppend(buf, _path, quotePath);
         }
 
         // Append domain
-        if (has_domain)
+        if (hasDomain)
         {
             buf.append(";Domain=");
-            quoteOnlyOrAppend(buf,_domain,quote_domain);
+            quoteOnlyOrAppend(buf, _domain, quoteDomain);
         }
 
         // Handle max-age and/or expires
@@ -299,7 +299,7 @@ public class HttpCookie
                 DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * _maxAge);
 
             // for v1 cookies, also send max-age
-            if (version>=1)
+            if (version >= 1)
             {
                 buf.append(";Max-Age=");
                 buf.append(_maxAge);
@@ -314,7 +314,7 @@ public class HttpCookie
         if (_comment != null)
         {
             buf.append(";Comment=");
-            quoteOnlyOrAppend(buf,_comment,isQuoteNeededForCookie(_comment));
+            quoteOnlyOrAppend(buf, _comment, isQuoteNeededForCookie(_comment));
         }
         return buf.toString();
     }
@@ -333,14 +333,14 @@ public class HttpCookie
 
         // Format value and params
         StringBuilder buf = new StringBuilder();
-        buf.append(_name).append('=').append(_value==null?"":_value);
+        buf.append(_name).append('=').append(_value == null ? "" : _value);
 
         // Append path
-        if (_path!=null && _path.length()>0)
+        if (_path != null && _path.length() > 0)
             buf.append("; Path=").append(_path);
 
         // Append domain
-        if (_domain!=null && _domain.length()>0)
+        if (_domain != null && _domain.length() > 0)
             buf.append("; Domain=").append(_domain);
 
         // Handle max-age and/or expires
@@ -365,7 +365,6 @@ public class HttpCookie
             buf.append("; HttpOnly");
         return buf.toString();
     }
-
 
     public static class SetCookieHttpField extends HttpField
     {

@@ -556,7 +556,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     streamId = localStreamIds.getAndAdd(2);
                     PriorityFrame priority = frame.getPriority();
                     priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(),
-                            priority.getWeight(), priority.isExclusive());
+                        priority.getWeight(), priority.isExclusive());
                     frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
                 }
                 IStream stream = createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
@@ -584,7 +584,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             streamId = localStreamIds.getAndAdd(2);
             frame = new PriorityFrame(streamId, frame.getParentStreamId(),
-                    frame.getWeight(), frame.isExclusive());
+                frame.getWeight(), frame.isExclusive());
         }
         control(stream, callback, frame);
         return streamId;
@@ -655,8 +655,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
      * performing their actions.</li>
      * </ul>
      *
-     * @param error    the error code
-     * @param reason   the reason
+     * @param error the error code
+     * @param reason the reason
      * @param callback the callback to invoke when the operation is complete
      * @see #onGoAway(GoAwayFrame)
      * @see #onShutdown()
@@ -732,7 +732,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             callback = new CountingCallback(callback, 1 + length);
             frame(new ControlEntry(frame, stream, callback), false);
             for (int i = 1; i <= length; ++i)
+            {
                 frame(new ControlEntry(frames[i - 1], stream, callback), i == length);
+            }
         }
     }
 
@@ -1063,7 +1065,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     {
                         flusher.terminate(cause);
                         for (IStream stream : streams.values())
+                        {
                             stream.close();
+                        }
                         streams.clear();
                         disconnect();
                         return;
@@ -1215,15 +1219,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public String toString()
     {
         return String.format("%s@%x{l:%s <-> r:%s,sendWindow=%s,recvWindow=%s,streams=%d,%s,%s}",
-                getClass().getSimpleName(),
-                hashCode(),
-                getEndPoint().getLocalAddress(),
-                getEndPoint().getRemoteAddress(),
-                sendWindow,
-                recvWindow,
-                streams.size(),
-                closed,
-                closeFrame);
+            getClass().getSimpleName(),
+            hashCode(),
+            getEndPoint().getLocalAddress(),
+            getEndPoint().getRemoteAddress(),
+            sendWindow,
+            recvWindow,
+            streams.size(),
+            closed,
+            closeFrame);
     }
 
     private class ControlEntry extends HTTP2Flusher.Entry

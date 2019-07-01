@@ -24,14 +24,12 @@ import java.lang.management.MemoryUsage;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
-import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.server.Server;
@@ -79,10 +77,12 @@ public class MemoryUsageTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
-        ServerContainer container = JavaxWebSocketServletContainerInitializer.configureContext(context);
-        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEndpoint.class, "/").build();
-        container.addEndpoint(config);
+        ServletContextHandler contextHandler = new ServletContextHandler(server, "/", true, false);
+        JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+        {
+            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEndpoint.class, "/").build();
+            container.addEndpoint(config);
+        });
 
         server.start();
 
@@ -140,7 +140,7 @@ public class MemoryUsageTest
         assertThat("heap used", heapUsed, lessThan(expected));
     }
 
-    public static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
+    public abstract static class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
     {
         @Override
         public void onOpen(Session session, EndpointConfig config)

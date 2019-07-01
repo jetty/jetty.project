@@ -77,7 +77,9 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         if (maxMemory > 0)
         {
             while (getMemory(direct) > maxMemory)
+            {
                 clearFn.accept(direct);
+            }
         }
     }
 

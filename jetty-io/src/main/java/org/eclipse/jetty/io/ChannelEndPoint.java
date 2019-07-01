@@ -57,19 +57,19 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
      */
     protected int _desiredInterestOps;
 
-    private abstract class RunnableTask  implements Runnable, Invocable
+    private abstract class RunnableTask implements Runnable, Invocable
     {
         final String _operation;
 
         protected RunnableTask(String op)
         {
-            _operation=op;
+            _operation = op;
         }
 
         @Override
         public String toString()
         {
-            return String.format("CEP:%s:%s:%s",ChannelEndPoint.this,_operation,getInvocationType());
+            return String.format("CEP:%s:%s:%s", ChannelEndPoint.this, _operation, getInvocationType());
         }
     }
 
@@ -110,7 +110,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         {
             return getFillInterest().getCallbackInvocationType();
         }
-        
+
         @Override
         public void run()
         {
@@ -125,7 +125,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         {
             return getWriteFlusher().getCallbackInvocationType();
         }
-        
+
         @Override
         public void run()
         {
@@ -135,9 +135,8 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         @Override
         public String toString()
         {
-            return String.format("CEP:%s:%s:%s->%s",ChannelEndPoint.this,_operation,getInvocationType(),getWriteFlusher());
+            return String.format("CEP:%s:%s:%s->%s", ChannelEndPoint.this, _operation, getInvocationType(), getWriteFlusher());
         }
-        
     };
 
     private final Runnable _runCompleteWriteFillable = new RunnableCloseable("runCompleteWriteFillable")
@@ -147,18 +146,18 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         {
             InvocationType fillT = getFillInterest().getCallbackInvocationType();
             InvocationType flushT = getWriteFlusher().getCallbackInvocationType();
-            if (fillT==flushT)
+            if (fillT == flushT)
                 return fillT;
-            
-            if (fillT==InvocationType.EITHER && flushT==InvocationType.NON_BLOCKING)
+
+            if (fillT == InvocationType.EITHER && flushT == InvocationType.NON_BLOCKING)
                 return InvocationType.EITHER;
-            
-            if (fillT==InvocationType.NON_BLOCKING && flushT==InvocationType.EITHER)
+
+            if (fillT == InvocationType.NON_BLOCKING && flushT == InvocationType.EITHER)
                 return InvocationType.EITHER;
-            
+
             return InvocationType.BLOCKING;
         }
-        
+
         @Override
         public void run()
         {
@@ -170,10 +169,10 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     public ChannelEndPoint(ByteChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
         super(scheduler);
-        _channel=channel;
-        _selector=selector;
-        _key=key;
-        _gather=(channel instanceof GatheringByteChannel)?(GatheringByteChannel)channel:null;
+        _channel = channel;
+        _selector = selector;
+        _key = key;
+        _gather = (channel instanceof GatheringByteChannel) ? (GatheringByteChannel)channel : null;
     }
 
     @Override
@@ -216,7 +215,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
         finally
         {
-            if (_selector!=null)
+            if (_selector != null)
                 _selector.destroyEndPoint(this, cause);
         }
     }
@@ -227,17 +226,17 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         if (isInputShutdown())
             return -1;
 
-        int pos=BufferUtil.flipToFill(buffer);
+        int pos = BufferUtil.flipToFill(buffer);
         int filled;
         try
         {
             filled = _channel.read(buffer);
-            if (filled>0)
+            if (filled > 0)
                 notIdle();
-            else if (filled==-1)
+            else if (filled == -1)
                 shutdownInput();
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             LOG.debug(e);
             shutdownInput();
@@ -245,7 +244,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
         finally
         {
-            BufferUtil.flipToFlush(buffer,pos);
+            BufferUtil.flipToFlush(buffer, pos);
         }
         if (LOG.isDebugEnabled())
             LOG.debug("filled {} {}", filled, BufferUtil.toDetailString(buffer));
@@ -255,22 +254,22 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
-        long flushed=0;
+        long flushed = 0;
         try
         {
-            if (buffers.length==1)
-                flushed=_channel.write(buffers[0]);
-            else if (_gather!=null && buffers.length>1)
-                flushed=_gather.write(buffers,0,buffers.length);
+            if (buffers.length == 1)
+                flushed = _channel.write(buffers[0]);
+            else if (_gather != null && buffers.length > 1)
+                flushed = _gather.write(buffers, 0, buffers.length);
             else
             {
                 for (ByteBuffer b : buffers)
                 {
                     if (b.hasRemaining())
                     {
-                        int l=_channel.write(b);
-                        if (l>0)
-                            flushed+=l;
+                        int l = _channel.write(b);
+                        if (l > 0)
+                            flushed += l;
                         if (b.hasRemaining())
                             break;
                     }
@@ -284,12 +283,14 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             throw new EofException(e);
         }
 
-        if (flushed>0)
+        if (flushed > 0)
             notIdle();
 
         for (ByteBuffer b : buffers)
+        {
             if (!BufferUtil.isEmpty(b))
                 return false;
+        }
 
         return true;
     }
@@ -304,7 +305,6 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     {
         return _channel;
     }
-
 
     @Override
     protected void needsFillInterest()
@@ -328,7 +328,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         int readyOps = _key.readyOps();
         int oldInterestOps;
         int newInterestOps;
-        synchronized(this)
+        synchronized (this)
         {
             _updatePending = true;
             // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
@@ -344,16 +344,16 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, fillable, flushable, this);
 
         // return task to complete the job
-        Runnable task= fillable 
-                ? (flushable 
-                        ? _runCompleteWriteFillable 
-                        : _runFillable)
-                : (flushable 
-                        ? _runCompleteWrite 
-                        : null);
+        Runnable task = fillable
+            ? (flushable
+            ? _runCompleteWriteFillable
+            : _runFillable)
+            : (flushable
+            ? _runCompleteWrite
+            : null);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("task {}",task);
+            LOG.debug("task {}", task);
         return task;
     }
 
@@ -368,7 +368,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         {
             int oldInterestOps;
             int newInterestOps;
-            synchronized(this)
+            synchronized (this)
             {
                 _updatePending = false;
                 oldInterestOps = _currentInterestOps;
@@ -405,7 +405,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         int oldInterestOps;
         int newInterestOps;
         boolean pending;
-        synchronized(this)
+        synchronized (this)
         {
             pending = _updatePending;
             oldInterestOps = _desiredInterestOps;
@@ -417,7 +417,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         if (LOG.isDebugEnabled())
             LOG.debug("changeInterests p={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
 
-        if (!pending && _selector!=null)
+        if (!pending && _selector != null)
             _selector.submit(_updateKeyAction);
     }
 
@@ -426,10 +426,10 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     {
         // We do a best effort to print the right toString() and that's it.
         return String.format("%s{io=%d/%d,kio=%d,kro=%d}",
-                super.toEndPointString(),
-                _currentInterestOps,
-                _desiredInterestOps,
-                ManagedSelector.safeInterestOps(_key),
-                ManagedSelector.safeReadyOps(_key));
+            super.toEndPointString(),
+            _currentInterestOps,
+            _desiredInterestOps,
+            ManagedSelector.safeInterestOps(_key),
+            ManagedSelector.safeReadyOps(_key));
     }
 }

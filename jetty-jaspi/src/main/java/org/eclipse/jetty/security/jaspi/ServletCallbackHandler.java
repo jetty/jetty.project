@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security.jaspi;
 
 import java.io.IOException;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -61,20 +60,20 @@ public class ServletCallbackHandler implements CallbackHandler
             // jaspi to server communication
             if (callback instanceof CallerPrincipalCallback)
             {
-                _callerPrincipals.set((CallerPrincipalCallback) callback);
+                _callerPrincipals.set((CallerPrincipalCallback)callback);
             }
             else if (callback instanceof GroupPrincipalCallback)
             {
-                _groupPrincipals.set((GroupPrincipalCallback) callback);
+                _groupPrincipals.set((GroupPrincipalCallback)callback);
             }
             else if (callback instanceof PasswordValidationCallback)
             {
-                PasswordValidationCallback passwordValidationCallback = (PasswordValidationCallback) callback;
+                PasswordValidationCallback passwordValidationCallback = (PasswordValidationCallback)callback;
                 Subject subject = passwordValidationCallback.getSubject();
 
-                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(),passwordValidationCallback.getPassword(), null);
-                
-                if (user!=null)
+                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null);
+
+                if (user != null)
                 {
                     passwordValidationCallback.setResult(true);
                     passwordValidationCallback.getSubject().getPrincipals().addAll(user.getSubject().getPrincipals());
@@ -83,15 +82,15 @@ public class ServletCallbackHandler implements CallbackHandler
             }
             else if (callback instanceof CredentialValidationCallback)
             {
-                CredentialValidationCallback credentialValidationCallback = (CredentialValidationCallback) callback;
+                CredentialValidationCallback credentialValidationCallback = (CredentialValidationCallback)callback;
                 Subject subject = credentialValidationCallback.getSubject();
                 LoginCallback loginCallback = new LoginCallbackImpl(subject,
-                        credentialValidationCallback.getUsername(),
-                        credentialValidationCallback.getCredential());
+                    credentialValidationCallback.getUsername(),
+                    credentialValidationCallback.getCredential());
 
-                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(),credentialValidationCallback.getCredential(), null);
+                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(), credentialValidationCallback.getCredential(), null);
 
-                if (user!=null)
+                if (user != null)
                 {
                     loginCallback.setUserPrincipal(user.getUserPrincipal());
                     credentialValidationCallback.getSubject().getPrivateCredentials().add(loginCallback);
@@ -101,18 +100,21 @@ public class ServletCallbackHandler implements CallbackHandler
                 }
             }
             // server to jaspi communication
-            // TODO implement these
             else if (callback instanceof CertStoreCallback)
             {
+                // TODO implement this
             }
             else if (callback instanceof PrivateKeyCallback)
             {
+                // TODO implement this
             }
             else if (callback instanceof SecretKeyCallback)
             {
+                // TODO implement this
             }
             else if (callback instanceof TrustStoreCallback)
             {
+                // TODO implement this
             }
             else
             {

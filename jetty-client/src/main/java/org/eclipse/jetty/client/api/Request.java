@@ -243,7 +243,7 @@ public interface Request
 
     /**
      * @param accepts the media types that are acceptable in the response, such as
-     *                "text/plain;q=0.5" or "text/html" (corresponds to the {@code Accept} header)
+     * "text/plain;q=0.5" or "text/html" (corresponds to the {@code Accept} header)
      * @return this request object
      */
     Request accept(String... accepts);
@@ -268,7 +268,7 @@ public interface Request
 
     /**
      * @param timeout the total timeout for the request/response conversation;
-     *                use zero or a negative value to disable the timeout
+     * use zero or a negative value to disable the timeout
      * @param unit the timeout unit
      * @return this request object
      */
@@ -287,8 +287,8 @@ public interface Request
 
     /**
      * @param listenerClass the class of the listener, or null for all listeners classes
-     * @return the listeners for request events of the given class
      * @param <T> the type of listener class
+     * @return the listeners for request events of the given class
      */
     <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass);
 
@@ -477,6 +477,7 @@ public interface Request
          * Callback method invoked when the request headers (and perhaps small content) are ready to be sent.
          * The request has been converted into bytes, but not yet sent to the server, and further modifications
          * to the request may have no effect.
+         *
          * @param request the request that is about to be committed
          */
         public void onHeaders(Request request);
@@ -491,6 +492,7 @@ public interface Request
          * Callback method invoked when the request headers (and perhaps small content) have been sent.
          * The request is now committed, and in transit to the server, and further modifications to the
          * request may have no effect.
+         *
          * @param request the request that has been committed
          */
         public void onCommit(Request request);
@@ -504,6 +506,7 @@ public interface Request
         /**
          * Callback method invoked when a chunk of request content has been sent successfully.
          * Changes to bytes in the given buffer have no effect, as the content has already been sent.
+         *
          * @param request the request that has been committed
          * @param content the content
          */
@@ -530,6 +533,7 @@ public interface Request
     {
         /**
          * Callback method invoked when the request has failed to be sent
+         *
          * @param request the request that failed
          * @param failure the failure
          */

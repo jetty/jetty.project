@@ -16,13 +16,11 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionBindingEvent;
@@ -36,23 +34,21 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 /**
  * SessionAuthentication
- * 
+ *
  * When a user has been successfully authenticated with some types
  * of Authenticator, the Authenticator stashes a SessionAuthentication
  * into a HttpSession to remember that the user is authenticated.
- *
  */
-public class SessionAuthentication extends AbstractUserAuthentication 
-                                   implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
+public class SessionAuthentication extends AbstractUserAuthentication
+    implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
 {
     private static final Logger LOG = Log.getLogger(SessionAuthentication.class);
 
     private static final long serialVersionUID = -4643200685888258706L;
 
-    public final static String __J_AUTHENTICATED="org.eclipse.jetty.security.UserIdentity";
+    public static final String __J_AUTHENTICATED = "org.eclipse.jetty.security.UserIdentity";
 
     private final String _name;
     private final Object _credentials;
@@ -61,10 +57,9 @@ public class SessionAuthentication extends AbstractUserAuthentication
     public SessionAuthentication(String method, UserIdentity userIdentity, Object credentials)
     {
         super(method, userIdentity);
-        _name=userIdentity.getUserPrincipal().getName();
-        _credentials=credentials;
+        _name = userIdentity.getUserPrincipal().getName();
+        _credentials = credentials;
     }
-
 
     @Override
     public UserIdentity getUserIdentity()
@@ -74,41 +69,35 @@ public class SessionAuthentication extends AbstractUserAuthentication
         return super.getUserIdentity();
     }
 
-
     private void readObject(ObjectInputStream stream)
         throws IOException, ClassNotFoundException
     {
         stream.defaultReadObject();
 
-        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
-        if (security==null)
+        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
+        if (security == null)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("!SecurityHandler");
+            if (LOG.isDebugEnabled())
+                LOG.debug("!SecurityHandler");
             return;
         }
 
-        LoginService login_service=security.getLoginService();
-        if (login_service==null)
+        LoginService loginService = security.getLoginService();
+        if (loginService == null)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("!LoginService");
+            if (LOG.isDebugEnabled())
+                LOG.debug("!LoginService");
             return;
         }
 
-        _userIdentity=login_service.login(_name,_credentials, null);
-        LOG.debug("Deserialized and relogged in {}",this);
+        _userIdentity = loginService.login(_name, _credentials, null);
+        LOG.debug("Deserialized and relogged in {}", this);
     }
 
-    @Override
-    @Deprecated
-    public void logout()
-    {
-    }
-
-    
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s}",this.getClass().getSimpleName(),hashCode(),_session==null?"-":_session.getId(),_userIdentity);
+        return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
     }
 
     @Override
@@ -119,9 +108,9 @@ public class SessionAuthentication extends AbstractUserAuthentication
     @Override
     public void sessionDidActivate(HttpSessionEvent se)
     {
-        if (_session==null)
+        if (_session == null)
         {
-            _session=se.getSession();
+            _session = se.getSession();
         }
     }
 
@@ -136,5 +125,4 @@ public class SessionAuthentication extends AbstractUserAuthentication
     public void valueUnbound(HttpSessionBindingEvent event)
     {
     }
-
 }

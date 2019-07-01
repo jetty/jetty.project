@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -83,7 +84,7 @@ public class RedirectRegexRule extends RegexRule
         for (int g = 1; g <= matcher.groupCount(); g++)
         {
             String group = matcher.group(g);
-            target = target.replaceAll("\\$" + g, group);
+            target = StringUtil.replace(target, "$" + g, group);
         }
 
         target = response.encodeRedirectURL(target);
@@ -100,7 +101,11 @@ public class RedirectRegexRule extends RegexRule
     @Override
     public String toString()
     {
-        return String.format("%s[%d>%s]", super.toString(), _statusCode, _location);
+        StringBuilder str = new StringBuilder();
+        str.append(super.toString());
+        str.append('[').append(_statusCode);
+        str.append('>').append(_location);
+        str.append(']');
+        return str.toString();
     }
-
 }

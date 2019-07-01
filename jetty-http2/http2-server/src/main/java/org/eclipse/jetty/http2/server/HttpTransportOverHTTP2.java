@@ -244,9 +244,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Response #{}/{}:{}{} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(),
-                    System.lineSeparator(), info.getFields());
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(),
+                System.lineSeparator(), info.getFields());
         }
 
         HeadersFrame frame = new HeadersFrame(stream.getId(), info, null, endStream);
@@ -258,8 +258,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Response #{}/{}: {} content bytes{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    content.remaining(), lastContent ? " (last chunk)" : "");
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                content.remaining(), lastContent ? " (last chunk)" : "");
         }
         DataFrame frame = new DataFrame(stream.getId(), content, endStream);
         stream.data(frame, callback);
@@ -270,7 +270,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Response #{}/{}: trailers",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
         }
 
         HeadersFrame frame = new HeadersFrame(stream.getId(), metaData, null, true);
@@ -339,7 +339,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         IStream stream = this.stream;
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Response #{}/{} aborted", stream == null ? -1 : stream.getId(),
-                    stream == null ? -1 : Integer.toHexString(stream.getSession().hashCode()));
+                stream == null ? -1 : Integer.toHexString(stream.getSession().hashCode()));
         if (stream != null)
             stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP);
     }
@@ -391,9 +391,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("HTTP2 Response #{}/{} {} {}",
-                        stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                        commit ? "commit" : "flush",
-                        callback == null ? "failure" : "success");
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    commit ? "commit" : "flush",
+                    callback == null ? "failure" : "success");
             if (callback != null)
                 callback.succeeded();
         }

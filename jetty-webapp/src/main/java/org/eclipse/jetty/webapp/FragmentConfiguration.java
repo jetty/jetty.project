@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.webapp;
 
 import java.util.Map;
@@ -30,15 +29,13 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class FragmentConfiguration extends AbstractConfiguration
 {
-    public final static String FRAGMENT_RESOURCES="org.eclipse.jetty.webFragments";
+    public static final String FRAGMENT_RESOURCES = "org.eclipse.jetty.webFragments";
 
     public FragmentConfiguration()
     {
         addDependencies(MetaInfConfiguration.class, WebXmlConfiguration.class);
     }
 
-   
-    
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
@@ -46,33 +43,30 @@ public class FragmentConfiguration extends AbstractConfiguration
         addWebFragments(context, context.getMetaData());
     }
 
-
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
         context.setAttribute(FRAGMENT_RESOURCES, null);
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     /**
      * Add in fragment descriptors that have already been discovered by MetaInfConfiguration
-     * 
+     *
      * @param context the web app context to look in
      * @param metaData the metadata to populate with fragments
-     * 
      * @throws Exception if unable to find web fragments
      */
-    public void addWebFragments (final WebAppContext context, final MetaData metaData) throws Exception
+    public void addWebFragments(final WebAppContext context, final MetaData metaData) throws Exception
     {
         @SuppressWarnings("unchecked")
-        Map<Resource, Resource> frags = (Map<Resource,Resource>)context.getAttribute(FRAGMENT_RESOURCES);
-        if (frags!=null)
+        Map<Resource, Resource> frags = (Map<Resource, Resource>)context.getAttribute(FRAGMENT_RESOURCES);
+        if (frags != null)
         {
             for (Resource key : frags.keySet())
             {
                 if (key.isDirectory()) //tolerate the case where the library is a directory, not a jar. useful for OSGi for example
                 {
-                    metaData.addFragment(key, frags.get(key));                          
+                    metaData.addFragment(key, frags.get(key));
                 }
                 else //the standard case: a jar most likely inside WEB-INF/lib
                 {

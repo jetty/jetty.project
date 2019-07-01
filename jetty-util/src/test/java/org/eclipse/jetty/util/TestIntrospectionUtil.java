@@ -18,22 +18,21 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * TestInjection
  */
 public class TestIntrospectionUtil
 {
-    public final static Class<?>[] __INTEGER_ARG = new Class[] {Integer.class};
+    public static final Class<?>[] __INTEGER_ARG = new Class[]{Integer.class};
     static Field privateAField;
     static Field protectedAField;
     static Field publicAField;
@@ -69,23 +68,45 @@ public class TestIntrospectionUtil
 
     public class ServletC
     {
-        private void setPrivateC (Integer c) {}
-        protected void setProtectedC (Integer c) {}
-        public void setPublicC(Integer c) {}
-        void setDefaultC(Integer c) {}
+        private void setPrivateC(Integer c)
+        {
+        }
+
+        protected void setProtectedC(Integer c)
+        {
+        }
+
+        public void setPublicC(Integer c)
+        {
+        }
+
+        void setDefaultC(Integer c)
+        {
+        }
     }
 
     public class ServletD extends ServletC
     {
-        private void setPrivateD(Integer d) {}
-        protected void setProtectedD(Integer d) {}
-        public void setPublicD(Integer d) {}
-        void setDefaultD(Integer d) {}
+        private void setPrivateD(Integer d)
+        {
+        }
+
+        protected void setProtectedD(Integer d)
+        {
+        }
+
+        public void setPublicD(Integer d)
+        {
+        }
+
+        void setDefaultD(Integer d)
+        {
+        }
     }
 
     @BeforeAll
     public static void setUp()
-    throws Exception
+        throws Exception
     {
         privateAField = ServletA.class.getDeclaredField("privateA");
         protectedAField = ServletA.class.getDeclaredField("protectedA");
@@ -106,15 +127,16 @@ public class TestIntrospectionUtil
     }
 
     @Test
-    public void testFieldPrivate ()
-    throws Exception
+    public void testFieldPrivate()
+        throws Exception
     {
         //direct
         Field f = IntrospectionUtil.findField(ServletA.class, "privateA", Integer.class, true, false);
-        assertEquals(privateAField,f);
+        assertEquals(privateAField, f);
 
         //inheritance
-        assertThrows(NoSuchFieldException.class, ()-> {
+        assertThrows(NoSuchFieldException.class, () ->
+        {
             // Private fields should not be inherited
             IntrospectionUtil.findField(ServletB.class, "privateA", Integer.class, true, false);
         });
@@ -122,7 +144,7 @@ public class TestIntrospectionUtil
 
     @Test
     public void testFieldProtected()
-    throws Exception
+        throws Exception
     {
         //direct
         Field f = IntrospectionUtil.findField(ServletA.class, "protectedA", Integer.class, true, false);
@@ -135,7 +157,7 @@ public class TestIntrospectionUtil
 
     @Test
     public void testFieldPublic()
-    throws Exception
+        throws Exception
     {
         //direct
         Field f = IntrospectionUtil.findField(ServletA.class, "publicA", Integer.class, true, false);
@@ -148,7 +170,7 @@ public class TestIntrospectionUtil
 
     @Test
     public void testFieldDefault()
-    throws Exception
+        throws Exception
     {
         //direct
         Field f = IntrospectionUtil.findField(ServletA.class, "defaultA", Integer.class, true, false);
@@ -160,22 +182,23 @@ public class TestIntrospectionUtil
     }
 
     @Test
-    public void testMethodPrivate ()
-    throws Exception
+    public void testMethodPrivate()
+        throws Exception
     {
         //direct
         Method m = IntrospectionUtil.findMethod(ServletC.class, "setPrivateC", __INTEGER_ARG, true, false);
         assertEquals(m, privateCMethod);
 
         //inheritance
-        assertThrows(NoSuchMethodException.class, ()-> {
+        assertThrows(NoSuchMethodException.class, () ->
+        {
             IntrospectionUtil.findMethod(ServletD.class, "setPrivateC", __INTEGER_ARG, true, false);
         });
     }
 
     @Test
-    public void testMethodProtected ()
-    throws Exception
+    public void testMethodProtected()
+        throws Exception
     {
         // direct
         Method m = IntrospectionUtil.findMethod(ServletC.class, "setProtectedC", __INTEGER_ARG, true, false);
@@ -187,21 +210,21 @@ public class TestIntrospectionUtil
     }
 
     @Test
-    public void testMethodPublic ()
-    throws Exception
+    public void testMethodPublic()
+        throws Exception
     {
         // direct
-        Method m = IntrospectionUtil.findMethod(ServletC.class, "setPublicC",  __INTEGER_ARG, true, false);
+        Method m = IntrospectionUtil.findMethod(ServletC.class, "setPublicC", __INTEGER_ARG, true, false);
         assertEquals(m, publicCMethod);
 
         //inherited
-       m = IntrospectionUtil.findMethod(ServletD.class, "setPublicC",  __INTEGER_ARG, true, false);
-       assertEquals(m, publicCMethod);
+        m = IntrospectionUtil.findMethod(ServletD.class, "setPublicC", __INTEGER_ARG, true, false);
+        assertEquals(m, publicCMethod);
     }
 
     @Test
-    public void testMethodDefault ()
-    throws Exception
+    public void testMethodDefault()
+        throws Exception
     {
         // direct
         Method m = IntrospectionUtil.findMethod(ServletC.class, "setDefaultC", __INTEGER_ARG, true, false);

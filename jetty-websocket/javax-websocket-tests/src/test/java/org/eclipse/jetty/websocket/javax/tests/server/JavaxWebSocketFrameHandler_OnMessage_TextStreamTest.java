@@ -23,7 +23,6 @@ import java.io.Reader;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import javax.websocket.OnMessage;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
@@ -129,5 +128,4 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
         String msg = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Message", msg, is("onMessage(MessageReader,foo) = \"Hello World\""));
     }
-
 }

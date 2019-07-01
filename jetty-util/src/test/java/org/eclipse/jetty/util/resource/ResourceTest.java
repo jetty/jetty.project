@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
-
 import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.stream.Stream;
 
@@ -38,6 +33,10 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 
 public class ResourceTest
 {
@@ -55,127 +54,128 @@ public class ResourceTest
         Scenario(Scenario data, String path, boolean exists, boolean dir)
             throws Exception
         {
-            this.test=data.resource+"+"+path;
-            resource=data.resource.addPath(path);
-            this.exists=exists;
-            this.dir=dir;
+            this.test = data.resource + "+" + path;
+            resource = data.resource.addPath(path);
+            this.exists = exists;
+            this.dir = dir;
         }
 
         Scenario(Scenario data, String path, boolean exists, boolean dir, String content)
             throws Exception
         {
-            this.test=data.resource+"+"+path;
-            resource=data.resource.addPath(path);
-            this.exists=exists;
-            this.dir=dir;
-            this.content=content;
+            this.test = data.resource + "+" + path;
+            resource = data.resource.addPath(path);
+            this.exists = exists;
+            this.dir = dir;
+            this.content = content;
         }
 
         Scenario(URL url, boolean exists, boolean dir)
             throws Exception
         {
-            this.test=url.toString();
-            this.exists=exists;
-            this.dir=dir;
-            resource=Resource.newResource(url);
+            this.test = url.toString();
+            this.exists = exists;
+            this.dir = dir;
+            resource = Resource.newResource(url);
         }
 
         Scenario(String url, boolean exists, boolean dir)
             throws Exception
         {
-            this.test=url;
-            this.exists=exists;
-            this.dir=dir;
-            resource=Resource.newResource(url);
+            this.test = url;
+            this.exists = exists;
+            this.dir = dir;
+            resource = Resource.newResource(url);
         }
-        
+
         Scenario(URI uri, boolean exists, boolean dir)
-                throws Exception
+            throws Exception
         {
-            this.test=uri.toASCIIString();
-            this.exists=exists;
-            this.dir=dir;
-            resource=Resource.newResource(uri);
+            this.test = uri.toASCIIString();
+            this.exists = exists;
+            this.dir = dir;
+            resource = Resource.newResource(uri);
         }
-        
+
         Scenario(File file, boolean exists, boolean dir)
         {
-            this.test=file.toString();
-            this.exists=exists;
-            this.dir=dir;
-            resource=Resource.newResource(file);
+            this.test = file.toString();
+            this.exists = exists;
+            this.dir = dir;
+            resource = Resource.newResource(file);
         }
 
         Scenario(String url, boolean exists, boolean dir, String content)
             throws Exception
         {
-            this.test=url;
-            this.exists=exists;
-            this.dir=dir;
-            this.content=content;
-            resource=Resource.newResource(url);
+            this.test = url;
+            this.exists = exists;
+            this.dir = dir;
+            this.content = content;
+            resource = Resource.newResource(url);
         }
-        
+
         @Override
         public String toString()
         {
             return this.test;
         }
     }
-    
+
     static class Scenarios extends ArrayList<Arguments>
     {
         final File fileRef;
         final URI uriRef;
         final String relRef;
-        
+
         final Scenario[] baseCases;
-        
-        public Scenarios(String ref) throws Exception {
+
+        public Scenarios(String ref) throws Exception
+        {
             // relative directory reference
             this.relRef = FS.separators(ref);
             // File object reference
             this.fileRef = MavenTestingUtils.getProjectDir(relRef);
             // URI reference
             this.uriRef = fileRef.toURI();
-            
+
             // create baseline cases
-            baseCases = new Scenario[] {
-                new Scenario(relRef,EXISTS,DIR),
-                new Scenario(uriRef,EXISTS,DIR),
-                new Scenario(fileRef,EXISTS,DIR)
+            baseCases = new Scenario[]{
+                new Scenario(relRef, EXISTS, DIR),
+                new Scenario(uriRef, EXISTS, DIR),
+                new Scenario(fileRef, EXISTS, DIR)
             };
-            
+
             // add all baseline cases
             for (Scenario bcase : baseCases)
             {
                 addCase(bcase);
             }
         }
-        
+
         public void addCase(Scenario ucase)
         {
             add(Arguments.of(ucase));
         }
-        
-        public void addAllSimpleCases(String subpath, boolean exists, boolean dir) 
+
+        public void addAllSimpleCases(String subpath, boolean exists, boolean dir)
             throws Exception
         {
             addCase(new Scenario(FS.separators(relRef + subpath), exists, dir));
             addCase(new Scenario(uriRef.resolve(subpath).toURL(), exists, dir));
-            addCase(new Scenario(new File(fileRef,subpath),exists, dir));
+            addCase(new Scenario(new File(fileRef, subpath), exists, dir));
         }
-        
+
         public Scenario addAllAddPathCases(String subpath, boolean exists, boolean dir) throws Exception
         {
             Scenario bdata = null;
-            
+
             for (Scenario bcase : baseCases)
             {
                 bdata = new Scenario(bcase, subpath, exists, dir);
                 addCase(bdata);
             }
-            
+
             return bdata;
         }
     }
@@ -183,66 +183,65 @@ public class ResourceTest
     public static Stream<Arguments> scenarios() throws Exception
     {
         Scenarios cases = new Scenarios("src/test/resources/");
-        
+
         File testDir = MavenTestingUtils.getTargetTestingDir(ResourceTest.class.getName());
         FS.ensureEmpty(testDir);
         File tmpFile = new File(testDir, "test.tmp");
         FS.touch(tmpFile);
 
-        cases.addCase(new Scenario(tmpFile.toString(),EXISTS,!DIR));
-        
+        cases.addCase(new Scenario(tmpFile.toString(), EXISTS, !DIR));
+
         // Some resource references.
-        cases.addAllSimpleCases("resource.txt",EXISTS,!DIR);
-        cases.addAllSimpleCases("NoName.txt",!EXISTS,!DIR);
-        
+        cases.addAllSimpleCases("resource.txt", EXISTS, !DIR);
+        cases.addAllSimpleCases("NoName.txt", !EXISTS, !DIR);
+
         // Some addPath() forms
-        cases.addAllAddPathCases("resource.txt",EXISTS,!DIR);
-        cases.addAllAddPathCases("/resource.txt",EXISTS,!DIR);
-        cases.addAllAddPathCases("//resource.txt",EXISTS,!DIR);
-        cases.addAllAddPathCases("NoName.txt",!EXISTS,!DIR);
-        cases.addAllAddPathCases("/NoName.txt",!EXISTS,!DIR);
-        cases.addAllAddPathCases("//NoName.txt",!EXISTS,!DIR);
+        cases.addAllAddPathCases("resource.txt", EXISTS, !DIR);
+        cases.addAllAddPathCases("/resource.txt", EXISTS, !DIR);
+        cases.addAllAddPathCases("//resource.txt", EXISTS, !DIR);
+        cases.addAllAddPathCases("NoName.txt", !EXISTS, !DIR);
+        cases.addAllAddPathCases("/NoName.txt", !EXISTS, !DIR);
+        cases.addAllAddPathCases("//NoName.txt", !EXISTS, !DIR);
 
         Scenario tdata1 = cases.addAllAddPathCases("TestData", EXISTS, DIR);
         Scenario tdata2 = cases.addAllAddPathCases("TestData/", EXISTS, DIR);
-        
-        cases.addCase(new Scenario(tdata1, "alphabet.txt", EXISTS,!DIR,"ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
-        cases.addCase(new Scenario(tdata2, "alphabet.txt", EXISTS,!DIR,"ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
 
-        cases.addCase(new Scenario("jar:file:/somejar.jar!/content/",!EXISTS,DIR));
-        cases.addCase(new Scenario("jar:file:/somejar.jar!/",!EXISTS,DIR));
+        cases.addCase(new Scenario(tdata1, "alphabet.txt", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+        cases.addCase(new Scenario(tdata2, "alphabet.txt", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+
+        cases.addCase(new Scenario("jar:file:/somejar.jar!/content/", !EXISTS, DIR));
+        cases.addCase(new Scenario("jar:file:/somejar.jar!/", !EXISTS, DIR));
 
         String urlRef = cases.uriRef.toASCIIString();
-        Scenario zdata = new Scenario("jar:"+urlRef +"TestData/test.zip!/",EXISTS,DIR);
+        Scenario zdata = new Scenario("jar:" + urlRef + "TestData/test.zip!/", EXISTS, DIR);
         cases.addCase(zdata);
 
-        cases.addCase(new Scenario(zdata,"Unknown",!EXISTS,!DIR));
-        cases.addCase(new Scenario(zdata,"/Unknown/",!EXISTS,DIR));
+        cases.addCase(new Scenario(zdata, "Unknown", !EXISTS, !DIR));
+        cases.addCase(new Scenario(zdata, "/Unknown/", !EXISTS, DIR));
 
+        cases.addCase(new Scenario(zdata, "subdir", EXISTS, DIR));
+        cases.addCase(new Scenario(zdata, "/subdir/", EXISTS, DIR));
+        cases.addCase(new Scenario(zdata, "alphabet", EXISTS, !DIR,
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+        cases.addCase(new Scenario(zdata, "/subdir/alphabet", EXISTS, !DIR,
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
 
-        cases.addCase(new Scenario(zdata,"subdir",EXISTS,DIR));
-        cases.addCase(new Scenario(zdata,"/subdir/",EXISTS,DIR));
-        cases.addCase(new Scenario(zdata,"alphabet",EXISTS,!DIR,
-                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
-        cases.addCase(new Scenario(zdata,"/subdir/alphabet",EXISTS,!DIR,
-                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
-        
-        cases.addAllAddPathCases("/TestData/test/subdir/subsubdir/",EXISTS,DIR);
-        cases.addAllAddPathCases("//TestData/test/subdir/subsubdir/",EXISTS,DIR);
-        cases.addAllAddPathCases("/TestData//test/subdir/subsubdir/",EXISTS,DIR);
-        cases.addAllAddPathCases("/TestData/test//subdir/subsubdir/",EXISTS,DIR);
-        cases.addAllAddPathCases("/TestData/test/subdir//subsubdir/",EXISTS,DIR);
-        
-        cases.addAllAddPathCases("TestData/test/subdir/subsubdir/",EXISTS,DIR);
-        cases.addAllAddPathCases("TestData/test/subdir/subsubdir//",EXISTS,DIR);
-        cases.addAllAddPathCases("TestData/test/subdir//subsubdir/",EXISTS,DIR);
-        cases.addAllAddPathCases("TestData/test//subdir/subsubdir/",EXISTS,DIR);
+        cases.addAllAddPathCases("/TestData/test/subdir/subsubdir/", EXISTS, DIR);
+        cases.addAllAddPathCases("//TestData/test/subdir/subsubdir/", EXISTS, DIR);
+        cases.addAllAddPathCases("/TestData//test/subdir/subsubdir/", EXISTS, DIR);
+        cases.addAllAddPathCases("/TestData/test//subdir/subsubdir/", EXISTS, DIR);
+        cases.addAllAddPathCases("/TestData/test/subdir//subsubdir/", EXISTS, DIR);
 
-        cases.addAllAddPathCases("/TestData/../TestData/test/subdir/subsubdir/",EXISTS,DIR);
+        cases.addAllAddPathCases("TestData/test/subdir/subsubdir/", EXISTS, DIR);
+        cases.addAllAddPathCases("TestData/test/subdir/subsubdir//", EXISTS, DIR);
+        cases.addAllAddPathCases("TestData/test/subdir//subsubdir/", EXISTS, DIR);
+        cases.addAllAddPathCases("TestData/test//subdir/subsubdir/", EXISTS, DIR);
+
+        cases.addAllAddPathCases("/TestData/../TestData/test/subdir/subsubdir/", EXISTS, DIR);
 
         return cases.stream();
     }
-    
+
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testResourceExists(Scenario data)
@@ -254,18 +253,18 @@ public class ResourceTest
     @MethodSource("scenarios")
     public void testResourceDir(Scenario data)
     {
-        assertThat("Is Directory: " + data.test, data.resource.isDirectory(),equalTo(data.dir));
+        assertThat("Is Directory: " + data.test, data.resource.isDirectory(), equalTo(data.dir));
     }
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testEncodeAddPath (Scenario data)
-    throws Exception
+    public void testEncodeAddPath(Scenario data)
+        throws Exception
     {
         if (data.dir)
         {
             Resource r = data.resource.addPath("foo%/b r");
-            assertThat(r.getURI().toString(),Matchers.endsWith("/foo%25/b%20r"));
+            assertThat(r.getURI().toString(), Matchers.endsWith("/foo%25/b%20r"));
         }
     }
 
@@ -274,10 +273,10 @@ public class ResourceTest
     public void testResourceContent(Scenario data)
         throws Exception
     {
-        Assumptions.assumeTrue(data.content  != null);
-        
+        Assumptions.assumeTrue(data.content != null);
+
         InputStream in = data.resource.getInputStream();
         String c = IO.toString(in);
-        assertThat("Content: " + data.test,c,startsWith(data.content));
+        assertThat("Content: " + data.test, c, startsWith(data.content));
     }
 }

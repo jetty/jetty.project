@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.OnMessage;
@@ -104,11 +103,11 @@ public class LargeContainerTest
                 client.start();
 
                 FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-                clientSocket.setMaxTextMessageSize(128 * 1024);
                 Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
 
                 // wait for connect
                 FrameHandler.CoreSession coreSession = clientConnectFuture.get(5, TimeUnit.SECONDS);
+                coreSession.setMaxTextMessageSize(128 * 1024);
                 try
                 {
                     // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies

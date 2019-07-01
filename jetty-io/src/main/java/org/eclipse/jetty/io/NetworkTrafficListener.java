@@ -51,7 +51,7 @@ public interface NetworkTrafficListener
      * <p>Callback method invoked when bytes sent by a remote client arrived on the server.</p>
      *
      * @param socket the socket associated with the remote client
-     * @param bytes  the read-only buffer containing the incoming bytes
+     * @param bytes the read-only buffer containing the incoming bytes
      */
     public void incoming(Socket socket, ByteBuffer bytes);
 
@@ -60,7 +60,7 @@ public interface NetworkTrafficListener
      * <p>This method is invoked after the bytes have been actually written to the remote client.</p>
      *
      * @param socket the socket associated with the remote client
-     * @param bytes  the read-only buffer containing the outgoing bytes
+     * @param bytes the read-only buffer containing the outgoing bytes
      */
     public void outgoing(Socket socket, ByteBuffer bytes);
 

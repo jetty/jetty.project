@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.examples.MyAdvancedEchoServlet;
 import org.eclipse.jetty.websocket.tests.examples.MyAuthedServlet;
 import org.eclipse.jetty.websocket.tests.examples.MyEchoServlet;
@@ -73,7 +73,7 @@ public class WebSocketServletExamplesTest
         _context.addServlet(MyAdvancedEchoServlet.class, "/advancedEcho");
         _context.addServlet(MyAuthedServlet.class, "/authed");
 
-        JettyWebSocketServletContainerInitializer.configureContext(_context);
+        JettyWebSocketServletContainerInitializer.configure(_context, null);
         _server.start();
     }
 
@@ -83,11 +83,12 @@ public class WebSocketServletExamplesTest
         _server.stop();
     }
 
-    private static SecurityHandler getSecurityHandler(String username, String password, String realm) {
+    private static SecurityHandler getSecurityHandler(String username, String password, String realm)
+    {
 
         HashLoginService loginService = new HashLoginService();
         UserStore userStore = new UserStore();
-        userStore.addUser(username, Credential.getCredential(password), new String[] {"websocket"});
+        userStore.addUser(username, Credential.getCredential(password), new String[]{"websocket"});
         loginService.setUserStore(userStore);
         loginService.setName(realm);
 
@@ -114,7 +115,7 @@ public class WebSocketServletExamplesTest
         WebSocketClient client = new WebSocketClient();
         client.start();
 
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/echo");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
         try (Session session = connect.get(5, TimeUnit.SECONDS))
@@ -135,7 +136,7 @@ public class WebSocketServletExamplesTest
         WebSocketClient client = new WebSocketClient();
         client.start();
 
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/advancedEcho");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/advancedEcho");
         EventSocket socket = new EventSocket();
 
         UpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -160,7 +161,7 @@ public class WebSocketServletExamplesTest
         client.start();
         AuthenticationStore authenticationStore = client.getHttpClient().getAuthenticationStore();
 
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/authed");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/authed");
 
         BasicAuthentication basicAuthentication = new BasicAuthentication(uri, "testRealm", "user", "password");
         authenticationStore.addAuthentication(basicAuthentication);

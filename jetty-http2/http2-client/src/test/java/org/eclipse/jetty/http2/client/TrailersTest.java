@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -252,7 +251,7 @@ public class TrailersTest extends AbstractTest
                 Response jettyResponse = jettyRequest.getResponse();
                 HttpFields trailers = new HttpFields();
                 jettyResponse.setTrailerFields(() ->
-                        trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
+                    trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
 
                 jettyResponse.getOutputStream().write("hello_trailers".getBytes(StandardCharsets.UTF_8));
                 jettyResponse.flushBuffer();
@@ -340,7 +339,7 @@ public class TrailersTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap( StringUtil.getUtf8Bytes( "hello"));
+        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         Callback.Completable completable = new Callback.Completable();
         stream.data(new DataFrame(stream.getId(), data, false), completable);
         completable.thenRun(() ->

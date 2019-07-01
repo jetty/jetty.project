@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.internal.compress;
 
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 
 /**
  * Collect up 1 or more byte arrays for later transfer to a single {@link ByteBuffer}.
@@ -42,14 +42,14 @@ public class ByteAccumulator
         this.maxSize = maxOverallMessageSize;
     }
 
-    public void copyChunk(byte buf[], int offset, int length)
+    public void copyChunk(byte[] buf, int offset, int length)
     {
         if (this.length + length > maxSize)
         {
             throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]", this.length + length, maxSize));
         }
 
-        byte copy[] = new byte[length - offset];
+        byte[] copy = new byte[length - offset];
         System.arraycopy(buf, offset, copy, 0, length);
 
         chunks.add(copy);

@@ -20,7 +20,6 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -32,9 +31,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
-
-/* ------------------------------------------------------------ */
-/** Servlet handling JSP Property Group mappings
+/**
+ * Servlet handling JSP Property Group mappings
  * <p>
  * This servlet is mapped to by any URL pattern for a JSP property group.
  * Resources handled by this servlet that are not directories will be passed
@@ -45,7 +43,7 @@ public class JspPropertyGroupServlet extends GenericServlet
 {
     private static final long serialVersionUID = 3681783214726776945L;
 
-    public final static String NAME = "__org.eclipse.jetty.servlet.JspPropertyGroupServlet__";
+    public static final String NAME = "__org.eclipse.jetty.servlet.JspPropertyGroupServlet__";
     private final ServletHandler _servletHandler;
     private final ContextHandler _contextHandler;
     private ServletHolder _dftServlet;
@@ -54,43 +52,43 @@ public class JspPropertyGroupServlet extends GenericServlet
 
     public JspPropertyGroupServlet(ContextHandler context, ServletHandler servletHandler)
     {
-        _contextHandler=context;
-        _servletHandler=servletHandler;
+        _contextHandler = context;
+        _servletHandler = servletHandler;
     }
 
     @Override
     public void init() throws ServletException
     {
-        String jsp_name = "jsp";
-        ServletMapping servlet_mapping =_servletHandler.getServletMapping("*.jsp");
-        if (servlet_mapping!=null)
+        String jspName = "jsp";
+        ServletMapping servletMapping = _servletHandler.getServletMapping("*.jsp");
+        if (servletMapping != null)
         {
-            _starJspMapped=true;
+            _starJspMapped = true;
 
             //now find the jsp servlet, ignoring the mapping that is for ourself
             ServletMapping[] mappings = _servletHandler.getServletMappings();
-            for (ServletMapping m:mappings)
+            for (ServletMapping m : mappings)
             {
                 String[] paths = m.getPathSpecs();
-                if (paths!=null)
+                if (paths != null)
                 {
-                    for (String path:paths)
+                    for (String path : paths)
                     {
                         if ("*.jsp".equals(path) && !NAME.equals(m.getServletName()))
-                            servlet_mapping = m;
+                            servletMapping = m;
                     }
                 }
             }
 
-            jsp_name=servlet_mapping.getServletName();
+            jspName = servletMapping.getServletName();
         }
-        _jspServlet=_servletHandler.getServlet(jsp_name);
+        _jspServlet = _servletHandler.getServlet(jspName);
 
-        String dft_name="default";
-        ServletMapping default_mapping=_servletHandler.getServletMapping("/");
-        if (default_mapping!=null)
-            dft_name=default_mapping.getServletName();
-        _dftServlet=_servletHandler.getServlet(dft_name);
+        String defaultName = "default";
+        ServletMapping defaultMapping = _servletHandler.getServletMapping("/");
+        if (defaultMapping != null)
+            defaultName = defaultMapping.getServletName();
+        _dftServlet = _servletHandler.getServlet(defaultName);
     }
 
     @Override
@@ -102,16 +100,16 @@ public class JspPropertyGroupServlet extends GenericServlet
         else
             throw new ServletException("Request not HttpServletRequest");
 
-        String servletPath=null;
-        String pathInfo=null;
-        if (request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI)!=null)
+        String servletPath = null;
+        String pathInfo = null;
+        if (request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI) != null)
         {
-            servletPath=(String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
-            pathInfo=(String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
-            if (servletPath==null)
+            servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
+            if (servletPath == null)
             {
-                servletPath=request.getServletPath();
-                pathInfo=request.getPathInfo();
+                servletPath = request.getServletPath();
+                pathInfo = request.getPathInfo();
             }
         }
         else
@@ -120,26 +118,24 @@ public class JspPropertyGroupServlet extends GenericServlet
             pathInfo = request.getPathInfo();
         }
 
-        String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
+        String pathInContext = URIUtil.addPaths(servletPath, pathInfo);
 
         if (pathInContext.endsWith("/"))
         {
-            _dftServlet.getServlet().service(req,res);
+            _dftServlet.getServlet().service(req, res);
         }
         else if (_starJspMapped && pathInContext.toLowerCase(Locale.ENGLISH).endsWith(".jsp"))
         {
-            _jspServlet.getServlet().service(req,res);
+            _jspServlet.getServlet().service(req, res);
         }
         else
         {
 
             Resource resource = _contextHandler.getResource(pathInContext);
-            if (resource!=null && resource.isDirectory())
-                _dftServlet.getServlet().service(req,res);
+            if (resource != null && resource.isDirectory())
+                _dftServlet.getServlet().service(req, res);
             else
-                _jspServlet.getServlet().service(req,res);
+                _jspServlet.getServlet().service(req, res);
         }
-
     }
-
 }

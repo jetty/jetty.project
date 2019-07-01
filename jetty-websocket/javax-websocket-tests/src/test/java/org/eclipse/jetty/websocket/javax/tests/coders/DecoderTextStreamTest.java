@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.tests.coders;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.javax.tests.FunctionMethod;
-import org.eclipse.jetty.websocket.javax.common.CompletableFutureCallback;
-import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.javax.tests.client.AbstractClientSessionTest;
-import org.junit.jupiter.api.Test;
-
-import javax.websocket.Decoder;
 import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Files;
@@ -36,6 +27,15 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import javax.websocket.Decoder;
+
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.javax.common.CompletableFutureCallback;
+import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
+import org.eclipse.jetty.websocket.javax.tests.FunctionMethod;
+import org.eclipse.jetty.websocket.javax.tests.client.AbstractClientSessionTest;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

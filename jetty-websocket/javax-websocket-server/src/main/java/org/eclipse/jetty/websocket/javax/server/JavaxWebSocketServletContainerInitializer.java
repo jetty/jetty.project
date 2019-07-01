@@ -27,11 +27,13 @@ import javax.servlet.annotation.HandlesTypes;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerApplicationConfig;
+import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -40,11 +42,16 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
-@HandlesTypes({ ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class })
+@HandlesTypes({ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class})
 public class JavaxWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
+    /**
+     * The ServletContext attribute key name for the
+     * ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
+     */
+    public static final String ATTR_JAVAX_SERVER_CONTAINER = javax.websocket.server.ServerContainer.class.getName();
+
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.javax";
-    public static final String DEPRECATED_ENABLE_KEY = "org.eclipse.jetty.websocket.jsr356";
     public static final String HTTPCLIENT_ATTRIBUTE = "org.eclipse.jetty.websocket.javax.HttpClient";
     private static final Logger LOG = Log.getLogger(JavaxWebSocketServletContainerInitializer.class);
 
@@ -52,8 +59,8 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
      * Test a ServletContext for {@code init-param} or {@code attribute} at {@code keyName} for
      * true or false setting that determines if the specified feature is enabled (or not).
      *
-     * @param context  the context to search
-     * @param keyName  the key name
+     * @param context the context to search
+     * @param keyName the key name
      * @return the value for the feature key, otherwise null if key is not set in context
      */
     private static Boolean isEnabledViaContext(ServletContext context, String keyName)
@@ -81,32 +88,89 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         return null;
     }
 
-    public static JavaxWebSocketServerContainer configureContext(ServletContextHandler context)
+    public interface Configurator
     {
-        WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(context.getServletContext());
-        FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
-        WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
-        JavaxWebSocketServerContainer container = JavaxWebSocketServerContainer.ensureContainer(context.getServletContext());
+        void accept(ServletContext servletContext, ServerContainer serverContainer) throws DeploymentException;
+    }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("configureContext {} {} {} {}", mapping, components, filterHolder, container);
+    /**
+     * Configure the {@link ServletContextHandler} to call {@link JavaxWebSocketServletContainerInitializer#onStartup(Set, ServletContext)}
+     * during the {@link ServletContext} initialization phase.
+     *
+     * @param context the context to add listener to
+     * @param configurator the lambda that is called to allow the {@link ServerContainer} to
+     * be configured during the {@link ServletContext} initialization phase
+     */
+    public static void configure(ServletContextHandler context, Configurator configurator)
+    {
+        // In this embedded-jetty usage, allow ServletContext.addListener() to
+        // add other ServletContextListeners (such as the ContextDestroyListener) after
+        // the initialization phase is over. (important for this SCI to function)
+        context.getServletContext().setExtendedListenerTypes(true);
 
-        return container;
+        context.addEventListener(ContainerInitializer.asContextListener(new JavaxWebSocketServletContainerInitializer())
+            .afterStartup((servletContext) ->
+            {
+                JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(servletContext);
+                if (configurator != null)
+                {
+                    try
+                    {
+                        configurator.accept(servletContext, serverContainer);
+                    }
+                    catch (DeploymentException e)
+                    {
+                        throw new RuntimeException("Failed to deploy WebSocket Endpoint", e);
+                    }
+                }
+            }));
+    }
+
+    /**
+     * Immediately initialize the {@link ServletContext} with the default (and empty) {@link ServerContainer}.
+     *
+     * <p>
+     * This method is typically called from {@link #onStartup(Set, ServletContext)} itself or from
+     * another dependent {@link ServletContainerInitializer} that requires minimal setup to
+     * be performed.
+     * </p>
+     * <p>
+     * This method SHOULD NOT BE CALLED by users of Jetty.
+     * Use the {@link #configure(ServletContextHandler, Configurator)} method instead.
+     * </p>
+     * <p>
+     * There is no enablement check here, and no automatic deployment of endpoints at this point
+     * in time.  It merely sets up the {@link ServletContext} so with the basics needed to start
+     * configuring for `javax.websocket.server` based endpoints.
+     * </p>
+     *
+     * @param context the context to work with
+     * @return the default {@link ServerContainer} for this context
+     */
+    public static JavaxWebSocketServerContainer initialize(ServletContextHandler context)
+    {
+        JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
+        if (serverContainer == null)
+        {
+            WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(context.getServletContext());
+            FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
+            WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
+            serverContainer = JavaxWebSocketServerContainer.ensureContainer(context.getServletContext());
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("configureContext {} {} {} {}", mapping, components, filterHolder, serverContainer);
+        }
+        return serverContainer;
     }
 
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext context) throws ServletException
     {
         Boolean enableKey = isEnabledViaContext(context, ENABLE_KEY);
-        Boolean deprecatedEnabledKey = isEnabledViaContext(context, DEPRECATED_ENABLE_KEY);
-        if (deprecatedEnabledKey != null)
-            LOG.warn("Deprecated parameter used: " + DEPRECATED_ENABLE_KEY);
 
         boolean websocketEnabled = true;
         if (enableKey != null)
             websocketEnabled = enableKey;
-        else if (deprecatedEnabledKey != null)
-            websocketEnabled = deprecatedEnabledKey;
 
         if (!websocketEnabled)
         {
@@ -114,7 +178,8 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
             return;
         }
 
-        JavaxWebSocketServerContainer container = configureContext(ServletContextHandler.getServletContextHandler(context,"Javax WebSocket SCI"));
+        ServletContextHandler servletContextHandler = ServletContextHandler.getServletContextHandler(context, "Javax WebSocket SCI");
+        JavaxWebSocketServerContainer container = initialize(servletContextHandler);
 
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
         {
@@ -215,7 +280,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
 
     @SuppressWarnings("unchecked")
     private void filterClasses(Set<Class<?>> c, Set<Class<? extends Endpoint>> discoveredExtendedEndpoints, Set<Class<?>> discoveredAnnotatedEndpoints,
-        Set<Class<? extends ServerApplicationConfig>> serverAppConfigs)
+                               Set<Class<? extends ServerApplicationConfig>> serverAppConfigs)
     {
         for (Class<?> clazz : c)
         {

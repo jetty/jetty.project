@@ -25,8 +25,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})
-public @interface Sample 
+public @interface Sample
 {
     int value();
 }
-

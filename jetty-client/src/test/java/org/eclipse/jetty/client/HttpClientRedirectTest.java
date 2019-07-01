@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -65,10 +64,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/303/localhost/done")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/303/localhost/done")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -81,10 +80,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/303/localhost/302/localhost/done")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/303/localhost/302/localhost/done")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -97,10 +96,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/303/127.0.0.1/302/localhost/done")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/303/127.0.0.1/302/localhost/done")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -113,11 +112,11 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.HEAD)
-                .path("/301/localhost/done")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.HEAD)
+            .path("/301/localhost/done")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -130,12 +129,12 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         ExecutionException x = assertThrows(ExecutionException.class, () ->
-                client.newRequest("localhost", connector.getLocalPort())
-                        .scheme(scenario.getScheme())
-                        .method(HttpMethod.DELETE)
-                        .path("/301/localhost/done")
-                        .timeout(5, TimeUnit.SECONDS)
-                        .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .method(HttpMethod.DELETE)
+                .path("/301/localhost/done")
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
         HttpResponseException xx = (HttpResponseException)x.getCause();
         Response response = xx.getResponse();
         assertNotNull(response);
@@ -151,12 +150,12 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
         byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .path("/307/localhost/done")
-                .content(new ByteBufferContentProvider(ByteBuffer.wrap(data)))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .path("/307/localhost/done")
+            .content(new ByteBufferContentProvider(ByteBuffer.wrap(data)))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -171,11 +170,11 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         client.setMaxRedirects(1);
 
         ExecutionException x = assertThrows(ExecutionException.class, () ->
-                client.newRequest("localhost", connector.getLocalPort())
-                        .scheme(scenario.getScheme())
-                        .path("/303/localhost/302/localhost/done")
-                        .timeout(5, TimeUnit.SECONDS)
-                        .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path("/303/localhost/302/localhost/done")
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
         HttpResponseException xx = (HttpResponseException)x.getCause();
         Response response = xx.getResponse();
         assertNotNull(response);
@@ -190,10 +189,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/303/localhost/done?close=true")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/303/localhost/done?close=true")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -206,11 +205,11 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .followRedirects(false)
-                .path("/303/localhost/done?close=true")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .followRedirects(false)
+            .path("/303/localhost/done?close=true")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(303, response.getStatus());
         assertTrue(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -223,10 +222,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/303/localhost/done?relative=true")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/303/localhost/done?relative=true")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -239,10 +238,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/303/localhost/a+space?decode=true")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/303/localhost/a+space?decode=true")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -255,10 +254,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/303/localhost/a+space?relative=true&decode=true")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/303/localhost/a+space?relative=true&decode=true")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
@@ -280,14 +279,14 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/path")
-                .timeout(5, TimeUnit.SECONDS)
-                .send(result ->
-                {
-                    assertTrue(result.isFailed());
-                    latch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .path("/path")
+            .timeout(5, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                assertTrue(result.isFailed());
+                latch.countDown();
+            });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
@@ -302,10 +301,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .path("/303/doesNotExist/done")
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .scheme(scenario.getScheme())
+                .path("/303/doesNotExist/done")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
         }
         catch (ExecutionException x)
         {
@@ -405,10 +404,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         final HttpRedirector redirector = new HttpRedirector(client);
 
         org.eclipse.jetty.client.api.Request request1 = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/303/localhost/302/localhost/done")
-                .timeout(5, TimeUnit.SECONDS)
-                .followRedirects(false);
+            .scheme(scenario.getScheme())
+            .path("/303/localhost/302/localhost/done")
+            .timeout(5, TimeUnit.SECONDS)
+            .followRedirects(false);
         ContentResponse response1 = request1.send();
 
         assertEquals(303, response1.getStatus());
@@ -459,10 +458,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/redirect")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/redirect")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
@@ -483,9 +482,9 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         });
 
         ExecutionException x = assertThrows(ExecutionException.class, () ->
-                client.newRequest("localhost", connector.getLocalPort())
-                        .scheme(scenario.getScheme())
-                        .send());
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .send());
         assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
     }
 
@@ -516,9 +515,9 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         {
             client.setMaxRedirects(-1);
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .timeout(1, TimeUnit.SECONDS)
-                    .send();
+                .scheme(scenario.getScheme())
+                .timeout(1, TimeUnit.SECONDS)
+                .send();
         });
     }
 
@@ -561,11 +560,11 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(requestMethod)
-                .path("/" + redirectCode + "/localhost/done")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(requestMethod)
+            .path("/" + redirectCode + "/localhost/done")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
     }

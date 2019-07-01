@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server.sockets.primitives;
 
-import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
+import java.io.IOException;
+import java.util.Locale;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.util.Locale;
+
+import org.eclipse.jetty.toolchain.test.StackUtils;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 @ServerEndpoint("/echo/primitives/float")
 public class FloatTextSocket

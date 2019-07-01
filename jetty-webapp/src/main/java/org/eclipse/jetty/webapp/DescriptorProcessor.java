@@ -20,10 +20,8 @@ package org.eclipse.jetty.webapp;
 
 /**
  * DescriptorProcessor
- *
- *
  */
 public interface DescriptorProcessor
 {
-    public void process (WebAppContext context, Descriptor descriptor) throws Exception;
+    public void process(WebAppContext context, Descriptor descriptor) throws Exception;
 }

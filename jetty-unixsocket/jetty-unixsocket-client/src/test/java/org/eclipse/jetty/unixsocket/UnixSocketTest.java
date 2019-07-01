@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -126,9 +125,9 @@ public class UnixSocketTest
                 response.setStatus(200);
                 response.getWriter().write("Hello World " + new Date() + "\r\n");
                 response.getWriter().write(
-                        "remote=" + request.getRemoteAddr() + ":" + request.getRemotePort() + "\r\n");
+                    "remote=" + request.getRemoteAddr() + ":" + request.getRemotePort() + "\r\n");
                 response.getWriter().write(
-                        "local =" + request.getLocalAddr() + ":" + request.getLocalPort() + "\r\n");
+                    "local =" + request.getLocalAddr() + ":" + request.getLocalPort() + "\r\n");
                 response.getWriter().write("read =" + l + "\r\n");
             }
         });
@@ -139,8 +138,8 @@ public class UnixSocketTest
         httpClient.start();
 
         ContentResponse contentResponse = httpClient
-                .newRequest("http://localhost")
-                .send();
+            .newRequest("http://localhost")
+            .send();
 
         log.debug("response from server: {}", contentResponse.getContentAsString());
 

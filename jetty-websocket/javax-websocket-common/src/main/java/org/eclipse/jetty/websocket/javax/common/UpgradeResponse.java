@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-
 import java.util.List;
+
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 public interface UpgradeResponse
 {

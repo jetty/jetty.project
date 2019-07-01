@@ -27,6 +27,7 @@ public interface ServerSessionListener extends Session.Listener
 {
     /**
      * <p>Callback method invoked when a connection has been accepted by the server.</p>
+     *
      * @param session the session
      */
     public void onAccept(Session session);

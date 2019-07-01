@@ -22,13 +22,10 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.logging.Logger;
-
 import javax.sql.DataSource;
 
 /**
  * MockDataSource
- *
- *
  */
 public class MockDataSource implements DataSource
 {
@@ -37,12 +34,12 @@ public class MockDataSource implements DataSource
      * NOTE: JDK7+ new feature
      */
     @Override
-    public Logger getParentLogger() 
+    public Logger getParentLogger()
     {
         return null;
     }
 
-    /** 
+    /**
      * @see javax.sql.DataSource#getConnection()
      */
     @Override
@@ -51,17 +48,17 @@ public class MockDataSource implements DataSource
         return null;
     }
 
-    /** 
+    /**
      * @see javax.sql.DataSource#getConnection(java.lang.String, java.lang.String)
      */
     @Override
     public Connection getConnection(String username, String password)
-            throws SQLException
+        throws SQLException
     {
         return null;
     }
 
-    /** 
+    /**
      * @see javax.sql.DataSource#getLogWriter()
      */
     @Override
@@ -70,7 +67,7 @@ public class MockDataSource implements DataSource
         return null;
     }
 
-    /** 
+    /**
      * @see javax.sql.DataSource#getLoginTimeout()
      */
     @Override
@@ -79,7 +76,7 @@ public class MockDataSource implements DataSource
         return 0;
     }
 
-    /** 
+    /**
      * @see javax.sql.DataSource#setLogWriter(java.io.PrintWriter)
      */
     @Override
@@ -87,7 +84,7 @@ public class MockDataSource implements DataSource
     {
     }
 
-    /** 
+    /**
      * @see javax.sql.DataSource#setLoginTimeout(int)
      */
     @Override
@@ -106,5 +103,4 @@ public class MockDataSource implements DataSource
     {
         return null;
     }
-
 }

@@ -19,17 +19,14 @@
 package org.eclipse.jetty.websocket.server.browser;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -47,8 +44,8 @@ import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
 /**
  * Tool to help debug websocket circumstances reported around browsers.
@@ -93,7 +90,8 @@ public class BrowserDebugTool
         return connector.getLocalPort();
     }
 
-    public void prepare(int port) throws IOException, URISyntaxException {
+    public void prepare(int port)
+    {
         server = new Server();
         connector = new ServerConnector(server);
         connector.setPort(port);
@@ -101,7 +99,7 @@ public class BrowserDebugTool
 
         ServletContextHandler context = new ServletContextHandler();
 
-        JettyWebSocketServletContainerInitializer.configureContext(context);
+        JettyWebSocketServletContainerInitializer.configure(context, null);
 
         context.setContextPath("/");
         Resource staticResourceBase = findStaticResources();
@@ -116,7 +114,7 @@ public class BrowserDebugTool
 
         server.setHandler(handlers);
 
-        LOG.info("{} setup on port {}",this.getClass().getName(),port);
+        LOG.info("{} setup on port {}", this.getClass().getName(), port);
     }
 
     private Resource findStaticResources()
@@ -129,7 +127,7 @@ public class BrowserDebugTool
     public void start() throws Exception
     {
         server.start();
-        LOG.info("Server available on port {}",getPort());
+        LOG.info("Server available on port {}", getPort());
     }
 
     public void stop() throws Exception
@@ -140,11 +138,12 @@ public class BrowserDebugTool
     public static class BrowserSocketServlet extends JettyWebSocketServlet
     {
         @Override
-        public void configure(JettyWebSocketServletFactory factory) {
+        public void configure(JettyWebSocketServletFactory factory)
+        {
             LOG.debug("Configuring WebSocketServerFactory ...");
 
             // Setup the desired Socket to use for all incoming upgrade requests
-            factory.addMapping(new ServletPathSpec("/"), new BrowserSocketCreator());
+            factory.addMapping("/", new BrowserSocketCreator());
 
             // Set the timeout
             factory.setIdleTimeout(Duration.ofSeconds(30));
@@ -156,7 +155,7 @@ public class BrowserDebugTool
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            request.getServletContext().getNamedDispatcher("default").forward(request,response);
+            request.getServletContext().getNamedDispatcher("default").forward(request, response);
         }
     }
 
@@ -196,13 +195,13 @@ public class BrowserDebugTool
 
             resp.setExtensions(negotiated);
 
-            LOG.debug("User-Agent: {}",ua);
-            LOG.debug("Sec-WebSocket-Extensions (Request) : {}",rexts);
-            LOG.debug("Sec-WebSocket-Protocol (Request): {}",req.getHeader("Sec-WebSocket-Protocol"));
-            LOG.debug("Sec-WebSocket-Protocol (Response): {}",resp.getAcceptedSubProtocol());
+            LOG.debug("User-Agent: {}", ua);
+            LOG.debug("Sec-WebSocket-Extensions (Request) : {}", rexts);
+            LOG.debug("Sec-WebSocket-Protocol (Request): {}", req.getHeader("Sec-WebSocket-Protocol"));
+            LOG.debug("Sec-WebSocket-Protocol (Response): {}", resp.getAcceptedSubProtocol());
 
             req.getExtensions();
-            return new BrowserSocket(ua,rexts);
+            return new BrowserSocket(ua, rexts);
         }
     }
 }

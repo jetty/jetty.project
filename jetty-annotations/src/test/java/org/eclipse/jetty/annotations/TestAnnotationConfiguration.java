@@ -45,7 +45,7 @@ public class TestAnnotationConfiguration
 {
     public class TestableAnnotationConfiguration extends AnnotationConfiguration
     {
-        public void assertAnnotationDiscovery (boolean b)
+        public void assertAnnotationDiscovery(boolean b)
         {
             if (!b)
                 assertTrue(_discoverableAnnotationHandlers.isEmpty());
@@ -102,14 +102,18 @@ public class TestAnnotationConfiguration
         JAR.unpack(testWebInfClassesJar, unpacked);
         webInfClasses = Resource.newResource(unpacked);
 
-        containerLoader = new URLClassLoader(new URL[] { testContainerSciJar.toURI().toURL() }, Thread.currentThread().getContextClassLoader());
+        containerLoader = new URLClassLoader(new URL[]{
+            testContainerSciJar.toURI().toURL()
+        }, Thread.currentThread().getContextClassLoader());
 
         targetClasses = Resource.newResource(MavenTestingUtils.getTargetDir().toURI()).addPath("/test-classes");
 
-        classes = Arrays.asList(new Resource[] { webInfClasses, targetClasses });
+        classes = Arrays.asList(new Resource[]{webInfClasses, targetClasses});
 
-        webAppLoader = new URLClassLoader(new URL[] { testSciJar.toURI().toURL(), targetClasses.getURI().toURL(), webInfClasses.getURI().toURL() },
-                                          containerLoader);
+        webAppLoader = new URLClassLoader(new URL[]{
+            testSciJar.toURI().toURL(), targetClasses.getURI().toURL(), webInfClasses.getURI().toURL()
+        },
+            containerLoader);
     }
 
     @Test
@@ -126,7 +130,7 @@ public class TestAnnotationConfiguration
         context25.getServletContext().setEffectiveMinorVersion(5);
         config25.configure(context25);
         config25.assertAnnotationDiscovery(false);
-        
+
         //check that a 2.5 webapp with configurationDiscovered will discover annotations
         TestableAnnotationConfiguration config25b = new TestableAnnotationConfiguration();
         WebAppContext context25b = new WebAppContext();
@@ -139,7 +143,7 @@ public class TestAnnotationConfiguration
         context25b.getServletContext().setEffectiveMinorVersion(5);
         config25b.configure(context25b);
         config25b.assertAnnotationDiscovery(true);
-        
+
         //check that a 3.x webapp with metadata true won't discover annotations
         TestableAnnotationConfiguration config31 = new TestableAnnotationConfiguration();
         WebAppContext context31 = new WebAppContext();
@@ -151,7 +155,7 @@ public class TestAnnotationConfiguration
         context31.getServletContext().setEffectiveMinorVersion(1);
         config31.configure(context31);
         config31.assertAnnotationDiscovery(false);
-        
+
         //check that a 3.x webapp with metadata false will discover annotations
         TestableAnnotationConfiguration config31b = new TestableAnnotationConfiguration();
         WebAppContext context31b = new WebAppContext();
@@ -220,12 +224,12 @@ public class TestAnnotationConfiguration
             assertNotNull(scis);
             assertEquals(3, scis.size());
             assertEquals("com.acme.ServerServletContainerInitializer", scis.get(0).getClass().getName()); // container
-                                                                                                          // path
+            // path
             assertEquals("com.acme.webinf.WebInfClassServletContainerInitializer", scis.get(1).getClass().getName()); // web-inf
             assertEquals("com.acme.initializer.FooInitializer", scis.get(2).getClass().getName()); // web-inf
-                                                                                                   // jar
-                                                                                                   // no
-                                                                                                   // web-fragment
+            // jar
+            // no
+            // web-fragment
         }
         finally
         {
@@ -243,9 +247,11 @@ public class TestAnnotationConfiguration
 
         File orderedFragmentJar = new File(jarDir, "test-sci-with-ordering.jar");
         assertTrue(orderedFragmentJar.exists());
-        URLClassLoader orderedLoader = new URLClassLoader(new URL[] { orderedFragmentJar.toURI().toURL(), testSciJar.toURI().toURL(),
-                                                                      targetClasses.getURI().toURL(), webInfClasses.getURI().toURL() },
-                                                          containerLoader);
+        URLClassLoader orderedLoader = new URLClassLoader(new URL[]{
+            orderedFragmentJar.toURI().toURL(), testSciJar.toURI().toURL(),
+            targetClasses.getURI().toURL(), webInfClasses.getURI().toURL()
+        },
+            containerLoader);
         Thread.currentThread().setContextClassLoader(orderedLoader);
 
         try
@@ -270,7 +276,6 @@ public class TestAnnotationConfiguration
             assertEquals("com.acme.webinf.WebInfClassServletContainerInitializer", scis.get(1).getClass().getName()); // web-inf
             assertEquals("com.acme.ordering.AcmeServletContainerInitializer", scis.get(2).getClass().getName()); // first
             assertEquals("com.acme.initializer.FooInitializer", scis.get(3).getClass().getName()); //other in ordering
-
         }
         finally
         {
@@ -297,7 +302,7 @@ public class TestAnnotationConfiguration
             context.getServletContext().setEffectiveMinorVersion(5);
             scis = config.getNonExcludedInitializers(context);
             assertNotNull(scis);
-            for (ServletContainerInitializer s:scis)
+            for (ServletContainerInitializer s : scis)
             {
                 //should not have any of the web-inf lib scis in here
                 assertFalse(s.getClass().getName().equals("com.acme.ordering.AcmeServletContainerInitializer"));
@@ -338,7 +343,6 @@ public class TestAnnotationConfiguration
             assertEquals("com.acme.ServerServletContainerInitializer", scis.get(0).getClass().getName()); //container path
             assertEquals("com.acme.webinf.WebInfClassServletContainerInitializer", scis.get(1).getClass().getName()); // web-inf
             assertEquals("com.acme.initializer.FooInitializer", scis.get(2).getClass().getName()); //web-inf jar no web-fragment
-
         }
         finally
         {
@@ -346,24 +350,22 @@ public class TestAnnotationConfiguration
         }
     }
 
-    
-
     @Test
     public void testGetFragmentFromJar() throws Exception
     {
         String dir = MavenTestingUtils.getTargetTestingDir("getFragmentFromJar").getAbsolutePath();
         File file = new File(dir);
-        file=new File(file.getCanonicalPath());
-        URL url=file.toURI().toURL();
+        file = new File(file.getCanonicalPath());
+        URL url = file.toURI().toURL();
 
-        Resource jar1 = Resource.newResource(url+"file.jar");
+        Resource jar1 = Resource.newResource(url + "file.jar");
 
         AnnotationConfiguration config = new AnnotationConfiguration();
         WebAppContext wac = new WebAppContext();
 
         List<FragmentDescriptor> frags = new ArrayList<FragmentDescriptor>();
-        frags.add(new FragmentDescriptor(Resource.newResource("jar:"+url+"file.jar!/fooa.props")));
-        frags.add(new FragmentDescriptor(Resource.newResource("jar:"+url+"file2.jar!/foob.props")));
+        frags.add(new FragmentDescriptor(Resource.newResource("jar:" + url + "file.jar!/fooa.props")));
+        frags.add(new FragmentDescriptor(Resource.newResource("jar:" + url + "file2.jar!/foob.props")));
 
         assertNotNull(config.getFragmentFromJar(jar1, frags));
     }

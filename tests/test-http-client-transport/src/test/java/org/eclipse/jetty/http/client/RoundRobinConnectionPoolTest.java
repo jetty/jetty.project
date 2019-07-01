@@ -75,8 +75,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         for (int i = 0; i < maxConnections; ++i)
         {
             ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
 
@@ -85,8 +85,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         for (int i = 0; i < requests; ++i)
         {
             ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
 
@@ -149,8 +149,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         for (int i = 0; i < maxConnections; ++i)
         {
             ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
 
@@ -162,15 +162,15 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             CountDownLatch latch = new CountDownLatch(1);
             requestLatch.set(latch);
             scenario.client.newRequest(scenario.newURI())
-                    .path("/" + i)
-                    .onRequestQueued(request -> requests.incrementAndGet())
-                    .onRequestBegin(request -> requests.decrementAndGet())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == HttpStatus.OK_200)
-                            clientLatch.countDown();
-                    });
+                .path("/" + i)
+                .onRequestQueued(request -> requests.incrementAndGet())
+                .onRequestBegin(request -> requests.decrementAndGet())
+                .timeout(5, TimeUnit.SECONDS)
+                .send(result ->
+                {
+                    if (result.getResponse().getStatus() == HttpStatus.OK_200)
+                        clientLatch.countDown();
+                });
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
 

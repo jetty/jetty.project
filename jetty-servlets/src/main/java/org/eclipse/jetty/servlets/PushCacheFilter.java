@@ -103,10 +103,12 @@ public class PushCacheFilter implements Filter
         String ports = config.getInitParameter("ports");
         if (ports != null)
             for (String p : StringUtil.csvSplit(ports))
+            {
                 _ports.add(Integer.parseInt(p));
+            }
 
         _useQueryInKey = Boolean.parseBoolean(config.getInitParameter("useQueryInKey"));
-        
+
         // Expose for JMX.
         config.getServletContext().setAttribute(config.getFilterName(), this);
 
@@ -121,8 +123,8 @@ public class PushCacheFilter implements Filter
 
         PushBuilder pushBuilder = request.newPushBuilder();
         if (HttpVersion.fromString(request.getProtocol()).getVersion() < 20 ||
-                !HttpMethod.GET.is(request.getMethod()) ||
-                pushBuilder == null)
+            !HttpMethod.GET.is(request.getMethod()) ||
+            pushBuilder == null)
         {
             chain.doFilter(req, resp);
             return;
@@ -136,9 +138,9 @@ public class PushCacheFilter implements Filter
         for (String headerName : headerNames)
         {
             if (HttpHeader.IF_MATCH.is(headerName) ||
-                    HttpHeader.IF_MODIFIED_SINCE.is(headerName) ||
-                    HttpHeader.IF_NONE_MATCH.is(headerName) ||
-                    HttpHeader.IF_UNMODIFIED_SINCE.is(headerName))
+                HttpHeader.IF_MODIFIED_SINCE.is(headerName) ||
+                HttpHeader.IF_NONE_MATCH.is(headerName) ||
+                HttpHeader.IF_UNMODIFIED_SINCE.is(headerName))
             {
                 conditional = true;
                 break;
@@ -170,14 +172,14 @@ public class PushCacheFilter implements Filter
                     port = request.isSecure() ? 443 : 80;
             }
 
-            boolean referredFromHere = !_hosts.isEmpty()? _hosts.contains(host) : host.equals(request.getServerName());
-            referredFromHere &= !_ports.isEmpty()? _ports.contains(port) : port == request.getServerPort();
+            boolean referredFromHere = !_hosts.isEmpty() ? _hosts.contains(host) : host.equals(request.getServerName());
+            referredFromHere &= !_ports.isEmpty() ? _ports.contains(port) : port == request.getServerPort();
 
             if (referredFromHere)
             {
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
-                    String referrerPath = _useQueryInKey?referrerURI.getPathQuery():referrerURI.getPath();
+                    String referrerPath = _useQueryInKey ? referrerURI.getPathQuery() : referrerURI.getPath();
                     if (referrerPath == null)
                         referrerPath = "/";
                     if (referrerPath.startsWith(request.getContextPath() + "/"))

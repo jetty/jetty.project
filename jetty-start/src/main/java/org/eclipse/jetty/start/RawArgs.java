@@ -64,7 +64,7 @@ public class RawArgs implements Iterable<Entry>
         String source = sourceFile.toAbsolutePath().toString();
         for (String line : lines)
         {
-            addArg(line,source);
+            addArg(line, source);
         }
     }
 
@@ -81,7 +81,7 @@ public class RawArgs implements Iterable<Entry>
             return;
         }
 
-        args.add(new Entry(line,source));
+        args.add(new Entry(line, source));
     }
 
     @Override

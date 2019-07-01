@@ -16,12 +16,10 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.apache.jsp;
 
 import java.net.URL;
 import java.util.Collection;
-
 import javax.servlet.ServletContext;
 
 import org.apache.jasper.servlet.TldPreScanned;
@@ -33,25 +31,24 @@ import org.apache.tomcat.util.descriptor.tld.TldResourcePath;
  * Change to TldPreScanned to not require that the tlds have been
  * pre-scanned from a jar file, but rather may be files in the
  * file system.
- * 
+ *
  * This is important for running in the jetty maven plugin
  * environment in multi-module builds, where modules that contain tlds
  * may be in the reactor at the same time as a webapp being run with the
  * plugin. That means that the tlds will be used from their location in
  * the file system, rather than from their assembled jar.
- *
  */
 public class JettyTldPreScanned extends TldPreScanned
 {
     private final Collection<URL> _jettyPreScannedURLs;
-    
+
     public JettyTldPreScanned(ServletContext context, boolean namespaceAware, boolean validation, boolean blockExternal, Collection<URL> preScannedTlds)
     {
         super(context, namespaceAware, validation, blockExternal, preScannedTlds);
         _jettyPreScannedURLs = preScannedTlds;
     }
 
-    /** 
+    /**
      * @see org.apache.jasper.servlet.TldPreScanned#scanJars()
      */
     @Override
@@ -65,8 +62,8 @@ public class JettyTldPreScanned extends TldPreScanned
                 int a = str.indexOf("jar:");
                 int b = str.indexOf("META-INF");
                 if (b < 0)
-                    throw new IllegalStateException("Bad tld url: "+str);
-                
+                    throw new IllegalStateException("Bad tld url: " + str);
+
                 String path = str.substring(b);
                 if (a >= 0)
                 {
@@ -95,5 +92,4 @@ public class JettyTldPreScanned extends TldPreScanned
             }
         }
     }
-
 }

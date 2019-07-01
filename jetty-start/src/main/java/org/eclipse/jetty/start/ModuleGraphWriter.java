@@ -52,17 +52,17 @@ public class ModuleGraphWriter
     public void config(Props props)
     {
         String prefix = "jetty.graph.";
-        colorModuleBg = getProperty(props,prefix + "color.module.bg",colorModuleBg);
-        colorEnabledBg = getProperty(props,prefix + "color.enabled.bg",colorEnabledBg);
-        colorTransitiveBg = getProperty(props,prefix + "color.transitive.bg",colorTransitiveBg);
-        colorCellBg = getProperty(props,prefix + "color.cell.bg",colorCellBg);
-        colorHeaderBg = getProperty(props,prefix + "color.header.bg",colorHeaderBg);
-        colorModuleFont = getProperty(props,prefix + "color.font",colorModuleFont);
+        colorModuleBg = getProperty(props, prefix + "color.module.bg", colorModuleBg);
+        colorEnabledBg = getProperty(props, prefix + "color.enabled.bg", colorEnabledBg);
+        colorTransitiveBg = getProperty(props, prefix + "color.transitive.bg", colorTransitiveBg);
+        colorCellBg = getProperty(props, prefix + "color.cell.bg", colorCellBg);
+        colorHeaderBg = getProperty(props, prefix + "color.header.bg", colorHeaderBg);
+        colorModuleFont = getProperty(props, prefix + "color.font", colorModuleFont);
     }
 
     private String getProperty(Props props, String key, String defVal)
     {
-        String val = props.getString(key,defVal);
+        String val = props.getString(key, defVal);
         if (val == null)
         {
             return defVal;
@@ -77,10 +77,10 @@ public class ModuleGraphWriter
 
     public void write(Modules modules, Path outputFile) throws IOException
     {
-        try (BufferedWriter writer = Files.newBufferedWriter(outputFile,StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE); 
+        try (BufferedWriter writer = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
              PrintWriter out = new PrintWriter(writer);)
         {
-            writeHeaderMessage(out,outputFile);
+            writeHeaderMessage(out, outputFile);
 
             out.println();
             out.println("digraph modules {");
@@ -105,10 +105,10 @@ public class ModuleGraphWriter
             List<Module> enabled = modules.getEnabled();
 
             // Module Nodes
-            writeModules(out,modules,enabled);
+            writeModules(out, modules, enabled);
 
             // Module Relationships
-            writeRelationships(out,modules,enabled);
+            writeRelationships(out, modules, enabled);
 
             out.println("}");
             out.println();
@@ -125,21 +125,21 @@ public class ModuleGraphWriter
         out.println(" * ");
         out.println(" * To Generate Graph image using graphviz:");
         String filename = outputFile.getFileName().toString();
-        String basename = filename.substring(0,filename.indexOf('.'));
-        out.printf(" *   $ dot -Tpng -Goverlap=false -o %s.png %s%n",basename,filename);
+        String basename = filename.substring(0, filename.indexOf('.'));
+        out.printf(" *   $ dot -Tpng -Goverlap=false -o %s.png %s%n", basename, filename);
         out.println(" */");
     }
 
     private void writeModuleDetailHeader(PrintWriter out, String header)
     {
-        writeModuleDetailHeader(out,header,1);
+        writeModuleDetailHeader(out, header, 1);
     }
 
     private void writeModuleDetailHeader(PrintWriter out, String header, int count)
     {
         out.printf("  <TR>");
-        out.printf("<TD BGCOLOR=\"%s\" ALIGN=\"LEFT\"><I>",colorHeaderBg);
-        out.printf("%s%s</I></TD>",header,count > 1?"s":"");
+        out.printf("<TD BGCOLOR=\"%s\" ALIGN=\"LEFT\"><I>", colorHeaderBg);
+        out.printf("%s%s</I></TD>", header, count > 1 ? "s" : "");
         out.println("</TR>");
     }
 
@@ -147,17 +147,23 @@ public class ModuleGraphWriter
     {
         out.printf("  <TR>");
         StringBuilder escape = new StringBuilder();
-        for(char c: line.toCharArray()) {
-            switch(c) {
-                case '<': escape.append("&lt;"); break;
-                case '>': escape.append("&gt;"); break;
+        for (char c : line.toCharArray())
+        {
+            switch (c)
+            {
+                case '<':
+                    escape.append("&lt;");
+                    break;
+                case '>':
+                    escape.append("&gt;");
+                    break;
                 default:
                     escape.append(c);
                     break;
             }
         }
-        
-        out.printf("<TD BGCOLOR=\"%s\" ALIGN=\"LEFT\">%s</TD></TR>%n",colorCellBg,escape.toString());
+
+        out.printf("<TD BGCOLOR=\"%s\" ALIGN=\"LEFT\">%s</TD></TR>%n", colorCellBg, escape.toString());
     }
 
     private void writeModuleNode(PrintWriter out, Module module, boolean resolved)
@@ -174,47 +180,47 @@ public class ModuleGraphWriter
             color = colorTransitiveBg;
         }
 
-        out.printf("  \"%s\" [ color=\"%s\" label=<",module.getName(),color);
+        out.printf("  \"%s\" [ color=\"%s\" label=<", module.getName(), color);
         out.printf("<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"2\">%n");
-        out.printf("  <TR><TD ALIGN=\"LEFT\"><B>%s</B></TD></TR>%n",module.getName());
+        out.printf("  <TR><TD ALIGN=\"LEFT\"><B>%s</B></TD></TR>%n", module.getName());
 
         if (module.isEnabled())
         {
-            writeModuleDetailHeader(out,"ENABLED");
+            writeModuleDetailHeader(out, "ENABLED");
             for (String selection : module.getEnableSources())
             {
-                writeModuleDetailLine(out,"via: " + selection);
+                writeModuleDetailLine(out, "via: " + selection);
             }
         }
         else if (resolved)
         {
-            writeModuleDetailHeader(out,"TRANSITIVE");
+            writeModuleDetailHeader(out, "TRANSITIVE");
         }
 
         if (!module.getXmls().isEmpty())
         {
             List<String> xmls = module.getXmls();
-            writeModuleDetailHeader(out,"XML",xmls.size());
+            writeModuleDetailHeader(out, "XML", xmls.size());
             for (String xml : xmls)
             {
-                writeModuleDetailLine(out,xml);
+                writeModuleDetailLine(out, xml);
             }
         }
 
         if (!module.getLibs().isEmpty())
         {
             List<String> libs = module.getLibs();
-            writeModuleDetailHeader(out,"LIB",libs.size());
+            writeModuleDetailHeader(out, "LIB", libs.size());
             for (String lib : libs)
             {
-                writeModuleDetailLine(out,lib);
+                writeModuleDetailLine(out, lib);
             }
         }
 
         if (!module.getIniTemplate().isEmpty())
         {
             List<String> inis = module.getIniTemplate();
-            writeModuleDetailHeader(out,"INI Template",inis.size());
+            writeModuleDetailHeader(out, "INI Template", inis.size());
         }
 
         out.printf("</TABLE>>];%n");
@@ -228,10 +234,10 @@ public class ModuleGraphWriter
 
         out.println("  node [ labeljust = l ];");
 
-        for (Module module: allmodules)
+        for (Module module : allmodules)
         {
             boolean resolved = enabled.contains(module);
-            writeModuleNode(out,module,resolved);
+            writeModuleNode(out, module, resolved);
         }
     }
 
@@ -240,9 +246,13 @@ public class ModuleGraphWriter
         for (Module module : modules)
         {
             for (String depends : module.getDepends())
-                out.printf("    \"%s\" -> \"%s\";%n",module.getName(),depends);
+            {
+                out.printf("    \"%s\" -> \"%s\";%n", module.getName(), depends);
+            }
             for (String optional : module.getOptional())
-                out.printf("    \"%s\" => \"%s\";%n",module.getName(),optional);
+            {
+                out.printf("    \"%s\" => \"%s\";%n", module.getName(), optional);
+            }
         }
     }
 }

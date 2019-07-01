@@ -33,59 +33,57 @@ import java.util.jar.Manifest;
 
 import org.codehaus.plexus.util.SelectorUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 
-
-
 /**
  * SelectiveJarResource
  *
  * Selectively copies resources from a jar file based on includes/excludes.
- * 
  */
 public class SelectiveJarResource extends JarResource
-{  
+{
     private static final Logger LOG = Log.getLogger(SelectiveJarResource.class);
-    public static final List<String> DEFAULT_INCLUDES = Arrays.asList(new String[]{"**"});// No includes supplied, so set it to 'matches all'
+    public static final List<String> DEFAULT_INCLUDES = Arrays.asList(new String[]{
+        "**"
+    });// No includes supplied, so set it to 'matches all'
     public static final List<String> DEFAULT_EXCLUDES = Collections.emptyList(); //No includes, set to no exclusions
 
     List<String> _includes = null;
     List<String> _excludes = null;
     boolean _caseSensitive = false;
-    
+
     public SelectiveJarResource(URL url)
     {
         super(url);
     }
-  
+
     public SelectiveJarResource(URL url, boolean useCaches)
     {
         super(url, useCaches);
     }
-    
-    public void setCaseSensitive (boolean caseSensitive)
+
+    public void setCaseSensitive(boolean caseSensitive)
     {
         _caseSensitive = caseSensitive;
     }
-    
-    public void setIncludes (List<String> patterns)
+
+    public void setIncludes(List<String> patterns)
     {
         _includes = patterns;
     }
-    
-    
-    public void setExcludes (List<String> patterns)
+
+    public void setExcludes(List<String> patterns)
     {
         _excludes = patterns;
     }
-    
-    
-    protected boolean isIncluded (String name)
-    {    
-        for (String include:_includes)
+
+    protected boolean isIncluded(String name)
+    {
+        for (String include : _includes)
         {
             if (SelectorUtils.matchPath(include, name, _caseSensitive))
             {
@@ -94,23 +92,20 @@ public class SelectiveJarResource extends JarResource
         }
         return false;
     }
-    
-    protected boolean isExcluded (String name)
+
+    protected boolean isExcluded(String name)
     {
-        for (String exclude:_excludes)
+        for (String exclude : _excludes)
         {
-            if (SelectorUtils.matchPath (exclude, name, _caseSensitive))
+            if (SelectorUtils.matchPath(exclude, name, _caseSensitive))
             {
                 return true;
             }
         }
         return false;
     }
-    
-    
-  
 
-    /** 
+    /**
      * @see org.eclipse.jetty.util.resource.JarResource#copyTo(java.io.File)
      */
     @Override
@@ -120,41 +115,41 @@ public class SelectiveJarResource extends JarResource
             _includes = DEFAULT_INCLUDES;
         if (_excludes == null)
             _excludes = DEFAULT_EXCLUDES;
-        
+
         //Copy contents of the jar file to the given directory, 
         //using the includes and excludes patterns to control which
         //parts of the jar file are copied
         if (!exists())
             return;
-        
+
         String urlString = this.getURI().toASCIIString().trim();
         int endOfJarUrl = urlString.indexOf("!/");
-        int startOfJarUrl = (endOfJarUrl >= 0?4:0);
-        
+        int startOfJarUrl = (endOfJarUrl >= 0 ? 4 : 0);
+
         if (endOfJarUrl < 0)
-            throw new IOException("Not a valid jar url: "+urlString);
-        
+            throw new IOException("Not a valid jar url: " + urlString);
+
         URL jarFileURL = new URL(urlString.substring(startOfJarUrl, endOfJarUrl));
-     
+
         try (InputStream is = jarFileURL.openConnection().getInputStream();
-                JarInputStream jin = new JarInputStream(is))
+             JarInputStream jin = new JarInputStream(is))
         {
             JarEntry entry;
 
-            while((entry=jin.getNextJarEntry())!=null)
+            while ((entry = jin.getNextJarEntry()) != null)
             {
                 String entryName = entry.getName();
 
-                LOG.debug("Looking at "+entryName);
-                String dotCheck = entryName.replace('\\', '/');
+                LOG.debug("Looking at " + entryName);
+                String dotCheck = StringUtil.replace(entryName, '\\', '/');
                 dotCheck = URIUtil.canonicalPath(dotCheck);
                 if (dotCheck == null)
                 {
-                    LOG.info("Invalid entry: "+entryName);
+                    LOG.info("Invalid entry: " + entryName);
                     continue;
                 }
 
-                File file=new File(directory,entryName);
+                File file = new File(directory, entryName);
 
                 if (entry.isDirectory())
                 {
@@ -187,11 +182,11 @@ public class SelectiveJarResource extends JarResource
                             // Make file
                             try (OutputStream fout = new FileOutputStream(file))
                             {
-                                IO.copy(jin,fout);
+                                IO.copy(jin, fout);
                             }
 
                             // touch the file.
-                            if (entry.getTime()>=0)
+                            if (entry.getTime() >= 0)
                                 file.setLastModified(entry.getTime());
                         }
                         else
@@ -207,7 +202,7 @@ public class SelectiveJarResource extends JarResource
             {
                 if (isIncluded("META-INF") && !isExcluded("META-INF"))
                 {
-                    File metaInf = new File (directory, "META-INF");
+                    File metaInf = new File(directory, "META-INF");
                     metaInf.mkdir();
                     File f = new File(metaInf, "MANIFEST.MF");
                     try (OutputStream fout = new FileOutputStream(f))
@@ -218,5 +213,4 @@ public class SelectiveJarResource extends JarResource
             }
         }
     }
-    
 }

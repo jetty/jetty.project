@@ -31,15 +31,13 @@ import static java.util.EnumSet.noneOf;
 
 /**
  * The compliance for Cookie handling.
- *
  */
 public class CookieCompliance implements ComplianceViolation.Mode
 {
     enum Violation implements ComplianceViolation
     {
         COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Comma not valid as cookie-octet or separator"),
-        RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1","Reserved names no longer use '$' prefix")
-        ;
+        RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Reserved names no longer use '$' prefix");
 
         private final String url;
         private final String description;
@@ -55,6 +53,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
         {
             return name();
         }
+
         @Override
         public String getURL()
         {
@@ -71,13 +70,15 @@ public class CookieCompliance implements ComplianceViolation.Mode
     public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", noneOf(Violation.class));
     public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", allOf(Violation.class));
 
-    private final static List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265,RFC2965);
+    private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC2965);
 
     public static CookieCompliance valueOf(String name)
     {
         for (CookieCompliance compliance : KNOWN_MODES)
+        {
             if (compliance.getName().equals(name))
                 return compliance;
+        }
         return null;
     }
 

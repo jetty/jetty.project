@@ -48,15 +48,14 @@ public class PathMatchers
         }
     }
 
-    private static final char GLOB_CHARS[] = "*?".toCharArray();
-    private static final char SYNTAXED_GLOB_CHARS[] = "{}[]|:".toCharArray();
+    private static final char[] GLOB_CHARS = "*?".toCharArray();
+    private static final char[] SYNTAXED_GLOB_CHARS = "{}[]|:".toCharArray();
     private static final Path EMPTY_PATH = new File(".").toPath();
 
     /**
      * Convert a pattern to a Path object.
-     * 
-     * @param pattern
-     *            the raw pattern (can contain "glob:" or "regex:" syntax indicator)
+     *
+     * @param pattern the raw pattern (can contain "glob:" or "regex:" syntax indicator)
      * @return the Path version of the pattern provided.
      */
     private static Path asPath(final String pattern)
@@ -76,14 +75,14 @@ public class PathMatchers
     public static PathMatcher getMatcher(final String rawpattern)
     {
         FileSystem fs = FileSystems.getDefault();
-        
+
         String pattern = rawpattern;
-        
+
         // Strip trailing slash (if present)
         int lastchar = pattern.charAt(pattern.length() - 1);
         if (lastchar == '/' || lastchar == '\\')
         {
-            pattern = pattern.substring(0,pattern.length() - 1);
+            pattern = pattern.substring(0, pattern.length() - 1);
         }
 
         // If using FileSystem.getPathMatcher() with "glob:" or "regex:"
@@ -117,9 +116,8 @@ public class PathMatchers
 
     /**
      * Provide the non-glob / non-regex prefix on the pattern as a Path reference.
-     * 
-     * @param pattern
-     *            the pattern to test
+     *
+     * @param pattern the pattern to test
      * @return the Path representing the search root for the pattern provided.
      */
     public static Path getSearchRoot(final String pattern)
@@ -160,7 +158,7 @@ public class PathMatchers
 
                     // possible escaped sequence.
                     // only really interested in windows escape sequences "\\"
-                    int count = countChars(pattern,i+1,'\\');
+                    int count = countChars(pattern, i + 1, '\\');
                     if (count > 0)
                     {
                         // skip extra slashes
@@ -169,7 +167,7 @@ public class PathMatchers
                 }
                 else
                 {
-                    if (isGlob(c,syntaxed))
+                    if (isGlob(c, syntaxed))
                     {
                         break;
                     }
@@ -182,7 +180,7 @@ public class PathMatchers
             }
         }
 
-        String rootPath = root.substring(0,lastSep);
+        String rootPath = root.substring(0, lastSep);
         if (rootPath.length() <= 0)
         {
             return EMPTY_PATH;
@@ -211,9 +209,8 @@ public class PathMatchers
 
     /**
      * Tests if provided pattern is an absolute reference (or not)
-     * 
-     * @param pattern
-     *            the pattern to test
+     *
+     * @param pattern the pattern to test
      * @return true if pattern is an absolute reference.
      */
     public static boolean isAbsolute(final String pattern)
@@ -228,11 +225,9 @@ public class PathMatchers
 
     /**
      * Determine if part is a glob pattern.
-     * 
-     * @param part
-     *            the string to check
-     * @param syntaxed
-     *            true if overall pattern is syntaxed with <code>"glob:"</code> or <code>"regex:"</code>
+     *
+     * @param part the string to check
+     * @param syntaxed true if overall pattern is syntaxed with <code>"glob:"</code> or <code>"regex:"</code>
      * @return true if part has glob characters
      */
     private static boolean isGlob(char c, boolean syntaxed)

@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.time.Duration;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -100,6 +99,7 @@ public abstract class WebSocketServlet extends HttpServlet
      * configuration (which may be overriden by annotations) and mapping {@link WebSocketCreator}s.
      * This method assumes a single {@link FrameHandlerFactory} will be available as a bean on the
      * {@link ContextHandler}, which in practise will mostly the the Jetty WebSocket API factory.
+     *
      * @param factory the WebSocketServletFactory
      */
     protected abstract void configure(WebSocketServletFactory factory);
@@ -107,7 +107,7 @@ public abstract class WebSocketServlet extends HttpServlet
     /**
      * @return the instance of {@link FrameHandlerFactory} to be used to create the FrameHandler
      */
-    public abstract FrameHandlerFactory getFactory();
+    protected abstract FrameHandlerFactory getFactory();
 
     @Override
     public void init() throws ServletException
@@ -146,7 +146,7 @@ public abstract class WebSocketServlet extends HttpServlet
                 customizer.setOutputBufferSize(Integer.parseInt(max));
 
             max = getInitParameter("maxFrameSize");
-            if (max==null)
+            if (max == null)
                 max = getInitParameter("maxAllowedFrameSize");
             if (max != null)
                 customizer.setMaxFrameSize(Long.parseLong(max));
@@ -180,7 +180,6 @@ public abstract class WebSocketServlet extends HttpServlet
         // Handle normally
         super.service(req, resp);
     }
-
 
     private class CustomizedWebSocketServletFactory extends FrameHandler.ConfigurationCustomizer implements WebSocketServletFactory
     {

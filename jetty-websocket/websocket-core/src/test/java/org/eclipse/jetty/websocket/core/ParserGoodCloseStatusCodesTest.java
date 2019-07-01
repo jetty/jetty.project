@@ -18,17 +18,14 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,13 +60,11 @@ public class ParserGoodCloseStatusCodesTest
         );
     }
 
-    private ByteBufferPool bufferPool = new MappedByteBufferPool();
-
     @ParameterizedTest(name = "closeCode={0} {1}")
     @MethodSource("data")
     public void testGoodCloseCode(int closeCode, String description) throws InterruptedException
     {
-        ParserCapture capture = new ParserCapture(new Parser(bufferPool));
+        ParserCapture capture = new ParserCapture();
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);
@@ -93,7 +88,7 @@ public class ParserGoodCloseStatusCodesTest
     @MethodSource("data")
     public void testGoodCloseCode_WithReasonPhrase(int closeCode, String description) throws InterruptedException
     {
-        ParserCapture capture = new ParserCapture(new Parser(bufferPool));
+        ParserCapture capture = new ParserCapture();
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);

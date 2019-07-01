@@ -40,17 +40,17 @@ public class ResourceCacheTest
     public void testMutlipleSources1() throws Exception
     {
         ResourceCollection rc = new ResourceCollection(new String[]{
-                "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/one/",
-                "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/two/",
-                "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/three/"
+            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/one/",
+            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/two/",
+            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
 
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        CachedContentFactory rc3 = new CachedContentFactory(null,r[2],mime,false,false,CompressedContentFormat.NONE);
-        CachedContentFactory rc2 = new CachedContentFactory(rc3,r[1],mime,false,false,CompressedContentFormat.NONE);
-        CachedContentFactory rc1 = new CachedContentFactory(rc2,r[0],mime,false,false,CompressedContentFormat.NONE);
+        CachedContentFactory rc3 = new CachedContentFactory(null, r[2], mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc2 = new CachedContentFactory(rc3, r[1], mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc1 = new CachedContentFactory(rc2, r[0], mime, false, false, CompressedContentFormat.NONE);
 
         assertEquals(getContent(rc1, "1.txt"), "1 - one");
         assertEquals(getContent(rc1, "2.txt"), "2 - two");
@@ -63,32 +63,31 @@ public class ResourceCacheTest
         assertEquals(null, getContent(rc3, "1.txt"));
         assertEquals(getContent(rc3, "2.txt"), "2 - three");
         assertEquals(getContent(rc3, "3.txt"), "3 - three");
-
     }
 
     @Test
     public void testUncacheable() throws Exception
     {
         ResourceCollection rc = new ResourceCollection(new String[]{
-                "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/one/",
-                "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/two/",
-                "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/three/"
+            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/one/",
+            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/two/",
+            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
 
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        CachedContentFactory rc3 = new CachedContentFactory(null,r[2],mime,false,false,CompressedContentFormat.NONE);
-        CachedContentFactory rc2 = new CachedContentFactory(rc3,r[1],mime,false,false,CompressedContentFormat.NONE)
+        CachedContentFactory rc3 = new CachedContentFactory(null, r[2], mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc2 = new CachedContentFactory(rc3, r[1], mime, false, false, CompressedContentFormat.NONE)
         {
             @Override
             public boolean isCacheable(Resource resource)
             {
-                return super.isCacheable(resource) && resource.getName().indexOf("2.txt")<0;
+                return super.isCacheable(resource) && resource.getName().indexOf("2.txt") < 0;
             }
         };
 
-        CachedContentFactory rc1 = new CachedContentFactory(rc2,r[0],mime,false,false,CompressedContentFormat.NONE);
+        CachedContentFactory rc1 = new CachedContentFactory(rc2, r[0], mime, false, false, CompressedContentFormat.NONE);
 
         assertEquals(getContent(rc1, "1.txt"), "1 - one");
         assertEquals(getContent(rc1, "2.txt"), "2 - two");
@@ -101,120 +100,119 @@ public class ResourceCacheTest
         assertEquals(null, getContent(rc3, "1.txt"));
         assertEquals(getContent(rc3, "2.txt"), "2 - three");
         assertEquals(getContent(rc3, "3.txt"), "3 - three");
-
     }
-
 
     @Test
     public void testResourceCache() throws Exception
     {
         final Resource directory;
-        File[] files=new File[10];
-        String[] names=new String[files.length];
+        File[] files = new File[10];
+        String[] names = new String[files.length];
         CachedContentFactory cache;
 
-        for (int i=0;i<files.length;i++)
+        for (int i = 0; i < files.length; i++)
         {
-            files[i]=File.createTempFile("R-"+i+"-",".txt");
+            files[i] = File.createTempFile("R-" + i + "-", ".txt");
             files[i].deleteOnExit();
-            names[i]=files[i].getName();
+            names[i] = files[i].getName();
             try (OutputStream out = new FileOutputStream(files[i]))
             {
-                for (int j=0;j<(i*10-1);j++)
+                for (int j = 0; j < (i * 10 - 1); j++)
+                {
                     out.write(' ');
+                }
                 out.write('\n');
             }
         }
 
-        directory=Resource.newResource(files[0].getParentFile().getAbsolutePath());
+        directory = Resource.newResource(files[0].getParentFile().getAbsolutePath());
 
-
-        cache=new CachedContentFactory(null,directory,new MimeTypes(),false,false,CompressedContentFormat.NONE);
+        cache = new CachedContentFactory(null, directory, new MimeTypes(), false, false, CompressedContentFormat.NONE);
 
         cache.setMaxCacheSize(95);
         cache.setMaxCachedFileSize(85);
         cache.setMaxCachedFiles(4);
 
-        assertTrue(cache.getContent("does not exist",4096)==null);
-        assertTrue(cache.getContent(names[9],4096) instanceof ResourceHttpContent);
-        assertTrue(cache.getContent(names[9],4096).getIndirectBuffer()!=null);
+        assertTrue(cache.getContent("does not exist", 4096) == null);
+        assertTrue(cache.getContent(names[9], 4096) instanceof ResourceHttpContent);
+        assertTrue(cache.getContent(names[9], 4096).getIndirectBuffer() != null);
 
         HttpContent content;
-        content=cache.getContent(names[8],4096);
-        assertTrue(content!=null);
-        assertEquals(80,content.getContentLengthValue());
-        assertEquals(0,cache.getCachedSize());
-        
+        content = cache.getContent(names[8], 4096);
+        assertTrue(content != null);
+        assertEquals(80, content.getContentLengthValue());
+        assertEquals(0, cache.getCachedSize());
+
         if (org.junit.jupiter.api.condition.OS.LINUX.isCurrentOs())
         {
             // Initially not using memory mapped files
             content.getDirectBuffer();
-            assertEquals(80,cache.getCachedSize());
+            assertEquals(80, cache.getCachedSize());
 
             // with both types of buffer loaded, this is too large for cache
             content.getIndirectBuffer();
-            assertEquals(0,cache.getCachedSize());
-            assertEquals(0,cache.getCachedFiles());
+            assertEquals(0, cache.getCachedSize());
+            assertEquals(0, cache.getCachedFiles());
 
-            cache=new CachedContentFactory(null,directory,new MimeTypes(),true,false,CompressedContentFormat.NONE);
+            cache = new CachedContentFactory(null, directory, new MimeTypes(), true, false, CompressedContentFormat.NONE);
             cache.setMaxCacheSize(95);
             cache.setMaxCachedFileSize(85);
             cache.setMaxCachedFiles(4);
-            
-            content=cache.getContent(names[8],4096);
+
+            content = cache.getContent(names[8], 4096);
             content.getDirectBuffer();
-            assertEquals(cache.isUseFileMappedBuffer()?0:80,cache.getCachedSize());
+            assertEquals(cache.isUseFileMappedBuffer() ? 0 : 80, cache.getCachedSize());
 
             // with both types of buffer loaded, this is not too large for cache because
             // mapped buffers don't count, so we can continue
         }
 
         content.getIndirectBuffer();
-        assertEquals(80,cache.getCachedSize());
-        assertEquals(1,cache.getCachedFiles());
+        assertEquals(80, cache.getCachedSize());
+        assertEquals(1, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[1],4096);
-        assertEquals(80,cache.getCachedSize());
+        content = cache.getContent(names[1], 4096);
+        assertEquals(80, cache.getCachedSize());
         content.getIndirectBuffer();
-        assertEquals(90,cache.getCachedSize());
-        assertEquals(2,cache.getCachedFiles());
+        assertEquals(90, cache.getCachedSize());
+        assertEquals(2, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[2],4096);
+        content = cache.getContent(names[2], 4096);
         content.getIndirectBuffer();
-        assertEquals(30,cache.getCachedSize());
-        assertEquals(2,cache.getCachedFiles());
+        assertEquals(30, cache.getCachedSize());
+        assertEquals(2, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[3],4096);
+        content = cache.getContent(names[3], 4096);
         content.getIndirectBuffer();
-        assertEquals(60,cache.getCachedSize());
-        assertEquals(3,cache.getCachedFiles());
+        assertEquals(60, cache.getCachedSize());
+        assertEquals(3, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[4],4096);
+        content = cache.getContent(names[4], 4096);
         content.getIndirectBuffer();
-        assertEquals(90,cache.getCachedSize());
-        assertEquals(3,cache.getCachedFiles());
+        assertEquals(90, cache.getCachedSize());
+        assertEquals(3, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[5],4096);
+        content = cache.getContent(names[5], 4096);
         content.getIndirectBuffer();
-        assertEquals(90,cache.getCachedSize());
-        assertEquals(2,cache.getCachedFiles());
+        assertEquals(90, cache.getCachedSize());
+        assertEquals(2, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[6],4096);
+        content = cache.getContent(names[6], 4096);
         content.getIndirectBuffer();
-        assertEquals(60,cache.getCachedSize());
-        assertEquals(1,cache.getCachedFiles());
+        assertEquals(60, cache.getCachedSize());
+        assertEquals(1, cache.getCachedFiles());
 
         Thread.sleep(200);
 
@@ -222,52 +220,51 @@ public class ResourceCacheTest
         {
             out.write(' ');
         }
-        content=cache.getContent(names[7],4096);
+        content = cache.getContent(names[7], 4096);
         content.getIndirectBuffer();
-        assertEquals(70,cache.getCachedSize());
-        assertEquals(1,cache.getCachedFiles());
+        assertEquals(70, cache.getCachedSize());
+        assertEquals(1, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[6],4096);
+        content = cache.getContent(names[6], 4096);
         content.getIndirectBuffer();
-        assertEquals(71,cache.getCachedSize());
-        assertEquals(2,cache.getCachedFiles());
+        assertEquals(71, cache.getCachedSize());
+        assertEquals(2, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[0],4096);
+        content = cache.getContent(names[0], 4096);
         content.getIndirectBuffer();
-        assertEquals(72,cache.getCachedSize());
-        assertEquals(3,cache.getCachedFiles());
+        assertEquals(72, cache.getCachedSize());
+        assertEquals(3, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[1],4096);
+        content = cache.getContent(names[1], 4096);
         content.getIndirectBuffer();
-        assertEquals(82,cache.getCachedSize());
-        assertEquals(4,cache.getCachedFiles());
+        assertEquals(82, cache.getCachedSize());
+        assertEquals(4, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[2],4096);
+        content = cache.getContent(names[2], 4096);
         content.getIndirectBuffer();
-        assertEquals(32,cache.getCachedSize());
-        assertEquals(4,cache.getCachedFiles());
+        assertEquals(32, cache.getCachedSize());
+        assertEquals(4, cache.getCachedFiles());
 
         Thread.sleep(200);
 
-        content=cache.getContent(names[3],4096);
+        content = cache.getContent(names[3], 4096);
         content.getIndirectBuffer();
-        assertEquals(61,cache.getCachedSize());
-        assertEquals(4,cache.getCachedFiles());
+        assertEquals(61, cache.getCachedSize());
+        assertEquals(4, cache.getCachedFiles());
 
         Thread.sleep(200);
 
         cache.flushCache();
-        assertEquals(0,cache.getCachedSize());
-        assertEquals(0,cache.getCachedFiles());
-
+        assertEquals(0, cache.getCachedSize());
+        assertEquals(0, cache.getCachedFiles());
 
         cache.flushCache();
     }
@@ -276,13 +273,13 @@ public class ResourceCacheTest
     public void testNoextension() throws Exception
     {
         ResourceCollection rc = new ResourceCollection(new String[]{
-                "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/four/"
+            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/four/"
         });
 
         Resource[] resources = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        CachedContentFactory cache = new CachedContentFactory(null,resources[0],mime,false,false,CompressedContentFormat.NONE);
+        CachedContentFactory cache = new CachedContentFactory(null, resources[0], mime, false, false, CompressedContentFormat.NONE);
 
         assertEquals(getContent(cache, "four.txt"), "4 - four");
         assertEquals(getContent(cache, "four"), "4 - four (no extension)");
@@ -291,7 +288,7 @@ public class ResourceCacheTest
     static String getContent(CachedContentFactory rc, String path) throws Exception
     {
         HttpContent content = rc.getContent(path, rc.getMaxCachedFileSize());
-        if (content==null)
+        if (content == null)
             return null;
 
         return BufferUtil.toString(content.getIndirectBuffer());

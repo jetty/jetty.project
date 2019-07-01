@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server.sockets.echo;
 
+import java.io.IOException;
 import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
 
 @ServerEndpoint("/echo/text/basic/stateless")
 public class EchoStatelessBasicTextSocket

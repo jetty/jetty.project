@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.javax.server.browser;
 
 import java.util.Collections;
 import java.util.List;
-
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;

@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
  * only a credential that can be checked against the password.
  * <p>
  * This class includes an implementation for unix Crypt an MD5 digest.
- * 
+ *
  * @see Password
  */
 public abstract class Credential implements Serializable
@@ -46,10 +46,9 @@ public abstract class Credential implements Serializable
 
     /**
      * Check a credential
-     * 
-     * @param credentials
-     *            The credential to check against. This may either be another Credential object, a Password object or a String which is interpreted by this
-     *            credential.
+     *
+     * @param credentials The credential to check against. This may either be another Credential object, a Password object or a String which is interpreted by this
+     * credential.
      * @return True if the credentials indicated that the shared secret is known to both this Credential and the passed credential.
      */
     public abstract boolean check(Object credentials);
@@ -58,9 +57,8 @@ public abstract class Credential implements Serializable
      * Get a credential from a String. If the credential String starts with a known Credential type (eg "CRYPT:" or "MD5:" ) then a Credential of that type is
      * returned. Otherwise, it tries to find a credential provider whose prefix matches with the start of the credential String. Else the credential is assumed
      * to be a Password.
-     * 
-     * @param credential
-     *            String representation of the credential
+     *
+     * @param credential String representation of the credential
      * @return A Credential or Password instance.
      */
     public static Credential getCredential(String credential)
@@ -105,7 +103,9 @@ public abstract class Credential implements Serializable
         int l1 = known.length();
         int l2 = unknown.length();
         for (int i = 0; i < l2; ++i)
-            result &= ((l1==0)?unknown.charAt(l2-i-1):known.charAt(i%l1)) == unknown.charAt(i);
+        {
+            result &= ((l1 == 0) ? unknown.charAt(l2 - i - 1) : known.charAt(i % l1)) == unknown.charAt(i);
+        }
         return result && l1 == l2;
     }
 
@@ -127,7 +127,9 @@ public abstract class Credential implements Serializable
         int l1 = known.length;
         int l2 = unknown.length;
         for (int i = 0; i < l2; ++i)
-            result &= ((l1==0)?unknown[l2-i-1]:known[i%l1]) == unknown[i];
+        {
+            result &= ((l1 == 0) ? unknown[l2 - i - 1] : known[i % l1]) == unknown[i];
+        }
         return result && l1 == l2;
     }
 
@@ -143,7 +145,7 @@ public abstract class Credential implements Serializable
 
         Crypt(String cooked)
         {
-            _cooked = cooked.startsWith(Crypt.__TYPE)?cooked.substring(__TYPE.length()):cooked;
+            _cooked = cooked.startsWith(Crypt.__TYPE) ? cooked.substring(__TYPE.length()) : cooked;
         }
 
         @Override
@@ -153,7 +155,7 @@ public abstract class Credential implements Serializable
                 credentials = new String((char[])credentials);
             if (!(credentials instanceof String) && !(credentials instanceof Password))
                 LOG.warn("Can't check " + credentials.getClass() + " against CRYPT");
-            return stringEquals(_cooked, UnixCrypt.crypt(credentials.toString(),_cooked));
+            return stringEquals(_cooked, UnixCrypt.crypt(credentials.toString(), _cooked));
         }
 
         @Override

@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.plus.jndi;
 
-import org.junit.jupiter.api.Test;
-
 import javax.naming.NamingException;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -28,9 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Unit tests for class {@link NamingEntryUtil}.
  *
  * @see NamingEntryUtil
- *
  */
-public class NamingEntryUtilTest{
+public class NamingEntryUtilTest
+{
 
     @Test
     public void testBindToENCWithEmptyStringAndBindToENCThrowsNamingException()
@@ -41,7 +41,6 @@ public class NamingEntryUtilTest{
     @Test
     public void testBindToENCWithNullAndNullThrowsNamingException()
     {
-        assertThrows( NamingException.class, () -> NamingEntryUtil.bindToENC( null, null, "@=<9"));
+        assertThrows(NamingException.class, () -> NamingEntryUtil.bindToENC(null, null, "@=<9"));
     }
-
 }

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +41,6 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -63,9 +59,11 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ThreadStarvationTest
 {
@@ -95,11 +93,13 @@ public class ThreadStarvationTest
         try (OutputStream output = Files.newOutputStream(resourcePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE))
         {
             byte[] chunk = new byte[1024];
-            Arrays.fill(chunk,(byte)'X');
-            chunk[chunk.length-2]='\r';
-            chunk[chunk.length-1]='\n';
+            Arrays.fill(chunk, (byte)'X');
+            chunk[chunk.length - 2] = '\r';
+            chunk[chunk.length - 1] = '\n';
             for (int i = 0; i < 256 * 1024; ++i)
+            {
                 output.write(chunk);
+            }
         }
 
         final CountDownLatch writePending = new CountDownLatch(1);
@@ -130,13 +130,13 @@ public class ThreadStarvationTest
         _server.start();
 
         List<Socket> sockets = new ArrayList<>();
-        for (int i = 0; i < maxThreads*2; ++i)
+        for (int i = 0; i < maxThreads * 2; ++i)
         {
             Socket socket = new Socket("localhost", connector.getLocalPort());
             sockets.add(socket);
             OutputStream output = socket.getOutputStream();
-            String request = "" +
-                    "GET /" + resourceName + " HTTP/1.1\r\n" +
+            String request =
+                "GET /" + resourceName + " HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -161,51 +161,51 @@ public class ThreadStarvationTest
                 @Override
                 public void run()
                 {
-                    long total=0;
+                    long total = 0;
                     try
                     {
                         // look for CRLFCRLF
                         StringBuilder header = new StringBuilder();
-                        int state=0;
-                        while (state<4 && header.length()<2048)
+                        int state = 0;
+                        while (state < 4 && header.length() < 2048)
                         {
-                            int ch=input.read();
-                            if (ch<0)
+                            int ch = input.read();
+                            if (ch < 0)
                                 break;
                             header.append((char)ch);
-                            switch(state)
+                            switch (state)
                             {
                                 case 0:
-                                    if (ch=='\r')
-                                        state=1;
+                                    if (ch == '\r')
+                                        state = 1;
                                     break;
                                 case 1:
-                                    if (ch=='\n')
-                                        state=2;
+                                    if (ch == '\n')
+                                        state = 2;
                                     else
-                                        state=0;
+                                        state = 0;
                                     break;
                                 case 2:
-                                    if (ch=='\r')
-                                        state=3;
+                                    if (ch == '\r')
+                                        state = 3;
                                     else
-                                        state=0;
+                                        state = 0;
                                     break;
                                 case 3:
-                                    if (ch=='\n')
-                                        state=4;
+                                    if (ch == '\n')
+                                        state = 4;
                                     else
-                                        state=0;
+                                        state = 0;
                                     break;
                             }
                         }
 
-                        while (total<expected)
+                        while (total < expected)
                         {
-                            int read=input.read(buffer);
-                            if (read<0)
+                            int read = input.read(buffer);
+                            if (read < 0)
                                 break;
-                            total+=read;
+                            total += read;
                         }
                     }
                     catch (IOException e)
@@ -229,15 +229,17 @@ public class ThreadStarvationTest
 
         for (Exchanger<Long> x : totals)
         {
-            Long total = x.exchange(-1L,10000,TimeUnit.SECONDS);
-            assertEquals(expected,total.longValue());
+            Long total = x.exchange(-1L, 10000, TimeUnit.SECONDS);
+            assertEquals(expected, total.longValue());
         }
-        
+
         // We could read everything, good.
         for (Socket socket : sockets)
+        {
             socket.close();
+        }
     }
-    
+
     @Test
     public void testFailureStarvation() throws Exception
     {
@@ -246,14 +248,12 @@ public class ThreadStarvationTest
             int acceptors = 0;
             int selectors = 1;
             int maxThreads = 10;
-            final int barried=maxThreads-acceptors-selectors*2;
+            final int barried = maxThreads - acceptors - selectors * 2;
             final CyclicBarrier barrier = new CyclicBarrier(barried);
-
 
             QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, maxThreads);
             threadPool.setDetailedDump(true);
             _server = new Server(threadPool);
-
 
             ServerConnector connector = new ServerConnector(_server, acceptors, selectors)
             {
@@ -280,12 +280,12 @@ public class ThreadStarvationTest
                 @Override
                 public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
                 {
-                    int c=count.getAndIncrement();
+                    int c = count.getAndIncrement();
                     try
                     {
-                        if (c<barried)
+                        if (c < barried)
                         {
-                            barrier.await(10,TimeUnit.SECONDS);
+                            barrier.await(10, TimeUnit.SECONDS);
                         }
                     }
                     catch (InterruptedException | BrokenBarrierException | TimeoutException e)
@@ -303,13 +303,13 @@ public class ThreadStarvationTest
             _server.start();
 
             List<Socket> sockets = new ArrayList<>();
-            for (int i = 0; i < maxThreads*2; ++i)
+            for (int i = 0; i < maxThreads * 2; ++i)
             {
                 Socket socket = new Socket("localhost", connector.getLocalPort());
                 sockets.add(socket);
                 OutputStream output = socket.getOutputStream();
-                String request = "" +
-                        "GET / HTTP/1.1\r\n" +
+                String request =
+                    "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
                         //                    "Connection: close\r\n" +
                         "\r\n";
@@ -330,46 +330,46 @@ public class ThreadStarvationTest
                     @Override
                     public void run()
                     {
-                        int read=0;
+                        int read = 0;
                         try
                         {
                             // look for CRLFCRLF
                             StringBuilder header = new StringBuilder();
-                            int state=0;
-                            while (state<4 && header.length()<2048)
+                            int state = 0;
+                            while (state < 4 && header.length() < 2048)
                             {
-                                int ch=input.read();
-                                if (ch<0)
+                                int ch = input.read();
+                                if (ch < 0)
                                     break;
                                 header.append((char)ch);
-                                switch(state)
+                                switch (state)
                                 {
                                     case 0:
-                                        if (ch=='\r')
-                                            state=1;
+                                        if (ch == '\r')
+                                            state = 1;
                                         break;
                                     case 1:
-                                        if (ch=='\n')
-                                            state=2;
+                                        if (ch == '\n')
+                                            state = 2;
                                         else
-                                            state=0;
+                                            state = 0;
                                         break;
                                     case 2:
-                                        if (ch=='\r')
-                                            state=3;
+                                        if (ch == '\r')
+                                            state = 3;
                                         else
-                                            state=0;
+                                            state = 0;
                                         break;
                                     case 3:
-                                        if (ch=='\n')
-                                            state=4;
+                                        if (ch == '\n')
+                                            state = 4;
                                         else
-                                            state=0;
+                                            state = 0;
                                         break;
                                 }
                             }
 
-                            read=input.read(buffer);
+                            read = input.read(buffer);
                         }
                         catch (IOException e)
                         {
@@ -392,14 +392,16 @@ public class ThreadStarvationTest
 
             for (Exchanger<Integer> x : totals)
             {
-                Integer read = x.exchange(-1,10,TimeUnit.SECONDS);
-                assertEquals(-1,read.intValue());
+                Integer read = x.exchange(-1, 10, TimeUnit.SECONDS);
+                assertEquals(-1, read.intValue());
             }
 
             // We could read everything, good.
             for (Socket socket : sockets)
+            {
                 socket.close();
-            
+            }
+
             _server.stop();
         }
     }

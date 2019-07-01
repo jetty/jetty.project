@@ -18,10 +18,9 @@
 
 package org.eclipse.jetty.start;
 
+import java.util.Collection;
 
 import org.junit.jupiter.api.Test;
-
-import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -85,5 +84,4 @@ public class UtilsTest
         assertEquals(8, objectArray.length);
         assertEquals("null%.g[{2G<1null%.g[{2G<1null%.g[{2G<1null%.g[{2G<1null%.g[{2G<1null%.g[{2G<1null%.g[{2G<1null", joinedString);
     }
-
 }

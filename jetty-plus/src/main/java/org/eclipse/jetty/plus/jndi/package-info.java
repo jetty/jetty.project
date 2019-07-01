@@ -20,4 +20,3 @@
  * Jetty Plus : Limited JEE Jndi Support
  */
 package org.eclipse.jetty.plus.jndi;
-

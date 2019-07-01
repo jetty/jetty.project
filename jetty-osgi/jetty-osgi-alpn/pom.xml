@@ -20,12 +20,12 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <configuration>
-            <instructions>
-              <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
-              <Bundle-Name>Jetty OSGi ALPN Fragment</Bundle-Name>
-              <Import-Package>!javax.*;!org.eclipse.jetty.*</Import-Package>
-              <Fragment-Host>system.bundle;extension:=framework</Fragment-Host>
-            </instructions>
+          <instructions>
+            <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
+            <Bundle-Name>Jetty OSGi ALPN Fragment</Bundle-Name>
+            <Import-Package>!javax.*;!org.eclipse.jetty.*</Import-Package>
+            <Fragment-Host>system.bundle;extension:=framework</Fragment-Host>
+          </instructions>
         </configuration>
       </plugin>
     </plugins>

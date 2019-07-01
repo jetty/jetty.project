@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.concurrent.TimeUnit;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -27,9 +29,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
-import java.util.concurrent.TimeUnit;
-
-@State( Scope.Benchmark)
+@State(Scope.Benchmark)
 @Threads(4)
 @Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 9, time = 800, timeUnit = TimeUnit.MILLISECONDS)
@@ -42,23 +42,22 @@ public class StringIsEmptyBenchmark
 
     private static final String LONG = "beer.com/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde";
 
-
     @Benchmark
-    @BenchmarkMode( Mode.Throughput)
+    @BenchmarkMode(Mode.Throughput)
     public void shortIsEmpty()
     {
         StringUtil.isEmpty(SHORT);
     }
 
     @Benchmark
-    @BenchmarkMode( Mode.Throughput)
+    @BenchmarkMode(Mode.Throughput)
     public void mediumIsEmpty()
     {
         StringUtil.isEmpty(MEDIUM);
     }
 
     @Benchmark
-    @BenchmarkMode( Mode.Throughput)
+    @BenchmarkMode(Mode.Throughput)
     public void longIsEmpty()
     {
         StringUtil.isEmpty(LONG);

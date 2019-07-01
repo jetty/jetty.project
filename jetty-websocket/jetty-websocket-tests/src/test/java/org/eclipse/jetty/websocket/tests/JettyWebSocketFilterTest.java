@@ -27,8 +27,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,8 +53,8 @@ public class JettyWebSocketFilterTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.addMapping("/", (req, resp)->new EchoSocket());
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+            container.addMapping("/", (req, resp) -> new EchoSocket()));
         server.start();
 
         client = new WebSocketClient();
@@ -72,10 +71,10 @@ public class JettyWebSocketFilterTest
     @Test
     public void test() throws Exception
     {
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/filterPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
-        try(Session session = connect.get(5, TimeUnit.SECONDS))
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             session.getRemote().sendString("hello world");
         }

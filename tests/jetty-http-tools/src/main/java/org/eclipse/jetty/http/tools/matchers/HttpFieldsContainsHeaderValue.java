@@ -60,7 +60,7 @@ public class HttpFieldsContainsHeaderValue extends TypeSafeMatcher<HttpFields>
             return true;
 
         // Simple equals
-        if(this.value == field.getValue())
+        if (this.value == field.getValue())
             return true;
 
         // Try individual value logic

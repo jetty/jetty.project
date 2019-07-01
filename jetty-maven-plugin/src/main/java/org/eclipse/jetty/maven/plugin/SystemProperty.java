@@ -20,23 +20,21 @@ package org.eclipse.jetty.maven.plugin;
 
 /**
  * SystemProperty
- * 
+ *
  * Provides the ability to set System properties
- * for the mojo execution. A value will only 
+ * for the mojo execution. A value will only
  * be set if it is not set already. That is, if
  * it was set on the command line or by the system,
- * it won't be overridden by settings in the 
+ * it won't be overridden by settings in the
  * plugin's configuration.
- *
  */
 public class SystemProperty
 {
 
-
     private String name;
     private String value;
     private boolean isSet;
-    
+
     /**
      * @return Returns the name.
      */
@@ -44,6 +42,7 @@ public class SystemProperty
     {
         return this.name;
     }
+
     /**
      * @param name The name to set.
      */
@@ -57,10 +56,11 @@ public class SystemProperty
         return this.name;
     }
 
-    public void setKey (String name)
+    public void setKey(String name)
     {
         this.name = name;
     }
+
     /**
      * @return Returns the value.
      */
@@ -68,6 +68,7 @@ public class SystemProperty
     {
         return this.value;
     }
+
     /**
      * @param value The value to set.
      */
@@ -76,28 +77,27 @@ public class SystemProperty
         this.value = value;
     }
 
-    
-    public boolean isSet ()
+    public boolean isSet()
     {
         return isSet;
     }
-    
-    /** Set a System.property with this value
+
+    /**
+     * Set a System.property with this value
      * if it is not already set.
      */
     void setIfNotSetAlready()
     {
         if (System.getProperty(getName()) == null)
         {
-            System.setProperty(getName(), (getValue()==null?"":getValue()));
-            isSet=true;
+            System.setProperty(getName(), (getValue() == null ? "" : getValue()));
+            isSet = true;
         }
     }
-    
+
     void setAnyway()
     {
-        System.setProperty(getName(), (getValue()==null?"":getValue()));
-        isSet=true;
+        System.setProperty(getName(), (getValue() == null ? "" : getValue()));
+        isSet = true;
     }
-
 }

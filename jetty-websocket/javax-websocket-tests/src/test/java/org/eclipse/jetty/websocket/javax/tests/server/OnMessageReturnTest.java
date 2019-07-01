@@ -23,7 +23,6 @@ import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -134,5 +133,4 @@ public class OnMessageReturnTest
             wsb.stop();
         }
     }
-
 }

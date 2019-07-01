@@ -21,7 +21,6 @@ package org.eclipse.jetty.jaas.spi;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
@@ -29,7 +28,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/** 
+/**
  * JDBCLoginModule
  * <p>
  * JAAS LoginModule to retrieve user information from
@@ -49,34 +48,31 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
 
     /**
      * Get a connection from the DriverManager
-     * @see AbstractDatabaseLoginModule#getConnection()
+     *
      * @return the connection for this datasource
      * @throws Exception if unable to get the connection
+     * @see AbstractDatabaseLoginModule#getConnection()
      */
     @Override
-    public Connection getConnection ()
-    throws Exception
+    public Connection getConnection()
+        throws Exception
     {
-        if (!((dbDriver != null)
-                &&
-                (dbUrl != null)))
-            throw new IllegalStateException ("Database connection information not configured");
+        if (!((dbDriver != null) && (dbUrl != null)))
+            throw new IllegalStateException("Database connection information not configured");
 
-        if(LOG.isDebugEnabled())LOG.debug("Connecting using dbDriver="+dbDriver+"+ dbUserName="+dbUserName+", dbPassword="+dbUrl);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connecting using dbDriver=" + dbDriver + "+ dbUserName=" + dbUserName + ", dbPassword=" + dbUrl);
 
-        return DriverManager.getConnection (dbUrl,
-                dbUserName,
-                dbPassword);
+        return DriverManager.getConnection(dbUrl,
+            dbUserName,
+            dbPassword);
     }
 
-
-
-    /* ------------------------------------------------ */
-    /** 
+    /**
      * Init LoginModule.
      * <p>
      * Called once by JAAS after new instance created.
-     * 
+     *
      * @param subject the subject
      * @param callbackHandler the callback handler
      * @param sharedState the shared state map
@@ -85,8 +81,8 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
     @Override
     public void initialize(Subject subject,
                            CallbackHandler callbackHandler,
-                           Map<String,?> sharedState,
-                           Map<String,?> options)
+                           Map<String, ?> sharedState,
+                           Map<String, ?> options)
     {
         try
         {
@@ -109,7 +105,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
         }
         catch (Exception e)
         {
-            throw new IllegalStateException (e.toString());
+            throw new IllegalStateException(e.toString());
         }
     }
 }

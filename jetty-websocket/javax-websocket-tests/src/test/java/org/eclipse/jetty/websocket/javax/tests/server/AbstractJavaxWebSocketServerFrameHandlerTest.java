@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.server.Server;
@@ -45,14 +44,14 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
         server = new Server();
         context = new ServletContextHandler();
         server.setHandler(context);
-        container = JavaxWebSocketServletContainerInitializer.configureContext(context);
+        JavaxWebSocketServletContainerInitializer.configure(context, null);
         server.start();
+        container = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
     }
 
     @AfterAll
     public static void stopContainer() throws Exception
     {
-        container.stop();
         server.stop();
     }
 

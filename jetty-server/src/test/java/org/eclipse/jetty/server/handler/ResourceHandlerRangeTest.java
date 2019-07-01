@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStream;
@@ -37,6 +34,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 @Disabled("Unfixed range bug - Issue #107")
 public class ResourceHandlerRangeTest
@@ -56,7 +56,7 @@ public class ResourceHandlerRangeTest
 
         File dir = MavenTestingUtils.getTargetTestingDir(ResourceHandlerRangeTest.class.getSimpleName());
         FS.ensureEmpty(dir);
-        File rangeFile = new File(dir,"range.txt");
+        File rangeFile = new File(dir, "range.txt");
         try (FileWriter writer = new FileWriter(rangeFile))
         {
             writer.append("0123456789");
@@ -80,7 +80,7 @@ public class ResourceHandlerRangeTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("http://%s:%d/",host,port));
+        serverUri = new URI(String.format("http://%s:%d/", host, port));
     }
 
     @AfterAll
@@ -96,7 +96,7 @@ public class ResourceHandlerRangeTest
 
         HttpURLConnection uconn = (HttpURLConnection)uri.toURL().openConnection();
         uconn.setRequestMethod("GET");
-        uconn.addRequestProperty("Range","bytes=" + 5 + "-");
+        uconn.addRequestProperty("Range", "bytes=" + 5 + "-");
 
         int contentLength = Integer.parseInt(uconn.getHeaderField("Content-Length"));
 
@@ -106,7 +106,7 @@ public class ResourceHandlerRangeTest
             response = IO.toString(is);
         }
 
-        assertThat("Content Length",contentLength,is(5));
-        assertThat("Response Content",response,is("56789"));
+        assertThat("Content Length", contentLength, is(5));
+        assertThat("Response Content", response, is("56789"));
     }
 }

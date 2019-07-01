@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -209,7 +208,7 @@ public class HttpClientTransportDynamicTest
         client = new HttpClient(new HttpClientTransportDynamic(new ClientConnector(), h1c));
         client.start();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .send();
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
@@ -228,7 +227,7 @@ public class HttpClientTransportDynamicTest
         client.start();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
 //                .version(HttpVersion.HTTP_2)
-                .send();
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
@@ -269,27 +268,27 @@ public class HttpClientTransportDynamicTest
 
         // Make a HTTP/1.1 request.
         ContentResponse h1cResponse = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme.asString())
-                .version(HttpVersion.HTTP_1_1)
-                .send();
+            .scheme(scheme.asString())
+            .version(HttpVersion.HTTP_1_1)
+            .send();
         assertEquals(HttpStatus.OK_200, h1cResponse.getStatus());
 
         // Make a HTTP/2 request.
         ContentResponse h2cResponse = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme.asString())
-                .version(HttpVersion.HTTP_2)
-                .send();
+            .scheme(scheme.asString())
+            .version(HttpVersion.HTTP_2)
+            .send();
         assertEquals(HttpStatus.OK_200, h2cResponse.getStatus());
 
         // We must have 2 different destinations with the same origin.
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
         assertEquals(1, destinations.stream()
-                .map(HttpDestination.class::cast)
-                .map(HttpDestination::getKey)
-                .map(HttpDestination.Key::getOrigin)
-                .distinct()
-                .count());
+            .map(HttpDestination.class::cast)
+            .map(HttpDestination::getKey)
+            .map(HttpDestination.Key::getOrigin)
+            .distinct()
+            .count());
     }
 
     @Test
@@ -308,26 +307,26 @@ public class HttpClientTransportDynamicTest
 
         // Make a request, should be HTTP/1.1 because of the order of protocols on server.
         ContentResponse h1cResponse = client.newRequest("localhost", connector.getLocalPort())
-                .scheme("https")
-                .send();
+            .scheme("https")
+            .send();
         assertEquals(HttpStatus.OK_200, h1cResponse.getStatus());
 
         // Now clearly specify HTTP/2 in the client.
         ContentResponse h2cResponse = client.newRequest("localhost", connector.getLocalPort())
-                .scheme("https")
-                .version(HttpVersion.HTTP_2)
-                .send();
+            .scheme("https")
+            .version(HttpVersion.HTTP_2)
+            .send();
         assertEquals(HttpStatus.OK_200, h2cResponse.getStatus());
 
         // We must have 2 different destinations with the same origin.
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
         assertEquals(1, destinations.stream()
-                .map(HttpDestination.class::cast)
-                .map(HttpDestination::getKey)
-                .map(HttpDestination.Key::getOrigin)
-                .distinct()
-                .count());
+            .map(HttpDestination.class::cast)
+            .map(HttpDestination::getKey)
+            .map(HttpDestination.Key::getOrigin)
+            .distinct()
+            .count());
     }
 
     @Test
@@ -346,8 +345,8 @@ public class HttpClientTransportDynamicTest
 
         // The client prefers h2 over h1, and use of TLS and ALPN will allow the fallback to h1.
         ContentResponse h1cResponse = client.newRequest("localhost", connector.getLocalPort())
-                .scheme("https")
-                .send();
+            .scheme("https")
+            .send();
         assertEquals(HttpStatus.OK_200, h1cResponse.getStatus());
     }
 
@@ -367,8 +366,8 @@ public class HttpClientTransportDynamicTest
         // The client forces HTTP/2, but the server cannot speak it, so the request fails.
         // There is no fallback to HTTP/1 because the protocol version is set explicitly.
         assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
-                .version(HttpVersion.HTTP_2)
-                .send());
+            .version(HttpVersion.HTTP_2)
+            .send());
     }
 
     @Test
@@ -446,11 +445,11 @@ public class HttpClientTransportDynamicTest
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
         assertEquals(1, destinations.stream()
-                .map(HttpDestination.class::cast)
-                .map(HttpDestination::getKey)
-                .map(HttpDestination.Key::getOrigin)
-                .distinct()
-                .count());
+            .map(HttpDestination.class::cast)
+            .map(HttpDestination::getKey)
+            .map(HttpDestination.Key::getOrigin)
+            .distinct()
+            .count());
     }
 
     @Test
@@ -472,38 +471,38 @@ public class HttpClientTransportDynamicTest
 
         // Make a clear-text request using HTTP/1.1.
         ContentResponse h1cResponse = client.newRequest("localhost", clearConnector.getLocalPort())
-                .send();
+            .send();
         assertEquals(HttpStatus.OK_200, h1cResponse.getStatus());
 
         // Make a clear-text request using HTTP/2.
         ContentResponse h2cResponse = client.newRequest("localhost", clearConnector.getLocalPort())
-                .version(HttpVersion.HTTP_2)
-                .send();
+            .version(HttpVersion.HTTP_2)
+            .send();
         assertEquals(HttpStatus.OK_200, h2cResponse.getStatus());
 
         // Make an encrypted request without specifying the protocol.
         // Because the server prefers h2, this request will be HTTP/2, but will
         // generate a different destination than an explicit HTTP/2 request (like below).
         ContentResponse h1Response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme("https")
-                .send();
+            .scheme("https")
+            .send();
         assertEquals(HttpStatus.OK_200, h1Response.getStatus());
 
         // Make an encrypted request using explicitly HTTP/2.
         ContentResponse h2Response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme("https")
-                .version(HttpVersion.HTTP_2)
-                .send();
+            .scheme("https")
+            .version(HttpVersion.HTTP_2)
+            .send();
         assertEquals(HttpStatus.OK_200, h2Response.getStatus());
 
         // There should be 4 destinations with 2 origins.
         List<Destination> destinations = client.getDestinations();
         assertEquals(4, destinations.size());
         assertEquals(2, destinations.stream()
-                .map(HttpDestination.class::cast)
-                .map(HttpDestination::getKey)
-                .map(HttpDestination.Key::getOrigin)
-                .distinct()
-                .count());
+            .map(HttpDestination.class::cast)
+            .map(HttpDestination::getKey)
+            .map(HttpDestination.Key::getOrigin)
+            .distinct()
+            .count());
     }
 }

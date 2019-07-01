@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
-
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
-import javax.websocket.Extension;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.Decoder;
+import javax.websocket.Encoder;
+import javax.websocket.Extension;
+
+import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
 
 public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
 {

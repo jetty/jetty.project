@@ -76,7 +76,6 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
     {
         private final ALPNServerConnection alpnConnection;
 
-
         private ALPNCallback(ALPNServerConnection connection)
         {
             alpnConnection = connection;

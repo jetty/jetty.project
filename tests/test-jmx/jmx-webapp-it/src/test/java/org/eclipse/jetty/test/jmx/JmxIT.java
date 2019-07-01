@@ -25,7 +25,6 @@ import java.net.HttpURLConnection;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
-
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
@@ -94,7 +93,7 @@ public class JmxIT
         context.addConfiguration(new AnnotationConfiguration());
 
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                ".*/jetty-servlet-api-[^/]*\\.jar$");
+            ".*/jetty-servlet-api-[^/]*\\.jar$");
         _server.setHandler(context);
 
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());

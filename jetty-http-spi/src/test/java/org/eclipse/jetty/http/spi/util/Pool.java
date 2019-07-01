@@ -20,7 +20,6 @@ package org.eclipse.jetty.http.spi.util;
 
 /**
  * This class holds the default pool constants
- *
  */
 public enum Pool
 {

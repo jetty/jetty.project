@@ -18,23 +18,23 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
-import org.eclipse.jetty.websocket.core.CloseException;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-import org.eclipse.jetty.websocket.javax.common.MessageSink;
-
-import javax.websocket.CloseReason;
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
 import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import javax.websocket.CloseReason;
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+
+import org.eclipse.jetty.websocket.core.CloseException;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.javax.common.MessageSink;
 
 public class DecodedTextStreamMessageSink<T> extends DecodedMessageSink<Decoder.TextStream<T>>
 {
     public DecodedTextStreamMessageSink(JavaxWebSocketSession session,
-        Decoder.TextStream<T> decoder,
-        MethodHandle methodHandle)
+                                        Decoder.TextStream<T> decoder,
+                                        MethodHandle methodHandle)
         throws NoSuchMethodException, IllegalAccessException
     {
         super(session, decoder, methodHandle);

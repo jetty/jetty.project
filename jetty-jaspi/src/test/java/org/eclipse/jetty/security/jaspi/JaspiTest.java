@@ -51,35 +51,34 @@ public class JaspiTest
 {
     Server _server;
     LocalConnector _connector;
+
     public class TestLoginService extends AbstractLoginService
     {
         protected Map<String, UserPrincipal> _users = new HashMap<>();
         protected Map<String, String[]> _roles = new HashMap();
-     
-      
 
         public TestLoginService(String name)
         {
             setName(name);
         }
 
-        public void putUser (String username, Credential credential, String[] roles)
+        public void putUser(String username, Credential credential, String[] roles)
         {
-            UserPrincipal userPrincipal = new UserPrincipal(username,credential);
+            UserPrincipal userPrincipal = new UserPrincipal(username, credential);
             _users.put(username, userPrincipal);
             _roles.put(username, roles);
         }
-        
-        /** 
+
+        /**
          * @see org.eclipse.jetty.security.AbstractLoginService#loadRoleInfo(org.eclipse.jetty.security.AbstractLoginService.UserPrincipal)
          */
         @Override
         protected String[] loadRoleInfo(UserPrincipal user)
         {
-           return _roles.get(user.getName());
+            return _roles.get(user.getName());
         }
 
-        /** 
+        /**
          * @see org.eclipse.jetty.security.AbstractLoginService#loadUserInfo(java.lang.String)
          */
         @Override
@@ -88,111 +87,111 @@ public class JaspiTest
             return _users.get(username);
         }
     }
-    
+
     @BeforeEach
     public void before() throws Exception
     {
-        System.setProperty("org.apache.geronimo.jaspic.configurationFile","src/test/resources/jaspi.xml");
+        System.setProperty("org.apache.geronimo.jaspic.configurationFile", "src/test/resources/jaspi.xml");
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-        
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
-        
+
         TestLoginService loginService = new TestLoginService("TestRealm");
-        loginService.putUser("user",new Password("password"),new String[]{"users"});
-        loginService.putUser("admin",new Password("secret"),new String[]{"users","admins"});
+        loginService.putUser("user", new Password("password"), new String[]{"users"});
+        loginService.putUser("admin", new Password("secret"), new String[]{"users", "admins"});
         _server.addBean(loginService);
-        
+
         ContextHandler context = new ContextHandler();
         contexts.addHandler(context);
         context.setContextPath("/ctx");
-        
+
         JaspiAuthenticatorFactory jaspiAuthFactory = new JaspiAuthenticatorFactory();
-        
+
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
         context.setHandler(security);
         security.setAuthenticatorFactory(jaspiAuthFactory);
         // security.setAuthenticator(new BasicAuthenticator());
-       
-        Constraint constraint = new Constraint("All","users");
+
+        Constraint constraint = new Constraint("All", "users");
         constraint.setAuthenticate(true);
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/jaspi/*");
         mapping.setConstraint(constraint);
         security.addConstraintMapping(mapping);
-        
+
         TestHandler handler = new TestHandler();
         security.setHandler(handler);
-        
+
         ContextHandler other = new ContextHandler();
         contexts.addHandler(other);
         other.setContextPath("/other");
         ConstraintSecurityHandler securityOther = new ConstraintSecurityHandler();
         other.setHandler(securityOther);
         securityOther.setAuthenticatorFactory(jaspiAuthFactory);
-        securityOther.addConstraintMapping(mapping);        
+        securityOther.addConstraintMapping(mapping);
         securityOther.setHandler(new TestHandler());
-        
+
         _server.start();
     }
-    
+
     @AfterEach
     public void after() throws Exception
     {
         _server.stop();
     }
-    
+
     @Test
     public void testNoConstraint() throws Exception
     {
         String response = _connector.getResponse("GET /ctx/test HTTP/1.0\n\n");
-        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
-    
+
     @Test
     public void testConstraintNoAuth() throws Exception
     {
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n\n");
-        assertThat(response,startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response,Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
     }
-    
+
     @Test
     public void testConstraintWrongAuth() throws Exception
     {
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" +
             "Authorization: Basic " + Base64.getEncoder().encodeToString("user:wrong".getBytes(ISO_8859_1)) +
             "\n\n");
-        assertThat(response,startsWith("HTTP/1.1 401 Unauthorized"));
-        assertThat(response,Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
     }
-    
+
     @Test
     public void testConstraintAuth() throws Exception
     {
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" +
             "Authorization: Basic " + Base64.getEncoder().encodeToString("user:password".getBytes(ISO_8859_1)) +
             "\n\n");
-        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
-    
+
     @Test
     public void testOtherNoAuth() throws Exception
     {
         String response = _connector.getResponse("GET /other/test HTTP/1.0\n\n");
-        assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
     }
-    
+
     @Test
     public void testOtherAuth() throws Exception
     {
-        String response = _connector.getResponse("GET /other/test HTTP/1.0\n"+
-                                                  "X-Forwarded-User: user\n\n");
-        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        String response = _connector.getResponse("GET /other/test HTTP/1.0\n" +
+            "X-Forwarded-User: user\n\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
-    
+
     public class TestHandler extends AbstractHandler
     {
 
@@ -203,7 +202,7 @@ public class JaspiTest
             response.setStatus(200);
             response.setContentType("text/plain");
             response.getWriter().println("All OK");
-            response.getWriter().println("requestURI="+request.getRequestURI());
+            response.getWriter().println("requestURI=" + request.getRequestURI());
         }
     }
 }

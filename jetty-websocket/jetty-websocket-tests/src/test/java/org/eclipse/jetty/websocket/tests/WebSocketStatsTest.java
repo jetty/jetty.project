@@ -34,15 +34,14 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +58,7 @@ public class WebSocketStatsTest
         public void configure(JettyWebSocketServletFactory factory)
         {
             factory.setAutoFragment(false);
-            factory.addMapping("/",(req, resp)->new EchoSocket());
+            factory.addMapping("/", (req, resp) -> new EchoSocket());
         }
     }
 
@@ -97,7 +96,7 @@ public class WebSocketStatsTest
         contextHandler.addServlet(MyWebSocketServlet.class, "/testPath");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
         client = new WebSocketClient();
 
         server.start();
@@ -115,17 +114,16 @@ public class WebSocketStatsTest
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator generator = new Generator(bufferPool);
-        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength()+10, true);
+        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength() + 10, true);
         int pos = BufferUtil.flipToFill(buffer);
         generator.generateWholeFrame(frame, buffer);
         return buffer.position() - pos;
     }
 
-
     @Test
     public void echoStatsTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:"+connector.getLocalPort()+"/testPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/testPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
 
@@ -162,8 +160,8 @@ public class WebSocketStatsTest
         final long closeFrameSize = getFrameByteSize(closeFrame);
         final int maskSize = 4; // We use 4 byte mask for client frames in WSConnection
 
-        final long expectedSent = upgradeSentBytes + numMessages*textFrameSize + closeFrameSize;
-        final long expectedReceived = upgradeReceivedBytes + numMessages*(textFrameSize+maskSize) + closeFrameSize+maskSize;
+        final long expectedSent = upgradeSentBytes + numMessages * textFrameSize + closeFrameSize;
+        final long expectedReceived = upgradeReceivedBytes + numMessages * (textFrameSize + maskSize) + closeFrameSize + maskSize;
 
         assertThat(statistics.getSentBytes(), is(expectedSent));
         assertThat(statistics.getReceivedBytes(), is(expectedReceived));

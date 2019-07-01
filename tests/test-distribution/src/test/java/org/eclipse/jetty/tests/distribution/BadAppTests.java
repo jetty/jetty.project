@@ -48,9 +48,9 @@ public class BadAppTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         try (DistributionTester.Run run1 = distribution.start("--add-to-start=http,deploy"))
         {
@@ -59,9 +59,9 @@ public class BadAppTests extends AbstractDistributionTest
 
             // Setup webapps directory
             distribution.installBaseResource("badapp/badapp.war",
-                    "webapps/badapp.war");
+                "webapps/badapp.war");
             distribution.installBaseResource("badapp/badapp_throwonunavailable_true.xml",
-                    "webapps/badapp.xml");
+                "webapps/badapp.xml");
 
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
@@ -85,9 +85,9 @@ public class BadAppTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         try (DistributionTester.Run run1 = distribution.start("--add-to-start=http,deploy"))
         {
@@ -96,9 +96,9 @@ public class BadAppTests extends AbstractDistributionTest
 
             // Setup webapps directory
             distribution.installBaseResource("badapp/badapp.war",
-                    "webapps/badapp.war");
+                "webapps/badapp.war");
             distribution.installBaseResource("badapp/badapp_throwonunavailable_false.xml",
-                    "webapps/badapp.xml");
+                "webapps/badapp.xml");
 
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
@@ -127,9 +127,9 @@ public class BadAppTests extends AbstractDistributionTest
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
 
         try (DistributionTester.Run run1 = distribution.start("--add-to-start=http,deploy"))
         {
@@ -138,7 +138,7 @@ public class BadAppTests extends AbstractDistributionTest
 
             // Setup webapps directory
             distribution.installBaseResource("badapp/badapp.war",
-                    "webapps/badapp.war");
+                "webapps/badapp.war");
 
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))

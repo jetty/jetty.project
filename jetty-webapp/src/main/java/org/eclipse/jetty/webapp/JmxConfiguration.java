@@ -30,10 +30,9 @@ import org.eclipse.jetty.util.log.Logger;
  * be able to see the org.eclipse.jetty.jmx package.   This class is defined
  * in the webapp package, as it implements the {@link Configuration} interface,
  * which is unknown to the jmx package.  However, the corresponding {@link ServiceLoader}
- * resource is defined in the jmx package, so that this configuration only be 
+ * resource is defined in the jmx package, so that this configuration only be
  * loaded if the jetty-jmx jars are on the classpath.
  * </p>
- *
  */
 public class JmxConfiguration extends AbstractConfiguration
 {
@@ -50,7 +49,7 @@ public class JmxConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.jmx.ObjectMBean")!=null;
+            return Loader.loadClass("org.eclipse.jetty.jmx.ObjectMBean") != null;
         }
         catch (Throwable e)
         {

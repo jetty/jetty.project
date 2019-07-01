@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -30,11 +29,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.jasper.servlet.JspServlet;
 
-
 /**
  * JettyJspServlet
  *
- * Wrapper for the jsp servlet that handles receiving requests mapped from 
+ * Wrapper for the jsp servlet that handles receiving requests mapped from
  * jsp-property-groups. Mappings could be wildcard urls like "/*", which would
  * include welcome files, but we need those to be handled by the DefaultServlet.
  */
@@ -42,14 +40,10 @@ public class JettyJspServlet extends JspServlet
 {
 
     /**
-     * 
+     *
      */
     private static final long serialVersionUID = -5387857473125086791L;
 
-    
-    
-    
-    
     @Override
     public void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
@@ -59,16 +53,16 @@ public class JettyJspServlet extends JspServlet
         else
             throw new ServletException("Request not HttpServletRequest");
 
-        String servletPath=null;
-        String pathInfo=null;
-        if (request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI)!=null)
+        String servletPath = null;
+        String pathInfo = null;
+        if (request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null)
         {
-            servletPath=(String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
-            pathInfo=(String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
-            if (servletPath==null)
+            servletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
+            if (servletPath == null)
             {
-                servletPath=request.getServletPath();
-                pathInfo=request.getPathInfo();
+                servletPath = request.getServletPath();
+                pathInfo = request.getPathInfo();
             }
         }
         else
@@ -76,9 +70,9 @@ public class JettyJspServlet extends JspServlet
             servletPath = request.getServletPath();
             pathInfo = request.getPathInfo();
         }
-        
-        String pathInContext = addPaths(servletPath,pathInfo);
-    
+
+        String pathInContext = addPaths(servletPath, pathInfo);
+
         String jspFile = getInitParameter("jspFile");
 
         //if this is a forced-path from a jsp-file, we want the jsp servlet to handle it,
@@ -92,7 +86,7 @@ public class JettyJspServlet extends JspServlet
                 return;
             }
             else
-            {      
+            {
                 //check if it resolves to a directory
                 String realPath = getServletContext().getRealPath(pathInContext);
                 if (realPath != null)
@@ -107,7 +101,7 @@ public class JettyJspServlet extends JspServlet
                 }
             }
         }
-        
+
         //fall through to the normal jsp servlet handling
         super.service(req, resp);
     }
@@ -121,10 +115,10 @@ public class JettyJspServlet extends JspServlet
     {
         if (servletPath.isEmpty())
             return pathInfo;
-       
-        if (pathInfo==null)
+
+        if (pathInfo == null)
             return servletPath;
-        
-        return servletPath+pathInfo;
+
+        return servletPath + pathInfo;
     }
 }

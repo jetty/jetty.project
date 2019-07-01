@@ -50,7 +50,8 @@ public class HttpFieldsContainsHeaderKey extends TypeSafeMatcher<HttpFields>
         return fields.containsKey(this.keyName);
     }
 
-    public static Matcher<HttpFields> containsKey(String keyName) {
+    public static Matcher<HttpFields> containsKey(String keyName)
+    {
         return new HttpFieldsContainsHeaderKey(keyName);
     }
 }

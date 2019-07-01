@@ -43,117 +43,101 @@ import org.apache.maven.project.MavenProject;
 import org.eclipse.jetty.maven.plugin.utils.MavenProjectHelper;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-
 /**
- *  This goal is used in-situ on a Maven project without first requiring that the project 
- *  is assembled into a war, saving time during the development cycle.
- *  <p>
- *  The plugin forks a parallel lifecycle to ensure that the "compile" phase has been completed before invoking Jetty. This means
- *  that you do not need to explicitly execute a "mvn compile" first. It also means that a "mvn clean jetty:run" will ensure that
- *  a full fresh compile is done before invoking Jetty.
- *  <p>
- *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and automatically performing a 
- *  hot redeploy when necessary. This allows the developer to concentrate on coding changes to the project using their IDE of choice and have those changes
- *  immediately and transparently reflected in the running web container, eliminating development time that is wasted on rebuilding, reassembling and redeploying.
- *  <p>
- *  You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
- *  This can be used, for example, to deploy a static webapp that is not part of your maven build. 
- *  <p>
- *  There is a <a href="http://www.eclipse.org/jetty/documentation/current/maven-and-jetty.html">reference guide</a> to the configuration parameters for this plugin.
- * 
- *  Runs jetty directly from a maven project
+ * This goal is used in-situ on a Maven project without first requiring that the project
+ * is assembled into a war, saving time during the development cycle.
+ * <p>
+ * The plugin forks a parallel lifecycle to ensure that the "compile" phase has been completed before invoking Jetty. This means
+ * that you do not need to explicitly execute a "mvn compile" first. It also means that a "mvn clean jetty:run" will ensure that
+ * a full fresh compile is done before invoking Jetty.
+ * <p>
+ * Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and automatically performing a
+ * hot redeploy when necessary. This allows the developer to concentrate on coding changes to the project using their IDE of choice and have those changes
+ * immediately and transparently reflected in the running web container, eliminating development time that is wasted on rebuilding, reassembling and redeploying.
+ * <p>
+ * You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
+ * This can be used, for example, to deploy a static webapp that is not part of your maven build.
+ * <p>
+ * There is a <a href="http://www.eclipse.org/jetty/documentation/current/maven-and-jetty.html">reference guide</a> to the configuration parameters for this plugin.
+ *
+ * Runs jetty directly from a maven project
  */
-@Mojo( name = "run", requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "run", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class JettyRunMojo extends AbstractJettyMojo
 {
-    public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
+    public static final String DEFAULT_WEBAPP_SRC = "src" + File.separator + "main" + File.separator + "webapp";
     public static final String FAKE_WEBAPP = "webapp-tmp";
-    
-    
 
     /**
      * If true, the &lt;testOutputDirectory&gt;
      * and the dependencies of &lt;scope&gt;test&lt;scope&gt;
      * will be put first on the runtime classpath.
-     *
      */
-    @Parameter(alias="useTestClasspath", defaultValue="false")
+    @Parameter(alias = "useTestClasspath", defaultValue = "false")
     protected boolean useTestScope;
-    
-  
+
     /**
      * The default location of the web.xml file. Will be used
      * if &lt;webApp&gt;&lt;descriptor&gt; is not set.
-     *
      */
-    @Parameter(defaultValue="${maven.war.webxml}", readonly = true)
+    @Parameter(defaultValue = "${maven.war.webxml}", readonly = true)
     protected String webXml;
-    
-    
+
     /**
      * The directory containing generated classes.
-     *
      */
-    @Parameter(defaultValue="${project.build.outputDirectory}", required = true)
+    @Parameter(defaultValue = "${project.build.outputDirectory}", required = true)
     protected File classesDirectory;
-    
+
     /**
      * An optional pattern for includes/excludes of classes in the classesDirectory
-     *
      */
     @Parameter
     protected ScanPattern scanClassesPattern;
 
     /**
      * The directory containing generated test classes.
-     *
      */
-    @Parameter(defaultValue="${project.build.testOutputDirectory}", required = true)
+    @Parameter(defaultValue = "${project.build.testOutputDirectory}", required = true)
     protected File testClassesDirectory;
-    
+
     /**
      * An optional pattern for includes/excludes of classes in the testClassesDirectory
-     *
      */
     @Parameter
     protected ScanPattern scanTestClassesPattern;
 
     /**
      * Root directory for all html/jsp etc files
-     *
      */
-    @Parameter(defaultValue="${maven.war.src}")
+    @Parameter(defaultValue = "${maven.war.src}")
     protected File webAppSourceDirectory;
-    
- 
+
     /**
      * List of files or directories to additionally periodically scan for changes. Optional.
      */
     @Parameter
     protected File[] scanTargets;
-    
-    
+
     /**
      * List of directories with ant-style &lt;include&gt; and &lt;exclude&gt; patterns
      * for extra targets to periodically scan for changes. Can be used instead of,
      * or in conjunction with &lt;scanTargets&gt;.Optional.
-     *
      */
     @Parameter
     protected ScanTargetPattern[] scanTargetPatterns;
 
-    
     /**
      * maven-war-plugin reference
      */
     protected WarPluginInfo warPluginInfo;
-    
-    
+
     /**
      * List of deps that are wars
      */
@@ -161,7 +145,7 @@ public class JettyRunMojo extends AbstractJettyMojo
 
     protected Resource originalBaseResource;
 
-     /**
+    /**
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
      */
     @Override
@@ -173,48 +157,48 @@ public class JettyRunMojo extends AbstractJettyMojo
 
     /**
      * Verify the configuration given in the pom.
-     * 
+     *
      * @see AbstractJettyMojo#checkPomConfiguration()
      */
     @Override
-    public boolean checkPomConfiguration () throws MojoExecutionException
+    public boolean checkPomConfiguration() throws MojoExecutionException
     {
         // check the location of the static content/jsps etc
         try
         {
             if ((webAppSourceDirectory == null) || !webAppSourceDirectory.exists())
-            {  
-                getLog().info("webAppSourceDirectory"+(webAppSourceDirectory == null ? " not set." : (webAppSourceDirectory.getAbsolutePath()+" does not exist."))+" Trying "+DEFAULT_WEBAPP_SRC);
-                webAppSourceDirectory = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);             
+            {
+                getLog().info("webAppSourceDirectory" + (webAppSourceDirectory == null ? " not set." : (webAppSourceDirectory.getAbsolutePath() + " does not exist.")) + " Trying " + DEFAULT_WEBAPP_SRC);
+                webAppSourceDirectory = new File(project.getBasedir(), DEFAULT_WEBAPP_SRC);
                 if (!webAppSourceDirectory.exists())
                 {
-                    getLog().info("webAppSourceDirectory "+webAppSourceDirectory.getAbsolutePath()+" does not exist. Trying "+project.getBuild().getDirectory()+File.separator+FAKE_WEBAPP);
-                    
+                    getLog().info("webAppSourceDirectory " + webAppSourceDirectory.getAbsolutePath() + " does not exist. Trying " + project.getBuild().getDirectory() + File.separator + FAKE_WEBAPP);
+
                     //try last resort of making a fake empty dir
                     File target = new File(project.getBuild().getDirectory());
                     webAppSourceDirectory = new File(target, FAKE_WEBAPP);
                     if (!webAppSourceDirectory.exists())
-                        webAppSourceDirectory.mkdirs();              
+                        webAppSourceDirectory.mkdirs();
                 }
             }
             else
-                getLog().info( "Webapp source directory = " + webAppSourceDirectory.getCanonicalPath());
+                getLog().info("Webapp source directory = " + webAppSourceDirectory.getCanonicalPath());
         }
         catch (IOException e)
         {
             throw new MojoExecutionException("Webapp source directory does not exist", e);
         }
-        
+
         // check reload mechanic
-        if ( !"automatic".equalsIgnoreCase( reload ) && !"manual".equalsIgnoreCase( reload ) )
+        if (!"automatic".equalsIgnoreCase(reload) && !"manual".equalsIgnoreCase(reload))
         {
-            throw new MojoExecutionException( "invalid reload mechanic specified, must be 'automatic' or 'manual'" );
+            throw new MojoExecutionException("invalid reload mechanic specified, must be 'automatic' or 'manual'");
         }
         else
         {
-            getLog().info("Reload Mechanic: " + reload );
+            getLog().info("Reload Mechanic: " + reload);
         }
-        getLog().info( "nonBlocking:" + nonBlocking );
+        getLog().info("nonBlocking:" + nonBlocking);
 
         // check the classes to form a classpath with
         try
@@ -223,12 +207,12 @@ public class JettyRunMojo extends AbstractJettyMojo
             if (classesDirectory != null)
             {
                 if (!classesDirectory.exists())
-                    getLog().info( "Classes directory "+ classesDirectory.getCanonicalPath()+ " does not exist");
+                    getLog().info("Classes directory " + classesDirectory.getCanonicalPath() + " does not exist");
                 else
                     getLog().info("Classes = " + classesDirectory.getCanonicalPath());
             }
             else
-                getLog().info("Classes directory not set");         
+                getLog().info("Classes directory not set");
         }
         catch (IOException e)
         {
@@ -238,9 +222,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         return true;
     }
 
-   
-
-
     @Override
     public void finishConfigurationBeforeStart() throws Exception
     {
@@ -248,59 +229,57 @@ public class JettyRunMojo extends AbstractJettyMojo
         super.finishConfigurationBeforeStart();
     }
 
-
-
-
-    /** 
+    /**
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureWebApplication()
      */
     @Override
     public void configureWebApplication() throws Exception
     {
-       super.configureWebApplication();
-       
-       //Set up the location of the webapp.
-       //There are 2 parts to this: setWar() and setBaseResource(). On standalone jetty,
-       //the former could be the location of a packed war, while the latter is the location
-       //after any unpacking. With this mojo, you are running an unpacked, unassembled webapp,
-       //so the two locations should be equal.
-       Resource webAppSourceDirectoryResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
-       if (webApp.getWar() == null)
-           webApp.setWar(webAppSourceDirectoryResource.toString());
+        super.configureWebApplication();
 
-       //The first time we run, remember the original base dir
-       if (originalBaseResource == null)
-       {
-           if (webApp.getBaseResource() == null)
-               originalBaseResource = webAppSourceDirectoryResource;
-           else
-               originalBaseResource = webApp.getBaseResource();
-       }
+        //Set up the location of the webapp.
+        //There are 2 parts to this: setWar() and setBaseResource(). On standalone jetty,
+        //the former could be the location of a packed war, while the latter is the location
+        //after any unpacking. With this mojo, you are running an unpacked, unassembled webapp,
+        //so the two locations should be equal.
+        Resource webAppSourceDirectoryResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
+        if (webApp.getWar() == null)
+            webApp.setWar(webAppSourceDirectoryResource.toString());
 
-       //On every subsequent re-run set it back to the original base dir before
-       //we might have applied any war overlays onto it
-       webApp.setBaseResource(originalBaseResource);
+        //The first time we run, remember the original base dir
+        if (originalBaseResource == null)
+        {
+            if (webApp.getBaseResource() == null)
+                originalBaseResource = webAppSourceDirectoryResource;
+            else
+                originalBaseResource = webApp.getBaseResource();
+        }
 
-       if (classesDirectory != null)
-           webApp.setClasses (classesDirectory);
-       if (useTestScope && (testClassesDirectory != null))
-           webApp.setTestClasses (testClassesDirectory);
+        //On every subsequent re-run set it back to the original base dir before
+        //we might have applied any war overlays onto it
+        webApp.setBaseResource(originalBaseResource);
+
+        if (classesDirectory != null)
+            webApp.setClasses(classesDirectory);
+        if (useTestScope && (testClassesDirectory != null))
+            webApp.setTestClasses(testClassesDirectory);
 
         MavenProjectHelper mavenProjectHelper = new MavenProjectHelper(project);
         List<File> webInfLibs = getWebInfLibArtifacts(project).stream()
-                .map(a -> {
-                    Path p = mavenProjectHelper.getArtifactPath(a);
-                    getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
-                    return p.toFile();
-                }).collect(Collectors.toList());
+            .map(a ->
+            {
+                Path p = mavenProjectHelper.getArtifactPath(a);
+                getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
+                return p.toFile();
+            }).collect(Collectors.toList());
         getLog().debug("WEB-INF/lib initialized (at root)");
         webApp.setWebInfLib(webInfLibs);
 
-       //if we have not already set web.xml location, need to set one up
-       if (webApp.getDescriptor() == null)
-       {
-           //Has an explicit web.xml file been configured to use?
-           if (webXml != null)
+        //if we have not already set web.xml location, need to set one up
+        if (webApp.getDescriptor() == null)
+        {
+            //Has an explicit web.xml file been configured to use?
+            if (webXml != null)
             {
                 Resource r = Resource.newResource(webXml);
                 if (r.exists() && !r.isDirectory())
@@ -308,7 +287,7 @@ public class JettyRunMojo extends AbstractJettyMojo
                     webApp.setDescriptor(r.toString());
                 }
             }
-            
+
             //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
             {
@@ -318,32 +297,32 @@ public class JettyRunMojo extends AbstractJettyMojo
                     webApp.setDescriptor(r.toString());
                 }
             }
-            
+
             //Still don't have a web.xml file: finally try the configured static resource directory if there is one
             if (webApp.getDescriptor() == null && (webAppSourceDirectory != null))
             {
-                File f = new File (new File (webAppSourceDirectory, "WEB-INF"), "web.xml");
+                File f = new File(new File(webAppSourceDirectory, "WEB-INF"), "web.xml");
                 if (f.exists() && f.isFile())
                 {
-                   webApp.setDescriptor(f.getCanonicalPath());
+                    webApp.setDescriptor(f.getCanonicalPath());
                 }
             }
-       }
+        }
 
-       //process any overlays and the war type artifacts
-       List<Overlay> overlays = getOverlays();
-       unpackOverlays(overlays); //this sets up the base resource collection
+        //process any overlays and the war type artifacts
+        List<Overlay> overlays = getOverlays();
+        unpackOverlays(overlays); //this sets up the base resource collection
 
-       getLog().info( "web.xml file = "+webApp.getDescriptor());       
-       getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
+        getLog().info("web.xml file = " + webApp.getDescriptor());
+        getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureScanner()
      */
     @Override
-    public void configureScanner ()
-    throws MojoExecutionException
+    public void configureScanner()
+        throws MojoExecutionException
     {
         try
         {
@@ -354,7 +333,7 @@ public class JettyRunMojo extends AbstractJettyMojo
             throw new MojoExecutionException("Error forming scan list", e);
         }
 
-        scanner.addListener( new PathWatcher.EventListListener()
+        scanner.addListener(new PathWatcher.EventListListener()
         {
 
             @Override
@@ -365,7 +344,7 @@ public class JettyRunMojo extends AbstractJettyMojo
                     boolean reconfigure = false;
                     if (events != null)
                     {
-                        for (PathWatchEvent e:events)
+                        for (PathWatchEvent e : events)
                         {
                             if (e.getPath().equals(project.getFile().toPath()))
                             {
@@ -379,13 +358,12 @@ public class JettyRunMojo extends AbstractJettyMojo
                 }
                 catch (Exception e)
                 {
-                    getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
+                    getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
                 }
             }
         });
     }
 
-    
     public void gatherScannables() throws Exception
     {
         if (webApp.getDescriptor() != null)
@@ -393,7 +371,7 @@ public class JettyRunMojo extends AbstractJettyMojo
             Resource r = Resource.newResource(webApp.getDescriptor());
             scanner.watch(r.getFile().toPath());
         }
-        
+
         if (webApp.getJettyEnvXml() != null)
             scanner.watch(new File(webApp.getJettyEnvXml()).toPath());
 
@@ -407,23 +385,23 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             scanner.watch(new File(webApp.getOverrideDescriptor()).toPath());
         }
-        
-        File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory,"WEB-INF"));
+
+        File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory, "WEB-INF"));
         if (jettyWebXmlFile != null)
         {
             scanner.watch(jettyWebXmlFile.toPath());
         }
-        
+
         //make sure each of the war artifacts is added to the scanner
-        for (Artifact a:getWarArtifacts())
+        for (Artifact a : getWarArtifacts())
         {
             scanner.watch(a.getFile().toPath());
         }
-        
+
         //handle the explicit extra scan targets
         if (scanTargets != null)
         {
-            for (File f:scanTargets)
+            for (File f : scanTargets)
             {
                 if (f.isDirectory())
                 {
@@ -435,58 +413,68 @@ public class JettyRunMojo extends AbstractJettyMojo
                     scanner.watch(f.toPath());
             }
         }
-        
+
         //handle the extra scan patterns
         if (scanTargetPatterns != null)
         {
-            for (ScanTargetPattern p:scanTargetPatterns)
+            for (ScanTargetPattern p : scanTargetPatterns)
             {
                 PathWatcher.Config config = new PathWatcher.Config(p.getDirectory().toPath());
                 config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-                for (String pattern:p.getExcludes())
+                for (String pattern : p.getExcludes())
+                {
                     config.addExcludeGlobRelative(pattern);
-                for (String pattern:p.getIncludes())
+                }
+                for (String pattern : p.getIncludes())
+                {
                     config.addIncludeGlobRelative(pattern);
+                }
                 scanner.watch(config);
             }
         }
-      
 
         scanner.watch(project.getFile().toPath());
 
         if (webApp.getTestClasses() != null && webApp.getTestClasses().exists())
         {
             PathWatcher.Config config = new PathWatcher.Config(webApp.getTestClasses().toPath());
-            config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);           
+            config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
             if (scanTestClassesPattern != null)
             {
-                for (String p:scanTestClassesPattern.getExcludes())
+                for (String p : scanTestClassesPattern.getExcludes())
+                {
                     config.addExcludeGlobRelative(p);
-                for (String p:scanTestClassesPattern.getIncludes())
+                }
+                for (String p : scanTestClassesPattern.getIncludes())
+                {
                     config.addIncludeGlobRelative(p);
+                }
             }
             scanner.watch(config);
         }
-        
+
         if (webApp.getClasses() != null && webApp.getClasses().exists())
         {
             PathWatcher.Config config = new PathWatcher.Config(webApp.getClasses().toPath());
             config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
             if (scanClassesPattern != null)
             {
-                for (String p:scanClassesPattern.getExcludes())
+                for (String p : scanClassesPattern.getExcludes())
+                {
                     config.addExcludeGlobRelative(p);
+                }
 
-                for (String p:scanClassesPattern.getIncludes())
+                for (String p : scanClassesPattern.getIncludes())
+                {
                     config.addIncludeGlobRelative(p);
-
+                }
             }
             scanner.watch(config);
         }
 
         if (webApp.getWebInfLib() != null)
         {
-            for (File f:webApp.getWebInfLib())
+            for (File f : webApp.getWebInfLib())
             {
                 PathWatcher.Config config = new PathWatcher.Config(f.toPath());
                 config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
@@ -495,20 +483,19 @@ public class JettyRunMojo extends AbstractJettyMojo
         }
     }
 
-    
-    /** 
+    /**
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
      */
     @Override
-    public void restartWebApp(boolean reconfigureScanner) throws Exception 
+    public void restartWebApp(boolean reconfigureScanner) throws Exception
     {
-        getLog().info("restarting "+webApp);
+        getLog().info("restarting " + webApp);
         getLog().debug("Stopping webapp ...");
         stopScanner();
         webApp.stop();
 
         getLog().debug("Reconfiguring webapp ...");
- 
+
         checkPomConfiguration();
         configureWebApplication();
 
@@ -525,14 +512,14 @@ public class JettyRunMojo extends AbstractJettyMojo
         getLog().debug("Restarting webapp ...");
         webApp.start();
         startScanner();
-        getLog().info("Restart completed at "+new Date().toString());
+        getLog().info("Restart completed at " + new Date().toString());
     }
 
     private Collection<Artifact> getWebInfLibArtifacts(Set<Artifact> artifacts)
     {
         return artifacts.stream()
-                .filter(this::canPutArtifactInWebInfLib)
-                .collect(Collectors.toList());
+            .filter(this::canPutArtifactInWebInfLib)
+            .collect(Collectors.toList());
     }
 
     private Collection<Artifact> getWebInfLibArtifacts(MavenProject mavenProject)
@@ -563,12 +550,12 @@ public class JettyRunMojo extends AbstractJettyMojo
     }
 
     private List<Overlay> getOverlays()
-    throws Exception
+        throws Exception
     {
         //get copy of a list of war artifacts
         Set<Artifact> matchedWarArtifacts = new HashSet<>();
         List<Overlay> overlays = new ArrayList<>();
-        for (OverlayConfig config:warPluginInfo.getMavenWarOverlayConfigs())
+        for (OverlayConfig config : warPluginInfo.getMavenWarOverlayConfigs())
         {
             //overlays can be individually skipped
             if (config.isSkip())
@@ -587,7 +574,7 @@ public class JettyRunMojo extends AbstractJettyMojo
             if (a != null)
             {
                 matchedWarArtifacts.add(a);
-                SelectiveJarResource r = new SelectiveJarResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/"));
+                SelectiveJarResource r = new SelectiveJarResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/"));
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
                 Overlay overlay = new Overlay(config, r);
@@ -596,32 +583,31 @@ public class JettyRunMojo extends AbstractJettyMojo
         }
 
         //iterate over the left over war artifacts and unpack them (without include/exclude processing) as necessary
-        for (Artifact a: getWarArtifacts())
+        for (Artifact a : getWarArtifacts())
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                Overlay overlay = new Overlay(null, Resource.newResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/")));
+                Overlay overlay = new Overlay(null, Resource.newResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/")));
                 overlays.add(overlay);
             }
         }
         return overlays;
     }
 
-
-    public void unpackOverlays (List<Overlay> overlays)
-            throws Exception
+    public void unpackOverlays(List<Overlay> overlays)
+        throws Exception
     {
         if (overlays == null || overlays.isEmpty())
             return;
 
         List<Resource> resourceBaseCollection = new ArrayList<>();
 
-        for (Overlay o:overlays)
+        for (Overlay o : overlays)
         {
             //can refer to the current project in list of overlays for ordering purposes
             if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getBaseResource().exists())
             {
-                resourceBaseCollection.add(webApp.getBaseResource()); 
+                resourceBaseCollection.add(webApp.getBaseResource());
                 continue;
             }
 
@@ -643,64 +629,61 @@ public class JettyRunMojo extends AbstractJettyMojo
         }
         webApp.setBaseResource(new ResourceCollection(resourceBaseCollection.toArray(new Resource[resourceBaseCollection.size()])));
     }
-    
 
-
-
-    public  Resource unpackOverlay (Overlay overlay)
-    throws IOException
-    {        
+    public Resource unpackOverlay(Overlay overlay)
+        throws IOException
+    {
         if (overlay.getResource() == null)
             return null; //nothing to unpack
-   
+
         //Get the name of the overlayed war and unpack it to a dir of the
         //same name in the temporary directory
         String name = overlay.getResource().getName();
         if (name.endsWith("!/"))
-            name = name.substring(0,name.length()-2);
+            name = name.substring(0, name.length() - 2);
         int i = name.lastIndexOf('/');
-        if (i>0)
-            name = name.substring(i+1,name.length());
-        name = name.replace('.', '_');
+        if (i > 0)
+            name = name.substring(i + 1, name.length());
+        name = StringUtil.replace(name, '.', '_');
         //name = name+(++COUNTER); //add some digits to ensure uniqueness
-        File overlaysDir = new File (project.getBuild().getDirectory(), "jetty_overlays");
+        File overlaysDir = new File(project.getBuild().getDirectory(), "jetty_overlays");
         File dir = new File(overlaysDir, name);
 
         //if specified targetPath, unpack to that subdir instead
         File unpackDir = dir;
         if (overlay.getConfig() != null && overlay.getConfig().getTargetPath() != null)
-            unpackDir = new File (dir, overlay.getConfig().getTargetPath());
+            unpackDir = new File(dir, overlay.getConfig().getTargetPath());
 
         //only unpack if the overlay is newer
         if (!unpackDir.exists() || (overlay.getResource().lastModified() > unpackDir.lastModified()))
         {
-            boolean made=unpackDir.mkdirs();
+            boolean made = unpackDir.mkdirs();
             overlay.getResource().copyTo(unpackDir);
         }
 
         //use top level of unpacked content
-       return Resource.newResource(dir.getCanonicalPath());
+        return Resource.newResource(dir.getCanonicalPath());
     }
-    
+
     /**
-     * @return
+     *
      */
-    private List<Artifact> getWarArtifacts ()
+    private List<Artifact> getWarArtifacts()
     {
         if (warArtifacts != null)
-            return warArtifacts;       
-        
+            return warArtifacts;
+
         warArtifacts = new ArrayList<>();
-        for ( Artifact artifact : projectArtifacts)
+        for (Artifact artifact : projectArtifacts)
         {
             if (artifact.getType().equals("war") || artifact.getType().equals("zip"))
             {
                 try
-                {                  
+                {
                     warArtifacts.add(artifact);
-                    getLog().info("Dependent war artifact "+artifact.getId());
+                    getLog().info("Dependent war artifact " + artifact.getId());
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     throw new RuntimeException(e);
                 }
@@ -709,36 +692,33 @@ public class JettyRunMojo extends AbstractJettyMojo
         return warArtifacts;
     }
 
-    protected Artifact getArtifactForOverlay (OverlayConfig o, List<Artifact> warArtifacts)
+    protected Artifact getArtifactForOverlay(OverlayConfig o, List<Artifact> warArtifacts)
     {
         if (o == null || warArtifacts == null || warArtifacts.isEmpty())
             return null;
-        
-        for (Artifact a:warArtifacts)
+
+        for (Artifact a : warArtifacts)
         {
-            if (o.matchesArtifact (a.getGroupId(), a.getArtifactId(), a.getClassifier()))
+            if (o.matchesArtifact(a.getGroupId(), a.getArtifactId(), a.getClassifier()))
             {
-               return a;
+                return a;
             }
         }
-        
+
         return null;
     }
 
-
-
     /**
-     * @return
+     *
      */
     protected String getJavaBin()
     {
-        String javaexes[] = new String[]
-            { "java", "java.exe" };
+        String[] javaexes = {"java", "java.exe"};
 
         File javaHomeDir = new File(System.getProperty("java.home"));
         for (String javaexe : javaexes)
         {
-            File javabin = new File(javaHomeDir,fileSeparators("bin/" + javaexe));
+            File javabin = new File(javaHomeDir, fileSeparators("bin/" + javaexe));
             if (javabin.exists() && javabin.isFile())
             {
                 return javabin.getAbsolutePath();

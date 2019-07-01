@@ -20,8 +20,8 @@ package org.eclipse.jetty.http.spi;
 
 import com.sun.net.httpserver.HttpPrincipal;
 
-/* ------------------------------------------------------------ */
 /**
+ *
  */
 public interface JettyExchange
 {
@@ -29,5 +29,4 @@ public interface JettyExchange
     HttpPrincipal getPrincipal();
 
     void setPrincipal(HttpPrincipal principal);
-
 }

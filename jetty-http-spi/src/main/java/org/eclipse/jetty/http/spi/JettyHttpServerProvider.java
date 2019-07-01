@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http.spi;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsServer;
 import com.sun.net.httpserver.spi.HttpServerProvider;
@@ -28,9 +31,6 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
 
 /**
  * Jetty implementation of <a href="http://java.sun.com/javase/6/docs/jre/api/net/httpserver/spec/index.html">Java HTTP Server SPI</a>
@@ -47,7 +47,7 @@ public class JettyHttpServerProvider extends HttpServerProvider
 
     @Override
     public HttpServer createHttpServer(InetSocketAddress addr, int backlog)
-            throws IOException
+        throws IOException
     {
         Server server = _server;
         boolean shared = true;
@@ -58,7 +58,7 @@ public class JettyHttpServerProvider extends HttpServerProvider
             server = new Server(threadPool);
 
             HandlerCollection handlerCollection = new HandlerCollection();
-            handlerCollection.setHandlers(new Handler[] {new ContextHandlerCollection(), new DefaultHandler()});
+            handlerCollection.setHandlers(new Handler[]{new ContextHandlerCollection(), new DefaultHandler()});
             server.setHandler(handlerCollection);
 
             shared = false;
@@ -66,7 +66,7 @@ public class JettyHttpServerProvider extends HttpServerProvider
 
         JettyHttpServer jettyHttpServer = new JettyHttpServer(server, shared);
         if (addr != null)
-           jettyHttpServer.bind(addr, backlog);
+            jettyHttpServer.bind(addr, backlog);
         return jettyHttpServer;
     }
 
@@ -75,5 +75,4 @@ public class JettyHttpServerProvider extends HttpServerProvider
     {
         throw new UnsupportedOperationException();
     }
-
 }

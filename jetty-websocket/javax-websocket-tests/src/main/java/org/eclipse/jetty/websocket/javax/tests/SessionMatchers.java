@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
+import javax.websocket.MessageHandler;
+
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.tests.matchers.IsMessageHandlerType;
 import org.eclipse.jetty.websocket.javax.tests.matchers.IsMessageHandlerTypeRegistered;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.hamcrest.Matcher;
-
-import javax.websocket.MessageHandler;
 
 public final class SessionMatchers
 {

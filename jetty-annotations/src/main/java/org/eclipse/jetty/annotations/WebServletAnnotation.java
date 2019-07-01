@@ -21,14 +21,12 @@ package org.eclipse.jetty.annotations;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.Servlet;
 import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.servlet.Source;
@@ -44,20 +42,17 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * WebServletAnnotation
- *
- *
  */
 public class WebServletAnnotation extends DiscoveredAnnotation
 {
     private static final Logger LOG = Log.getLogger(WebServletAnnotation.class);
 
-    public WebServletAnnotation (WebAppContext context, String className)
+    public WebServletAnnotation(WebAppContext context, String className)
     {
         super(context, className);
     }
 
-
-    public WebServletAnnotation (WebAppContext context, String className, Resource resource)
+    public WebServletAnnotation(WebAppContext context, String className, Resource resource)
     {
         super(context, className, resource);
     }
@@ -73,14 +68,14 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
         if (clazz == null)
         {
-            LOG.warn(_className+" cannot be loaded");
+            LOG.warn(_className + " cannot be loaded");
             return;
         }
 
         //Servlet Spec 8.1.1
         if (!HttpServlet.class.isAssignableFrom(clazz))
         {
-            LOG.warn(clazz.getName()+" is not assignable from javax.servlet.http.HttpServlet");
+            LOG.warn(clazz.getName() + " is not assignable from javax.servlet.http.HttpServlet");
             return;
         }
 
@@ -88,7 +83,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
         if (annotation.urlPatterns().length > 0 && annotation.value().length > 0)
         {
-            LOG.warn(clazz.getName()+ " defines both @WebServlet.value and @WebServlet.urlPatterns");
+            LOG.warn(clazz.getName() + " defines both @WebServlet.value and @WebServlet.urlPatterns");
             return;
         }
 
@@ -98,16 +93,18 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
         if (urlPatterns.length == 0)
         {
-            LOG.warn(clazz.getName()+ " defines neither @WebServlet.value nor @WebServlet.urlPatterns");
+            LOG.warn(clazz.getName() + " defines neither @WebServlet.value nor @WebServlet.urlPatterns");
             return;
         }
 
         //canonicalize the patterns
         ArrayList<String> urlPatternList = new ArrayList<String>();
         for (String p : urlPatterns)
+        {
             urlPatternList.add(ServletPathSpec.normalize(p));
+        }
 
-        String servletName = (annotation.name().equals("")?clazz.getName():annotation.name());
+        String servletName = (annotation.name().equals("") ? clazz.getName() : annotation.name());
 
         MetaData metaData = _context.getMetaData();
         ServletMapping mapping = null; //the new mapping
@@ -134,33 +131,32 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             //No servlet of this name has already been defined, either by a descriptor
             //or another annotation (which would be impossible).
             Source source = new Source(Source.Origin.ANNOTATION, clazz.getName());
-            
+
             holder = _context.getServletHandler().newServletHolder(source);
             holder.setHeldClass(clazz);
-            metaData.setOrigin(servletName+".servlet.servlet-class",annotation,clazz);
+            metaData.setOrigin(servletName + ".servlet.servlet-class", annotation, clazz);
 
             holder.setName(servletName);
             holder.setDisplayName(annotation.displayName());
-            metaData.setOrigin(servletName+".servlet.display-name",annotation,clazz);
+            metaData.setOrigin(servletName + ".servlet.display-name", annotation, clazz);
 
             holder.setInitOrder(annotation.loadOnStartup());
-            metaData.setOrigin(servletName+".servlet.load-on-startup",annotation,clazz);
+            metaData.setOrigin(servletName + ".servlet.load-on-startup", annotation, clazz);
 
             holder.setAsyncSupported(annotation.asyncSupported());
-            metaData.setOrigin(servletName+".servlet.async-supported",annotation,clazz);
+            metaData.setOrigin(servletName + ".servlet.async-supported", annotation, clazz);
 
-            for (WebInitParam ip:annotation.initParams())
+            for (WebInitParam ip : annotation.initParams())
             {
                 holder.setInitParameter(ip.name(), ip.value());
-                metaData.setOrigin(servletName+".servlet.init-param."+ip.name(),ip,clazz);
+                metaData.setOrigin(servletName + ".servlet.init-param." + ip.name(), ip, clazz);
             }
 
             _context.getServletHandler().addServlet(holder);
 
-
             mapping = new ServletMapping(source);
             mapping.setServletName(holder.getName());
-            mapping.setPathSpecs( LazyList.toStringArray(urlPatternList));
+            mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
         }
         else
         {
@@ -175,15 +171,14 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
             //check if the existing servlet has each init-param from the annotation
             //if not, add it
-            for (WebInitParam ip:annotation.initParams())
+            for (WebInitParam ip : annotation.initParams())
             {
-                if (metaData.getOrigin(servletName+".servlet.init-param."+ip.name())==Origin.NotSet)
+                if (metaData.getOrigin(servletName + ".servlet.init-param." + ip.name()) == Origin.NotSet)
                 {
                     holder.setInitParameter(ip.name(), ip.value());
-                    metaData.setOrigin(servletName+".servlet.init-param."+ip.name(),ip,clazz);
+                    metaData.setOrigin(servletName + ".servlet.init-param." + ip.name(), ip, clazz);
                 }
             }
-
 
             //check the url-patterns
             //ServletSpec 3.0 p81 If a servlet already has url mappings from a
@@ -201,7 +196,6 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             }
         }
 
-
         //We also want to be able to replace mappings that were defined in webdefault.xml
         //that were for a different servlet eg a mapping in webdefault.xml for / to the jetty
         //default servlet should be able to be replaced by an annotation for / to a different
@@ -217,7 +211,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             //for each of the urls in the annotation, check if a mapping to same/different servlet exists
             //  if mapping exists and is from a default descriptor, it can be replaced. NOTE: we do not
             //  guard against duplicate path mapping here: that is the job of the ServletHandler
-            for (String p:urlPatternList)
+            for (String p : urlPatternList)
             {
                 ServletMapping existingMapping = _context.getServletHandler().getServletMapping(p);
                 if (existingMapping != null && existingMapping.isDefault())
@@ -227,36 +221,34 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                     if (updatedPaths == null || updatedPaths.length == 0)
                     {
                         boolean success = allMappings.remove(existingMapping);
-                        if (LOG.isDebugEnabled()) LOG.debug("Removed empty mapping {} from defaults descriptor success:{}",existingMapping, success);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Removed empty mapping {} from defaults descriptor success:{}", existingMapping, success);
                     }
                     else
                     {
                         existingMapping.setPathSpecs(updatedPaths);
-                        if (LOG.isDebugEnabled()) LOG.debug("Removed path {} from mapping {} from defaults descriptor ", p,existingMapping);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Removed path {} from mapping {} from defaults descriptor ", p, existingMapping);
                     }
                 }
-                _context.getMetaData().setOrigin(servletName+".servlet.mapping."+p, annotation, clazz);
+                _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + p, annotation, clazz);
             }
             allMappings.add(mapping);
             _context.getServletHandler().setServletMappings(allMappings.toArray(new ServletMapping[allMappings.size()]));
         }
     }
 
-
-
-
     /**
-     * @param name
-     * @return
+     *
      */
-    private List<ServletMapping>  getServletMappingsForServlet (String name)
+    private List<ServletMapping> getServletMappingsForServlet(String name)
     {
         ServletMapping[] allMappings = _context.getServletHandler().getServletMappings();
         if (allMappings == null)
             return Collections.emptyList();
 
         List<ServletMapping> mappings = new ArrayList<ServletMapping>();
-        for (ServletMapping m:allMappings)
+        for (ServletMapping m : allMappings)
         {
             if (m.getServletName() != null && name.equals(m.getServletName()))
             {
@@ -266,16 +258,14 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         return mappings;
     }
 
-
     /**
-     * @param mappings
-     * @return
+     *
      */
-    private boolean containsNonDefaultMappings (List<ServletMapping> mappings)
+    private boolean containsNonDefaultMappings(List<ServletMapping> mappings)
     {
         if (mappings == null)
             return false;
-        for (ServletMapping m:mappings)
+        for (ServletMapping m : mappings)
         {
             if (!m.isDefault())
                 return true;

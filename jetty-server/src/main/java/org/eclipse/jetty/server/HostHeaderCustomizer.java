@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.util.Objects;
-
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -64,6 +63,6 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
         if (request.getHeader("Host") == null)
-            request.setAuthority(serverName,serverPort);  // TODO set the field as well?
+            request.setAuthority(serverName, serverPort);  // TODO set the field as well?
     }
 }

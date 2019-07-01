@@ -42,26 +42,23 @@ public class ValidUrlRule extends Rule
 
     String _code = "400";
     String _message = "Illegal Url";
-    
+
     public ValidUrlRule()
     {
         _handling = true;
         _terminating = true;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the response status code.
-     * 
-     * @param code
-     *            response code
+     *
+     * @param code response code
      */
     public void setCode(String code)
     {
         _code = code;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the message for the {@link org.eclipse.jetty.server.Response#sendError(int, String)} method.
      *
@@ -79,7 +76,7 @@ public class ValidUrlRule extends Rule
         // String uri = request.getRequestURI();
         String uri = URIUtil.decodePath(request.getRequestURI());
 
-        for (int i = 0; i < uri.length();)
+        for (int i = 0; i < uri.length(); )
         {
             int codepoint = uri.codePointAt(i);
 
@@ -89,7 +86,7 @@ public class ValidUrlRule extends Rule
                 int code = Integer.parseInt(_code);
 
                 // status code 400 and up are error codes so include a reason
-                if (_message!=null && !_message.isEmpty())
+                if (_message != null && !_message.isEmpty())
                     response.sendError(code, _message);
                 else
                     response.setStatus(code);
@@ -107,10 +104,10 @@ public class ValidUrlRule extends Rule
     protected boolean isValidChar(int codepoint)
     {
         Character.UnicodeBlock block = Character.UnicodeBlock.of(codepoint);
-        
+
         LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
-        
-        return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);       
+
+        return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);
     }
 
     @Override

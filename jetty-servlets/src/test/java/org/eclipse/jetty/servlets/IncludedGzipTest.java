@@ -29,7 +29,6 @@ import java.nio.ByteBuffer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.tools.HttpTester;
@@ -52,18 +51,18 @@ public class IncludedGzipTest
     public WorkDir testdir;
 
     private static String __content =
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
-        "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
-        "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. "+
-        "Vestibulum sit amet felis augue, vel convallis dolor. Cras accumsan vehicula diam "+
-        "at faucibus. Etiam in urna turpis, sed congue mi. Morbi et lorem eros. Donec vulputate "+
-        "velit in risus suscipit lobortis. Aliquam id urna orci, nec sollicitudin ipsum. "+
-        "Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum "+
-        "eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa "+
-        "sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam "+
-        "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. "+
-        "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
-        "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. " +
+            "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque " +
+            "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. " +
+            "Vestibulum sit amet felis augue, vel convallis dolor. Cras accumsan vehicula diam " +
+            "at faucibus. Etiam in urna turpis, sed congue mi. Morbi et lorem eros. Donec vulputate " +
+            "velit in risus suscipit lobortis. Aliquam id urna orci, nec sollicitudin ipsum. " +
+            "Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum " +
+            "eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa " +
+            "sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam " +
+            "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. " +
+            "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse " +
+            "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
     private ServletTester tester;
     private String compressionType;
@@ -82,14 +81,15 @@ public class IncludedGzipTest
         try (OutputStream testOut = new BufferedOutputStream(new FileOutputStream(testFile)))
         {
             ByteArrayInputStream testIn = new ByteArrayInputStream(__content.getBytes("ISO8859_1"));
-            IO.copy(testIn,testOut);
+            IO.copy(testIn, testOut);
         }
 
-        tester=new ServletTester("/context");
+        tester = new ServletTester("/context");
         tester.getContext().setResourceBase(testdir.getPath().toString());
         tester.getContext().addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
-        
+
         GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setMinGzipSize(16);
         tester.getContext().insertHandler(gzipHandler);
         tester.start();
     }
@@ -105,17 +105,16 @@ public class IncludedGzipTest
     {
         // generated and parsed test
 
-        ByteBuffer request=BufferUtil.toBuffer(
-            "GET /context/file.txt HTTP/1.0\r\n"+
-            "Host: tester\r\n"+
-            "Accept-Encoding: "+compressionType+"\r\n"+
-            "\r\n");
+        ByteBuffer request = BufferUtil.toBuffer(
+            "GET /context/file.txt HTTP/1.0\r\n" +
+                "Host: tester\r\n" +
+                "Accept-Encoding: " + compressionType + "\r\n" +
+                "\r\n");
 
+        HttpTester.Response response = HttpTester.parseResponse(tester.getResponses(request));
 
-        HttpTester.Response response=HttpTester.parseResponse(tester.getResponses(request));
-
-        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        assertEquals(compressionType,response.get("Content-Encoding"));
+        assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+        assertEquals(compressionType, response.get("Content-Encoding"));
 
         InputStream testIn = null;
         ByteArrayInputStream compressedResponseStream = new ByteArrayInputStream(response.getContentBytes());
@@ -128,7 +127,7 @@ public class IncludedGzipTest
             testIn = new InflaterInputStream(compressedResponseStream, new Inflater(true));
         }
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn,testOut);
+        IO.copy(testIn, testOut);
 
         assertEquals(__content, testOut.toString("ISO8859_1"));
     }

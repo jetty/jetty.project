@@ -71,7 +71,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
      */
     public static boolean isSupportedProtocol(String protocol)
     {
-        switch(protocol)
+        switch (protocol)
         {
             case "h2":
             case "h2-17":
@@ -145,7 +145,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         notifyAccept(getSession());
         for (Frame frame : upgradeFrames)
+        {
             getSession().onFrame(frame);
+        }
         super.onOpen();
         produce();
     }
@@ -257,7 +259,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             CountingCallback counter = new CountingCallback(callback, streams.size());
             for (Stream stream : streams)
+            {
                 onStreamFailure((IStream)stream, failure, counter);
+            }
         }
     }
 
@@ -338,7 +342,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             final byte[] settings = Base64.getUrlDecoder().decode(value == null ? "" : value);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} settings {}",this,TypeUtil.toHexString(settings));
+                LOG.debug("{} settings {}", this, TypeUtil.toHexString(settings));
 
             SettingsFrame settingsFrame = SettingsBodyParser.parseBody(BufferUtil.toBuffer(settings));
             if (settingsFrame == null)

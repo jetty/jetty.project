@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -42,13 +41,15 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 @SuppressWarnings("serial")
 public class WebSocketChatServlet extends JettyWebSocketServlet implements JettyWebSocketCreator
 {
-    /** Holds active sockets to other members of the chat */
+    /**
+     * Holds active sockets to other members of the chat
+     */
     private final List<ChatWebSocket> members = new CopyOnWriteArrayList<ChatWebSocket>();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        getServletContext().getNamedDispatcher("default").forward(request,response);
+        getServletContext().getNamedDispatcher("default").forward(request, response);
     }
 
     @Override
@@ -65,10 +66,9 @@ public class WebSocketChatServlet extends JettyWebSocketServlet implements Jetty
     @Override
     public void configure(JettyWebSocketServletFactory factory)
     {
-        factory.addMapping(factory.parsePathSpec("/"), this);
+        factory.addMapping("/", this);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Create a WebSocket that echo's back the message to all other members of the servlet.
      */
@@ -108,7 +108,7 @@ public class WebSocketChatServlet extends JettyWebSocketServlet implements Jetty
                 }
 
                 // Async write the message back.
-                member.remote.sendString(data,null);
+                member.remote.sendString(data, null);
             }
         }
 

@@ -35,7 +35,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
     {
         return WebInfConfiguration.class;
     }
-    
+
     /**
      * Adds classpath files into web application classloader, and
      * sets web.xml and base directory for the configured web application.
@@ -50,11 +50,11 @@ public class AntWebInfConfiguration extends WebInfConfiguration
             List<File> classPathFiles = ((AntWebAppContext)context).getClassPathFiles();
             if (classPathFiles != null)
             {
-                for (File cpFile:classPathFiles)
+                for (File cpFile : classPathFiles)
                 {
                     if (cpFile.exists())
                     {
-                        ((WebAppClassLoader) context.getClassLoader()).addClassPath(cpFile.getCanonicalPath());
+                        ((WebAppClassLoader)context.getClassLoader()).addClassPath(cpFile.getCanonicalPath());
                     }
                 }
             }

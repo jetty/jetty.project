@@ -43,7 +43,7 @@ public class Classpath implements Iterable<File>
 
         Loader(URL[] urls, ClassLoader parent)
         {
-            super(urls,parent);
+            super(urls, parent);
         }
 
         @Override
@@ -69,7 +69,7 @@ public class Classpath implements Iterable<File>
         boolean added = false;
         if (s != null)
         {
-            StringTokenizer t = new StringTokenizer(s,File.pathSeparator);
+            StringTokenizer t = new StringTokenizer(s, File.pathSeparator);
             while (t.hasMoreTokens())
             {
                 added |= addComponent(t.nextToken());
@@ -80,7 +80,7 @@ public class Classpath implements Iterable<File>
 
     public boolean addComponent(File path)
     {
-        StartLog.debug("Adding classpath component: %s",path);
+        StartLog.debug("Adding classpath component: %s", path);
         if ((path == null) || (!path.exists()))
         {
             // not a valid component
@@ -125,7 +125,7 @@ public class Classpath implements Iterable<File>
         int i = 0;
         for (File element : elements)
         {
-            out.printf("%2d: %s%n",i++,element.getAbsolutePath());
+            out.printf("%2d: %s%n", i++, element.getAbsolutePath());
         }
     }
 
@@ -138,14 +138,14 @@ public class Classpath implements Iterable<File>
             try
             {
                 urls[i] = elements.get(i).toURI().toURL();
-                StartLog.debug("URLClassLoader.url[%d] = %s",i,urls[i]);
+                StartLog.debug("URLClassLoader.url[%d] = %s", i, urls[i]);
             }
             catch (MalformedURLException e)
             {
                 StartLog.warn(e);
             }
         }
-        StartLog.debug("Loaded %d URLs into URLClassLoader",urls.length);
+        StartLog.debug("Loaded %d URLs into URLClassLoader", urls.length);
 
         ClassLoader parent = Thread.currentThread().getContextClassLoader();
         if (parent == null)
@@ -156,7 +156,7 @@ public class Classpath implements Iterable<File>
         {
             parent = ClassLoader.getSystemClassLoader();
         }
-        return new Loader(urls,parent);
+        return new Loader(urls, parent);
     }
 
     public List<File> getElements()
@@ -177,9 +177,8 @@ public class Classpath implements Iterable<File>
 
     /**
      * Overlay another classpath, copying its elements into place on this Classpath, while eliminating duplicate entries on the classpath.
-     * 
-     * @param other
-     *            the other classpath to overlay
+     *
+     * @param other the other classpath to overlay
      */
     public void overlay(Classpath other)
     {

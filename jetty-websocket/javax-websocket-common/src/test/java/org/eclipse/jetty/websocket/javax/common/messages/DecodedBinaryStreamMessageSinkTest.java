@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.is;
 
 public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
 {
-    public final static TimeZone GMT = TimeZone.getTimeZone("GMT");
+    public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
     @Test
     public void testCalendar_1_Frame() throws Exception

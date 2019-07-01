@@ -106,7 +106,7 @@ public class MessageWriterTest
         while (remaining > 0)
         {
             frame = capture.frames.poll(1, TimeUnit.SECONDS);
-            String prefix = String.format("Frame[%d](op=%d,%sfin)", (i++), frame.getOpCode(), frame.isFin()?"":"!");
+            String prefix = String.format("Frame[%d](op=%d,%sfin)", (i++), frame.getOpCode(), frame.isFin() ? "" : "!");
             assertThat(prefix + ".opcode", frame.getOpCode(), is(expectedOpCode));
             int expectedSize = Math.min(remaining, writerBufferSize);
             assertThat(prefix + ".payloadLength", frame.getPayloadLength(), is(expectedSize));

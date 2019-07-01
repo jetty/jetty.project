@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.deploy.providers;
 
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
-
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,6 +35,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 /**
  * Similar in scope to {@link ScanningAppProviderStartupTest}, except is concerned with the modification of existing
@@ -57,7 +57,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
     {
         testdir.ensureEmpty();
         Resource.setDefaultUseCaches(false);
-        
+
         jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-http.xml");
@@ -86,7 +86,6 @@ public class ScanningAppProviderRuntimeUpdatesTest
                 });
             }
         }
-
     }
 
     @AfterEach
@@ -98,30 +97,31 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
     public void waitForDirectoryScan()
     {
-        int scan=_scans.get()+(2*_providers);
+        int scan = _scans.get() + (2 * _providers);
         do
         {
             try
             {
                 Thread.sleep(200);
             }
-            catch(InterruptedException e)
+            catch (InterruptedException e)
             {
                 LOG.warn(e);
             }
         }
-        while(_scans.get()<scan);
+        while (_scans.get() < scan);
     }
 
     /**
      * Simple webapp deployment after startup of server.
+     *
      * @throws IOException on test failure
      */
     @Test
     public void testAfterStartupContext() throws IOException
     {
-        jetty.copyWebapp("foo-webapp-1.war","foo.war");
-        jetty.copyWebapp("foo.xml","foo.xml");
+        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
+        jetty.copyWebapp("foo.xml", "foo.xml");
 
         waitForDirectoryScan();
         waitForDirectoryScan();
@@ -131,13 +131,14 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
     /**
      * Simple webapp deployment after startup of server, and then removal of the webapp.
+     *
      * @throws IOException on test failure
      */
     @Test
     public void testAfterStartupThenRemoveContext() throws IOException
     {
-        jetty.copyWebapp("foo-webapp-1.war","foo.war");
-        jetty.copyWebapp("foo.xml","foo.xml");
+        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
+        jetty.copyWebapp("foo.xml", "foo.xml");
 
         waitForDirectoryScan();
         waitForDirectoryScan();
@@ -155,27 +156,29 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
     /**
      * Simple webapp deployment after startup of server, and then removal of the webapp.
+     *
      * @throws Exception on test failure
      */
     @Test
-    @DisabledOnOs(WINDOWS) // This test will not work on Windows as second war file would, not be written over the first one because of a file lock
+    @DisabledOnOs(WINDOWS)
+    // This test will not work on Windows as second war file would, not be written over the first one because of a file lock
     public void testAfterStartupThenUpdateContext() throws Exception
     {
-        jetty.copyWebapp("foo-webapp-1.war","foo.war");
-        jetty.copyWebapp("foo.xml","foo.xml");
+        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
+        jetty.copyWebapp("foo.xml", "foo.xml");
 
         waitForDirectoryScan();
         waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
-        
+
         // Test that webapp response contains "-1"
-        jetty.assertResponseContains("/foo/info","FooServlet-1");
+        jetty.assertResponseContains("/foo/info", "FooServlet-1");
 
         waitForDirectoryScan();
         //System.err.println("Updating war files");
-        jetty.copyWebapp("foo.xml","foo.xml"); // essentially "touch" the context xml
-        jetty.copyWebapp("foo-webapp-2.war","foo.war");
+        jetty.copyWebapp("foo.xml", "foo.xml"); // essentially "touch" the context xml
+        jetty.copyWebapp("foo-webapp-2.war", "foo.war");
 
         // This should result in the existing foo.war being replaced with the new foo.war
         waitForDirectoryScan();
@@ -183,6 +186,6 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.assertWebAppContextsExists("/foo");
 
         // Test that webapp response contains "-2"
-        jetty.assertResponseContains("/foo/info","FooServlet-2");
+        jetty.assertResponseContains("/foo/info", "FooServlet-2");
     }
 }

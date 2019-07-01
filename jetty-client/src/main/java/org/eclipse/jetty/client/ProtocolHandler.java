@@ -44,7 +44,7 @@ public interface ProtocolHandler
      * <p>This method is being called just after the response line has
      * been parsed, and before the response headers are available.</p>
      *
-     * @param request  the request to accept
+     * @param request the request to accept
      * @param response the response to accept
      * @return true if this protocol handler can handle the given request and response
      */

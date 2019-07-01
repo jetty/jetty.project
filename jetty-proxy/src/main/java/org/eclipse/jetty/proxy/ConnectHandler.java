@@ -106,7 +106,7 @@ public class ConnectHandler extends HandlerWrapper
 
     public void setScheduler(Scheduler scheduler)
     {
-        updateBean(this.scheduler,scheduler);
+        updateBean(this.scheduler, scheduler);
         this.scheduler = scheduler;
     }
 
@@ -221,9 +221,9 @@ public class ConnectHandler extends HandlerWrapper
      * <p>CONNECT requests may have authentication headers such as {@code Proxy-Authorization}
      * that authenticate the client with the proxy.</p>
      *
-     * @param baseRequest  Jetty-specific http request
-     * @param request       the http request
-     * @param response      the http response
+     * @param baseRequest Jetty-specific http request
+     * @param request the http request
+     * @param response the http response
      * @param serverAddress the remote server address in the form {@code host:port}
      */
     protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
@@ -390,9 +390,9 @@ public class ConnectHandler extends HandlerWrapper
      * <p>Handles the authentication before setting up the tunnel to the remote server.</p>
      * <p>The default implementation returns true.</p>
      *
-     * @param request  the HTTP request
+     * @param request the HTTP request
      * @param response the HTTP response
-     * @param address  the address of the remote server in the form {@code host:port}.
+     * @param address the address of the remote server in the form {@code host:port}.
      * @return true to allow to connect to the remote host, false otherwise
      */
     protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address)
@@ -427,10 +427,10 @@ public class ConnectHandler extends HandlerWrapper
      * <p>Reads (with non-blocking semantic) into the given {@code buffer} from the given {@code endPoint}.</p>
      *
      * @param endPoint the endPoint to read from
-     * @param buffer   the buffer to read data into
-     * @param context  the context information related to the connection
+     * @param buffer the buffer to read data into
+     * @param context the context information related to the connection
      * @return the number of bytes read (possibly 0 since the read is non-blocking)
-     *         or -1 if the channel has been closed remotely
+     * or -1 if the channel has been closed remotely
      * @throws IOException if the endPoint cannot be read
      */
     protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
@@ -445,9 +445,9 @@ public class ConnectHandler extends HandlerWrapper
      * <p>Writes (with non-blocking semantic) the given buffer of data onto the given endPoint.</p>
      *
      * @param endPoint the endPoint to write to
-     * @param buffer   the buffer to write
+     * @param buffer the buffer to write
      * @param callback the completion callback to invoke
-     * @param context  the context information related to the connection
+     * @param context the context information related to the connection
      */
     protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
     {
@@ -599,7 +599,7 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected void write(EndPoint endPoint, ByteBuffer buffer,Callback callback)
+        protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
         {
             ConnectHandler.this.write(endPoint, buffer, callback, getContext());
         }

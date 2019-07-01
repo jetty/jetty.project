@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.test.websocket;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
@@ -32,6 +30,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class JettyWebSocketTest
 {
     private static XmlBasedJettyServer server;
@@ -43,7 +43,6 @@ public class JettyWebSocketTest
         server.setScheme(HttpScheme.HTTP.asString());
         server.addXmlConfiguration("basic-server.xml");
         server.addXmlConfiguration("login-service.xml");
-        // server.addXmlConfiguration("configurations-addknown-all.xml");
         server.addXmlConfiguration("deploy.xml");
         server.addXmlConfiguration("NIOHttp.xml");
 
@@ -73,7 +72,7 @@ public class JettyWebSocketTest
 
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             request.setSubProtocols("chat");
-            client.connect(socket,uri,request);
+            client.connect(socket, uri, request);
             // wait for closed socket connection.
             assertTrue(socket.awaitClose(5, TimeUnit.SECONDS));
         }

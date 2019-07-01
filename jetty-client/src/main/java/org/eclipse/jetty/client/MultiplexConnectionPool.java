@@ -235,9 +235,9 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         synchronized (this)
         {
             activeConnections.values().stream()
-                    .map(holder -> holder.connection)
-                    .filter(connection -> connection instanceof Sweeper.Sweepable)
-                    .collect(Collectors.toCollection(() -> toSweep));
+                .map(holder -> holder.connection)
+                .filter(connection -> connection instanceof Sweeper.Sweepable)
+                .collect(Collectors.toCollection(() -> toSweep));
         }
         for (Connection connection : toSweep)
         {
@@ -245,11 +245,11 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             {
                 boolean removed = remove(connection, true);
                 LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                        connection,
-                        System.lineSeparator(),
-                        removed ? "Removed" : "Not removed",
-                        System.lineSeparator(),
-                        dump());
+                    connection,
+                    System.lineSeparator(),
+                    removed ? "Removed" : "Not removed",
+                    System.lineSeparator(),
+                    dump());
             }
         }
         return false;
@@ -266,13 +266,13 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             idleSize = idleConnections.size();
         }
         return String.format("%s@%x[connections=%d/%d,multiplex=%d,active=%d,idle=%d]",
-                getClass().getSimpleName(),
-                hashCode(),
-                getConnectionCount(),
-                getMaxConnectionCount(),
-                getMaxMultiplex(),
-                activeSize,
-                idleSize);
+            getClass().getSimpleName(),
+            hashCode(),
+            getConnectionCount(),
+            getMaxConnectionCount(),
+            getMaxMultiplex(),
+            activeSize,
+            idleSize);
     }
 
     private static class Holder

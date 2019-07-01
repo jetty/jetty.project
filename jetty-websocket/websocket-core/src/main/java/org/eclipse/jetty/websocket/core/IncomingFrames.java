@@ -32,7 +32,7 @@ public interface IncomingFrames
      * to copy it, as the information contained in the Frame will be released
      * and/or reused by the implementation.
      *
-     * @param frame    the frame to process
+     * @param frame the frame to process
      * @param callback the read completion
      */
     void onFrame(Frame frame, Callback callback);

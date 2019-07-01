@@ -20,7 +20,6 @@ package org.eclipse.jetty.alpn.server;
 
 import java.util.Collections;
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
@@ -44,7 +43,7 @@ public class ALPNServerConnection extends NegotiatingServerConnection
     {
         select(Collections.emptyList());
     }
-    
+
     public void select(List<String> clientProtocols)
     {
         SSLEngine sslEngine = getSSLEngine();

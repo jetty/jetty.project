@@ -20,7 +20,6 @@ package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -30,7 +29,6 @@ import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 
 public class AsyncEchoServlet extends HttpServlet
 {
@@ -60,7 +58,7 @@ public class AsyncEchoServlet extends HttpServlet
             this.input = asyncContext.getRequest().getInputStream();
             this.output = asyncContext.getResponse().getOutputStream();
         }
-        
+
         @Override
         public void onDataAvailable() throws IOException
         {
@@ -78,7 +76,7 @@ public class AsyncEchoServlet extends HttpServlet
         {
             handleAsyncIO();
         }
-        
+
         private void handleAsyncIO() throws IOException
         {
             // This method is called:
@@ -86,7 +84,7 @@ public class AsyncEchoServlet extends HttpServlet
             //   2) after first registering a ReadListener iff write is ready
             //   3) when a previous write completes after an output.isReady() returns false
             //   4) from an input callback 
-           
+
             // We should try to read, only if we are able to write!
             while (true)
             {
@@ -98,15 +96,15 @@ public class AsyncEchoServlet extends HttpServlet
                 if (!input.isReady())
                     // Nothing available to read, so wait for another call to onDataAvailable
                     break;
-                
+
                 int read = input.read(buffer);
-                if (read<0)
+                if (read < 0)
                 {
-                    if (complete.compareAndSet(false,true))
+                    if (complete.compareAndSet(false, true))
                         asyncContext.complete();
                     break;
                 }
-                else if (read>0)
+                else if (read > 0)
                 {
                     output.write(buffer, 0, read);
                 }
@@ -116,7 +114,7 @@ public class AsyncEchoServlet extends HttpServlet
         @Override
         public void onError(Throwable failure)
         {
-            new Throwable("onError",failure).printStackTrace();
+            new Throwable("onError", failure).printStackTrace();
             asyncContext.complete();
         }
     }

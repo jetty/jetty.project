@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
+import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -26,9 +29,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-
-import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
 
 public class StringMessageSink extends AbstractMessageSink
 {

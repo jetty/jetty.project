@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.stream.Stream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -79,7 +78,9 @@ public class SSLAsyncIOServletTest
         String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         final byte[] content = new byte[50000];
         for (int i = 0; i < content.length; ++i)
+        {
             content[i] = (byte)chars.charAt(random.nextInt(chars.length()));
+        }
 
         prepare(scenario, new HttpServlet()
         {
@@ -133,15 +134,15 @@ public class SSLAsyncIOServletTest
 
         try (Socket client = scenario.newClient())
         {
-            String request = "" +
-                    "GET " + scenario.getServletPath() + " HTTP/1.1\r\n" +
+            String request =
+                "GET " + scenario.getServletPath() + " HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Connection: close\r\n" +
                     "\r\n";
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();
-    
+
             InputStream inputStream = client.getInputStream();
             HttpTester.Response response = HttpTester.parseResponse(inputStream);
             assertEquals(200, response.getStatus());

@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.security.Password;
 
 public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
 {
-    private static final Class[] SUPPORTED_MESSAGE_TYPES = new Class[] { HttpServletRequest.class, HttpServletResponse.class };
+    private static final Class[] SUPPORTED_MESSAGE_TYPES = new Class[]{HttpServletRequest.class, HttpServletResponse.class};
 
     protected static final String LOGIN_SERVICE_KEY = "org.eclipse.jetty.security.jaspi.modules.LoginService";
 
@@ -109,30 +109,31 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
      */
     protected boolean isMandatory(MessageInfo messageInfo)
     {
-        String mandatory = (String) messageInfo.getMap().get(JaspiMessageInfo.MANDATORY_KEY);
-        if (mandatory == null) return false;
+        String mandatory = (String)messageInfo.getMap().get(JaspiMessageInfo.MANDATORY_KEY);
+        if (mandatory == null)
+            return false;
         return Boolean.parseBoolean(mandatory);
     }
 
-    protected boolean login(Subject clientSubject, String credentials, 
-                            String authMethod, MessageInfo messageInfo) 
-    throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String credentials,
+                            String authMethod, MessageInfo messageInfo)
+        throws IOException, UnsupportedCallbackException
     {
-        credentials = credentials.substring(credentials.indexOf(' ')+1);
+        credentials = credentials.substring(credentials.indexOf(' ') + 1);
         credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
         int i = credentials.indexOf(':');
-        String userName = credentials.substring(0,i);
-        String password = credentials.substring(i+1);
+        String userName = credentials.substring(0, i);
+        String password = credentials.substring(i + 1);
         return login(clientSubject, userName, new Password(password), authMethod, messageInfo);
     }
 
-    protected boolean login(Subject clientSubject, String username, 
-                            Credential credential, String authMethod, 
-                            MessageInfo messageInfo) 
-    throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String username,
+                            Credential credential, String authMethod,
+                            MessageInfo messageInfo)
+        throws IOException, UnsupportedCallbackException
     {
         CredentialValidationCallback credValidationCallback = new CredentialValidationCallback(clientSubject, username, credential);
-        callbackHandler.handle(new Callback[] { credValidationCallback });
+        callbackHandler.handle(new Callback[]{credValidationCallback});
         if (credValidationCallback.getResult())
         {
             Set<LoginCallbackImpl> loginCallbacks = clientSubject.getPrivateCredentials(LoginCallbackImpl.class);
@@ -141,11 +142,10 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
                 LoginCallbackImpl loginCallback = loginCallbacks.iterator().next();
                 CallerPrincipalCallback callerPrincipalCallback = new CallerPrincipalCallback(clientSubject, loginCallback.getUserPrincipal());
                 GroupPrincipalCallback groupPrincipalCallback = new GroupPrincipalCallback(clientSubject, loginCallback.getRoles());
-                callbackHandler.handle(new Callback[] { callerPrincipalCallback, groupPrincipalCallback });
+                callbackHandler.handle(new Callback[]{callerPrincipalCallback, groupPrincipalCallback});
             }
             messageInfo.getMap().put(JaspiMessageInfo.AUTH_METHOD_KEY, authMethod);
         }
         return credValidationCallback.getResult();
-
     }
 }

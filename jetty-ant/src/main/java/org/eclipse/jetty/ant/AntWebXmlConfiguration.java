@@ -24,9 +24,7 @@ import java.util.List;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
-
 
 /**
  * This configuration object provides additional way to inject application
@@ -38,12 +36,15 @@ public class AntWebXmlConfiguration extends WebXmlConfiguration
 {
     private static final Logger LOG = Log.getLogger(WebXmlConfiguration.class);
 
-    /** List of classpath files. */
+    /**
+     * List of classpath files.
+     */
     private List classPathFiles;
 
-    /** Web application root directory. */
+    /**
+     * Web application root directory.
+     */
     private File webAppBaseDir;
-
 
     public AntWebXmlConfiguration()
     {
@@ -55,7 +56,7 @@ public class AntWebXmlConfiguration extends WebXmlConfiguration
     {
         return WebXmlConfiguration.class;
     }
-    
+
     public void setClassPathFiles(List classPathFiles)
     {
         this.classPathFiles = classPathFiles;
@@ -65,7 +66,4 @@ public class AntWebXmlConfiguration extends WebXmlConfiguration
     {
         this.webAppBaseDir = webAppBaseDir;
     }
-
-
-
 }

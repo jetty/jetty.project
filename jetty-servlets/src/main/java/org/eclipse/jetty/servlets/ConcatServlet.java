@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -135,7 +134,9 @@ public class ConcatServlet extends HttpServlet
             response.setContentType(type);
 
         for (RequestDispatcher dispatcher : dispatchers)
+        {
             dispatcher.include(request, response);
+        }
     }
 
     private boolean startsWith(String path, String prefix)

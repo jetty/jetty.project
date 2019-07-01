@@ -29,7 +29,7 @@ public interface WebSocketConnectionListener
      * The underlying Connection will be considered closed at this point.
      *
      * @param statusCode the close status code. (See {@link StatusCode})
-     * @param reason     the optional reason for the close.
+     * @param reason the optional reason for the close.
      */
     void onWebSocketClose(int statusCode, String reason);
 

@@ -30,7 +30,7 @@ public class EchoerMBean extends ObjectMBean
         super(managedObject);
     }
 
-    @ManagedAttribute(value="Gets the value of foo",proxied=true)
+    @ManagedAttribute(value = "Gets the value of foo", proxied = true)
     public String getFoo()
     {
         return "foo-ish";

@@ -37,7 +37,7 @@ import org.osgi.framework.Bundle;
 
 /**
  * DefaultFileLocatorHelper
- * <p> 
+ * <p>
  * From a bundle to its location on the filesystem. Assumes the bundle is not a
  * jar.
  */
@@ -59,30 +59,38 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
     // DirZipBundleEntry
 
     private static Field ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = null;// ZipFile
-    
-    private static final String[] FILE_BUNDLE_ENTRY_CLASSES = {"org.eclipse.osgi.baseadaptor.bundlefile.FileBundleEntry","org.eclipse.osgi.storage.bundlefile.FileBundleEntry"};
-    private static final String[] ZIP_BUNDLE_ENTRY_CLASSES = {"org.eclipse.osgi.baseadaptor.bundlefile.ZipBundleEntry","org.eclipse.osgi.storage.bundlefile.ZipBundleEntry"};
-    private static final String[] DIR_ZIP_BUNDLE_ENTRY_CLASSES = {"org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry","org.eclipse.osgi.storage.bundlefile.DirZipBundleEntry"};
-    private static final String[] BUNDLE_URL_CONNECTION_CLASSES = {"org.eclipse.osgi.framework.internal.core.BundleURLConnection", "org.eclipse.osgi.storage.url.BundleURLConnection"};
 
+    private static final String[] FILE_BUNDLE_ENTRY_CLASSES = {
+        "org.eclipse.osgi.baseadaptor.bundlefile.FileBundleEntry", "org.eclipse.osgi.storage.bundlefile.FileBundleEntry"
+    };
+    private static final String[] ZIP_BUNDLE_ENTRY_CLASSES = {
+        "org.eclipse.osgi.baseadaptor.bundlefile.ZipBundleEntry", "org.eclipse.osgi.storage.bundlefile.ZipBundleEntry"
+    };
+    private static final String[] DIR_ZIP_BUNDLE_ENTRY_CLASSES = {
+        "org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry", "org.eclipse.osgi.storage.bundlefile.DirZipBundleEntry"
+    };
+    private static final String[] BUNDLE_URL_CONNECTION_CLASSES = {
+        "org.eclipse.osgi.framework.internal.core.BundleURLConnection", "org.eclipse.osgi.storage.url.BundleURLConnection"
+    };
 
-    public static boolean match (String name, String... names)
+    public static boolean match(String name, String... names)
     {
         if (name == null || names == null)
             return false;
         boolean matched = false;
-        for (int i=0; i< names.length && !matched; i++)
+        for (int i = 0; i < names.length && !matched; i++)
+        {
             if (name.equals(names[i]))
                 matched = true;
+        }
         return matched;
     }
-    
-    
+
     /**
      * Works with equinox, felix, nuxeo and probably more. Not exactly in the
      * spirit of OSGi but quite necessary to support self-contained webapps and
      * other situations.
-     * 
+     *
      * @param bundle The bundle
      * @return Its installation location as a file.
      * @throws Exception if unable to get the bundle install location
@@ -122,7 +130,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 BUNDLE_ENTRY_FIELD.setAccessible(true);
             }
             Object bundleEntry = BUNDLE_ENTRY_FIELD.get(con);
-           
+
             if (match(bundleEntry.getClass().getName(), FILE_BUNDLE_ENTRY_CLASSES))
             {
                 if (FILE_FIELD == null)
@@ -130,7 +138,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                     FILE_FIELD = bundleEntry.getClass().getDeclaredField("file");
                     FILE_FIELD.setAccessible(true);
                 }
-                File f = (File) FILE_FIELD.get(bundleEntry);
+                File f = (File)FILE_FIELD.get(bundleEntry);
                 return f.getParentFile().getParentFile().getCanonicalFile();
             }
             else if (match(bundleEntry.getClass().getName(), ZIP_BUNDLE_ENTRY_CLASSES))
@@ -141,7 +149,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 con.setDefaultUseCaches(Resource.getDefaultUseCaches());
 
                 if (BUNDLE_ENTRY_FIELD == null)
-                {// this one will be a DirZipBundleEntry
+                {
+                    // this one will be a DirZipBundleEntry
                     BUNDLE_ENTRY_FIELD = con.getClass().getDeclaredField("bundleEntry");
                     BUNDLE_ENTRY_FIELD.setAccessible(true);
                 }
@@ -157,10 +166,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                     ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = zipBundleFile.getClass().getDeclaredField("zipFile");
                     ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.setAccessible(true);
                 }
-                ZipFile zipFile = (ZipFile) ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.get(zipBundleFile);
+                ZipFile zipFile = (ZipFile)ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.get(zipBundleFile);
                 return new File(zipFile.getName());
             }
-            else if (match (bundleEntry.getClass().getName(), DIR_ZIP_BUNDLE_ENTRY_CLASSES))
+            else if (match(bundleEntry.getClass().getName(), DIR_ZIP_BUNDLE_ENTRY_CLASSES))
             {
                 // that will not happen as we did ask for the manifest not a
                 // directory.
@@ -181,18 +190,20 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 // it is relative to relative to the BundleArchive's
                 // m_archiveRootDir
                 File res = new File(location.substring("file:".length()));
-                if (!res.exists()) { return null;
-                // Object bundleArchive = getFelixBundleArchive(bundle);
-                // File archiveRoot =
-                // getFelixBundleArchiveRootDir(bundleArchive);
-                // String currentLocation =
-                // getFelixBundleArchiveCurrentLocation(bundleArchive);
-                // System.err.println("Got the archive root " +
-                // archiveRoot.getAbsolutePath()
-                // + " current location " + currentLocation +
-                // " is directory ?");
-                // res = new File(archiveRoot, currentLocation != null
-                // ? currentLocation : location.substring("file:".length()));
+                if (!res.exists())
+                {
+                    return null;
+                    // Object bundleArchive = getFelixBundleArchive(bundle);
+                    // File archiveRoot =
+                    // getFelixBundleArchiveRootDir(bundleArchive);
+                    // String currentLocation =
+                    // getFelixBundleArchiveCurrentLocation(bundleArchive);
+                    // System.err.println("Got the archive root " +
+                    // archiveRoot.getAbsolutePath()
+                    // + " current location " + currentLocation +
+                    // " is directory ?");
+                    // res = new File(archiveRoot, currentLocation != null
+                    // ? currentLocation : location.substring("file:".length()));
                 }
                 return res;
             }
@@ -208,7 +219,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
     /**
      * Locate a file inside a bundle.
-     * 
+     *
      * @param bundle the bundle
      * @param path the path
      * @return file object
@@ -223,12 +234,11 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         }
         File bundleInstall = getBundleInstallLocation(bundle);
         File webapp = path != null && path.length() != 0 ? new File(bundleInstall, path) : bundleInstall;
-        if (!webapp.exists()) { throw new IllegalArgumentException("Unable to locate " + path
-                                                                   + " inside "
-                                                                   + bundle.getSymbolicName()
-                                                                   + " ("
-                                                                   + (bundleInstall != null ? bundleInstall.getAbsolutePath() : " no_bundle_location ")
-                                                                   + ")"); }
+        if (!webapp.exists())
+        {
+            throw new IllegalArgumentException("Unable to locate " + path + " inside " + bundle.getSymbolicName() +
+                " (" + (bundleInstall != null ? bundleInstall.getAbsolutePath() : " no_bundle_location ") + ")");
+        }
         return webapp;
     }
 
@@ -236,7 +246,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * Helper method equivalent to Bundle#getEntry(String entryPath) except that
      * it searches for entries in the fragments by using the Bundle#findEntries
      * method.
-     * 
+     *
      * @param bundle the bundle
      * @param entryPath the entry path
      * @return null or all the entries found for that path.
@@ -265,10 +275,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * development purpose where the bundle was imported in pde and the classes
      * kept in a jar.
      * </p>
-     * 
+     *
      * @param bundle the bundle
      * @return The jar(s) file that is either the bundle itself, either the jars
-     *         embedded inside it.
+     * embedded inside it.
      */
     @Override
     public File[] locateJarsInsideBundle(Bundle bundle) throws Exception
@@ -299,7 +309,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         }
         else
         {
-            return new File[] { jasperLocation };
+            return new File[]{jasperLocation};
         }
     }
 
@@ -318,12 +328,12 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * Get a URL to the bundle entry that uses a common protocol (i.e. file:
      * jar: or http: etc.).
      * </p>
-     * 
+     *
      * @return a URL to the bundle entry that uses a common protocol
      */
     @Override
     public URL getLocalURL(URL url)
-    throws Exception
+        throws Exception
     {
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {
@@ -335,7 +345,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL");
                 BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
             }
-            if (BUNDLE_URL_CONNECTION_getLocalURL != null) { return (URL) BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn); }
+            if (BUNDLE_URL_CONNECTION_getLocalURL != null)
+            {
+                return (URL)BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn);
+            }
         }
         return url;
     }
@@ -347,32 +360,31 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * Get a URL to the content of the bundle entry that uses the file:
      * protocol. The content of the bundle entry may be downloaded or extracted
      * to the local file system in order to create a file: URL.
-     * 
+     *
      * @return a URL to the content of the bundle entry that uses the file:
-     *         protocol
-     *         </p>
-     * @throws Exception if unable to get the file url 
+     * protocol
+     * </p>
+     * @throws Exception if unable to get the file url
      */
     @Override
     public URL getFileURL(URL url) throws Exception
- 
+
     {
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {
 
             URLConnection conn = url.openConnection();
             conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-            if (BUNDLE_URL_CONNECTION_getFileURL == null 
-                && 
-                match (conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
+            if (BUNDLE_URL_CONNECTION_getFileURL == null && match(conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
             {
                 BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL");
                 BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);
             }
-            if (BUNDLE_URL_CONNECTION_getFileURL != null) { return (URL) BUNDLE_URL_CONNECTION_getFileURL.invoke(conn); }
-
+            if (BUNDLE_URL_CONNECTION_getFileURL != null)
+            {
+                return (URL)BUNDLE_URL_CONNECTION_getFileURL.invoke(conn);
+            }
         }
         return url;
     }
-
 }

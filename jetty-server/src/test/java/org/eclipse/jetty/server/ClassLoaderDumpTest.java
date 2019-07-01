@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
 import org.eclipse.jetty.util.component.Dumpable;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 public class ClassLoaderDumpTest
 {
@@ -48,10 +48,10 @@ public class ClassLoaderDumpTest
         StringBuilder out = new StringBuilder();
         server.dump(out);
         String dump = out.toString();
-        assertThat(dump,containsString("+- SimpleLoader"));
-        assertThat(dump,containsString("+> "+Server.class.getClassLoader()));
+        assertThat(dump, containsString("+- SimpleLoader"));
+        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
     }
-    
+
     @Test
     public void testParent() throws Exception
     {
@@ -69,11 +69,11 @@ public class ClassLoaderDumpTest
         StringBuilder out = new StringBuilder();
         server.dump(out);
         String dump = out.toString();
-        assertThat(dump,containsString("+- ParentedLoader"));
-        assertThat(dump,containsString("|  +> Server loader: "+Server.class.getClassLoader()));
-        assertThat(dump,containsString("+> "+Server.class.getClassLoader()));
+        assertThat(dump, containsString("+- ParentedLoader"));
+        assertThat(dump, containsString("|  +> Server loader: " + Server.class.getClassLoader()));
+        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
     }
-    
+
     @Test
     public void testNested() throws Exception
     {
@@ -98,12 +98,12 @@ public class ClassLoaderDumpTest
         StringBuilder out = new StringBuilder();
         server.dump(out);
         String dump = out.toString();
-        assertThat(dump,containsString("+- TopLoader"));
-        assertThat(dump,containsString("|  +> MiddleLoader"));
-        assertThat(dump,containsString("|     +> Server loader: "+Server.class.getClassLoader()));
-        assertThat(dump,containsString("+> "+Server.class.getClassLoader()));
+        assertThat(dump, containsString("+- TopLoader"));
+        assertThat(dump, containsString("|  +> MiddleLoader"));
+        assertThat(dump, containsString("|     +> Server loader: " + Server.class.getClassLoader()));
+        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
     }
-    
+
     @Test
     public void testDumpable() throws Exception
     {
@@ -122,12 +122,12 @@ public class ClassLoaderDumpTest
         StringBuilder out = new StringBuilder();
         server.dump(out);
         String dump = out.toString();
-        assertThat(dump,containsString("+- TopLoader"));
-        assertThat(dump,containsString("|  +> DumpableClassLoader"));
-        assertThat(dump,not(containsString("|    +> "+Server.class.getClassLoader())));
-        assertThat(dump,containsString("+> "+Server.class.getClassLoader()));
+        assertThat(dump, containsString("+- TopLoader"));
+        assertThat(dump, containsString("|  +> DumpableClassLoader"));
+        assertThat(dump, not(containsString("|    +> " + Server.class.getClassLoader())));
+        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
     }
-    
+
     public static class DumpableClassLoader extends ClassLoader implements Dumpable
     {
         public DumpableClassLoader(ClassLoader parent)
@@ -152,15 +152,13 @@ public class ClassLoaderDumpTest
             return "DumpableClassLoader";
         }
     }
-    
 
-    
     @Test
     public void testUrlClassLoaders() throws Exception
     {
         Server server = new Server();
-        ClassLoader middleLoader = new URLClassLoader(new URL[] 
-            {new URL("file:/one"),new URL("file:/two"),new URL("file:/three"),},
+        ClassLoader middleLoader = new URLClassLoader(new URL[]
+            {new URL("file:/one"), new URL("file:/two"), new URL("file:/three"),},
             Server.class.getClassLoader())
         {
             public String toString()
@@ -168,8 +166,8 @@ public class ClassLoaderDumpTest
                 return "MiddleLoader";
             }
         };
-        ClassLoader loader = new URLClassLoader(new URL[] 
-            {new URL("file:/ONE"),new URL("file:/TWO"),new URL("file:/THREE"),},
+        ClassLoader loader = new URLClassLoader(new URL[]
+            {new URL("file:/ONE"), new URL("file:/TWO"), new URL("file:/THREE"),},
             middleLoader)
         {
             public String toString()
@@ -184,15 +182,15 @@ public class ClassLoaderDumpTest
         server.dump(out);
         String dump = out.toString();
         // System.err.println(dump);
-        assertThat(dump,containsString("+- TopLoader"));
-        assertThat(dump,containsString("|  |  +> file:/ONE"));
-        assertThat(dump,containsString("|  |  +> file:/TWO"));
-        assertThat(dump,containsString("|  |  +> file:/THREE"));
-        assertThat(dump,containsString("|  +> MiddleLoader"));
-        assertThat(dump,containsString("|     |  +> file:/one"));
-        assertThat(dump,containsString("|     |  +> file:/two"));
-        assertThat(dump,containsString("|     |  +> file:/three"));
-        assertThat(dump,containsString("|     +> "+Server.class.getClassLoader()));
-        assertThat(dump,containsString("+> "+Server.class.getClassLoader()));
+        assertThat(dump, containsString("+- TopLoader"));
+        assertThat(dump, containsString("|  |  +> file:/ONE"));
+        assertThat(dump, containsString("|  |  +> file:/TWO"));
+        assertThat(dump, containsString("|  |  +> file:/THREE"));
+        assertThat(dump, containsString("|  +> MiddleLoader"));
+        assertThat(dump, containsString("|     |  +> file:/one"));
+        assertThat(dump, containsString("|     |  +> file:/two"));
+        assertThat(dump, containsString("|     |  +> file:/three"));
+        assertThat(dump, containsString("|     +> " + Server.class.getClassLoader()));
+        assertThat(dump, containsString("+> " + Server.class.getClassLoader()));
     }
 }

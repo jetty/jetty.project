@@ -47,7 +47,7 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        LOG.debug("onWebSocketClose({}, {})",statusCode,reason);
+        LOG.debug("onWebSocketClose({}, {})", statusCode, reason);
         this.closeStatusCode = statusCode;
         this.closeReason = reason;
         closeLatch.countDown();
@@ -61,7 +61,7 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
     }
 
     public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher, Matcher<String> reasonMatcher)
-            throws InterruptedException
+        throws InterruptedException
     {
         assertThat("Client Close Event Occurred", closeLatch.await(clientTimeoutMs, TimeUnit.MILLISECONDS), is(true));
         assertThat("Client Close Event Status Code", closeStatusCode, statusCodeMatcher);

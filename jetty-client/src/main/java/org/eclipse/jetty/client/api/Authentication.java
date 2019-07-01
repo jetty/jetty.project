@@ -42,12 +42,14 @@ public interface Authentication
 {
     /**
      * Constant used to indicate that any realm will match.
+     *
      * @see #matches(String, URI, String)
      */
     public static final String ANY_REALM = "<<ANY_REALM>>";
 
     /**
      * Matches {@link Authentication}s based on the given parameters
+     *
      * @param type the {@link Authentication} type such as "Basic" or "Digest"
      * @param uri the request URI
      * @param realm the authentication realm as provided in the {@code WWW-Authenticate} response header
@@ -66,9 +68,9 @@ public interface Authentication
      * @param request the request to execute the authentication mechanism for
      * @param response the 401 response obtained in the previous attempt to request the protected resource
      * @param headerInfo the {@code WWW-Authenticate} (or {@code Proxy-Authenticate}) header chosen for this
-     *                     authentication (among the many that the response may contain)
+     * authentication (among the many that the response may contain)
      * @param context the conversation context in case the authentication needs multiple exchanges
-     *                to be completed and information needs to be stored across exchanges
+     * to be completed and information needs to be stored across exchanges
      * @return the authentication result, or null if the authentication could not be performed
      */
     Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context);
@@ -80,16 +82,15 @@ public interface Authentication
     {
         private final HttpHeader header;
         private final String type;
-        private final Map<String,String> params;
+        private final Map<String, String> params;
 
-        
-        public HeaderInfo(HttpHeader header, String type, Map<String,String> params) throws IllegalArgumentException
+        public HeaderInfo(HttpHeader header, String type, Map<String, String> params) throws IllegalArgumentException
         {
             this.header = header;
             this.type = type;
             this.params = params;
         }
-        
+
         /**
          * @return the authentication type (for example "Basic" or "Digest")
          */
@@ -113,7 +114,7 @@ public interface Authentication
         {
             return params.get("base64");
         }
-        
+
         /**
          * @return additional authentication parameters
          */
@@ -121,7 +122,7 @@ public interface Authentication
         {
             return params;
         }
-        
+
         /**
          * @return specified authentication parameter or null if does not exist
          */

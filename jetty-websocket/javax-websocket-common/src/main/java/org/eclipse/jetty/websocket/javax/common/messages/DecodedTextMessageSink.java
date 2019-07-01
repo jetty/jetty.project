@@ -18,22 +18,22 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import javax.websocket.CloseReason;
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+
 import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.MessageSink;
 
-import javax.websocket.CloseReason;
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-
 public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T>>
 {
     public DecodedTextMessageSink(JavaxWebSocketSession session,
-        Decoder.Text<T> decoder,
-        MethodHandle methodHandle)
+                                  Decoder.Text<T> decoder,
+                                  MethodHandle methodHandle)
         throws NoSuchMethodException, IllegalAccessException
     {
         super(session, decoder, methodHandle);
@@ -58,7 +58,7 @@ public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T
     {
         if (!getDecoder().willDecode(wholeMessage))
         {
-            LOG.warn("Message lost, decoder " + getDecoder().getClass().getName() + "#willDecode() has rejected it.");
+            logger.warn("Message lost, decoder " + getDecoder().getClass().getName() + "#willDecode() has rejected it.");
             return;
         }
 

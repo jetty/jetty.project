@@ -125,7 +125,9 @@ public class MetaData implements Iterable<HttpField>
     {
         StringBuilder out = new StringBuilder();
         for (HttpField field : this)
+        {
             out.append(field).append(System.lineSeparator());
+        }
         return out.toString();
     }
 
@@ -167,14 +169,13 @@ public class MetaData implements Iterable<HttpField>
             this(method, new HttpURI(scheme,
                     hostPort == null ? null : hostPort.getHost(),
                     hostPort == null ? -1 : hostPort.getPort(),
-                    uri), version, fields, contentLength);
+                uri), version, fields, contentLength);
         }
 
         public Request(Request request)
         {
-            this(request.getMethod(),new HttpURI(request.getURI()), request.getHttpVersion(), new HttpFields(request.getFields()), request.getContentLength());
-            setProtocol(request.getProtocol());
-        }
+            this(request.getMethod(), new HttpURI(request.getURI()), request.getHttpVersion(), new HttpFields(request.getFields()), request.getContentLength());
+            setProtocol(request.getProtocol());        }
 
         @Override
         public void recycle()

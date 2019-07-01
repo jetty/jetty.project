@@ -1,4 +1,3 @@
-package org.acme;
 //
 //  ========================================================================
 //  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
@@ -17,13 +16,10 @@ package org.acme;
 //  ========================================================================
 //
 
-
-
+package org.acme;
 
 /**
  * ClassOne
- *
- *
  */
 public class ClassOne
 {
@@ -31,5 +27,4 @@ public class ClassOne
     public void one()
     {
     }
-
 }

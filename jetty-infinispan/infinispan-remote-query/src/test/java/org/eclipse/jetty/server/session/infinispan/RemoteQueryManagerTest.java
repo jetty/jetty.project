@@ -47,80 +47,78 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RemoteQueryManagerTest
 {
-    public static final String DEFAULT_CACHE_NAME =  "remote-session-test";
+    public static final String DEFAULT_CACHE_NAME = "remote-session-test";
 
     @Test
     public void test() throws Exception
     {
         SearchMapping mapping = new SearchMapping();
         mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
-        
+
         Properties properties = new Properties();
         properties.put(Environment.MODEL_MAPPING, mapping);
-        
+
         ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
         clientBuilder.withProperties(properties).addServer().host("127.0.0.1").marshaller(new ProtoStreamMarshaller());
-            
+
         RemoteCacheManager remoteCacheManager = new RemoteCacheManager(clientBuilder.build());
-        
-        
+
         FileDescriptorSource fds = new FileDescriptorSource();
         fds.addProtoFiles("/session.proto");
-        
+
         SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(remoteCacheManager);
         serCtx.registerProtoFiles(fds);
         serCtx.registerMarshaller(new SessionDataMarshaller());
-        
+
         RemoteCache<String, SessionData> _cache = remoteCacheManager.getCache(DEFAULT_CACHE_NAME);
-           
-        
+
         ByteArrayOutputStream baos;
-        try(InputStream is = RemoteQueryManagerTest.class.getClassLoader().getResourceAsStream("session.proto"))
+        try (InputStream is = RemoteQueryManagerTest.class.getClassLoader().getResourceAsStream("session.proto"))
         {
             if (is == null)
                 throw new IllegalStateException("inputstream is null");
-            
+
             baos = new ByteArrayOutputStream();
             IO.copy(is, baos);
         }
-        
+
         String content = baos.toString("UTF-8");
         remoteCacheManager.getCache("___protobuf_metadata").put("session.proto", content);
-        
+
         //put some sessions into the remote cache
         int numSessions = 10;
         long currentTime = 500;
         int maxExpiryTime = 1000;
         Set<String> expiredSessions = new HashSet<>();
         Random r = new Random();
-        
-        for(int i=0; i<numSessions; i++)
+
+        for (int i = 0; i < numSessions; i++)
         {
-            String id = "sd"+i;
+            String id = "sd" + i;
             //create new sessiondata with random expiry time
             long expiryTime = r.nextInt(maxExpiryTime);
             SessionData sd = new SessionData(id, "", "", 0, 0, 0, 0);
             sd.setLastNode("lastNode");
             sd.setExpiry(expiryTime);
-            
+
             //if this entry has expired add it to expiry list
             if (expiryTime <= currentTime)
                 expiredSessions.add(id);
-            
+
             //add to cache
             _cache.put(id, sd);
             assertNotNull(_cache.get(id));
         }
-       
+
         //run the query
         QueryManager qm = new RemoteQueryManager(_cache);
-        Set<String> queryResult = qm.queryExpiredSessions(currentTime);       
-        
+        Set<String> queryResult = qm.queryExpiredSessions(currentTime);
+
         // Check that the result is correct
         assertEquals(expiredSessions.size(), queryResult.size());
-        for(String s : expiredSessions)
+        for (String s : expiredSessions)
         {
             assertTrue(queryResult.contains(s));
-        }  
+        }
     }
 }

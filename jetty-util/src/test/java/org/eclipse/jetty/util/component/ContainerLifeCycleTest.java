@@ -129,7 +129,8 @@ public class ContainerLifeCycleTest
         container.stop();
         container.destroy();
 
-        assertThrows(IllegalStateException.class, ()-> {
+        assertThrows(IllegalStateException.class, () ->
+        {
             container.start();
         });
     }
@@ -280,11 +281,12 @@ public class ContainerLifeCycleTest
             @Override
             public void dump(Appendable out, String indent) throws IOException
             {
-                Dumpable.dumpObjects(out, indent, this.toString(), TypeUtil.asList(new Object[]{a1, a2}), TypeUtil.asList(new Object[]{a3, a4}));
+                Dumpable.dumpObjects(out, indent, this.toString(), TypeUtil.asList(new Object[]{
+                    a1, a2
+                }), TypeUtil.asList(new Object[]{a3, a4}));
             }
         };
         a0.addBean(aa, true);
-
 
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
@@ -591,8 +593,7 @@ public class ContainerLifeCycleTest
             s = s.substring(0, nl);
         }
 
-
-        assertThat( s, Matchers.startsWith( x));
+        assertThat(s, Matchers.startsWith(x));
 
         return r;
     }
@@ -625,7 +626,6 @@ public class ContainerLifeCycleTest
         }
     }
 
-
     @Test
     public void testGetBeans() throws Exception
     {
@@ -644,11 +644,11 @@ public class ContainerLifeCycleTest
         leaf.addBean(4);
         leaf.addBean("leaf");
 
-        assertThat(root.getBeans(Container.class), containsInAnyOrder(left,right));
+        assertThat(root.getBeans(Container.class), containsInAnyOrder(left, right));
         assertThat(root.getBeans(Integer.class), containsInAnyOrder(0, 1));
         assertThat(root.getBeans(String.class), containsInAnyOrder());
 
-        assertThat(root.getContainedBeans(Container.class), containsInAnyOrder(left,right,leaf));
+        assertThat(root.getContainedBeans(Container.class), containsInAnyOrder(left, right, leaf));
         assertThat(root.getContainedBeans(Integer.class), containsInAnyOrder(0, 1, 2, 3, 4));
         assertThat(root.getContainedBeans(String.class), containsInAnyOrder("leaf"));
     }

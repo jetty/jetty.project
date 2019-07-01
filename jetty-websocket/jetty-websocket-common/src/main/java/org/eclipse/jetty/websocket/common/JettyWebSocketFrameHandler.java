@@ -77,15 +77,15 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private Runnable delayedOnFrame;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
-        Object endpointInstance,
-        MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-        MethodHandle textHandle, MethodHandle binaryHandle,
-        Class<? extends MessageSink> textSinkClass,
-        Class<? extends MessageSink> binarySinkClass,
-        MethodHandle frameHandle,
-        MethodHandle pingHandle, MethodHandle pongHandle,
-        BatchMode batchMode,
-        Customizer customizer)
+                                      Object endpointInstance,
+                                      MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
+                                      MethodHandle textHandle, MethodHandle binaryHandle,
+                                      Class<? extends MessageSink> textSinkClass,
+                                      Class<? extends MessageSink> binarySinkClass,
+                                      MethodHandle frameHandle,
+                                      MethodHandle pingHandle, MethodHandle pongHandle,
+                                      BatchMode batchMode,
+                                      Customizer customizer)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
@@ -181,13 +181,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         synchronized (this)
         {
-            switch(state)
+            switch (state)
             {
                 case DEMANDING:
                     break;
 
                 case SUSPENDING:
-                    delayedOnFrame = ()->onFrame(frame, callback);
+                    delayedOnFrame = () -> onFrame(frame, callback);
                     state = SuspendState.SUSPENDED;
                     return;
 
@@ -211,21 +211,21 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
 
         // Demand after succeeding any received frame
-        Callback demandingCallback = Callback.from(()->
+        Callback demandingCallback = Callback.from(() ->
+            {
+                try
                 {
-                    try
-                    {
-                        demand();
-                    }
-                    catch (Throwable t)
-                    {
-                        callback.failed(t);
-                        return;
-                    }
+                    demand();
+                }
+                catch (Throwable t)
+                {
+                    callback.failed(t);
+                    return;
+                }
 
-                    callback.succeeded();
-                },
-                callback::failed
+                callback.succeeded();
+            },
+            callback::failed
         );
 
         switch (frame.getOpCode())
@@ -397,7 +397,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         synchronized (this)
         {
-            switch(state)
+            switch (state)
             {
                 case DEMANDING:
                     state = SuspendState.SUSPENDING;
@@ -418,7 +418,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         Runnable delayedFrame = null;
         synchronized (this)
         {
-            switch(state)
+            switch (state)
             {
                 case DEMANDING:
                     throw new IllegalStateException("Already Resumed");
@@ -451,7 +451,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         boolean demand = false;
         synchronized (this)
         {
-            switch(state)
+            switch (state)
             {
                 case DEMANDING:
                     demand = true;
@@ -473,7 +473,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             session.getCoreSession().demand(1);
     }
 
-    static Throwable convertCause(Throwable cause)
+    public static Throwable convertCause(Throwable cause)
     {
         if (cause instanceof MessageTooLargeException)
             return new org.eclipse.jetty.websocket.api.MessageTooLargeException(cause.getMessage(), cause);
@@ -494,7 +494,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             return new org.eclipse.jetty.websocket.api.InvalidWebSocketException(cause.getMessage(), cause);
 
         if (cause instanceof UpgradeException)
-            return new org.eclipse.jetty.websocket.api.UpgradeException(((UpgradeException)cause).getRequestURI(), cause);
+        {
+            UpgradeException ue = (UpgradeException)cause;
+            return new org.eclipse.jetty.websocket.api.UpgradeException(ue.getRequestURI(), ue.getResponseStatusCode(), cause);
+        }
 
         return cause;
     }

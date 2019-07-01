@@ -19,7 +19,6 @@
 package org.eclipse.jetty.test.webapp;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;

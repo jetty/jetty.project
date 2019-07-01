@@ -244,8 +244,8 @@ public class BalancerServlet extends ProxyServlet
         {
             URI backendURI = balancerMember.getBackendURI();
             if (backendURI.getHost().equals(locationURI.getHost()) &&
-                    backendURI.getScheme().equals(locationURI.getScheme())
-                    && backendURI.getPort() == locationURI.getPort())
+                backendURI.getScheme().equals(locationURI.getScheme()) &&
+                backendURI.getPort() == locationURI.getPort())
             {
                 return true;
             }

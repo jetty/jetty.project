@@ -26,7 +26,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -56,25 +55,25 @@ import static org.hamcrest.Matchers.not;
 
 public class DebugHandlerTest
 {
-    public final static HostnameVerifier __hostnameverifier = (hostname, session) -> true;
-    
+    public static final HostnameVerifier __hostnameverifier = (hostname, session) -> true;
+
     private SSLContext sslContext;
     private Server server;
     private URI serverURI;
     private URI secureServerURI;
-    
+
     private DebugHandler debugHandler;
     private ByteArrayOutputStream capturedLog;
-    
+
     @BeforeEach
     public void startServer() throws Exception
     {
         server = new Server();
-        
+
         ServerConnector httpConnector = new ServerConnector(server);
         httpConnector.setPort(0);
         server.addConnector(httpConnector);
-        
+
         File keystorePath = MavenTestingUtils.getTestResourceFile("keystore");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath.getAbsolutePath());
@@ -84,31 +83,32 @@ public class DebugHandlerTest
         sslContextFactory.setTrustStorePassword("storepwd");
         ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
         ServerConnector sslConnector = new ServerConnector(server, null, null, pool, 1, 1,
-                AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
-        
+            AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
+
         server.addConnector(sslConnector);
-        
+
         debugHandler = new DebugHandler();
         capturedLog = new ByteArrayOutputStream();
         debugHandler.setOutputStream(capturedLog);
         debugHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                {
-                    baseRequest.setHandled(true);
-                    response.setStatus(HttpStatus.OK_200);
-                }
-            });
+                baseRequest.setHandled(true);
+                response.setStatus(HttpStatus.OK_200);
+            }
+        });
         server.setHandler(debugHandler);
         server.start();
-        
+
         String host = httpConnector.getHost();
-        if(host == null) host = "localhost";
-        
+        if (host == null)
+            host = "localhost";
+
         serverURI = URI.create(String.format("http://%s:%d/", host, httpConnector.getLocalPort()));
         secureServerURI = URI.create(String.format("https://%s:%d/", host, sslConnector.getLocalPort()));
-        
+
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
         try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
         {
@@ -126,44 +126,44 @@ public class DebugHandlerTest
             sc.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
-    
+
     @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
     public void testThreadName() throws IOException
     {
-        HttpURLConnection http = (HttpURLConnection) serverURI.resolve("/foo/bar?a=b").toURL().openConnection();
+        HttpURLConnection http = (HttpURLConnection)serverURI.resolve("/foo/bar?a=b").toURL().openConnection();
         assertThat("Response Code", http.getResponseCode(), is(200));
-        
+
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());
         String expectedThreadName = ":/foo/bar?a=b";
         assertThat("ThreadName", log, containsString(expectedThreadName));
         // Look for bad/mangled/duplicated schemes
-        assertThat("ThreadName", log, not(containsString("http:"+expectedThreadName)));
-        assertThat("ThreadName", log, not(containsString("https:"+expectedThreadName)));
+        assertThat("ThreadName", log, not(containsString("http:" + expectedThreadName)));
+        assertThat("ThreadName", log, not(containsString("https:" + expectedThreadName)));
     }
-    
+
     @Test
     public void testSecureThreadName() throws IOException
     {
-        HttpURLConnection http = (HttpURLConnection) secureServerURI.resolve("/foo/bar?a=b").toURL().openConnection();
+        HttpURLConnection http = (HttpURLConnection)secureServerURI.resolve("/foo/bar?a=b").toURL().openConnection();
         assertThat("Response Code", http.getResponseCode(), is(200));
-        
+
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());
         String expectedThreadName = ":/foo/bar?a=b";
         assertThat("ThreadName", log, containsString(expectedThreadName));
         // Look for bad/mangled/duplicated schemes
-        assertThat("ThreadName", log, not(containsString("http:"+expectedThreadName)));
-        assertThat("ThreadName", log, not(containsString("https:"+expectedThreadName)));
+        assertThat("ThreadName", log, not(containsString("http:" + expectedThreadName)));
+        assertThat("ThreadName", log, not(containsString("https:" + expectedThreadName)));
     }
 }

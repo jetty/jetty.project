@@ -18,20 +18,20 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.hamcrest.Matcher;
-
-import javax.websocket.CloseReason;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.websocket.CloseReason;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Session;
+
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.hamcrest.Matcher;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @SuppressWarnings("unused")
 public abstract class WSEndpointTracker extends Endpoint
 {
-    public final Logger LOG;
+    public final Logger logger;
 
     public Session session;
     public EndpointConfig config;
@@ -61,8 +61,8 @@ public abstract class WSEndpointTracker extends Endpoint
 
     public WSEndpointTracker(String id)
     {
-        LOG = Log.getLogger(this.getClass().getName() + "." + id);
-        LOG.debug("init");
+        logger = Log.getLogger(this.getClass().getName() + "." + id);
+        logger.debug("init");
     }
 
     public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher) throws InterruptedException
@@ -109,9 +109,9 @@ public abstract class WSEndpointTracker extends Endpoint
     {
         this.session = session;
         this.config = config;
-        if (LOG.isDebugEnabled())
+        if (logger.isDebugEnabled())
         {
-            LOG.debug("onOpen({}, {})", session, config);
+            logger.debug("onOpen({}, {})", session, config);
         }
         this.openLatch.countDown();
     }
@@ -130,8 +130,8 @@ public abstract class WSEndpointTracker extends Endpoint
         assertThat("Error must have value", cause, notNullValue());
         if (error.compareAndSet(null, cause) == false)
         {
-            LOG.warn("onError should only happen once - Original Cause", error.get());
-            LOG.warn("onError should only happen once - Extra/Excess Cause", cause);
+            logger.warn("onError should only happen once - Original Cause", error.get());
+            logger.warn("onError should only happen once - Extra/Excess Cause", cause);
             fail("onError should only happen once!");
         }
     }

@@ -19,12 +19,10 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.annotation.Name;
-
 
 /**
  * Sets the header in the response whenever the rule finds a match.
@@ -35,27 +33,24 @@ public class HeaderPatternRule extends PatternRule
     private String _value;
     private boolean _add;
 
-    /* ------------------------------------------------------------ */
     public HeaderPatternRule()
     {
-        this(null,null,null);
+        this(null, null, null);
     }
 
-    /* ------------------------------------------------------------ */
     public HeaderPatternRule(@Name("pattern") String pattern, @Name("name") String name, @Name("value") String value)
     {
         super(pattern);
         _handling = false;
         _terminating = false;
-        _add=false;
+        _add = false;
         setName(name);
         setValue(value);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the header name.
-     * 
+     *
      * @param name name of the header field
      */
     public void setName(String name)
@@ -63,10 +58,9 @@ public class HeaderPatternRule extends PatternRule
         _name = name;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the header value. The value can be either a <code>String</code> or <code>int</code> value.
-     * 
+     *
      * @param value of the header field
      */
     public void setValue(String value)
@@ -74,9 +68,9 @@ public class HeaderPatternRule extends PatternRule
         _value = value;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Sets the Add flag. 
+     * Sets the Add flag.
+     *
      * @param add If true, the header is added to the response, otherwise the header it is set on the response.
      */
     public void setAdd(boolean add)
@@ -84,13 +78,12 @@ public class HeaderPatternRule extends PatternRule
         _add = add;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Invokes this method when a match found. If the header had already been set, 
-     * the new value overwrites the previous one. Otherwise, it adds the new 
+     * Invokes this method when a match found. If the header had already been set,
+     * the new value overwrites the previous one. Otherwise, it adds the new
      * header name and value.
-     * 
-     *@see org.eclipse.jetty.rewrite.handler.Rule#matchAndApply(String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+     *
+     * @see org.eclipse.jetty.rewrite.handler.Rule#matchAndApply(String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -99,15 +92,13 @@ public class HeaderPatternRule extends PatternRule
         if (_add)
             response.addHeader(_name, _value);
         else
-            response.setHeader(_name, _value); 
+            response.setHeader(_name, _value);
         return target;
     }
-    
-    
 
-    /* ------------------------------------------------------------ */
     /**
      * Returns the header name.
+     *
      * @return the header name.
      */
     public String getName()
@@ -115,9 +106,9 @@ public class HeaderPatternRule extends PatternRule
         return _name;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Returns the header value.
+     *
      * @return the header value.
      */
     public String getValue()
@@ -125,9 +116,9 @@ public class HeaderPatternRule extends PatternRule
         return _value;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Returns the add flag value.
+     *
      * @return true if add flag set
      */
     public boolean isAdd()
@@ -135,13 +126,12 @@ public class HeaderPatternRule extends PatternRule
         return _add;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Returns the header contents.
      */
     @Override
     public String toString()
     {
-        return super.toString()+"["+_name+","+_value+"]";
+        return super.toString() + "[" + _name + "," + _value + "]";
     }
 }

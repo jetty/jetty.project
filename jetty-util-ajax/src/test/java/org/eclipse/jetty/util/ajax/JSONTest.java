@@ -40,25 +40,24 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 public class JSONTest
 {
-    String test="\n\n\n\t\t    "+
-    "// ignore this ,a [ \" \n"+
-    "/* and this \n" +
-    "/* and * // this \n" +
-    "*/" +
-    "{ "+
-    "\"onehundred\" : 100  ,"+
-    "\"small\":-0.2,"+
-    "\"name\" : \"fred\"  ," +
-    "\"empty\" : {}  ," +
-    "\"map\" : {\"a\":-1.0e2}  ," +
-    "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
-    "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}," +
-    "\"NaN\": NaN," +
-    "\"undefined\": undefined," +
-    "}";
+    String test = "\n\n\n\t\t    " +
+        "// ignore this ,a [ \" \n" +
+        "/* and this \n" +
+        "/* and * // this \n" +
+        "*/" +
+        "{ " +
+        "\"onehundred\" : 100  ," +
+        "\"small\":-0.2," +
+        "\"name\" : \"fred\"  ," +
+        "\"empty\" : {}  ," +
+        "\"map\" : {\"a\":-1.0e2}  ," +
+        "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
+        "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}," +
+        "\"NaN\": NaN," +
+        "\"undefined\": undefined," +
+        "}";
 
     @BeforeEach
     public void resetJSON()
@@ -70,7 +69,7 @@ public class JSONTest
     @Test
     public void testToString()
     {
-        JSON.registerConvertor(Gadget.class,new JSONObjectConvertor(false));
+        JSON.registerConvertor(Gadget.class, new JSONObjectConvertor(false));
         HashMap map = new HashMap();
         HashMap obj6 = new HashMap();
         HashMap obj7 = new HashMap();
@@ -78,42 +77,41 @@ public class JSONTest
         Woggle w0 = new Woggle();
         Woggle w1 = new Woggle();
 
-        w0.name="woggle0";
-        w0.nested=w1;
-        w0.number=100;
-        w1.name="woggle1";
-        w1.nested=null;
-        w1.number=-101;
+        w0.name = "woggle0";
+        w0.nested = w1;
+        w0.number = 100;
+        w1.name = "woggle1";
+        w1.nested = null;
+        w1.number = -101;
 
-        map.put("n1",null);
+        map.put("n1", null);
         map.put("n2", 2);
         map.put("n3", -0.00000000003);
-        map.put("n4","4\n\r\t\"4");
-        map.put("n5",new Object[]{"a",'b', 3,new String[]{},null,Boolean.TRUE,Boolean.FALSE});
-        map.put("n6",obj6);
-        map.put("n7",obj7);
-        map.put("n8",new int[]{1,2,3,4});
-        map.put("n9",new JSON.Literal("[{},  [],  {}]"));
-        map.put("w0",w0);
+        map.put("n4", "4\n\r\t\"4");
+        map.put("n5", new Object[]{"a", 'b', 3, new String[]{}, null, Boolean.TRUE, Boolean.FALSE});
+        map.put("n6", obj6);
+        map.put("n7", obj7);
+        map.put("n8", new int[]{1, 2, 3, 4});
+        map.put("n9", new JSON.Literal("[{},  [],  {}]"));
+        map.put("w0", w0);
 
-        obj7.put("x","value");
-
+        obj7.put("x", "value");
 
         String s = JSON.toString(map);
-        assertTrue(s.indexOf("\"n1\":null")>=0);
-        assertTrue(s.indexOf("\"n2\":2")>=0);
-        assertTrue(s.indexOf("\"n3\":-3.0E-11")>=0);
-        assertTrue(s.indexOf("\"n4\":\"4\\n")>=0);
-        assertTrue(s.indexOf("\"n5\":[\"a\",\"b\",")>=0);
-        assertTrue(s.indexOf("\"n6\":{}")>=0);
-        assertTrue(s.indexOf("\"n7\":{\"x\":\"value\"}")>=0);
-        assertTrue(s.indexOf("\"n8\":[1,2,3,4]")>=0);
-        assertTrue(s.indexOf("\"n9\":[{},  [],  {}]")>=0);
-        assertTrue(s.indexOf("\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}")>=0);
+        assertTrue(s.indexOf("\"n1\":null") >= 0);
+        assertTrue(s.indexOf("\"n2\":2") >= 0);
+        assertTrue(s.indexOf("\"n3\":-3.0E-11") >= 0);
+        assertTrue(s.indexOf("\"n4\":\"4\\n") >= 0);
+        assertTrue(s.indexOf("\"n5\":[\"a\",\"b\",") >= 0);
+        assertTrue(s.indexOf("\"n6\":{}") >= 0);
+        assertTrue(s.indexOf("\"n7\":{\"x\":\"value\"}") >= 0);
+        assertTrue(s.indexOf("\"n8\":[1,2,3,4]") >= 0);
+        assertTrue(s.indexOf("\"n9\":[{},  [],  {}]") >= 0);
+        assertTrue(s.indexOf("\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}") >= 0);
 
         Gadget gadget = new Gadget();
         gadget.setShields(42);
-        gadget.setWoggles(new Woggle[]{w0,w1});
+        gadget.setWoggles(new Woggle[]{w0, w1});
 
         s = JSON.toString(new Gadget[]{gadget});
         assertThat(s, startsWith("["));
@@ -127,26 +125,26 @@ public class JSONTest
     public void testParse()
     {
         Map map = (Map)JSON.parse(test);
-        assertEquals((long) 100,map.get("onehundred"));
-        assertEquals("fred",map.get("name"));
-        assertEquals(-0.2,map.get("small"));
+        assertEquals((long)100, map.get("onehundred"));
+        assertEquals("fred", map.get("name"));
+        assertEquals(-0.2, map.get("small"));
         assertTrue(map.get("array").getClass().isArray());
         assertTrue(map.get("w0") instanceof Woggle);
         assertTrue(((Woggle)map.get("w0")).nested instanceof Woggle);
-        assertEquals(-101,((Woggle)((Woggle)map.get("w0")).nested).number);
+        assertEquals(-101, ((Woggle)((Woggle)map.get("w0")).nested).number);
         assertTrue(map.containsKey("NaN"));
-        assertEquals(null,map.get("NaN"));
+        assertEquals(null, map.get("NaN"));
         assertTrue(map.containsKey("undefined"));
-        assertEquals(null,map.get("undefined"));
+        assertEquals(null, map.get("undefined"));
 
-        test="{\"data\":{\"source\":\"15831407eqdaawf7\",\"widgetId\":\"Magnet_8\"},\"channel\":\"/magnets/moveStart\",\"connectionId\":null,\"clientId\":\"15831407eqdaawf7\"}";
+        test = "{\"data\":{\"source\":\"15831407eqdaawf7\",\"widgetId\":\"Magnet_8\"},\"channel\":\"/magnets/moveStart\",\"connectionId\":null,\"clientId\":\"15831407eqdaawf7\"}";
         map = (Map)JSON.parse(test);
     }
 
     @Test
     public void testToString_LineFeed()
     {
-        Map<String,String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         map.put("str", "line\nfeed");
         String jsonStr = JSON.toString(map);
         assertThat(jsonStr, is("{\"str\":\"line\\nfeed\"}"));
@@ -155,7 +153,7 @@ public class JSONTest
     @Test
     public void testToString_Tab()
     {
-        Map<String,String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         map.put("str", "tab\tchar");
         String jsonStr = JSON.toString(map);
         assertThat(jsonStr, is("{\"str\":\"tab\\tchar\"}"));
@@ -164,7 +162,7 @@ public class JSONTest
     @Test
     public void testToString_Bel()
     {
-        Map<String,String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         map.put("str", "ascii\u0007bel");
         String jsonStr = JSON.toString(map);
         assertThat(jsonStr, is("{\"str\":\"ascii\\u0007bel\"}"));
@@ -173,7 +171,7 @@ public class JSONTest
     @Test
     public void testToString_Utf8()
     {
-        Map<String,String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         map.put("str", "japanese: 桟橋");
         String jsonStr = JSON.toString(map);
         assertThat(jsonStr, is("{\"str\":\"japanese: 桟橋\"}"));
@@ -191,7 +189,7 @@ public class JSONTest
             }
         };
 
-        Map<String,String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         map.put("str", "japanese: 桟橋");
         String jsonStr = jsonUnicode.toJSON(map);
         assertThat(jsonStr, is("{\"str\":\"japanese: \\u685f\\u6a4b\"}"));
@@ -226,45 +224,44 @@ public class JSONTest
     {
         Map map = (Map)JSON.parse(new StringReader(test));
 
-        assertEquals((long) 100,map.get("onehundred"));
-        assertEquals("fred",map.get("name"));
+        assertEquals((long)100, map.get("onehundred"));
+        assertEquals("fred", map.get("name"));
         assertTrue(map.get("array").getClass().isArray());
         assertTrue(map.get("w0") instanceof Woggle);
         assertTrue(((Woggle)map.get("w0")).nested instanceof Woggle);
 
-        test="{\"data\":{\"source\":\"15831407eqdaawf7\",\"widgetId\":\"Magnet_8\"},\"channel\":\"/magnets/moveStart\",\"connectionId\":null,\"clientId\":\"15831407eqdaawf7\"}";
+        test = "{\"data\":{\"source\":\"15831407eqdaawf7\",\"widgetId\":\"Magnet_8\"},\"channel\":\"/magnets/moveStart\",\"connectionId\":null,\"clientId\":\"15831407eqdaawf7\"}";
         map = (Map)JSON.parse(test);
     }
 
     @Test
     public void testStripComment()
     {
-        String test="\n\n\n\t\t    "+
-        "// ignore this ,a [ \" \n"+
-        "/* "+
-        "{ "+
-        "\"onehundred\" : 100  ,"+
-        "\"name\" : \"fred\"  ," +
-        "\"empty\" : {}  ," +
-        "\"map\" : {\"a\":-1.0e2}  ," +
-        "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
-        "} */";
+        String test = "\n\n\n\t\t    " +
+            "// ignore this ,a [ \" \n" +
+            "/* " +
+            "{ " +
+            "\"onehundred\" : 100  ," +
+            "\"name\" : \"fred\"  ," +
+            "\"empty\" : {}  ," +
+            "\"map\" : {\"a\":-1.0e2}  ," +
+            "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
+            "} */";
 
-        Object o = JSON.parse(test,false);
-        assertTrue(o==null);
-        o = JSON.parse(test,true);
+        Object o = JSON.parse(test, false);
+        assertTrue(o == null);
+        o = JSON.parse(test, true);
         assertTrue(o instanceof Map);
-        assertEquals("fred",((Map)o).get("name"));
-
+        assertEquals("fred", ((Map)o).get("name"));
     }
 
     @Test
     public void testQuote()
     {
-        String test="\"abc123|\\\"|\\\\|\\/|\\b|\\f|\\n|\\r|\\t|\\uaaaa|\"";
+        String test = "\"abc123|\\\"|\\\\|\\/|\\b|\\f|\\n|\\r|\\t|\\uaaaa|\"";
 
-        String result = (String)JSON.parse(test,false);
-        assertEquals("abc123|\"|\\|/|\b|\f|\n|\r|\t|\uaaaa|",result);
+        String result = (String)JSON.parse(test, false);
+        assertEquals("abc123|\"|\\|/|\b|\f|\n|\r|\t|\uaaaa|", result);
     }
 
     @Test
@@ -274,15 +271,14 @@ public class JSONTest
         assertTrue(obj instanceof Double);
         BigDecimal bd = BigDecimal.valueOf(10000000d);
         String string = JSON.toString(new Object[]{bd});
-        obj = Array.get(JSON.parse(string),0);
+        obj = Array.get(JSON.parse(string), 0);
         assertTrue(obj instanceof Double);
     }
-
 
     @Test
     public void testZeroByte()
     {
-        String withzero="\u0000";
+        String withzero = "\u0000";
         JSON.toString(withzero);
     }
 
@@ -291,6 +287,7 @@ public class JSONTest
         private boolean modulated;
         private long shields;
         private Woggle[] woggles;
+
         /**
          * @return the modulated
          */
@@ -298,13 +295,15 @@ public class JSONTest
         {
             return modulated;
         }
+
         /**
          * @param modulated the modulated to set
          */
         public void setModulated(boolean modulated)
         {
-            this.modulated=modulated;
+            this.modulated = modulated;
         }
+
         /**
          * @return the shields
          */
@@ -312,13 +311,15 @@ public class JSONTest
         {
             return shields;
         }
+
         /**
          * @param shields the shields to set
          */
         public void setShields(long shields)
         {
-            this.shields=shields;
+            this.shields = shields;
         }
+
         /**
          * @return the woggles
          */
@@ -326,12 +327,13 @@ public class JSONTest
         {
             return woggles;
         }
+
         /**
          * @param woggles the woggles to set
          */
         public void setWoggles(Woggle[] woggles)
         {
-            this.woggles=woggles;
+            this.woggles = woggles;
         }
     }
 
@@ -340,33 +342,33 @@ public class JSONTest
     {
         // test case#1 - force timezone to GMT
         JSON json = new JSON();
-        json.addConvertor(Date.class, new JSONDateConvertor("MM/dd/yyyy HH:mm:ss zzz", TimeZone.getTimeZone("GMT"),false));
-        json.addConvertor(Object.class,new JSONObjectConvertor());
+        json.addConvertor(Date.class, new JSONDateConvertor("MM/dd/yyyy HH:mm:ss zzz", TimeZone.getTimeZone("GMT"), false));
+        json.addConvertor(Object.class, new JSONObjectConvertor());
 
         Woggle w0 = new Woggle();
         Gizmo g0 = new Gizmo();
 
-        w0.name="woggle0";
-        w0.nested=g0;
-        w0.number=100;
-        g0.name="woggle1";
-        g0.nested=null;
-        g0.number=-101;
-        g0.tested=true;
+        w0.name = "woggle0";
+        w0.nested = g0;
+        w0.number = 100;
+        g0.name = "woggle1";
+        g0.nested = null;
+        g0.number = -101;
+        g0.tested = true;
 
         HashMap map = new HashMap();
         Date dummyDate = new Date(1);
         map.put("date", dummyDate);
-        map.put("w0",w0);
+        map.put("w0", w0);
 
         StringBuffer buf = new StringBuffer();
-        json.append(buf,map);
-        String js=buf.toString();
+        json.append(buf, map);
+        String js = buf.toString();
 
-        assertTrue(js.indexOf("\"date\":\"01/01/1970 00:00:00 GMT\"")>=0);
-        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
-        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
-        assertTrue(js.indexOf("\"tested\":true")>=0);
+        assertTrue(js.indexOf("\"date\":\"01/01/1970 00:00:00 GMT\"") >= 0);
+        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle") >= 0);
+        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo") < 0);
+        assertTrue(js.indexOf("\"tested\":true") >= 0);
 
         // test case#3
         TimeZone tzone = TimeZone.getTimeZone("JST");
@@ -374,107 +376,109 @@ public class JSONTest
         String format = "EEE MMMMM dd HH:mm:ss zzz yyyy";
 
         Locale l = new Locale("ja", "JP");
-        if (l!=null)
+        if (l != null)
         {
             json.addConvertor(Date.class, new JSONDateConvertor(format, tzone, false, l));
             buf = new StringBuffer();
-            json.append(buf,map);
-            js=buf.toString();
+            json.append(buf, map);
+            js = buf.toString();
             //assertTrue(js.indexOf("\"date\":\"\u6728 1\u6708 01 09:00:00 JST 1970\"")>=0);
-            assertTrue(js.indexOf(" 01 09:00:00 JST 1970\"")>=0);
-            assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
-            assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
-            assertTrue(js.indexOf("\"tested\":true")>=0);
+            assertTrue(js.indexOf(" 01 09:00:00 JST 1970\"") >= 0);
+            assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle") >= 0);
+            assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo") < 0);
+            assertTrue(js.indexOf("\"tested\":true") >= 0);
         }
 
         // test case#4
-        json.addConvertor(Date.class,new JSONDateConvertor(true));
-        w0.nested=null;
+        json.addConvertor(Date.class, new JSONDateConvertor(true));
+        w0.nested = null;
         buf = new StringBuffer();
-        json.append(buf,map);
-        js=buf.toString();
-        assertTrue(js.indexOf("\"date\":\"Thu Jan 01 00:00:00 GMT 1970\"")<0);
-        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
-        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
+        json.append(buf, map);
+        js = buf.toString();
+        assertTrue(js.indexOf("\"date\":\"Thu Jan 01 00:00:00 GMT 1970\"") < 0);
+        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle") >= 0);
+        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo") < 0);
 
-        map=(HashMap)json.parse(new JSON.StringSource(js));
+        map = (HashMap)json.parse(new JSON.StringSource(js));
 
         assertTrue(map.get("date") instanceof Date);
         assertTrue(map.get("w0") instanceof Woggle);
     }
 
-    enum Color { Red, Green, Blue };
+    enum Color
+    {
+        Red, Green, Blue
+    }
+
+    ;
 
     @Test
     public void testEnumConvertor()
     {
         JSON json = new JSON();
         Locale l = new Locale("en", "US");
-        json.addConvertor(Date.class,new JSONDateConvertor(DateCache.DEFAULT_FORMAT,TimeZone.getTimeZone("GMT"),false,l));
-        json.addConvertor(Enum.class,new JSONEnumConvertor(false));
-        json.addConvertor(Object.class,new JSONObjectConvertor());
+        json.addConvertor(Date.class, new JSONDateConvertor(DateCache.DEFAULT_FORMAT, TimeZone.getTimeZone("GMT"), false, l));
+        json.addConvertor(Enum.class, new JSONEnumConvertor(false));
+        json.addConvertor(Object.class, new JSONObjectConvertor());
 
         Woggle w0 = new Woggle();
         Gizmo g0 = new Gizmo();
 
-        w0.name="woggle0";
-        w0.nested=g0;
-        w0.number=100;
-        w0.other=Color.Blue;
-        g0.name="woggle1";
-        g0.nested=null;
-        g0.number=-101;
-        g0.tested=true;
-        g0.other=Color.Green;
+        w0.name = "woggle0";
+        w0.nested = g0;
+        w0.number = 100;
+        w0.other = Color.Blue;
+        g0.name = "woggle1";
+        g0.nested = null;
+        g0.number = -101;
+        g0.tested = true;
+        g0.other = Color.Green;
 
         HashMap map = new HashMap();
-        map.put("date",new Date(1));
-        map.put("w0",w0);
-        map.put("g0",g0);
+        map.put("date", new Date(1));
+        map.put("w0", w0);
+        map.put("g0", g0);
 
         StringBuffer buf = new StringBuffer();
-        json.append((Appendable)buf,map);
-        String js=buf.toString();
+        json.append((Appendable)buf, map);
+        String js = buf.toString();
 
-        assertTrue(js.indexOf("\"date\":\"Thu Jan 01 00:00:00 GMT 1970\"")>=0);
-        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
-        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
-        assertTrue(js.indexOf("\"tested\":true")>=0);
-        assertTrue(js.indexOf("\"Green\"")>=0);
-        assertTrue(js.indexOf("\"Blue\"")<0);
+        assertTrue(js.indexOf("\"date\":\"Thu Jan 01 00:00:00 GMT 1970\"") >= 0);
+        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle") >= 0);
+        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo") < 0);
+        assertTrue(js.indexOf("\"tested\":true") >= 0);
+        assertTrue(js.indexOf("\"Green\"") >= 0);
+        assertTrue(js.indexOf("\"Blue\"") < 0);
 
-        json.addConvertor(Date.class,new JSONDateConvertor(DateCache.DEFAULT_FORMAT,TimeZone.getTimeZone("GMT"),true,l));
-        json.addConvertor(Enum.class,new JSONEnumConvertor(false));
-        w0.nested=null;
+        json.addConvertor(Date.class, new JSONDateConvertor(DateCache.DEFAULT_FORMAT, TimeZone.getTimeZone("GMT"), true, l));
+        json.addConvertor(Enum.class, new JSONEnumConvertor(false));
+        w0.nested = null;
         buf = new StringBuffer();
-        json.append((Appendable)buf,map);
-        js=buf.toString();
-        assertTrue(js.indexOf("\"date\":\"Thu Jan 01 00:00:00 GMT 1970\"")<0);
-        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
-        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
+        json.append((Appendable)buf, map);
+        js = buf.toString();
+        assertTrue(js.indexOf("\"date\":\"Thu Jan 01 00:00:00 GMT 1970\"") < 0);
+        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle") >= 0);
+        assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo") < 0);
 
-        Map map2=(HashMap)json.parse(new JSON.StringSource(js));
+        Map map2 = (HashMap)json.parse(new JSON.StringSource(js));
 
         assertTrue(map2.get("date") instanceof Date);
         assertTrue(map2.get("w0") instanceof Woggle);
-        assertEquals(null, ((Woggle)map2.get("w0")).getOther() );
+        assertEquals(null, ((Woggle)map2.get("w0")).getOther());
         assertEquals(Color.Green.toString(), ((Map)map2.get("g0")).get("other"));
 
-
-
-        json.addConvertor(Date.class,new JSONDateConvertor(DateCache.DEFAULT_FORMAT,TimeZone.getTimeZone("GMT"),true,l));
-        json.addConvertor(Enum.class,new JSONEnumConvertor(true));
+        json.addConvertor(Date.class, new JSONDateConvertor(DateCache.DEFAULT_FORMAT, TimeZone.getTimeZone("GMT"), true, l));
+        json.addConvertor(Enum.class, new JSONEnumConvertor(true));
         buf = new StringBuffer();
-        json.append((Appendable)buf,map);
-        js=buf.toString();
-        map2=(HashMap)json.parse(new JSON.StringSource(js));
+        json.append((Appendable)buf, map);
+        js = buf.toString();
+        map2 = (HashMap)json.parse(new JSON.StringSource(js));
 
         assertTrue(map2.get("date") instanceof Date);
         assertTrue(map2.get("w0") instanceof Woggle);
-        assertEquals(null, ((Woggle)map2.get("w0")).getOther() );
-        Object o=((Map)map2.get("g0")).get("other");
+        assertEquals(null, ((Woggle)map2.get("w0")).getOther());
+        Object o = ((Map)map2.get("g0")).get("other");
         assertEquals(Color.Green, o);
-
     }
 
     public static class Gizmo
@@ -489,18 +493,22 @@ public class JSONTest
         {
             return name;
         }
+
         public Gizmo getNested()
         {
             return nested;
         }
+
         public long getNumber()
         {
             return number;
         }
+
         public boolean isTested()
         {
             return tested;
         }
+
         public Object getOther()
         {
             return other;
@@ -517,25 +525,24 @@ public class JSONTest
         @Override
         public void fromJSON(Map object)
         {
-            name=(String)object.get("name");
-            nested=(Gizmo)object.get("nested");
-            number=((Number)object.get("number")).intValue();
+            name = (String)object.get("name");
+            nested = (Gizmo)object.get("nested");
+            number = ((Number)object.get("number")).intValue();
         }
 
         @Override
         public void toJSON(Output out)
         {
             out.addClass(Woggle.class);
-            out.add("name",name);
-            out.add("nested",nested);
-            out.add("number",number);
+            out.add("name", name);
+            out.add("nested", nested);
+            out.add("number", number);
         }
 
         @Override
         public String toString()
         {
-            return name+"<<"+nested+">>"+number;
+            return name + "<<" + nested + ">>" + number;
         }
-
     }
 }

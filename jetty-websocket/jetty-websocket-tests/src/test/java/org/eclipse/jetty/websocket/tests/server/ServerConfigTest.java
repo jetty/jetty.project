@@ -42,10 +42,9 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,9 +66,9 @@ public class ServerConfigTest
     private ConnectionListener listener = new ConnectionListener();
 
     private static String message = "this message is over 20 characters long";
-    private final static int inputBufferSize = 200;
-    private final static int maxMessageSize = 20;
-    private final static int idleTimeout = 500;
+    private static final int inputBufferSize = 200;
+    private static final int maxMessageSize = 20;
+    private static final int idleTimeout = 500;
 
     private EventSocket annotatedEndpoint = new AnnotatedConfigEndpoint();
     private EventSocket sessionConfigEndpoint = new SessionConfigEndpoint();
@@ -96,7 +95,7 @@ public class ServerConfigTest
         return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
     }
 
-    @WebSocket(idleTimeout=idleTimeout, maxTextMessageSize=maxMessageSize, maxBinaryMessageSize=maxMessageSize, inputBufferSize=inputBufferSize, batchMode=BatchMode.ON)
+    @WebSocket(idleTimeout = idleTimeout, maxTextMessageSize = maxMessageSize, maxBinaryMessageSize = maxMessageSize, inputBufferSize = inputBufferSize, batchMode = BatchMode.ON)
     public static class AnnotatedConfigEndpoint extends EventSocket
     {
     }
@@ -124,7 +123,7 @@ public class ServerConfigTest
             factory.setMaxTextMessageSize(maxMessageSize);
             factory.setMaxBinaryMessageSize(maxMessageSize);
             factory.setInputBufferSize(inputBufferSize);
-            factory.addMapping("/",(req, resp)->standardEndpoint);
+            factory.addMapping("/", (req, resp) -> standardEndpoint);
         }
     }
 
@@ -133,7 +132,7 @@ public class ServerConfigTest
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping("/",(req, resp)->annotatedEndpoint);
+            factory.addMapping("/", (req, resp) -> annotatedEndpoint);
         }
     }
 
@@ -142,7 +141,7 @@ public class ServerConfigTest
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping("/",(req, resp)->sessionConfigEndpoint);
+            factory.addMapping("/", (req, resp) -> sessionConfigEndpoint);
         }
     }
 
@@ -187,12 +186,15 @@ public class ServerConfigTest
         contextHandler.addServlet(new ServletHolder(new WebSocketSessionConfigServlet()), "/sessionConfig");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
-        container.setIdleTimeout(Duration.ofMillis(idleTimeout));
-        container.setMaxTextMessageSize(maxMessageSize);
-        container.setMaxBinaryMessageSize(maxMessageSize);
-        container.setInputBufferSize(inputBufferSize);
-        container.addMapping("/containerConfig", (req, resp)->standardEndpoint);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+        {
+            container.setIdleTimeout(Duration.ofMillis(idleTimeout));
+            container.setMaxTextMessageSize(maxMessageSize);
+            container.setMaxBinaryMessageSize(maxMessageSize);
+            container.setInputBufferSize(inputBufferSize);
+            container.addMapping("/containerConfig", (req, resp) -> standardEndpoint);
+        });
+
         server.start();
 
         client = new WebSocketClient();
@@ -205,7 +207,6 @@ public class ServerConfigTest
         client.stop();
         server.stop();
     }
-
 
     @ParameterizedTest
     @MethodSource("data")

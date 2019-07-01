@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,8 +34,12 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SlowClientWithPipelinedRequestTest
 {
@@ -52,12 +50,12 @@ public class SlowClientWithPipelinedRequestTest
     public void startServer(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server,new HttpConnectionFactory()
+        connector = new ServerConnector(server, new HttpConnectionFactory()
         {
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new HttpConnection(getHttpConfiguration(),connector,endPoint, isRecordHttpComplianceViolations())
+                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations())
                 {
                     @Override
                     public void onFillable()
@@ -65,7 +63,7 @@ public class SlowClientWithPipelinedRequestTest
                         handles.incrementAndGet();
                         super.onFillable();
                     }
-                },connector,endPoint);
+                }, connector, endPoint);
             }
         });
 
@@ -93,7 +91,7 @@ public class SlowClientWithPipelinedRequestTest
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                    throws IOException, ServletException
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 if ("/content".equals(target))
@@ -114,8 +112,8 @@ public class SlowClientWithPipelinedRequestTest
 
         Socket client = new Socket("localhost", connector.getLocalPort());
         OutputStream output = client.getOutputStream();
-        output.write(("" +
-                "GET /content HTTP/1.1\r\n" +
+        output.write((
+            "GET /content HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                 "\r\n" +
                 "").getBytes(StandardCharsets.UTF_8));
@@ -127,8 +125,8 @@ public class SlowClientWithPipelinedRequestTest
         assertTrue(read >= 0);
         // As soon as we can read the response, send a pipelined request
         // so it is a different read for the server and it will trigger NIO
-        output.write(("" +
-                "GET /pipelined HTTP/1.1\r\n" +
+        output.write((
+            "GET /pipelined HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                 "\r\n" +
                 "").getBytes(StandardCharsets.UTF_8));
@@ -155,7 +153,9 @@ public class SlowClientWithPipelinedRequestTest
         assertThat(lines.toString(), containsString(" 200 "));
         // Read the body
         for (int i = 0; i < contentLength; ++i)
+        {
             input.read();
+        }
 
         // Read the pipelined response
         lines.setLength(0);

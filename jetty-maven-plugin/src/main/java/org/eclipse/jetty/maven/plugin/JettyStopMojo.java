@@ -33,62 +33,59 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * This goal stops a running instance of jetty.
- * 
+ *
  * The <b>stopPort</b> and <b>stopKey</b> parameters can be used to
  * configure which jetty to stop.
- * 
+ *
  * Stops jetty that is configured with &lt;stopKey&gt; and &lt;stopPort&gt;.
  */
-@Mojo( name = "stop")
+@Mojo(name = "stop")
 public class JettyStopMojo extends AbstractMojo
 {
-    
+
     /**
      * Port to listen to stop jetty on sending stop command
      */
     @Parameter(required = true)
     protected int stopPort;
-    
+
     /**
-     * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt; 
+     * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt;
      * -DSTOP.PORT=&lt;stopPort&gt; -jar start.jar --stop
      */
     @Parameter(required = true)
     protected String stopKey;
-    
+
     /**
      * Max time in seconds that the plugin will wait for confirmation that jetty has stopped.
      */
     @Parameter
     protected int stopWait;
 
-    
-    
-
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException 
+    public void execute() throws MojoExecutionException, MojoFailureException
     {
         if (stopPort <= 0)
-            throw new MojoExecutionException("Please specify a valid port"); 
+            throw new MojoExecutionException("Please specify a valid port");
         if (stopKey == null)
-            throw new MojoExecutionException("Please specify a valid stopKey");  
+            throw new MojoExecutionException("Please specify a valid stopKey");
 
         //Ensure jetty Server instance stops. Whether or not the remote process
         //also stops depends whether or not it was started with ShutdownMonitor.exitVm=true
-        String command = "forcestop"; 
-       
-        try(Socket s=new Socket(InetAddress.getByName("127.0.0.1"),stopPort);)
-        {        
-            OutputStream out=s.getOutputStream();
-            out.write((stopKey+"\r\n"+command+"\r\n").getBytes());
+        String command = "forcestop";
+
+        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort);)
+        {
+            OutputStream out = s.getOutputStream();
+            out.write((stopKey + "\r\n" + command + "\r\n").getBytes());
             out.flush();
 
             if (stopWait > 0)
-            {      
+            {
                 s.setSoTimeout(stopWait * 1000);
                 s.getInputStream();
 
-                getLog().info("Waiting "+stopWait+" seconds for jetty to stop");
+                getLog().info("Waiting " + stopWait + " seconds for jetty to stop");
                 LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
                 String response;
                 boolean stopped = false;
@@ -98,7 +95,7 @@ public class JettyStopMojo extends AbstractMojo
                     {
                         stopped = true;
                         getLog().info("Server reports itself as stopped");
-                    }                
+                    }
                 }
             }
         }
@@ -112,19 +109,23 @@ public class JettyStopMojo extends AbstractMojo
         }
     }
 
-    public int getStopPort() {
+    public int getStopPort()
+    {
         return stopPort;
     }
 
-    public void setStopPort(int stopPort) {
+    public void setStopPort(int stopPort)
+    {
         this.stopPort = stopPort;
     }
 
-    public String getStopKey() {
+    public String getStopKey()
+    {
         return stopKey;
     }
 
-    public void setStopKey(String stopKey) {
+    public void setStopKey(String stopKey)
+    {
         this.stopKey = stopKey;
     }
 }

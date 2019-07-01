@@ -33,7 +33,6 @@ public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
     private final JavaxWebSocketClientContainer containerContext;
     private final JavaxWebSocketFrameHandler frameHandler;
 
-
     public JavaxClientUpgradeRequest(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);

@@ -16,11 +16,9 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
-import java.util.Iterator;
 
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.util.IO;
@@ -33,61 +31,61 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * MavenQuickStartConfiguration
- *
- *
  */
 public class MavenQuickStartConfiguration extends QuickStartConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
-    
+
     private Resource _quickStartWebXml; //the descriptor to use for starting/generating quickstart
 
     public void setQuickStartWebXml(Resource quickStartWebXml)
     {
         _quickStartWebXml = quickStartWebXml;
     }
-    
-    
+
     @Override
     public Resource getQuickStartWebXml(WebAppContext context) throws Exception
     {
         if (_quickStartWebXml == null)
             return super.getQuickStartWebXml(context);
-        
+
         return _quickStartWebXml;
     }
 
     @Override
     public void preConfigure(WebAppContext context) throws Exception
-    {        
+    {
         //check that webapp is suitable for quick start 
         if (context.getBaseResource() == null)
-            throw new IllegalStateException ("No location for webapp");  
+            throw new IllegalStateException("No location for webapp");
 
-        
         //look for quickstart-web.xml in WEB-INF of webapp
         Resource quickStartWebXml = getQuickStartWebXml(context);
-        if (LOG.isDebugEnabled()) LOG.debug("quickStartWebXml={}",quickStartWebXml);
+        if (LOG.isDebugEnabled())
+            LOG.debug("quickStartWebXml={}", quickStartWebXml);
         super.preConfigure(context);
     }
 
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-       JettyWebAppContext jwac = (JettyWebAppContext)context;
-        
+        JettyWebAppContext jwac = (JettyWebAppContext)context;
+
         //put the classes dir and all dependencies into the classpath
         if (jwac.getClassPathFiles() != null)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Setting up classpath ...");
-            for(File classPathFile:jwac.getClassPathFiles())
+            if (LOG.isDebugEnabled())
+                LOG.debug("Setting up classpath ...");
+            for (File classPathFile : jwac.getClassPathFiles())
+            {
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(classPathFile.getCanonicalPath());
+            }
         }
-        
+
         //Set up the quickstart environment for the context
-        super.configure(context);       
+        super.configure(context);
     }
-    
+
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
@@ -102,7 +100,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
             Resource res = context.getBaseResource();
             if (res instanceof ResourceCollection)
             {
-                for (Resource r:((ResourceCollection)res).getResources())
+                for (Resource r : ((ResourceCollection)res).getResources())
                 {
                     if (originalBaseStr.contains(r.toString()))
                         continue;
@@ -112,5 +110,4 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         }
         super.deconfigure(context);
     }
-    
 }

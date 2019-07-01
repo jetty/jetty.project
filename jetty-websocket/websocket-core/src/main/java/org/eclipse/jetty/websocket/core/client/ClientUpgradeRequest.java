@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.client;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
@@ -48,7 +49,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -136,22 +136,26 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     {
         HttpFields headers = getHeaders();
         for (ExtensionConfig config : configs)
+        {
             headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedName());
+        }
     }
 
     public void addExtensions(String... configs)
     {
         HttpFields headers = getHeaders();
         for (String config : configs)
+        {
             headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ExtensionConfig.parse(config).getParameterizedName());
+        }
     }
 
     public List<ExtensionConfig> getExtensions()
     {
         List<ExtensionConfig> extensions = getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true)
-                .stream()
-                .map(ExtensionConfig::parse)
-                .collect(Collectors.toList());
+            .stream()
+            .map(ExtensionConfig::parse)
+            .collect(Collectors.toList());
 
         return extensions;
     }
@@ -161,7 +165,9 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         HttpFields headers = getHeaders();
         headers.remove(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
         for (ExtensionConfig config : configs)
+        {
             headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedName());
+        }
     }
 
     public List<String> getSubProtocols()
@@ -175,7 +181,9 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         HttpFields headers = getHeaders();
         headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         for (String protocol : protocols)
+        {
             headers.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
+        }
     }
 
     public void setSubProtocols(List<String> protocols)
@@ -183,7 +191,9 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         HttpFields headers = getHeaders();
         headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         for (String protocol : protocols)
+        {
             headers.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
+        }
     }
 
     @Override
@@ -238,9 +248,8 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
             Throwable failure = result.getFailure();
             boolean wrapFailure = !((failure instanceof java.net.SocketException) ||
-                                    (failure instanceof java.io.InterruptedIOException) ||
-                                    (failure instanceof HttpResponseException) ||
-                                    (failure instanceof UpgradeException));
+                (failure instanceof java.io.InterruptedIOException) ||
+                (failure instanceof UpgradeException));
             if (wrapFailure)
                 failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
             handleException(failure);
@@ -329,7 +338,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         HttpField subProtocolField = response.getHeaders().getField(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         if (subProtocolField != null)
         {
-            String values[] = subProtocolField.getValues();
+            String[] values = subProtocolField.getValues();
             if (values != null)
             {
                 if (values.length > 1)
@@ -364,7 +373,9 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
 
         for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
+        {
             wsConnection.addListener(listener);
+        }
 
         coreSession.setWebSocketConnection(wsConnection);
 
@@ -407,7 +418,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     {
         byte[] bytes = new byte[16];
         ThreadLocalRandom.current().nextBytes(bytes);
-        return new String(B64Code.encode(bytes));
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     private void initWebSocketHeaders()

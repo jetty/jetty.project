@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CapturedHexPayloads;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -47,6 +46,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingNetworkBytesCapture;
+import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
@@ -218,7 +218,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     {
         // What pywebsocket produces for "time:", "time:", "time:"
         String expected[] = new String[]
-            { "2AC9CC4DB50200", "2A01110000", "02130000" };
+            {"2AC9CC4DB50200", "2A01110000", "02130000"};
 
         // Lets see what we produce
         CapturedHexPayloads capture = new CapturedHexPayloads();
@@ -415,14 +415,13 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         assertArrayEquals(input, result.toByteArray());
     }
 
-
     private WebSocketCoreSession sessionWithMaxMessageSize(int maxMessageSize)
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
         exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
 
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack));
         coreSession.setMaxFrameSize(maxMessageSize);
         return coreSession;
     }

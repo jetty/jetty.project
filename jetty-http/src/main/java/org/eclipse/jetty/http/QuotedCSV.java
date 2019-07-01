@@ -25,11 +25,11 @@ import java.util.List;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 
-/* ------------------------------------------------------------ */
 /**
  * Implements a quoted comma separated list of values
  * in accordance with RFC7230.
  * OWS is removed and quoted characters ignored for parsing.
+ *
  * @see "https://tools.ietf.org/html/rfc7230#section-3.2.6"
  * @see "https://tools.ietf.org/html/rfc7230#section-7"
  */
@@ -42,6 +42,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
 
     /**
      * Join a list into Quoted CSV string
+     *
      * @param values A list of values
      * @return A Quoted Comma Separated Value list
      */
@@ -61,12 +62,13 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
             return values.get(0);
 
         StringBuilder ret = new StringBuilder();
-        join(ret,values);
+        join(ret, values);
         return ret.toString();
     }
 
     /**
      * Join a list into Quoted CSV string
+     *
      * @param values A list of values
      * @return A Quoted Comma Separated Value list
      */
@@ -90,6 +92,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
 
     /**
      * Join a list into Quoted CSV StringBuilder
+     *
      * @param builder A builder to join the list into
      * @param values A list of values
      */
@@ -114,14 +117,16 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
 
     public QuotedCSV(String... values)
     {
-        this(true,values);
+        this(true, values);
     }
-    
-    public QuotedCSV(boolean keepQuotes,String... values)
+
+    public QuotedCSV(boolean keepQuotes, String... values)
     {
         super(keepQuotes);
-        for (String v:values)
+        for (String v : values)
+        {
             addValue(v);
+        }
     }
 
     @Override
@@ -144,7 +149,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
     {
         return _values;
     }
-    
+
     @Override
     public Iterator<String> iterator()
     {
@@ -156,7 +161,9 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
     {
         List<String> list = new ArrayList<>();
         for (String s : this)
+        {
             list.add(s);
+        }
         return list.toString();
     }
 }

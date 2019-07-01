@@ -158,7 +158,7 @@ public class SocketChannelEndPointTest
                 // wait for read timeout
                 client.setSoTimeout(500);
                 long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                assertThrows(SocketTimeoutException.class, ()-> client.getInputStream().read());
+                assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
                 long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
                 assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
 
@@ -170,7 +170,7 @@ public class SocketChannelEndPointTest
                 {
                     int b = client.getInputStream().read();
                     assertThat("expect valid char integer", b, greaterThan(0));
-                    assertEquals(c, (char) b, "expect characters to be same");
+                    assertEquals(c, (char)b, "expect characters to be same");
                 }
                 client.close();
 
@@ -213,7 +213,7 @@ public class SocketChannelEndPointTest
 
                 // wait for read timeout
                 long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                assertThrows(SocketTimeoutException.class, ()-> client.getInputStream().read());
+                assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start >= 400);
 
                 // write then shutdown
@@ -261,8 +261,8 @@ public class SocketChannelEndPointTest
             Thread.sleep((11 * specifiedTimeout) / 10);
 
             long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            assertThrows(SocketTimeoutException.class, ()-> clientInputStream.read());
-            int elapsed = (int) (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start);
+            assertThrows(SocketTimeoutException.class, () -> clientInputStream.read());
+            int elapsed = (int)(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start);
             assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3 * specifiedTimeout / 4));
 
             // write remaining characters
@@ -416,7 +416,7 @@ public class SocketChannelEndPointTest
                             int b = in.read();
                             byteNum++;
                             assertTrue(b > 0);
-                            assertEquals(c, (char) b, "test-" + i + "/" + j);
+                            assertEquals(c, (char)b, "test-" + i + "/" + j);
                         }
 
                         if (i == 0)
@@ -444,7 +444,6 @@ public class SocketChannelEndPointTest
             }
         }
     }
-
 
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -815,7 +814,7 @@ public class SocketChannelEndPointTest
             }
             catch (InterruptedException | EofException e)
             {
-                if(LOG.isDebugEnabled())
+                if (LOG.isDebugEnabled())
                     LOG.debug(e);
                 else
                     LOG.info(e.getClass().getName());

@@ -19,9 +19,7 @@
 package org.eclipse.jetty.http.spi.util;
 
 /**
- *
  * This is a sample task. Test cases uses this for testing purpose
- *
  */
 public class PrintTask implements Runnable
 {

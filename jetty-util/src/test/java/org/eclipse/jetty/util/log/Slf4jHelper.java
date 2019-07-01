@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.net.MalformedURLException;
@@ -27,6 +25,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public final class Slf4jHelper
 {
@@ -56,6 +56,6 @@ public final class Slf4jHelper
             // System.out.println("Adding test-jar => " + urls[i]);
         }
 
-        return new URLClassLoader(urls,parentClassLoader);
+        return new URLClassLoader(urls, parentClassLoader);
     }
 }

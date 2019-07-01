@@ -23,18 +23,20 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.Callback;
 
-
-/* ------------------------------------------------------------ */
-/** Abstraction of the outbound HTTP transport.
+/**
+ * Abstraction of the outbound HTTP transport.
  */
 public interface HttpTransport
 {
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = HttpTransport.class.getName() + ".UPGRADE";
 
-    /** Asynchronous call to send a response (or part) over the transport
+    /**
+     * Asynchronous call to send a response (or part) over the transport
+     *
      * @param request True if the response if for a HEAD request (and the data should not be sent).
      * @param response The header info to send, or null if just sending more data.
      *             The first call to send for a response must have a non null info.
+     * @param head True if the response if for a HEAD request (and the data should not be sent).
      * @param content A buffer of content to be sent.
      * @param lastContent True if the content is the last content for the current response.
      * @param callback The Callback instance that success or failure of the send is notified on
@@ -73,8 +75,9 @@ public interface HttpTransport
      */
     void abort(Throwable failure);
 
-    /* ------------------------------------------------------------ */
-    /** Is the underlying transport optimized for DirectBuffer usage
+    /**
+     * Is the underlying transport optimized for DirectBuffer usage
+     *
      * @return True if direct buffers can be used optimally.
      */
     boolean isOptimizedForDirectBuffers();

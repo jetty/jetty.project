@@ -28,6 +28,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -250,7 +251,7 @@ public class MessageReceivingTest
                 if (i > 0)
                     getCoreSession().sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, true);
                 boolean last = (i >= (parts.length - 1));
-                Frame frame = new Frame((i == 0)?OpCode.TEXT:OpCode.CONTINUATION);
+                Frame frame = new Frame((i == 0) ? OpCode.TEXT : OpCode.CONTINUATION);
                 frame.setPayload(BufferUtil.toBuffer(parts[i], UTF_8));
                 frame.setFin(last);
                 getCoreSession().sendFrame(frame, Callback.NOOP, !last);
@@ -343,6 +344,8 @@ public class MessageReceivingTest
 
     public static class ServerMessageNegotiator extends CoreServer.BaseNegotiator
     {
+        private static final int MAX_MESSAGE_SIZE = (1024 * 1024) + 2;
+
         public ServerMessageNegotiator()
         {
             super();
@@ -363,7 +366,6 @@ public class MessageReceivingTest
             {
                 negotiation.setSubprotocol("partial-binary");
                 SendPartialBinaryFrameHandler frameHandler = new SendPartialBinaryFrameHandler();
-                frameHandler.setMaxBinaryMessageSize((1024 * 1024) + 2);
                 return frameHandler;
             }
 
@@ -371,11 +373,17 @@ public class MessageReceivingTest
             {
                 negotiation.setSubprotocol("echo");
                 EchoWholeMessageFrameHandler frameHandler = new EchoWholeMessageFrameHandler();
-                frameHandler.setMaxTextMessageSize((1024 * 1024) + 2);
                 return frameHandler;
             }
 
             return null;
+        }
+
+        @Override
+        public void customize(FrameHandler.Configuration configurable)
+        {
+            configurable.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            configurable.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
         }
     }
 
@@ -413,7 +421,7 @@ public class MessageReceivingTest
     /**
      * Abstract message handler implementation, used for tests.
      */
-    private static abstract class AbstractHandler implements javax.websocket.MessageHandler
+    private abstract static class AbstractHandler implements javax.websocket.MessageHandler
     {
         public final BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     }

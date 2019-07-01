@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -27,18 +32,13 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.UpgradeUtils;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
-import org.eclipse.jetty.websocket.javax.tests.server.configs.EchoSocketConfigurator;
-import org.eclipse.jetty.websocket.javax.tests.server.sockets.ConfiguredEchoSocket;
 import org.eclipse.jetty.websocket.javax.tests.coders.DateDecoder;
 import org.eclipse.jetty.websocket.javax.tests.coders.TimeEncoder;
+import org.eclipse.jetty.websocket.javax.tests.server.configs.EchoSocketConfigurator;
+import org.eclipse.jetty.websocket.javax.tests.server.sockets.ConfiguredEchoSocket;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Example of an annotated echo server discovered via annotation scanning.

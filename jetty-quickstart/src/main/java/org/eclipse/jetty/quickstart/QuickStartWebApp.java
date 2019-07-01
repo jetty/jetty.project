@@ -33,22 +33,23 @@ public class QuickStartWebApp extends WebAppContext
 
     private String _originAttribute;
     private boolean _generateOrigin;
+
     public QuickStartWebApp()
     {
         super();
         addConfiguration(
-                         _quickStartConfiguration=new QuickStartConfiguration(),
-                         new EnvConfiguration(),
-                         new PlusConfiguration(),
-                         new AnnotationConfiguration());
+            _quickStartConfiguration = new QuickStartConfiguration(),
+            new EnvConfiguration(),
+            new PlusConfiguration(),
+            new AnnotationConfiguration());
         setExtractWAR(true);
         setCopyWebDir(false);
         setCopyWebInf(false);
     }
 
-    public void setOriginAttribute (String name)
+    public void setOriginAttribute(String name)
     {
-        setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE,name);
+        setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, name);
     }
 
     /**
@@ -57,7 +58,7 @@ public class QuickStartWebApp extends WebAppContext
     public String getOriginAttribute()
     {
         Object attr = getAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE);
-        return attr==null?null:attr.toString();
+        return attr == null ? null : attr.toString();
     }
 
     /**
@@ -65,7 +66,7 @@ public class QuickStartWebApp extends WebAppContext
      */
     public void setGenerateOrigin(boolean generateOrigin)
     {
-        setAttribute(QuickStartConfiguration.GENERATE_ORIGIN,generateOrigin);
+        setAttribute(QuickStartConfiguration.GENERATE_ORIGIN, generateOrigin);
     }
 
     /**
@@ -74,7 +75,7 @@ public class QuickStartWebApp extends WebAppContext
     public boolean isGenerateOrigin()
     {
         Object attr = getAttribute(QuickStartConfiguration.GENERATE_ORIGIN);
-        return attr==null?false:Boolean.valueOf(attr.toString());
+        return attr == null ? false : Boolean.valueOf(attr.toString());
     }
 
     public Mode getMode()

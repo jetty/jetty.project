@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-
-import java.nio.ByteBuffer;
 
 public class CallbackBuffer
 {

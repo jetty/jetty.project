@@ -26,13 +26,14 @@ package org.eclipse.jetty.util.thread;
  * execute tasks until the producer continues to produce them.</p>
  */
 public interface ExecutionStrategy
-{    
+{
     /**
      * <p>Initiates (or resumes) the task production and consumption.</p>
      * <p>This method guarantees that the task is never run by the
      * thread that called this method.</p>
      *
      * TODO review the need for this (only used by HTTP2 push)
+     *
      * @see #produce()
      */
     public void dispatch();
@@ -45,7 +46,7 @@ public interface ExecutionStrategy
      * @see #dispatch()
      */
     public void produce();
-    
+
     /**
      * <p>A producer of {@link Runnable} tasks to run.</p>
      * <p>The {@link ExecutionStrategy} will repeatedly invoke {@link #produce()} until
@@ -63,5 +64,4 @@ public interface ExecutionStrategy
          */
         Runnable produce();
     }
-    
 }

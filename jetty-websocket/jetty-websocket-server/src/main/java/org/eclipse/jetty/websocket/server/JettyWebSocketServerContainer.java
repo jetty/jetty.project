@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -42,6 +41,8 @@ import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 
@@ -49,13 +50,18 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 {
     public static final String JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE = WebSocketContainer.class.getName();
 
+    public static JettyWebSocketServerContainer getContainer(ServletContext servletContext)
+    {
+        return (JettyWebSocketServerContainer)servletContext.getAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE);
+    }
+
     public static JettyWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
         ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
-        JettyWebSocketServerContainer container = (JettyWebSocketServerContainer)servletContext.getAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE);
+        JettyWebSocketServerContainer container = getContainer(servletContext);
         if (container == null)
         {
             // Find Pre-Existing executor
@@ -65,9 +71,9 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
             // Create the Jetty ServerContainer implementation
             container = new JettyWebSocketServerContainer(
-                    contextHandler,
-                    WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
-                    WebSocketComponents.ensureWebSocketComponents(servletContext), executor);
+                contextHandler,
+                WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
+                WebSocketComponents.ensureWebSocketComponents(servletContext), executor);
             servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
             contextHandler.addManaged(container);
             contextHandler.addLifeCycleListener(container);
@@ -76,7 +82,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         return container;
     }
 
-    private final static Logger LOG = Log.getLogger(JettyWebSocketServerContainer.class);
+    private static final Logger LOG = Log.getLogger(JettyWebSocketServerContainer.class);
 
     private final WebSocketMapping webSocketMapping;
     private final WebSocketComponents webSocketComponents;
@@ -90,11 +96,11 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     /**
      * Main entry point for {@link JettyWebSocketServletContainerInitializer}.
      *
-     * @param webSocketMapping    the {@link WebSocketMapping} that this container belongs to
+     * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
      * @param webSocketComponents the {@link WebSocketComponents} instance to use
-     * @param executor            the {@link Executor} to use
+     * @param executor the {@link Executor} to use
      */
-    public JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, Executor executor)
+    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, Executor executor)
     {
         this.webSocketMapping = webSocketMapping;
         this.webSocketComponents = webSocketComponents;
@@ -120,8 +126,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
         webSocketMapping.addMapping(ps,
-                (req, resp)-> creator.createWebSocket(new JettyServerUpgradeRequest(req), new JettyServerUpgradeResponse(resp)),
-                frameHandlerFactory, customizer);
+            (req, resp) -> creator.createWebSocket(new JettyServerUpgradeRequest(req), new JettyServerUpgradeResponse(resp)),
+            frameHandlerFactory, customizer);
     }
 
     @Override

@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.IOException;
+
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
-
-import org.junit.jupiter.api.Test;
-
 
 public class MultiExceptionTest
 {
@@ -37,7 +36,7 @@ public class MultiExceptionTest
     {
         MultiException me = new MultiException();
 
-        assertEquals(0,me.size());
+        assertEquals(0, me.size());
         me.ifExceptionThrow();
         me.ifExceptionThrowMulti();
         me.ifExceptionThrowRuntime();
@@ -53,7 +52,7 @@ public class MultiExceptionTest
         IOException io = new IOException("one");
         me.add(io);
 
-        assertEquals(1,me.size());
+        assertEquals(1, me.size());
 
         // TODO: convert to assertThrows chain
         try
@@ -61,9 +60,9 @@ public class MultiExceptionTest
             me.ifExceptionThrow();
             assertTrue(false);
         }
-        catch(IOException e)
+        catch (IOException e)
         {
-            assertTrue(e==io);
+            assertTrue(e == io);
         }
 
         try
@@ -71,7 +70,7 @@ public class MultiExceptionTest
             me.ifExceptionThrowMulti();
             assertTrue(false);
         }
-        catch(MultiException e)
+        catch (MultiException e)
         {
             assertTrue(e instanceof MultiException);
         }
@@ -81,9 +80,9 @@ public class MultiExceptionTest
             me.ifExceptionThrowRuntime();
             assertTrue(false);
         }
-        catch(RuntimeException e)
+        catch (RuntimeException e)
         {
-            assertTrue(e.getCause()==io);
+            assertTrue(e.getCause() == io);
         }
 
         try
@@ -91,9 +90,9 @@ public class MultiExceptionTest
             me.ifExceptionThrowSuppressed();
             assertTrue(false);
         }
-        catch(IOException e)
+        catch (IOException e)
         {
-            assertTrue(e==io);
+            assertTrue(e == io);
         }
 
         me = new MultiException();
@@ -105,33 +104,35 @@ public class MultiExceptionTest
             me.ifExceptionThrowRuntime();
             assertTrue(false);
         }
-        catch(RuntimeException e)
+        catch (RuntimeException e)
         {
-            assertTrue(run==e);
+            assertTrue(run == e);
         }
 
         assertEquals(0, me.getStackTrace().length, "Stack trace should not be filled out");
     }
 
-    private MultiException multiExceptionWithIoRt() {
+    private MultiException multiExceptionWithIoRt()
+    {
         MultiException me = new MultiException();
         IOException io = new IOException("one");
         RuntimeException run = new RuntimeException("two");
         me.add(io);
         me.add(run);
-        assertEquals(2,me.size());
+        assertEquals(2, me.size());
 
         assertEquals(0, me.getStackTrace().length, "Stack trace should not be filled out");
         return me;
     }
 
-    private MultiException multiExceptionWithRtIo() {
+    private MultiException multiExceptionWithRtIo()
+    {
         MultiException me = new MultiException();
         RuntimeException run = new RuntimeException("one");
         IOException io = new IOException("two");
         me.add(run);
         me.add(io);
-        assertEquals(2,me.size());
+        assertEquals(2, me.size());
 
         assertEquals(0, me.getStackTrace().length, "Stack trace should not be filled out");
         return me;
@@ -146,7 +147,7 @@ public class MultiExceptionTest
             me.ifExceptionThrow();
             assertTrue(false);
         }
-        catch(MultiException e)
+        catch (MultiException e)
         {
             assertTrue(e instanceof MultiException);
             assertTrue(e.getStackTrace().length > 0);
@@ -158,7 +159,7 @@ public class MultiExceptionTest
             me.ifExceptionThrowMulti();
             assertTrue(false);
         }
-        catch(MultiException e)
+        catch (MultiException e)
         {
             assertTrue(e instanceof MultiException);
             assertTrue(e.getStackTrace().length > 0);
@@ -170,7 +171,7 @@ public class MultiExceptionTest
             me.ifExceptionThrowRuntime();
             assertTrue(false);
         }
-        catch(RuntimeException e)
+        catch (RuntimeException e)
         {
             assertTrue(e.getCause() instanceof MultiException);
             assertTrue(e.getStackTrace().length > 0);
@@ -182,7 +183,7 @@ public class MultiExceptionTest
             me.ifExceptionThrowRuntime();
             assertTrue(false);
         }
-        catch(RuntimeException e)
+        catch (RuntimeException e)
         {
             assertThat(e.getCause(), instanceOf(MultiException.class));
             assertTrue(e.getStackTrace().length > 0);
@@ -194,14 +195,14 @@ public class MultiExceptionTest
             me.ifExceptionThrowSuppressed();
             assertTrue(false);
         }
-        catch(RuntimeException e)
+        catch (RuntimeException e)
         {
             assertThat(e.getCause(), is(nullValue()));
-            assertEquals(1,e.getSuppressed().length,1);
-            assertEquals(IOException.class,e.getSuppressed()[0].getClass());
+            assertEquals(1, e.getSuppressed().length, 1);
+            assertEquals(IOException.class, e.getSuppressed()[0].getClass());
         }
     }
-    
+
     @Test
     public void testCause() throws Exception
     {
@@ -211,13 +212,14 @@ public class MultiExceptionTest
         me.add(io);
         me.add(run);
 
-
-        try {
+        try
+        {
             me.ifExceptionThrow();
-        } catch (MultiException e) {
-            assertEquals(io,e.getCause());
-            assertEquals(2,e.size());
         }
-
+        catch (MultiException e)
+        {
+            assertEquals(io, e.getCause());
+            assertEquals(2, e.size());
+        }
     }
 }

@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.gcloud</groupId>
     <artifactId>gcloud-parent</artifactId>
@@ -32,6 +30,13 @@
           <artifactId>javax.servlet-api</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <!-- avoid depending on a range dependency from a transitive dependency -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-core</artifactId>
+      <version>1.0.1</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.google.auto.value</groupId>
@@ -136,15 +141,8 @@
             </goals>
             <configuration>
               <tasks>
-                <replaceregexp file="${project.build.directory}/deps.txt"
-                               match=" *(.*):(.*):jar:(.*):.*$"
-                               replace="maven://\1/\2/\3|lib/gcloud/\2-\3.jar"
-                               byline="true"
-                />
-                <replaceregexp file="${project.build.directory}/deps.txt"
-                               match="The following files have been resolved:"
-                               replace="[files]"
-                />
+                <replaceregexp file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):.*$" replace="maven://\1/\2/\3|lib/gcloud/\2-\3.jar" byline="true" />
+                <replaceregexp file="${project.build.directory}/deps.txt" match="The following files have been resolved:" replace="[files]" />
               </tasks>
             </configuration>
           </execution>
@@ -157,8 +155,8 @@
             <configuration>
               <tasks>
                 <concat destfile="${project.build.directory}/gcloud-datastore.mod">
-                  <fileset file="src/main/config-template/modules/gcloud-datastore.mod"/>
-                  <fileset file="${project.build.directory}/deps.txt"/>
+                  <fileset file="src/main/config-template/modules/gcloud-datastore.mod" />
+                  <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
               </tasks>
             </configuration>

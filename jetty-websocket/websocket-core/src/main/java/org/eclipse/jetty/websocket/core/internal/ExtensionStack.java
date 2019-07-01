@@ -56,6 +56,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     private List<Extension> extensions;
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
+    private Extension[] rsvClaims = new Extension[3];
 
     public ExtensionStack(WebSocketExtensionRegistry factory, Behavior behavior)
     {
@@ -112,7 +113,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
      * <p>
      * For the list of negotiated extensions, use {@link #getNegotiatedExtensions()}
      *
-     * @param offeredConfigs    the configurations being requested by the client
+     * @param offeredConfigs the configurations being requested by the client
      * @param negotiatedConfigs the configurations accepted by the server
      */
     public void negotiate(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, List<ExtensionConfig> offeredConfigs, List<ExtensionConfig> negotiatedConfigs)
@@ -121,8 +122,6 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             LOG.debug("Extension Configs={}", negotiatedConfigs);
 
         this.extensions = new ArrayList<>();
-
-        String rsvClaims[] = new String[3];
 
         for (ExtensionConfig config : negotiatedConfigs)
         {
@@ -175,17 +174,20 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             // Check RSV
             if (ext.isRsv1User() && (rsvClaims[0] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV1", config, rsvClaims[0]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not adding extension {}. Extension {} already claimed RSV1", config, rsvClaims[0]);
                 continue;
             }
             if (ext.isRsv2User() && (rsvClaims[1] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV2", config, rsvClaims[1]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not adding extension {}. Extension {} already claimed RSV2", config, rsvClaims[1]);
                 continue;
             }
             if (ext.isRsv3User() && (rsvClaims[2] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV3", config, rsvClaims[2]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not adding extension {}. Extension {} already claimed RSV3", config, rsvClaims[2]);
                 continue;
             }
 
@@ -197,17 +199,11 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
             // Record RSV Claims
             if (ext.isRsv1User())
-            {
-                rsvClaims[0] = ext.getName();
-            }
+                rsvClaims[0] = ext;
             if (ext.isRsv2User())
-            {
-                rsvClaims[1] = ext.getName();
-            }
+                rsvClaims[1] = ext;
             if (ext.isRsv3User())
-            {
-                rsvClaims[2] = ext.getName();
-            }
+                rsvClaims[2] = ext;
         }
 
         // Wire up Extensions
@@ -259,7 +255,39 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         }
 
         for (Extension extension : extensions)
+        {
             extension.setWebSocketCoreSession(coreSession);
+        }
+    }
+
+    public Extension getRsv1User()
+    {
+        return rsvClaims[0];
+    }
+
+    public Extension getRsv2User()
+    {
+        return rsvClaims[1];
+    }
+
+    public Extension getRsv3User()
+    {
+        return rsvClaims[2];
+    }
+
+    public boolean isRsv1Used()
+    {
+        return (rsvClaims[0] != null);
+    }
+
+    public boolean isRsv2Used()
+    {
+        return (rsvClaims[1] != null);
+    }
+
+    public boolean isRsv3Used()
+    {
+        return (rsvClaims[2] != null);
     }
 
     @Override
@@ -271,7 +299,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, extensions == null?Collections.emptyList():extensions);
+        Dumpable.dumpObjects(out, indent, this, extensions == null ? Collections.emptyList() : extensions);
     }
 
     @Override
@@ -311,8 +339,8 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             }
             s.append(']');
         }
-        s.append(",incoming=").append((this.incoming == null)?"<null>":this.incoming.getClass().getName());
-        s.append(",outgoing=").append((this.outgoing == null)?"<null>":this.outgoing.getClass().getName());
+        s.append(",incoming=").append((this.incoming == null) ? "<null>" : this.incoming.getClass().getName());
+        s.append(",outgoing=").append((this.outgoing == null) ? "<null>" : this.outgoing.getClass().getName());
         s.append("]");
         return s.toString();
     }

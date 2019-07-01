@@ -122,9 +122,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-     <groupId>org.infinispan.protostream</groupId>
-     <artifactId>protostream</artifactId>
-     <version>4.2.2.Final</version>
+      <groupId>org.infinispan.protostream</groupId>
+      <artifactId>protostream</artifactId>
+      <version>4.2.2.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>

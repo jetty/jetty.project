@@ -101,10 +101,10 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
         byte[] content = new byte[3072];
         long contentLength = content.length;
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .header(HttpHeader.CONNECTION, "close")
-                .content(new BytesContentProvider(content))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .header(HttpHeader.CONNECTION, "close")
+            .content(new BytesContentProvider(content))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
         assertTrue(closed.await(2 * idleTimeout, TimeUnit.MILLISECONDS));

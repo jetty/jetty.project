@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
-
+import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 
 public interface Handshaker
 {

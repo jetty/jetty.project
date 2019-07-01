@@ -102,8 +102,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * Connect to remote websocket endpoint
      *
      * @param websocket the websocket object
-     * @param toUri     the websocket uri to connect to
-     * @param request   the upgrade request information
+     * @param toUri the websocket uri to connect to
+     * @param request the upgrade request information
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
@@ -116,17 +116,19 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * Connect to remote websocket endpoint
      *
      * @param websocket the websocket object
-     * @param toUri     the websocket uri to connect to
-     * @param request   the upgrade request information
-     * @param upgradeListener  the upgrade listener
+     * @param toUri the websocket uri to connect to
+     * @param request the upgrade request information
+     * @param upgradeListener the upgrade listener
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
     public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, JettyUpgradeListener upgradeListener) throws IOException
     {
         for (Connection.Listener listener : getBeans(Connection.Listener.class))
+        {
             coreClient.addBean(listener);
-            
+        }
+
         JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(this, coreClient, request, toUri, websocket);
         if (upgradeListener != null)
         {
@@ -148,11 +150,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         upgradeRequest.setConfiguration(configurationCustomizer);
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
-        coreClient.connect(upgradeRequest).whenComplete((coreSession, error)->
+        coreClient.connect(upgradeRequest).whenComplete((coreSession, error) ->
         {
             if (error != null)
             {
-                futureSession.completeExceptionally(error);
+                futureSession.completeExceptionally(JettyWebSocketFrameHandler.convertCause(error));
                 return;
             }
 

@@ -72,8 +72,12 @@ public class ChatWebSocketServer
             public void onOpen(CoreSession coreSession, Callback callback)
             {
                 LOG.debug("onOpen {}", coreSession);
-                setMaxTextMessageSize(2 * 1024);
-                super.onOpen(coreSession, Callback.from(()->{members.add(this); callback.succeeded();},x->callback.failed(x)));
+                coreSession.setMaxTextMessageSize(2 * 1024);
+                super.onOpen(coreSession, Callback.from(() ->
+                {
+                    members.add(this);
+                    callback.succeeded();
+                }, x -> callback.failed(x)));
             }
 
             @Override
@@ -94,7 +98,7 @@ public class ChatWebSocketServer
             public void onClosed(CloseStatus closeStatus, Callback callback)
             {
                 LOG.debug("onClosed {}", closeStatus);
-                super.onClosed(closeStatus, Callback.from(()->members.remove(this),callback));
+                super.onClosed(closeStatus, Callback.from(() -> members.remove(this), callback));
                 members.remove(this);
             }
         };
@@ -120,7 +124,7 @@ public class ChatWebSocketServer
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException, ServletException
+                    throws IOException, ServletException
             {
                 response.setStatus(200);
                 response.setContentType("text/plain");
@@ -132,5 +136,4 @@ public class ChatWebSocketServer
         server.start();
         server.join();
     }
-
 }

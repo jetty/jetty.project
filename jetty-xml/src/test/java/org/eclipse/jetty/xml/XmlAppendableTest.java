@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.xml;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class XmlAppendableTest
 {
@@ -50,8 +49,8 @@ public class XmlAppendableTest
 
         out.closeTag();
 
-        String expected = "" +
-                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+        String expected =
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
                 "<test>\n" +
                 "  <tag/>\n" +
                 "  <tag name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\"/>\n" +

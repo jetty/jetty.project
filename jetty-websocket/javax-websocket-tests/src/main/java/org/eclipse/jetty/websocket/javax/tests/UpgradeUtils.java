@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
-import org.eclipse.jetty.http.HttpHeader;
-
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.eclipse.jetty.http.HttpHeader;
 
 public class UpgradeUtils
 {
@@ -29,7 +29,7 @@ public class UpgradeUtils
     {
         StringBuilder upgradeRequest = new StringBuilder();
         upgradeRequest.append("GET ");
-        upgradeRequest.append(requestPath == null?"/":requestPath);
+        upgradeRequest.append(requestPath == null ? "/" : requestPath);
         upgradeRequest.append(" HTTP/1.1\r\n");
         headers.entrySet().stream().forEach(e ->
             upgradeRequest.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n"));

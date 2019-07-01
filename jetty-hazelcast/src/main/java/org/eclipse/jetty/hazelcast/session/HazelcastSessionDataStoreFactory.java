@@ -54,9 +54,8 @@ public class HazelcastSessionDataStoreFactory
     private HazelcastInstance hazelcastInstance;
 
     private MapConfig mapConfig;
-    
-    private boolean scavengeZombies = false;
 
+    private boolean scavengeZombies = false;
 
     public boolean isScavengeZombies()
     {
@@ -69,72 +68,71 @@ public class HazelcastSessionDataStoreFactory
     }
 
     @Override
-    public SessionDataStore getSessionDataStore( SessionHandler handler )
+    public SessionDataStore getSessionDataStore(SessionHandler handler)
         throws Exception
     {
         HazelcastSessionDataStore hazelcastSessionDataStore = new HazelcastSessionDataStore();
 
-        if ( hazelcastInstance == null )
+        if (hazelcastInstance == null)
         {
             try
             {
-                if ( onlyClient )
+                if (onlyClient)
                 {
-                    if ( configurationLocation == null )
+                    if (configurationLocation == null)
                     {
                         ClientConfig config = new ClientConfig();
-                        SerializerConfig sc = new SerializerConfig().
-                                setImplementation(new SessionDataSerializer()).
-                                setTypeClass(SessionData.class);
+                        SerializerConfig sc = new SerializerConfig()
+                            .setImplementation(new SessionDataSerializer())
+                            .setTypeClass(SessionData.class);
                         config.getSerializationConfig().addSerializerConfig(sc);
                         hazelcastInstance = HazelcastClient.newHazelcastClient(config);
                     }
                     else
                     {
                         hazelcastInstance = HazelcastClient.newHazelcastClient(
-                            new XmlClientConfigBuilder( configurationLocation ).build() );
+                            new XmlClientConfigBuilder(configurationLocation).build());
                     }
-
                 }
                 else
                 {
                     Config config;
-                    if ( configurationLocation == null )
+                    if (configurationLocation == null)
                     {
-                        
-                        SerializerConfig sc = new SerializerConfig().
-                                setImplementation(new SessionDataSerializer()).
-                                setTypeClass(SessionData.class);
+
+                        SerializerConfig sc = new SerializerConfig()
+                            .setImplementation(new SessionDataSerializer())
+                            .setTypeClass(SessionData.class);
                         config = new Config();
                         config.getSerializationConfig().addSerializerConfig(sc);
                         // configure a default Map if null
-                        if ( mapConfig == null )
+                        if (mapConfig == null)
                         {
                             mapConfig = new MapConfig();
-                            mapConfig.setName( mapName );
+                            mapConfig.setName(mapName);
                         }
                         else
                         {
                             // otherwise we reuse the name
                             mapName = mapConfig.getName();
                         }
-                        config.addMapConfig( mapConfig );
+                        config.addMapConfig(mapConfig);
                     }
                     else
                     {
-                        config = new XmlConfigBuilder( configurationLocation ).build();
+                        config = new XmlConfigBuilder(configurationLocation).build();
                     }
-                    config.setInstanceName( hazelcastInstanceName );
-                    hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance( config );
+                    config.setInstanceName(hazelcastInstanceName);
+                    hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance(config);
                 }
             }
-            catch ( IOException e )
+            catch (IOException e)
             {
-                throw new RuntimeException( e.getMessage(), e );
+                throw new RuntimeException(e.getMessage(), e);
             }
         }
         // initialize the map
-        hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap( mapName ));
+        hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap(mapName));
         hazelcastSessionDataStore.setGracePeriodSec(getGracePeriodSec());
         hazelcastSessionDataStore.setSavePeriodSec(getSavePeriodSec());
         hazelcastSessionDataStore.setScavengeZombieSessions(scavengeZombies);
@@ -147,11 +145,10 @@ public class HazelcastSessionDataStoreFactory
     }
 
     /**
-     *
      * @param onlyClient if <code>true</code> the session manager will only connect to an external Hazelcast instance
-     *                   and not use this JVM to start an Hazelcast instance
+     * and not use this JVM to start an Hazelcast instance
      */
-    public void setOnlyClient( boolean onlyClient )
+    public void setOnlyClient(boolean onlyClient)
     {
         this.onlyClient = onlyClient;
     }
@@ -161,7 +158,7 @@ public class HazelcastSessionDataStoreFactory
         return configurationLocation;
     }
 
-    public void setConfigurationLocation( String configurationLocation )
+    public void setConfigurationLocation(String configurationLocation)
     {
         this.configurationLocation = configurationLocation;
     }
@@ -171,7 +168,7 @@ public class HazelcastSessionDataStoreFactory
         return mapName;
     }
 
-    public void setMapName( String mapName )
+    public void setMapName(String mapName)
     {
         this.mapName = mapName;
     }
@@ -181,7 +178,7 @@ public class HazelcastSessionDataStoreFactory
         return hazelcastInstance;
     }
 
-    public void setHazelcastInstance( HazelcastInstance hazelcastInstance )
+    public void setHazelcastInstance(HazelcastInstance hazelcastInstance)
     {
         this.hazelcastInstance = hazelcastInstance;
     }
@@ -191,7 +188,7 @@ public class HazelcastSessionDataStoreFactory
         return mapConfig;
     }
 
-    public void setMapConfig( MapConfig mapConfig )
+    public void setMapConfig(MapConfig mapConfig)
     {
         this.mapConfig = mapConfig;
     }
@@ -201,7 +198,7 @@ public class HazelcastSessionDataStoreFactory
         return hazelcastInstanceName;
     }
 
-    public void setHazelcastInstanceName( String hazelcastInstanceName )
+    public void setHazelcastInstanceName(String hazelcastInstanceName)
     {
         this.hazelcastInstanceName = hazelcastInstanceName;
     }

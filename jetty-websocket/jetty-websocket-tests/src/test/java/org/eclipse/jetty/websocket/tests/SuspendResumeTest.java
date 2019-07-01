@@ -32,8 +32,8 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -85,7 +85,7 @@ public class SuspendResumeTest
         server.setHandler(contextHandler);
         contextHandler.addServlet(new ServletHolder(new UpgradeServlet()), "/suspend");
 
-        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
 
         server.start();
         client.start();
@@ -101,7 +101,7 @@ public class SuspendResumeTest
     @Test
     public void testSuspendWhenProcessingFrame() throws Exception
     {
-        URI uri = new URI("ws://localhost:"+connector.getLocalPort()+"/suspend");
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();
         Future<Session> connect = client.connect(clientSocket, uri);
         connect.get(5, TimeUnit.SECONDS);
@@ -134,7 +134,7 @@ public class SuspendResumeTest
     @Test
     public void testExternalSuspend() throws Exception
     {
-        URI uri = new URI("ws://localhost:"+connector.getLocalPort()+"/suspend");
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();
         Future<Session> connect = client.connect(clientSocket, uri);
         connect.get(5, TimeUnit.SECONDS);
@@ -173,7 +173,7 @@ public class SuspendResumeTest
     @Test
     public void testSuspendAfterClose() throws Exception
     {
-        URI uri = new URI("ws://localhost:"+connector.getLocalPort()+"/suspend");
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();
         Future<Session> connect = client.connect(clientSocket, uri);
         connect.get(5, TimeUnit.SECONDS);

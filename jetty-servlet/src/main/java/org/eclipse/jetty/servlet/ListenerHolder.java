@@ -16,11 +16,9 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.servlet;
 
 import java.util.EventListener;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
@@ -35,13 +33,12 @@ public class ListenerHolder extends BaseHolder<EventListener>
 {
     private EventListener _listener;
     private boolean _initialized = false;
-    
 
-    public ListenerHolder ()
+    public ListenerHolder()
     {
-        this (Source.EMBEDDED);
+        this(Source.EMBEDDED);
     }
-    
+
     public ListenerHolder(Source source)
     {
         super(source);
@@ -52,7 +49,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
         super(Source.EMBEDDED);
         setHeldClass(listenerClass);
     }
-   
+
     public EventListener getListener()
     {
         return _listener;
@@ -63,18 +60,15 @@ public class ListenerHolder extends BaseHolder<EventListener>
      * just like ServletHolder and FilterHolder,
      * the listener will not be introspected for
      * annotations like Resource etc.
-     * 
-     * @param listener
      */
-    public void setListener (EventListener listener)
+    public void setListener(EventListener listener)
     {
         _listener = listener;
-        _extInstance=true;
+        _extInstance = true;
         setHeldClass(_listener.getClass());
     }
 
-
-    public void initialize (ServletContext context) throws Exception
+    public void initialize(ServletContext context) throws Exception
     {
         if (!_initialized)
         {
@@ -84,26 +78,24 @@ public class ListenerHolder extends BaseHolder<EventListener>
             {
                 //create an instance of the listener and decorate it
                 try
-                {                    
-                    _listener = (context instanceof ServletContextHandler.Context)
-                            ?((ServletContextHandler.Context)context).createListener(getHeldClass())
-                            :getHeldClass().getDeclaredConstructor().newInstance();
-
-                }
-                catch (ServletException se)
                 {
-                    Throwable cause = se.getRootCause();
+                    _listener = (context instanceof ServletContextHandler.Context)
+                        ? ((ServletContextHandler.Context)context).createListener(getHeldClass())
+                        : getHeldClass().getDeclaredConstructor().newInstance();
+                }
+                catch (ServletException ex)
+                {
+                    Throwable cause = ex.getRootCause();
                     if (cause instanceof InstantiationException)
                         throw (InstantiationException)cause;
                     if (cause instanceof IllegalAccessException)
                         throw (IllegalAccessException)cause;
-                    throw se;
+                    throw ex;
                 }
             }
             _initialized = true;
         }
     }
-
 
     @Override
     public void doStart() throws Exception
@@ -111,13 +103,11 @@ public class ListenerHolder extends BaseHolder<EventListener>
         super.doStart();
         if (!java.util.EventListener.class.isAssignableFrom(_class))
         {
-            String msg = _class+" is not a java.util.EventListener";
+            String msg = _class + " is not a java.util.EventListener";
             super.stop();
             throw new IllegalStateException(msg);
         }
     }
-
-
 
     @Override
     public void doStop() throws Exception
@@ -131,6 +121,6 @@ public class ListenerHolder extends BaseHolder<EventListener>
     @Override
     public String toString()
     {
-        return super.toString()+": "+getClassName();
-    } 
+        return super.toString() + ": " + getClassName();
+    }
 }

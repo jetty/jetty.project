@@ -29,7 +29,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class ExampleServerXml
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         // Find Jetty XML (in classpath) that configures and starts Server.
         Resource serverXml = Resource.newSystemResource("exampleserver.xml");

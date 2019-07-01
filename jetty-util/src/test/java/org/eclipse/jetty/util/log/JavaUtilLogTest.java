@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.logging.Handler;
@@ -28,9 +25,11 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.AfterAll;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class JavaUtilLogTest
 {
@@ -101,10 +100,10 @@ public class JavaUtilLogTest
 
         // Tests
         JavaUtilLog log = new JavaUtilLog("test.de.bug");
-        setJulLevel("test.de.bug",Level.FINE);
+        setJulLevel("test.de.bug", Level.FINE);
 
         log.debug("Simple debug");
-        log.debug("Debug with {} parameter",1);
+        log.debug("Debug with {} parameter", 1);
         log.debug("Debug with {} {} parameters", 2, "spiffy");
         log.debug("Debug with throwable", th);
         log.debug(th);
@@ -133,10 +132,10 @@ public class JavaUtilLogTest
 
         // Tests
         JavaUtilLog log = new JavaUtilLog("test.in.fo");
-        setJulLevel("test.in.fo",Level.INFO);
+        setJulLevel("test.in.fo", Level.INFO);
 
         log.info("Simple info");
-        log.info("Info with {} parameter",1);
+        log.info("Info with {} parameter", 1);
         log.info("Info with {} {} parameters", 2, "spiffy");
         log.info("Info with throwable", th);
         log.info(th);
@@ -165,10 +164,10 @@ public class JavaUtilLogTest
 
         // Tests
         JavaUtilLog log = new JavaUtilLog("test.wa.rn");
-        setJulLevel("test.wa.rn",Level.WARNING);
+        setJulLevel("test.wa.rn", Level.WARNING);
 
         log.warn("Simple warn");
-        log.warn("Warn with {} parameter",1);
+        log.warn("Warn with {} parameter", 1);
         log.warn("Warn with {} {} parameters", 2, "spiffy");
         log.warn("Warn with throwable", th);
         log.warn(th);
@@ -188,14 +187,14 @@ public class JavaUtilLogTest
         jul.clear();
 
         JavaUtilLog log = new JavaUtilLog("test.nu.ll");
-        setJulLevel("test.nu.ll",Level.INFO);
+        setJulLevel("test.nu.ll", Level.INFO);
 
-        log.info("Testing info(msg,null,null) - {} {}","arg0","arg1");
-        log.info("Testing info(msg,null,null) - {}/{}",null,null);
-        log.info("Testing info(msg,null,null) > {}",null,null);
-        log.info("Testing info(msg,null,null)",null,null);
-        log.info(null,"Testing","info(null,arg0,arg1)");
-        log.info(null,null,null);
+        log.info("Testing info(msg,null,null) - {} {}", "arg0", "arg1");
+        log.info("Testing info(msg,null,null) - {}/{}", null, null);
+        log.info("Testing info(msg,null,null) > {}", null, null);
+        log.info("Testing info(msg,null,null)", null, null);
+        log.info(null, "Testing", "info(null,arg0,arg1)");
+        log.info(null, null, null);
 
         //jul.dump();
 
@@ -207,25 +206,26 @@ public class JavaUtilLogTest
     }
 
     @Test
-    public void testIsDebugEnabled() {
+    public void testIsDebugEnabled()
+    {
         JavaUtilLog log = new JavaUtilLog("test.legacy");
 
-        setJulLevel("test.legacy",Level.ALL);
+        setJulLevel("test.legacy", Level.ALL);
         assertThat("log.level(all).isDebugEnabled", log.isDebugEnabled(), is(true));
 
-        setJulLevel("test.legacy",Level.FINEST);
+        setJulLevel("test.legacy", Level.FINEST);
         assertThat("log.level(finest).isDebugEnabled", log.isDebugEnabled(), is(true));
 
-        setJulLevel("test.legacy",Level.FINER);
+        setJulLevel("test.legacy", Level.FINER);
         assertThat("log.level(finer).isDebugEnabled", log.isDebugEnabled(), is(true));
 
-        setJulLevel("test.legacy",Level.FINE);
+        setJulLevel("test.legacy", Level.FINE);
         assertThat("log.level(fine).isDebugEnabled", log.isDebugEnabled(), is(true));
 
-        setJulLevel("test.legacy",Level.INFO);
+        setJulLevel("test.legacy", Level.INFO);
         assertThat("log.level(info).isDebugEnabled", log.isDebugEnabled(), is(false));
 
-        setJulLevel("test.legacy",Level.WARNING);
+        setJulLevel("test.legacy", Level.WARNING);
         assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
 
         log.setDebugEnabled(true);

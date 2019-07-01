@@ -27,9 +27,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
-
-/* ------------------------------------------------------------ */
-
 /**
  * Symbolic Link AliasChecker.
  * <p>An instance of this class can be registered with {@link ContextHandler#addAliasCheck(AliasCheck)}
@@ -40,15 +37,15 @@ import org.eclipse.jetty.util.resource.Resource;
 public class AllowSymLinkAliasChecker implements AliasCheck
 {
     private static final Logger LOG = Log.getLogger(AllowSymLinkAliasChecker.class);
-    
+
     @Override
     public boolean check(String uri, Resource resource)
     {
         // Only support PathResource alias checking
         if (!(resource instanceof PathResource))
             return false;
-        
-        PathResource pathResource = (PathResource) resource;
+
+        PathResource pathResource = (PathResource)resource;
 
         try
         {
@@ -69,7 +66,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
         {
             LOG.ignore(e);
         }
-        
+
         return false;
     }
 
@@ -94,5 +91,4 @@ public class AllowSymLinkAliasChecker implements AliasCheck
 
         return false;
     }
-
 }

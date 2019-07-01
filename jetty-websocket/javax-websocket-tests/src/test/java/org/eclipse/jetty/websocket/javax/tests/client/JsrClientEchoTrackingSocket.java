@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client;
 
-import org.eclipse.jetty.websocket.javax.tests.DataUtils;
-import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
-
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnMessage;
-import javax.websocket.PongMessage;
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
+import javax.websocket.PongMessage;
+
+import org.eclipse.jetty.websocket.javax.tests.DataUtils;
+import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
 
 @ClientEndpoint
 public class JsrClientEchoTrackingSocket extends WSEventTracker.Basic

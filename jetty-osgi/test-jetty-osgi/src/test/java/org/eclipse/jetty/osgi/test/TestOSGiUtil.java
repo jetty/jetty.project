@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -61,10 +60,10 @@ public class TestOSGiUtil
 {
     public static final String BUNDLE_DEBUG = "bundle.debug";
 
-    public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
+    public static List<Option> configureJettyHomeAndPort(boolean ssl, String jettySelectorFileName)
     {
         File etc = new File(FS.separators("src/test/config/etc"));
-        
+
         List<Option> options = new ArrayList<>();
         StringBuffer xmlConfigs = new StringBuffer();
         xmlConfigs.append(new File(etc, "jetty.xml").toURI());
@@ -78,7 +77,6 @@ public class TestOSGiUtil
             xmlConfigs.append(";");
             xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
             xmlConfigs.append(";");
-
         }
         xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
         xmlConfigs.append(";");
@@ -94,60 +92,60 @@ public class TestOSGiUtil
     }
 
     public static List<Option> provisionCoreJetty()
-    { 
+    {
         List<Option> res = new ArrayList<>();
         // get the jetty home config from the osgi boot bundle.
         res.add(CoreOptions.systemProperty("jetty.home.bundle").value("org.eclipse.jetty.osgi.boot"));
         res.addAll(coreJettyDependencies());
         return res;
     }
- 
+
     public static Option optionalRemoteDebug()
     {
         return CoreOptions.when(Boolean.getBoolean("pax.exam.debug.remote"))
-                .useOptions(CoreOptions.vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"));
+            .useOptions(CoreOptions.vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"));
     }
 
     public static List<Option> coreJettyDependencies()
     {
         List<Option> res = new ArrayList<>();
         res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
-        String mavenRepoPath = System.getProperty( "mavenRepoPath" );
+        String mavenRepoPath = System.getProperty("mavenRepoPath");
         if (!StringUtil.isBlank(mavenRepoPath))
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-servlet-api" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.apache.aries.spifly" ).artifactId( "org.apache.aries.spifly.dynamic.bundle" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "jakarta.annotation" ).artifactId( "jakarta.annotation-api" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.apache.geronimo.specs" ).artifactId( "geronimo-jta_1.1_spec" ).version("1.1.1").start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-util" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-deploy" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-server" ).versionAsInProject().start());  
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlet" ).versionAsInProject().start());  
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-http" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-xml" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-webapp" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-io" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-security" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlets" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-client" ).versionAsInProject().start());  
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-jndi" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-plus" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-annotations" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-core" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-api" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-common" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-server" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "jetty-websocket-client" ).versionAsInProject().start());
+            res.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(mavenRepoPath));
+        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-servlet-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-tree").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.apache.geronimo.specs").artifactId("geronimo-jta_1.1_spec").version("1.1.1").start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-servlet").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-http").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-xml").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-webapp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-io").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-security").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-servlets").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-client").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-jndi").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-plus").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-annotations").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-core").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("jetty-websocket-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("jetty-websocket-common").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-servlet").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("jetty-websocket-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("jetty-websocket-client").versionAsInProject().start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-common").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-client").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-server").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-javax-websocket-api").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot").versionAsInProject().start());
         return res;
     }
 
@@ -155,16 +153,14 @@ public class TestOSGiUtil
     {
         List<Option> res = new ArrayList<>();
         res.add(systemProperty("osgi.console").value("6666"));
-        res.add(systemProperty("osgi.console.enable.builtin").value("true")); 
+        res.add(systemProperty("osgi.console.enable.builtin").value("true"));
         return res;
     }
-
-
 
     public static List<Option> jspDependencies()
     {
         List<Option> res = new ArrayList<>();
-  
+
         //jetty jsp bundles  
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
@@ -175,26 +171,26 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
         return res;
     }
-     
+
     public static List<Option> httpServiceJetty()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-httpservice" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.equinox.http" ).artifactId( "servlet" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-httpservice").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.equinox.http").artifactId("servlet").versionAsInProject().start());
         return res;
     }
 
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
-        Map<String,Bundle> _bundles = new HashMap<>();
+        Map<String, Bundle> _bundles = new HashMap<>();
         for (Bundle b : bundleContext.getBundles())
         {
             Bundle prevBundle = _bundles.put(b.getSymbolicName(), b);
             String err = prevBundle != null ? "2 versions of the bundle " + b.getSymbolicName()
-            + " "
-            + b.getHeaders().get("Bundle-Version")
-            + " and "
-            + prevBundle.getHeaders().get("Bundle-Version") : "";
+                + " "
+                + b.getHeaders().get("Bundle-Version")
+                + " and "
+                + prevBundle.getHeaders().get("Bundle-Version") : "";
             assertNull(err, prevBundle);
         }
         return _bundles.get(symbolicName);
@@ -211,9 +207,10 @@ public class TestOSGiUtil
     {
         Bundle b = getBundle(bundleContext, symbolicName);
         assertNotNull(b);
-        if (b.getHeaders().get("Fragment-Host") == null) diagnoseNonActiveOrNonResolvedBundle(b);
+        if (b.getHeaders().get("Fragment-Host") == null)
+            diagnoseNonActiveOrNonResolvedBundle(b);
         assertTrue(b.getSymbolicName() + " must be active or resolved. It was " + b.getState(),
-                          b.getState() == Bundle.ACTIVE || b.getState() == Bundle.RESOLVED);
+            b.getState() == Bundle.ACTIVE || b.getState() == Bundle.RESOLVED);
     }
 
     protected static void assertAllBundlesActiveOrResolved(BundleContext bundleContext)
@@ -225,15 +222,15 @@ public class TestOSGiUtil
                 diagnoseNonActiveOrNonResolvedBundle(b);
             }
             assertTrue("Bundle: " + b
-                              + " (state should be "
-                              + "ACTIVE["
-                              + Bundle.ACTIVE
-                              + "] or RESOLVED["
-                              + Bundle.RESOLVED
-                              + "]"
-                              + ", but was ["
-                              + b.getState()
-                              + "])", (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
+                + " (state should be "
+                + "ACTIVE["
+                + Bundle.ACTIVE
+                + "] or RESOLVED["
+                + Bundle.RESOLVED
+                + "]"
+                + ", but was ["
+                + b.getState()
+                + "])", (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
         }
     }
 
@@ -268,14 +265,14 @@ public class TestOSGiUtil
         for (Bundle b : bundleContext.getBundles())
         {
             bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-            System.err.println("    " + b.getBundleId()+" "+b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion()+ " " + b.getState());
+            System.err.println("    " + b.getBundleId() + " " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion() + " " + b.getState());
         }
     }
-   
+
     @SuppressWarnings("rawtypes")
-    protected static ServiceReference[] getServices (String service, BundleContext bundleContext) throws Exception
+    protected static ServiceReference[] getServices(String service, BundleContext bundleContext) throws Exception
     {
-       return bundleContext.getAllServiceReferences(service, null);
+        return bundleContext.getAllServiceReferences(service, null);
     }
 
     protected static SslContextFactory.Client newClientSslContextFactory()
@@ -319,7 +316,7 @@ public class TestOSGiUtil
         // ready.
         ServiceReference<?> sr = bundleContext.getServiceReference(HttpService.class.getName());
         assertNotNull("The httpServiceOSGiBundle is started and should " + "have deployed a service reference for HttpService", sr);
-        HttpService http = (HttpService) bundleContext.getService(sr);
+        HttpService http = (HttpService)bundleContext.getService(sr);
         http.registerServlet("/greetings", new HttpServlet()
         {
             private static final long serialVersionUID = 1L;
