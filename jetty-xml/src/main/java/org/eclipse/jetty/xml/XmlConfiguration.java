@@ -579,9 +579,30 @@ public class XmlConfiguration
                     Field field = oClass.getField(attr);
                     if (Modifier.isPublic(field.getModifiers()))
                     {
+                    try
+                    {
                         setField(field, obj, value);
                         return;
                     }
+                    catch (IllegalArgumentException e)
+                    {
+                        // try to convert String value to field value
+                        if (value instanceof String)
+                        {
+                            try
+                            {
+                                value = TypeUtil.valueOf(field.getType(), ((String)value).trim());
+                                setField(field, obj, value);
+                                return;
+                            }
+                            catch (Exception e2)
+                            {
+                                e.addSuppressed(e2);
+                                throw e;
+                            }
+                        }
+                    }
+                }
                 }
                 catch (NoSuchFieldException e)
                 {
@@ -1376,62 +1397,70 @@ public class XmlConfiguration
                     return null;
                 }
 
-                // Trim values
                 int first = 0;
                 int last = node.size() - 1;
 
-                // Handle default trim type
-                if (!"String".equals(type))
+                // If it is String, just append all the nodes including whitespace
+                if ("String".equals(type))
                 {
-                    // Skip leading white
-                    Object item;
+                    if (first == last)
+                        value = itemValue(obj, node.get(first));
+                    else
+                    {
+                        StringBuilder buf = new StringBuilder();
+                        for (int i = first; i <= last; i++)
+                        {
+                            Object item = node.get(i);
+                            buf.append(itemValue(obj, item));
+                        }
+                        value = buf.toString();
+                    }
+                }
+                else // Skip leading/trailing nodes that are all white space
+                {
+                    // Skip leading nodes that are all white space
                     while (first <= last)
                     {
-                        item = node.get(first);
-                        if (!(item instanceof String))
-                            break;
-                        item = ((String)item).trim();
-                        if (((String)item).length() > 0)
+                        Object item = node.get(first);
+                        if (!(item instanceof String) || ((String)item).trim().length() > 0)
                             break;
                         first++;
                     }
 
-                    // Skip trailing white
+                    // Skip trailing nodes that are all white space
                     while (first < last)
                     {
-                        item = node.get(last);
-                        if (!(item instanceof String))
-                            break;
-                        item = ((String)item).trim();
-                        if (((String)item).length() > 0)
+                        Object item = node.get(last);
+                        if (!(item instanceof String) || ((String)item).trim().length() > 0)
                             break;
                         last--;
                     }
 
-                    // All white, so return null
+                    // No non whitespace nodes, so return null
                     if (first > last)
                         return null;
-                }
 
-                if (first == last)
-                {
-                    // Single Item value
-                    value = itemValue(obj, node.get(first));
-                }
-                else
-                {
-                    // Get the multiple items as a single string
-                    StringBuilder buf = new StringBuilder();
-                    for (int i = first; i <= last; i++)
+                    if (first == last)
                     {
-                        Object item = node.get(i);
-                        buf.append(itemValue(obj, item));
+                        // Single Item value
+                        value = itemValue(obj, node.get(first));
+                        if (value instanceof String)
+                            value = ((String)value).trim();
                     }
-                    value = buf.toString();
+                    else
+                    {
+                        // Get the multiple items as a single string
+                        StringBuilder buf = new StringBuilder();
+                        for (int i = first; i <= last; i++)
+                        {
+                            buf.append(itemValue(obj, node.get(i)));
+                        }
+                        value = buf.toString().trim();
+                    }
                 }
             }
 
-            // Untyped or unknown
+            // No value
             if (value == null)
             {
                 if ("String".equals(type))
@@ -1439,14 +1468,11 @@ public class XmlConfiguration
                 return null;
             }
 
-            // Try to type the object
+            // Untyped
             if (type == null)
-            {
-                if (value instanceof String)
-                    return ((String)value).trim();
                 return value;
-            }
 
+            // Try to type the object
             if (isTypeMatchingClass(type, String.class))
                 return value.toString();
 

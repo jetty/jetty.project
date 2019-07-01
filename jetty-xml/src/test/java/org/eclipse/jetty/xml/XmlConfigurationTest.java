@@ -778,9 +778,9 @@ public class XmlConfigurationTest
 
     public static class NativeHolder
     {
-        private boolean _boolean;
-        private int _integer;
-        private float _float;
+        public boolean _boolean;
+        public int _integer;
+        public float _float;
 
         public boolean getBoolean()
         {
@@ -858,10 +858,7 @@ public class XmlConfigurationTest
                 "  <Set name=\"integer\">bad</Set>" +
                 "</Configure>");
 
-        assertThrows(InvocationTargetException.class, () ->
-        {
-            xmlConfiguration.configure();
-        });
+        assertThrows(InvocationTargetException.class, () -> xmlConfiguration.configure());
     }
 
     @Test
@@ -872,10 +869,63 @@ public class XmlConfigurationTest
                 "  <Set name=\"integer\">100 bas</Set>" +
                 "</Configure>");
 
-        assertThrows(InvocationTargetException.class, () ->
-        {
-            xmlConfiguration.configure();
-        });
+        assertThrows(InvocationTargetException.class, () -> xmlConfiguration.configure());
+    }
+
+    @Test
+    public void testSetTrimmedSetterInt() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"integer\">" +
+                "    42  " +
+                "  </Set>" +
+                "</Configure>");
+
+        NativeHolder holder = (NativeHolder)xmlConfiguration.configure();
+        assertThat(holder._integer, is(42));
+    }
+
+    @Test
+    public void testSetTrimmedIntSetterWithType() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"integer\" type=\"int\">" +
+                "    42  " +
+                "  </Set>" +
+                "</Configure>");
+
+        NativeHolder holder = (NativeHolder)xmlConfiguration.configure();
+        assertThat(holder._integer, is(42));
+    }
+
+    @Test
+    public void testSetTrimmedFieldInt() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"_integer\">" +
+                "    42  " +
+                "  </Set>" +
+                "</Configure>");
+
+        NativeHolder holder = (NativeHolder)xmlConfiguration.configure();
+        assertThat(holder._integer, is(42));
+    }
+
+    @Test
+    public void testSetTrimmedIntFieldWithType() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"integer\" type=\"int\">" +
+                "    42  " +
+                "  </Set>" +
+                "</Configure>");
+
+        NativeHolder holder = (NativeHolder)xmlConfiguration.configure();
+        assertThat(holder._integer, is(42));
     }
 
     @Test
@@ -886,10 +936,7 @@ public class XmlConfigurationTest
                 "  <Set name=\"integer\">1.5</Set>" +
                 "</Configure>");
 
-        assertThrows(InvocationTargetException.class, () ->
-        {
-            xmlConfiguration.configure();
-        });
+        assertThrows(InvocationTargetException.class, () -> xmlConfiguration.configure());
     }
 
     @Test
@@ -1008,10 +1055,11 @@ public class XmlConfigurationTest
     @Test
     public void testJettyStandardIdsAndProperties_JettyHome_JettyBase() throws Exception
     {
-        String propNames[] = new String[]{
-            "jetty.base",
-            "jetty.home"
-        };
+        String propNames[] = new String[]
+            {
+                "jetty.base",
+                "jetty.home"
+            };
 
         for (String propName : propNames)
         {
@@ -1036,10 +1084,11 @@ public class XmlConfigurationTest
     @Test
     public void testJettyStandardIdsAndProperties_JettyHomeUri_JettyBaseUri() throws Exception
     {
-        String propNames[] = new String[]{
-            "jetty.base.uri",
-            "jetty.home.uri"
-        };
+        String propNames[] = new String[]
+            {
+                "jetty.base.uri",
+                "jetty.home.uri"
+            };
 
         for (String propName : propNames)
         {

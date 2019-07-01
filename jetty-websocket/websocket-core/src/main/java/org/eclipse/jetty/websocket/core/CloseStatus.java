@@ -52,13 +52,14 @@ public class CloseStatus
 
     private final int code;
     private final String reason;
+    private final Throwable cause;
 
     /**
      * Creates a reason for closing a web socket connection with the no given status code.
      */
     public CloseStatus()
     {
-        this(NO_CODE);
+        this(NO_CODE, null, null);
     }
 
     /**
@@ -68,7 +69,7 @@ public class CloseStatus
      */
     public CloseStatus(int statusCode)
     {
-        this(statusCode, null);
+        this(statusCode, null, null);
     }
 
     /**
@@ -79,7 +80,31 @@ public class CloseStatus
      */
     public CloseStatus(int statusCode, String reasonPhrase)
     {
+        this(statusCode, reasonPhrase, null);
+    }
+
+    /**
+     * Creates a reason for closing a web socket connection with the given status code and reason phrase.
+     *
+     * @param statusCode the close code
+     * @param cause the error which caused the close
+     */
+    public CloseStatus(int statusCode, Throwable cause)
+    {
+        this(statusCode, cause.getMessage(), cause);
+    }
+
+    /**
+     * Creates a reason for closing a web socket connection with the given status code and reason phrase.
+     *
+     * @param statusCode the close code
+     * @param reasonPhrase the reason phrase
+     * @param cause the error which caused the close
+     */
+    public CloseStatus(int statusCode, String reasonPhrase, Throwable cause)
+    {
         this.code = statusCode;
+        this.cause = cause;
 
         if (reasonPhrase != null)
         {
@@ -100,6 +125,7 @@ public class CloseStatus
     public CloseStatus(ByteBuffer payload)
     {
         // RFC-6455 Spec Required Close Frame validation.
+        this.cause = null;
         int statusCode = NO_CODE;
 
         if ((payload == null) || (payload.remaining() == 0))
@@ -169,14 +195,22 @@ public class CloseStatus
             return ((CloseStatus.Supplier)frame).getCloseStatus();
         if (frame.getOpCode() == OpCode.CLOSE)
             return new CloseStatus(frame);
-        return null;
+        throw new IllegalArgumentException("not a close frame");
     }
 
-    // TODO consider defining a precedence for every CloseStatus, and change SessionState only if higher precedence
-    public static boolean isOrdinary(CloseStatus closeStatus)
+    public static boolean isOrdinary(int closeCode)
     {
-        int code = closeStatus.getCode();
-        return (code == NORMAL || code == NO_CODE || code >= 3000);
+        return (closeCode == NORMAL || closeCode == NO_CODE || closeCode >= 3000);
+    }
+
+    public boolean isAbnormal()
+    {
+        return !isOrdinary(code);
+    }
+
+    public Throwable getCause()
+    {
+        return cause;
     }
 
     public int getCode()

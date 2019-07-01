@@ -411,6 +411,21 @@ public class WebSocketCloseTest extends WebSocketTester
         assertThat(server.handler.closeStatus.getReason(), containsString("onReceiveFrame throws for binary frames"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    public void abnormalCloseStatusIsHardClose(String scheme) throws Exception
+    {
+        setup(State.OPEN, scheme);
+
+        server.handler.getCoreSession().close(CloseStatus.SERVER_ERROR, "manually sent server error", Callback.NOOP);
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
+        assertThat(server.handler.closeStatus.getReason(), containsString("manually sent server error"));
+
+        Frame frame = receiveFrame(client.getInputStream());
+        assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.SERVER_ERROR));
+    }
+
     static class DemandingTestFrameHandler implements SynchronousFrameHandler
     {
         private CoreSession coreSession;

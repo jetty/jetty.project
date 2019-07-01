@@ -428,6 +428,28 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>3.1.0</version>
+          <configuration>
+            <configLocation>jetty-checkstyle.xml</configLocation>
+            <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
+            <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>build-resources</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>8.20</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
           <version>3.1.0</version>
         </plugin>
@@ -513,19 +535,22 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1-SNAPSHOT</version>
           <configuration>
+            <verbose>true</verbose>
+            <debug>true</debug>
             <source>11</source>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
-            <additionalJOption>--no-module-directories</additionalJOption>
             <additionalOptions>-html5</additionalOptions>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>false</detectJavaApiLink>
+            <detectOfflineLinks>false</detectOfflineLinks>
             <show>protected</show>
             <attach>true</attach>
+            <isOffline>true</isOffline>
             <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
           </configuration>
         </plugin>
@@ -1086,11 +1111,6 @@
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jxr-plugin</artifactId>
-            <version>3.0.0</version>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-checkstyle-plugin</artifactId>
             <reportSets>
               <reportSet>
@@ -1103,32 +1123,6 @@
         </plugins>
       </reporting>
       <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-checkstyle-plugin</artifactId>
-              <version>3.0.0</version>
-              <configuration>
-                <configLocation>jetty-checkstyle.xml</configLocation>
-                <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
-                <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
-              </configuration>
-              <dependencies>
-                <dependency>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>build-resources</artifactId>
-                  <version>${project.version}</version>
-                </dependency>
-                <dependency>
-                  <groupId>com.puppycrawl.tools</groupId>
-                  <artifactId>checkstyle</artifactId>
-                  <version>8.20</version>
-                </dependency>
-              </dependencies>
-            </plugin>
-          </plugins>
-        </pluginManagement>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>

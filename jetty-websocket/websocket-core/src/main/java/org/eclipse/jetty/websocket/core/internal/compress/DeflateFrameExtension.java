@@ -21,9 +21,12 @@ package org.eclipse.jetty.websocket.core.internal.compress;
 import java.util.zip.DataFormatException;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 /**
  * Implementation of the
@@ -32,6 +35,8 @@ import org.eclipse.jetty.websocket.core.OpCode;
  */
 public class DeflateFrameExtension extends CompressExtension
 {
+    private static final Logger LOG = Log.getLogger(DeflateFrameExtension.class);
+
     @Override
     public String getName()
     {
@@ -56,7 +61,6 @@ public class DeflateFrameExtension extends CompressExtension
         // Incoming frames are always non concurrent because
         // they are read and parsed with a single thread, and
         // therefore there is no need for synchronization.
-
         if ((OpCode.isControlFrame(frame.getOpCode())) || !frame.isRsv1() || !frame.hasPayload())
         {
             nextIncomingFrame(frame, callback);
@@ -77,5 +81,13 @@ public class DeflateFrameExtension extends CompressExtension
         {
             throw new BadPayloadException(e);
         }
+    }
+
+    @Override
+    public void setWebSocketCoreSession(WebSocketCoreSession coreSession)
+    {
+        // Frame auto-fragmentation must not be used with DeflateFrameExtension
+        coreSession.setAutoFragment(false);
+        super.setWebSocketCoreSession(coreSession);
     }
 }

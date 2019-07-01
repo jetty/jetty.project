@@ -243,6 +243,33 @@ public interface Callback extends Invocable
         };
     }
 
+    /**
+     * Create a callback which combines two other callbacks and will succeed or fail them both.
+     * @param callback1 The first callback
+     * @param callback2 The second callback
+     * @return a new callback.
+     */
+    static Callback from(Callback callback1, Callback callback2)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                callback1.succeeded();
+                callback2.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                callback1.failed(x);
+                callback2.failed(x);
+            }
+        };
+    }
+
+
     class Completing implements Callback
     {
         @Override

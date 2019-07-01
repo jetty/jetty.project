@@ -50,7 +50,7 @@ pipeline {
             maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
           }
         }
-/*
+
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
@@ -59,24 +59,21 @@ pipeline {
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
           }
         }
-*/
-/*
+
         stage("Checkstyle ") {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk11", "install checkstyle:checkstyle -DskipTests", "maven3", true)
+            mavenBuild("jdk11", "install checkstyle:check -DskipTests", "maven3", true)
             recordIssues(
                     enabledForFailure: true, aggregatingResults: true,
-                    tools: [java(), checkStyle(pattern: '** /target/checkstyle-result.xml', reportEncoding: 'UTF-8')]
+                    tools: [java(), checkStyle(pattern: '**/target/checkstyle-result.xml', reportEncoding: 'UTF-8')]
             )
           }
         }
-*/
       }
     }
   }
-  /*
   post {
     failure {
       slackNotif()
@@ -88,24 +85,29 @@ pipeline {
       slackNotif()
     }
   }
-  */
 }
 
-/*
+
 def slackNotif() {
     script {
-      if (env.BRANCH_NAME=='jetty-10.0.x' ||
-          env.BRANCH_NAME=='jetty-9.4.x') {
+      try
+      {
+        if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-9.4.x' )
+        {
           //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
           // by ${BUILD_USER}
           COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
           slackSend channel: '#jenkins',
-                  color: COLOR_MAP[currentBuild.currentResult],
-                  message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} - ${env.BUILD_URL}"
+                    color: COLOR_MAP[currentBuild.currentResult],
+                    message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} - ${env.BUILD_URL}"
+        }
+      } catch (Exception e) {
+        e.printStackTrace()
+        echo "skip failure slack notification: " + e.getMessage()
       }
     }
 }
-*/
+
 
 /**
  * To other developers, if you are using this method above, please use the following syntax.
