@@ -27,10 +27,12 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +50,7 @@ public class ConcurrentConnectTest
     private Server server;
     private WebSocketClient client;
     private URI uri;
+    private WebSocketServerFactory serverFactory;
 
     @BeforeEach
     public void start() throws Exception
@@ -59,7 +62,17 @@ public class ConcurrentConnectTest
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        context.addServlet(MyWebSocketServlet.class, "/");
+
+        WebSocketServlet servlet = new WebSocketServlet() {
+            @Override
+            public void configure(WebSocketServletFactory factory)
+            {
+                factory.register(EventSocket.EchoSocket.class);
+                serverFactory = (WebSocketServerFactory)factory;
+            }
+        };
+
+        context.addServlet(new ServletHolder(servlet), "/");
         server.setHandler(context);
 
         server.start();
@@ -124,6 +137,10 @@ public class ConcurrentConnectTest
         {
             assertTrue(((WebSocketSession)l.session).isStopped());
         }
+
+        assertTrue(client.getOpenSessions().isEmpty());
+        assertTrue(client.getContainedBeans(WebSocketSession.class).isEmpty());
+        assertTrue(serverFactory.getContainedBeans(WebSocketSession.class).isEmpty());
     }
 
     public static class CloseListener implements WebSocketSessionListener
@@ -144,15 +161,6 @@ public class ConcurrentConnectTest
         public void onSessionClosed(WebSocketSession session)
         {
             closeLatch.countDown();
-        }
-    }
-
-    public static class MyWebSocketServlet extends WebSocketServlet
-    {
-        @Override
-        public void configure(WebSocketServletFactory factory)
-        {
-            factory.register(EventSocket.EchoSocket.class);
         }
     }
 }

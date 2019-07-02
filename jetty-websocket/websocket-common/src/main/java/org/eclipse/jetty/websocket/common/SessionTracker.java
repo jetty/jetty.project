@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 
-public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener
+public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener, Dumpable
 {
     private CopyOnWriteArraySet<WebSocketSession> sessions = new CopyOnWriteArraySet<>();
 
@@ -62,5 +64,11 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
             LifeCycle.stop(session);
         }
         super.doStop();
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, sessions);
     }
 }
