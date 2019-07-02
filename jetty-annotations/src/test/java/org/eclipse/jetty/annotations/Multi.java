@@ -29,5 +29,3 @@ public @interface Multi
 {
     String[] value();
 }
-
-

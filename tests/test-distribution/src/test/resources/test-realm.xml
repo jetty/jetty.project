@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+    <!-- =========================================================== -->
+    <!-- Configure Authentication Login Service                      -->
+    <!-- Realms may be configured for the entire server here, or     -->
+    <!-- they can be configured for a specific web app in a context  -->
+    <!-- configuration (see $(jetty.home)/webapps/test.xml for an    -->
+    <!-- example).                                                   -->
+    <!-- =========================================================== -->
+    <Call name="addBean">
+      <Arg>
+        <New class="org.eclipse.jetty.security.HashLoginService">
+          <Set name="name">Test Realm</Set>
+          <Set name="config"><Property name="jetty.demo.realm" default="etc/realm.properties"/></Set>
+          <Set name="hotReload">false</Set>
+        </New>
+      </Arg>
+    </Call>
+
+    <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
+      <Call name="warn"><Arg>demo test-realm is deployed. DO NOT USE IN PRODUCTION!</Arg></Call>
+    </Get>
+</Configure>

@@ -311,6 +311,9 @@ public abstract class Resource implements ResourceFactory, Closeable
         return r.isContainedIn(containingResource);
     }
 
+    /**
+     * @checkstyle-disable-check : NoFinalizerCheck
+     */
     @Override
     protected void finalize()
     {
