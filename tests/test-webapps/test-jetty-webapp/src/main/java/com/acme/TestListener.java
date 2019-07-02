@@ -144,14 +144,13 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
         try
         {
             AddListServletRequestListener listenerClass =
-                sce.getServletContext().createListener( AddListServletRequestListener.class );
-            sce.getServletContext().addListener( listenerClass );
+                sce.getServletContext().createListener(AddListServletRequestListener.class);
+            sce.getServletContext().addListener(listenerClass);
         }
-        catch ( ServletException e )
+        catch (ServletException e)
         {
-            throw new RuntimeException( e.getMessage(), e );
+            throw new RuntimeException(e.getMessage(), e);
         }
-
     }
 
     @Override

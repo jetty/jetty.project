@@ -88,7 +88,7 @@ public class Injection
             tmpTarget = IntrospectionUtil.findMethod(clazz, setter, new Class[]{_resourceClass}, true, false);
             tmpParamClass = _resourceClass;
         }
-        catch (NoSuchMethodException me)
+        catch (NoSuchMethodException nsme)
         {
             //try as a field
             try
@@ -96,9 +96,10 @@ public class Injection
                 tmpTarget = IntrospectionUtil.findField(clazz, target, resourceType, true, false);
                 tmpParamClass = null;
             }
-            catch (NoSuchFieldException fe)
+            catch (NoSuchFieldException nsfe)
             {
-                throw new IllegalArgumentException("No such field or method " + target + " on class " + _targetClass);
+                nsme.addSuppressed(nsfe);
+                throw new IllegalArgumentException("No such field or method " + target + " on class " + _targetClass, nsme);
             }
         }
 
