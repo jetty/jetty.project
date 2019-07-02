@@ -28,13 +28,10 @@ import java.util.Random;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -47,7 +44,6 @@ import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
@@ -78,7 +74,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         // Wire up stack
         ext.setNextIncomingFrames(capture);
 
-        Parser parser = new Parser(bufferPool);
+        Parser parser = new Parser(components.getBufferPool());
         ByteBuffer buffer = ByteBuffer.wrap(raw);
         while (BufferUtil.hasContent(buffer))
         {
@@ -113,7 +109,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         DeflateFrameExtension ext = new DeflateFrameExtension();
         init(ext);
 
-        Generator generator = new Generator(bufferPool);
+        Generator generator = new Generator(components.getBufferPool());
 
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
@@ -238,7 +234,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     private void init(DeflateFrameExtension ext)
     {
         ext.setWebSocketCoreSession(sessionWithMaxMessageSize(20 * 1024 * 1024));
-        ext.init(new ExtensionConfig(ext.getName()), bufferPool);
+        ext.init(new ExtensionConfig(ext.getName()), components);
     }
 
     @Test
@@ -290,7 +286,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         DeflateFrameExtension ext = new DeflateFrameExtension();
         init(ext);
 
-        Generator generator = new Generator(bufferPool);
+        Generator generator = new Generator(components.getBufferPool());
 
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
@@ -417,9 +413,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     private WebSocketCoreSession sessionWithMaxMessageSize(int maxMessageSize)
     {
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
-        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
-        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
+        ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
+        exStack.negotiate(new LinkedList<>(), new LinkedList<>());
 
         WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack));
         coreSession.setMaxFrameSize(maxMessageSize);

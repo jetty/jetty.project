@@ -246,7 +246,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
         public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
         {
-            super(components.getExtensionRegistry(), components.getObjectFactory(), components.getBufferPool(), customizer);
+            super(components, customizer);
             this.creator = creator;
             this.factory = factory;
         }

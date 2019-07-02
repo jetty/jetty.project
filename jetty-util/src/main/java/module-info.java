@@ -31,6 +31,7 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util.statistic;
     exports org.eclipse.jetty.util.thread;
     exports org.eclipse.jetty.util.thread.strategy;
+    exports org.eclipse.jetty.util.compression;
 
     // Only required if using AppContextLeakPreventer/AWTLeakPreventer.
     requires static java.desktop;

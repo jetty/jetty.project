@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.
@@ -144,7 +144,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    public void init(final ExtensionConfig config, ByteBufferPool bufferPool)
+    public void init(final ExtensionConfig config, WebSocketComponents components)
     {
         configRequested = new ExtensionConfig(config);
         Map<String, String> paramsNegotiated = new HashMap<>();
@@ -183,7 +183,7 @@ public class PerMessageDeflateExtension extends CompressExtension
         configNegotiated = new ExtensionConfig(config.getName(), paramsNegotiated);
         LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
-        super.init(configNegotiated, bufferPool);
+        super.init(configNegotiated, components);
     }
 
     @Override

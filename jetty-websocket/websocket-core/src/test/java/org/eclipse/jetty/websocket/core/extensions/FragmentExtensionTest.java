@@ -52,7 +52,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         ext.setNextIncomingFrames(capture);
 
@@ -101,7 +101,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         ext.setNextIncomingFrames(capture);
 
@@ -136,7 +136,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=20");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         ext.setNextOutgoingFrames(capture);
 
@@ -208,7 +208,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         ext.setNextOutgoingFrames(capture);
 
@@ -272,7 +272,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         ext.setNextOutgoingFrames(capture);
 
