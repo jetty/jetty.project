@@ -262,7 +262,7 @@ public class PathWatcherTest
 
             // average chunk buffer
             int chunkBufLen = 16;
-            byte chunkBuf[] = new byte[chunkBufLen];
+            byte[] chunkBuf = new byte[chunkBufLen];
             Arrays.fill(chunkBuf, (byte)'x');
             long end = System.nanoTime() + timeUnit.toNanos(timeDuration);
 

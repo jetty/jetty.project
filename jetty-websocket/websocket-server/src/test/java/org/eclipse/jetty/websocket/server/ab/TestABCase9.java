@@ -62,11 +62,11 @@ public class TestABCase9 extends AbstractABCase
 
     private void assertMultiFrameEcho(byte opcode, int overallMsgSize, int fragmentSize) throws Exception
     {
-        byte msg[] = new byte[overallMsgSize];
+        byte[] msg = new byte[overallMsgSize];
         Arrays.fill(msg, (byte)'M');
 
         List<WebSocketFrame> send = new ArrayList<>();
-        byte frag[];
+        byte[] frag;
         int remaining = msg.length;
         int offset = 0;
         boolean fin;
@@ -103,7 +103,7 @@ public class TestABCase9 extends AbstractABCase
 
     private void assertSlowFrameEcho(byte opcode, int overallMsgSize, int segmentSize) throws Exception
     {
-        byte msg[] = new byte[overallMsgSize];
+        byte[] msg = new byte[overallMsgSize];
         Arrays.fill(msg, (byte)'M');
         ByteBuffer buf = ByteBuffer.wrap(msg);
 
@@ -133,7 +133,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_1_1() throws Exception
     {
-        byte utf[] = new byte[64 * KBYTE];
+        byte[] utf = new byte[64 * KBYTE];
         Arrays.fill(utf, (byte)'y');
         String msg = StringUtil.toUTF8String(utf, 0, utf.length);
 
@@ -162,7 +162,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_1_2() throws Exception
     {
-        byte utf[] = new byte[256 * KBYTE];
+        byte[] utf = new byte[256 * KBYTE];
         Arrays.fill(utf, (byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
@@ -191,7 +191,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_1_3() throws Exception
     {
-        byte utf[] = new byte[1 * MBYTE];
+        byte[] utf = new byte[1 * MBYTE];
         Arrays.fill(utf, (byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
@@ -220,7 +220,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_1_4() throws Exception
     {
-        byte utf[] = new byte[4 * MBYTE];
+        byte[] utf = new byte[4 * MBYTE];
         Arrays.fill(utf, (byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
@@ -249,7 +249,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_1_5() throws Exception
     {
-        byte utf[] = new byte[8 * MBYTE];
+        byte[] utf = new byte[8 * MBYTE];
         Arrays.fill(utf, (byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
@@ -278,7 +278,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_1_6() throws Exception
     {
-        byte utf[] = new byte[16 * MBYTE];
+        byte[] utf = new byte[16 * MBYTE];
         Arrays.fill(utf, (byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
@@ -307,7 +307,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_2_1() throws Exception
     {
-        byte data[] = new byte[64 * KBYTE];
+        byte[] data = new byte[64 * KBYTE];
         Arrays.fill(data, (byte)0x21);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -335,7 +335,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_2_2() throws Exception
     {
-        byte data[] = new byte[256 * KBYTE];
+        byte[] data = new byte[256 * KBYTE];
         Arrays.fill(data, (byte)0x22);
         ByteBuffer buf = ByteBuffer.wrap(data);
 
@@ -364,7 +364,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_2_3() throws Exception
     {
-        byte data[] = new byte[1 * MBYTE];
+        byte[] data = new byte[1 * MBYTE];
         Arrays.fill(data, (byte)0x23);
         ByteBuffer buf = ByteBuffer.wrap(data);
 
@@ -393,7 +393,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_2_4() throws Exception
     {
-        byte data[] = new byte[4 * MBYTE];
+        byte[] data = new byte[4 * MBYTE];
         Arrays.fill(data, (byte)0x24);
         ByteBuffer buf = ByteBuffer.wrap(data);
 
@@ -422,7 +422,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_2_5() throws Exception
     {
-        byte data[] = new byte[8 * MBYTE];
+        byte[] data = new byte[8 * MBYTE];
         Arrays.fill(data, (byte)0x25);
         ByteBuffer buf = ByteBuffer.wrap(data);
 
@@ -451,7 +451,7 @@ public class TestABCase9 extends AbstractABCase
     @Test
     public void testCase9_2_6() throws Exception
     {
-        byte data[] = new byte[16 * MBYTE];
+        byte[] data = new byte[16 * MBYTE];
         Arrays.fill(data, (byte)0x26);
         ByteBuffer buf = ByteBuffer.wrap(data);
 

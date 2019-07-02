@@ -104,7 +104,7 @@ public class RFC6455ExamplesGeneratorTest
         int dataSize = 256;
 
         BinaryFrame binary = new BinaryFrame();
-        byte payload[] = new byte[dataSize];
+        byte[] payload = new byte[dataSize];
         Arrays.fill(payload, (byte)0x44);
         binary.setPayload(ByteBuffer.wrap(payload));
 
@@ -133,7 +133,7 @@ public class RFC6455ExamplesGeneratorTest
         int dataSize = 1024 * 64;
 
         BinaryFrame binary = new BinaryFrame();
-        byte payload[] = new byte[dataSize];
+        byte[] payload = new byte[dataSize];
         Arrays.fill(payload, (byte)0x44);
         binary.setPayload(ByteBuffer.wrap(payload));
 

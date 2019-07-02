@@ -309,7 +309,7 @@ public class XmlConfiguredJetty
     {
         List<WebAppContext> contexts = new ArrayList<>();
         HandlerCollection handlers = (HandlerCollection)_server.getHandler();
-        Handler children[] = handlers.getChildHandlers();
+        Handler[] children = handlers.getChildHandlers();
 
         for (Handler handler : children)
         {
@@ -396,7 +396,7 @@ public class XmlConfiguredJetty
 
         // Find the active server port.
         _serverPort = -1;
-        Connector connectors[] = _server.getConnectors();
+        Connector[] connectors = _server.getConnectors();
         for (int i = 0; _serverPort < 0 && i < connectors.length; i++)
         {
             if (connectors[i] instanceof NetworkConnector)

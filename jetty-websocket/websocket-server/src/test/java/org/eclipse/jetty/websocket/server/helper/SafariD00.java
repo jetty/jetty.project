@@ -92,9 +92,9 @@ public class SafariD00
 
         // System.out.printf("--- Request ---%n%s",req);
 
-        byte reqBytes[] = req.toString().getBytes(StandardCharsets.UTF_8);
-        byte hixieBytes[] = TypeUtil.fromHexString("e739617916c9daf3");
-        byte buf[] = new byte[reqBytes.length + hixieBytes.length];
+        byte[] reqBytes = req.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] hixieBytes = TypeUtil.fromHexString("e739617916c9daf3");
+        byte[] buf = new byte[reqBytes.length + hixieBytes.length];
         System.arraycopy(reqBytes, 0, buf, 0, reqBytes.length);
         System.arraycopy(hixieBytes, 0, buf, reqBytes.length, hixieBytes.length);
 
@@ -122,8 +122,8 @@ public class SafariD00
         }
 
         // Read expected handshake hixie bytes
-        byte hixieHandshakeExpected[] = TypeUtil.fromHexString("c7438d956cf611a6af70603e6fa54809");
-        byte hixieHandshake[] = new byte[hixieHandshakeExpected.length];
+        byte[] hixieHandshakeExpected = TypeUtil.fromHexString("c7438d956cf611a6af70603e6fa54809");
+        byte[] hixieHandshake = new byte[hixieHandshakeExpected.length];
 
         int readLen = in.read(hixieHandshake, 0, hixieHandshake.length);
         assertThat("Read hixie handshake bytes", readLen, is(hixieHandshake.length));

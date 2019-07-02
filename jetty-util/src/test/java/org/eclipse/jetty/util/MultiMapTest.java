@@ -136,7 +136,7 @@ public class MultiMapTest
 
         String key = "formats";
 
-        String input[] = {"gzip", "jar", "pack200"};
+        String[] input = {"gzip", "jar", "pack200"};
         mm.putValues(key, input);
         assertMapSize(mm, 1);
         assertValues(mm, key, "gzip", "jar", "pack200");
@@ -245,7 +245,7 @@ public class MultiMapTest
         assertValues(mm, key, "gzip");
 
         // Add to the key
-        String extras[] = {"jar", "pack200", "zip"};
+        String[] extras = {"jar", "pack200", "zip"};
         mm.addValues(key, extras);
 
         assertMapSize(mm, 1);
@@ -268,7 +268,7 @@ public class MultiMapTest
         assertValues(mm, key, "gzip");
 
         // Add to the key
-        String extras[] = new String[0];
+        String[] extras = new String[0];
         mm.addValues(key, extras);
 
         assertMapSize(mm, 1);

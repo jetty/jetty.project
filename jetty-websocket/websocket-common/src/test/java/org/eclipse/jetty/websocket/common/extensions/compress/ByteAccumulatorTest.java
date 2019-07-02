@@ -37,9 +37,9 @@ public class ByteAccumulatorTest
     {
         ByteAccumulator accumulator = new ByteAccumulator(10_000);
 
-        byte hello[] = "Hello".getBytes(UTF_8);
-        byte space[] = " ".getBytes(UTF_8);
-        byte world[] = "World".getBytes(UTF_8);
+        byte[] hello = "Hello".getBytes(UTF_8);
+        byte[] space = " ".getBytes(UTF_8);
+        byte[] world = "World".getBytes(UTF_8);
 
         accumulator.copyChunk(hello, 0, hello.length);
         accumulator.copyChunk(space, 0, space.length);
@@ -58,9 +58,9 @@ public class ByteAccumulatorTest
     {
         ByteAccumulator accumulator = new ByteAccumulator(10_000);
 
-        byte hello[] = "Hello".getBytes(UTF_8);
-        byte space[] = " ".getBytes(UTF_8);
-        byte world[] = "World".getBytes(UTF_8);
+        byte[] hello = "Hello".getBytes(UTF_8);
+        byte[] space = " ".getBytes(UTF_8);
+        byte[] world = "World".getBytes(UTF_8);
 
         accumulator.copyChunk(hello, 0, hello.length);
         accumulator.copyChunk(space, 0, space.length);
@@ -78,9 +78,9 @@ public class ByteAccumulatorTest
     public void testCopyChunk_NotEnoughSpace()
     {
 
-        byte hello[] = "Hello".getBytes(UTF_8);
-        byte space[] = " ".getBytes(UTF_8);
-        byte world[] = "World".getBytes(UTF_8);
+        byte[] hello = "Hello".getBytes(UTF_8);
+        byte[] space = " ".getBytes(UTF_8);
+        byte[] world = "World".getBytes(UTF_8);
 
         int length = hello.length + space.length + world.length;
         ByteAccumulator accumulator = new ByteAccumulator(length - 2); // intentionally too small of a max

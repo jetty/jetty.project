@@ -43,7 +43,7 @@ public class PongMessageEndpoint extends Endpoint implements MessageHandler.Whol
     @Override
     public void onMessage(PongMessage pong)
     {
-        byte buf[] = BufferUtil.toArray(pong.getApplicationData());
+        byte[] buf = BufferUtil.toArray(pong.getApplicationData());
         String message = new String(buf, StandardCharsets.UTF_8);
         this.session.getAsyncRemote().sendText("PongMessage[" + path + "]:" + message);
     }

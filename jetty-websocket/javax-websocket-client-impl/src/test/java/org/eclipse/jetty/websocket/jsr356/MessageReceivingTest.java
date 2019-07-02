@@ -63,7 +63,7 @@ public class MessageReceivingTest
 
     public MessageReceivingTest()
     {
-        byte raw[] = new byte[1024 * 1024];
+        byte[] raw = new byte[1024 * 1024];
         Arrays.fill(raw, (byte)'x');
         VERY_LONG_STRING = new String(raw, StandardCharsets.UTF_8);
     }

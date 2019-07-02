@@ -39,7 +39,7 @@ public class ClosePayloadParserTest
     {
         String expectedReason = "Game Over";
 
-        byte utf[] = expectedReason.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedReason.getBytes(StandardCharsets.UTF_8);
         ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
         payload.putChar((char)StatusCode.NORMAL);
         payload.put(utf, 0, utf.length);
