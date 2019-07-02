@@ -83,15 +83,13 @@ public abstract class CompressExtension extends AbstractExtension
      */
     private static final int DECOMPRESS_BUF_SIZE = 8 * 1024;
 
-    private static final boolean NOWRAP = true;
-
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
     private Deflater deflaterImpl;
     private Inflater inflaterImpl;
     protected AtomicInteger decompressCount = new AtomicInteger(0);
-    private int tailDrop = TAIL_DROP_NEVER;
-    private int rsvUse = RSV_USE_ALWAYS;
+    private int tailDrop;
+    private int rsvUse;
 
     protected CompressExtension()
     {
@@ -102,19 +100,27 @@ public abstract class CompressExtension extends AbstractExtension
     public Deflater getDeflater()
     {
         if (deflaterImpl == null)
-        {
-            deflaterImpl = new Deflater(Deflater.DEFAULT_COMPRESSION, NOWRAP);
-        }
+            deflaterImpl = getDeflaterPool().acquire();
         return deflaterImpl;
     }
 
     public Inflater getInflater()
     {
         if (inflaterImpl == null)
-        {
-            inflaterImpl = new Inflater(NOWRAP);
-        }
+            inflaterImpl = getInflaterPool().acquire();
         return inflaterImpl;
+    }
+
+    public void releaseInflater()
+    {
+        getInflaterPool().release(inflaterImpl);
+        inflaterImpl = null;
+    }
+
+    public void releaseDeflater()
+    {
+        getInflaterPool().release(inflaterImpl);
+        inflaterImpl = null;
     }
 
     /**
@@ -409,6 +415,8 @@ public abstract class CompressExtension extends AbstractExtension
         @Override
         public void failed(Throwable cause)
         {
+            releaseInflater();
+            releaseDeflater();
             notifyCallbackFailure(current.callback, cause);
             // If something went wrong, very likely the compression context
             // will be invalid, so we need to fail this IteratingCallback.

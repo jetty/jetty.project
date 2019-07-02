@@ -115,7 +115,7 @@ public class PerMessageDeflateExtension extends CompressExtension
         {
             LOG.debug("Incoming Context Reset");
             decompressCount.set(0);
-            getInflater().reset();
+            releaseInflater();
         }
         super.nextIncomingFrame(frame, callback);
     }
@@ -126,7 +126,7 @@ public class PerMessageDeflateExtension extends CompressExtension
         if (frame.isFin() && !outgoingContextTakeover)
         {
             LOG.debug("Outgoing Context Reset");
-            getDeflater().reset();
+            releaseDeflater();
         }
         super.nextOutgoingFrame(frame, callback, batch);
     }
