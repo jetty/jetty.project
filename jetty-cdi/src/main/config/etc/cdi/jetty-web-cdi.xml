@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext" id="cdi-context">
+  <!-- Add and attribute that a webapp can check to know that the DecoratingListener will be registered -->
   <Call name="setAttribute">
     <Arg>org.eclipse.jetty.cdi</Arg>
     <Arg>DecoratingListener</Arg>
