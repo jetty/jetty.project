@@ -20,16 +20,24 @@ package org.eclipse.jetty.plus.annotation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * InjectionCollection
+ * Map of classname to all injections requested on that class,
+ * whether by declaration in web.xml or via equivalent annotations.
+ * 
+ * This class is not threadsafe for concurrent modifications, but is
+ * threadsafe for readers with concurrent modifications.
  */
 public class InjectionCollection
 {
@@ -37,26 +45,34 @@ public class InjectionCollection
 
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
 
-    private HashMap<String, List<Injection>> _injectionMap = new HashMap<String, List<Injection>>();//map of classname to injections
+    private final ConcurrentMap<String, Set<Injection>> _injectionMap = new ConcurrentHashMap<>();//map of classname to injections
 
     public void add(Injection injection)
     {
-        if ((injection == null) || injection.getTargetClass() == null)
+        if (injection == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring null Injection");
             return;
+        }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("Adding injection for class=" + (injection.getTargetClass() + " on a " + (injection.getTarget().getName())));
+        String name = injection.getTargetClass().getName();
 
-        List<Injection> injections = _injectionMap.get(injection.getTargetClass().getCanonicalName());
+        Set<Injection> injections = _injectionMap.get(name);
         if (injections == null)
         {
-            injections = new ArrayList<Injection>();
-            _injectionMap.put(injection.getTargetClass().getCanonicalName(), injections);
+            injections = new CopyOnWriteArraySet<>();
+            Set<Injection> tmp = _injectionMap.putIfAbsent(name, injections);
+            if (tmp != null)
+                injections = tmp;
         }
-        injections.add(injection);
+
+        boolean added = injections.add(injection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding injection for class={} on {} added={}", name, injection.getTarget().getName(), added);
     }
 
-    public List<Injection> getInjections(String className)
+    public Set<Injection> getInjections(String className)
     {
         if (className == null)
             return null;
@@ -69,7 +85,7 @@ public class InjectionCollection
         if (field == null || clazz == null)
             return null;
 
-        List<Injection> injections = getInjections(clazz.getCanonicalName());
+        Set<Injection> injections = getInjections(clazz.getName());
         if (injections == null)
             return null;
         Iterator<Injection> itor = injections.iterator();
@@ -89,7 +105,7 @@ public class InjectionCollection
         if (clazz == null || method == null || paramClass == null)
             return null;
 
-        List<Injection> injections = getInjections(clazz.getCanonicalName());
+        Set<Injection> injections = getInjections(clazz.getName());
         if (injections == null)
             return null;
         Iterator<Injection> itor = injections.iterator();
@@ -115,7 +131,7 @@ public class InjectionCollection
 
         while (clazz != null)
         {
-            List<Injection> injections = _injectionMap.get(clazz.getCanonicalName());
+            Set<Injection> injections = _injectionMap.get(clazz.getName());
             if (injections != null)
             {
                 for (Injection i : injections)

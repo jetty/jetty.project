@@ -18,15 +18,16 @@
 
 package org.eclipse.jetty.jaas.spi;
 
-import java.security.Principal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
+import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.PropertyUserStore;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
@@ -116,14 +117,11 @@ public class PropertyFileLoginModule extends AbstractLoginModule
 
         //TODO in future versions change the impl of PropertyUserStore so its not
         //storing Subjects etc, just UserInfo
-        Set<Principal> principals = userIdentity.getSubject().getPrincipals();
+        Set<AbstractLoginService.RolePrincipal> principals = userIdentity.getSubject().getPrincipals(AbstractLoginService.RolePrincipal.class);
 
-        List<String> roles = new ArrayList<String>();
-
-        for (Principal principal : principals)
-        {
-            roles.add(principal.getName());
-        }
+        List<String> roles = principals.stream()
+            .map(AbstractLoginService.RolePrincipal::getName)
+            .collect(Collectors.toList());
 
         Credential credential = (Credential)userIdentity.getSubject().getPrivateCredentials().iterator().next();
         LOG.debug("Found: " + userName + " in PropertyUserStore " + _filename);

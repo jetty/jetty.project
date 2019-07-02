@@ -20,4 +20,3 @@
  * Jetty Plus : Limited JEE Annotation Support
  */
 package org.eclipse.jetty.plus.annotation;
-
