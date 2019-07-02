@@ -1734,7 +1734,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public String toString()
     {
-        String[] vhosts = getVirtualHosts();
+        final String[] vhosts = getVirtualHosts();
 
         StringBuilder b = new StringBuilder();
 
@@ -2726,14 +2726,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
-        {
-            // TODO new in 4.0
-            LOG.warn(__unimplmented);
-            return null;
-        }
-
-        @Override
         public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
             LOG.warn(__unimplmented);
@@ -2743,6 +2735,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
+            LOG.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
+        {
+            // TODO new in 4.0
             LOG.warn(__unimplmented);
             return null;
         }

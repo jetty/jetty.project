@@ -109,6 +109,9 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
                 case CLOSED: // already closed
                     return;
+
+                default:
+                    throw new IllegalStateException(s.toString());
             }
         }
     }
@@ -163,6 +166,9 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
                 case CLOSED: // already closed
                     return;
+
+                default:
+                    throw new IllegalStateException(s.toString());
             }
         }
     }
@@ -201,6 +207,9 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
                 case CLOSED: // already closed
                     return;
+
+                default:
+                    throw new IllegalStateException(s.toString());
             }
         }
     }

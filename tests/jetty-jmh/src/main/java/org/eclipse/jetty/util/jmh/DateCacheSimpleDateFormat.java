@@ -101,8 +101,8 @@ public class DateCacheSimpleDateFormat
         int zIndex = _formatString.indexOf("ZZZ");
         if (zIndex >= 0)
         {
-            String ss1 = _formatString.substring(0, zIndex);
-            String ss2 = _formatString.substring(zIndex + 3);
+            final String ss1 = _formatString.substring(0, zIndex);
+            final String ss2 = _formatString.substring(zIndex + 3);
             int tzOffset = tz.getRawOffset();
 
             StringBuilder sb = new StringBuilder(_formatString.length() + 10);

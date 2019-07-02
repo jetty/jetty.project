@@ -114,6 +114,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
+        public boolean onIdleTimeout(Stream stream, Throwable x)
+        {
+            return getConnection().onStreamTimeout((IStream)stream, x);
+        }
+
+        @Override
         public void onClose(Session session, GoAwayFrame frame, Callback callback)
         {
             String reason = frame.tryConvertPayload();
@@ -126,6 +132,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public void onFailure(Session session, Throwable failure, Callback callback)
         {
             getConnection().onSessionFailure(failure, callback);
+        }
+
+        @Override
+        public void onFailure(Stream stream, int error, String reason, Callback callback)
+        {
+            getConnection().onStreamFailure((IStream)stream, new EofException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason)), callback);
         }
 
         @Override
@@ -155,18 +167,6 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             getConnection().onStreamFailure((IStream)stream, new EofException("Reset " + ErrorCode.toString(frame.getError(), null)), callback);
-        }
-
-        @Override
-        public void onFailure(Stream stream, int error, String reason, Callback callback)
-        {
-            getConnection().onStreamFailure((IStream)stream, new EofException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason)), callback);
-        }
-
-        @Override
-        public boolean onIdleTimeout(Stream stream, Throwable x)
-        {
-            return getConnection().onStreamTimeout((IStream)stream, x);
         }
 
         private void close(Stream stream, String reason)

@@ -97,11 +97,11 @@ public class BufferUtil
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
     static final byte[] DIGIT =
-        {
-            (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
-            (byte)'A', (byte)'B', (byte)'C', (byte)'D',
-            (byte)'E', (byte)'F'
-        };
+    {
+        (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
+        (byte)'A', (byte)'B', (byte)'C', (byte)'D',
+        (byte)'E', (byte)'F'
+    };
 
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
@@ -590,17 +590,6 @@ public class BufferUtil
     }
 
     /**
-     * Convert the buffer to an UTF-8 String
-     *
-     * @param buffer The buffer to convert in flush mode. The buffer is unchanged
-     * @return The buffer as a string.
-     */
-    public static String toUTF8String(ByteBuffer buffer)
-    {
-        return toString(buffer, StandardCharsets.UTF_8);
-    }
-
-    /**
      * Convert the buffer to an ISO-8859-1 String
      *
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
@@ -645,6 +634,17 @@ public class BufferUtil
             return new String(to, 0, to.length, charset);
         }
         return new String(array, buffer.arrayOffset() + position, length, charset);
+    }
+
+    /**
+     * Convert the buffer to an UTF-8 String
+     *
+     * @param buffer The buffer to convert in flush mode. The buffer is unchanged
+     * @return The buffer as a string.
+     */
+    public static String toUTF8String(ByteBuffer buffer)
+    {
+        return toString(buffer, StandardCharsets.UTF_8);
     }
 
     /**
@@ -964,6 +964,29 @@ public class BufferUtil
         return ByteBuffer.wrap(array, offset, length);
     }
 
+    public static ByteBuffer toBuffer(Resource resource, boolean direct) throws IOException
+    {
+        int len = (int)resource.length();
+        if (len < 0)
+            throw new IllegalArgumentException("invalid resource: " + String.valueOf(resource) + " len=" + len);
+
+        ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
+
+        int pos = BufferUtil.flipToFill(buffer);
+        if (resource.getFile() != null)
+            BufferUtil.readFrom(resource.getFile(), buffer);
+        else
+        {
+            try (InputStream is = resource.getInputStream();)
+            {
+                BufferUtil.readFrom(is, len, buffer);
+            }
+        }
+        BufferUtil.flipToFlush(buffer, pos);
+
+        return buffer;
+    }
+
     public static ByteBuffer toDirectBuffer(String s)
     {
         return toDirectBuffer(s, StandardCharsets.ISO_8859_1);
@@ -986,29 +1009,6 @@ public class BufferUtil
         {
             return channel.map(MapMode.READ_ONLY, 0, file.length());
         }
-    }
-
-    public static ByteBuffer toBuffer(Resource resource, boolean direct) throws IOException
-    {
-        int len = (int)resource.length();
-        if (len < 0)
-            throw new IllegalArgumentException("invalid resource: " + String.valueOf(resource) + " len=" + len);
-
-        ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
-
-        int pos = BufferUtil.flipToFill(buffer);
-        if (resource.getFile() != null)
-            BufferUtil.readFrom(resource.getFile(), buffer);
-        else
-        {
-            try (InputStream is = resource.getInputStream();)
-            {
-                BufferUtil.readFrom(is, len, buffer);
-            }
-        }
-        BufferUtil.flipToFlush(buffer, pos);
-
-        return buffer;
     }
 
     public static String toSummaryString(ByteBuffer buffer)
@@ -1043,6 +1043,36 @@ public class BufferUtil
     }
 
     /**
+     * Convert Buffer to a detail debug string of pointers and content
+     *
+     * @param buffer the buffer to generate a detail string from
+     * @return A string showing the pointers and content of the buffer
+     */
+    public static String toDetailString(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return "null";
+
+        StringBuilder buf = new StringBuilder();
+        idString(buffer, buf);
+        buf.append("[p=");
+        buf.append(buffer.position());
+        buf.append(",l=");
+        buf.append(buffer.limit());
+        buf.append(",c=");
+        buf.append(buffer.capacity());
+        buf.append(",r=");
+        buf.append(buffer.remaining());
+        buf.append("]={");
+
+        appendDebugString(buf, buffer);
+
+        buf.append("}");
+
+        return buf.toString();
+    }
+
+    /**
      * Convert Buffer to string ID independent of content
      */
     private static void idString(ByteBuffer buffer, StringBuilder out)
@@ -1072,36 +1102,6 @@ public class BufferUtil
     {
         StringBuilder buf = new StringBuilder();
         idString(buffer, buf);
-        return buf.toString();
-    }
-
-    /**
-     * Convert Buffer to a detail debug string of pointers and content
-     *
-     * @param buffer the buffer to generate a detail string from
-     * @return A string showing the pointers and content of the buffer
-     */
-    public static String toDetailString(ByteBuffer buffer)
-    {
-        if (buffer == null)
-            return "null";
-
-        StringBuilder buf = new StringBuilder();
-        idString(buffer, buf);
-        buf.append("[p=");
-        buf.append(buffer.position());
-        buf.append(",l=");
-        buf.append(buffer.limit());
-        buf.append(",c=");
-        buf.append(buffer.capacity());
-        buf.append(",r=");
-        buf.append(buffer.remaining());
-        buf.append("]={");
-
-        appendDebugString(buf, buffer);
-
-        buf.append("}");
-
         return buf.toString();
     }
 
@@ -1206,17 +1206,21 @@ public class BufferUtil
     }
 
     private static final int[] decDivisors =
-        {1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1};
+    {
+        1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
+    };
 
     private static final int[] hexDivisors =
-        {0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1};
+    {
+        0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1
+    };
 
     private static final long[] decDivisorsL =
-        {
-            1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L,
-            1000000000000L, 100000000000L,
-            10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L
-        };
+    {
+        1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L,
+        1000000000000L, 100000000000L,
+        10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L
+    };
 
     public static void putCRLF(ByteBuffer buffer)
     {

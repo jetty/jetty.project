@@ -100,19 +100,6 @@ public class MultiPartWriter extends FilterWriter
     }
 
     /**
-     * end creation of the next Content.
-     *
-     * @throws IOException if unable to write the part
-     */
-    public void endPart()
-        throws IOException
-    {
-        if (inPart)
-            out.write(__CRLF);
-        inPart = false;
-    }
-
-    /**
      * Start creation of the next Content.
      *
      * @param contentType the content type of the part
@@ -137,6 +124,19 @@ public class MultiPartWriter extends FilterWriter
         }
         out.write(__CRLF);
         inPart = true;
+    }
+
+    /**
+     * end creation of the next Content.
+     *
+     * @throws IOException if unable to write the part
+     */
+    public void endPart()
+        throws IOException
+    {
+        if (inPart)
+            out.write(__CRLF);
+        inPart = false;
     }
 }
 

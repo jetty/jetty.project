@@ -176,6 +176,39 @@ public class Response implements HttpServletResponse
         _fields.put(__EXPIRES_01JAN1970);
     }
 
+    @Override
+    public void addCookie(Cookie cookie)
+    {
+        if (StringUtil.isBlank(cookie.getName()))
+            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+
+        String comment = cookie.getComment();
+        boolean httpOnly = cookie.isHttpOnly();
+
+        if (comment != null)
+        {
+            int i = comment.indexOf(HTTP_ONLY_COMMENT);
+            if (i >= 0)
+            {
+                httpOnly = true;
+                comment = StringUtil.strip(comment.trim(), HTTP_ONLY_COMMENT);
+                if (comment.length() == 0)
+                    comment = null;
+            }
+        }
+
+        addCookie(new HttpCookie(
+            cookie.getName(),
+            cookie.getValue(),
+            cookie.getDomain(),
+            cookie.getPath(),
+            (long)cookie.getMaxAge(),
+            httpOnly,
+            cookie.getSecure(),
+            comment,
+            cookie.getVersion()));
+    }
+
     /**
      * Replace (or add) a cookie.
      * Using name, path and domain, look for a matching set-cookie header and replace it.
@@ -190,7 +223,7 @@ public class Response implements HttpServletResponse
 
             if (field.getHeader() == HttpHeader.SET_COOKIE)
             {
-                CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
+                final CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
 
                 HttpCookie oldCookie;
                 if (field instanceof SetCookieHttpField)
@@ -224,39 +257,6 @@ public class Response implements HttpServletResponse
 
         // Not replaced, so add normally
         addCookie(cookie);
-    }
-
-    @Override
-    public void addCookie(Cookie cookie)
-    {
-        if (StringUtil.isBlank(cookie.getName()))
-            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
-
-        String comment = cookie.getComment();
-        boolean httpOnly = cookie.isHttpOnly();
-
-        if (comment != null)
-        {
-            int i = comment.indexOf(HTTP_ONLY_COMMENT);
-            if (i >= 0)
-            {
-                httpOnly = true;
-                comment = StringUtil.strip(comment.trim(), HTTP_ONLY_COMMENT);
-                if (comment.length() == 0)
-                    comment = null;
-            }
-        }
-
-        addCookie(new HttpCookie(
-            cookie.getName(),
-            cookie.getValue(),
-            cookie.getDomain(),
-            cookie.getPath(),
-            (long)cookie.getMaxAge(),
-            httpOnly,
-            cookie.getSecure(),
-            comment,
-            cookie.getVersion()));
     }
 
     @Override
@@ -976,7 +976,10 @@ public class Response implements HttpServletResponse
                     {
                         _contentType = contentType + ";charset=" + _characterEncoding;
                         _mimeType = null;
+                        break;
                     }
+                    default:
+                        throw new IllegalStateException(_encodingFrom.toString());
                 }
             }
             else if (isWriting() && !charset.equalsIgnoreCase(_characterEncoding))

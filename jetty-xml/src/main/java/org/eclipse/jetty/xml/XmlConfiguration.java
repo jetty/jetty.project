@@ -82,18 +82,18 @@ public class XmlConfiguration
 {
     private static final Logger LOG = Log.getLogger(XmlConfiguration.class);
     private static final Class<?>[] __primitives =
-        {
-            Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
-        };
+    {
+        Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
+    };
     private static final Class<?>[] __boxedPrimitives =
-        {
-            Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class,
-            Void.class
-        };
+    {
+        Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class,
+        Void.class
+    };
     private static final Class<?>[] __supportedCollections =
-        {
-            ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
-        };
+    {
+        ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
+    };
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
 
@@ -398,14 +398,6 @@ public class XmlConfiguration
             return obj;
         }
 
-        private static Class<?> nodeClass(XmlParser.Node node) throws ClassNotFoundException
-        {
-            String className = node.getAttribute("class");
-            if (className == null)
-                return null;
-            return Loader.loadClass(className);
-        }
-
         /**
          * Recursive configuration routine.
          * This method applies the nested Set, Put, Call, etc. elements to the given object.
@@ -488,6 +480,14 @@ public class XmlConfiguration
                     throw e;
                 }
             }
+        }
+
+        private static Class<?> nodeClass(XmlParser.Node node) throws ClassNotFoundException
+        {
+            String className = node.getAttribute("class");
+            if (className == null)
+                return null;
+            return Loader.loadClass(className);
         }
 
         /**
@@ -579,30 +579,30 @@ public class XmlConfiguration
                     Field field = oClass.getField(attr);
                     if (Modifier.isPublic(field.getModifiers()))
                     {
-                    try
-                    {
-                        setField(field, obj, value);
-                        return;
-                    }
-                    catch (IllegalArgumentException e)
-                    {
-                        // try to convert String value to field value
-                        if (value instanceof String)
+                        try
                         {
-                            try
+                            setField(field, obj, value);
+                            return;
+                        }
+                        catch (IllegalArgumentException e)
+                        {
+                            // try to convert String value to field value
+                            if (value instanceof String)
                             {
-                                value = TypeUtil.valueOf(field.getType(), ((String)value).trim());
-                                setField(field, obj, value);
-                                return;
-                            }
-                            catch (Exception e2)
-                            {
-                                e.addSuppressed(e2);
-                                throw e;
+                                try
+                                {
+                                    value = TypeUtil.valueOf(field.getType(), ((String)value).trim());
+                                    setField(field, obj, value);
+                                    return;
+                                }
+                                catch (Exception e2)
+                                {
+                                    e.addSuppressed(e2);
+                                    throw e;
+                                }
                             }
                         }
                     }
-                }
                 }
                 catch (NoSuchFieldException e)
                 {
@@ -963,10 +963,10 @@ public class XmlConfiguration
          */
         private Object newObj(Object obj, XmlParser.Node node) throws Exception
         {
-            AttrOrElementNode aoeNode = new AttrOrElementNode(obj, node, "Id", "Class", "Arg");
-            String id = aoeNode.getString("Id");
-            String clazz = aoeNode.getString("Class");
-            List<XmlParser.Node> argNodes = aoeNode.getNodes("Arg");
+            final AttrOrElementNode aoeNode = new AttrOrElementNode(obj, node, "Id", "Class", "Arg");
+            final String id = aoeNode.getString("Id");
+            final String clazz = aoeNode.getString("Class");
+            final List<XmlParser.Node> argNodes = aoeNode.getNodes("Arg");
 
             if (LOG.isDebugEnabled())
                 LOG.debug("XML new " + clazz);
@@ -1227,11 +1227,11 @@ public class XmlConfiguration
          */
         private Object propertyObj(XmlParser.Node node) throws Exception
         {
-            AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id", "Name", "Deprecated", "Default");
-            String id = aoeNode.getString("Id");
-            String name = aoeNode.getString("Name", true);
-            List<Object> deprecated = aoeNode.getList("Deprecated");
-            String dftValue = aoeNode.getString("Default");
+            final AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id", "Name", "Deprecated", "Default");
+            final String id = aoeNode.getString("Id");
+            final String name = aoeNode.getString("Name", true);
+            final List<Object> deprecated = aoeNode.getList("Deprecated");
+            final String dftValue = aoeNode.getString("Default");
 
             // Look for a value
             Map<String, String> properties = _configuration.getProperties();
@@ -1278,11 +1278,11 @@ public class XmlConfiguration
          */
         private Object systemPropertyObj(XmlParser.Node node) throws Exception
         {
-            AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id", "Name", "Deprecated", "Default");
-            String id = aoeNode.getString("Id");
-            String name = aoeNode.getString("Name", true);
-            List<Object> deprecated = aoeNode.getList("Deprecated");
-            String dftValue = aoeNode.getString("Default");
+            final AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id", "Name", "Deprecated", "Default");
+            final String id = aoeNode.getString("Id");
+            final String name = aoeNode.getString("Name", true);
+            final List<Object> deprecated = aoeNode.getList("Deprecated");
+            final String dftValue = aoeNode.getString("Default");
 
             // Look for a value
             String value = System.getProperty(name);

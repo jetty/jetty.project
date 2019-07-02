@@ -170,6 +170,5 @@ public abstract class LifeCycleCallback
         return false;
     }
 
-
     public abstract void validate(Class<?> clazz, Method m);
 }

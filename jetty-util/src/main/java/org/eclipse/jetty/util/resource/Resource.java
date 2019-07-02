@@ -576,14 +576,12 @@ public abstract class Resource implements ResourceFactory, Closeable
         // HTML Table
         final String ARROW_DOWN = "&nbsp; &#8681;";
         final String ARROW_UP = "&nbsp; &#8679;";
-        String arrow;
-        String order;
 
         buf.append("<table class=\"listing\">\n");
         buf.append("<thead>\n");
 
-        arrow = "";
-        order = "A";
+        String arrow = "";
+        String order = "A";
         if (sortColumn.equals("N"))
         {
             if (sortOrderAscending)
@@ -784,6 +782,8 @@ public abstract class Resource implements ResourceFactory, Closeable
                 case '>':
                     buf = new StringBuffer(raw.length() << 1);
                     break loop;
+                default:
+                    break;
             }
         }
         if (buf == null)

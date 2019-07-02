@@ -289,7 +289,7 @@ public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implement
         @Override
         public AppConfigurationEntry[] getAppConfigurationEntry(String name)
         {
-            String principal = getServiceName() + "/" + getHostName();
+            final String principal = getServiceName() + "/" + getHostName();
             Map<String, Object> options = new HashMap<>();
             if (LOG.isDebugEnabled())
                 options.put("debug", "true");

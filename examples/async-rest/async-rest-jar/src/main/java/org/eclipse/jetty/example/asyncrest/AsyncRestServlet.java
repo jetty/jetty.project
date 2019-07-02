@@ -130,7 +130,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         // We have results!
 
         // Generate the response
-        String thumbs = generateThumbs(results);
+        final String thumbs = generateThumbs(results);
 
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
@@ -194,9 +194,10 @@ public class AsyncRestServlet extends AbstractRestServlet
             onComplete();
         }
 
+        abstract void onComplete();
+
         abstract void onAuctionFound(Map<String, String> details);
 
-        abstract void onComplete();
     }
 
     @Override

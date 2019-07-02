@@ -221,6 +221,9 @@ public class Parser
                             LOG.debug("{} parsed {}", this, frame);
                         return frame;
                     }
+
+                    default:
+                        throw new IllegalStateException();
                 }
             }
         }
@@ -307,7 +310,7 @@ public class Parser
                         nextMask[2] = mask[(2 + shift) % 4];
                         nextMask[3] = mask[(3 + shift) % 4];
                     }
-                    ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, buffer.slice(), false);
+                    final ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, buffer.slice(), false);
                     buffer.position(buffer.limit());
                     mask = nextMask;
                     firstByte = (byte)((firstByte & 0x80) | OpCode.CONTINUATION);
@@ -335,7 +338,7 @@ public class Parser
             int limit = buffer.limit();
             int end = buffer.position() + payloadLength;
             buffer.limit(end);
-            ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), false);
+            final ParsedFrame frame = newFrame(firstByte, mask, buffer.slice(), false);
             buffer.position(end);
             buffer.limit(limit);
             state = State.START;

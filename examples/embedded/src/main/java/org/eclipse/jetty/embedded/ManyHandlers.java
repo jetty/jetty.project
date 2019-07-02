@@ -106,13 +106,13 @@ public class ManyHandlers
 
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(8080);
+        final Server server = new Server(8080);
 
         // create the handlers
-        Handler param = new ParamHandler();
-        HandlerWrapper wrapper = new WelcomeWrapHandler();
-        Handler hello = new HelloHandler();
-        Handler dft = new DefaultHandler();
+        final Handler param = new ParamHandler();
+        final HandlerWrapper wrapper = new WelcomeWrapHandler();
+        final Handler hello = new HelloHandler();
+        final Handler dft = new DefaultHandler();
 
         // configure request logging
         File requestLogFile = File.createTempFile("demo", "log");

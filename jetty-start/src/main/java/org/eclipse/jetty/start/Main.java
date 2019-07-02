@@ -243,7 +243,7 @@ public class Main
 
     public void listModules(StartArgs args)
     {
-        List<String> tags = args.getListModules();
+        final List<String> tags = args.getListModules();
 
         StartLog.endStartLog();
         System.out.println();
@@ -497,12 +497,19 @@ public class Main
         }
     }
 
+    // ------------------------------------------------------------
+    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
+    public void start() throws Exception
+    {
+        start(jsvcStartArgs);
+    }
+
     private void doStop(StartArgs args)
     {
-        Prop stopHostProp = args.getProperties().getProp("STOP.HOST", true);
-        Prop stopPortProp = args.getProperties().getProp("STOP.PORT", true);
-        Prop stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
-        Prop stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
+        final Prop stopHostProp = args.getProperties().getProp("STOP.HOST", true);
+        final Prop stopPortProp = args.getProperties().getProp("STOP.PORT", true);
+        final Prop stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
+        final Prop stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
 
         String stopHost = "127.0.0.1";
         int stopPort = -1;
@@ -611,6 +618,12 @@ public class Main
         }
     }
 
+    /* implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy) */
+    public void stop() throws Exception
+    {
+        doStop(jsvcStartArgs);
+    }
+
     public void usage(boolean exit)
     {
         StartLog.endStartLog();
@@ -655,8 +668,7 @@ public class Main
         return resourcePrinted;
     }
 
-    // ------------------------------------------------------------
-    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
+    /* implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy) */
     public void init(String[] args) throws Exception
     {
         try
@@ -674,22 +686,7 @@ public class Main
         }
     }
 
-    // ------------------------------------------------------------
-    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
-    public void start() throws Exception
-    {
-        start(jsvcStartArgs);
-    }
-
-    // ------------------------------------------------------------
-    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
-    public void stop() throws Exception
-    {
-        doStop(jsvcStartArgs);
-    }
-
-    // ------------------------------------------------------------
-    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
+    /* implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy) */
     public void destroy()
     {
     }

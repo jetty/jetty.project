@@ -133,15 +133,15 @@ public class DefaultHandler extends AbstractHandler
             writer.append("<p>No context on this server matched or handled this request.</p>\n");
             writer.append("<p>Contexts known to this server are:</p>\n");
 
-            Server server = getServer();
-            Handler[] handlers = server == null ? null : server.getChildHandlersByClass(ContextHandler.class);
-
             writer.append("<table class=\"contexts\"><thead><tr>");
             writer.append("<th>Context Path</th>");
             writer.append("<th>Display Name</th>");
             writer.append("<th>Status</th>");
             writer.append("<th>LifeCycle</th>");
             writer.append("</tr></thead><tbody>\n");
+
+            Server server = getServer();
+            Handler[] handlers = server == null ? null : server.getChildHandlersByClass(ContextHandler.class);
 
             for (int i = 0; handlers != null && i < handlers.length; i++)
             {

@@ -185,22 +185,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * Customizes the request attributes for general secure settings.
-     * The default impl calls {@link Request#setSecure(boolean)} with true
-     * and sets a response header if the Strict-Transport-Security options
-     * are set.
-     *
-     * @param request the request being customized
-     */
-    protected void customizeSecure(Request request)
-    {
-        request.setSecure(true);
-
-        if (_stsField != null)
-            request.getResponse().getHttpFields().add(_stsField);
-    }
-
-    /**
      * <p>
      * Customizes the request attributes to be set for SSL requests.
      * </p>
@@ -277,6 +261,22 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         {
             LOG.warn(Log.EXCEPTION, e);
         }
+    }
+
+    /**
+     * Customizes the request attributes for general secure settings.
+     * The default impl calls {@link Request#setSecure(boolean)} with true
+     * and sets a response header if the Strict-Transport-Security options
+     * are set.
+     *
+     * @param request the request being customized
+     */
+    protected void customizeSecure(Request request)
+    {
+        request.setSecure(true);
+
+        if (_stsField != null)
+            request.getResponse().getHttpFields().add(_stsField);
     }
 
     private X509Certificate[] getCertChain(Request request, SSLSession sslSession)

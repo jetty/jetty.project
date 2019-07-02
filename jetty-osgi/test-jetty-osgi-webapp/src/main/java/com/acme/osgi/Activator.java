@@ -77,7 +77,7 @@ public class Activator implements BundleActivator
 
         //Create a second webappB as a Service and target it at a custom Server
         //deployed by another bundle
-        WebAppContext webappB = new WebAppContext();
+        final WebAppContext webappB = new WebAppContext();
         Dictionary propsB = new Hashtable();
         propsB.put("Jetty-WarResourcePath", "webappB");
         propsB.put("Web-ContextPath", "/acme");

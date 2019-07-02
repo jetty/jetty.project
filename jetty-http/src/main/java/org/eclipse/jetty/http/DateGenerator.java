@@ -101,16 +101,16 @@ public class DateGenerator
         buf.setLength(0);
         gc.setTimeInMillis(date);
 
-        int dayOfWeek = gc.get(Calendar.DAY_OF_WEEK);
-        int dayOfMonth = gc.get(Calendar.DAY_OF_MONTH);
-        int month = gc.get(Calendar.MONTH);
-        int year = gc.get(Calendar.YEAR);
-        int century = year / 100;
-        year = year % 100;
+        final int dayOfWeek = gc.get(Calendar.DAY_OF_WEEK);
+        final int dayOfMonth = gc.get(Calendar.DAY_OF_MONTH);
+        final int month = gc.get(Calendar.MONTH);
+        final int fullYear = gc.get(Calendar.YEAR);
+        final int century = fullYear / 100;
+        final int year = fullYear % 100;
 
-        int hours = gc.get(Calendar.HOUR_OF_DAY);
-        int minutes = gc.get(Calendar.MINUTE);
-        int seconds = gc.get(Calendar.SECOND);
+        final int hours = gc.get(Calendar.HOUR_OF_DAY);
+        final int minutes = gc.get(Calendar.MINUTE);
+        final int seconds = gc.get(Calendar.SECOND);
 
         buf.append(DAYS[dayOfWeek]);
         buf.append(',');
@@ -143,17 +143,17 @@ public class DateGenerator
     {
         gc.setTimeInMillis(date);
 
-        int dayOfWeek = gc.get(Calendar.DAY_OF_WEEK);
-        int dayOfMonth = gc.get(Calendar.DAY_OF_MONTH);
-        int month = gc.get(Calendar.MONTH);
-        int year = gc.get(Calendar.YEAR);
-        year = year % 10000;
+        final int dayOfWeek = gc.get(Calendar.DAY_OF_WEEK);
+        final int dayOfMonth = gc.get(Calendar.DAY_OF_MONTH);
+        final int month = gc.get(Calendar.MONTH);
+        final int fullYear = gc.get(Calendar.YEAR);
+        final int year = fullYear % 10000;
 
-        int epoch = (int)((date / 1000) % (60 * 60 * 24));
-        int seconds = epoch % 60;
-        epoch = epoch / 60;
-        int minutes = epoch % 60;
-        int hours = epoch / 60;
+        final int epochSec = (int)((date / 1000) % (60 * 60 * 24));
+        final int seconds = epochSec % 60;
+        final int epoch = epochSec / 60;
+        final int minutes = epoch % 60;
+        final int hours = epoch / 60;
 
         buf.append(DAYS[dayOfWeek]);
         buf.append(',');

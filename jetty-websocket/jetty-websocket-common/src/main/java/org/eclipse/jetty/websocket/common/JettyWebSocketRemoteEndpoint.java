@@ -85,6 +85,19 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     }
 
     @Override
+    public void sendString(String text) throws IOException
+    {
+        sendBlocking(new Frame(OpCode.TEXT).setPayload(text));
+    }
+
+    @Override
+    public void sendString(String text, WriteCallback callback)
+    {
+        Callback cb = callback == null ? Callback.NOOP : Callback.from(callback::writeSuccess, callback::writeFailed);
+        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text), cb, isBatch());
+    }
+
+    @Override
     public void sendBytes(ByteBuffer data) throws IOException
     {
         sendBlocking(new Frame(OpCode.BINARY).setPayload(data));
@@ -114,17 +127,32 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         sendPartialBytes(fragment, isLast, Callback.from(callback::writeSuccess, callback::writeFailed));
     }
 
-    @Override
-    public void sendString(String text) throws IOException
+    private void sendPartialBytes(ByteBuffer fragment, boolean isLast, Callback callback)
     {
-        sendBlocking(new Frame(OpCode.TEXT).setPayload(text));
-    }
+        Frame frame;
+        switch (messageType)
+        {
+            case -1: // new message
+                frame = new Frame(OpCode.BINARY);
+                messageType = OpCode.BINARY;
+                break;
+            case OpCode.BINARY:
+                frame = new Frame(OpCode.CONTINUATION);
+                break;
+            default:
+                callback.failed(new ProtocolException("Attempt to send Partial Binary during active opcode " + messageType));
+                return;
+        }
 
-    @Override
-    public void sendString(String text, WriteCallback callback)
-    {
-        Callback cb = callback == null ? Callback.NOOP : Callback.from(callback::writeSuccess, callback::writeFailed);
-        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text), cb, isBatch());
+        frame.setPayload(fragment);
+        frame.setFin(isLast);
+
+        coreSession.sendFrame(frame, callback, isBatch());
+
+        if (isLast)
+        {
+            messageType = -1;
+        }
     }
 
     @Override
@@ -167,34 +195,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData),
             Callback.from(callback::writeSuccess, callback::writeFailed), false);
-    }
-
-    private void sendPartialBytes(ByteBuffer fragment, boolean isLast, Callback callback)
-    {
-        Frame frame;
-        switch (messageType)
-        {
-            case -1: // new message
-                frame = new Frame(OpCode.BINARY);
-                messageType = OpCode.BINARY;
-                break;
-            case OpCode.BINARY:
-                frame = new Frame(OpCode.CONTINUATION);
-                break;
-            default:
-                callback.failed(new ProtocolException("Attempt to send Partial Binary during active opcode " + messageType));
-                return;
-        }
-
-        frame.setPayload(fragment);
-        frame.setFin(isLast);
-
-        coreSession.sendFrame(frame, callback, isBatch());
-
-        if (isLast)
-        {
-            messageType = -1;
-        }
     }
 
     private void sendPartialText(String fragment, boolean isLast, Callback callback)

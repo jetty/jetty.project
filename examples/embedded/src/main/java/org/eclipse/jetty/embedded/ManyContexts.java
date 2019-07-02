@@ -27,7 +27,7 @@ public class ManyContexts
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(8080);
+        final Server server = new Server(8080);
 
         ContextHandler context = new ContextHandler("/");
         context.setContextPath("/");

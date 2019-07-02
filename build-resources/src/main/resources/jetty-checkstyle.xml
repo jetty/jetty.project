@@ -38,10 +38,16 @@
       ===========================================================================================
       -->
 
+    <module name="SuppressionCommentFilter">
+      <property name="offCommentFormat" value="@checkstyle-disable-check : ([\w\|]+)"/>
+      <property name="onCommentFormat" value="@checkstyle-enable-check : ([\w\|]+)"/>
+      <property name="checkFormat" value="$1"/>
+    </module>
+
     <!-- Check abbreviations(consecutive capital letters) length in identifier name -->
     <module name="AbbreviationAsWordInName">
       <property name="ignoreFinal" value="true"/>
-      <property name="allowedAbbreviations" value="RFC, XML, URL, URI, HTTP, IP, ID, ISO8859, UTF8, CRLF, AWT"/>
+      <property name="allowedAbbreviations" value="ALPN, ASCII, AWT, CRLDP, CRLF, FCGI, GZIP, HTTP, HTTPS, ID, IP, ISO8859, JAAS, JDBC, JMXRMI, JNDI, JPMS, JSON, JSTL, LDAP, PROXY, RFC, SPNEGO, URI, URL, UTF8, XML"/>
     </module>
 
     <!-- Location of Annotations -->
@@ -51,7 +57,7 @@
 
     <!-- Catch Parameter Name Format -->
     <module name="CatchParameterName">
-      <property name="format" value="^(e|t|x|ex|[a-z][a-z][a-zA-Z0-9]+)$"/>
+      <property name="format" value="^(e|t|x|ex|th|e2|[a-z][a-z][a-zA-Z0-9]+)$"/>
     </module>
 
     <!-- Class Type Parameter Name Format -->

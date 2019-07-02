@@ -676,6 +676,8 @@ public class ForwardedRequestCustomizer implements Customizer
                             _proto = value;
                         }
                         break;
+                    default:
+                        break;
                 }
             }
         }

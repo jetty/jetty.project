@@ -109,16 +109,15 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         if (existingFilter != null)
             return existingFilter;
 
-        String name = "WebSocketUpgradeFilter";
-        String pathSpec = "/*";
-        EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
+        final String name = "WebSocketUpgradeFilter";
+        final String pathSpec = "/*";
         FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
         holder.setName(name);
         holder.setInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
 
         holder.setAsyncSupported(true);
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
-        servletHandler.addFilterWithMapping(holder, pathSpec, dispatcherTypes);
+        servletHandler.addFilterWithMapping(holder, pathSpec, EnumSet.of(DispatcherType.REQUEST));
         if (LOG.isDebugEnabled())
             LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
         return holder;

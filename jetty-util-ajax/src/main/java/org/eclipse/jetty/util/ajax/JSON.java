@@ -160,44 +160,9 @@ public class JSON
         return buffer.toString();
     }
 
-    /**
-     * @param s String containing JSON object or array.
-     * @return A Map, Object array or primitive array parsed from the JSON.
-     */
-    public static Object parse(String s)
+    protected String toString(char[] buffer, int offset, int length)
     {
-        return DEFAULT.parse(new StringSource(s), false);
-    }
-
-    /**
-     * @param s String containing JSON object or array.
-     * @param stripOuterComment If true, an outer comment around the JSON is ignored.
-     * @return A Map, Object array or primitive array parsed from the JSON.
-     */
-    public static Object parse(String s, boolean stripOuterComment)
-    {
-        return DEFAULT.parse(new StringSource(s), stripOuterComment);
-    }
-
-    /**
-     * @param in Reader containing JSON object or array.
-     * @return A Map, Object array or primitive array parsed from the JSON.
-     * @throws IOException if unable to parse
-     */
-    public static Object parse(Reader in) throws IOException
-    {
-        return DEFAULT.parse(new ReaderSource(in), false);
-    }
-
-    /**
-     * @param in Reader containing JSON object or array.
-     * @param stripOuterComment If true, an outer comment around the JSON is ignored.
-     * @return A Map, Object array or primitive array parsed from the JSON.
-     * @throws IOException if unable to parse
-     */
-    public static Object parse(Reader in, boolean stripOuterComment) throws IOException
-    {
-        return DEFAULT.parse(new ReaderSource(in), stripOuterComment);
+        return new String(buffer, offset, length);
     }
 
     private void quotedEscape(Appendable buffer, String input)
@@ -558,13 +523,6 @@ public class JSON
         quotedEscape(buffer, string);
     }
 
-    // Parsing utilities
-
-    protected String toString(char[] buffer, int offset, int length)
-    {
-        return new String(buffer, offset, length);
-    }
-
     protected Map<String, Object> newMap()
     {
         return new HashMap<String, Object>();
@@ -679,6 +637,46 @@ public class JSON
         return convertor;
     }
 
+    /**
+     * @param in Reader containing JSON object or array.
+     * @param stripOuterComment If true, an outer comment around the JSON is ignored.
+     * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
+     */
+    public static Object parse(Reader in, boolean stripOuterComment) throws IOException
+    {
+        return DEFAULT.parse(new ReaderSource(in), stripOuterComment);
+    }
+
+    /**
+     * @param s String containing JSON object or array.
+     * @return A Map, Object array or primitive array parsed from the JSON.
+     */
+    public static Object parse(String s)
+    {
+        return DEFAULT.parse(new StringSource(s), false);
+    }
+
+    /**
+     * @param s String containing JSON object or array.
+     * @param stripOuterComment If true, an outer comment around the JSON is ignored.
+     * @return A Map, Object array or primitive array parsed from the JSON.
+     */
+    public static Object parse(String s, boolean stripOuterComment)
+    {
+        return DEFAULT.parse(new StringSource(s), stripOuterComment);
+    }
+
+    /**
+     * @param in Reader containing JSON object or array.
+     * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
+     */
+    public static Object parse(Reader in) throws IOException
+    {
+        return DEFAULT.parse(new ReaderSource(in), false);
+    }
+
     public Object parse(Source source, boolean stripOuterComment)
     {
         int commentState = 0; // 0=no comment, 1="/", 2="/*", 3="/* *" -1="//"
@@ -707,6 +705,9 @@ public class JSON
                             commentState = 0;
                             stripState = 2;
                         }
+                        break;
+                    default:
+                        break;
                 }
             }
             // handle /* C style */ comment
@@ -785,6 +786,9 @@ public class JSON
                         break;
                     case '*':
                         commentState = 2;
+                        break;
+                    default:
+                        break;
                 }
             }
             // handle /* C Style */ comment
@@ -1307,24 +1311,6 @@ public class JSON
         }
 
         @Override
-        public void addClass(Class type)
-        {
-            try
-            {
-                if (c == 0)
-                    throw new IllegalStateException();
-                _buffer.append(c);
-                _buffer.append("\"class\":");
-                append(_buffer, type.getName());
-                c = ',';
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
         public void add(String name, Object value)
         {
             try
@@ -1392,6 +1378,24 @@ public class JSON
                 quotedEscape(_buffer, name);
                 _buffer.append(':');
                 appendBoolean(_buffer, value ? Boolean.TRUE : Boolean.FALSE);
+                c = ',';
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public void addClass(Class type)
+        {
+            try
+            {
+                if (c == 0)
+                    throw new IllegalStateException();
+                _buffer.append(c);
+                _buffer.append("\"class\":");
+                append(_buffer, type.getName());
                 c = ',';
             }
             catch (IOException e)

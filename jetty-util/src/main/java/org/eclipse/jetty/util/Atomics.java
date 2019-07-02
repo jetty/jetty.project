@@ -39,18 +39,6 @@ public class Atomics
         return false;
     }
 
-    public static boolean updateMax(AtomicLong currentMax, long newValue)
-    {
-        long oldValue = currentMax.get();
-        while (newValue > oldValue)
-        {
-            if (currentMax.compareAndSet(oldValue, newValue))
-                return true;
-            oldValue = currentMax.get();
-        }
-        return false;
-    }
-
     public static boolean updateMin(AtomicInteger currentMin, int newValue)
     {
         int oldValue = currentMin.get();
@@ -59,6 +47,18 @@ public class Atomics
             if (currentMin.compareAndSet(oldValue, newValue))
                 return true;
             oldValue = currentMin.get();
+        }
+        return false;
+    }
+
+    public static boolean updateMax(AtomicLong currentMax, long newValue)
+    {
+        long oldValue = currentMax.get();
+        while (newValue > oldValue)
+        {
+            if (currentMax.compareAndSet(oldValue, newValue))
+                return true;
+            oldValue = currentMax.get();
         }
         return false;
     }

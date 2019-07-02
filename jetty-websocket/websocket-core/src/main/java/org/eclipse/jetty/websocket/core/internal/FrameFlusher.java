@@ -149,8 +149,10 @@ public class FrameFlusher extends IteratingCallback
 
         if (failedEntries != null)
         {
-            WebSocketException failure = new WebSocketException("Flusher received abnormal CloseFrame: "
-                + CloseStatus.codeString(closeStatus.getCode()), closeStatus.getCause());
+            WebSocketException failure =
+                new WebSocketException(
+                    "Flusher received abnormal CloseFrame: " +
+                        CloseStatus.codeString(closeStatus.getCode()), closeStatus.getCause());
 
             for (Entry e : failedEntries)
             {

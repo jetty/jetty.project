@@ -178,6 +178,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 //ServletSpec p.75. No declaration in web.xml, but in multiple web-fragments. Error.
                 throw new IllegalStateException("Conflicting env-entry " + name + " in " + descriptor.getResource());
             }
+            default:
+                break;
         }
     }
 
@@ -312,16 +314,16 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     //declarations of the resource-ref must be the same in both fragment descriptors
                     String otherType = otherNode.getString("res-type", false, true);
+                    otherType = (otherType == null ? "" : otherType);
                     String otherAuth = otherNode.getString("res-auth", false, true);
+                    otherAuth = (otherAuth == null ? "" : otherAuth);
                     String otherShared = otherNode.getString("res-sharing-scope", false, true);
+                    otherShared = (otherShared == null ? "" : otherShared);
 
                     //otherType, otherAuth and otherShared must be the same as type, auth, shared
                     type = (type == null ? "" : type);
-                    otherType = (otherType == null ? "" : otherType);
                     auth = (auth == null ? "" : auth);
-                    otherAuth = (otherAuth == null ? "" : otherAuth);
                     shared = (shared == null ? "" : shared);
-                    otherShared = (otherShared == null ? "" : otherShared);
 
                     //ServletSpec p.75. No declaration of resource-ref in web xml, but different in multiple web-fragments. Error.
                     if (!type.equals(otherType) || !auth.equals(otherAuth) || !shared.equals(otherShared))
@@ -331,7 +333,11 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 else
                     throw new IllegalStateException("resource-ref." + jndiName + " not found in declaring descriptor " + otherFragment);
+                break;
             }
+
+            default:
+                break;
         }
     }
 
@@ -436,7 +442,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 else
                     throw new IllegalStateException("resource-env-ref." + jndiName + " not found in declaring descriptor " + otherFragment);
+                break;
             }
+            default:
+                break;
         }
     }
 
@@ -535,7 +544,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 else
                     throw new IllegalStateException("message-destination-ref." + jndiName + " not found in declaring descriptor " + otherFragment);
+                break;
             }
+            default:
+                break;
         }
     }
 
@@ -615,6 +627,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 break;
             }
+            default:
+                break;
         }
     }
 
@@ -691,6 +705,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 break;
             }
+            default:
+                break;
         }
     }
 

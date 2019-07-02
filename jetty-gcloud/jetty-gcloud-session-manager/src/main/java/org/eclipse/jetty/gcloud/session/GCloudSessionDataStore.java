@@ -904,14 +904,14 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             return null;
 
         //turn an Entity into a Session
-        String id = entity.getString(_model.getId());
-        String contextPath = entity.getString(_model.getContextPath());
-        String vhost = entity.getString(_model.getVhost());
-        long accessed = entity.getLong(_model.getAccessed());
-        long lastAccessed = entity.getLong(_model.getLastAccessed());
-        long createTime = entity.getLong(_model.getCreateTime());
-        long cookieSet = entity.getLong(_model.getCookieSetTime());
-        String lastNode = entity.getString(_model.getLastNode());
+        final String id = entity.getString(_model.getId());
+        final String contextPath = entity.getString(_model.getContextPath());
+        final String vhost = entity.getString(_model.getVhost());
+        final long accessed = entity.getLong(_model.getAccessed());
+        final long lastAccessed = entity.getLong(_model.getLastAccessed());
+        final long createTime = entity.getLong(_model.getCreateTime());
+        final long cookieSet = entity.getLong(_model.getCookieSetTime());
+        final String lastNode = entity.getString(_model.getLastNode());
 
         long lastSaved = 0;
         //for compatibility with previously saved sessions, lastSaved may not be present

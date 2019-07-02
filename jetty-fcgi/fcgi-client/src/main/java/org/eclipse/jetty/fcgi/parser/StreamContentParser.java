@@ -62,7 +62,7 @@ public class StreamContentParser extends ContentParser
                     int length = Math.min(contentLength, buffer.remaining());
                     int limit = buffer.limit();
                     buffer.limit(buffer.position() + length);
-                    ByteBuffer slice = buffer.slice();
+                    final ByteBuffer slice = buffer.slice();
                     buffer.position(buffer.limit());
                     buffer.limit(limit);
                     contentLength -= length;

@@ -120,26 +120,17 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
-        MethodHandle openHandle = metadata.getOpenHandle();
-        MethodHandle closeHandle = metadata.getCloseHandle();
-        MethodHandle errorHandle = metadata.getErrorHandle();
-        MethodHandle textHandle = metadata.getTextHandle();
-        MethodHandle binaryHandle = metadata.getBinaryHandle();
-        Class<? extends MessageSink> textSinkClass = metadata.getTextSink();
-        Class<? extends MessageSink> binarySinkClass = metadata.getBinarySink();
-        MethodHandle frameHandle = metadata.getFrameHandle();
-        MethodHandle pingHandle = metadata.getPingHandle();
-        MethodHandle pongHandle = metadata.getPongHandle();
+        final MethodHandle openHandle = metadata.getOpenHandle();
+        final MethodHandle closeHandle = bindTo(metadata.getCloseHandle(), endpointInstance);
+        final MethodHandle errorHandle = bindTo(metadata.getErrorHandle(), endpointInstance);
+        final MethodHandle textHandle = bindTo(metadata.getTextHandle(), endpointInstance);
+        final MethodHandle binaryHandle = bindTo(metadata.getBinaryHandle(), endpointInstance);
+        final Class<? extends MessageSink> textSinkClass = metadata.getTextSink();
+        final Class<? extends MessageSink> binarySinkClass = metadata.getBinarySink();
+        final MethodHandle frameHandle = bindTo(metadata.getFrameHandle(), endpointInstance);
+        final MethodHandle pingHandle = bindTo(metadata.getPingHandle(), endpointInstance);
+        final MethodHandle pongHandle = bindTo(metadata.getPongHandle(), endpointInstance);
         BatchMode batchMode = metadata.getBatchMode();
-
-        openHandle = bindTo(openHandle, endpointInstance);
-        closeHandle = bindTo(closeHandle, endpointInstance);
-        errorHandle = bindTo(errorHandle, endpointInstance);
-        textHandle = bindTo(textHandle, endpointInstance);
-        binaryHandle = bindTo(binaryHandle, endpointInstance);
-        frameHandle = bindTo(frameHandle, endpointInstance);
-        pingHandle = bindTo(pingHandle, endpointInstance);
-        pongHandle = bindTo(pongHandle, endpointInstance);
 
         JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
             container,

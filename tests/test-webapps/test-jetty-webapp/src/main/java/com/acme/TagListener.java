@@ -41,45 +41,21 @@ public class TagListener implements HttpSessionListener, HttpSessionAttributeLis
     }
 
     @Override
-    public void attributeRemoved(HttpSessionBindingEvent se)
-    {
-        //System.err.println("tagListener: attributeRemoved "+se);
-    }
-
-    @Override
-    public void attributeReplaced(HttpSessionBindingEvent se)
-    {
-        //System.err.println("tagListener: attributeReplaced "+se);
-    }
-
-    @Override
-    public void sessionWillPassivate(HttpSessionEvent se)
-    {
-        //System.err.println("tagListener: sessionWillPassivate "+se);
-    }
-
-    @Override
-    public void sessionDidActivate(HttpSessionEvent se)
-    {
-        //System.err.println("tagListener: sessionDidActivate "+se);
-    }
-
-    @Override
-    public void contextInitialized(ServletContextEvent sce)
-    {
-        //System.err.println("tagListener: contextInitialized "+sce);
-    }
-
-    @Override
-    public void contextDestroyed(ServletContextEvent sce)
-    {
-        //System.err.println("tagListener: contextDestroyed "+sce);
-    }
-
-    @Override
     public void attributeAdded(ServletContextAttributeEvent scab)
     {
         //System.err.println("tagListener: attributeAdded "+scab);
+    }
+
+    @Override
+    public void attributeAdded(ServletRequestAttributeEvent srae)
+    {
+        //System.err.println("tagListener: attributeAdded "+srae);
+    }
+
+    @Override
+    public void attributeRemoved(HttpSessionBindingEvent se)
+    {
+        //System.err.println("tagListener: attributeRemoved "+se);
     }
 
     @Override
@@ -89,9 +65,39 @@ public class TagListener implements HttpSessionListener, HttpSessionAttributeLis
     }
 
     @Override
+    public void attributeRemoved(ServletRequestAttributeEvent srae)
+    {
+        //System.err.println("tagListener: attributeRemoved "+srae);
+    }
+
+    @Override
+    public void attributeReplaced(HttpSessionBindingEvent se)
+    {
+        //System.err.println("tagListener: attributeReplaced "+se);
+    }
+
+    @Override
     public void attributeReplaced(ServletContextAttributeEvent scab)
     {
         //System.err.println("tagListener: attributeReplaced "+scab);
+    }
+
+    @Override
+    public void attributeReplaced(ServletRequestAttributeEvent srae)
+    {
+        //System.err.println("tagListener: attributeReplaced "+srae);
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent sce)
+    {
+        //System.err.println("tagListener: contextDestroyed "+sce);
+    }
+
+    @Override
+    public void contextInitialized(ServletContextEvent sce)
+    {
+        //System.err.println("tagListener: contextInitialized "+sce);
     }
 
     @Override
@@ -107,24 +113,6 @@ public class TagListener implements HttpSessionListener, HttpSessionAttributeLis
     }
 
     @Override
-    public void attributeAdded(ServletRequestAttributeEvent srae)
-    {
-        //System.err.println("tagListener: attributeAdded "+srae);
-    }
-
-    @Override
-    public void attributeRemoved(ServletRequestAttributeEvent srae)
-    {
-        //System.err.println("tagListener: attributeRemoved "+srae);
-    }
-
-    @Override
-    public void attributeReplaced(ServletRequestAttributeEvent srae)
-    {
-        //System.err.println("tagListener: attributeReplaced "+srae);
-    }
-
-    @Override
     public void sessionCreated(HttpSessionEvent se)
     {
         //System.err.println("tagListener: sessionCreated "+se);
@@ -134,5 +122,17 @@ public class TagListener implements HttpSessionListener, HttpSessionAttributeLis
     public void sessionDestroyed(HttpSessionEvent se)
     {
         //System.err.println("tagListener: sessionDestroyed "+se);
+    }
+
+    @Override
+    public void sessionDidActivate(HttpSessionEvent se)
+    {
+        //System.err.println("tagListener: sessionDidActivate "+se);
+    }
+
+    @Override
+    public void sessionWillPassivate(HttpSessionEvent se)
+    {
+        //System.err.println("tagListener: sessionWillPassivate "+se);
     }
 }

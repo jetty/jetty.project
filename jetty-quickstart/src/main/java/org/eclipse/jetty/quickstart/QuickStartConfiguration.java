@@ -142,6 +142,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 else
                     throw new IllegalStateException("No " + quickStartWebXml);
                 break;
+
+            default:
+                throw new IllegalStateException(_mode.toString());
         }
     }
 
@@ -159,18 +162,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
             generator.setQuickStartWebXml((Resource)attr);
         else if (attr != null)
             generator.setQuickStartWebXml(Resource.newResource(attr.toString()));
-    }
-
-    protected void quickStart(WebAppContext context, Resource quickStartWebXml)
-        throws Exception
-    {
-        _quickStart = true;
-        context.setConfigurations(context.getWebAppConfigurations().stream()
-            .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
-            .collect(Collectors.toList()).toArray(new Configuration[]{}));
-        context.getMetaData().setWebXml(quickStartWebXml);
-        context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebXml().getMajorVersion());
-        context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebXml().getMinorVersion());
     }
 
     /**
@@ -202,6 +193,18 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
             LOG.debug("configured {}", this);
         }
+    }
+
+    protected void quickStart(WebAppContext context, Resource quickStartWebXml)
+        throws Exception
+    {
+        _quickStart = true;
+        context.setConfigurations(context.getWebAppConfigurations().stream()
+            .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
+            .collect(Collectors.toList()).toArray(new Configuration[]{}));
+        context.getMetaData().setWebXml(quickStartWebXml);
+        context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebXml().getMajorVersion());
+        context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebXml().getMinorVersion());
     }
 
     /**

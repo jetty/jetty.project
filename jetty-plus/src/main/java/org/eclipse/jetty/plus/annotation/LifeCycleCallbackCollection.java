@@ -98,6 +98,21 @@ public class LifeCycleCallbackCollection
         return preDestroyCallbacksMap.get(clazz.getName());
     }
 
+    /**
+     * Amalgamate all pre-destroy callbacks and return a read only set
+     *
+     * @return the collection of {@link PreDestroyCallback}s
+     */
+    public Collection<LifeCycleCallback> getPreDestroyCallbacks()
+    {
+        Set<LifeCycleCallback> set = new HashSet<LifeCycleCallback>();
+        for (String s : preDestroyCallbacksMap.keySet())
+        {
+            set.addAll(preDestroyCallbacksMap.get(s));
+        }
+        return Collections.unmodifiableCollection(set);
+    }
+
     public Set<LifeCycleCallback> getPostConstructCallbacks(Object o)
     {
         if (o == null)
@@ -105,6 +120,21 @@ public class LifeCycleCallbackCollection
 
         Class<? extends Object> clazz = o.getClass();
         return postConstructCallbacksMap.get(clazz.getName());
+    }
+
+    /**
+     * Amalgamate all post-construct callbacks and return a read only set
+     *
+     * @return the collection of {@link PostConstructCallback}s
+     */
+    public Collection<LifeCycleCallback> getPostConstructCallbacks()
+    {
+        Set<LifeCycleCallback> set = new HashSet<LifeCycleCallback>();
+        for (String s : postConstructCallbacksMap.keySet())
+        {
+            set.addAll(postConstructCallbacksMap.get(s));
+        }
+        return Collections.unmodifiableCollection(set);
     }
 
     /**
@@ -171,35 +201,5 @@ public class LifeCycleCallbackCollection
     public Map<String, Set<LifeCycleCallback>> getPreDestroyCallbackMap()
     {
         return Collections.unmodifiableMap(preDestroyCallbacksMap);
-    }
-
-    /**
-     * Amalgamate all post-construct callbacks and return a read only set
-     *
-     * @return the collection of {@link PostConstructCallback}s
-     */
-    public Collection<LifeCycleCallback> getPostConstructCallbacks()
-    {
-        Set<LifeCycleCallback> set = new HashSet<LifeCycleCallback>();
-        for (String s : postConstructCallbacksMap.keySet())
-        {
-            set.addAll(postConstructCallbacksMap.get(s));
-        }
-        return Collections.unmodifiableCollection(set);
-    }
-
-    /**
-     * Amalgamate all pre-destroy callbacks and return a read only set
-     *
-     * @return the collection of {@link PreDestroyCallback}s
-     */
-    public Collection<LifeCycleCallback> getPreDestroyCallbacks()
-    {
-        Set<LifeCycleCallback> set = new HashSet<LifeCycleCallback>();
-        for (String s : preDestroyCallbacksMap.keySet())
-        {
-            set.addAll(preDestroyCallbacksMap.get(s));
-        }
-        return Collections.unmodifiableCollection(set);
     }
 }

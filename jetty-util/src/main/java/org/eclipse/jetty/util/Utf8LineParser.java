@@ -76,6 +76,7 @@ public class Utf8LineParser
                 utf = new Utf8StringBuilder();
                 state = State.PARSE;
                 return parseByte(b);
+
             case PARSE:
                 // not waiting on more UTF sequence parts.
                 if (utf.isUtf8SequenceComplete() && ((b == '\r') || (b == '\n')))
@@ -84,7 +85,8 @@ public class Utf8LineParser
                     return parseByte(b);
                 }
                 utf.append(b);
-                break;
+                return false;
+
             case END:
                 if (b == '\n')
                 {
@@ -92,8 +94,10 @@ public class Utf8LineParser
                     state = State.START;
                     return true;
                 }
-                break;
+                return false;
+
+            default:
+                throw new IllegalStateException();
         }
-        return false;
     }
 }

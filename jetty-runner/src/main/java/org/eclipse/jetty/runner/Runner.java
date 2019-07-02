@@ -369,7 +369,7 @@ public class Runner
                                 statsContext.setSessionHandler(new SessionHandler());
                                 if (_statsPropFile != null)
                                 {
-                                    HashLoginService loginService = new HashLoginService("StatsRealm", _statsPropFile);
+                                    final HashLoginService loginService = new HashLoginService("StatsRealm", _statsPropFile);
                                     Constraint constraint = new Constraint();
                                     constraint.setName("Admin Only");
                                     constraint.setRoles(new String[]{"admin"});
@@ -495,6 +495,9 @@ public class Runner
                 monitor.setPort(stopPort);
                 monitor.setKey(stopKey);
                 monitor.setExitVm(true);
+                break;
+
+            default:
                 break;
         }
 

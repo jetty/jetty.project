@@ -986,7 +986,6 @@ public class Dump extends HttpServlet
     {
         if (data != null && data.length() > 0)
         {
-            long d = Long.parseLong(data);
             int b = (block != null && block.length() > 0) ? Integer.parseInt(block) : 50;
             byte[] buf = new byte[b];
             for (int i = 0; i < b; i++)
@@ -999,6 +998,7 @@ public class Dump extends HttpServlet
             buf[0] = 'o';
             OutputStream out = response.getOutputStream();
             response.setContentType("text/plain");
+            long d = Long.parseLong(data);
             while (d > 0)
             {
                 if (b == 1)
@@ -1041,7 +1041,6 @@ public class Dump extends HttpServlet
         // Handle a dump of data
         if (chars != null && chars.length() > 0)
         {
-            long d = Long.parseLong(chars);
             int b = (block != null && block.length() > 0) ? Integer.parseInt(block) : 50;
             char[] buf = new char[b];
             for (int i = 0; i < b; i++)
@@ -1053,6 +1052,7 @@ public class Dump extends HttpServlet
             buf[0] = 'o';
             response.setContentType("text/plain");
             PrintWriter out = response.getWriter();
+            long d = Long.parseLong(chars);
             while (d > 0 && !out.checkError())
             {
                 if (b == 1)

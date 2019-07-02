@@ -300,7 +300,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
 
     public boolean onStreamTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        boolean delayed = _delayedUntilContent;
+        final boolean delayed = _delayedUntilContent;
         _delayedUntilContent = false;
 
         boolean result = isRequestIdle();

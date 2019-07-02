@@ -384,7 +384,7 @@ public class DoSFilter implements Filter
                 long throttleMs = getThrottleMs();
                 if (!Boolean.TRUE.equals(throttled) && throttleMs > 0)
                 {
-                    int priority = getPriority(request, tracker);
+                    final int priority = getPriority(request, tracker);
                     request.setAttribute(__THROTTLED, Boolean.TRUE);
                     if (isInsertHeaders())
                         response.addHeader("DoSFilter", "throttled");

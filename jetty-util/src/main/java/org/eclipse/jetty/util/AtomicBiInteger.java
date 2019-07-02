@@ -49,11 +49,33 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
+     * Gets a hi value from the given encoded value.
+     *
+     * @param encoded the encoded value
+     * @return the hi value
+     */
+    public static int getHi(long encoded)
+    {
+        return (int)((encoded >> 32) & 0xFFFF_FFFFL);
+    }
+
+    /**
      * @return the lo value
      */
     public int getLo()
     {
         return getLo(get());
+    }
+
+    /**
+     * Gets a lo value from the given encoded value.
+     *
+     * @param encoded the encoded value
+     * @return the lo value
+     */
+    public static int getLo(long encoded)
+    {
+        return (int)(encoded & 0xFFFF_FFFFL);
     }
 
     /**
@@ -232,28 +254,6 @@ public class AtomicBiInteger extends AtomicLong
             if (compareAndSet(encoded, update))
                 return;
         }
-    }
-
-    /**
-     * Gets a hi value from the given encoded value.
-     *
-     * @param encoded the encoded value
-     * @return the hi value
-     */
-    public static int getHi(long encoded)
-    {
-        return (int)((encoded >> 32) & 0xFFFF_FFFFL);
-    }
-
-    /**
-     * Gets a lo value from the given encoded value.
-     *
-     * @param encoded the encoded value
-     * @return the lo value
-     */
-    public static int getLo(long encoded)
-    {
-        return (int)(encoded & 0xFFFF_FFFFL);
     }
 
     /**
