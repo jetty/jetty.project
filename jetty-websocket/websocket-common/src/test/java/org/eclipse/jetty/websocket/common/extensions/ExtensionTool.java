@@ -80,7 +80,7 @@ public class ExtensionTool
         public void parseIncomingHex(String... rawhex)
         {
             int parts = rawhex.length;
-            byte net[];
+            byte[] net;
 
             for (int i = 0; i < parts; i++)
             {
@@ -92,7 +92,7 @@ public class ExtensionTool
 
         public void assertHasFrames(String... textFrames)
         {
-            Frame frames[] = new Frame[textFrames.length];
+            Frame[] frames = new Frame[textFrames.length];
             for (int i = 0; i < frames.length; i++)
             {
                 frames[i] = new TextFrame().setPayload(textFrames[i]);

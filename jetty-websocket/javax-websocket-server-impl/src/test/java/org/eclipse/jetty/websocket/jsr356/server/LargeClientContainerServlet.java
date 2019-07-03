@@ -79,7 +79,7 @@ public class LargeClientContainerServlet extends HttpServlet
             size = Integer.parseInt(sizeParam);
         }
 
-        byte buf[] = new byte[size];
+        byte[] buf = new byte[size];
         Arrays.fill(buf, (byte)'x');
 
         String destUrl = req.getParameter("destUrl");

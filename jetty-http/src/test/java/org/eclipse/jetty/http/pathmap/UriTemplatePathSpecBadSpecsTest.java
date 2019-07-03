@@ -33,7 +33,7 @@ public class UriTemplatePathSpecBadSpecsTest
 {
     public static Stream<Arguments> data()
     {
-        String badSpecs[] = new String[]{
+        String[] badSpecs = new String[]{
             "/a/b{var}", // bad syntax - variable does not encompass whole path segment
             "a/{var}", // bad syntax - no start slash
             "/a/{var/b}", // path segment separator in variable name

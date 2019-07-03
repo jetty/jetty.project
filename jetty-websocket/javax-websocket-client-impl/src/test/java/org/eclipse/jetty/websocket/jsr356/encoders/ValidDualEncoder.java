@@ -43,7 +43,7 @@ public class ValidDualEncoder implements Encoder.Text<Integer>, Encoder.BinarySt
     @Override
     public void encode(Long object, OutputStream os) throws EncodeException, IOException
     {
-        byte b[] = new byte[8];
+        byte[] b = new byte[8];
         long v = object;
         b[0] = (byte)(v >>> 56);
         b[1] = (byte)(v >>> 48);

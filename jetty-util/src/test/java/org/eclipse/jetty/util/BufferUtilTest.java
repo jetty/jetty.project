@@ -194,7 +194,7 @@ public class BufferUtilTest
     @Test
     public void testToBuffer_Array()
     {
-        byte arr[] = new byte[128];
+        byte[] arr = new byte[128];
         Arrays.fill(arr, (byte)0x44);
         ByteBuffer buf = BufferUtil.toBuffer(arr);
 
@@ -212,7 +212,7 @@ public class BufferUtilTest
     @Test
     public void testToBuffer_ArrayOffsetLength()
     {
-        byte arr[] = new byte[128];
+        byte[] arr = new byte[128];
         Arrays.fill(arr, (byte)0xFF); // fill whole thing with FF
         int offset = 10;
         int length = 100;

@@ -151,7 +151,7 @@ public class GzipTester
             digester = new DigestOutputStream(uncompressedStream, digest);
             IO.copy(in, digester);
 
-            byte output[] = uncompressedStream.toByteArray();
+            byte[] output = uncompressedStream.toByteArray();
             String actualSha1Sum = Hex.asHex(digest.digest());
             return new ContentMetadata(output.length, actualSha1Sum);
         }

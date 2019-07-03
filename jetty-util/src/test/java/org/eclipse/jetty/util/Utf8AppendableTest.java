@@ -258,7 +258,7 @@ public class Utf8AppendableTest
     @TestFactory
     public Iterator<DynamicTest> testBadUtf8()
     {
-        String samples[] = new String[]{
+        String[] samples = new String[]{
             "c0af",
             "EDA080",
             "f08080af",

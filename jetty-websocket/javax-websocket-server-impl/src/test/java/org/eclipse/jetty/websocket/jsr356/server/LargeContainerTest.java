@@ -77,7 +77,7 @@ public class LargeContainerTest
                 // wait for connect
                 foo.get(1, TimeUnit.SECONDS);
                 // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies
-                byte txt[] = new byte[100 * 1024];
+                byte[] txt = new byte[100 * 1024];
                 Arrays.fill(txt, (byte)'o');
                 String msg = new String(txt, StandardCharsets.UTF_8);
                 clientEcho.sendMessage(msg);

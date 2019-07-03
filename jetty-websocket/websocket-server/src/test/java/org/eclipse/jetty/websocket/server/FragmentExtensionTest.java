@@ -77,7 +77,7 @@ public class FragmentExtensionTest
     {
         int strLength = str.length();
         int count = (int)Math.ceil((double)str.length() / partSize);
-        String ret[] = new String[count];
+        String[] ret = new String[count];
         int idx;
         for (int i = 0; i < count; i++)
         {
@@ -116,7 +116,7 @@ public class FragmentExtensionTest
             String msg = "Sent as a long message that should be split";
             clientConn.write(new TextFrame().setPayload(msg));
 
-            String parts[] = split(msg, fragSize);
+            String[] parts = split(msg, fragSize);
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             for (int i = 0; i < parts.length; i++)
             {
