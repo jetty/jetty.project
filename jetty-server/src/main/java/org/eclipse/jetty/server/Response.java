@@ -451,7 +451,10 @@ public class Response implements HttpServletResponse
             if (errorHandler != null)
                 errorHandler.handle(null, request, request, this);
         }
-        if (!wasAsync)
+
+        // Do not close the output if the request was async (but may not now be due to async error dispatch)
+        // or it is now async because the request handling is async!
+        if (!(wasAsync || request.isAsyncStarted()))
             closeOutput();
     }
 
