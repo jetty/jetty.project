@@ -421,7 +421,7 @@ public class LazyListTest
     @Test
     public void testAddArray_NullInput_NullArray()
     {
-        String arr[] = null;
+        String[] arr = null;
         Object list = LazyList.addArray(null, arr);
         assertNull(list);
     }
@@ -432,7 +432,7 @@ public class LazyListTest
     @Test
     public void testAddArray_NullInput_EmptyArray()
     {
-        String arr[] = new String[0];
+        String[] arr = new String[0];
         Object list = LazyList.addArray(null, arr);
         if (STRICT)
         {
@@ -447,7 +447,7 @@ public class LazyListTest
     @Test
     public void testAddArray_NullInput_SingleArray()
     {
-        String arr[] = new String[]{"a"};
+        String[] arr = new String[]{"a"};
         Object list = LazyList.addArray(null, arr);
         assertNotNull(list);
         if (STRICT)
@@ -464,7 +464,7 @@ public class LazyListTest
     @Test
     public void testAddArray_NullInput_Array()
     {
-        String arr[] = new String[]{"a", "b", "c"};
+        String[] arr = new String[]{"a", "b", "c"};
         Object list = LazyList.addArray(null, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -481,7 +481,7 @@ public class LazyListTest
     public void testAddArray_NonListInput_NullArray()
     {
         String input = "z";
-        String arr[] = null;
+        String[] arr = null;
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         if (STRICT)
@@ -499,7 +499,7 @@ public class LazyListTest
     public void testAddArray_NonListInput_EmptyArray()
     {
         String input = "z";
-        String arr[] = new String[0];
+        String[] arr = new String[0];
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         if (STRICT)
@@ -517,7 +517,7 @@ public class LazyListTest
     public void testAddArray_NonListInput_SingleArray()
     {
         String input = "z";
-        String arr[] = new String[]{"a"};
+        String[] arr = new String[]{"a"};
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -533,7 +533,7 @@ public class LazyListTest
     public void testAddArray_NonListInput_Array()
     {
         String input = "z";
-        String arr[] = new String[]{"a", "b", "c"};
+        String[] arr = new String[]{"a", "b", "c"};
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -554,7 +554,7 @@ public class LazyListTest
         input = LazyList.add(input, "y");
         input = LazyList.add(input, "z");
 
-        String arr[] = null;
+        String[] arr = null;
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -574,7 +574,7 @@ public class LazyListTest
         input = LazyList.add(input, "y");
         input = LazyList.add(input, "z");
 
-        String arr[] = new String[0];
+        String[] arr = new String[0];
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -594,7 +594,7 @@ public class LazyListTest
         input = LazyList.add(input, "y");
         input = LazyList.add(input, "z");
 
-        String arr[] = new String[]{"a"};
+        String[] arr = new String[]{"a"};
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -615,7 +615,7 @@ public class LazyListTest
         input = LazyList.add(input, "y");
         input = LazyList.add(input, "z");
 
-        String arr[] = new String[]{"a", "b", "c"};
+        String[] arr = new String[]{"a", "b", "c"};
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -639,7 +639,7 @@ public class LazyListTest
         input.add("y");
         input.add("z");
 
-        String arr[] = null;
+        String[] arr = null;
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -660,7 +660,7 @@ public class LazyListTest
         input.add("y");
         input.add("z");
 
-        String arr[] = new String[0];
+        String[] arr = new String[0];
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -681,7 +681,7 @@ public class LazyListTest
         input.add("y");
         input.add("z");
 
-        String arr[] = new String[]{"a"};
+        String[] arr = new String[]{"a"};
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -703,7 +703,7 @@ public class LazyListTest
         input.add("y");
         input.add("z");
 
-        String arr[] = new String[]{"a", "b", "c"};
+        String[] arr = new String[]{"a", "b", "c"};
         Object list = LazyList.addArray(input, arr);
         assertNotNull(list);
         assertTrue(list instanceof List);
@@ -1285,7 +1285,7 @@ public class LazyListTest
         assertTrue(arr.getClass().isArray());
         assertTrue(arr instanceof String[]);
 
-        String strs[] = (String[])arr;
+        String[] strs = (String[])arr;
         assertEquals(1, strs.length);
         assertEquals("a", strs[0]);
     }
@@ -1305,7 +1305,7 @@ public class LazyListTest
         assertTrue(arr.getClass().isArray());
         assertTrue(arr instanceof String[]);
 
-        String strs[] = (String[])arr;
+        String[] strs = (String[])arr;
         assertEquals(3, strs.length);
         assertEquals("a", strs[0]);
         assertEquals("b", strs[1]);
@@ -1328,7 +1328,7 @@ public class LazyListTest
         assertTrue(arr.getClass().isArray());
         assertTrue(arr instanceof int[]);
 
-        int nums[] = (int[])arr;
+        int[] nums = (int[])arr;
         assertEquals(4, nums.length);
         assertEquals(22, nums[0]);
         assertEquals(333, nums[1]);
@@ -1352,7 +1352,7 @@ public class LazyListTest
         assertTrue(arr.getClass().isArray());
         assertTrue(arr instanceof String[]);
 
-        String strs[] = (String[])arr;
+        String[] strs = (String[])arr;
         assertEquals(3, strs.length);
         assertEquals("a", strs[0]);
         assertEquals("b", strs[1]);
@@ -1832,7 +1832,7 @@ public class LazyListTest
     @Test
     public void testArray2List_NullInput()
     {
-        Object input[] = null;
+        Object[] input = null;
 
         Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
@@ -1846,7 +1846,7 @@ public class LazyListTest
     @Test
     public void testArray2List_EmptyInput()
     {
-        String input[] = new String[0];
+        String[] input = new String[0];
 
         Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
@@ -1860,7 +1860,7 @@ public class LazyListTest
     @Test
     public void testArray2List_SingleInput()
     {
-        String input[] = new String[]{"a"};
+        String[] input = new String[]{"a"};
 
         Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
@@ -1875,7 +1875,7 @@ public class LazyListTest
     @Test
     public void testArray2List_MultiInput()
     {
-        String input[] = new String[]{"a", "b", "c"};
+        String[] input = new String[]{"a", "b", "c"};
 
         Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
@@ -1892,7 +1892,7 @@ public class LazyListTest
     @Test
     public void testArray2List_GenericsInput()
     {
-        String input[] = new String[]{"a", "b", "c"};
+        String[] input = new String[]{"a", "b", "c"};
 
         // Test the Generics definitions for array2List
         List<String> list = ArrayUtil.asMutableList(input);
@@ -1910,9 +1910,9 @@ public class LazyListTest
     @Test
     public void testAddToArray_NullInput_NullItem()
     {
-        Object input[] = null;
+        Object[] input = null;
 
-        Object arr[] = ArrayUtil.addToArray(input, null, Object.class);
+        Object[] arr = ArrayUtil.addToArray(input, null, Object.class);
         assertNotNull(arr);
         if (STRICT)
         {
@@ -1935,9 +1935,9 @@ public class LazyListTest
         assumeTrue(STRICT);
 
         // Harsh test case.
-        Object input[] = null;
+        Object[] input = null;
 
-        Object arr[] = ArrayUtil.addToArray(input, null, null);
+        Object[] arr = ArrayUtil.addToArray(input, null, null);
         assertNotNull(arr);
         if (STRICT)
         {
@@ -1956,9 +1956,9 @@ public class LazyListTest
     @Test
     public void testAddToArray_NullInput_SimpleItem()
     {
-        Object input[] = null;
+        Object[] input = null;
 
-        Object arr[] = ArrayUtil.addToArray(input, "a", String.class);
+        Object[] arr = ArrayUtil.addToArray(input, "a", String.class);
         assertNotNull(arr);
         assertEquals(1, arr.length);
         assertEquals("a", arr[0]);
@@ -1976,9 +1976,9 @@ public class LazyListTest
     @Test
     public void testAddToArray_EmptyInput_NullItem()
     {
-        String input[] = new String[0];
+        String[] input = new String[0];
 
-        String arr[] = ArrayUtil.addToArray(input, null, Object.class);
+        String[] arr = ArrayUtil.addToArray(input, null, Object.class);
         assertNotNull(arr);
         if (STRICT)
         {
@@ -1997,9 +1997,9 @@ public class LazyListTest
     @Test
     public void testAddToArray_EmptyInput_SimpleItem()
     {
-        String input[] = new String[0];
+        String[] input = new String[0];
 
-        String arr[] = ArrayUtil.addToArray(input, "a", String.class);
+        String[] arr = ArrayUtil.addToArray(input, "a", String.class);
         assertNotNull(arr);
         assertEquals(1, arr.length);
         assertEquals("a", arr[0]);
@@ -2011,9 +2011,9 @@ public class LazyListTest
     @Test
     public void testAddToArray_SingleInput_NullItem()
     {
-        String input[] = new String[]{"z"};
+        String[] input = new String[]{"z"};
 
-        String arr[] = ArrayUtil.addToArray(input, null, Object.class);
+        String[] arr = ArrayUtil.addToArray(input, null, Object.class);
         assertNotNull(arr);
         if (STRICT)
         {
@@ -2034,9 +2034,9 @@ public class LazyListTest
     @Test
     public void testAddToArray_SingleInput_SimpleItem()
     {
-        String input[] = new String[]{"z"};
+        String[] input = new String[]{"z"};
 
-        String arr[] = ArrayUtil.addToArray(input, "a", String.class);
+        String[] arr = ArrayUtil.addToArray(input, "a", String.class);
         assertNotNull(arr);
         assertEquals(2, arr.length);
         assertEquals("z", arr[0]);
@@ -2049,9 +2049,9 @@ public class LazyListTest
     @Test
     public void testRemoveFromArray_NullInput_NullItem()
     {
-        Object input[] = null;
+        Object[] input = null;
 
-        Object arr[] = ArrayUtil.removeFromArray(input, null);
+        Object[] arr = ArrayUtil.removeFromArray(input, null);
         assertNull(arr);
     }
 
@@ -2061,9 +2061,9 @@ public class LazyListTest
     @Test
     public void testRemoveFromArray_NullInput_SimpleItem()
     {
-        Object input[] = null;
+        Object[] input = null;
 
-        Object arr[] = ArrayUtil.removeFromArray(input, "a");
+        Object[] arr = ArrayUtil.removeFromArray(input, "a");
         assertNull(arr);
     }
 
@@ -2073,9 +2073,9 @@ public class LazyListTest
     @Test
     public void testRemoveFromArray_EmptyInput_NullItem()
     {
-        String input[] = new String[0];
+        String[] input = new String[0];
 
-        String arr[] = ArrayUtil.removeFromArray(input, null);
+        String[] arr = ArrayUtil.removeFromArray(input, null);
         assertNotNull(arr, "Should not be null");
         assertEquals(0, arr.length);
     }
@@ -2086,9 +2086,9 @@ public class LazyListTest
     @Test
     public void testRemoveFromArray_EmptyInput_SimpleItem()
     {
-        String input[] = new String[0];
+        String[] input = new String[0];
 
-        String arr[] = ArrayUtil.removeFromArray(input, "a");
+        String[] arr = ArrayUtil.removeFromArray(input, "a");
         assertNotNull(arr, "Should not be null");
         assertEquals(0, arr.length);
     }
@@ -2099,9 +2099,9 @@ public class LazyListTest
     @Test
     public void testRemoveFromArray_SingleInput()
     {
-        String input[] = new String[]{"a"};
+        String[] input = new String[]{"a"};
 
-        String arr[] = ArrayUtil.removeFromArray(input, null);
+        String[] arr = ArrayUtil.removeFromArray(input, null);
         assertNotNull(arr, "Should not be null");
         assertEquals(1, arr.length);
         assertEquals("a", arr[0]);
@@ -2118,9 +2118,9 @@ public class LazyListTest
     @Test
     public void testRemoveFromArray_MultiInput()
     {
-        String input[] = new String[]{"a", "b", "c"};
+        String[] input = new String[]{"a", "b", "c"};
 
-        String arr[] = ArrayUtil.removeFromArray(input, null);
+        String[] arr = ArrayUtil.removeFromArray(input, null);
         assertNotNull(arr, "Should not be null");
         assertEquals(3, arr.length);
         assertEquals("a", arr[0]);

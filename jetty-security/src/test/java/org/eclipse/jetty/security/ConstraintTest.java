@@ -1652,7 +1652,7 @@ public class ConstraintTest
 
     private static String authBase64(String authorization)
     {
-        byte raw[] = authorization.getBytes(ISO_8859_1);
+        byte[] raw = authorization.getBytes(ISO_8859_1);
         return Base64.getEncoder().encodeToString(raw);
     }
 
