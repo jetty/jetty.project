@@ -225,6 +225,16 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             _runFillable.run();
     }
 
+    public void addInput(String s)
+    {
+        addInput(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
+    }
+
+    public void addInput(String s, Charset charset)
+    {
+        addInput(BufferUtil.toBuffer(s, charset));
+    }
+
     public void addInputAndExecute(ByteBuffer in)
     {
         boolean fillable = false;
@@ -246,16 +256,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         }
         if (fillable)
             execute(_runFillable);
-    }
-
-    public void addInput(String s)
-    {
-        addInput(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
-    }
-
-    public void addInput(String s, Charset charset)
-    {
-        addInput(BufferUtil.toBuffer(s, charset));
     }
 
     /**

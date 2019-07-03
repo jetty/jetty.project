@@ -104,26 +104,6 @@ public class MessageOutputStream extends OutputStream
         }
     }
 
-    @Override
-    public void close() throws IOException
-    {
-        try
-        {
-            flush(true);
-            bufferPool.release(buffer);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Stream closed, {} frames ({} bytes) sent", frameCount, bytesSent);
-            // Notify without holding locks.
-            notifySuccess();
-        }
-        catch (Throwable x)
-        {
-            // Notify without holding locks.
-            notifyFailure(x);
-            throw x;
-        }
-    }
-
     private void flush(boolean fin) throws IOException
     {
         synchronized (this)
@@ -179,6 +159,26 @@ public class MessageOutputStream extends OutputStream
                 }
             }
             bytesSent += length;
+        }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        try
+        {
+            flush(true);
+            bufferPool.release(buffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stream closed, {} frames ({} bytes) sent", frameCount, bytesSent);
+            // Notify without holding locks.
+            notifySuccess();
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
         }
     }
 

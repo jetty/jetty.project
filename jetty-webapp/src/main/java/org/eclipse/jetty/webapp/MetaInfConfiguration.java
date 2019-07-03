@@ -309,6 +309,26 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return uris;
     }
 
+    @Override
+    public void configure(WebAppContext context) throws Exception
+    {
+
+        // Look for extra resource
+        @SuppressWarnings("unchecked")
+        Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
+        if (resources != null && !resources.isEmpty())
+        {
+            Resource[] collection = new Resource[resources.size() + 1];
+            int i = 0;
+            collection[i++] = context.getBaseResource();
+            for (Resource resource : resources)
+            {
+                collection[i++] = resource;
+            }
+            context.setBaseResource(new ResourceCollection(collection));
+        }
+    }
+
     protected void scanJars(WebAppContext context) throws Exception
     {
         boolean useContainerCache = DEFAULT_USE_CONTAINER_METAINF_CACHE;
@@ -353,26 +373,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
         throws Exception
     {
         scanJars(context, jars, useCaches, __allScanTypes);
-    }
-
-    @Override
-    public void configure(WebAppContext context) throws Exception
-    {
-
-        // Look for extra resource
-        @SuppressWarnings("unchecked")
-        Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
-        if (resources != null && !resources.isEmpty())
-        {
-            Resource[] collection = new Resource[resources.size() + 1];
-            int i = 0;
-            collection[i++] = context.getBaseResource();
-            for (Resource resource : resources)
-            {
-                collection[i++] = resource;
-            }
-            context.setBaseResource(new ResourceCollection(collection));
-        }
     }
 
     /**

@@ -449,7 +449,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         // Form query for upsert
-        BasicDBObject key = new BasicDBObject(__ID, id);
+        final BasicDBObject key = new BasicDBObject(__ID, id);
 
         // Form updates
         BasicDBObject update = new BasicDBObject();

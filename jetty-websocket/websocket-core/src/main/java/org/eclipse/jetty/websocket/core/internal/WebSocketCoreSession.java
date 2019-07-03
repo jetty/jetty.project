@@ -114,6 +114,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 if (frame.isMasked())
                     throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
                 break;
+
+            default:
+                throw new IllegalStateException(behavior.toString());
         }
 
         /*
@@ -140,7 +143,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             if (!(frame instanceof ParsedFrame)) // already check in parser
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                if (!CloseStatus.isTransmittableStatusCode(closeStatus.getCode()) && (closeStatus.getCode()!=CloseStatus.NO_CODE))
+                if (!CloseStatus.isTransmittableStatusCode(closeStatus.getCode()) && (closeStatus.getCode() != CloseStatus.NO_CODE))
                 {
                     throw new ProtocolException("Frame has non-transmittable status code");
                 }

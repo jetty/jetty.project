@@ -94,30 +94,6 @@ public class JaspiAuthenticator extends LoginAuthenticator
         return "JASPI";
     }
 
-    @Override
-    public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
-    {
-        JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
-        request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
-
-        Authentication a = validateRequest(info);
-
-        //if its not mandatory to authenticate, and the authenticator returned UNAUTHENTICATED, we treat it as authentication deferred
-        if (_allowLazyAuthentication && !info.isAuthMandatory() && a == Authentication.UNAUTHENTICATED)
-            a = new DeferredAuthentication(this);
-        return a;
-    }
-
-    // most likely validatedUser is not needed here.
-    @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
-    {
-        JaspiMessageInfo info = (JaspiMessageInfo)req.getAttribute("org.eclipse.jetty.security.jaspi.info");
-        if (info == null)
-            throw new NullPointerException("MessageInfo from request missing: " + req);
-        return secureResponse(info, validatedUser);
-    }
-
     /**
      * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#login(java.lang.String, java.lang.Object, javax.servlet.ServletRequest)
      */
@@ -136,6 +112,20 @@ public class JaspiAuthenticator extends LoginAuthenticator
             }
         }
         return user;
+    }
+
+    @Override
+    public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
+    {
+        JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
+        request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
+
+        Authentication a = validateRequest(info);
+
+        //if its not mandatory to authenticate, and the authenticator returned UNAUTHENTICATED, we treat it as authentication deferred
+        if (_allowLazyAuthentication && !info.isAuthMandatory() && a == Authentication.UNAUTHENTICATED)
+            a = new DeferredAuthentication(this);
+        return a;
     }
 
     public Authentication validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
@@ -216,6 +206,16 @@ public class JaspiAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(e);
         }
+    }
+
+    // most likely validatedUser is not needed here.
+    @Override
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
+    {
+        JaspiMessageInfo info = (JaspiMessageInfo)req.getAttribute("org.eclipse.jetty.security.jaspi.info");
+        if (info == null)
+            throw new NullPointerException("MessageInfo from request missing: " + req);
+        return secureResponse(info, validatedUser);
     }
 
     public boolean secureResponse(JaspiMessageInfo messageInfo, Authentication validatedUser) throws ServerAuthException

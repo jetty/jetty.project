@@ -228,7 +228,7 @@ public class MetaData
             case False:
                 _metaDataComplete = false;
                 break;
-            case NotSet:
+            default:
                 break;
         }
 

@@ -102,6 +102,9 @@ public class ThreadPoolBenchmark
             case AETP:
                 pool = new ExecutorThreadPool(size, size, new ArrayBlockingQueue<>(32768));
                 break;
+
+            default:
+                throw new IllegalStateException();
         }
         LifeCycle.start(pool);
     }

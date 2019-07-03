@@ -44,7 +44,7 @@ public class SimpleFlowControlStrategy extends AbstractFlowControlStrategy
         // This method is called when a whole flow controlled frame has been consumed.
         // We send a WindowUpdate every time, even if the frame was very small.
 
-        WindowUpdateFrame sessionFrame = new WindowUpdateFrame(0, length);
+        final WindowUpdateFrame sessionFrame = new WindowUpdateFrame(0, length);
         session.updateRecvWindow(length);
         if (LOG.isDebugEnabled())
             LOG.debug("Data consumed, increased session recv window by {} for {}", length, session);

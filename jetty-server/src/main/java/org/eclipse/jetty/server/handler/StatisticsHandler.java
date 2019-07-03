@@ -105,7 +105,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             Request request = state.getBaseRequest();
             final long elapsed = System.currentTimeMillis() - request.getTimeStamp();
 
-            long d = _requestStats.decrement();
+            final long d = _requestStats.decrement();
             _requestTimeStats.record(elapsed);
 
             updateResponse(request);

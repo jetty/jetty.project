@@ -241,6 +241,8 @@ public class ServletPathSpec extends PathSpec
                     case '/':
                         super.pathDepth++;
                         break;
+                    default:
+                        break;
                 }
             }
         }

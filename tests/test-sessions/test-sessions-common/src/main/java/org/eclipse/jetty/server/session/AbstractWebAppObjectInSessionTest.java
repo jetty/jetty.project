@@ -49,9 +49,9 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
     @Test
     public void testWebappObjectInSession() throws Exception
     {
-        String contextName = "webappObjectInSessionTest";
-        String contextPath = "/" + contextName;
-        String servletMapping = "/server";
+        final String contextName = "webappObjectInSessionTest";
+        final String contextPath = "/" + contextName;
+        final String servletMapping = "/server";
 
         File targetDir = new File(System.getProperty("basedir"), "target");
         File warDir = new File(targetDir, contextName);

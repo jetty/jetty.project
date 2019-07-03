@@ -202,12 +202,6 @@ public class AntWebAppContext extends WebAppContext
         }
 
         @Override
-        protected Package definePackage(String name, Manifest man, URL url) throws IllegalArgumentException
-        {
-            return super.definePackage(name, man, url);
-        }
-
-        @Override
         public URL findResource(String name)
         {
             return super.findResource(name);
@@ -253,6 +247,12 @@ public class AntWebAppContext extends WebAppContext
         public Enumeration<URL> getResources(String name) throws IOException
         {
             return super.getResources(name);
+        }
+
+        @Override
+        protected Package definePackage(String name, Manifest man, URL url) throws IllegalArgumentException
+        {
+            return super.definePackage(name, man, url);
         }
 
         @Override

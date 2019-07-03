@@ -590,8 +590,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        ServletContext context = baseRequest.getServletContext();
-        String path = context == null ? baseRequest.getRequestURI() : URIUtil.addPaths(baseRequest.getServletPath(), baseRequest.getPathInfo());
+        final ServletContext context = baseRequest.getServletContext();
+        final String path = context == null ? baseRequest.getRequestURI() : URIUtil.addPaths(baseRequest.getServletPath(), baseRequest.getPathInfo());
         LOG.debug("{} handle {} in {}", this, baseRequest, context);
 
         if (!_dispatchers.contains(baseRequest.getDispatcherType()))

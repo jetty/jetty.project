@@ -62,6 +62,8 @@ public class ProduceExecuteConsume implements ExecutionStrategy
                 case EXECUTE:
                     _state = State.EXECUTE;
                     return;
+                default:
+                    throw new IllegalStateException(_state.toString());
             }
         }
 
@@ -87,6 +89,8 @@ public class ProduceExecuteConsume implements ExecutionStrategy
                         case EXECUTE:
                             _state = State.PRODUCE;
                             continue;
+                        default:
+                            throw new IllegalStateException(_state.toString());
                     }
                 }
             }

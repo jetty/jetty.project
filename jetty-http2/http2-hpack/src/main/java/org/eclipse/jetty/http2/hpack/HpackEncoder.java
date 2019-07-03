@@ -217,15 +217,6 @@ public class HpackEncoder
             LOG.debug(String.format("CtxTbl[%x] encoded %d octets", _context.hashCode(), buffer.position() - pos));
     }
 
-    public void encodeMaxDynamicTableSize(ByteBuffer buffer, int maxDynamicTableSize)
-    {
-        if (maxDynamicTableSize > _remoteMaxDynamicTableSize)
-            throw new IllegalArgumentException();
-        buffer.put((byte)0x20);
-        NBitInteger.encode(buffer, 5, maxDynamicTableSize);
-        _context.resize(maxDynamicTableSize);
-    }
-
     public void encode(ByteBuffer buffer, HttpField field)
     {
         if (field.getValue() == null)
@@ -367,6 +358,15 @@ public class HpackEncoder
             if (LOG.isDebugEnabled())
                 LOG.debug("encode {}:'{}' to '{}'", encoding, field, TypeUtil.toHexString(buffer.array(), buffer.arrayOffset() + p, e - p));
         }
+    }
+
+    public void encodeMaxDynamicTableSize(ByteBuffer buffer, int maxDynamicTableSize)
+    {
+        if (maxDynamicTableSize > _remoteMaxDynamicTableSize)
+            throw new IllegalArgumentException();
+        buffer.put((byte)0x20);
+        NBitInteger.encode(buffer, 5, maxDynamicTableSize);
+        _context.resize(maxDynamicTableSize);
     }
 
     private void encodeName(ByteBuffer buffer, byte mask, int bits, String name, Entry entry)

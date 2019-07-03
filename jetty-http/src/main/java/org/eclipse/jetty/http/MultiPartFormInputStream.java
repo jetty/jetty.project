@@ -149,6 +149,38 @@ public class MultiPartFormInputStream
             _size += length;
         }
 
+        @Override
+        public void write(String fileName) throws IOException
+        {
+            if (_file == null)
+            {
+                _temporary = false;
+
+                // part data is only in the ByteArrayOutputStream and never been written to disk
+                _file = new File(_tmpDir, fileName);
+
+                try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(_file)))
+                {
+                    _bout.writeTo(bos);
+                    bos.flush();
+                }
+                finally
+                {
+                    _bout = null;
+                }
+            }
+            else
+            {
+                // the part data is already written to a temporary file, just rename it
+                _temporary = false;
+
+                Path src = _file.toPath();
+                Path target = src.resolveSibling(fileName);
+                Files.move(src, target, StandardCopyOption.REPLACE_EXISTING);
+                _file = target.toFile();
+            }
+        }
+
         protected void createFile() throws IOException
         {
             /*
@@ -246,38 +278,6 @@ public class MultiPartFormInputStream
         public long getSize()
         {
             return _size;
-        }
-
-        @Override
-        public void write(String fileName) throws IOException
-        {
-            if (_file == null)
-            {
-                _temporary = false;
-
-                // part data is only in the ByteArrayOutputStream and never been written to disk
-                _file = new File(_tmpDir, fileName);
-
-                try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(_file)))
-                {
-                    _bout.writeTo(bos);
-                    bos.flush();
-                }
-                finally
-                {
-                    _bout = null;
-                }
-            }
-            else
-            {
-                // the part data is already written to a temporary file, just rename it
-                _temporary = false;
-
-                Path src = _file.toPath();
-                Path target = src.resolveSibling(fileName);
-                Files.move(src, target, StandardCopyOption.REPLACE_EXISTING);
-                _file = target.toFile();
-            }
         }
 
         /**

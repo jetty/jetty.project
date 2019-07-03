@@ -67,9 +67,9 @@ public final class RFC6455Handshaker implements Handshaker
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response,
                                   FrameHandler.Customizer defaultCustomizer) throws IOException
     {
-        Request baseRequest = Request.getBaseRequest(request);
-        HttpChannel httpChannel = baseRequest.getHttpChannel();
-        Connector connector = httpChannel.getConnector();
+        final Request baseRequest = Request.getBaseRequest(request);
+        final HttpChannel httpChannel = baseRequest.getHttpChannel();
+        final Connector connector = httpChannel.getConnector();
 
         if (negotiator == null)
         {

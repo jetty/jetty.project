@@ -171,23 +171,6 @@ public class HttpURI
         parse(State.START, uri);
     }
 
-    /**
-     * Parse according to https://tools.ietf.org/html/rfc7230#section-5.3
-     *
-     * @param method the request method
-     * @param uri the request uri
-     */
-    public void parseRequestTarget(String method, String uri)
-    {
-        clear();
-        _uri = uri;
-
-        if (HttpMethod.CONNECT.is(method))
-            _path = uri;
-        else
-            parse(uri.startsWith("/") ? State.PATH : State.START, uri);
-    }
-
     public void parse(String uri, int offset, int length)
     {
         clear();
@@ -297,6 +280,9 @@ public class HttpURI
                             _path = uri.substring(mark, i);
                             state = State.FRAGMENT;
                             break;
+
+                        default:
+                            break;
                     }
                     continue;
                 }
@@ -361,6 +347,9 @@ public class HttpURI
                         case '[':
                             state = State.IPV6;
                             break;
+
+                        default:
+                            break;
                     }
                     break;
                 }
@@ -384,6 +373,9 @@ public class HttpURI
                                 pathMark = mark = i;
                                 state = State.PATH;
                             }
+                            break;
+
+                        default:
                             break;
                     }
 
@@ -434,6 +426,9 @@ public class HttpURI
                         case '.':
                             if ('/' == last)
                                 encoded = true;
+                            break;
+                        default:
+                            break;
                     }
                     break;
                 }
@@ -463,6 +458,8 @@ public class HttpURI
                             // multiple parameters
                             mark = i + 1;
                             break;
+                        default:
+                            break;
                     }
                     break;
                 }
@@ -489,6 +486,9 @@ public class HttpURI
                     i = end;
                     break;
                 }
+
+                default:
+                    throw new IllegalStateException(state.toString());
             }
             last = c;
         }
@@ -536,6 +536,9 @@ public class HttpURI
             case QUERY:
                 _query = uri.substring(mark, end);
                 break;
+
+            default:
+                throw new IllegalStateException(state.toString());
         }
 
         if (!encoded)
@@ -545,6 +548,23 @@ public class HttpURI
             else
                 _decodedPath = _path.substring(0, _path.length() - _param.length() - 1);
         }
+    }
+
+    /**
+     * Parse according to https://tools.ietf.org/html/rfc7230#section-5.3
+     *
+     * @param method the request method
+     * @param uri the request uri
+     */
+    public void parseRequestTarget(String method, String uri)
+    {
+        clear();
+        _uri = uri;
+
+        if (HttpMethod.CONNECT.is(method))
+            _path = uri;
+        else
+            parse(uri.startsWith("/") ? State.PATH : State.START, uri);
     }
 
     public String getScheme()

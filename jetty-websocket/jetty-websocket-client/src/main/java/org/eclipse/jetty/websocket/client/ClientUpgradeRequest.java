@@ -243,6 +243,16 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
+    public void setSubProtocols(List<String> subProtocols)
+    {
+        this.subProtocols.clear();
+        if (subProtocols != null)
+        {
+            this.subProtocols.addAll(subProtocols);
+        }
+    }
+
+    @Override
     public boolean hasSubProtocol(String test)
     {
         for (String protocol : subProtocols)
@@ -310,16 +320,6 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     public void setSession(Object session)
     {
         throw new UnsupportedOperationException("HttpSession not available on Client request");
-    }
-
-    @Override
-    public void setSubProtocols(List<String> subProtocols)
-    {
-        this.subProtocols.clear();
-        if (subProtocols != null)
-        {
-            this.subProtocols.addAll(subProtocols);
-        }
     }
 
     /**

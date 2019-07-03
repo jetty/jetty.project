@@ -338,6 +338,11 @@ public class DeploymentManager extends ContainerLifeCycle
         return ret;
     }
 
+    public Collection<App> getApps(String nodeName)
+    {
+        return getApps(_lifecycle.getNodeByName(nodeName));
+    }
+
     public List<App> getAppsWithSameContext(App app)
     {
         List<App> ret = new ArrayList<App>();
@@ -538,15 +543,6 @@ public class DeploymentManager extends ContainerLifeCycle
         }
     }
 
-    private synchronized void addOnStartupError(Throwable cause)
-    {
-        if (onStartupErrors == null)
-        {
-            onStartupErrors = new MultiException();
-        }
-        onStartupErrors.add(cause);
-    }
-
     /**
      * Move an {@link App} through the {@link AppLifeCycle} to the desired {@link Node}, executing each lifecycle step
      * in the process to reach the desired state.
@@ -563,6 +559,15 @@ public class DeploymentManager extends ContainerLifeCycle
             throw new IllegalStateException("App not being tracked by Deployment Manager: " + appId);
         }
         requestAppGoal(appentry, nodeName);
+    }
+
+    private synchronized void addOnStartupError(Throwable cause)
+    {
+        if (onStartupErrors == null)
+        {
+            onStartupErrors = new MultiException();
+        }
+        onStartupErrors.add(cause);
     }
 
     /**
@@ -626,11 +631,6 @@ public class DeploymentManager extends ContainerLifeCycle
     public Collection<Node> getNodes()
     {
         return _lifecycle.getNodes();
-    }
-
-    public Collection<App> getApps(String nodeName)
-    {
-        return getApps(_lifecycle.getNodeByName(nodeName));
     }
 
     public void scope(XmlConfiguration xmlc, Resource webapp)

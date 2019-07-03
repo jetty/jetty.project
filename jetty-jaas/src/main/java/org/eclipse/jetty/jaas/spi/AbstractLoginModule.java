@@ -81,6 +81,9 @@ public abstract class AbstractLoginModule implements LoginModule
             return this.principal;
         }
 
+        /**
+         * @param subject The subject
+         */
         public void setJAASInfo(Subject subject)
         {
             subject.getPrincipals().add(this.principal);
@@ -91,6 +94,9 @@ public abstract class AbstractLoginModule implements LoginModule
             subject.getPrincipals().addAll(roles);
         }
 
+        /**
+         * @param subject The subject
+         */
         public void unsetJAASInfo(Subject subject)
         {
             subject.getPrincipals().remove(this.principal);
