@@ -85,12 +85,17 @@ public class ErrorHandler extends AbstractHandler
             return;
         }
 
+        if (_cacheControl != null)
+            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
+
         if (this instanceof ErrorPageMapper)
         {
             String errorPage = ((ErrorPageMapper)this).getErrorPage(request);
             if (errorPage != null)
             {
                 String oldErrorPage = (String)request.getAttribute(ERROR_PAGE);
+                request.setAttribute(ERROR_PAGE, errorPage);
+
                 ServletContext servletContext = request.getServletContext();
                 if (servletContext == null)
                     servletContext = ContextHandler.getCurrentContext();
@@ -102,10 +107,12 @@ public class ErrorHandler extends AbstractHandler
                 {
                     LOG.warn("Error page loop {}", errorPage);
                 }
+                else if (baseRequest.getHttpChannelState().asyncErrorDispatch(errorPage))
+                {
+                    return;
+                }
                 else
                 {
-                    request.setAttribute(ERROR_PAGE, errorPage);
-
                     Dispatcher dispatcher = (Dispatcher)servletContext.getRequestDispatcher(errorPage);
                     try
                     {
@@ -134,8 +141,6 @@ public class ErrorHandler extends AbstractHandler
             }
         }
 
-        if (_cacheControl != null)
-            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
         generateAcceptableResponse(baseRequest, request, response, response.getStatus(), baseRequest.getResponse().getReason());
     }
 

@@ -20,8 +20,19 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.EnumSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import javax.servlet.AsyncContext;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,6 +42,7 @@ import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -59,12 +71,15 @@ public class ErrorPageTest
 
         context.setContextPath("/");
 
+        context.addFilter(SingleDispatchFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
+
         context.addServlet(DefaultServlet.class, "/");
         context.addServlet(FailServlet.class, "/fail/*");
         context.addServlet(FailClosedServlet.class, "/fail-closed/*");
         context.addServlet(ErrorServlet.class, "/error/*");
         context.addServlet(AppServlet.class, "/app/*");
         context.addServlet(LongerAppServlet.class, "/longer.app/*");
+        context.addServlet(AsyncSendErrorServlet.class, "/async/*");
 
         ErrorPageErrorHandler error = new ErrorPageErrorHandler();
         context.setErrorHandler(error);
@@ -179,6 +194,22 @@ public class ErrorPageTest
         }
     }
 
+    @Test
+    public void testAsyncErrorPage() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
+        {
+            String response = _connector.getResponse("GET /async/info HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
+        }
+    }
+
     public static class AppServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -195,6 +226,37 @@ public class ErrorPageTest
         {
             PrintWriter writer = response.getWriter();
             writer.println(request.getRequestURI());
+        }
+    }
+
+    public static class AsyncSendErrorServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            try
+            {
+                final CountDownLatch hold = new CountDownLatch(1);
+                AsyncContext async = request.startAsync();
+                async.start(() ->
+                {
+                    try
+                    {
+                        response.sendError(599);
+                        hold.countDown();
+                        async.complete();
+                    }
+                    catch (IOException e)
+                    {
+                        Log.getLog().warn(e);
+                    }
+                });
+                hold.await();
+            }
+            catch (InterruptedException e)
+            {
+                throw new ServletException(e);
+            }
         }
     }
 
@@ -244,6 +306,61 @@ public class ErrorPageTest
             writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
             writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
             writer.println("getParameterMap()= " + request.getParameterMap());
+        }
+    }
+
+    public static class SingleDispatchFilter implements Filter
+    {
+        ConcurrentMap<Integer, Thread> dispatches = new ConcurrentHashMap<>();
+
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            final Integer key = request.hashCode();
+            Thread current = Thread.currentThread();
+            final Thread existing = dispatches.putIfAbsent(key, current);
+            if (existing != null && existing != current)
+            {
+                System.err.println("DOUBLE DISPATCH OF REQUEST!!!!!!!!!!!!!!!!!!");
+                System.err.println("Thread " + existing + " :");
+                for (StackTraceElement element : existing.getStackTrace())
+                {
+                    System.err.println("\tat " + element);
+                }
+                IllegalStateException ex = new IllegalStateException();
+                System.err.println("Thread " + current + " :");
+                for (StackTraceElement element : ex.getStackTrace())
+                {
+                    System.err.println("\tat " + element);
+                }
+                response.flushBuffer();
+                throw ex;
+            }
+
+            try
+            {
+                chain.doFilter(request, response);
+            }
+            finally
+            {
+                if (existing == null)
+                {
+                    if (!dispatches.remove(key, current))
+                        throw new IllegalStateException();
+                }
+            }
+        }
+
+        @Override
+        public void destroy()
+        {
+
         }
     }
 }

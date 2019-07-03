@@ -436,6 +436,7 @@ public class Response implements HttpServletResponse
         else
             _reason = message;
 
+        boolean wasAsync = request.isAsyncStarted();
         // If we are allowed to have a body, then produce the error page.
         if (code != SC_NO_CONTENT && code != SC_NOT_MODIFIED &&
             code != SC_PARTIAL_CONTENT && code >= SC_OK)
@@ -450,7 +451,7 @@ public class Response implements HttpServletResponse
             if (errorHandler != null)
                 errorHandler.handle(null, request, request, this);
         }
-        if (!request.isAsyncStarted())
+        if (!wasAsync)
             closeOutput();
     }
 

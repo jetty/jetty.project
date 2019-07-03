@@ -121,6 +121,7 @@ public class HttpChannelState
     private boolean _asyncWritePossible;
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
+    private boolean _ignoreComplete;
 
     protected HttpChannelState(HttpChannel channel)
     {
@@ -325,6 +326,7 @@ public class HttpChannelState
             _event = event;
             lastAsyncListeners = _asyncListeners;
             _asyncListeners = null;
+            _ignoreComplete = false;
         }
 
         if (lastAsyncListeners != null)
@@ -576,6 +578,47 @@ public class HttpChannelState
             scheduleDispatch();
     }
 
+    public boolean asyncErrorDispatch(String path)
+    {
+        boolean dispatch = false;
+        AsyncContextEvent event;
+        try (Locker.Lock lock = _locker.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("errorDispatch {} -> {}", toStringLocked(), path);
+
+            if (_async != Async.STARTED)
+                return false;
+
+            event = _event;
+            _async = Async.DISPATCH;
+
+            if (path != null)
+                _event.setDispatchPath(path);
+
+            _ignoreComplete = true;
+            switch (_state)
+            {
+                case DISPATCHED:
+                case ASYNC_IO:
+                case ASYNC_WOKEN:
+                    break;
+                case ASYNC_WAIT:
+                    _state = State.ASYNC_WOKEN;
+                    dispatch = true;
+                    break;
+                default:
+                    LOG.warn("asyncErrorDispatch when complete {}", this);
+                    break;
+            }
+        }
+
+        cancelTimeout(event);
+        if (dispatch)
+            scheduleDispatch();
+        return true;
+    }
+
     protected void onTimeout()
     {
         final List<AsyncListener> listeners;
@@ -676,7 +719,6 @@ public class HttpChannelState
 
     public void complete()
     {
-
         // just like resume, except don't set _dispatched=true;
         boolean handle = false;
         AsyncContextEvent event;
@@ -700,6 +742,11 @@ public class HttpChannelState
                 case COMPLETE:
                     return;
                 default:
+                    if (_ignoreComplete)
+                    {
+                        _ignoreComplete = false;
+                        return;
+                    }
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
             _async = Async.COMPLETE;
