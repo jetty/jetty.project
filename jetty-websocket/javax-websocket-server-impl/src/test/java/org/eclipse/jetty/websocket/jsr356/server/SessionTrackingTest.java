@@ -97,11 +97,6 @@ public class SessionTrackingTest
             wsServerFactory.addSessionListener(new WebSocketSessionListener()
             {
                 @Override
-                public void onSessionCreated(WebSocketSession session)
-                {
-                }
-
-                @Override
                 public void onSessionOpened(WebSocketSession session)
                 {
                     openedLatch.countDown();

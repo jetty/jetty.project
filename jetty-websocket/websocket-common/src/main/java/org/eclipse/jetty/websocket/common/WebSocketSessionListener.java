@@ -20,9 +20,15 @@ package org.eclipse.jetty.websocket.common;
 
 public interface WebSocketSessionListener
 {
-    void onSessionCreated(WebSocketSession session);
+    default void onSessionCreated(WebSocketSession session)
+    {
+    }
 
-    void onSessionOpened(WebSocketSession session);
+    default void onSessionOpened(WebSocketSession session)
+    {
+    }
 
-    void onSessionClosed(WebSocketSession session);
+    default void onSessionClosed(WebSocketSession session)
+    {
+    }
 }

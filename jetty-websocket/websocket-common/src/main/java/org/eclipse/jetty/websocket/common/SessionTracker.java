@@ -44,12 +44,6 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
     }
 
     @Override
-    public void onSessionOpened(WebSocketSession session)
-    {
-        // do nothing
-    }
-
-    @Override
     public void onSessionClosed(WebSocketSession session)
     {
         sessions.remove(session);

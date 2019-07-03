@@ -148,16 +148,6 @@ public class ConcurrentConnectTest
         public CountDownLatch closeLatch = new CountDownLatch(MAX_CONNECTIONS);
 
         @Override
-        public void onSessionCreated(WebSocketSession session)
-        {
-        }
-
-        @Override
-        public void onSessionOpened(WebSocketSession session)
-        {
-        }
-
-        @Override
         public void onSessionClosed(WebSocketSession session)
         {
             closeLatch.countDown();
