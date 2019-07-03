@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -378,14 +379,9 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        /* Mimic behavior from old FileResource class and its
-         * usage of java.io.FileInputStream(File) which will trigger
-         * an IOException on construction if the path is a directory
-         */
-        if (Files.isDirectory(path))
-            throw new IOException(path + " is a directory");
-
-        return Files.newInputStream(path, StandardOpenOption.READ);
+        // Use a FileInputStream rather than Files.newInputStream(path)
+        // since it produces a stream with a fast skip implementation
+        return new FileInputStream(getFile());
     }
 
     @Override
