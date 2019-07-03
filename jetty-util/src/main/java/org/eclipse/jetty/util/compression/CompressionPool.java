@@ -62,18 +62,12 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
 
         if (_capacity == 0)
             object = newObject();
-        else if (_capacity < 0)
-        {
-            object = _pool.poll();
-            if (object == null)
-                object = newObject();
-        }
         else
         {
             object = _pool.poll();
             if (object == null)
                 object = newObject();
-            else
+            else if (_capacity > 0)
                 _numObjects.decrementAndGet();
         }
 
@@ -88,7 +82,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         if (object == null)
             return;
 
-        if (_capacity == 0 || isStopped())
+        if (_capacity == 0 || !isRunning())
         {
             end(object);
             return;
