@@ -62,7 +62,7 @@ public class SessionTrackingTest
                 return;
             }
 
-            String parts[] = msg.split("\\|");
+            String[] parts = msg.split("\\|");
 
             if ("openSessions".equals(parts[0]))
             {

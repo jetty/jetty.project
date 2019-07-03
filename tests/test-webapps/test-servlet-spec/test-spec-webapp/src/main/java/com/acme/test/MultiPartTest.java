@@ -115,7 +115,7 @@ public class MultiPartTest extends HttpServlet
         throws IOException
     {
         int bufferSize = 8192;
-        byte buffer[] = new byte[bufferSize];
+        byte[] buffer = new byte[bufferSize];
 
         while (true)
         {

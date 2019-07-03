@@ -64,7 +64,7 @@ public class InvokerUtils_StaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onFruit", String.class);
 
         // Declared Variable Names
-        final String namedVariables[] = new String[]{
+        final String[] namedVariables = new String[]{
             "fruit"
         };
 
@@ -95,7 +95,7 @@ public class InvokerUtils_StaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onCount", int.class);
 
         // Declared Variable Names - as seen in url-template-pattern
-        final String namedVariables[] = new String[]{
+        final String[] namedVariables = new String[]{
             "count"
         };
 
@@ -124,7 +124,7 @@ public class InvokerUtils_StaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onLabeledCount", String.class, int.class);
 
         // Declared Variable Names - as seen in url-template-pattern
-        final String namedVariables[] = new String[]{
+        final String[] namedVariables = new String[]{
             "count"
         };
 

@@ -90,7 +90,7 @@ public class LargeAnnotatedTest
                 {
 
                     // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies
-                    byte txt[] = new byte[100 * 1024];
+                    byte[] txt = new byte[100 * 1024];
                     Arrays.fill(txt, (byte)'o');
                     String msg = new String(txt, StandardCharsets.UTF_8);
                     coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(msg), Callback.NOOP, false);

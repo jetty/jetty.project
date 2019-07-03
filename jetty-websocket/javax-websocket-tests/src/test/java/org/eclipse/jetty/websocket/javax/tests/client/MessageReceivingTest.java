@@ -114,7 +114,7 @@ public class MessageReceivingTest
         {
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("", UTF_8));
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("Echo", UTF_8));
-            byte bigBuf[] = new byte[1024 * 1024];
+            byte[] bigBuf = new byte[1024 * 1024];
             Arrays.fill(bigBuf, (byte)'x');
             // allocate fresh ByteBuffer and copy array contents, not wrap
             // as the send will modify the wrapped array (for client masking purposes)
@@ -215,7 +215,7 @@ public class MessageReceivingTest
             .preferredSubprotocols(Collections.singletonList("echo"))
             .build();
 
-        byte raw[] = new byte[1024 * 1024];
+        byte[] raw = new byte[1024 * 1024];
         Arrays.fill(raw, (byte)'x');
         String veryLongString = new String(raw, UTF_8);
 
@@ -245,7 +245,7 @@ public class MessageReceivingTest
         @Override
         public void onText(String wholeMessage, Callback callback)
         {
-            String parts[] = wholeMessage.split(" ");
+            String[] parts = wholeMessage.split(" ");
             for (int i = 0; i < parts.length; i++)
             {
                 if (i > 0)
