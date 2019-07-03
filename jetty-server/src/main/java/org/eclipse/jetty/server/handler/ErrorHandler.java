@@ -168,7 +168,7 @@ public class ErrorHandler extends AbstractHandler
             for (String mimeType : acceptable)
             {
                 generateAcceptableResponse(baseRequest, request, response, code, message, mimeType);
-                if (baseRequest.isHandled())
+                if (response.isCommitted() || baseRequest.getResponse().isWritingOrStreaming())
                     break;
             }
         }
