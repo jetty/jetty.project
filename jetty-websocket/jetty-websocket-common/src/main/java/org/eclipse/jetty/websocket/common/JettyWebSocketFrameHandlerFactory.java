@@ -120,7 +120,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
-        final MethodHandle openHandle = metadata.getOpenHandle();
+        final MethodHandle openHandle = bindTo(metadata.getOpenHandle(), endpointInstance);
         final MethodHandle closeHandle = bindTo(metadata.getCloseHandle(), endpointInstance);
         final MethodHandle errorHandle = bindTo(metadata.getErrorHandle(), endpointInstance);
         final MethodHandle textHandle = bindTo(metadata.getTextHandle(), endpointInstance);
