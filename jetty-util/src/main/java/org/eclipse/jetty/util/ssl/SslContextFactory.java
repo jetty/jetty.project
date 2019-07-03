@@ -1208,6 +1208,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     // @checkstyle-disable-check : AbbreviationAsWordInNameCheck
     protected PKIXBuilderParameters newPKIXBuilderParameters(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
+    // @checkstyle-enable-check : AbbreviationAsWordInNameCheck
     {
         PKIXBuilderParameters pbParams = new PKIXBuilderParameters(trustStore, new X509CertSelector());
 
@@ -1245,7 +1246,6 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
         return pbParams;
     }
-    // @checkstyle-enable-check : AbbreviationAsWordInNameCheck
 
     /**
      * Select protocols to be used by the connector

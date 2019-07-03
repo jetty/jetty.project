@@ -275,7 +275,6 @@ public class Main
     public StartArgs processCommandLine(String[] cmdLine) throws Exception
     {
         // Processing Order is important!
-        // ------------------------------------------------------------
         // 1) Configuration Locations
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         baseHome = new BaseHome(cmdLineSource);
@@ -283,7 +282,6 @@ public class Main
         StartLog.debug("jetty.home=%s", baseHome.getHome());
         StartLog.debug("jetty.base=%s", baseHome.getBase());
 
-        // ------------------------------------------------------------
         // 2) Parse everything provided.
         // This would be the directory information +
         // the various start inis
@@ -306,13 +304,11 @@ public class Main
             normalizeURI(baseHome.getBasePath().toUri().toString()),
             base.source);
 
-        // ------------------------------------------------------------
         // 3) Module Registration
         Modules modules = new Modules(baseHome, args);
         StartLog.debug("Registering all modules");
         modules.registerAll();
 
-        // ------------------------------------------------------------
         // 4) Active Module Resolution
         for (String enabledModule : args.getEnabledModules())
         {
@@ -343,21 +339,17 @@ public class Main
             module.setSkipFilesValidation(true);
         }
 
-        // ------------------------------------------------------------
         // 5) Lib & XML Expansion / Resolution
         args.expandSystemProperties();
         args.expandLibs();
         args.expandModules(activeModules);
 
-        // ------------------------------------------------------------
         // 6) Resolve Extra XMLs
         args.resolveExtraXmls();
 
-        // ------------------------------------------------------------
         // 7) JPMS Expansion
         args.expandJPMS(activeModules);
 
-        // ------------------------------------------------------------
         // 8) Resolve Property Files
         args.resolvePropertyFiles();
 
@@ -497,8 +489,7 @@ public class Main
         }
     }
 
-    // ------------------------------------------------------------
-    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
+    /* implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy) */
     public void start() throws Exception
     {
         start(jsvcStartArgs);

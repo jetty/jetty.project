@@ -308,9 +308,6 @@ public abstract class Resource implements ResourceFactory, Closeable
         return r.isContainedIn(containingResource);
     }
 
-
-    //@checkstyle-disable-check : NoFinalizer
-    //@checkstyle-enable-check : NoFinalizer
     public abstract boolean isContainedIn(Resource r) throws MalformedURLException;
 
     /**
