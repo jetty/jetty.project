@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.util.Map;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.NullAppendable;
 import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
@@ -100,9 +100,9 @@ public class ValidationExtension extends AbstractExtension
     }
 
     @Override
-    public void init(ExtensionConfig config, ByteBufferPool bufferPool)
+    public void init(ExtensionConfig config, WebSocketComponents components)
     {
-        super.init(config, bufferPool);
+        super.init(config, components);
 
         Map<String, String> parameters = config.getParameters();
 

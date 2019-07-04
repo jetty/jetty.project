@@ -30,12 +30,10 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 
 public class Negotiation
@@ -45,9 +43,7 @@ public class Negotiation
     private final HttpServletResponse response;
     private final List<ExtensionConfig> offeredExtensions;
     private final List<String> offeredSubprotocols;
-    private final WebSocketExtensionRegistry registry;
-    private final DecoratedObjectFactory objectFactory;
-    private final ByteBufferPool bufferPool;
+    private final WebSocketComponents components;
     private final String version;
     private final Boolean upgrade;
     private final String key;
@@ -63,16 +59,12 @@ public class Negotiation
         Request baseRequest,
         HttpServletRequest request,
         HttpServletResponse response,
-        WebSocketExtensionRegistry registry,
-        DecoratedObjectFactory objectFactory,
-        ByteBufferPool bufferPool) throws BadMessageException
+        WebSocketComponents components) throws BadMessageException
     {
         this.baseRequest = baseRequest;
         this.request = request;
         this.response = response;
-        this.registry = registry;
-        this.objectFactory = objectFactory;
-        this.bufferPool = bufferPool;
+        this.components = components;
 
         Boolean upgrade = null;
         String key = null;
@@ -131,7 +123,7 @@ public class Negotiation
             this.key = key;
             this.upgrade = upgrade != null && connectionCSVs != null && connectionCSVs.getValues().stream().anyMatch(s -> s.equalsIgnoreCase("Upgrade"));
 
-            Set<String> available = registry.getAvailableExtensionNames();
+            Set<String> available = components.getExtensionRegistry().getAvailableExtensionNames();
             offeredExtensions = extensions == null
                 ? Collections.emptyList()
                 : extensions.getValues().stream()
@@ -227,8 +219,8 @@ public class Negotiation
         if (extensionStack == null)
         {
             // Extension stack can decide to drop any of these extensions or their parameters
-            extensionStack = new ExtensionStack(registry, Behavior.SERVER);
-            extensionStack.negotiate(objectFactory, bufferPool, offeredExtensions, negotiatedExtensions);
+            extensionStack = new ExtensionStack(components, Behavior.SERVER);
+            extensionStack.negotiate(offeredExtensions, negotiatedExtensions);
             negotiatedExtensions = extensionStack.getNegotiatedExtensions();
 
             if (extensionStack.hasNegotiatedExtensions())

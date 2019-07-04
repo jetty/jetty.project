@@ -22,32 +22,23 @@ import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 public class TestWebSocketNegotiator implements WebSocketNegotiator
 {
-    final DecoratedObjectFactory objectFactory;
-    final WebSocketExtensionRegistry extensionRegistry;
-    final ByteBufferPool bufferPool;
+    final WebSocketComponents components;
     private final FrameHandler frameHandler;
 
     public TestWebSocketNegotiator(FrameHandler frameHandler)
     {
-        this.objectFactory = new DecoratedObjectFactory();
-        this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.bufferPool = new MappedByteBufferPool();
-        this.frameHandler = frameHandler;
+        this (frameHandler, new WebSocketComponents());
     }
 
-    public TestWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool,
-                                   FrameHandler frameHandler)
+    public TestWebSocketNegotiator(FrameHandler frameHandler, WebSocketComponents components)
     {
-        this.objectFactory = objectFactory;
-        this.extensionRegistry = extensionRegistry;
-        this.bufferPool = bufferPool;
+        this.components = components;
         this.frameHandler = frameHandler;
     }
 
@@ -69,18 +60,24 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
     @Override
     public WebSocketExtensionRegistry getExtensionRegistry()
     {
-        return extensionRegistry;
+        return components.getExtensionRegistry();
     }
 
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return objectFactory;
+        return components.getObjectFactory();
     }
 
     @Override
     public ByteBufferPool getByteBufferPool()
     {
-        return bufferPool;
+        return components.getBufferPool();
+    }
+
+    @Override
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
     }
 }

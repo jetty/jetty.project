@@ -25,8 +25,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 
 public class WebSocketExtensionRegistry implements Iterable<Class<? extends Extension>>
@@ -73,7 +71,7 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
         return availableExtensions.values().iterator();
     }
 
-    public Extension newInstance(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, ExtensionConfig config)
+    public Extension newInstance(ExtensionConfig config, WebSocketComponents components)
     {
         if (config == null)
         {
@@ -94,8 +92,8 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
 
         try
         {
-            Extension ext = objectFactory.createInstance(extClass);
-            ext.init(config, bufferPool);
+            Extension ext = components.getObjectFactory().createInstance(extClass);
+            ext.init(config, components);
 
             return ext;
         }
