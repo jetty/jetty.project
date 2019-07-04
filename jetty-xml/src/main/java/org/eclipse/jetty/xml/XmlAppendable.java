@@ -117,16 +117,6 @@ public class XmlAppendable
         return this;
     }
 
-    // @checkstyle-disable-check : AbbreviationAsWordInNameCheck
-    public XmlAppendable tagCDATA(String tag, String data) throws IOException
-    {
-        _out.append(_space).append('<').append(tag).append('>');
-        cdata(data);
-        _out.append("</").append(tag).append(">\n");
-        return this;
-    }
-    // @checkstyle-enable-check : AbbreviationAsWordInNameCheck
-
     public XmlAppendable tag(String tag, Map<String, String> attributes, String content) throws IOException
     {
         _out.append(_space).append('<').append(tag);
@@ -136,6 +126,16 @@ public class XmlAppendable
         _out.append("</").append(tag).append(">\n");
         return this;
     }
+
+    // @checkstyle-disable-check : AbbreviationAsWordInNameCheck
+    public XmlAppendable tagCDATA(String tag, String data) throws IOException
+    {
+        _out.append(_space).append('<').append(tag).append('>');
+        cdata(data);
+        _out.append("</").append(tag).append(">\n");
+        return this;
+    }
+    // @checkstyle-enable-check : AbbreviationAsWordInNameCheck
 
     public XmlAppendable closeTag() throws IOException
     {

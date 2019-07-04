@@ -102,7 +102,7 @@ public class ResourceHandlerTest
         try (BufferedReader reader = Files.newBufferedReader(big.toPath(), StandardCharsets.UTF_8))
         {
             // a buffer large enough to capture at least 1 EOL
-            char cbuf[] = new char[128];
+            char[] cbuf = new char[128];
             reader.read(cbuf);
             String sample = new String(cbuf);
             if (sample.contains("\r\n"))

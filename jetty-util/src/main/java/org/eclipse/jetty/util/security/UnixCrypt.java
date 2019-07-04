@@ -428,14 +428,10 @@ public class UnixCrypt
         {
             for (int loop_count = 0; loop_count < 8; loop_count++)
             {
-                long kp;
-                long B;
-                long k;
-
-                kp = KS[(loop_count << 1)];
-                k = ((R >> 32) ^ R) & salt & 0xffffffffL;
+                long kp = KS[(loop_count << 1)];
+                long k = ((R >> 32) ^ R) & salt & 0xffffffffL;
                 k |= (k << 32);
-                B = (k ^ R ^ kp);
+                long B = (k ^ R ^ kp);
 
                 L ^= (SPE[0][(int)((B >> 58) & 0x3f)] ^ SPE[1][(int)((B >> 50) & 0x3f)]
                     ^ SPE[2][(int)((B >> 42) & 0x3f)]
@@ -499,8 +495,6 @@ public class UnixCrypt
      */
     public static String crypt(String key, String setting)
     {
-        long constdatablock = 0L; /* encryption constant */
-        byte[] cryptresult = new byte[13]; /* encrypted result */
         long keyword = 0L;
         /* invalid parameters! */
         if (key == null || setting == null)
@@ -517,6 +511,8 @@ public class UnixCrypt
         long[] KS = des_setkey(keyword);
 
         int salt = 0;
+        /* encrypted result */
+        byte[] cryptresult = new byte[13];
         for (int i = 2; --i >= 0; )
         {
             char c = (i < setting.length()) ? setting.charAt(i) : '.';
@@ -524,7 +520,8 @@ public class UnixCrypt
             salt = (salt << 6) | (0x00ff & A64TOI[c]);
         }
 
-        long rsltblock = des_cipher(constdatablock, salt, 25, KS);
+        /* encryption constant */
+        long rsltblock = des_cipher(0L, salt, 25, KS);
 
         cryptresult[12] = ITOA64[(((int)rsltblock) << 2) & 0x3f];
         rsltblock >>= 4;

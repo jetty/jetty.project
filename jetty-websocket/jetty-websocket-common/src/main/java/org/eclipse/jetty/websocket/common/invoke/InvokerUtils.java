@@ -136,26 +136,6 @@ public class InvokerUtils
         return mutatedInvoker(targetClass, true, method, paramIdentifier, callingArgs);
     }
 
-    /**
-     * Create an optional MethodHandle that performs the following layers.
-     * <ol>
-     * <li>{@link MethodHandles#permuteArguments(MethodHandle, MethodType, int...)} - moving calling Args around
-     * to fit actual actual method parameter arguments (in proper order), with remaining (unused) calling args afterwords</li>
-     * <li>{@link MethodHandles#dropArguments(MethodHandle, int, Class[])} - to drop the unused calling args</li>
-     * <li>{@link MethodHandle#invoke(Object...)} - to call the specific method</li>
-     * </ol>
-     *
-     * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
-     * @param method the method to invoke
-     * @param paramIdentifier the mechanism to identify parameters in method
-     * @param callingArgs the calling arguments
-     * @return the MethodHandle for this set of CallingArgs, or null if not possible to create MethodHandle with CallingArgs to provided method
-     */
-    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, Arg... callingArgs)
-    {
-        return mutatedInvoker(targetClass, false, method, paramIdentifier, callingArgs);
-    }
-
     private static MethodHandle mutatedInvoker(Class<?> targetClass, boolean throwOnFailure, Method method, ParamIdentifier paramIdentifier, Arg... callingArgs)
     {
         Class<?>[] parameterTypes = method.getParameterTypes();
@@ -337,6 +317,26 @@ public class InvokerUtils
 
             throw new InvalidSignatureException("Unable to obtain MethodHandle for " + method, e);
         }
+    }
+
+    /**
+     * Create an optional MethodHandle that performs the following layers.
+     * <ol>
+     * <li>{@link MethodHandles#permuteArguments(MethodHandle, MethodType, int...)} - moving calling Args around
+     * to fit actual actual method parameter arguments (in proper order), with remaining (unused) calling args afterwords</li>
+     * <li>{@link MethodHandles#dropArguments(MethodHandle, int, Class[])} - to drop the unused calling args</li>
+     * <li>{@link MethodHandle#invoke(Object...)} - to call the specific method</li>
+     * </ol>
+     *
+     * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
+     * @param method the method to invoke
+     * @param paramIdentifier the mechanism to identify parameters in method
+     * @param callingArgs the calling arguments
+     * @return the MethodHandle for this set of CallingArgs, or null if not possible to create MethodHandle with CallingArgs to provided method
+     */
+    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, Arg... callingArgs)
+    {
+        return mutatedInvoker(targetClass, false, method, paramIdentifier, callingArgs);
     }
 
     private static void appendTypeList(StringBuilder str, Arg[] args)

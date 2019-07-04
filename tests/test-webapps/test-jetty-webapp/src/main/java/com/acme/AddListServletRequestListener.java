@@ -18,33 +18,32 @@
 
 package com.acme;
 
-import javax.servlet.ServletRequestEvent;
-import javax.servlet.ServletRequestListener;
 import java.util.ArrayList;
 import java.util.List;
+import javax.servlet.ServletRequestEvent;
+import javax.servlet.ServletRequestListener;
 
 public final class AddListServletRequestListener
     implements ServletRequestListener
 {
 
-    public void requestDestroyed( ServletRequestEvent event )
+    public void requestDestroyed(ServletRequestEvent event)
     {
-        List al = (List) event.getServletContext().getAttribute( "arraylist" );
-        if ( al != null )
+        List al = (List)event.getServletContext().getAttribute("arraylist");
+        if (al != null)
         {
-            event.getServletContext().removeAttribute( "arraylist" );
+            event.getServletContext().removeAttribute("arraylist");
         }
     }
 
-    public void requestInitialized( ServletRequestEvent event )
+    public void requestInitialized(ServletRequestEvent event)
     {
-        List al = (List) event.getServletContext().getAttribute( "arraylist" );
-        if ( al == null )
+        List al = (List)event.getServletContext().getAttribute("arraylist");
+        if (al == null)
         {
             al = new ArrayList();
         }
-        al.add( "in requestInitialized method of "+ getClass().getName() );
-        event.getServletContext().setAttribute( "arraylist", al );
+        al.add("in requestInitialized method of " + getClass().getName());
+        event.getServletContext().setAttribute("arraylist", al);
     }
-
 }

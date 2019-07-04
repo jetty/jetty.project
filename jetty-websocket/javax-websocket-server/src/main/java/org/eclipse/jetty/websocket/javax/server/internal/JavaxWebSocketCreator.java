@@ -62,8 +62,8 @@ public class JavaxWebSocketCreator implements WebSocketCreator
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
-        JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
-        JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);
+        final JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
+        final JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);
 
         // Establish a copy of the config, so that the UserProperties are unique
         // per upgrade request.

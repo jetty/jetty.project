@@ -601,7 +601,7 @@ public class FileSystemResourceTest
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
         {
-            String list[] = base.list();
+            String[] list = base.list();
             List<String> actual = Arrays.asList(list);
 
             assertEquals(expected.size(), actual.size());

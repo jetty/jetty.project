@@ -244,10 +244,10 @@ public class FormAuthenticator extends LoginAuthenticator
     @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
-        HttpServletRequest request = (HttpServletRequest)req;
-        HttpServletResponse response = (HttpServletResponse)res;
-        Request baseRequest = Request.getBaseRequest(request);
-        Response baseResponse = baseRequest.getResponse();
+        final HttpServletRequest request = (HttpServletRequest)req;
+        final HttpServletResponse response = (HttpServletResponse)res;
+        final Request baseRequest = Request.getBaseRequest(request);
+        final Response baseResponse = baseRequest.getResponse();
 
         String uri = request.getRequestURI();
         if (uri == null)

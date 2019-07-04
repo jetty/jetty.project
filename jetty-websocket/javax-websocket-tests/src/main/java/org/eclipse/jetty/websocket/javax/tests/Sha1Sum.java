@@ -54,17 +54,17 @@ public class Sha1Sum
         }
 
         @Override
+        public void write(int b) throws IOException
+        {
+        }
+
+        @Override
         public void flush() throws IOException
         {
         }
 
         @Override
         public void close() throws IOException
-        {
-        }
-
-        @Override
-        public void write(int b) throws IOException
         {
         }
     }

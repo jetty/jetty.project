@@ -207,6 +207,9 @@ public class QuotedStringTokenizer
                         _token.append(c);
                     }
                     break;
+
+                default:
+                    throw new IllegalStateException();
             }
         }
 
@@ -358,36 +361,6 @@ public class QuotedStringTokenizer
 
     /**
      * Quote a string into an Appendable.
-     * Only quotes and backslash are escaped.
-     *
-     * @param buffer The Appendable
-     * @param input The String to quote.
-     */
-    public static void quoteOnly(Appendable buffer, String input)
-    {
-        if (input == null)
-            return;
-
-        try
-        {
-            buffer.append('"');
-            for (int i = 0; i < input.length(); ++i)
-            {
-                char c = input.charAt(i);
-                if (c == '"' || c == '\\')
-                    buffer.append('\\');
-                buffer.append(c);
-            }
-            buffer.append('"');
-        }
-        catch (IOException x)
-        {
-            throw new RuntimeException(x);
-        }
-    }
-
-    /**
-     * Quote a string into an Appendable.
      * The characters ", \, \n, \r, \t, \f and \b are escaped
      *
      * @param buffer The Appendable
@@ -426,6 +399,36 @@ public class QuotedStringTokenizer
                         buffer.append('\\').append(escape);
                     }
                 }
+            }
+            buffer.append('"');
+        }
+        catch (IOException x)
+        {
+            throw new RuntimeException(x);
+        }
+    }
+
+    /**
+     * Quote a string into an Appendable.
+     * Only quotes and backslash are escaped.
+     *
+     * @param buffer The Appendable
+     * @param input The String to quote.
+     */
+    public static void quoteOnly(Appendable buffer, String input)
+    {
+        if (input == null)
+            return;
+
+        try
+        {
+            buffer.append('"');
+            for (int i = 0; i < input.length(); ++i)
+            {
+                char c = input.charAt(i);
+                if (c == '"' || c == '\\')
+                    buffer.append('\\');
+                buffer.append(c);
             }
             buffer.append('"');
         }

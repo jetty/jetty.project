@@ -1206,7 +1206,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         return managers;
     }
 
+    // @checkstyle-disable-check : AbbreviationAsWordInNameCheck
     protected PKIXBuilderParameters newPKIXBuilderParameters(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
+    // @checkstyle-enable-check : AbbreviationAsWordInNameCheck
     {
         PKIXBuilderParameters pbParams = new PKIXBuilderParameters(trustStore, new X509CertSelector());
 
@@ -1886,18 +1888,6 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * Obtain the X509 Certificate Chain from the provided SSLSession using this
-     * SslContextFactory's optional Provider specific {@link CertificateFactory}.
-     *
-     * @param sslSession the session to use for active peer certificates
-     * @return the certificate chain
-     */
-    public X509Certificate[] getX509CertChain(SSLSession sslSession)
-    {
-        return getX509CertChain(this, sslSession);
-    }
-
-    /**
      * Obtain the X509 Certificate Chain from the provided SSLSession using the
      * default {@link CertificateFactory} behaviors
      *
@@ -1907,6 +1897,18 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     public static X509Certificate[] getCertChain(SSLSession sslSession)
     {
         return getX509CertChain(null, sslSession);
+    }
+
+    /**
+     * Obtain the X509 Certificate Chain from the provided SSLSession using this
+     * SslContextFactory's optional Provider specific {@link CertificateFactory}.
+     *
+     * @param sslSession the session to use for active peer certificates
+     * @return the certificate chain
+     */
+    public X509Certificate[] getX509CertChain(SSLSession sslSession)
+    {
+        return getX509CertChain(this, sslSession);
     }
 
     private static X509Certificate[] getX509CertChain(SslContextFactory sslContextFactory, SSLSession sslSession)

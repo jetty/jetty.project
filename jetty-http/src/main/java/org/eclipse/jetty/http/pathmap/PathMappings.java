@@ -271,6 +271,8 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
             case SUFFIX_GLOB:
                 _suffixMap.remove(pathSpec.getSuffix());
                 break;
+            default:
+                break;
         }
 
         Iterator<MappedResource<E>> iter = _mappings.iterator();

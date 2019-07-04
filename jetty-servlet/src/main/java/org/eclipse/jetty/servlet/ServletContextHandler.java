@@ -109,6 +109,16 @@ public class ServletContextHandler extends ContextHandler
         return (ServletContextHandler)contextHandler;
     }
 
+    public static ServletContextHandler getServletContextHandler(ServletContext context)
+    {
+        ContextHandler handler = getContextHandler(context);
+        if (handler == null)
+            return null;
+        if (handler instanceof ServletContextHandler)
+            return (ServletContextHandler)handler;
+        return null;
+    }
+
     public interface ServletContainerInitializerCaller extends LifeCycle {}
 
     ;
@@ -719,16 +729,6 @@ public class ServletContextHandler extends ContextHandler
     void destroyFilter(Filter filter)
     {
         _objFactory.destroy(filter);
-    }
-
-    public static ServletContextHandler getServletContextHandler(ServletContext context)
-    {
-        ContextHandler handler = getContextHandler(context);
-        if (handler == null)
-            return null;
-        if (handler instanceof ServletContextHandler)
-            return (ServletContextHandler)handler;
-        return null;
     }
 
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor

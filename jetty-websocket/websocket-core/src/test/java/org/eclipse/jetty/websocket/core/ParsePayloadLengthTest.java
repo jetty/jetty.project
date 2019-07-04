@@ -69,7 +69,7 @@ public class ParsePayloadLengthTest
         // Create text frame
         RawFrameBuilder.putOpFin(raw, OpCode.TEXT, true);
         RawFrameBuilder.putLength(raw, size, false); // len of closeCode
-        byte payload[] = new byte[size];
+        byte[] payload = new byte[size];
         Arrays.fill(payload, (byte)'x');
         raw.put(payload);
 

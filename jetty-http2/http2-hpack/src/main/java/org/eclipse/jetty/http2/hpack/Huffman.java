@@ -422,16 +422,6 @@ public class Huffman
         return out.toString();
     }
 
-    public static int octetsNeeded(String s)
-    {
-        return octetsNeeded(CODES, s);
-    }
-
-    public static void encode(ByteBuffer buffer, String s)
-    {
-        encode(CODES, buffer, s);
-    }
-
     public static int octetsNeededLC(String s)
     {
         return octetsNeeded(LCCODES, s);
@@ -440,6 +430,11 @@ public class Huffman
     public static void encodeLC(ByteBuffer buffer, String s)
     {
         encode(LCCODES, buffer, s);
+    }
+
+    public static int octetsNeeded(String s)
+    {
+        return octetsNeeded(CODES, s);
     }
 
     private static int octetsNeeded(final int[][] table, String s)
@@ -455,6 +450,11 @@ public class Huffman
         }
 
         return (needed + 7) / 8;
+    }
+
+    public static void encode(ByteBuffer buffer, String s)
+    {
+        encode(CODES, buffer, s);
     }
 
     private static void encode(final int[][] table, ByteBuffer buffer, String s)

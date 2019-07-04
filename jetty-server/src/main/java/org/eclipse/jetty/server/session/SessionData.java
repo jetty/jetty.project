@@ -234,6 +234,11 @@ public class SessionData implements Serializable
         _dirty = dirty;
     }
 
+    public void setDirty(String name)
+    {
+        setDirty(true);
+    }
+
     /**
      * @param name the name of the attribute
      * @return the value of the attribute named
@@ -259,11 +264,6 @@ public class SessionData implements Serializable
 
         setDirty(name);
         return old;
-    }
-
-    public void setDirty(String name)
-    {
-        setDirty(true);
     }
 
     public void putAllAttributes(Map<String, Object> attributes)

@@ -483,14 +483,12 @@ public class MimeTypes
                     else
                         state = 0;
                     break;
-
                 case 8:
                     if ('=' == b)
                         state = 9;
                     else if (' ' != b)
                         state = 0;
                     break;
-
                 case 9:
                     if (' ' == b)
                         break;
@@ -504,11 +502,13 @@ public class MimeTypes
                     start = i;
                     state = 10;
                     break;
-
                 case 10:
                     if (!quote && (';' == b || ' ' == b) ||
                         (quote && '"' == b))
                         return StringUtil.normalizeCharset(value, start, i - start);
+                    break;
+                default:
+                    throw new IllegalStateException();
             }
         }
 
@@ -658,7 +658,6 @@ public class MimeTypes
                     else if (' ' != b)
                         state = 0;
                     break;
-
                 case 9:
                     if (' ' == b)
                         break;
@@ -666,7 +665,6 @@ public class MimeTypes
                     builder.append(value, 0, start + 1);
                     state = 10;
                     break;
-
                 case 10:
                     if (';' == b)
                     {
@@ -677,6 +675,9 @@ public class MimeTypes
                 case 11:
                     if (' ' != b)
                         builder.append(b);
+                    break;
+                default:
+                    throw new IllegalStateException();
             }
         }
         if (builder == null)

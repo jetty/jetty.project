@@ -695,68 +695,6 @@ public class AnnotationParser
     }
 
     /**
-     * Parse all classes in a directory
-     *
-     * @param handlers the set of handlers to look for classes in
-     * @param root the resource directory to look for classes
-     * @throws Exception if unable to parse
-     */
-    protected void parseDir(Set<? extends Handler> handlers, Resource root) throws Exception
-    {
-        if (!root.isDirectory() || !root.exists() || root.getName().startsWith("."))
-            return;
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Scanning dir {}", root);
-
-        File rootFile = root.getFile();
-
-        MultiException me = new MultiException();
-        Collection<Resource> resources = root.getAllResources();
-        if (resources != null)
-        {
-            for (Resource r : resources)
-            {
-                if (r.isDirectory())
-                    continue;
-
-                File file = r.getFile();
-                if (isValidClassFileName((file == null ? null : file.getName())))
-                {
-                    Path classpath = rootFile.toPath().relativize(file.toPath());
-                    String str = classpath.toString();
-                    str = str.substring(0, str.lastIndexOf(".class"));
-                    str = StringUtil.replace(str, File.separatorChar, '.');
-
-                    try
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Scanning class {}", r);
-                        addParsedClass(str, r);
-                        try (InputStream is = r.getInputStream())
-                        {
-                            scanClass(handlers, Resource.newResource(file.getParentFile()), is);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Error scanning file " + file, ex);
-                        me.add(new RuntimeException("Error scanning file " + file, ex));
-                    }
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Skipping scan on invalid file {}", file);
-                }
-            }
-        }
-
-        me.ifExceptionThrow();
-    }
-
-    /**
      * Parse classes in the supplied uris.
      *
      * @param handlers the handlers to look for classes in
@@ -835,6 +773,68 @@ public class AnnotationParser
 
         if (LOG.isDebugEnabled())
             LOG.warn("Resource not scannable for classes: {}", r);
+    }
+
+    /**
+     * Parse all classes in a directory
+     *
+     * @param handlers the set of handlers to look for classes in
+     * @param root the resource directory to look for classes
+     * @throws Exception if unable to parse
+     */
+    protected void parseDir(Set<? extends Handler> handlers, Resource root) throws Exception
+    {
+        if (!root.isDirectory() || !root.exists() || root.getName().startsWith("."))
+            return;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scanning dir {}", root);
+
+        File rootFile = root.getFile();
+
+        MultiException me = new MultiException();
+        Collection<Resource> resources = root.getAllResources();
+        if (resources != null)
+        {
+            for (Resource r : resources)
+            {
+                if (r.isDirectory())
+                    continue;
+
+                File file = r.getFile();
+                if (isValidClassFileName((file == null ? null : file.getName())))
+                {
+                    Path classpath = rootFile.toPath().relativize(file.toPath());
+                    String str = classpath.toString();
+                    str = str.substring(0, str.lastIndexOf(".class"));
+                    str = StringUtil.replace(str, File.separatorChar, '.');
+
+                    try
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Scanning class {}", r);
+                        addParsedClass(str, r);
+                        try (InputStream is = r.getInputStream())
+                        {
+                            scanClass(handlers, Resource.newResource(file.getParentFile()), is);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Error scanning file " + file, ex);
+                        me.add(new RuntimeException("Error scanning file " + file, ex));
+                    }
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Skipping scan on invalid file {}", file);
+                }
+            }
+        }
+
+        me.ifExceptionThrow();
     }
 
     /**

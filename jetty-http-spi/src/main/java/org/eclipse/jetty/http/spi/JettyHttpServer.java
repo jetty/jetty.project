@@ -259,6 +259,12 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
         return context;
     }
 
+    @Override
+    public HttpContext createContext(String path)
+    {
+        return createContext(path, null);
+    }
+
     private void checkIfContextIsFree(String path)
     {
         Handler serverHandler = _server.getHandler();
@@ -282,12 +288,6 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
                     throw new RuntimeException("another context already bound to path " + path);
             }
         }
-    }
-
-    @Override
-    public HttpContext createContext(String path)
-    {
-        return createContext(path, null);
     }
 
     @Override

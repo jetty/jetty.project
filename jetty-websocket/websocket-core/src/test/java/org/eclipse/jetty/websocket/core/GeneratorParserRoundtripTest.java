@@ -85,7 +85,7 @@ public class GeneratorParserRoundtripTest
             Frame frame = new Frame(OpCode.TEXT).setPayload(message);
 
             // Add masking
-            byte mask[] = new byte[4];
+            byte[] mask = new byte[4];
             Arrays.fill(mask, (byte)0xFF);
             frame.setMask(mask);
 

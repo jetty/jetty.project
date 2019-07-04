@@ -266,8 +266,8 @@ public class StressTest
             // System.err.println();
             final int quantums = 48;
             final int[][] count = new int[_latencies.length][quantums];
-            final int length[] = new int[_latencies.length];
-            final int other[] = new int[_latencies.length];
+            final int[] length = new int[_latencies.length];
+            final int[] other = new int[_latencies.length];
 
             long total = 0;
 

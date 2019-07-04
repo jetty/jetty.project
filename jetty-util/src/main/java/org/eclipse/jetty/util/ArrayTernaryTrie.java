@@ -573,12 +573,6 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
 
         @Override
-        public boolean put(V v)
-        {
-            return put(v.toString(), v);
-        }
-
-        @Override
         public int hashCode()
         {
             return _trie.hashCode();
@@ -588,24 +582,6 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         public V remove(String s)
         {
             return _trie.remove(s);
-        }
-
-        @Override
-        public V get(String s)
-        {
-            return _trie.get(s);
-        }
-
-        @Override
-        public V get(ByteBuffer b)
-        {
-            return _trie.get(b);
-        }
-
-        @Override
-        public V getBest(byte[] b, int offset, int len)
-        {
-            return _trie.getBest(b, offset, len);
         }
 
         @Override
@@ -627,6 +603,12 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
 
         @Override
+        public boolean put(V v)
+        {
+            return put(v.toString(), v);
+        }
+
+        @Override
         public boolean put(String s, V v)
         {
             boolean added = _trie.put(s, v);
@@ -645,6 +627,18 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
 
         @Override
+        public V get(String s)
+        {
+            return _trie.get(s);
+        }
+
+        @Override
+        public V get(ByteBuffer b)
+        {
+            return _trie.get(b);
+        }
+
+        @Override
         public V get(String s, int offset, int len)
         {
             return _trie.get(s, offset, len);
@@ -654,6 +648,12 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         public V get(ByteBuffer b, int offset, int len)
         {
             return _trie.get(b, offset, len);
+        }
+
+        @Override
+        public V getBest(byte[] b, int offset, int len)
+        {
+            return _trie.getBest(b, offset, len);
         }
 
         @Override

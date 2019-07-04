@@ -174,7 +174,7 @@ public abstract class AbstractSessionDataStoreTest
         store.start();
 
         //create a session
-        long now = System.currentTimeMillis();
+        final long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", 100, 200, 199, -1);//never expires
         data.setAttribute("a", "b");
         data.setLastNode(sessionContext.getWorkerName());

@@ -661,6 +661,39 @@ public class HttpFields implements Iterable<HttpField>
         add(field);
     }
 
+    public void add(HttpField field)
+    {
+        if (field != null)
+        {
+            if (_size == _fields.length)
+                _fields = Arrays.copyOf(_fields, _size * 2);
+            _fields[_size++] = field;
+        }
+    }
+
+    /**
+     * Add fields from another HttpFields instance. Single valued fields are replaced, while all
+     * others are added.
+     *
+     * @param fields the fields to add
+     */
+    public void add(HttpFields fields)
+    {
+        if (fields == null)
+            return;
+
+        Enumeration<String> e = fields.getFieldNames();
+        while (e.hasMoreElements())
+        {
+            String name = e.nextElement();
+            Enumeration<String> values = fields.getValues(name);
+            while (values.hasMoreElements())
+            {
+                add(name, values.nextElement());
+            }
+        }
+    }
+
     /**
      * Remove a field.
      *
@@ -873,44 +906,11 @@ public class HttpFields implements Iterable<HttpField>
         _size = 0;
     }
 
-    public void add(HttpField field)
-    {
-        if (field != null)
-        {
-            if (_size == _fields.length)
-                _fields = Arrays.copyOf(_fields, _size * 2);
-            _fields[_size++] = field;
-        }
-    }
-
     public void addAll(HttpFields fields)
     {
         for (int i = 0; i < fields._size; i++)
         {
             add(fields._fields[i]);
-        }
-    }
-
-    /**
-     * Add fields from another HttpFields instance. Single valued fields are replaced, while all
-     * others are added.
-     *
-     * @param fields the fields to add
-     */
-    public void add(HttpFields fields)
-    {
-        if (fields == null)
-            return;
-
-        Enumeration<String> e = fields.getFieldNames();
-        while (e.hasMoreElements())
-        {
-            String name = e.nextElement();
-            Enumeration<String> values = fields.getValues(name);
-            while (values.hasMoreElements())
-            {
-                add(name, values.nextElement());
-            }
         }
     }
 

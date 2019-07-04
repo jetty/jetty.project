@@ -201,7 +201,7 @@ public class ClientDemo
                     op = OpCode.BINARY;
                 }
 
-                byte data[] = null;
+                byte[] data = null;
 
                 switch (op)
                 {

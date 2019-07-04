@@ -165,8 +165,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         LOG.info("Quickstart generating");
 
-        XmlAppendable out = new XmlAppendable(stream, "UTF-8");
-
         MetaData md = context.getMetaData();
 
         Map<String, String> webappAttr = new HashMap<>();
@@ -178,6 +176,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         webappAttr.put("metadata-complete", "true");
         webappAttr.put("version", major + "." + minor);
 
+        XmlAppendable out = new XmlAppendable(stream, "UTF-8");
         out.openTag("web-app", webappAttr);
         if (context.getDisplayName() != null)
             out.tag("display-name", context.getDisplayName());

@@ -42,7 +42,7 @@ public class MessageWriterTest
         FrameCapture capture = new FrameCapture();
         try (MessageWriter writer = new MessageWriter(capture, 1024))
         {
-            char cbuf[] = new char[512];
+            char[] cbuf = new char[512];
             Arrays.fill(cbuf, 'x');
             writer.write(cbuf);
         }
@@ -59,7 +59,7 @@ public class MessageWriterTest
         FrameCapture capture = new FrameCapture();
         try (MessageWriter writer = new MessageWriter(capture, 1024))
         {
-            char cbuf[] = new char[1024 * 2];
+            char[] cbuf = new char[1024 * 2];
             Arrays.fill(cbuf, 'x');
             writer.write(cbuf);
         }
@@ -85,7 +85,7 @@ public class MessageWriterTest
         FrameCapture capture = new FrameCapture();
         try (MessageWriter writer = new MessageWriter(capture, writerBufferSize))
         {
-            char cbuf[] = new char[testSize];
+            char[] cbuf = new char[testSize];
             Arrays.fill(cbuf, 'x');
             int remaining = cbuf.length;
             int offset = 0;
@@ -127,7 +127,7 @@ public class MessageWriterTest
         WholeMessageCapture capture = new WholeMessageCapture();
         try (MessageWriter writer = new MessageWriter(capture, writerBufferSize))
         {
-            char cbuf[] = new char[testSize];
+            char[] cbuf = new char[testSize];
             Arrays.fill(cbuf, 'x');
             for (int i = 0; i < testSize; i++)
             {

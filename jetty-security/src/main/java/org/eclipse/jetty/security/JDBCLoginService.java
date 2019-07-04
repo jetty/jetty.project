@@ -123,16 +123,17 @@ public class JDBCLoginService extends AbstractLoginService
         _url = properties.getProperty("url");
         _userName = properties.getProperty("username");
         _password = properties.getProperty("password");
-        String userTable = properties.getProperty("usertable");
         _userTableKey = properties.getProperty("usertablekey");
-        String userTableUserField = properties.getProperty("usertableuserfield");
         _userTablePasswordField = properties.getProperty("usertablepasswordfield");
-        String roleTable = properties.getProperty("roletable");
-        String roleTableKey = properties.getProperty("roletablekey");
         _roleTableRoleField = properties.getProperty("roletablerolefield");
-        String userRoleTable = properties.getProperty("userroletable");
-        String userRoleTableUserKey = properties.getProperty("userroletableuserkey");
-        String userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
+
+        final String userTable = properties.getProperty("usertable");
+        final String userTableUserField = properties.getProperty("usertableuserfield");
+        final String roleTable = properties.getProperty("roletable");
+        final String roleTableKey = properties.getProperty("roletablekey");
+        final String userRoleTable = properties.getProperty("userroletable");
+        final String userRoleTableUserKey = properties.getProperty("userroletableuserkey");
+        final String userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
 
         if (_jdbcDriver == null || _jdbcDriver.equals("") ||
             _url == null || _url.equals("") ||

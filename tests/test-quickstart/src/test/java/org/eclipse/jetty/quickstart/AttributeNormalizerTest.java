@@ -44,9 +44,8 @@ public class AttributeNormalizerTest
 {
     public static Stream<Arguments> scenarios() throws IOException
     {
-        List<Scenario> data = new ArrayList<>();
-
-        String arch = String.format("%s/%s", System.getProperty("os.name"), System.getProperty("os.arch"));
+        final List<Scenario> data = new ArrayList<>();
+        final String arch = String.format("%s/%s", System.getProperty("os.name"), System.getProperty("os.arch"));
 
         String title;
         Map<String, String> env;

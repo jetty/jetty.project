@@ -100,7 +100,7 @@ public class SecuredRedirectHandlerTest
         server.setConnectors(new Connector[]{httpConnector, httpsConnector});
 
         // Wire up contexts
-        String secureHosts[] = new String[]{"@secured"};
+        String[] secureHosts = new String[]{"@secured"};
 
         ContextHandler test1Context = new ContextHandler();
         test1Context.setContextPath("/test1");

@@ -39,7 +39,7 @@ public class ServerWithAnnotations
     public static final void main(String[] args) throws Exception
     {
         // Create the server
-        Server server = new Server(8080);
+        final Server server = new Server(8080);
 
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();

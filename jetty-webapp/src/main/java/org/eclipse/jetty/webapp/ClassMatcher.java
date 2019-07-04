@@ -571,26 +571,6 @@ public class ClassMatcher extends AbstractSet<String>
         return added;
     }
 
-    protected Entry newEntry(String pattern)
-    {
-        if (pattern.startsWith("-"))
-            return newEntry(pattern.substring(1), false);
-        return newEntry(pattern, true);
-    }
-
-    protected Entry newEntry(String name, boolean inclusive)
-    {
-        if (name.startsWith("-"))
-            throw new IllegalStateException(name);
-        if (name.startsWith("file:"))
-            return new LocationEntry(name, inclusive);
-        if (name.startsWith("jrt:"))
-            return new ModuleEntry(name, inclusive);
-        if (name.endsWith("."))
-            return new PackageEntry(name, inclusive);
-        return new ClassEntry(name, inclusive);
-    }
-
     protected boolean add(Entry entry)
     {
         if (_entries.containsKey(entry.getPattern()))
@@ -612,6 +592,26 @@ public class ClassMatcher extends AbstractSet<String>
                 _patterns.exclude(entry);
         }
         return true;
+    }
+
+    protected Entry newEntry(String pattern)
+    {
+        if (pattern.startsWith("-"))
+            return newEntry(pattern.substring(1), false);
+        return newEntry(pattern, true);
+    }
+
+    protected Entry newEntry(String name, boolean inclusive)
+    {
+        if (name.startsWith("-"))
+            throw new IllegalStateException(name);
+        if (name.startsWith("file:"))
+            return new LocationEntry(name, inclusive);
+        if (name.startsWith("jrt:"))
+            return new ModuleEntry(name, inclusive);
+        if (name.endsWith("."))
+            return new PackageEntry(name, inclusive);
+        return new ClassEntry(name, inclusive);
     }
 
     @Override
@@ -758,14 +758,13 @@ public class ClassMatcher extends AbstractSet<String>
             return false;
 
         URI uri = location.get();
-        if (uri != null)
-        {
-            Boolean byLocation = locations.isIncludedAndNotExcluded(uri);
-            if (Boolean.FALSE == byLocation)
-                return false;
+        if (uri == null)
+            return locations.isEmpty() || locations.hasExcludes() && !locations.hasIncludes();
 
-            return Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation) || !(names.hasIncludes() || locations.hasIncludes());
-        }
-        return false;
+        Boolean byLocation = locations.isIncludedAndNotExcluded(uri);
+        if (Boolean.FALSE == byLocation)
+            return false;
+
+        return Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation) || !(names.hasIncludes() || locations.hasIncludes());
     }
 }

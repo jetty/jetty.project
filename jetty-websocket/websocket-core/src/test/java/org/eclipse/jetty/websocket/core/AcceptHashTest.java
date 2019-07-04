@@ -34,7 +34,7 @@ public class AcceptHashTest
 {
     private static String hexAsKey(String hex)
     {
-        byte key[] = TypeUtil.fromHexString(hex);
+        byte[] key = TypeUtil.fromHexString(hex);
         assertThat("Key size of hex:[" + hex + "]", key.length, is(16));
         return Base64.getEncoder().encodeToString(key);
     }

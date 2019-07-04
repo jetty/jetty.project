@@ -601,15 +601,15 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             DataInputStream di = new DataInputStream(is);
 
             id = di.readUTF();
-            String contextPath = di.readUTF();
-            String vhost = di.readUTF();
-            String lastNode = di.readUTF();
-            long created = di.readLong();
-            long accessed = di.readLong();
-            long lastAccessed = di.readLong();
-            long cookieSet = di.readLong();
-            long expiry = di.readLong();
-            long maxIdle = di.readLong();
+            final String contextPath = di.readUTF();
+            final String vhost = di.readUTF();
+            final String lastNode = di.readUTF();
+            final long created = di.readLong();
+            final long accessed = di.readLong();
+            final long lastAccessed = di.readLong();
+            final long cookieSet = di.readLong();
+            final long expiry = di.readLong();
+            final long maxIdle = di.readLong();
 
             data = newSessionData(id, created, accessed, lastAccessed, maxIdle);
             data.setContextPath(contextPath);

@@ -69,6 +69,8 @@ public class RelativeOrdering implements Ordering
                     case After:
                         afterOthers.add(jar);
                         break;
+                    default:
+                        throw new IllegalStateException(fragment.toString());
                 }
             }
         }
@@ -131,6 +133,8 @@ public class RelativeOrdering implements Ordering
                         beforeOthers.forEach(addAfter);
                         others.forEach(addAfter);
                         break;
+                    default:
+                        throw new IllegalStateException(fragment.toString());
                 }
             }
             referenced.clear();

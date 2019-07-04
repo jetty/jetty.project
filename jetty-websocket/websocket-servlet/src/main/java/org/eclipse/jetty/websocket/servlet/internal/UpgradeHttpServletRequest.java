@@ -172,15 +172,15 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
         return Collections.enumeration(values);
     }
 
+    public Map<String, List<String>> getHeaders()
+    {
+        return Collections.unmodifiableMap(headers);
+    }
+
     @Override
     public Enumeration<String> getHeaderNames()
     {
         return Collections.enumeration(headers.keySet());
-    }
-
-    public Map<String, List<String>> getHeaders()
-    {
-        return Collections.unmodifiableMap(headers);
     }
 
     @Override

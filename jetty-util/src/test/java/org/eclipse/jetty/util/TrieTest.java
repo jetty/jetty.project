@@ -83,7 +83,7 @@ public class TrieTest
     @MethodSource("implementations")
     public void testKeySet(Trie<Integer> trie) throws Exception
     {
-        String values[] = new String[]{
+        String[] values = new String[]{
             "hello",
             "He",
             "HELL",

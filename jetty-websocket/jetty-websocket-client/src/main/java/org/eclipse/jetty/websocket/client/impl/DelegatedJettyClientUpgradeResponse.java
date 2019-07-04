@@ -68,6 +68,12 @@ public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
     }
 
     @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        return null;
+    }
+
+    @Override
     public int getStatusCode()
     {
         return this.delegate.getStatus();
@@ -77,12 +83,6 @@ public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
     public void addHeader(String name, String value)
     {
 
-    }
-
-    @Override
-    public Map<String, List<String>> getHeaders()
-    {
-        return null;
     }
 
     @Override

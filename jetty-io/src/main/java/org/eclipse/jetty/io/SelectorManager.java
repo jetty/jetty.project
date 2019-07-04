@@ -253,6 +253,11 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return new ManagedSelector(this, id);
     }
 
+    protected Selector newSelector() throws IOException
+    {
+        return Selector.open();
+    }
+
     @Override
     protected void doStop() throws Exception
     {
@@ -357,11 +362,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     protected void connectionFailed(SelectableChannel channel, Throwable ex, Object attachment)
     {
         LOG.warn(String.format("%s - %s", channel, attachment), ex);
-    }
-
-    protected Selector newSelector() throws IOException
-    {
-        return Selector.open();
     }
 
     /**

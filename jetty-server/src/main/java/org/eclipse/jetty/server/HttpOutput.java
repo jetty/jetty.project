@@ -219,37 +219,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _writeBlocker.acquire();
     }
 
-    private void write(ByteBuffer content, boolean complete) throws IOException
-    {
-        try (Blocker blocker = _writeBlocker.acquire())
-        {
-            write(content, complete, blocker);
-            blocker.block();
-        }
-        catch (Exception failure)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug(failure);
-            abort(failure);
-            if (failure instanceof IOException)
-                throw failure;
-            throw new IOException(failure);
-        }
-    }
-
-    protected void write(ByteBuffer content, boolean complete, Callback callback)
-    {
-        if (_firstByteTimeStamp == -1)
-        {
-            long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
-            if (minDataRate > 0)
-                _firstByteTimeStamp = System.nanoTime();
-            else
-                _firstByteTimeStamp = Long.MAX_VALUE;
-        }
-        _interceptor.write(content, complete, callback);
-    }
-
     private void abort(Throwable failure)
     {
         closed();
@@ -435,6 +404,37 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+    private void write(ByteBuffer content, boolean complete) throws IOException
+    {
+        try (Blocker blocker = _writeBlocker.acquire())
+        {
+            write(content, complete, blocker);
+            blocker.block();
+        }
+        catch (Exception failure)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(failure);
+            abort(failure);
+            if (failure instanceof IOException)
+                throw failure;
+            throw new IOException(failure);
+        }
+    }
+
+    protected void write(ByteBuffer content, boolean complete, Callback callback)
+    {
+        if (_firstByteTimeStamp == -1)
+        {
+            long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
+            if (minDataRate > 0)
+                _firstByteTimeStamp = System.nanoTime();
+            else
+                _firstByteTimeStamp = Long.MAX_VALUE;
+        }
+        _interceptor.write(content, complete, callback);
+    }
+
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
@@ -540,8 +540,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             ByteBuffer view = ByteBuffer.wrap(b, off, len);
             while (len > getBufferSize())
             {
-                int p = view.position();
-                int l = p + getBufferSize();
+                final int p = view.position();
+                final int l = p + getBufferSize();
                 view.limit(p + getBufferSize());
                 write(view, false);
                 len -= getBufferSize();
@@ -689,12 +689,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         print(s, false);
     }
 
-    @Override
-    public void println(String s) throws IOException
-    {
-        print(s, true);
-    }
-
     private void print(String s, boolean eoln) throws IOException
     {
         if (isClosed())
@@ -759,6 +753,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         BufferUtil.flipToFlush(out, 0);
         write(out.array(), out.arrayOffset(), out.remaining());
         getHttpChannel().getByteBufferPool().release(out);
+    }
+
+    @Override
+    public void println(String s) throws IOException
+    {
+        print(s, true);
     }
 
     @Override
