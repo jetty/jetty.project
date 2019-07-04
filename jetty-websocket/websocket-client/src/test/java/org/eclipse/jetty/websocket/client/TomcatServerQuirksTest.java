@@ -123,7 +123,7 @@ public class TomcatServerQuirksTest
             try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
             {
                 // Have server write frame.
-                byte payload[] = new byte[bufferSize / 2];
+                byte[] payload = new byte[bufferSize / 2];
                 Arrays.fill(payload, (byte)'x');
                 ByteBuffer serverFrame = BufferUtil.allocate(bufferSize);
                 BufferUtil.flipToFill(serverFrame);

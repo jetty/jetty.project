@@ -200,7 +200,7 @@ public class TestClient
                     op = OpCode.BINARY;
                 }
 
-                byte data[] = null;
+                byte[] data = null;
 
                 switch (op)
                 {

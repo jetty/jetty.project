@@ -55,7 +55,7 @@ public class AllowSymLinkAliasCheckerTest
     {
         List<Arguments> data = new ArrayList<>();
 
-        String dirs[] = {
+        String[] dirs = {
             "/workDir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/",
             "/testdirwraplnk/"
         };

@@ -41,7 +41,7 @@ public class UnitParser extends Parser
     private void parsePartial(ByteBuffer buf, int numBytes)
     {
         int len = Math.min(numBytes, buf.remaining());
-        byte arr[] = new byte[len];
+        byte[] arr = new byte[len];
         buf.get(arr, 0, len);
         this.parse(ByteBuffer.wrap(arr));
     }

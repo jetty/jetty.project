@@ -317,7 +317,7 @@ public class ThreadStarvationTest
                     long bodyCount = 0;
                     long len;
 
-                    byte buf[] = new byte[1024];
+                    byte[] buf = new byte[1024];
 
                     try
                     {

@@ -139,7 +139,7 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_2() throws Exception
     {
-        byte payload[] = StringUtil.getUtf8Bytes("Hello world");
+        byte[] payload = StringUtil.getUtf8Bytes("Hello world");
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
@@ -166,7 +166,7 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_3() throws Exception
     {
-        byte payload[] = new byte[]{0x00, (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC, (byte)0xFB, 0x00, (byte)0xFF};
+        byte[] payload = new byte[]{0x00, (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC, (byte)0xFB, 0x00, (byte)0xFF};
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
@@ -193,7 +193,7 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_4() throws Exception
     {
-        byte payload[] = new byte[125];
+        byte[] payload = new byte[125];
         Arrays.fill(payload, (byte)0xFE);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -223,7 +223,7 @@ public class TestABCase2 extends AbstractABCase
     {
         try (StacklessLogging scope = new StacklessLogging(Parser.class))
         {
-            byte payload[] = new byte[126]; // intentionally too big
+            byte[] payload = new byte[126]; // intentionally too big
             Arrays.fill(payload, (byte)'5');
             ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -253,7 +253,7 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_6() throws Exception
     {
-        byte payload[] = new byte[125];
+        byte[] payload = new byte[125];
         Arrays.fill(payload, (byte)'6');
 
         List<WebSocketFrame> send = new ArrayList<>();

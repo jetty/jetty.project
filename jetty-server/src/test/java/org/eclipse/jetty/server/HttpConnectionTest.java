@@ -246,7 +246,7 @@ public class HttpConnectionTest
             StringBuilder request = new StringBuilder();
             request.append("POST /?id=").append(Integer.toString(x)).append(" HTTP/1.1\r\n");
             request.append("Host: local\r\n");
-            int clen[] = contentLengths[x];
+            int[] clen = contentLengths[x];
             for (int n = 0; n < clen.length; n++)
             {
                 request.append("Content-Length: ").append(Integer.toString(clen[n])).append("\r\n");
@@ -280,7 +280,7 @@ public class HttpConnectionTest
             StringBuilder request = new StringBuilder();
             request.append("POST /?id=").append(Integer.toString(x)).append(" HTTP/1.1\r\n");
             request.append("Host: local\r\n");
-            int clen[] = contentLengths[x];
+            int[] clen = contentLengths[x];
             for (int n = 0; n < clen.length; n++)
             {
                 if (clen[n] == -1)

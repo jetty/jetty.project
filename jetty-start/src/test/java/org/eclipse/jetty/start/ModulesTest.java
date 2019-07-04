@@ -50,7 +50,7 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyPathDir().toFile();
-        String cmdLine[] = new String[]{"jetty.version=TEST"};
+        String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
@@ -109,7 +109,7 @@ public class ModulesTest
         // intentionally setup top level resources dir (as this would have many
         // deep references)
         File baseDir = MavenTestingUtils.getTestResourcesDir();
-        String cmdLine[] = new String[]{"jetty.version=TEST"};
+        String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
@@ -146,7 +146,7 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyPathDir().toFile();
-        String cmdLine[] = new String[]{"jetty.version=TEST"};
+        String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);

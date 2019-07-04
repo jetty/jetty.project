@@ -121,7 +121,7 @@ public class CloseInfoTest
     private ByteBuffer asByteBuffer(int statusCode, String reason)
     {
         int len = 2; // status code length
-        byte utf[] = null;
+        byte[] utf = null;
         if (StringUtil.isNotBlank(reason))
         {
             utf = StringUtil.getUtf8Bytes(reason);

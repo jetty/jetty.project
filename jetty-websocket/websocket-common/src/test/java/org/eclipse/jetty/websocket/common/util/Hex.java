@@ -37,7 +37,7 @@ public final class Hex
         }
 
         int size = hstr.length() / 2;
-        byte buf[] = new byte[size];
+        byte[] buf = new byte[size];
         byte hex;
         int len = hstr.length();
 
@@ -67,7 +67,7 @@ public final class Hex
     public static String asHex(byte buf[])
     {
         int len = buf.length;
-        char out[] = new char[len * 2];
+        char[] out = new char[len * 2];
         for (int i = 0; i < len; i++)
         {
             out[i * 2] = hexcodes[(buf[i] & 0xF0) >> 4];

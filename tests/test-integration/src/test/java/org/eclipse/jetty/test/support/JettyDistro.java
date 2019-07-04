@@ -300,7 +300,7 @@ public class JettyDistro
 
         // The actual jetty-distribution-${version} directory is under this directory.
         // Lets find it.
-        File subdirs[] = distroUnpackDir.listFiles(path ->
+        File[] subdirs = distroUnpackDir.listFiles(path ->
             {
                 if (!path.isDirectory())
                 {
@@ -753,7 +753,7 @@ public class JettyDistro
 
     private String getJavaBin()
     {
-        String javaexes[] = new String[]
+        String[] javaexes = new String[]
             {"java", "java.exe"};
 
         File javaHomeDir = new File(System.getProperty("java.home"));

@@ -45,7 +45,7 @@ public class BlockheadClientConnection extends BlockheadConnection
     {
         if (frame.getMask() == null)
         {
-            byte mask[] = new byte[4];
+            byte[] mask = new byte[4];
             ThreadLocalRandom.current().nextBytes(mask);
             frame.setMask(mask);
         }

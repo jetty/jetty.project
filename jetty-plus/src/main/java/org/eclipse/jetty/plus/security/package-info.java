@@ -20,4 +20,3 @@
  * Jetty Plus : Limited JEE Security Support
  */
 package org.eclipse.jetty.plus.security;
-

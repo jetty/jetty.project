@@ -52,7 +52,7 @@ public class TestABCase6 extends AbstractABCase
     {
         int len = msg.length;
         boolean continuation = false;
-        byte mini[];
+        byte[] mini;
         for (int i = 0; i < len; i++)
         {
             DataFrame frame = null;
@@ -198,7 +198,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_2_3() throws Exception
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
-        byte msg[] = StringUtil.getUtf8Bytes(utf8);
+        byte[] msg = StringUtil.getUtf8Bytes(utf8);
 
         List<WebSocketFrame> send = new ArrayList<>();
         fragmentText(send, msg);
@@ -225,7 +225,7 @@ public class TestABCase6 extends AbstractABCase
     @Test
     public void testCase6_2_4() throws Exception
     {
-        byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
+        byte[] msg = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
 
         List<WebSocketFrame> send = new ArrayList<>();
         fragmentText(send, msg);
@@ -252,7 +252,7 @@ public class TestABCase6 extends AbstractABCase
     @Test
     public void testCase6_3_2() throws Exception
     {
-        byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
+        byte[] invalid = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
 
         List<WebSocketFrame> send = new ArrayList<>();
         fragmentText(send, invalid);
@@ -379,7 +379,7 @@ public class TestABCase6 extends AbstractABCase
 
                 ByteBuffer net = fuzzer.asNetworkBuffer(send);
 
-                int splits[] = {17, 21, net.limit()};
+                int[] splits = {17, 21, net.limit()};
 
                 ByteBuffer part1 = net.slice(); // Header + good UTF
                 part1.limit(splits[0]);
@@ -407,7 +407,7 @@ public class TestABCase6 extends AbstractABCase
     @Test
     public void testCase6_4_4() throws Exception
     {
-        byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
+        byte[] invalid = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(ByteBuffer.wrap(invalid)));

@@ -179,7 +179,7 @@ public class TestABCase7 extends AbstractABCase
     @Test
     public void testCase7_1_6() throws Exception
     {
-        byte msg[] = new byte[256 * 1024];
+        byte[] msg = new byte[256 * 1024];
         Arrays.fill(msg, (byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(msg);
 
@@ -234,7 +234,7 @@ public class TestABCase7 extends AbstractABCase
     @Test
     public void testCase7_3_2() throws Exception
     {
-        byte payload[] = new byte[]{0x00};
+        byte[] payload = new byte[]{0x00};
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -310,7 +310,7 @@ public class TestABCase7 extends AbstractABCase
     @Test
     public void testCase7_3_5() throws Exception
     {
-        byte utf[] = new byte[123];
+        byte[] utf = new byte[123];
         Arrays.fill(utf, (byte)'!');
         String reason = StringUtil.toUTF8String(utf, 0, utf.length);
 
@@ -343,7 +343,7 @@ public class TestABCase7 extends AbstractABCase
         BufferUtil.clearToFill(payload);
         payload.put((byte)0x03); // normal close
         payload.put((byte)0xE8);
-        byte invalidUtf[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
+        byte[] invalidUtf = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
         payload.put(invalidUtf);
         BufferUtil.flipToFlush(payload, 0);
 

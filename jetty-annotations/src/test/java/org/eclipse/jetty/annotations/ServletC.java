@@ -42,7 +42,8 @@ import javax.servlet.http.HttpServletResponse;
 @MultipartConfig(fileSizeThreshold = 1000, maxFileSize = 2000, maxRequestSize = 3000)
 @RunAs("admin")
 @ServletSecurity(value = @HttpConstraint(rolesAllowed = {"fred", "bill", "dorothy"}), httpMethodConstraints = {
-    @HttpMethodConstraint(value = "GET", rolesAllowed = {"bob", "carol", "ted"})
+    @HttpMethodConstraint(value = "GET", rolesAllowed =
+    {"bob", "carol", "ted"})
 })
 public class ServletC extends HttpServlet
 {

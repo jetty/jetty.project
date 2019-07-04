@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.plus.annotation;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.servlet.ServletHolder;
 
 /**
@@ -30,23 +32,15 @@ public class RunAs
     private String _className;
     private String _roleName;
 
-    public RunAs()
+    public RunAs(String className, String roleName)
     {
-    }
-
-    public void setTargetClassName(String className)
-    {
-        _className = className;
+        _className = Objects.requireNonNull(className);
+        _roleName = Objects.requireNonNull(roleName);
     }
 
     public String getTargetClassName()
     {
         return _className;
-    }
-
-    public void setRoleName(String roleName)
-    {
-        _roleName = roleName;
     }
 
     public String getRoleName()

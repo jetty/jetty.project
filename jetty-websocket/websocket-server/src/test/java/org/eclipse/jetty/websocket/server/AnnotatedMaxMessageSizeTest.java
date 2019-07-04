@@ -141,7 +141,7 @@ public class AnnotatedMaxMessageSizeTest
             {
                 // Generate text frame
                 int size = 120 * 1024;
-                byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
+                byte[] buf = new byte[size]; // buffer bigger than maxMessageSize
                 Arrays.fill(buf, (byte)'x');
                 clientConn.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
 

@@ -193,6 +193,11 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
         return !_includes.isEmpty();
     }
 
+    public boolean hasExcludes()
+    {
+        return !_excludes.isEmpty();
+    }
+
     public int size()
     {
         return _includes.size() + _excludes.size();

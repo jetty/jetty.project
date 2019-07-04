@@ -575,17 +575,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 //No post-constructs have been declared previously.
                 context.getMetaData().setOrigin("post-construct", descriptor);
 
-                try
-                {
-                    Class<?> clazz = context.loadClass(className);
-                    LifeCycleCallback callback = new PostConstructCallback();
-                    callback.setTarget(clazz, methodName);
-                    ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
-                }
-                catch (ClassNotFoundException e)
-                {
-                    LOG.warn("Couldn't load post-construct target class " + className);
-                }
+                LifeCycleCallback callback = new PostConstructCallback(className, methodName);
+                ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
                 break;
             }
             case WebXml:
@@ -599,8 +590,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     try
                     {
                         Class<?> clazz = context.loadClass(className);
-                        LifeCycleCallback callback = new PostConstructCallback();
-                        callback.setTarget(clazz, methodName);
+                        LifeCycleCallback callback = new PostConstructCallback(clazz, methodName);
                         ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
                     }
                     catch (ClassNotFoundException e)
@@ -616,8 +606,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 try
                 {
                     Class<?> clazz = context.loadClass(className);
-                    LifeCycleCallback callback = new PostConstructCallback();
-                    callback.setTarget(clazz, methodName);
+                    LifeCycleCallback callback = new PostConstructCallback(clazz, methodName);
                     ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
                 }
                 catch (ClassNotFoundException e)
@@ -660,17 +649,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 //No pre-destroys have been declared previously. Record this descriptor
                 //as the first declarer.
                 context.getMetaData().setOrigin("pre-destroy", descriptor);
-                try
-                {
-                    Class<?> clazz = context.loadClass(className);
-                    LifeCycleCallback callback = new PreDestroyCallback();
-                    callback.setTarget(clazz, methodName);
-                    ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
-                }
-                catch (ClassNotFoundException e)
-                {
-                    LOG.warn("Couldn't load pre-destroy target class " + className);
-                }
+
+                LifeCycleCallback callback = new PreDestroyCallback(className, methodName);
+                ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
+
                 break;
             }
             case WebXml:
@@ -684,8 +666,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     try
                     {
                         Class<?> clazz = context.loadClass(className);
-                        LifeCycleCallback callback = new PreDestroyCallback();
-                        callback.setTarget(clazz, methodName);
+                        LifeCycleCallback callback = new PreDestroyCallback(clazz, methodName);
                         ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
                     }
                     catch (ClassNotFoundException e)
@@ -701,8 +682,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 try
                 {
                     Class<?> clazz = context.loadClass(className);
-                    LifeCycleCallback callback = new PreDestroyCallback();
-                    callback.setTarget(clazz, methodName);
+                    LifeCycleCallback callback = new PreDestroyCallback(clazz, methodName);
                     ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
                 }
                 catch (ClassNotFoundException e)
@@ -754,9 +734,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             try
             {
                 Class<?> clazz = context.loadClass(targetClassName);
-                Injection injection = new Injection();
-                injection.setJndiName(jndiName);
-                injection.setTarget(clazz, targetName, valueClass);
+                Injection injection = new Injection(clazz, targetName, valueClass, jndiName, null);
                 injections.add(injection);
 
                 //Record which was the first descriptor to declare an injection for this name

@@ -56,6 +56,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.util.log.Log;
+
 /**
  * Dump Servlet Request.
  */
@@ -344,10 +346,12 @@ public class Dump extends HttpServlet
                 }
                 catch (IOException e2)
                 {
+                    Log.getLogger(Dump.class).ignore(e2);
                 }
             }
             catch (IOException e)
             {
+                Log.getLogger(Dump.class).ignore(e);
             }
             return;
         }
@@ -829,10 +833,10 @@ public class Dump extends HttpServlet
             pout.write("<br/>");
             pout.write("<h2>International Characters (UTF-8)</h2>");
             pout.write("LATIN LETTER SMALL CAPITAL AE<br/>\n");
-            pout.write("Directly uni encoded(\\u1d01): \u1d01<br/>");
+            pout.write("Directly uni encoded(\\u1d01): \u1d01<br/>"); // uni encoded
             pout.write("HTML reference (&amp;AElig;): &AElig;<br/>");
             pout.write("Decimal (&amp;#7425;): &#7425;<br/>");
-            pout.write("Javascript unicode (\\u1d01) : <script language='javascript'>document.write(\"\u1d01\");</script><br/>");
+            pout.write("Javascript unicode (\\u1d01) : <script language='javascript'>document.write(\"\u1d01\");</script><br/>"); // uni encoded
             pout.write("<br/>");
             pout.write("<h2>Form to generate GET content</h2>");
             pout.write("<form method=\"GET\" action=\"" + response.encodeURL(getURI(request)) + "\">");

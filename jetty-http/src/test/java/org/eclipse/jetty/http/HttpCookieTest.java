@@ -90,7 +90,7 @@ public class HttpCookieTest
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1);
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", httpCookie.getRFC6265SetCookie());
 
-        String badNameExamples[] = {
+        String[] badNameExamples = {
             "\"name\"",
             "name\t",
             "na me",
@@ -118,7 +118,7 @@ public class HttpCookieTest
             }
         }
 
-        String badValueExamples[] = {
+        String[] badValueExamples = {
             "va\tlue",
             "\t",
             "value\u0000",
@@ -147,7 +147,7 @@ public class HttpCookieTest
             }
         }
 
-        String goodNameExamples[] = {
+        String[] goodNameExamples = {
             "name",
             "n.a.m.e",
             "na-me",
@@ -163,7 +163,7 @@ public class HttpCookieTest
             // should not throw an exception
         }
 
-        String goodValueExamples[] = {
+        String[] goodValueExamples = {
             "value",
             "",
             null,
