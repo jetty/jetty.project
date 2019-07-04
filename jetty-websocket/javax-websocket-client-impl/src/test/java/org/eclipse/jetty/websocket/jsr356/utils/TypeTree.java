@@ -80,7 +80,7 @@ public class TypeTree
             System.out.printf("%s (ParameterizedType) = %s%n", indent, ReflectUtils.toShortName(ptype));
             // dumpTree(indent + ".ownerType()",ptype.getOwnerType());
             dumpTree(indent + ".rawType(" + ReflectUtils.toShortName(ptype.getRawType()) + ")", ptype.getRawType());
-            Type args[] = ptype.getActualTypeArguments();
+            Type[] args = ptype.getActualTypeArguments();
             if (args != null)
             {
                 System.out.printf("%s.actualTypeArguments[].length = %d%n", indent, args.length);

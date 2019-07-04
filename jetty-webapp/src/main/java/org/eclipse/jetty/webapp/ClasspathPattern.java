@@ -734,14 +734,14 @@ public class ClasspathPattern extends AbstractSet<String>
             return false;
 
         URI uri = location.get();
-        if (uri != null)
-        {
-            Boolean byLocation = locations.isIncludedAndNotExcluded(uri);
-            if (Boolean.FALSE == byLocation)
-                return false;
+        if (uri == null)
+            return locations.isEmpty() || locations.hasExcludes() && !locations.hasIncludes();
 
-            return Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation) || !(names.hasIncludes() || locations.hasIncludes());
-        }
-        return false;
+        Boolean byLocation = locations.isIncludedAndNotExcluded(uri);
+        if (Boolean.FALSE == byLocation)
+            return false;
+
+        return Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation) || !(names.hasIncludes() || locations.hasIncludes());
+
     }
 }

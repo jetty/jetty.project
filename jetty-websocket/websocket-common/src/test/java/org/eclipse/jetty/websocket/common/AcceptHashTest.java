@@ -31,7 +31,7 @@ public class AcceptHashTest
     @Test
     public void testHash()
     {
-        byte key[] = TypeUtil.fromHexString("00112233445566778899AABBCCDDEEFF");
+        byte[] key = TypeUtil.fromHexString("00112233445566778899AABBCCDDEEFF");
         assertThat("Key size", key.length, is(16));
 
         // what the client sends

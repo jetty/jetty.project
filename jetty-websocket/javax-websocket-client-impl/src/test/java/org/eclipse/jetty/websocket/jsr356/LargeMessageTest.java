@@ -92,7 +92,7 @@ public class LargeMessageTest
 
         // Issue connect using instance of class that extends Endpoint
         Session session = container.connectToServer(echoer, wsUri);
-        byte buf[] = new byte[LARGER_THAN_DEFAULT_SIZE];
+        byte[] buf = new byte[LARGER_THAN_DEFAULT_SIZE];
         Arrays.fill(buf, (byte)'x');
         String message = new String(buf, UTF_8);
         session.getBasicRemote().sendText(message);

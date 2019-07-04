@@ -184,7 +184,7 @@ public class SessionListenerTest
             assertThat(sessionId, is(in(listener.createdSessions)));
 
             //and wait until the session should have expired
-            Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + (scavengePeriod)));
+            Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + (2*scavengePeriod)));
 
             assertThat(sessionId, is(in(listener.destroyedSessions)));
 

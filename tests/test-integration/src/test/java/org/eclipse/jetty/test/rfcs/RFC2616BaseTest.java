@@ -1534,12 +1534,12 @@ public abstract class RFC2616BaseTest
 
         // Collect 'boundary' string
         String boundary = null;
-        String parts[] = StringUtil.split(contentType, ';');
+        String[] parts = StringUtil.split(contentType, ';');
         for (int i = 0; i < parts.length; i++)
         {
             if (parts[i].trim().startsWith("boundary="))
             {
-                String boundparts[] = StringUtil.split(parts[i], '=');
+                String[] boundparts = StringUtil.split(parts[i], '=');
                 assertEquals(2, boundparts.length, specId + " Boundary parts.length");
                 boundary = boundparts[1];
             }

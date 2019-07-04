@@ -45,7 +45,7 @@ public class ModuleGraphWriterTest
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
         Path baseDir = testdir.getEmptyPathDir();
-        String cmdLine[] = new String[]{"jetty.version=TEST"};
+        String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);

@@ -58,7 +58,7 @@ public class MessageInputStreamTest
                 stream.appendFrame(payload, fin);
 
                 // Read entire message it from the stream.
-                byte buf[] = new byte[32];
+                byte[] buf = new byte[32];
                 int len = stream.read(buf);
                 String message = new String(buf, 0, len, StandardCharsets.UTF_8);
 
@@ -109,7 +109,7 @@ public class MessageInputStreamTest
                 startLatch.await();
 
                 // Read it from the stream.
-                byte buf[] = new byte[32];
+                byte[] buf = new byte[32];
                 int len = stream.read(buf);
                 String message = new String(buf, 0, len, StandardCharsets.UTF_8);
 
@@ -216,7 +216,7 @@ public class MessageInputStreamTest
                 stream.appendFrame(msg3, true);
 
                 // Read entire message it from the stream.
-                byte buf[] = new byte[32];
+                byte[] buf = new byte[32];
                 int len = stream.read(buf);
                 String message = new String(buf, 0, len, StandardCharsets.UTF_8);
 
@@ -243,7 +243,7 @@ public class MessageInputStreamTest
                 stream.appendFrame(msg3, true);
 
                 // Read entire message it from the stream.
-                byte buf[] = new byte[32];
+                byte[] buf = new byte[32];
                 int len = stream.read(buf);
                 String message = new String(buf, 0, len, StandardCharsets.UTF_8);
 

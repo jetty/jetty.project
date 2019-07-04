@@ -210,7 +210,7 @@ public class TestABCase7_3
         ByteBuffer actual = UnitGenerator.generate(close.asFrame());
         ByteBuffer expected = ByteBuffer.allocate(132);
 
-        byte messageBytes[] = message.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
 
         expected.put(new byte[]
             {(byte)0x88});
