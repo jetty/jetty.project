@@ -21,13 +21,18 @@ package org.eclipse.jetty.websocket.tests;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -45,6 +50,7 @@ public class ConcurrentConnectTest
     private Server server;
     private WebSocketClient client;
     private URI uri;
+    private WebSocketServerFactory serverFactory;
 
     @BeforeEach
     public void start() throws Exception
@@ -56,7 +62,17 @@ public class ConcurrentConnectTest
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        context.addServlet(MyWebSocketServlet.class, "/");
+
+        WebSocketServlet servlet = new WebSocketServlet() {
+            @Override
+            public void configure(WebSocketServletFactory factory)
+            {
+                factory.register(EventSocket.EchoSocket.class);
+                serverFactory = (WebSocketServerFactory)factory;
+            }
+        };
+
+        context.addServlet(new ServletHolder(servlet), "/");
         server.setHandler(context);
 
         server.start();
@@ -78,6 +94,8 @@ public class ConcurrentConnectTest
     public void testConcurrentConnect() throws Exception
     {
         List<EventSocket> listeners = new ArrayList();
+        CloseListener closeListener = new CloseListener();
+        client.addSessionListener(closeListener);
         final int messages = MAX_CONNECTIONS;
 
         for (int i = 0; i < messages; i++)
@@ -113,14 +131,26 @@ public class ConcurrentConnectTest
             assertThat(l.closeReason, is("close from client"));
             //assertNull(l.failure); //TODO: we can get failures after close??
         }
+
+        closeListener.closeLatch.await(5, TimeUnit.SECONDS);
+        for (EventSocket l : listeners)
+        {
+            assertTrue(((WebSocketSession)l.session).isStopped());
+        }
+
+        assertTrue(client.getOpenSessions().isEmpty());
+        assertTrue(client.getContainedBeans(WebSocketSession.class).isEmpty());
+        assertTrue(serverFactory.getContainedBeans(WebSocketSession.class).isEmpty());
     }
 
-    public static class MyWebSocketServlet extends WebSocketServlet
+    public static class CloseListener implements WebSocketSessionListener
     {
+        public CountDownLatch closeLatch = new CountDownLatch(MAX_CONNECTIONS);
+
         @Override
-        public void configure(WebSocketServletFactory factory)
+        public void onSessionClosed(WebSocketSession session)
         {
-            factory.register(EventSocket.EchoSocket.class);
+            closeLatch.countDown();
         }
     }
 }
