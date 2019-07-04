@@ -38,6 +38,8 @@ import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
@@ -69,6 +71,12 @@ public class HttpClientTransportOverUnixSockets extends AbstractConnectorHttpCli
             int maxConnections = httpClient.getMaxConnectionsPerDestination();
             return new DuplexConnectionPool(destination, maxConnections, destination);
         });
+    }
+
+    @Override
+    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+    {
+        return new HttpDestination.Key(origin, null);
     }
 
     @Override

@@ -32,7 +32,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -544,12 +543,6 @@ public abstract class HttpReceiver
                 LOG.debug("State update failed: {} -> {}: {}", from, to, responseState.get());
         }
         return updated;
-    }
-
-    protected boolean isTunnel(HttpExchange exchange)
-    {
-        return HttpMethod.CONNECT.is(exchange.getRequest().getMethod()) &&
-                exchange.getResponse().getStatus() == HttpStatus.OK_200;
     }
 
     @Override

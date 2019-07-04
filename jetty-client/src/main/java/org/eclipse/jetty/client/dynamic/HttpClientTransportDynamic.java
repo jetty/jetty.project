@@ -79,7 +79,7 @@ import org.eclipse.jetty.io.EndPoint;
  * version, or request headers, or request attributes, or even request path) by overriding
  * {@link #newDestinationKey(HttpRequest, Origin)}.</p>
  */
-public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTransport implements HttpClientTransport.Dynamic
+public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTransport
 {
     private final List<ClientConnectionFactory.Info> factoryInfos;
     private final List<String> protocols;

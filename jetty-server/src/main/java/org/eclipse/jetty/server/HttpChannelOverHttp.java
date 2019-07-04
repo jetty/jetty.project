@@ -283,6 +283,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
+        onRequest(_metadata);
+
         if (_complianceViolations != null && !_complianceViolations.isEmpty())
         {
             this.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
@@ -363,7 +365,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 _upgrade = PREAMBLE_UPGRADE_H2C;
 
                 if (HttpMethod.PRI.is(_metadata.getMethod()) &&
-                        "*".equals(_metadata.getURI().toString()) &&
+                        "*".equals(_metadata.getURI().getPath()) &&
                         _fields.size() == 0 &&
                         upgrade())
                     return true;
@@ -381,8 +383,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         if (!persistent)
             _httpConnection.getGenerator().setPersistent(false);
-
-        onRequest(_metadata);
 
         // Should we delay dispatch until we have some content?
         // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse

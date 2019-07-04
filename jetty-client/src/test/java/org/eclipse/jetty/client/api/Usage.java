@@ -153,13 +153,13 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
+        Request request = client.newRequest("localhost", 8080);
+
         // Create an explicit connection, and use try-with-resources to manage it
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
-        client.getDestination("http", "localhost", 8080).newConnection(futureConnection);
+        client.resolveDestination(request).newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = client.newRequest("localhost", 8080);
-
             // Asynchronous send but using FutureResponseListener
             FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
@@ -293,15 +293,8 @@ public class Usage
         try (OutputStream output = content.getOutputStream())
         {
             client.newRequest("localhost", 8080)
-                .content(content)
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertEquals(200, result.getResponse().getStatus());
-                    }
-                });
+                    .content(content)
+                    .send(result -> assertEquals(200, result.getResponse().getStatus()));
 
             output.write(new byte[1024]);
             output.write(new byte[512]);

@@ -260,8 +260,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        if (isTunnel(exchange))
+        if (HttpMethod.CONNECT.is(exchange.getRequest().getMethod()))
+        {
+            // Store the EndPoint even in case of non-200 responses.
             exchange.getRequest().getConversation().setAttribute(EndPoint.class.getName(), getHttpConnection().getEndPoint());
+        }
 
         return !responseHeaders(exchange);
     }

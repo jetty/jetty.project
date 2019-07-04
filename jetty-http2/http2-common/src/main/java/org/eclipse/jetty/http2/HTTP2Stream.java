@@ -240,6 +240,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         notIdle();
         switch (frame.getType())
         {
+            case PREFACE:
+            {
+                onNewStream(callback);
+                break;
+            }
             case HEADERS:
             {
                 onHeaders((HeadersFrame)frame, callback);
@@ -275,6 +280,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 throw new UnsupportedOperationException();
             }
         }
+    }
+
+    private void onNewStream(Callback callback)
+    {
+        notifyNewStream(this);
+        callback.succeeded();
     }
 
     private void onHeaders(HeadersFrame frame, Callback callback)
@@ -544,6 +555,22 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private Callback endWrite()
     {
         return writing.getAndSet(null);
+    }
+
+    private void notifyNewStream(Stream stream)
+    {
+        Listener listener = this.listener;
+        if (listener != null)
+        {
+            try
+            {
+                listener.onNewStream(stream);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener " + listener, x);
+            }
+        }
     }
 
     private void notifyData(Stream stream, DataFrame frame, Callback callback)

@@ -169,6 +169,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     private class Listener implements Stream.Listener
     {
         @Override
+        public void onNewStream(Stream stream)
+        {
+            setStream(stream);
+        }
+
+        @Override
         public void onHeaders(Stream stream, HeadersFrame frame)
         {
             receiver.onHeaders(stream, frame);

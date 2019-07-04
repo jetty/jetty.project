@@ -300,7 +300,7 @@ public class ForwardProxyTLSServerTest
                 .path("/echo?body=" + URLEncoder.encode(content1, "UTF-8"))
                 .onRequestCommit(request ->
                 {
-                    Destination destination = httpClient.getDestination(HttpScheme.HTTPS.asString(), "localhost", serverConnector.getLocalPort());
+                    Destination destination = httpClient.resolveDestination(request);
                     destination.newConnection(new Promise.Adapter<>()
                     {
                         @Override

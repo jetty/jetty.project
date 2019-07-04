@@ -19,12 +19,15 @@
 package org.eclipse.jetty.client.http;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
@@ -35,6 +38,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("The HTTP/1.1 client transport")
 public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTransport
 {
+    public static final HttpDestination.Protocol HTTP11 = new HttpDestination.Protocol(List.of("http/1.1"), false);
+
     public HttpClientTransportOverHTTP()
     {
         this(Math.max(1, ProcessorUtils.availableProcessors() / 2));
@@ -50,6 +55,12 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     {
         super(connector);
         setConnectionPoolFactory(destination -> new DuplexConnectionPool(destination, getHttpClient().getMaxConnectionsPerDestination(), destination));
+    }
+
+    @Override
+    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+    {
+        return new HttpDestination.Key(origin, HTTP11);
     }
 
     @Override

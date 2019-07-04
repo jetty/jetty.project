@@ -44,6 +44,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -547,6 +548,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             // Synchronization is necessary to atomically create
             // the stream id and enqueue the frame to be sent.
+            IStream stream;
             boolean queued;
             synchronized (this)
             {
@@ -559,12 +561,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         priority.getWeight(), priority.isExclusive());
                     frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
                 }
-                IStream stream = createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
+                stream = createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
                 stream.setListener(listener);
 
                 ControlEntry entry = new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream));
                 queued = flusher.append(entry);
             }
+            stream.process(new PrefaceFrame(), Callback.NOOP);
             // Iterate outside the synchronized block.
             if (queued)
                 flusher.iterate();

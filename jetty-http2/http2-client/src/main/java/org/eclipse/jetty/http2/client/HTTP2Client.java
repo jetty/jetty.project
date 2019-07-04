@@ -323,7 +323,7 @@ public class HTTP2Client extends ContainerLifeCycle
     public void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         context = contextFrom(factory, listener, promise, context);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, promise);
         connector.connect(address, context);
     }
 
@@ -336,7 +336,7 @@ public class HTTP2Client extends ContainerLifeCycle
     public void accept(SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
     {
         Map<String, Object> context = contextFrom(factory, listener, promise, null);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, promise);
         connector.accept(channel, context);
     }
 

@@ -100,8 +100,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     wrapped = ((Promise.Wrapper<Connection>)promise).unwrap();
                 if (wrapped instanceof TunnelPromise)
                 {
-                    // TODO: this is very so weird that it deserves a comment.
-                    //  I don't even know when this happens.
+                    // In case the server closes the tunnel (e.g. proxy authentication
+                    // required: 407 + Connection: close), we will open another tunnel
+                    // so we need to tell the promise about the new EndPoint.
                     ((TunnelPromise)wrapped).setEndPoint(endPoint);
                     return connectionFactory.newConnection(endPoint, context);
                 }
@@ -186,16 +187,16 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             String target = destination.getOrigin().getAddress().asString();
             Origin.Address proxyAddress = destination.getConnectAddress();
             HttpClient httpClient = destination.getHttpClient();
-            HttpRequest connect = (HttpRequest)httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
-                .method(HttpMethod.CONNECT)
-                .path(target)
-                .header(HttpHeader.HOST, target);
+            Request connect = new TunnelRequest(httpClient, proxyAddress)
+                    .method(HttpMethod.CONNECT)
+                    .path(target)
+                    .header(HttpHeader.HOST, target);
             ProxyConfiguration.Proxy proxy = destination.getProxy();
             if (proxy.isSecure())
                 connect.scheme(HttpScheme.HTTPS.asString());
 
             connect.attribute(Connection.class.getName(), new ProxyConnection(destination, connection, promise));
-            connection.send(connect, new TunnelListener(connect.getConversation()));
+            connection.send(connect, new TunnelListener(connect));
         }
 
         private void tunnelSucceeded(EndPoint endPoint)
@@ -208,10 +209,6 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     connectionFactory = destination.newSslClientConnectionFactory(connectionFactory);
                 var oldConnection = endPoint.getConnection();
                 var newConnection = connectionFactory.newConnection(endPoint, context);
-                // TODO: the comment below is outdated: we only create the connection and not link it to the endPoint.
-                // Creating the connection will link the new Connection the EndPoint,
-                // but we need the old Connection linked for the upgrade to do its job.
-                endPoint.setConnection(oldConnection);
                 endPoint.upgrade(newConnection);
                 if (LOG.isDebugEnabled())
                     LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
@@ -232,9 +229,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         {
             private final HttpConversation conversation;
 
-            private TunnelListener(HttpConversation conversation)
+            private TunnelListener(Request request)
             {
-                this.conversation = conversation;
+                this.conversation = ((HttpRequest)request).getConversation();
             }
 
             @Override
@@ -332,6 +329,14 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         {
             HttpConversation conversation = ((HttpRequest)request).getConversation();
             conversation.setAttribute(EndPoint.class.getName(), endPoint);
+        }
+    }
+
+    public static class TunnelRequest extends HttpRequest
+    {
+        private TunnelRequest(HttpClient client, Origin.Address address)
+        {
+            super(client, new HttpConversation(), URI.create("http://" + address.asString()));
         }
     }
 }

@@ -189,14 +189,13 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         long timeout = 1000;
         scenario.start(new TimeoutHandler(2 * timeout));
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = scenario.client.getDestination(scenario.getScheme(), "localhost", scenario.getNetworkConnectorLocalPortInt().get());
+        Request request = scenario.client.newRequest(scenario.newURI()).timeout(timeout, TimeUnit.MILLISECONDS);
+        CountDownLatch latch = new CountDownLatch(1);
+        Destination destination = scenario.client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = scenario.client.newRequest(scenario.newURI())
-                .timeout(timeout, TimeUnit.MILLISECONDS);
             connection.send(request, result ->
             {
                 assertTrue(result.isFailed());
@@ -217,14 +216,13 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         long timeout = 1000;
         scenario.start(new TimeoutHandler(timeout));
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = scenario.client.getDestination(scenario.getScheme(), "localhost", scenario.getNetworkConnectorLocalPortInt().get());
+        Request request = scenario.client.newRequest(scenario.newURI()).timeout(2 * timeout, TimeUnit.MILLISECONDS);
+        CountDownLatch latch = new CountDownLatch(1);
+        Destination destination = scenario.client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = scenario.client.newRequest(scenario.newURI())
-                .timeout(2 * timeout, TimeUnit.MILLISECONDS);
             connection.send(request, result ->
             {
                 Response response = result.getResponse();
@@ -510,10 +508,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
             // Abort the test if we can connect.
             fail("Error: Should not have been able to connect to " + host + ":" + port);
         }
-        catch (SocketTimeoutException x)
+        catch (SocketTimeoutException ignored)
         {
             // Expected timeout during connect, continue the test.
-            return;
         }
         catch (Throwable x)
         {
