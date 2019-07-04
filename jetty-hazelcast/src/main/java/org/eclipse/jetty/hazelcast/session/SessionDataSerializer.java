@@ -77,17 +77,17 @@ public class SessionDataSerializer implements StreamSerializer<SessionData>
     @Override
     public SessionData read(ObjectDataInput in) throws IOException
     {
-        String id = in.readUTF();
-        String contextPath = in.readUTF();
-        String vhost = in.readUTF();
+        final String id = in.readUTF();
+        final String contextPath = in.readUTF();
+        final String vhost = in.readUTF();
 
-        long accessed = in.readLong();
-        long lastAccessed = in.readLong();
-        long created = in.readLong();
-        long cookieSet = in.readLong();
-        String lastNode = in.readUTF();
-        long expiry = in.readLong();
-        long maxInactiveMs = in.readLong();
+        final long accessed = in.readLong();
+        final long lastAccessed = in.readLong();
+        final long created = in.readLong();
+        final long cookieSet = in.readLong();
+        final String lastNode = in.readUTF();
+        final long expiry = in.readLong();
+        final long maxInactiveMs = in.readLong();
 
         SessionData sd = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxInactiveMs);
 

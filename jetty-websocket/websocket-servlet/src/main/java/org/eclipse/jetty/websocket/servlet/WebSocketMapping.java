@@ -75,6 +75,12 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         return null;
     }
 
+    public WebSocketCreator getMapping(PathSpec pathSpec)
+    {
+        Negotiator cn = mappings.get(pathSpec);
+        return cn == null ? null : cn.getWebSocketCreator();
+    }
+
     public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
     {
         WebSocketMapping mapping = getMapping(servletContext, mappingKey);
@@ -185,12 +191,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         mappings.put(pathSpec, new Negotiator(creator, factory, customizer));
     }
 
-    public WebSocketCreator getMapping(PathSpec pathSpec)
-    {
-        Negotiator cn = mappings.get(pathSpec);
-        return cn == null ? null : cn.getWebSocketCreator();
-    }
-
     public boolean removeMapping(PathSpec pathSpec)
     {
         return mappings.remove(pathSpec);
@@ -246,7 +246,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
         public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
         {
-            super(components.getExtensionRegistry(), components.getObjectFactory(), components.getBufferPool(), customizer);
+            super(components, customizer);
             this.creator = creator;
             this.factory = factory;
         }

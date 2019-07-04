@@ -16,19 +16,20 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.javax.tests;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
 import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.server.Server;
@@ -36,14 +37,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -52,23 +48,9 @@ import static org.hamcrest.Matchers.is;
 public class RestartContextTest
 {
     private Server server;
-    private WebSocketClient client;
-
-    @BeforeEach
-    public void startClient() throws Exception
-    {
-        client = new WebSocketClient();
-        client.start();
-    }
 
     @AfterEach
-    public void stopClient() throws Exception
-    {
-        client.stop();
-    }
-
-    @AfterEach
-    public void startServer() throws Exception
+    public void stopServer() throws Exception
     {
         server.stop();
     }
@@ -85,7 +67,7 @@ public class RestartContextTest
         // Setup Context
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        WebSocketServerContainerInitializer.configure(context, null);
+        JavaxWebSocketServletContainerInitializer.configure(context, null);
         // late initialization via my own ServletContextListener
         context.addEventListener(new AddEndpointListener());
 
@@ -125,7 +107,7 @@ public class RestartContextTest
         // Setup Context
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        WebSocketServerContainerInitializer.configure(context, (servletContext, serverContainer) ->
+        JavaxWebSocketServletContainerInitializer.configure(context, (servletContext, serverContainer) ->
         {
             // Add endpoint via configurator
             serverContainer.addEndpoint(EchoEndpoint.class);
@@ -155,13 +137,13 @@ public class RestartContextTest
         verifyWebSocketEcho(server.getURI().resolve("/echo"));
     }
 
-    private void verifyWebSocketEcho(URI endpointUri) throws URISyntaxException, IOException, ExecutionException, InterruptedException
+    private void verifyWebSocketEcho(URI endpointUri) throws Exception
     {
-        ClientEndpoint endpoint = new ClientEndpoint();
-        Future<Session> fut = client.connect(endpoint, WSURI.toWebsocket(endpointUri));
-        try (Session session = fut.get())
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        ClientSocket endpoint = new ClientSocket();
+        try (Session session = container.connectToServer(endpoint, WSURI.toWebsocket(endpointUri)))
         {
-            session.getRemote().sendString("Test Echo");
+            session.getBasicRemote().sendText("Test Echo");
             String msg = endpoint.messages.poll(5, TimeUnit.SECONDS);
             assertThat("msg", msg, is("Test Echo"));
         }
@@ -172,7 +154,7 @@ public class RestartContextTest
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
-            ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(javax.websocket.server.ServerContainer.class.getName());
+            ServerContainer container = JavaxWebSocketServerContainer.getContainer(sce.getServletContext());
             try
             {
                 container.addEndpoint(EchoEndpoint.class);
@@ -199,12 +181,12 @@ public class RestartContextTest
         }
     }
 
-    @WebSocket
-    public static class ClientEndpoint
+    @ClientEndpoint
+    public static class ClientSocket
     {
         public LinkedBlockingQueue<String> messages = new LinkedBlockingQueue<>();
 
-        @OnWebSocketMessage
+        @OnMessage
         public void onMessage(String msg)
         {
             this.messages.offer(msg);

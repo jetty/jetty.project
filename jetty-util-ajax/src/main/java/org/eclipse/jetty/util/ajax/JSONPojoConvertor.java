@@ -119,7 +119,6 @@ public class JSONPojoConvertor implements JSON.Convertor
                 switch (m.getParameterCount())
                 {
                     case 0:
-
                         if (m.getReturnType() != null)
                         {
                             if (name.startsWith("is") && name.length() > 2)
@@ -139,6 +138,9 @@ public class JSONPojoConvertor implements JSON.Convertor
                             if (includeField(name, m))
                                 addSetter(name, m);
                         }
+                        break;
+
+                    default:
                         break;
                 }
             }

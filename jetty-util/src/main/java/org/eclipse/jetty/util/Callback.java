@@ -269,7 +269,6 @@ public interface Callback extends Invocable
         };
     }
 
-
     class Completing implements Callback
     {
         @Override

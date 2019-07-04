@@ -507,6 +507,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     @Override
+    public void onWindowUpdate(IStream stream, WindowUpdateFrame frame)
+    {
+        // WindowUpdateFrames arrive concurrently with writes.
+        // Increasing (or reducing) the window size concurrently
+        // with writes requires coordination with the flusher, that
+        // decides how many frames to write depending on the available
+        // window sizes. If the window sizes vary concurrently, the
+        // flusher may take non-optimal or wrong decisions.
+        // Here, we "queue" window updates to the flusher, so it will
+        // be the only component responsible for window updates, for
+        // both increments and reductions.
+        flusher.window(stream, frame);
+    }
+
+    @Override
     public void onStreamFailure(int streamId, int error, String reason)
     {
         Callback callback = new ResetCallback(streamId, error, Callback.NOOP);
@@ -576,6 +591,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             promise.failed(x);
         }
+    }
+
+    protected IStream newStream(int streamId, boolean local)
+    {
+        return new HTTP2Stream(scheduler, this, streamId, local);
     }
 
     @Override
@@ -837,11 +857,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             remoteStreamCount.add(deltaStreams, deltaClosing);
     }
 
-    protected IStream newStream(int streamId, MetaData.Request request, boolean local)
-    {
-        return new HTTP2Stream(scheduler, this, streamId, request, local);
-    }
-
     @Override
     public void removeStream(IStream stream)
     {
@@ -895,21 +910,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public int updateRecvWindow(int delta)
     {
         return recvWindow.getAndAdd(delta);
-    }
-
-    @Override
-    public void onWindowUpdate(IStream stream, WindowUpdateFrame frame)
-    {
-        // WindowUpdateFrames arrive concurrently with writes.
-        // Increasing (or reducing) the window size concurrently
-        // with writes requires coordination with the flusher, that
-        // decides how many frames to write depending on the available
-        // window sizes. If the window sizes vary concurrently, the
-        // flusher may take non-optimal or wrong decisions.
-        // Here, we "queue" window updates to the flusher, so it will
-        // be the only component responsible for window updates, for
-        // both increments and reductions.
-        flusher.window(stream, frame);
     }
 
     @Override

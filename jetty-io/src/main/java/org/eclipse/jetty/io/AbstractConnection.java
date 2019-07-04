@@ -117,6 +117,10 @@ public abstract class AbstractConnection implements Connection
 
             case EITHER:
                 Invocable.invokeNonBlocking(failCallback);
+                break;
+
+            default:
+                throw new IllegalStateException();
         }
     }
 

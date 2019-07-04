@@ -452,7 +452,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 hasContent = true;
 
                 ProxyWriter proxyWriter = (ProxyWriter)clientRequest.getAttribute(WRITE_LISTENER_ATTRIBUTE);
-                boolean committed = proxyWriter != null;
+                final boolean committed = proxyWriter != null;
                 if (proxyWriter == null)
                 {
                     proxyWriter = newProxyWriteListener(clientRequest, serverResponse);

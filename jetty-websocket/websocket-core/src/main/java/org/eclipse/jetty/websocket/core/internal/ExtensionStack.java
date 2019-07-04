@@ -26,9 +26,7 @@ import java.util.ListIterator;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -40,8 +38,8 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 /**
  * Represents the stack of Extensions.
@@ -51,16 +49,16 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ExtensionStack.class);
 
-    private final WebSocketExtensionRegistry factory;
+    private final WebSocketComponents components;
     private final Behavior behavior;
     private List<Extension> extensions;
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
     private Extension[] rsvClaims = new Extension[3];
 
-    public ExtensionStack(WebSocketExtensionRegistry factory, Behavior behavior)
+    public ExtensionStack(WebSocketComponents components, Behavior behavior)
     {
-        this.factory = factory;
+        this.components = components;
         this.behavior = behavior;
     }
 
@@ -116,7 +114,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
      * @param offeredConfigs the configurations being requested by the client
      * @param negotiatedConfigs the configurations accepted by the server
      */
-    public void negotiate(DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool, List<ExtensionConfig> offeredConfigs, List<ExtensionConfig> negotiatedConfigs)
+    public void negotiate(List<ExtensionConfig> offeredConfigs, List<ExtensionConfig> negotiatedConfigs)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Extension Configs={}", negotiatedConfigs);
@@ -129,7 +127,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
             try
             {
-                ext = factory.newInstance(objectFactory, bufferPool, config);
+                ext = components.getExtensionRegistry().newInstance(config, components);
             }
             catch (Throwable t)
             {

@@ -45,132 +45,6 @@ class JettyAwareLogger implements org.slf4j.Logger
     }
 
     /**
-     * @see org.slf4j.Logger#getName()
-     */
-    @Override
-    public String getName()
-    {
-        return _logger.getName();
-    }
-
-    /**
-     * @see org.slf4j.Logger#isTraceEnabled()
-     */
-    @Override
-    public boolean isTraceEnabled()
-    {
-        return _logger.isTraceEnabled();
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(java.lang.String)
-     */
-    @Override
-    public void trace(String msg)
-    {
-        log(null, TRACE, msg, null, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Object)
-     */
-    @Override
-    public void trace(String format, Object arg)
-    {
-        log(null, TRACE, format, new Object[]{arg}, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Object, java.lang.Object)
-     */
-    @Override
-    public void trace(String format, Object arg1, Object arg2)
-    {
-        log(null, TRACE, format, new Object[]{arg1, arg2}, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Object[])
-     */
-    @Override
-    public void trace(String format, Object[] argArray)
-    {
-        log(null, TRACE, format, argArray, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Throwable)
-     */
-    @Override
-    public void trace(String msg, Throwable t)
-    {
-        log(null, TRACE, msg, null, t);
-    }
-
-    /**
-     * @see org.slf4j.Logger#isTraceEnabled(org.slf4j.Marker)
-     */
-    @Override
-    public boolean isTraceEnabled(Marker marker)
-    {
-        return _logger.isTraceEnabled(marker);
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String)
-     */
-    @Override
-    public void trace(Marker marker, String msg)
-    {
-        log(marker, TRACE, msg, null, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Object)
-     */
-    @Override
-    public void trace(Marker marker, String format, Object arg)
-    {
-        log(marker, TRACE, format, new Object[]{arg}, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Object, java.lang.Object)
-     */
-    @Override
-    public void trace(Marker marker, String format, Object arg1, Object arg2)
-    {
-        log(marker, TRACE, format, new Object[]{arg1, arg2}, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Object[])
-     */
-    @Override
-    public void trace(Marker marker, String format, Object[] argArray)
-    {
-        log(marker, TRACE, format, argArray, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Throwable)
-     */
-    @Override
-    public void trace(Marker marker, String msg, Throwable t)
-    {
-        log(marker, TRACE, msg, null, t);
-    }
-
-    /**
-     * @see org.slf4j.Logger#isDebugEnabled()
-     */
-    @Override
-    public boolean isDebugEnabled()
-    {
-        return _logger.isDebugEnabled();
-    }
-
-    /**
      * @see org.slf4j.Logger#debug(java.lang.String)
      */
     @Override
@@ -213,15 +87,6 @@ class JettyAwareLogger implements org.slf4j.Logger
     public void debug(String msg, Throwable t)
     {
         log(null, DEBUG, msg, null, t);
-    }
-
-    /**
-     * @see org.slf4j.Logger#isDebugEnabled(org.slf4j.Marker)
-     */
-    @Override
-    public boolean isDebugEnabled(Marker marker)
-    {
-        return _logger.isDebugEnabled(marker);
     }
 
     /**
@@ -270,12 +135,102 @@ class JettyAwareLogger implements org.slf4j.Logger
     }
 
     /**
-     * @see org.slf4j.Logger#isInfoEnabled()
+     * @see org.slf4j.Logger#error(java.lang.String)
      */
     @Override
-    public boolean isInfoEnabled()
+    public void error(String msg)
     {
-        return _logger.isInfoEnabled();
+        log(null, ERROR, msg, null, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#error(java.lang.String, java.lang.Object)
+     */
+    @Override
+    public void error(String format, Object arg)
+    {
+        log(null, ERROR, format, new Object[]{arg}, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#error(java.lang.String, java.lang.Object, java.lang.Object)
+     */
+    @Override
+    public void error(String format, Object arg1, Object arg2)
+    {
+        log(null, ERROR, format, new Object[]{arg1, arg2}, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#error(java.lang.String, java.lang.Object[])
+     */
+    @Override
+    public void error(String format, Object[] argArray)
+    {
+        log(null, ERROR, format, argArray, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#error(java.lang.String, java.lang.Throwable)
+     */
+    @Override
+    public void error(String msg, Throwable t)
+    {
+        log(null, ERROR, msg, null, t);
+    }
+
+    /**
+     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String)
+     */
+    @Override
+    public void error(Marker marker, String msg)
+    {
+        log(marker, ERROR, msg, null, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Object)
+     */
+    @Override
+    public void error(Marker marker, String format, Object arg)
+    {
+        log(marker, ERROR, format, new Object[]{arg}, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Object, java.lang.Object)
+     */
+    @Override
+    public void error(Marker marker, String format, Object arg1, Object arg2)
+    {
+        log(marker, ERROR, format, new Object[]{arg1, arg2}, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Object[])
+     */
+    @Override
+    public void error(Marker marker, String format, Object[] argArray)
+    {
+        log(marker, ERROR, format, argArray, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Throwable)
+     */
+    @Override
+    public void error(Marker marker, String msg, Throwable t)
+    {
+        log(marker, ERROR, msg, null, t);
+    }
+
+    /**
+     * @see org.slf4j.Logger#getName()
+     */
+    @Override
+    public String getName()
+    {
+        return _logger.getName();
     }
 
     /**
@@ -324,15 +279,6 @@ class JettyAwareLogger implements org.slf4j.Logger
     }
 
     /**
-     * @see org.slf4j.Logger#isInfoEnabled(org.slf4j.Marker)
-     */
-    @Override
-    public boolean isInfoEnabled(Marker marker)
-    {
-        return _logger.isInfoEnabled(marker);
-    }
-
-    /**
      * @see org.slf4j.Logger#info(org.slf4j.Marker, java.lang.String)
      */
     @Override
@@ -378,12 +324,189 @@ class JettyAwareLogger implements org.slf4j.Logger
     }
 
     /**
+     * @see org.slf4j.Logger#isDebugEnabled()
+     */
+    @Override
+    public boolean isDebugEnabled()
+    {
+        return _logger.isDebugEnabled();
+    }
+
+    /**
+     * @see org.slf4j.Logger#isDebugEnabled(org.slf4j.Marker)
+     */
+    @Override
+    public boolean isDebugEnabled(Marker marker)
+    {
+        return _logger.isDebugEnabled(marker);
+    }
+
+    /**
+     * @see org.slf4j.Logger#isErrorEnabled()
+     */
+    @Override
+    public boolean isErrorEnabled()
+    {
+        return _logger.isErrorEnabled();
+    }
+
+    /**
+     * @see org.slf4j.Logger#isErrorEnabled(org.slf4j.Marker)
+     */
+    @Override
+    public boolean isErrorEnabled(Marker marker)
+    {
+        return _logger.isErrorEnabled(marker);
+    }
+
+    /**
+     * @see org.slf4j.Logger#isInfoEnabled()
+     */
+    @Override
+    public boolean isInfoEnabled()
+    {
+        return _logger.isInfoEnabled();
+    }
+
+    /**
+     * @see org.slf4j.Logger#isInfoEnabled(org.slf4j.Marker)
+     */
+    @Override
+    public boolean isInfoEnabled(Marker marker)
+    {
+        return _logger.isInfoEnabled(marker);
+    }
+
+    /**
+     * @see org.slf4j.Logger#isTraceEnabled()
+     */
+    @Override
+    public boolean isTraceEnabled()
+    {
+        return _logger.isTraceEnabled();
+    }
+
+    /**
+     * @see org.slf4j.Logger#isTraceEnabled(org.slf4j.Marker)
+     */
+    @Override
+    public boolean isTraceEnabled(Marker marker)
+    {
+        return _logger.isTraceEnabled(marker);
+    }
+
+    /**
      * @see org.slf4j.Logger#isWarnEnabled()
      */
     @Override
     public boolean isWarnEnabled()
     {
         return _logger.isWarnEnabled();
+    }
+
+    /**
+     * @see org.slf4j.Logger#isWarnEnabled(org.slf4j.Marker)
+     */
+    @Override
+    public boolean isWarnEnabled(Marker marker)
+    {
+        return _logger.isWarnEnabled(marker);
+    }
+
+    @Override
+    public String toString()
+    {
+        return _logger.toString();
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(java.lang.String)
+     */
+    @Override
+    public void trace(String msg)
+    {
+        log(null, TRACE, msg, null, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Object)
+     */
+    @Override
+    public void trace(String format, Object arg)
+    {
+        log(null, TRACE, format, new Object[]{arg}, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Object, java.lang.Object)
+     */
+    @Override
+    public void trace(String format, Object arg1, Object arg2)
+    {
+        log(null, TRACE, format, new Object[]{arg1, arg2}, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Object[])
+     */
+    @Override
+    public void trace(String format, Object[] argArray)
+    {
+        log(null, TRACE, format, argArray, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Throwable)
+     */
+    @Override
+    public void trace(String msg, Throwable t)
+    {
+        log(null, TRACE, msg, null, t);
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String)
+     */
+    @Override
+    public void trace(Marker marker, String msg)
+    {
+        log(marker, TRACE, msg, null, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Object)
+     */
+    @Override
+    public void trace(Marker marker, String format, Object arg)
+    {
+        log(marker, TRACE, format, new Object[]{arg}, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Object, java.lang.Object)
+     */
+    @Override
+    public void trace(Marker marker, String format, Object arg1, Object arg2)
+    {
+        log(marker, TRACE, format, new Object[]{arg1, arg2}, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Object[])
+     */
+    @Override
+    public void trace(Marker marker, String format, Object[] argArray)
+    {
+        log(marker, TRACE, format, argArray, null);
+    }
+
+    /**
+     * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Throwable)
+     */
+    @Override
+    public void trace(Marker marker, String msg, Throwable t)
+    {
+        log(marker, TRACE, msg, null, t);
     }
 
     /**
@@ -432,15 +555,6 @@ class JettyAwareLogger implements org.slf4j.Logger
     }
 
     /**
-     * @see org.slf4j.Logger#isWarnEnabled(org.slf4j.Marker)
-     */
-    @Override
-    public boolean isWarnEnabled(Marker marker)
-    {
-        return _logger.isWarnEnabled(marker);
-    }
-
-    /**
      * @see org.slf4j.Logger#warn(org.slf4j.Marker, java.lang.String)
      */
     @Override
@@ -483,120 +597,6 @@ class JettyAwareLogger implements org.slf4j.Logger
     public void warn(Marker marker, String msg, Throwable t)
     {
         log(marker, WARN, msg, null, t);
-    }
-
-    /**
-     * @see org.slf4j.Logger#isErrorEnabled()
-     */
-    @Override
-    public boolean isErrorEnabled()
-    {
-        return _logger.isErrorEnabled();
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(java.lang.String)
-     */
-    @Override
-    public void error(String msg)
-    {
-        log(null, ERROR, msg, null, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(java.lang.String, java.lang.Object)
-     */
-    @Override
-    public void error(String format, Object arg)
-    {
-        log(null, ERROR, format, new Object[]{arg}, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(java.lang.String, java.lang.Object, java.lang.Object)
-     */
-    @Override
-    public void error(String format, Object arg1, Object arg2)
-    {
-        log(null, ERROR, format, new Object[]{arg1, arg2}, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(java.lang.String, java.lang.Object[])
-     */
-    @Override
-    public void error(String format, Object[] argArray)
-    {
-        log(null, ERROR, format, argArray, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(java.lang.String, java.lang.Throwable)
-     */
-    @Override
-    public void error(String msg, Throwable t)
-    {
-        log(null, ERROR, msg, null, t);
-    }
-
-    /**
-     * @see org.slf4j.Logger#isErrorEnabled(org.slf4j.Marker)
-     */
-    @Override
-    public boolean isErrorEnabled(Marker marker)
-    {
-        return _logger.isErrorEnabled(marker);
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String)
-     */
-    @Override
-    public void error(Marker marker, String msg)
-    {
-        log(marker, ERROR, msg, null, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Object)
-     */
-    @Override
-    public void error(Marker marker, String format, Object arg)
-    {
-        log(marker, ERROR, format, new Object[]{arg}, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Object, java.lang.Object)
-     */
-    @Override
-    public void error(Marker marker, String format, Object arg1, Object arg2)
-    {
-        log(marker, ERROR, format, new Object[]{arg1, arg2}, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Object[])
-     */
-    @Override
-    public void error(Marker marker, String format, Object[] argArray)
-    {
-        log(marker, ERROR, format, argArray, null);
-    }
-
-    /**
-     * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Throwable)
-     */
-    @Override
-    public void error(Marker marker, String msg, Throwable t)
-    {
-        log(marker, ERROR, msg, null, t);
-    }
-
-    @Override
-    public String toString()
-    {
-        return _logger.toString();
     }
 
     private void log(Marker marker, int level, String msg, Object[] argArray, Throwable t)

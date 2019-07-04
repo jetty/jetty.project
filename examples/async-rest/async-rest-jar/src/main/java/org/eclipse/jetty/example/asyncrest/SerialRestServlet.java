@@ -42,7 +42,7 @@ public class SerialRestServlet extends AbstractRestServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        long start = System.nanoTime();
+        final long start = System.nanoTime();
 
         String[] keywords = sanitize(request.getParameter(ITEMS_PARAM)).split(",");
         Queue<Map<String, String>> results = new LinkedList<Map<String, String>>();
@@ -67,7 +67,7 @@ public class SerialRestServlet extends AbstractRestServlet
         }
 
         // Generate the response
-        String thumbs = generateThumbs(results);
+        final String thumbs = generateThumbs(results);
 
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();

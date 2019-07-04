@@ -37,7 +37,6 @@ import javax.servlet.http.HttpSessionListener;
 @WebListener
 public class AnnotatedListener implements HttpSessionListener, HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
 {
-
     @Resource(mappedName = "maxAmount")
     private Double maxAmount;
 
@@ -48,9 +47,33 @@ public class AnnotatedListener implements HttpSessionListener, HttpSessionAttrib
     }
 
     @Override
+    public void attributeAdded(ServletContextAttributeEvent scab)
+    {
+        // System.err.println("attributeAdded "+scab);
+    }
+
+    @Override
+    public void attributeAdded(ServletRequestAttributeEvent srae)
+    {
+        // System.err.println("attributeAdded "+srae);
+    }
+
+    @Override
     public void attributeRemoved(HttpSessionBindingEvent se)
     {
         // System.err.println("attributeRemoved "+se);
+    }
+
+    @Override
+    public void attributeRemoved(ServletContextAttributeEvent scab)
+    {
+        // System.err.println("attributeRemoved "+scab);
+    }
+
+    @Override
+    public void attributeRemoved(ServletRequestAttributeEvent srae)
+    {
+        // System.err.println("attributeRemoved "+srae);
     }
 
     @Override
@@ -60,15 +83,21 @@ public class AnnotatedListener implements HttpSessionListener, HttpSessionAttrib
     }
 
     @Override
-    public void sessionWillPassivate(HttpSessionEvent se)
+    public void attributeReplaced(ServletContextAttributeEvent scab)
     {
-        // System.err.println("sessionWillPassivate "+se);
+        // System.err.println("attributeReplaced "+scab);
     }
 
     @Override
-    public void sessionDidActivate(HttpSessionEvent se)
+    public void attributeReplaced(ServletRequestAttributeEvent srae)
     {
-        // System.err.println("sessionDidActivate "+se);
+        // System.err.println("attributeReplaced "+srae);
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent sce)
+    {
+        // System.err.println("contextDestroyed "+sce);
     }
 
     @Override
@@ -80,28 +109,10 @@ public class AnnotatedListener implements HttpSessionListener, HttpSessionAttrib
         sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest", Boolean.valueOf(maxAmount != null));
     }
 
-    @Override
-    public void contextDestroyed(ServletContextEvent sce)
+    public void requestCompleted(ServletRequestEvent rre)
     {
-        // System.err.println("contextDestroyed "+sce);
-    }
+        // TODO Auto-generated method stub
 
-    @Override
-    public void attributeAdded(ServletContextAttributeEvent scab)
-    {
-        // System.err.println("attributeAdded "+scab);
-    }
-
-    @Override
-    public void attributeRemoved(ServletContextAttributeEvent scab)
-    {
-        // System.err.println("attributeRemoved "+scab);
-    }
-
-    @Override
-    public void attributeReplaced(ServletContextAttributeEvent scab)
-    {
-        // System.err.println("attributeReplaced "+scab);
     }
 
     @Override
@@ -116,22 +127,16 @@ public class AnnotatedListener implements HttpSessionListener, HttpSessionAttrib
         // System.err.println("requestInitialized "+sre);
     }
 
-    @Override
-    public void attributeAdded(ServletRequestAttributeEvent srae)
+    public void requestResumed(ServletRequestEvent rre)
     {
-        // System.err.println("attributeAdded "+srae);
+        // TODO Auto-generated method stub
+
     }
 
-    @Override
-    public void attributeRemoved(ServletRequestAttributeEvent srae)
+    public void requestSuspended(ServletRequestEvent rre)
     {
-        // System.err.println("attributeRemoved "+srae);
-    }
+        // TODO Auto-generated method stub
 
-    @Override
-    public void attributeReplaced(ServletRequestAttributeEvent srae)
-    {
-        // System.err.println("attributeReplaced "+srae);
     }
 
     @Override
@@ -146,21 +151,15 @@ public class AnnotatedListener implements HttpSessionListener, HttpSessionAttrib
         // System.err.println("sessionDestroyed "+se);
     }
 
-    public void requestCompleted(ServletRequestEvent rre)
+    @Override
+    public void sessionDidActivate(HttpSessionEvent se)
     {
-        // TODO Auto-generated method stub
-
+        // System.err.println("sessionDidActivate "+se);
     }
 
-    public void requestResumed(ServletRequestEvent rre)
+    @Override
+    public void sessionWillPassivate(HttpSessionEvent se)
     {
-        // TODO Auto-generated method stub
-
-    }
-
-    public void requestSuspended(ServletRequestEvent rre)
-    {
-        // TODO Auto-generated method stub
-
+        // System.err.println("sessionWillPassivate "+se);
     }
 }

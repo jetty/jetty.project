@@ -344,7 +344,7 @@ public class ClientCloseTest
             // clients disconnect
             for (int i = 0; i < sessionCount; i++)
             {
-                clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), containsString("Session Closed"));
+                clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.SHUTDOWN), containsString("Container being shut down"));
             }
 
             // ensure all Sessions are gone. connections are gone. etc. (client and server)

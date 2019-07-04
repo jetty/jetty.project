@@ -284,7 +284,7 @@ public class WebSocketClientTest
             // Create string that is larger than default size of 64k
             // but smaller than maxMessageSize of 100k
             int size = 80 * 1024;
-            byte buf[] = new byte[size];
+            byte[] buf = new byte[size];
             Arrays.fill(buf, (byte)'x');
             String msg = StringUtil.toUTF8String(buf, 0, buf.length);
 

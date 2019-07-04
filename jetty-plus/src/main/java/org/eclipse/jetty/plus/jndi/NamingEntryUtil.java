@@ -130,6 +130,33 @@ public class NamingEntryUtil
         }
     }
 
+    /**
+     * Build up a list of NamingEntry objects that are of a specific type.
+     */
+    private static List<Object> lookupNamingEntries(List<Object> list, Context context, Class<?> clazz)
+        throws NamingException
+    {
+        try
+        {
+            NamingEnumeration<Binding> nenum = context.listBindings("");
+            while (nenum.hasMoreElements())
+            {
+                Binding binding = nenum.next();
+                if (binding.getObject() instanceof Context)
+                    lookupNamingEntries(list, (Context)binding.getObject(), clazz);
+                else if (clazz.isInstance(binding.getObject()))
+                    list.add(binding.getObject());
+            }
+        }
+        catch (NameNotFoundException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("No entries of type " + clazz.getName() + " in context=" + context);
+        }
+
+        return list;
+    }
+
     public static Name makeNamingEntryName(NameParser parser, NamingEntry namingEntry)
         throws NamingException
     {
@@ -192,33 +219,6 @@ public class NamingEntryUtil
     {
         Context scopeContext = getContextForScope(scope);
         return (Context)scopeContext.lookup(NamingEntry.__contextName);
-    }
-
-    /**
-     * Build up a list of NamingEntry objects that are of a specific type.
-     */
-    private static List<Object> lookupNamingEntries(List<Object> list, Context context, Class<?> clazz)
-        throws NamingException
-    {
-        try
-        {
-            NamingEnumeration<Binding> nenum = context.listBindings("");
-            while (nenum.hasMoreElements())
-            {
-                Binding binding = nenum.next();
-                if (binding.getObject() instanceof Context)
-                    lookupNamingEntries(list, (Context)binding.getObject(), clazz);
-                else if (clazz.isInstance(binding.getObject()))
-                    list.add(binding.getObject());
-            }
-        }
-        catch (NameNotFoundException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("No entries of type " + clazz.getName() + " in context=" + context);
-        }
-
-        return list;
     }
 
     private static String canonicalizeScope(Object scope)

@@ -26,7 +26,6 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
@@ -35,7 +34,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
@@ -61,7 +60,7 @@ public class ExtensionTool
         {
             this.requestedExtParams = parameterizedExtension;
             this.extConfig = ExtensionConfig.parse(parameterizedExtension);
-            Class<?> extClass = factory.getExtension(extConfig.getName());
+            Class<?> extClass = components.getExtensionRegistry().getExtension(extConfig.getName());
             assertThat("extClass", extClass, notNullValue());
 
             this.capture = new IncomingFramesCapture();
@@ -75,7 +74,7 @@ public class ExtensionTool
 
         public void assertNegotiated(String expectedNegotiation)
         {
-            this.ext = factory.newInstance(objectFactory, bufferPool, extConfig);
+            this.ext = components.getExtensionRegistry().newInstance(extConfig, components);
             this.ext.setNextIncomingFrames(capture);
             this.ext.setWebSocketCoreSession(newWebSocketCoreSession());
         }
@@ -83,7 +82,7 @@ public class ExtensionTool
         public void parseIncomingHex(String... rawhex)
         {
             int parts = rawhex.length;
-            byte net[];
+            byte[] net;
 
             for (int i = 0; i < parts; i++)
             {
@@ -105,7 +104,7 @@ public class ExtensionTool
 
         public void assertHasFrames(String... textFrames)
         {
-            Frame frames[] = new Frame[textFrames.length];
+            Frame[] frames = new Frame[textFrames.length];
             for (int i = 0; i < frames.length; i++)
             {
                 frames[i] = new Frame(OpCode.TEXT).setPayload(textFrames[i]);
@@ -136,15 +135,11 @@ public class ExtensionTool
         }
     }
 
-    private final DecoratedObjectFactory objectFactory;
-    private final ByteBufferPool bufferPool;
-    private final WebSocketExtensionRegistry factory;
+    private final WebSocketComponents components;
 
     public ExtensionTool(ByteBufferPool bufferPool)
     {
-        this.objectFactory = new DecoratedObjectFactory();
-        this.bufferPool = bufferPool;
-        this.factory = new WebSocketExtensionRegistry();
+        this.components = new WebSocketComponents();
     }
 
     public Tester newTester(String parameterizedExtension)
@@ -154,9 +149,8 @@ public class ExtensionTool
 
     private WebSocketCoreSession newWebSocketCoreSession()
     {
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
-        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
-        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
+        ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
+        exStack.negotiate(new LinkedList<>(), new LinkedList<>());
         WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack));
         return coreSession;
     }

@@ -116,12 +116,13 @@ public abstract class HttpReceiver
         if (!updateResponseState(ResponseState.IDLE, ResponseState.TRANSIENT))
             return false;
 
-        HttpConversation conversation = exchange.getConversation();
-        HttpResponse response = exchange.getResponse();
+        final HttpConversation conversation = exchange.getConversation();
+        final HttpResponse response = exchange.getResponse();
         // Probe the protocol handlers
-        HttpDestination destination = getHttpDestination();
-        HttpClient client = destination.getHttpClient();
-        ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.getRequest(), response);
+        final HttpDestination destination = getHttpDestination();
+        final HttpClient client = destination.getHttpClient();
+        final ProtocolHandler protocolHandler = client.findProtocolHandler(exchange.getRequest(), response);
+
         Response.Listener handlerListener = null;
         if (protocolHandler != null)
         {

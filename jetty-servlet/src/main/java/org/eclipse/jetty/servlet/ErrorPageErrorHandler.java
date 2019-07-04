@@ -146,6 +146,8 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     dbg.append(" (from global default)");
                     LOG.debug(dbg.toString());
                     break;
+                default:
+                    throw new IllegalStateException(pageSource.toString());
             }
         }
 

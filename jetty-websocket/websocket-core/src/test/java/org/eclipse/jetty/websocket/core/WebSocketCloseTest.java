@@ -31,7 +31,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -551,8 +550,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
             ContextHandler context = new ContextHandler("/");
             server.setHandler(context);
-            WebSocketNegotiator negotiator = new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(),
-                connector.getByteBufferPool(), frameHandler);
+            WebSocketNegotiator negotiator = new TestWebSocketNegotiator(frameHandler);
 
             WebSocketUpgradeHandler upgradeHandler = new TestWebSocketUpgradeHandler(negotiator);
             context.setHandler(upgradeHandler);

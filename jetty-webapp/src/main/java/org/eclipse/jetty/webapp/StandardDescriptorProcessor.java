@@ -203,10 +203,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     public void visitServlet(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
-        String id = node.getAttribute("id");
-
-        // initialize holder
-        String name = node.getString("servlet-name", false, true);
+        final String id = node.getAttribute("id");
+        final String name = node.getString("servlet-name", false, true);
         ServletHolder holder = _servletHolderMap.get(name);
 
         //If servlet of that name does not already exist, create it.

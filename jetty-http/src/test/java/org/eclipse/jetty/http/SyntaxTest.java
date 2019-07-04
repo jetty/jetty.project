@@ -30,7 +30,7 @@ public class SyntaxTest
     @Test
     public void testRequireValidRFC2616Token_Good()
     {
-        String tokens[] = {
+        String[] tokens = {
             "name",
             "",
             null,
@@ -52,7 +52,7 @@ public class SyntaxTest
     @Test
     public void testRequireValidRFC2616Token_Bad()
     {
-        String tokens[] = {
+        String[] tokens = {
             "\"name\"",
             "name\t",
             "na me",
@@ -83,7 +83,7 @@ public class SyntaxTest
     @Test
     public void testRequireValidRFC6265CookieValue_Good()
     {
-        String values[] = {
+        String[] values = {
             "value",
             "",
             null,
@@ -104,7 +104,7 @@ public class SyntaxTest
     @Test
     public void testRequireValidRFC6265CookieValue_Bad()
     {
-        String values[] = {
+        String[] values = {
             "va\tlue",
             "\t",
             "value\u0000",

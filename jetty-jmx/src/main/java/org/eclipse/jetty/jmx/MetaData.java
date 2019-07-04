@@ -91,6 +91,21 @@ class MetaData
         return mbean;
     }
 
+    private static Object newInstance(Constructor<?> constructor, Object bean)
+    {
+        try
+        {
+            Object mbean = constructor.getParameterCount() == 0 ? constructor.newInstance() : constructor.newInstance(bean);
+            if (mbean instanceof ModelMBean)
+                ((ModelMBean)mbean).setManagedResource(bean, "objectReference");
+            return mbean;
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
     MBeanInfo getMBeanInfo()
     {
         return _info;
@@ -173,21 +188,6 @@ class MetaData
             result = r;
 
         return result;
-    }
-
-    private static Object newInstance(Constructor<?> constructor, Object bean)
-    {
-        try
-        {
-            Object mbean = constructor.getParameterCount() == 0 ? constructor.newInstance() : constructor.newInstance(bean);
-            if (mbean instanceof ModelMBean)
-                ((ModelMBean)mbean).setManagedResource(bean, "objectReference");
-            return mbean;
-        }
-        catch (Throwable x)
-        {
-            return null;
-        }
     }
 
     private void parseMethods(Class<?>... classes)

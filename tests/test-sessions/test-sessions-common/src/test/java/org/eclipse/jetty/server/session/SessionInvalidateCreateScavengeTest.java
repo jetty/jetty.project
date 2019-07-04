@@ -112,7 +112,7 @@ public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
                 assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
 
                 // Wait for the scavenger to run
-                Thread.sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + scavengePeriod));
+                Thread.sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + 2 * scavengePeriod));
 
                 //test that the session created in the last test is scavenged:
                 //the HttpSessionListener should have been called when session1 was invalidated and session2 was scavenged

@@ -53,7 +53,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     private void init(PerMessageDeflateExtension ext)
     {
-        ext.init(new ExtensionConfig(ext.getName()), bufferPool);
+        ext.init(new ExtensionConfig(ext.getName()), components);
     }
 
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
@@ -284,7 +284,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -319,7 +319,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -354,7 +354,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -409,7 +409,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
@@ -447,7 +447,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     public void testOutgoingFragmentedMessage() throws IOException, InterruptedException
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-        ext.init(ExtensionConfig.parse("permessage-deflate"), bufferPool);
+        ext.init(ExtensionConfig.parse("permessage-deflate"), components);
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();

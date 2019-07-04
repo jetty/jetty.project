@@ -147,7 +147,7 @@ public class ParserReservedBitTest
     @Test
     public void testCase3_5()
     {
-        byte payload[] = new byte[8];
+        byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
 
         List<Frame> send = new ArrayList<>();
@@ -167,7 +167,7 @@ public class ParserReservedBitTest
     @Test
     public void testCase3_6()
     {
-        byte payload[] = new byte[8];
+        byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
 
         List<Frame> send = new ArrayList<>();

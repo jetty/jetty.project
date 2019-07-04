@@ -248,6 +248,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             case OpCode.CONTINUATION:
                 onContinuationFrame(frame, demandingCallback);
                 break;
+            default:
+                callback.failed(new IllegalStateException());
         }
     }
 

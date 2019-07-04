@@ -151,6 +151,8 @@ public class MessageHandler implements FrameHandler
                 if (frame.isFin())
                     dataType = OpCode.UNDEFINED;
                 break;
+            default:
+                callback.failed(new IllegalStateException());
         }
     }
 

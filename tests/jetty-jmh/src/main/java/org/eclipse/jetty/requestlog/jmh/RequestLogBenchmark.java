@@ -94,14 +94,14 @@ public class RequestLogBenchmark
 
             // setup iteration
             iteratedLog = new Object[]
-                {
-                    logURI,
-                    " - ",
-                    logAddr,
-                    " ",
-                    logLength,
-                    "\n"
-                };
+            {
+                logURI,
+                " - ",
+                logAddr,
+                " ",
+                logLength,
+                "\n"
+            };
 
             // setup methodHandle
             logHandle = dropArguments(append.bindTo("\n"), 1, String.class);

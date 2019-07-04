@@ -62,7 +62,7 @@ public class MessageInputStreamTest
                 stream.accept(frame, Callback.NOOP);
 
                 // Read entire message it from the stream.
-                byte data[] = IO.readBytes(stream);
+                byte[] data = IO.readBytes(stream);
                 String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
 
                 // Test it
@@ -106,7 +106,7 @@ public class MessageInputStreamTest
                 startLatch.await();
 
                 // Read it from the stream.
-                byte data[] = IO.readBytes(stream);
+                byte[] data = IO.readBytes(stream);
                 String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
 
                 // Test it
@@ -204,7 +204,7 @@ public class MessageInputStreamTest
                 stream.accept(msg3, Callback.NOOP);
 
                 // Read entire message it from the stream.
-                byte data[] = IO.readBytes(stream);
+                byte[] data = IO.readBytes(stream);
                 String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
 
                 // Test it
@@ -232,7 +232,7 @@ public class MessageInputStreamTest
                 stream.accept(msg3, Callback.NOOP);
 
                 // Read entire message it from the stream.
-                byte data[] = IO.readBytes(stream);
+                byte[] data = IO.readBytes(stream);
                 String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
 
                 // Test it

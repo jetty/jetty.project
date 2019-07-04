@@ -112,6 +112,8 @@ public class OverlayConfig
                         excludes = Arrays.asList(exs);
                     break;
                 }
+                default:
+                    break;
             }
         }
     }

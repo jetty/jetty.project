@@ -22,6 +22,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
@@ -35,6 +37,8 @@ public abstract class AbstractExtension implements Extension
     private OutgoingFrames nextOutgoing;
     private IncomingFrames nextIncoming;
     private WebSocketCoreSession coreSession;
+    private DeflaterPool deflaterPool;
+    private InflaterPool inflaterPool;
 
     public AbstractExtension()
     {
@@ -42,10 +46,12 @@ public abstract class AbstractExtension implements Extension
     }
 
     @Override
-    public void init(ExtensionConfig config, ByteBufferPool bufferPool)
+    public void init(ExtensionConfig config, WebSocketComponents components)
     {
         this.config = config;
-        this.bufferPool = bufferPool;
+        this.bufferPool = components.getBufferPool();
+        this.deflaterPool = components.getDeflaterPool();
+        this.inflaterPool = components.getInflaterPool();
     }
 
     public ByteBufferPool getBufferPool()
@@ -57,6 +63,16 @@ public abstract class AbstractExtension implements Extension
     public ExtensionConfig getConfig()
     {
         return config;
+    }
+
+    public DeflaterPool getDeflaterPool()
+    {
+        return deflaterPool;
+    }
+
+    public InflaterPool getInflaterPool()
+    {
+        return inflaterPool;
     }
 
     @Override

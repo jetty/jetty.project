@@ -470,6 +470,9 @@ public class HttpChannelState
                         case IDLE:
                         case REGISTERED:
                             break;
+
+                        default:
+                            throw new IllegalStateException(_asyncRead.toString());
                     }
 
                     if (_asyncWritePossible)
@@ -1184,6 +1187,8 @@ public class HttpChannelState
                 case POSSIBLE:
                 case PRODUCING:
                     break;
+                default:
+                    throw new IllegalStateException(_asyncRead.toString());
             }
         }
 
@@ -1227,7 +1232,7 @@ public class HttpChannelState
                     }
                     break;
 
-                case POSSIBLE:
+                default:
                     throw new IllegalStateException(toStringLocked());
             }
         }

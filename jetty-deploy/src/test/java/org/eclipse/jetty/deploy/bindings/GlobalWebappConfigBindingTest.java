@@ -88,7 +88,7 @@ public class GlobalWebappConfigBindingTest
         WebAppContext context = contexts.get(0);
 
         assertNotNull(context, "Context should not be null");
-        String currentClasses[] = context.getServerClasses();
+        String[] currentClasses = context.getServerClasses();
 
         String addedClass = "org.eclipse.foo."; // What was added by the binding
         assertThat("Current Server Classes", addedClass, is(in(currentClasses)));

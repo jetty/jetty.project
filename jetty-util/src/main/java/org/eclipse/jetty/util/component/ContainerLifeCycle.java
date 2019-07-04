@@ -395,6 +395,10 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
                 case POJO:
                     newBean._managed = Managed.POJO;
+                    break;
+
+                default:
+                    throw new IllegalStateException(managed.toString());
             }
         }
         catch (RuntimeException | Error e)
@@ -546,18 +550,18 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         }
     }
 
-    @Override
-    public Collection<Object> getBeans()
-    {
-        return getBeans(Object.class);
-    }
-
     public void setBeans(Collection<Object> beans)
     {
         for (Object bean : beans)
         {
             addBean(bean);
         }
+    }
+
+    @Override
+    public Collection<Object> getBeans()
+    {
+        return getBeans(Object.class);
     }
 
     @Override
@@ -587,6 +591,16 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         return null;
     }
 
+    private Bean getBean(Object o)
+    {
+        for (Bean b : _beans)
+        {
+            if (b._bean == o)
+                return b;
+        }
+        return null;
+    }
+
     /**
      * Removes all bean
      */
@@ -597,16 +611,6 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         {
             remove(b);
         }
-    }
-
-    private Bean getBean(Object o)
-    {
-        for (Bean b : _beans)
-        {
-            if (b._bean == o)
-                return b;
-        }
-        return null;
     }
 
     @Override
@@ -620,7 +624,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         if (_beans.remove(bean))
         {
-            boolean wasManaged = bean.isManaged();
+            final boolean wasManaged = bean.isManaged();
 
             unmanage(bean);
 

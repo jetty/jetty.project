@@ -1055,7 +1055,7 @@ public class XmlConfigurationTest
     @Test
     public void testJettyStandardIdsAndProperties_JettyHome_JettyBase() throws Exception
     {
-        String propNames[] = new String[]
+        String[] propNames = new String[]
             {
                 "jetty.base",
                 "jetty.home"
@@ -1084,7 +1084,7 @@ public class XmlConfigurationTest
     @Test
     public void testJettyStandardIdsAndProperties_JettyHomeUri_JettyBaseUri() throws Exception
     {
-        String propNames[] = new String[]
+        String[] propNames = new String[]
             {
                 "jetty.base.uri",
                 "jetty.home.uri"

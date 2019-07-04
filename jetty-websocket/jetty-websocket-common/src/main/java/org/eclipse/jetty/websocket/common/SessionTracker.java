@@ -39,6 +39,7 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
     @Override
     public void onWebSocketSessionOpened(Session session)
     {
+        LifeCycle.start(session);
         sessions.add(session);
     }
 
@@ -46,6 +47,7 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
     public void onWebSocketSessionClosed(Session session)
     {
         sessions.remove(session);
+        LifeCycle.stop(session);
     }
 
     @Override

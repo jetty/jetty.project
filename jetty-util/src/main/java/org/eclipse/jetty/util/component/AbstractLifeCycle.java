@@ -166,8 +166,9 @@ public abstract class AbstractLifeCycle implements LifeCycle
                 return STOPPING;
             case STATE_STOPPED:
                 return STOPPED;
+            default:
+                return null;
         }
-        return null;
     }
 
     public static String getState(LifeCycle lc)

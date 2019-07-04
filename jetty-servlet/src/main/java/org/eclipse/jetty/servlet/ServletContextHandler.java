@@ -109,6 +109,16 @@ public class ServletContextHandler extends ContextHandler
         return (ServletContextHandler)contextHandler;
     }
 
+    public static ServletContextHandler getServletContextHandler(ServletContext context)
+    {
+        ContextHandler handler = getContextHandler(context);
+        if (handler == null)
+            return null;
+        if (handler instanceof ServletContextHandler)
+            return (ServletContextHandler)handler;
+        return null;
+    }
+
     public interface ServletContainerInitializerCaller extends LifeCycle {}
 
     ;
@@ -121,6 +131,8 @@ public class ServletContextHandler extends ContextHandler
     protected GzipHandler _gzipHandler;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
+
+    private boolean _startListeners;
 
     public ServletContextHandler()
     {
@@ -370,14 +382,11 @@ public class ServletContextHandler extends ContextHandler
                 for (ListenerHolder holder : _servletHandler.getListeners())
                 {
                     holder.start();
-                    //we need to pass in the context because the ServletHandler has not
-                    //yet got a reference to the ServletContext (happens in super.startContext)
-                    holder.initialize(_scontext);
-                    addEventListener(holder.getListener());
                 }
             }
         }
 
+        _startListeners = true;
         super.startContext();
 
         // OK to Initialize servlet handler now that all relevant object trees have been started
@@ -388,6 +397,7 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void stopContext() throws Exception
     {
+        _startListeners = false;
         super.stopContext();
     }
 
@@ -719,16 +729,6 @@ public class ServletContextHandler extends ContextHandler
     void destroyFilter(Filter filter)
     {
         _objFactory.destroy(filter);
-    }
-
-    public static ServletContextHandler getServletContextHandler(ServletContext context)
-    {
-        ContextHandler handler = getContextHandler(context);
-        if (handler == null)
-            return null;
-        if (handler instanceof ServletContextHandler)
-            return (ServletContextHandler)handler;
-        return null;
     }
 
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
@@ -1405,8 +1405,19 @@ public class ServletContextHandler extends ContextHandler
 
             ListenerHolder holder = getServletHandler().newListenerHolder(Source.JAVAX_API);
             holder.setListener(t);
-            getServletHandler().addListener(holder);
             addProgrammaticListener(t);
+            getServletHandler().addListener(holder);
+            if (_startListeners)
+            {
+                try
+                {
+                    holder.start();   
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }
         }
 
         @Override

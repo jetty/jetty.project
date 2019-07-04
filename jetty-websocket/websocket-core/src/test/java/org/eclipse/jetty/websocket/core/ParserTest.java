@@ -470,13 +470,13 @@ public class ParserTest
     public void testParse_Continuation_ManySmall()
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
-        byte msg[] = StringUtil.getUtf8Bytes(utf8);
+        byte[] msg = StringUtil.getUtf8Bytes(utf8);
 
         List<Frame> send = new ArrayList<>();
         int textCount = 0;
         int continuationCount = 0;
         int len = msg.length;
-        byte mini[];
+        byte[] mini;
         for (int i = 0; i < len; i++)
         {
             Frame frame;
@@ -1287,7 +1287,7 @@ public class ParserTest
         // Artificially small buffer/payload
         final int maxAllowedFrameSize = 1024;
 
-        byte utf[] = new byte[2048];
+        byte[] utf = new byte[2048];
         Arrays.fill(utf, (byte)'a');
 
         assertThat("Must be a medium length payload", utf.length, allOf(greaterThan(0x7E), lessThan(0xFFFF)));
@@ -1317,7 +1317,7 @@ public class ParserTest
         sb.append(". The end.");
 
         String expectedText = sb.toString();
-        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
         assertThat("Must be a long length payload", utf.length, greaterThan(0xFFFF));
 
@@ -1340,7 +1340,7 @@ public class ParserTest
     public void testParse_Text_ManySmallBuffers_NoAutoFragmentation() throws InterruptedException
     {
         // Create frames
-        byte payload[] = new byte[65536];
+        byte[] payload = new byte[65536];
         Arrays.fill(payload, (byte)'*');
 
         List<Frame> frames = new ArrayList<>();
@@ -1389,7 +1389,7 @@ public class ParserTest
         sb.append(". The end.");
 
         String expectedText = sb.toString();
-        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
         assertThat("Must be a medium length payload", utf.length, allOf(greaterThan(0x7E), lessThan(0xFFFF)));
 
@@ -1412,7 +1412,7 @@ public class ParserTest
     public void testParse_Text_ShortMasked() throws Exception
     {
         String expectedText = "Hello World";
-        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
@@ -1468,7 +1468,7 @@ public class ParserTest
     {
         String expectedText = "Hell\uFF4f W\uFF4Frld";
 
-        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);

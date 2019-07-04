@@ -53,6 +53,8 @@ public class IsMessageHandlerType extends TypeSafeMatcher<MessageHandler>
             case PONG:
                 description.appendText(PongMessage.class.getName()).appendText(" argument");
                 break;
+            default:
+                throw new IllegalStateException(expectedType.toString());
         }
     }
 
@@ -92,9 +94,9 @@ public class IsMessageHandlerType extends TypeSafeMatcher<MessageHandler>
             case TEXT:
                 return (Decoder.Text.class.isAssignableFrom(registeredDecoder.interfaceType) ||
                     Decoder.TextStream.class.isAssignableFrom(registeredDecoder.interfaceType));
+            default:
+                return false;
         }
-
-        return false;
     }
 
     public static IsMessageHandlerType isMessageHandlerType(JavaxWebSocketSession session, MessageType messageType)

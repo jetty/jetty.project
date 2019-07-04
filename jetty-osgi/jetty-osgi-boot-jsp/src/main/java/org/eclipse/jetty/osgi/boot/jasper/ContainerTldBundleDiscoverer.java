@@ -95,7 +95,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
         if (jstlBundle == null)
             jstlBundle = findJstlBundle();
 
-        Bundle[] bundles = FrameworkUtil.getBundle(ContainerTldBundleDiscoverer.class).getBundleContext().getBundles();
+        final Bundle[] bundles = FrameworkUtil.getBundle(ContainerTldBundleDiscoverer.class).getBundleContext().getBundles();
         HashSet<URL> urls = new HashSet<URL>();
         String tmp = System.getProperty(OSGiMetaInfConfiguration.SYS_PROP_TLD_BUNDLES); //comma separated exact names
         List<String> sysNames = new ArrayList<String>();

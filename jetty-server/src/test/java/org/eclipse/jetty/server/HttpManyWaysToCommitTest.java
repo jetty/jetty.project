@@ -442,7 +442,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         HttpTester.Response response = executeRequest(httpVersion);
         assertThat("response code", response.getStatus(), is(200));
         assertThat(response, containsHeaderValue("content-length", "6"));
-        byte content[] = response.getContentBytes();
+        byte[] content = response.getContentBytes();
         assertThat("content bytes", content.length, is(0));
         assertTrue(response.isEarlyEOF(), "response eof");
     }

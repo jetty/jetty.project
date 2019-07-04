@@ -231,6 +231,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             case OpCode.CLOSE:
                 onClose(frame, callback);
                 break;
+            default:
+                callback.failed(new IllegalStateException());
         }
 
         if (frame.isFin() && !frame.isControlFrame())
@@ -496,6 +498,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                         this.binaryMetadata = null;
                         this.binarySink = null;
                         break;
+                    default:
+                        break; // TODO ISE?
                 }
             }
         }

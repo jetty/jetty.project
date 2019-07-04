@@ -72,77 +72,6 @@ public class HttpTester
 {
     private static final Logger LOG = Log.getLogger(HttpTester.class);
 
-    private HttpTester()
-    {
-    }
-
-    public static Request newRequest()
-    {
-        Request r = new Request();
-        r.setMethod(HttpMethod.GET.asString());
-        r.setURI("/");
-        r.setVersion(HttpVersion.HTTP_1_1);
-        return r;
-    }
-
-    public static Request parseRequest(String request)
-    {
-        Request r = new Request();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(BufferUtil.toBuffer(request));
-        return r;
-    }
-
-    public static Request parseRequest(ByteBuffer request)
-    {
-        Request r = new Request();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(request);
-        return r;
-    }
-
-    public static Response parseResponse(String response)
-    {
-        Response r = new Response();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(BufferUtil.toBuffer(response));
-        return r;
-    }
-
-    public static Response parseResponse(ByteBuffer response)
-    {
-        Response r = new Response();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(response);
-        return r;
-    }
-
-    public static Response parseResponse(InputStream responseStream) throws IOException
-    {
-        Response r = new Response();
-        HttpParser parser = new HttpParser(r);
-
-        // Read and parse a character at a time so we never can read more than we should.
-        byte[] array = new byte[1];
-        ByteBuffer buffer = ByteBuffer.wrap(array);
-        buffer.limit(1);
-
-        while (true)
-        {
-            buffer.position(1);
-            int l = responseStream.read(array);
-            if (l < 0)
-                parser.atEOF();
-            else
-                buffer.position(0);
-
-            if (parser.parseNext(buffer))
-                return r;
-            else if (l < 0)
-                return null;
-        }
-    }
-
     public abstract static class Input
     {
         protected final ByteBuffer _buffer;
@@ -236,6 +165,77 @@ public class HttpTester
                 return len;
             }
         };
+    }
+
+    private HttpTester()
+    {
+    }
+
+    public static Request newRequest()
+    {
+        Request r = new Request();
+        r.setMethod(HttpMethod.GET.asString());
+        r.setURI("/");
+        r.setVersion(HttpVersion.HTTP_1_1);
+        return r;
+    }
+
+    public static Request parseRequest(String request)
+    {
+        Request r = new Request();
+        HttpParser parser = new HttpParser(r);
+        parser.parseNext(BufferUtil.toBuffer(request));
+        return r;
+    }
+
+    public static Request parseRequest(ByteBuffer request)
+    {
+        Request r = new Request();
+        HttpParser parser = new HttpParser(r);
+        parser.parseNext(request);
+        return r;
+    }
+
+    public static Response parseResponse(String response)
+    {
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
+        parser.parseNext(BufferUtil.toBuffer(response));
+        return r;
+    }
+
+    public static Response parseResponse(ByteBuffer response)
+    {
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
+        parser.parseNext(response);
+        return r;
+    }
+
+    public static Response parseResponse(InputStream responseStream) throws IOException
+    {
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
+
+        // Read and parse a character at a time so we never can read more than we should.
+        byte[] array = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(array);
+        buffer.limit(1);
+
+        while (true)
+        {
+            buffer.position(1);
+            int l = responseStream.read(array);
+            if (l < 0)
+                parser.atEOF();
+            else
+                buffer.position(0);
+
+            if (parser.parseNext(buffer))
+                return r;
+            else if (l < 0)
+                return null;
+        }
     }
 
     public static Response parseResponse(Input in) throws IOException
@@ -372,8 +372,8 @@ public class HttpTester
                 return null;
             byte[] bytes = _content.toByteArray();
 
-            String content_type = get(HttpHeader.CONTENT_TYPE);
-            String encoding = MimeTypes.getCharsetFromContentType(content_type);
+            String contentType = get(HttpHeader.CONTENT_TYPE);
+            String encoding = MimeTypes.getCharsetFromContentType(contentType);
             Charset charset = encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding);
 
             return new String(bytes, charset);
@@ -493,6 +493,9 @@ public class HttpTester
 
                         case SHUTDOWN_OUT:
                             break loop;
+
+                        default:
+                            break; // TODO verify if this should be ISE
                     }
                 }
 
@@ -504,7 +507,7 @@ public class HttpTester
             }
         }
 
-        abstract public MetaData getInfo();
+        public abstract MetaData getInfo();
 
         @Override
         public int getHeaderCacheSize()

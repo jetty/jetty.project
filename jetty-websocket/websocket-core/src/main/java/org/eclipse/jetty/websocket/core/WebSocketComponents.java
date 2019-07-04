@@ -18,11 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.util.zip.Deflater;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 
 /**
  * A collection of components which are the resources needed for websockets such as
@@ -50,19 +54,26 @@ public class WebSocketComponents
 
     public WebSocketComponents()
     {
-        this(new WebSocketExtensionRegistry(), new DecoratedObjectFactory(), new MappedByteBufferPool());
+        this(new WebSocketExtensionRegistry(), new DecoratedObjectFactory(), new MappedByteBufferPool(),
+            new InflaterPool(CompressionPool.INFINITE_CAPACITY, true),
+            new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true));
     }
 
-    public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool)
+    public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,
+                               ByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool)
     {
         this.extensionRegistry = extensionRegistry;
         this.objectFactory = objectFactory;
         this.bufferPool = bufferPool;
+        this.deflaterPool = deflaterPool;
+        this.inflaterPool = inflaterPool;
     }
 
     private DecoratedObjectFactory objectFactory;
     private WebSocketExtensionRegistry extensionRegistry;
     private ByteBufferPool bufferPool;
+    private InflaterPool inflaterPool;
+    private DeflaterPool deflaterPool;
 
     public ByteBufferPool getBufferPool()
     {
@@ -77,5 +88,15 @@ public class WebSocketComponents
     public DecoratedObjectFactory getObjectFactory()
     {
         return objectFactory;
+    }
+
+    public InflaterPool getInflaterPool()
+    {
+        return inflaterPool;
+    }
+
+    public DeflaterPool getDeflaterPool()
+    {
+        return deflaterPool;
     }
 }

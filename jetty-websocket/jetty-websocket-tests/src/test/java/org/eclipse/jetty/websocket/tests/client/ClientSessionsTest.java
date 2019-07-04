@@ -104,11 +104,6 @@ public class ClientSessionsTest
         client.addSessionListener(new WebSocketSessionListener()
         {
             @Override
-            public void onWebSocketSessionOpened(Session session)
-            {
-            }
-
-            @Override
             public void onWebSocketSessionClosed(Session session)
             {
                 onSessionCloseLatch.countDown();

@@ -35,7 +35,7 @@ public final class Slf4jHelper
         File testJarDir = MavenTestingUtils.getTargetFile("test-jars");
         assumeTrue(testJarDir.exists()); // trigger @Ignore if dir not there
 
-        File jarfiles[] = testJarDir.listFiles(new FileFilter()
+        File[] jarfiles = testJarDir.listFiles(new FileFilter()
         {
             public boolean accept(File path)
             {
@@ -49,7 +49,7 @@ public final class Slf4jHelper
 
         assumeTrue(jarfiles.length > 0); // trigger @Ignore if no jar files.
 
-        URL urls[] = new URL[jarfiles.length];
+        URL[] urls = new URL[jarfiles.length];
         for (int i = 0; i < jarfiles.length; i++)
         {
             urls[i] = jarfiles[i].toURI().toURL();

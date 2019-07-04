@@ -54,11 +54,12 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
                 case IDLE:
                     _state = State.PRODUCE;
                     break;
-
                 case PRODUCE:
                 case EXECUTE:
                     _state = State.EXECUTE;
                     return;
+                default:
+                    throw new IllegalStateException(_state.toString());
             }
         }
 
@@ -84,6 +85,8 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
                         case EXECUTE:
                             _state = State.PRODUCE;
                             continue;
+                        default:
+                            throw new IllegalStateException(_state.toString());
                     }
                 }
             }

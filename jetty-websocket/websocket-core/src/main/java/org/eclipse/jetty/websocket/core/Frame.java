@@ -149,7 +149,7 @@ public class Frame
 
     protected void copyHeaders(Frame frame)
     {
-        byte opCode = (byte)(finRsvOp & 0x0F);
+        final byte opCode = (byte)(finRsvOp & 0x0F);
         finRsvOp = 0x00;
         finRsvOp |= frame.isFin() ? 0x80 : 0x00;
         finRsvOp |= frame.isRsv1() ? 0x40 : 0x00;

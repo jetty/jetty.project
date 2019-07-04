@@ -85,7 +85,7 @@ public class DigestAuthentication extends AbstractAuthentication
         String nonce = params.get("nonce");
         if (nonce == null || nonce.length() == 0)
             return null;
-        String opaque = params.get("opaque");
+        final String opaque = params.get("opaque");
         String algorithm = params.get("algorithm");
         if (algorithm == null)
             algorithm = "MD5";
@@ -186,7 +186,7 @@ public class DigestAuthentication extends AbstractAuthentication
                 clientNonce = null;
                 a3 = hashA1 + ":" + nonce + ":" + hashA2;
             }
-            String hashA3 = toHexString(digester.digest(a3.getBytes(StandardCharsets.ISO_8859_1)));
+            final String hashA3 = toHexString(digester.digest(a3.getBytes(StandardCharsets.ISO_8859_1)));
 
             StringBuilder value = new StringBuilder("Digest");
             value.append(" username=\"").append(user).append("\"");
