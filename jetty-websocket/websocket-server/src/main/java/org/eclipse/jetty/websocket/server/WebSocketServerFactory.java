@@ -186,6 +186,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         addBean(scheduler);
         addBean(bufferPool);
         addBean(sessionTracker);
+        addBean(extensionFactory);
         listeners.add(this.sessionTracker);
     }
 
@@ -335,6 +336,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
 
         super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        sessionTracker.stop();
+        extensionFactory.stop();
+        super.doStop();
     }
 
     /**
