@@ -64,11 +64,6 @@ public class ClientOpenSessionTracker implements Connection.Listener, WebSocketS
     }
 
     @Override
-    public void onWebSocketSessionOpened(Session session)
-    {
-    }
-
-    @Override
     public void onWebSocketSessionClosed(Session session)
     {
         this.closeSessionLatch.countDown();
