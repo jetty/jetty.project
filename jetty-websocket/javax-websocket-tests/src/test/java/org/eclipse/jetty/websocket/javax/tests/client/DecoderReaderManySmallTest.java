@@ -174,7 +174,7 @@ public class DecoderReaderManySmallTest
         {
             if (text.startsWith("seq|"))
             {
-                String parts[] = text.split("\\|");
+                String[] parts = text.split("\\|");
                 int from = Integer.parseInt(parts[1]);
                 int to = Integer.parseInt(parts[2]);
 

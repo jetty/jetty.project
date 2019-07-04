@@ -56,12 +56,6 @@ public class DeploymentManagerMBean extends ObjectMBean
         return ret;
     }
 
-    @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
-    public Collection<String> getNodes()
-    {
-        return _manager.getNodes().stream().map(Node::getName).collect(Collectors.toList());
-    }
-
     @ManagedOperation(value = "list apps that are located at specified App LifeCycle nodes", impact = "ACTION")
     public Collection<String> getApps(@Name("nodeName") String nodeName)
     {
@@ -80,6 +74,12 @@ public class DeploymentManagerMBean extends ObjectMBean
             }
         }
         return ret;
+    }
+
+    @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
+    public Collection<String> getNodes()
+    {
+        return _manager.getNodes().stream().map(Node::getName).collect(Collectors.toList());
     }
 
     private String toRef(App app)

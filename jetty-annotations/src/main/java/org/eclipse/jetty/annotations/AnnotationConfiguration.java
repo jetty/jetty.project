@@ -428,8 +428,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         AnnotationParser parser = createAnnotationParser(javaPlatform);
         _parserTasks = new ArrayList<ParserTask>();
 
-        long start = 0;
-
         if (LOG.isDebugEnabled())
             LOG.debug("Annotation scanning commencing: webxml={}, metadatacomplete={}, configurationDiscovered={}, multiThreaded={}, maxScanWait={}",
                 context.getServletContext().getEffectiveMajorVersion(),
@@ -447,7 +445,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         parseWebInfClasses(context, parser);
         parseWebInfLib(context, parser);
 
-        start = System.nanoTime();
+        long start = System.nanoTime();
 
         //execute scan, either effectively synchronously (1 thread only), or asynchronously (limited by number of processors available) 
         final Semaphore task_limit = (isUseMultiThreading(context) ? new Semaphore(ProcessorUtils.availableProcessors()) : new Semaphore(1));

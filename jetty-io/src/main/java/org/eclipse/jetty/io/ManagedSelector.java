@@ -323,8 +323,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         Selector selector = _selector;
         if (selector != null && selector.isOpen())
         {
-            DumpKeys dump = new DumpKeys();
-            String updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
+            final DumpKeys dump = new DumpKeys();
+            final String updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
             synchronized (ManagedSelector.this)
             {
                 updates = new ArrayList<>(_updates);

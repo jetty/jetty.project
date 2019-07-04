@@ -127,7 +127,7 @@ public class ExtensionConfigTest
     @Test
     public void testParseList_Simple()
     {
-        String rawHeaders[] = new String[]{
+        String[] rawHeaders = new String[]{
             "permessage-compress; client_max_window_bits",
             "capture; output=\"wscapture.log\"",
             "identity"
@@ -147,7 +147,7 @@ public class ExtensionConfigTest
     @Test
     public void testParseList_Unsplit()
     {
-        String rawHeaders[] = new String[]{
+        String[] rawHeaders = new String[]{
             "permessage-compress; client_max_window_bits, identity",
             "capture; output=\"wscapture.log\""
         };

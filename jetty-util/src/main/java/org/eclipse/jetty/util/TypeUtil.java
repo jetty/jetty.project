@@ -622,14 +622,14 @@ public class TypeUtil
         return null;
     }
 
-    public static URI getClassLoaderLocation(Class<?> clazz)
-    {
-        return getClassLoaderLocation(clazz, clazz.getClassLoader());
-    }
-
     public static URI getSystemClassLoaderLocation(Class<?> clazz)
     {
         return getClassLoaderLocation(clazz, ClassLoader.getSystemClassLoader());
+    }
+
+    public static URI getClassLoaderLocation(Class<?> clazz)
+    {
+        return getClassLoaderLocation(clazz, clazz.getClassLoader());
     }
 
     public static URI getClassLoaderLocation(Class<?> clazz, ClassLoader loader)

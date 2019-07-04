@@ -77,7 +77,7 @@ public class PrimitivesBinaryEchoTest
         @OnMessage
         public byte[] onMessage(byte[] buf) throws IOException
         {
-            byte ret[] = new byte[buf.length + 1];
+            byte[] ret = new byte[buf.length + 1];
             ret[0] = (byte)0xFE; // proof that this endpoint got it
             System.arraycopy(buf, 0, ret, 1, buf.length);
             return ret;

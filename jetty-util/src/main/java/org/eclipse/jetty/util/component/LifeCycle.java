@@ -32,7 +32,6 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject("Lifecycle Interface for startable components")
 public interface LifeCycle
 {
-
     /**
      * Starts the component.
      *
@@ -42,8 +41,30 @@ public interface LifeCycle
      * @see #isFailed()
      */
     @ManagedOperation(value = "Starts the instance", impact = "ACTION")
-    public void start()
+    void start()
         throws Exception;
+
+    /**
+     * Utility to start an object if it is a LifeCycle and to convert
+     * any exception thrown to a {@link RuntimeException}
+     *
+     * @param object The instance to start.
+     * @throws RuntimeException if the call to start throws an exception.
+     */
+    static void start(Object object)
+    {
+        if (object instanceof LifeCycle)
+        {
+            try
+            {
+                ((LifeCycle)object).start();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     /**
      * Stops the component.
@@ -56,54 +77,76 @@ public interface LifeCycle
      * @see #isFailed()
      */
     @ManagedOperation(value = "Stops the instance", impact = "ACTION")
-    public void stop()
+    void stop()
         throws Exception;
+
+    /**
+     * Utility to stop an object if it is a LifeCycle and to convert
+     * any exception thrown to a {@link RuntimeException}
+     *
+     * @param object The instance to stop.
+     * @throws RuntimeException if the call to stop throws an exception.
+     */
+    static void stop(Object object)
+    {
+        if (object instanceof LifeCycle)
+        {
+            try
+            {
+                ((LifeCycle)object).stop();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     /**
      * @return true if the component is starting or has been started.
      */
-    public boolean isRunning();
+    boolean isRunning();
 
     /**
      * @return true if the component has been started.
      * @see #start()
      * @see #isStarting()
      */
-    public boolean isStarted();
+    boolean isStarted();
 
     /**
      * @return true if the component is starting.
      * @see #isStarted()
      */
-    public boolean isStarting();
+    boolean isStarting();
 
     /**
      * @return true if the component is stopping.
      * @see #isStopped()
      */
-    public boolean isStopping();
+    boolean isStopping();
 
     /**
      * @return true if the component has been stopped.
      * @see #stop()
      * @see #isStopping()
      */
-    public boolean isStopped();
+    boolean isStopped();
 
     /**
      * @return true if the component has failed to start or has failed to stop.
      */
-    public boolean isFailed();
+    boolean isFailed();
 
-    public void addLifeCycleListener(LifeCycle.Listener listener);
+    void addLifeCycleListener(LifeCycle.Listener listener);
 
-    public void removeLifeCycleListener(LifeCycle.Listener listener);
+    void removeLifeCycleListener(LifeCycle.Listener listener);
 
     /**
      * Listener.
      * A listener for Lifecycle events.
      */
-    public interface Listener extends EventListener
+    interface Listener extends EventListener
     {
         default void lifeCycleStarting(LifeCycle event)
         {
@@ -123,50 +166,6 @@ public interface LifeCycle
 
         default void lifeCycleStopped(LifeCycle event)
         {
-        }
-    }
-
-    /**
-     * Utility to start an object if it is a LifeCycle and to convert
-     * any exception thrown to a {@link RuntimeException}
-     *
-     * @param object The instance to start.
-     * @throws RuntimeException if the call to start throws an exception.
-     */
-    public static void start(Object object)
-    {
-        if (object instanceof LifeCycle)
-        {
-            try
-            {
-                ((LifeCycle)object).start();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    /**
-     * Utility to stop an object if it is a LifeCycle and to convert
-     * any exception thrown to a {@link RuntimeException}
-     *
-     * @param object The instance to stop.
-     * @throws RuntimeException if the call to stop throws an exception.
-     */
-    public static void stop(Object object)
-    {
-        if (object instanceof LifeCycle)
-        {
-            try
-            {
-                ((LifeCycle)object).stop();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
         }
     }
 }

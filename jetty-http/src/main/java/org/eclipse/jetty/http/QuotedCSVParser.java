@@ -133,6 +133,8 @@ public abstract class QuotedCSVParser
                             if (!_keepQuotes)
                                 continue;
                             break;
+                        default:
+                            break;
                     }
                 }
 
@@ -194,7 +196,10 @@ public abstract class QuotedCSVParser
                             case PARAM_VALUE:
                                 parsedParam(buffer, valueLength, paramName, paramValue);
                                 break;
+                            default:
+                                throw new IllegalStateException(state.toString());
                         }
+
                         parsedValueAndParams(buffer);
                     }
                     buffer.setLength(0);
@@ -209,9 +214,9 @@ public abstract class QuotedCSVParser
                     {
                         case VALUE:
                             // It wasn't really a value, it was a param name
-                            valueLength = paramName = 0;
+                            paramName = 0;
                             buffer.setLength(nwsLength); // trim following OWS
-                            String param = buffer.toString();
+                            final String param = buffer.toString();
                             buffer.setLength(0);
                             parsedValue(buffer);
                             valueLength = buffer.length();
@@ -234,8 +239,10 @@ public abstract class QuotedCSVParser
                             buffer.append(c);
                             nwsLength = buffer.length();
                             continue;
+
+                        default:
+                            throw new IllegalStateException(state.toString());
                     }
-                    continue;
 
                 default:
                 {
@@ -265,6 +272,9 @@ public abstract class QuotedCSVParser
                             nwsLength = buffer.length();
                             continue;
                         }
+
+                        default:
+                            throw new IllegalStateException(state.toString());
                     }
                 }
             }

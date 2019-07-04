@@ -85,8 +85,9 @@ public class FilterMapping implements Dumpable
                 return INCLUDE;
             case ERROR:
                 return ERROR;
+            default:
+                throw new IllegalStateException(type.toString());
         }
-        throw new IllegalArgumentException(type.toString());
     }
 
     /**
@@ -109,8 +110,9 @@ public class FilterMapping implements Dumpable
                 return DispatcherType.INCLUDE;
             case ERROR:
                 return DispatcherType.ERROR;
+            default:
+                throw new IllegalArgumentException(Integer.toString(type));
         }
-        throw new IllegalArgumentException(Integer.toString(type));
     }
 
     private int _dispatches = DEFAULT;

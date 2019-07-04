@@ -52,20 +52,20 @@ public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessio
     @Override
     public InfinispanSessionData readFrom(ProtoStreamReader in) throws IOException
     {
-        int version = in.readInt("version");// version of serialized session
-        String id = in.readString("id"); // session id
-        String cpath = in.readString("contextPath"); // context path
-        String vhost = in.readString("vhost"); // first vhost
+        final int version = in.readInt("version");// version of serialized session
+        final String id = in.readString("id"); // session id
+        final String cpath = in.readString("contextPath"); // context path
+        final String vhost = in.readString("vhost"); // first vhost
 
-        long accessed = in.readLong("accessed");// accessTime
-        long lastAccessed = in.readLong("lastAccessed"); // lastAccessTime
-        long created = in.readLong("created"); // time created
-        long cookieSet = in.readLong("cookieSet");// time cookie was set
-        String lastNode = in.readString("lastNode"); // name of last node
+        final long accessed = in.readLong("accessed");// accessTime
+        final long lastAccessed = in.readLong("lastAccessed"); // lastAccessTime
+        final long created = in.readLong("created"); // time created
+        final long cookieSet = in.readLong("cookieSet");// time cookie was set
+        final String lastNode = in.readString("lastNode"); // name of last node
         // managing
 
-        long expiry = in.readLong("expiry");
-        long maxInactiveMs = in.readLong("maxInactiveMs");
+        final long expiry = in.readLong("expiry");
+        final long maxInactiveMs = in.readLong("maxInactiveMs");
 
         InfinispanSessionData sd = new InfinispanSessionData(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
         sd.setCookieSet(cookieSet);

@@ -200,7 +200,7 @@ public class AvailableEncodersTest
     @Test
     public void testCoreEncoder_ByteArray() throws IllegalAccessException, InstantiationException, EncodeException
     {
-        byte buf[] = Hex.asByteArray("998877665544332211");
+        byte[] buf = Hex.asByteArray("998877665544332211");
         assertBinaryEncoder(byte[].class, buf, "998877665544332211");
     }
 

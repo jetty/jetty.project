@@ -456,6 +456,107 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    private void format(StringBuilder builder, String msg, Object... args)
+    {
+        if (msg == null)
+        {
+            msg = "";
+            for (int i = 0; i < args.length; i++)
+            {
+                msg += "{} ";
+            }
+        }
+        String braces = "{}";
+        int start = 0;
+        for (Object arg : args)
+        {
+            int bracesIndex = msg.indexOf(braces, start);
+            if (bracesIndex < 0)
+            {
+                escape(builder, msg.substring(start));
+                builder.append(" ");
+                builder.append(arg);
+                start = msg.length();
+            }
+            else
+            {
+                escape(builder, msg.substring(start, bracesIndex));
+                builder.append(String.valueOf(arg));
+                start = bracesIndex + braces.length();
+            }
+        }
+        escape(builder, msg.substring(start));
+    }
+
+    protected void format(StringBuilder buffer, Throwable thrown)
+    {
+        format(buffer, thrown, "");
+    }
+
+    protected void format(StringBuilder buffer, Throwable thrown, String indent)
+    {
+        if (thrown == null)
+        {
+            buffer.append("null");
+        }
+        else
+        {
+            buffer.append(EOL).append(indent);
+            format(buffer, thrown.toString());
+            StackTraceElement[] elements = thrown.getStackTrace();
+            for (int i = 0; elements != null && i < elements.length; i++)
+            {
+                buffer.append(EOL).append(indent).append("\tat ");
+                format(buffer, elements[i].toString());
+            }
+
+            for (Throwable suppressed : thrown.getSuppressed())
+            {
+                buffer.append(EOL).append(indent).append("Suppressed: ");
+                format(buffer, suppressed, "\t|" + indent);
+            }
+
+            Throwable cause = thrown.getCause();
+            if (cause != null && cause != thrown)
+            {
+                buffer.append(EOL).append(indent).append("Caused by: ");
+                format(buffer, cause, indent);
+            }
+        }
+    }
+
+    private void escape(StringBuilder builder, String string)
+    {
+        if (__escape)
+        {
+            for (int i = 0; i < string.length(); ++i)
+            {
+                char c = string.charAt(i);
+                if (Character.isISOControl(c))
+                {
+                    if (c == '\n')
+                    {
+                        builder.append('|');
+                    }
+                    else if (c == '\r')
+                    {
+                        builder.append('<');
+                    }
+                    else
+                    {
+                        builder.append('?');
+                    }
+                }
+                else
+                {
+                    builder.append(c);
+                }
+            }
+        }
+        else
+            builder.append(string);
+    }
+
     private void tag(StringBuilder buffer, String d, int ms, String tag)
     {
         buffer.setLength(0);
@@ -524,107 +625,6 @@ public class StdErrLog extends AbstractLogger
         }
 
         buffer.append(' ');
-    }
-
-    private void format(StringBuilder builder, String msg, Object... args)
-    {
-        if (msg == null)
-        {
-            msg = "";
-            for (int i = 0; i < args.length; i++)
-            {
-                msg += "{} ";
-            }
-        }
-        String braces = "{}";
-        int start = 0;
-        for (Object arg : args)
-        {
-            int bracesIndex = msg.indexOf(braces, start);
-            if (bracesIndex < 0)
-            {
-                escape(builder, msg.substring(start));
-                builder.append(" ");
-                builder.append(arg);
-                start = msg.length();
-            }
-            else
-            {
-                escape(builder, msg.substring(start, bracesIndex));
-                builder.append(String.valueOf(arg));
-                start = bracesIndex + braces.length();
-            }
-        }
-        escape(builder, msg.substring(start));
-    }
-
-    private void escape(StringBuilder builder, String string)
-    {
-        if (__escape)
-        {
-            for (int i = 0; i < string.length(); ++i)
-            {
-                char c = string.charAt(i);
-                if (Character.isISOControl(c))
-                {
-                    if (c == '\n')
-                    {
-                        builder.append('|');
-                    }
-                    else if (c == '\r')
-                    {
-                        builder.append('<');
-                    }
-                    else
-                    {
-                        builder.append('?');
-                    }
-                }
-                else
-                {
-                    builder.append(c);
-                }
-            }
-        }
-        else
-            builder.append(string);
-    }
-
-    protected void format(StringBuilder buffer, Throwable thrown)
-    {
-        format(buffer, thrown, "");
-    }
-
-    protected void format(StringBuilder buffer, Throwable thrown, String indent)
-    {
-        if (thrown == null)
-        {
-            buffer.append("null");
-        }
-        else
-        {
-            buffer.append(EOL).append(indent);
-            format(buffer, thrown.toString());
-            StackTraceElement[] elements = thrown.getStackTrace();
-            for (int i = 0; elements != null && i < elements.length; i++)
-            {
-                buffer.append(EOL).append(indent).append("\tat ");
-                format(buffer, elements[i].toString());
-            }
-
-            for (Throwable suppressed : thrown.getSuppressed())
-            {
-                buffer.append(EOL).append(indent).append("Suppressed: ");
-                format(buffer, suppressed, "\t|" + indent);
-            }
-
-            Throwable cause = thrown.getCause();
-            if (cause != null && cause != thrown)
-            {
-                buffer.append(EOL).append(indent).append("Caused by: ");
-                format(buffer, cause, indent);
-            }
-        }
     }
 
     /**

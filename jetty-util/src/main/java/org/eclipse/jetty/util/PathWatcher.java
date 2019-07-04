@@ -1276,6 +1276,9 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                     pending.remove(path);
                 events.add(event);
                 break;
+
+            default:
+                throw new IllegalStateException(event.toString());
         }
     }
 

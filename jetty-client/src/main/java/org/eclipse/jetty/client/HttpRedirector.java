@@ -175,58 +175,6 @@ public class HttpRedirector
         }
     }
 
-    /**
-     * Extracts and sanitizes (by making it absolute and escaping paths and query parameters)
-     * the redirect URI of the given {@code response}.
-     *
-     * @param response the response to extract the redirect URI from
-     * @return the absolute redirect URI, or null if the response does not contain a valid redirect location
-     */
-    public URI extractRedirectURI(Response response)
-    {
-        String location = response.getHeaders().get("location");
-        if (location != null)
-            return sanitize(location);
-        return null;
-    }
-
-    private URI sanitize(String location)
-    {
-        // Redirects should be valid, absolute, URIs, with properly escaped paths and encoded
-        // query parameters. However, shit happens, and here we try our best to recover.
-
-        try
-        {
-            // Direct hit first: if passes, we're good
-            return new URI(location);
-        }
-        catch (URISyntaxException x)
-        {
-            Matcher matcher = URI_PATTERN.matcher(location);
-            if (matcher.matches())
-            {
-                String scheme = matcher.group(2);
-                String authority = matcher.group(3);
-                String path = matcher.group(4);
-                String query = matcher.group(5);
-                if (query.length() == 0)
-                    query = null;
-                String fragment = matcher.group(6);
-                if (fragment.length() == 0)
-                    fragment = null;
-                try
-                {
-                    return new URI(scheme, authority, path, query, fragment);
-                }
-                catch (URISyntaxException ex)
-                {
-                    // Give up
-                }
-            }
-            return null;
-        }
-    }
-
     private Request redirect(Request request, Response response, Response.CompleteListener listener, URI newURI)
     {
         if (!newURI.isAbsolute())
@@ -303,6 +251,58 @@ public class HttpRedirector
         else
         {
             fail(request, response, new HttpResponseException("Max redirects exceeded " + redirects, response));
+            return null;
+        }
+    }
+
+    /**
+     * Extracts and sanitizes (by making it absolute and escaping paths and query parameters)
+     * the redirect URI of the given {@code response}.
+     *
+     * @param response the response to extract the redirect URI from
+     * @return the absolute redirect URI, or null if the response does not contain a valid redirect location
+     */
+    public URI extractRedirectURI(Response response)
+    {
+        String location = response.getHeaders().get("location");
+        if (location != null)
+            return sanitize(location);
+        return null;
+    }
+
+    private URI sanitize(String location)
+    {
+        // Redirects should be valid, absolute, URIs, with properly escaped paths and encoded
+        // query parameters. However, shit happens, and here we try our best to recover.
+
+        try
+        {
+            // Direct hit first: if passes, we're good
+            return new URI(location);
+        }
+        catch (URISyntaxException x)
+        {
+            Matcher matcher = URI_PATTERN.matcher(location);
+            if (matcher.matches())
+            {
+                String scheme = matcher.group(2);
+                String authority = matcher.group(3);
+                String path = matcher.group(4);
+                String query = matcher.group(5);
+                if (query.length() == 0)
+                    query = null;
+                String fragment = matcher.group(6);
+                if (fragment.length() == 0)
+                    fragment = null;
+                try
+                {
+                    return new URI(scheme, authority, path, query, fragment);
+                }
+                catch (URISyntaxException ex)
+                {
+                    // Give up
+                }
+            }
             return null;
         }
     }

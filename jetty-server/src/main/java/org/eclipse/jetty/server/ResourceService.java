@@ -765,7 +765,6 @@ public class ResourceService
             String mimetype = (content == null ? null : content.getContentTypeValue());
             if (mimetype == null)
                 LOG.warn("Unknown mimetype for " + request.getRequestURI());
-            MultiPartOutputStream multi = new MultiPartOutputStream(out);
             response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
             if (!response.containsHeader(HttpHeader.DATE.asString()))
                 response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());
@@ -778,6 +777,7 @@ public class ResourceService
                 ctp = "multipart/x-byteranges; boundary=";
             else
                 ctp = "multipart/byteranges; boundary=";
+            MultiPartOutputStream multi = new MultiPartOutputStream(out);
             response.setContentType(ctp + multi.getBoundary());
 
             InputStream in = content.getResource().getInputStream();

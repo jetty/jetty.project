@@ -83,7 +83,7 @@ public class MessageWriterTest
     public void testWriteLarge_RequiringMultipleBuffers() throws Exception
     {
         int size = (int)(OUTPUT_BUFFER_SIZE * 2.5);
-        char buf[] = new char[size];
+        char[] buf = new char[size];
         if (LOG.isDebugEnabled())
             LOG.debug("Buffer size: {}", size);
         Arrays.fill(buf, 'x');

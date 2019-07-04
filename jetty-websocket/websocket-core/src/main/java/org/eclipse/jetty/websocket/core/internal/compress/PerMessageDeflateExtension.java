@@ -74,6 +74,8 @@ public class PerMessageDeflateExtension extends CompressExtension
                 if (frame.isRsv1())
                     callback.failed(new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
                 break;
+            default:
+                break;
         }
 
         if (OpCode.isControlFrame(frame.getOpCode()) || !incomingCompressed)

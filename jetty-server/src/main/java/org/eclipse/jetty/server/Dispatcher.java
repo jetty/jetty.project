@@ -75,12 +75,6 @@ public class Dispatcher implements RequestDispatcher
         _named = name;
     }
 
-    @Override
-    public void forward(ServletRequest request, ServletResponse response) throws ServletException, IOException
-    {
-        forward(request, response, DispatcherType.FORWARD);
-    }
-
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
         try
@@ -140,6 +134,12 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.resetParameters();
             baseRequest.setDispatcherType(old_type);
         }
+    }
+
+    @Override
+    public void forward(ServletRequest request, ServletResponse response) throws ServletException, IOException
+    {
+        forward(request, response, DispatcherType.FORWARD);
     }
 
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException

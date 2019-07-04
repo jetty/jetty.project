@@ -243,7 +243,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             webApp.start(); //just enough to generate the quickstart
 
             //save config of the webapp BEFORE we stop
-            File props = prepareConfiguration();
+            final File props = prepareConfiguration();
 
             webApp.stop();
 

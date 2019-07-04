@@ -833,10 +833,10 @@ public class Dump extends HttpServlet
             pout.write("<br/>");
             pout.write("<h2>International Characters (UTF-8)</h2>");
             pout.write("LATIN LETTER SMALL CAPITAL AE<br/>\n");
-            pout.write("Directly uni encoded(\\u1d01): \u1d01<br/>");
+            pout.write("Directly uni encoded(\\u1d01): \u1d01<br/>"); // uni encoded
             pout.write("HTML reference (&amp;AElig;): &AElig;<br/>");
             pout.write("Decimal (&amp;#7425;): &#7425;<br/>");
-            pout.write("Javascript unicode (\\u1d01) : <script language='javascript'>document.write(\"\u1d01\");</script><br/>");
+            pout.write("Javascript unicode (\\u1d01) : <script language='javascript'>document.write(\"\u1d01\");</script><br/>"); // uni encoded
             pout.write("<br/>");
             pout.write("<h2>Form to generate GET content</h2>");
             pout.write("<form method=\"GET\" action=\"" + response.encodeURL(getURI(request)) + "\">");
@@ -986,7 +986,6 @@ public class Dump extends HttpServlet
     {
         if (data != null && data.length() > 0)
         {
-            long d = Long.parseLong(data);
             int b = (block != null && block.length() > 0) ? Integer.parseInt(block) : 50;
             byte[] buf = new byte[b];
             for (int i = 0; i < b; i++)
@@ -999,6 +998,7 @@ public class Dump extends HttpServlet
             buf[0] = 'o';
             OutputStream out = response.getOutputStream();
             response.setContentType("text/plain");
+            long d = Long.parseLong(data);
             while (d > 0)
             {
                 if (b == 1)
@@ -1041,7 +1041,6 @@ public class Dump extends HttpServlet
         // Handle a dump of data
         if (chars != null && chars.length() > 0)
         {
-            long d = Long.parseLong(chars);
             int b = (block != null && block.length() > 0) ? Integer.parseInt(block) : 50;
             char[] buf = new char[b];
             for (int i = 0; i < b; i++)
@@ -1053,6 +1052,7 @@ public class Dump extends HttpServlet
             buf[0] = 'o';
             response.setContentType("text/plain");
             PrintWriter out = response.getWriter();
+            long d = Long.parseLong(chars);
             while (d > 0 && !out.checkError())
             {
                 if (b == 1)

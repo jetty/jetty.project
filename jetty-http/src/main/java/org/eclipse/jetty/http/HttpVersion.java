@@ -68,15 +68,19 @@ public enum HttpVersion
                             return HTTP_1_0;
                         case '1':
                             return HTTP_1_1;
+                        default:
+                            return null;
                     }
-                    break;
                 case '2':
                     switch (bytes[position + 7])
                     {
                         case '0':
                             return HTTP_2;
+                        default:
+                            return null;
                     }
-                    break;
+                default:
+                    return null;
             }
         }
 

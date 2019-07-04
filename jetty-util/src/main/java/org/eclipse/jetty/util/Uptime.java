@@ -43,10 +43,10 @@ public class Uptime
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             try
             {
-                Class<?> mgmtFactory = Class.forName("java.lang.management.ManagementFactory", true, cl);
-                Class<?> runtimeClass = Class.forName("java.lang.management.RuntimeMXBean", true, cl);
-                Class<?>[] noParams = new Class<?>[0];
-                Method mxBeanMethod = mgmtFactory.getMethod("getRuntimeMXBean", noParams);
+                final Class<?> mgmtFactory = Class.forName("java.lang.management.ManagementFactory", true, cl);
+                final Class<?> runtimeClass = Class.forName("java.lang.management.RuntimeMXBean", true, cl);
+                final Class<?>[] noParams = new Class<?>[0];
+                final Method mxBeanMethod = mgmtFactory.getMethod("getRuntimeMXBean", noParams);
                 if (mxBeanMethod == null)
                 {
                     throw new UnsupportedOperationException("method getRuntimeMXBean() not found");

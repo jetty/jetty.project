@@ -35,6 +35,15 @@ public interface Container
     public boolean addBean(Object o);
 
     /**
+     * Adds the given bean, explicitly managing it or not.
+     *
+     * @param o The bean object to add
+     * @param managed whether to managed the lifecycle of the bean
+     * @return true if the bean was added, false if it was already present
+     */
+    boolean addBean(Object o, boolean managed);
+
+    /**
      * @return the list of beans known to this aggregate
      * @see #getBean(Class)
      */
@@ -104,15 +113,6 @@ public interface Container
      * @return whether this aggregate contains and manages the bean
      */
     boolean isManaged(Object bean);
-
-    /**
-     * Adds the given bean, explicitly managing it or not.
-     *
-     * @param o The bean object to add
-     * @param managed whether to managed the lifecycle of the bean
-     * @return true if the bean was added, false if it was already present
-     */
-    boolean addBean(Object o, boolean managed);
 
     /**
      * A listener for Container events.

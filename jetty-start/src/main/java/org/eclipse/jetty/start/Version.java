@@ -252,6 +252,8 @@ public class Version implements Comparable<Version>
                         update = val;
                     }
                     break;
+                default:
+                    throw new IllegalStateException(state.toString());
             }
 
             offset++;

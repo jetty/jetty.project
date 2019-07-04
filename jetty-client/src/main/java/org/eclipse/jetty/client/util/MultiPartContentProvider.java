@@ -365,6 +365,9 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
                     {
                         throw new NoSuchElementException();
                     }
+
+                    default:
+                        throw new IllegalStateException(state.toString());
                 }
             }
         }

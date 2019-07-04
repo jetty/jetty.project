@@ -52,19 +52,19 @@ public class StartLog
         }
     }
 
-    public static void trace(String format, Object... args)
-    {
-        if (INSTANCE.trace)
-        {
-            out.printf("TRACE " + format + "%n", args);
-        }
-    }
-
     public static void debug(Throwable t)
     {
         if (INSTANCE.debug)
         {
             t.printStackTrace(out);
+        }
+    }
+
+    public static void trace(String format, Object... args)
+    {
+        if (INSTANCE.trace)
+        {
+            out.printf("TRACE " + format + "%n", args);
         }
     }
 
@@ -88,14 +88,14 @@ public class StartLog
         log("INFO", format, args);
     }
 
-    public static void warn(String format, Object... args)
-    {
-        log("WARN", format, args);
-    }
-
     public static void error(String format, Object... args)
     {
         log("ERROR", format, args);
+    }
+
+    public static void warn(String format, Object... args)
+    {
+        log("WARN", format, args);
     }
 
     public static void warn(Throwable t)

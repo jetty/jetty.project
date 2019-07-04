@@ -77,12 +77,12 @@ public abstract class IncludeExcludeBasedFilter implements Filter
     @Override
     public void init(FilterConfig filterConfig) throws ServletException
     {
-        String includedPaths = filterConfig.getInitParameter("includedPaths");
-        String excludedPaths = filterConfig.getInitParameter("excludedPaths");
-        String includedMimeTypes = filterConfig.getInitParameter("includedMimeTypes");
-        String excludedMimeTypes = filterConfig.getInitParameter("excludedMimeTypes");
-        String includedHttpMethods = filterConfig.getInitParameter("includedHttpMethods");
-        String excludedHttpMethods = filterConfig.getInitParameter("excludedHttpMethods");
+        final String includedPaths = filterConfig.getInitParameter("includedPaths");
+        final String excludedPaths = filterConfig.getInitParameter("excludedPaths");
+        final String includedMimeTypes = filterConfig.getInitParameter("includedMimeTypes");
+        final String excludedMimeTypes = filterConfig.getInitParameter("excludedMimeTypes");
+        final String includedHttpMethods = filterConfig.getInitParameter("includedHttpMethods");
+        final String excludedHttpMethods = filterConfig.getInitParameter("excludedHttpMethods");
 
         if (includedPaths != null)
         {

@@ -184,6 +184,43 @@ public class ErrorHandler extends AbstractHandler
     }
 
     /**
+     * Generate an acceptable error response for a mime type.
+     * <p>This method is called for each mime type in the users agent's
+     * <code>Accept</code> header, until {@link Request#isHandled()} is true and a
+     * response of the appropriate type is generated.
+     *
+     * @param baseRequest The base request
+     * @param request The servlet request (may be wrapped)
+     * @param response The response (may be wrapped)
+     * @param code the http error code
+     * @param message the http error message
+     * @param mimeType The mimetype to generate (may be *&#47;*or other wildcard)
+     * @throws IOException if a response cannot be generated
+     */
+    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String mimeType)
+        throws IOException
+    {
+        switch (mimeType)
+        {
+            case "text/html":
+            case "text/*":
+            case "*/*":
+            {
+                baseRequest.setHandled(true);
+                Writer writer = getAcceptableWriter(baseRequest, request, response);
+                if (writer != null)
+                {
+                    response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
+                    handleErrorPage(request, writer, code, message);
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    /**
      * Returns an acceptable writer for an error page.
      * <p>Uses the user-agent's <code>Accept-Charset</code> to get response
      * {@link Writer}.  The acceptable charsets are tested in quality order
@@ -227,40 +264,6 @@ public class ErrorHandler extends AbstractHandler
             }
         }
         return null;
-    }
-
-    /**
-     * Generate an acceptable error response for a mime type.
-     * <p>This method is called for each mime type in the users agent's
-     * <code>Accept</code> header, until {@link Request#isHandled()} is true and a
-     * response of the appropriate type is generated.
-     *
-     * @param baseRequest The base request
-     * @param request The servlet request (may be wrapped)
-     * @param response The response (may be wrapped)
-     * @param code the http error code
-     * @param message the http error message
-     * @param mimeType The mimetype to generate (may be *&#47;*or other wildcard)
-     * @throws IOException if a response cannot be generated
-     */
-    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String mimeType)
-        throws IOException
-    {
-        switch (mimeType)
-        {
-            case "text/html":
-            case "text/*":
-            case "*/*":
-            {
-                baseRequest.setHandled(true);
-                Writer writer = getAcceptableWriter(baseRequest, request, response);
-                if (writer != null)
-                {
-                    response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
-                    handleErrorPage(request, writer, code, message);
-                }
-            }
-        }
     }
 
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)

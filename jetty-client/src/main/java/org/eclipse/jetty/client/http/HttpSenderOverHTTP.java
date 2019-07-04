@@ -237,7 +237,7 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                     case FLUSH:
                     {
-                        EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
+                        final EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
                         if (headerBuffer == null)
                             headerBuffer = BufferUtil.EMPTY_BUFFER;
                         if (chunkBuffer == null)

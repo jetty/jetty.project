@@ -61,10 +61,10 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
     @Test
     public void testClusteredScavenge() throws Exception
     {
-        String contextPath = "/";
-        String servletMapping = "/server";
-        int maxInactivePeriod = 5; //session will timeout after 5 seconds
-        int scavengePeriod = 1; //scavenging occurs every 1 seconds
+        final String contextPath = "/";
+        final String servletMapping = "/server";
+        final int maxInactivePeriod = 5; //session will timeout after 5 seconds
+        final int scavengePeriod = 1; //scavenging occurs every 1 seconds
 
         DefaultSessionCacheFactory cacheFactory1 = new DefaultSessionCacheFactory();
         cacheFactory1.setEvictionPolicy(SessionCache.NEVER_EVICT); //don't evict sessions

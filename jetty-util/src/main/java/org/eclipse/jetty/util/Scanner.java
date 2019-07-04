@@ -475,6 +475,9 @@ public class Scanner extends AbstractLifeCycle
                         case REMOVED:
                         case CHANGED:
                             _notifications.put(file, Notification.CHANGED);
+                            break;
+                        default:
+                            break;
                     }
                 }
             }
@@ -487,6 +490,9 @@ public class Scanner extends AbstractLifeCycle
                     {
                         case ADDED:
                             _notifications.put(file, Notification.ADDED);
+                            break;
+                        default:
+                            break;
                     }
                 }
             }
@@ -504,6 +510,9 @@ public class Scanner extends AbstractLifeCycle
                     {
                         case ADDED:
                             _notifications.remove(file);
+                            break;
+                        default:
+                            break;
                     }
                 }
             }
@@ -543,6 +552,8 @@ public class Scanner extends AbstractLifeCycle
                     break;
                 case REMOVED:
                     reportRemoval(file);
+                    break;
+                default:
                     break;
             }
         }

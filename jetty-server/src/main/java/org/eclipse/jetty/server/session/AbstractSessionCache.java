@@ -111,6 +111,28 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public abstract Session newSession(HttpServletRequest request, SessionData data);
 
     /**
+     * @see org.eclipse.jetty.server.session.SessionCache#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)
+     */
+    @Override
+    public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Creating new session id=" + id);
+        Session session = newSession(request, _sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
+        session.getSessionData().setLastNode(_context.getWorkerName());
+        try
+        {
+            if (isSaveOnCreate() && _sessionDataStore != null)
+                _sessionDataStore.store(id, session.getSessionData());
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Save of new session {} failed", id, e);
+        }
+        return session;
+    }
+
+    /**
      * Get the session matching the key
      *
      * @param id session id
@@ -718,7 +740,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
         try (Lock lock = session.lock())
         {
-            String oldId = session.getId();
+            final String oldId = session.getId();
             session.checkValidForWrite(); //can't change id on invalid session
             session.getSessionData().setId(newId);
             session.getSessionData().setLastSaved(0); //pretend that the session has never been saved before to get a full save
@@ -759,28 +781,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public boolean isSaveOnInactiveEviction()
     {
         return _saveOnInactiveEviction;
-    }
-
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCache#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)
-     */
-    @Override
-    public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Creating new session id=" + id);
-        Session session = newSession(request, _sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
-        session.getSessionData().setLastNode(_context.getWorkerName());
-        try
-        {
-            if (isSaveOnCreate() && _sessionDataStore != null)
-                _sessionDataStore.store(id, session.getSessionData());
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Save of new session {} failed", id, e);
-        }
-        return session;
     }
 
     @Override

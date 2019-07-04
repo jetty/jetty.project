@@ -81,6 +81,12 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        return null;
+    }
+
+    @Override
     public String getHost()
     {
         return delegate.getHost();
@@ -171,12 +177,6 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     public void addExtensions(String... configs)
     {
         // TODO
-    }
-
-    @Override
-    public Map<String, List<String>> getHeaders()
-    {
-        return null;
     }
 
     @Override
