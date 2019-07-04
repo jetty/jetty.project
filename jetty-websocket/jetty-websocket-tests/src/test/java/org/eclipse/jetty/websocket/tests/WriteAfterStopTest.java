@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
@@ -108,7 +109,7 @@ public class WriteAfterStopTest
 
         try (StacklessLogging stacklessLogging = new StacklessLogging(CompressExtension.class))
         {
-            assertThrows(NullPointerException.class,
+            assertThrows(ClosedChannelException.class,
                 () -> session.getRemote().sendString("hello world"));
         }
     }
