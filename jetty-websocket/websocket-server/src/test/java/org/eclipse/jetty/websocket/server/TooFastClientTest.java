@@ -93,7 +93,7 @@ public class TooFastClientTest
         for (String msg : msgs)
         {
             TextFrame frame = new TextFrame().setPayload(msg);
-            byte mask[] = new byte[]{0x11, 0x22, 0x33, 0x44};
+            byte[] mask = new byte[]{0x11, 0x22, 0x33, 0x44};
             frame.setMask(mask);
             generator.generateWholeFrame(frame, initialPacket);
         }
@@ -139,7 +139,7 @@ public class TooFastClientTest
     {
         BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
 
-        byte bigMsgBytes[] = new byte[64 * 1024];
+        byte[] bigMsgBytes = new byte[64 * 1024];
         Arrays.fill(bigMsgBytes, (byte)'x');
         String bigMsg = new String(bigMsgBytes, StandardCharsets.UTF_8);
 

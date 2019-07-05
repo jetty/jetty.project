@@ -74,7 +74,7 @@ public class StringUtil
             return new String[]{}; // empty array
         }
 
-        String ret[];
+        String[] ret;
 
         int count = 0;
         int offset = 0;

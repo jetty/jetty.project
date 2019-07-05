@@ -70,7 +70,7 @@ public class TestABCase4 extends AbstractABCase
     @Test
     public void testCase4_1_2() throws Exception
     {
-        byte payload[] = StringUtil.getUtf8Bytes("reserved payload");
+        byte[] payload = StringUtil.getUtf8Bytes("reserved payload");
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
         List<WebSocketFrame> send = new ArrayList<>();

@@ -150,7 +150,7 @@ public class TestABCase3 extends AbstractABCase
     @Test
     public void testCase3_5() throws Exception
     {
-        byte payload[] = new byte[8];
+        byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -177,7 +177,7 @@ public class TestABCase3 extends AbstractABCase
     @Test
     public void testCase3_6() throws Exception
     {
-        byte payload[] = new byte[8];
+        byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -204,7 +204,7 @@ public class TestABCase3 extends AbstractABCase
     @Test
     public void testCase3_7() throws Exception
     {
-        byte payload[] = new byte[8];
+        byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
 
         List<WebSocketFrame> send = new ArrayList<>();

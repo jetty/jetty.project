@@ -67,7 +67,7 @@ public class DeMaskProcessorTest
         final byte msgChar = '*';
         final int messageSize = 25;
 
-        byte message[] = new byte[messageSize];
+        byte[] message = new byte[messageSize];
         Arrays.fill(message, msgChar);
 
         TextFrame frame = new TextFrame();

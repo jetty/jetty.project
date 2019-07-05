@@ -121,7 +121,7 @@ public class MessageWriterTest
     public void testWriteMultipleBuffers() throws Exception
     {
         int bufsize = (int)(policy.getMaxTextMessageBufferSize() * 2.5);
-        char buf[] = new char[bufsize];
+        char[] buf = new char[bufsize];
         if (LOG.isDebugEnabled())
             LOG.debug("Buffer size: {}", bufsize);
         Arrays.fill(buf, 'x');

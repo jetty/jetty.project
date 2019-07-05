@@ -145,14 +145,14 @@ public class ParserTest
     public void testParseCase6_2_3()
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
-        byte msg[] = StringUtil.getUtf8Bytes(utf8);
+        byte[] msg = StringUtil.getUtf8Bytes(utf8);
 
         List<WebSocketFrame> send = new ArrayList<>();
         int textCount = 0;
         int continuationCount = 0;
         int len = msg.length;
         boolean continuation = false;
-        byte mini[];
+        byte[] mini;
         for (int i = 0; i < len; i++)
         {
             DataFrame frame = null;
@@ -207,7 +207,7 @@ public class ParserTest
     public void testWindowedParseLargeFrame()
     {
         // Create frames
-        byte payload[] = new byte[65536];
+        byte[] payload = new byte[65536];
         Arrays.fill(payload, (byte)'*');
 
         List<WebSocketFrame> frames = new ArrayList<>();

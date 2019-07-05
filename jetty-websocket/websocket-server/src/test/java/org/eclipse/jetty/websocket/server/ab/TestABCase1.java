@@ -67,7 +67,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_1_2() throws Exception
     {
-        byte payload[] = new byte[125];
+        byte[] payload = new byte[125];
         Arrays.fill(payload, (byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -96,7 +96,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_1_3() throws Exception
     {
-        byte payload[] = new byte[126];
+        byte[] payload = new byte[126];
         Arrays.fill(payload, (byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -125,7 +125,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_1_4() throws Exception
     {
-        byte payload[] = new byte[127];
+        byte[] payload = new byte[127];
         Arrays.fill(payload, (byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -154,7 +154,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_1_5() throws Exception
     {
-        byte payload[] = new byte[128];
+        byte[] payload = new byte[128];
         Arrays.fill(payload, (byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -183,7 +183,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_1_6() throws Exception
     {
-        byte payload[] = new byte[65535];
+        byte[] payload = new byte[65535];
         Arrays.fill(payload, (byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -212,7 +212,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_1_7() throws Exception
     {
-        byte payload[] = new byte[65536];
+        byte[] payload = new byte[65536];
         Arrays.fill(payload, (byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -245,7 +245,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_1_8() throws Exception
     {
-        byte payload[] = new byte[65536];
+        byte[] payload = new byte[65536];
         Arrays.fill(payload, (byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(payload);
         int segmentSize = 997;
@@ -301,7 +301,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_2_2() throws Exception
     {
-        byte payload[] = new byte[125];
+        byte[] payload = new byte[125];
         Arrays.fill(payload, (byte)0xFE);
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -330,7 +330,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_2_3() throws Exception
     {
-        byte payload[] = new byte[126];
+        byte[] payload = new byte[126];
         Arrays.fill(payload, (byte)0xFE);
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -359,7 +359,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_2_4() throws Exception
     {
-        byte payload[] = new byte[127];
+        byte[] payload = new byte[127];
         Arrays.fill(payload, (byte)0xFE);
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -388,7 +388,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_2_5() throws Exception
     {
-        byte payload[] = new byte[128];
+        byte[] payload = new byte[128];
         Arrays.fill(payload, (byte)0xFE);
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -417,7 +417,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_2_6() throws Exception
     {
-        byte payload[] = new byte[65535];
+        byte[] payload = new byte[65535];
         Arrays.fill(payload, (byte)0xFE);
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -446,7 +446,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_2_7() throws Exception
     {
-        byte payload[] = new byte[65536];
+        byte[] payload = new byte[65536];
         Arrays.fill(payload, (byte)0xFE);
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
@@ -479,7 +479,7 @@ public class TestABCase1 extends AbstractABCase
     @Test
     public void testCase1_2_8() throws Exception
     {
-        byte payload[] = new byte[65536];
+        byte[] payload = new byte[65536];
         Arrays.fill(payload, (byte)0xFE);
         ByteBuffer buf = ByteBuffer.wrap(payload);
         int segmentSize = 997;

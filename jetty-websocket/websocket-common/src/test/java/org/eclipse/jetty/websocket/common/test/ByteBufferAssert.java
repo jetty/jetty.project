@@ -54,8 +54,8 @@ public class ByteBufferAssert
         }
         else
         {
-            byte expectedBytes[] = BufferUtil.toArray(expectedBuffer);
-            byte actualBytes[] = BufferUtil.toArray(actualBuffer);
+            byte[] expectedBytes = BufferUtil.toArray(expectedBuffer);
+            byte[] actualBytes = BufferUtil.toArray(actualBuffer);
             assertEquals(message, expectedBytes, actualBytes);
         }
     }

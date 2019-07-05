@@ -167,7 +167,7 @@ public class CorrectMavenCentralRefs
                 String rawpath = line.substring(idx + keyword.length(), pipe);
                 String destpath = line.substring(pipe + 1);
 
-                String parts[] = rawpath.split("/");
+                String[] parts = rawpath.split("/");
                 int rev = parts.length;
                 String filename = parts[--rev];
 
