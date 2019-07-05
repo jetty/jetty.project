@@ -40,17 +40,21 @@ import java.nio.file.Path;
  * /dev/disk1s1   489620264 230478144 255695688    48% 1975282 9223372036852800525    0%   /System/Volumes/Data
  */
 
-public class MacOSMountPathChecker implements AliasCheck {
+public class MacOSMountPathChecker implements AliasCheck
+{
     private static final Logger LOG = Log.getLogger(MacOSMountPathChecker.class);
     private static final boolean RUNNING_ON_MAC_OS = System.getProperty("os.name").startsWith("Mac OS X");
 
     @Override
-    public boolean check(String uri, Resource resource) {
-        if (!RUNNING_ON_MAC_OS) {
+    public boolean check(String uri, Resource resource)
+    {
+        if (!RUNNING_ON_MAC_OS)
+        {
             return false;
         }
 
-        if (!(resource instanceof PathResource)) {
+        if (!(resource instanceof PathResource))
+        {
             return false;
         }
 
@@ -58,23 +62,29 @@ public class MacOSMountPathChecker implements AliasCheck {
         Path path = pathResource.getPath();
         Path alias = pathResource.getAliasPath();
 
-        try {
+        try
+        {
             boolean allowed = isAllowed(alias, Files.isSameFile(path, alias));
-            if (LOG.isDebugEnabled()) {
+            if (LOG.isDebugEnabled())
+            {
                 LOG.debug("Allow path by MacOS mount location {} --> {}", resource, pathResource.getAliasPath());
             }
             return allowed;
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             LOG.ignore(e);
             return false;
         }
     }
 
-    boolean isAllowed(Path alias, boolean isSamePathAndAlias) {
+    boolean isAllowed(Path alias, boolean isSamePathAndAlias)
+    {
         return containsMacOSMountPath(alias) && isSamePathAndAlias;
     }
 
-    private boolean containsMacOSMountPath(Path alias) {
+    private boolean containsMacOSMountPath(Path alias)
+    {
         return alias.startsWith("/System/Volumes/Data");
     }
 }

@@ -29,10 +29,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  * @author sam
  */
-class MacOSMountPathCheckerTest {
+class MacOSMountPathCheckerTest
+{
     @Test
-    void pathContainingMacOSMountPathShouldBeTreatedAsAlias() {
-        Path alias = Paths.get("/System/Volumes/Data/Users/jetty/test.xml");
+    void pathContainingMacOSMountPathShouldBeTreatedAsAlias()
+    {
+        Path alias = Paths.get("/System/Volumes/Data/Users/jetty/app-config.xml");
         assertThat(new MacOSMountPathChecker().isAllowed(alias, true), is(true));
     }
 }
