@@ -593,9 +593,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected IStream newStream(int streamId, boolean local)
+    protected IStream newStream(int streamId, MetaData.Request request, boolean local)
     {
-        return new HTTP2Stream(scheduler, this, streamId, local);
+        return new HTTP2Stream(scheduler, this, streamId, request, local);
     }
 
     @Override
