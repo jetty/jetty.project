@@ -35,6 +35,6 @@ class MacOSMountPathCheckerTest
     void pathContainingMacOSMountPathShouldBeTreatedAsAlias()
     {
         Path alias = Paths.get("/System/Volumes/Data/Users/jetty/app-config.xml");
-        assertThat(new MacOSMountPathChecker().isAllowed(alias, true), is(true));
+        assertThat(new MacOSMountPathChecker().isValidAlias(alias, true), is(true));
     }
 }

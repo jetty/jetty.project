@@ -64,12 +64,12 @@ public class MacOSMountPathChecker implements AliasCheck
 
         try
         {
-            boolean allowed = isAllowed(alias, Files.isSameFile(path, alias));
+            boolean valid = isValidAlias(alias, Files.isSameFile(path, alias));
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Allow path by MacOS mount location {} --> {}", resource, pathResource.getAliasPath());
             }
-            return allowed;
+            return valid;
         }
         catch (IOException e)
         {
@@ -78,7 +78,7 @@ public class MacOSMountPathChecker implements AliasCheck
         }
     }
 
-    boolean isAllowed(Path alias, boolean isSamePathAndAlias)
+    boolean isValidAlias(Path alias, boolean isSamePathAndAlias)
     {
         return containsMacOSMountPath(alias) && isSamePathAndAlias;
     }
