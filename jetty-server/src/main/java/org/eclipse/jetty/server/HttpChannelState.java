@@ -999,6 +999,7 @@ public class HttpChannelState
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
+            _ignoreComplete = false;
         }
     }
 

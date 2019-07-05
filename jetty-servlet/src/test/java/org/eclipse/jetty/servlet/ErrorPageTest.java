@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -195,11 +196,27 @@ public class ErrorPageTest
     }
 
     @Test
-    public void testAsyncErrorPage() throws Exception
+    public void testAsyncErrorPage0() throws Exception
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
             String response = _connector.getResponse("GET /async/info HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
+        }
+    }
+
+    @Test
+    public void testAsyncErrorPage1() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
+        {
+            String response = _connector.getResponse("GET /async/info?latecomplete=true HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
@@ -237,14 +254,33 @@ public class ErrorPageTest
             try
             {
                 final CountDownLatch hold = new CountDownLatch(1);
+                final boolean lateComplete = "true".equals(request.getParameter("latecomplete"));
                 AsyncContext async = request.startAsync();
                 async.start(() ->
                 {
                     try
                     {
                         response.sendError(599);
+                        if (!lateComplete)
+                            async.complete();
                         hold.countDown();
-                        async.complete();
+                        if (lateComplete)
+                        {
+                            // Wait until request is recycled
+                            while (Request.getBaseRequest(request).getMetaData()!=null)
+                            {
+                                try
+                                {
+                                    System.err.println("waiting "+request);
+                                    Thread.sleep(100);
+                                }
+                                catch (InterruptedException e)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }
+                            async.complete();
+                        }
                     }
                     catch (IOException e)
                     {
@@ -334,11 +370,7 @@ public class ErrorPageTest
                     System.err.println("\tat " + element);
                 }
                 IllegalStateException ex = new IllegalStateException();
-                System.err.println("Thread " + current + " :");
-                for (StackTraceElement element : ex.getStackTrace())
-                {
-                    System.err.println("\tat " + element);
-                }
+                ex.printStackTrace();
                 response.flushBuffer();
                 throw ex;
             }

@@ -150,7 +150,7 @@ public class ErrorHandler extends AbstractHandler
      * acceptable to the user-agent.  The Accept header is evaluated in
      * quality order and the method
      * {@link #generateAcceptableResponse(Request, HttpServletRequest, HttpServletResponse, int, String, String)}
-     * is called for each mimetype until {@link Request#isHandled()} is true.</p>
+     * is called for each mimetype until the response is written to or committed.</p>
      *
      * @param baseRequest The base request
      * @param request The servlet request (may be wrapped)
@@ -232,6 +232,11 @@ public class ErrorHandler extends AbstractHandler
      * <p>This method is called for each mime type in the users agent's
      * <code>Accept</code> header, until {@link Request#isHandled()} is true and a
      * response of the appropriate type is generated.
+     * </p>
+     * <p>The default implementation handles "text/html", "text/*" and "*&#47*".
+     * The method can be overridden to handle other types.  Implementations must
+     * immediate produce a response and may not be async.
+     * </p>
      *
      * @param baseRequest The base request
      * @param request The servlet request (may be wrapped)
