@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.proxy;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
@@ -280,6 +281,23 @@ class WebSocketProxy
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("[{}] onClosed {}", toString(), closeStatus);
+
+            boolean abnormalClose = false;
+            synchronized (lock)
+            {
+                switch (state)
+                {
+                    case CLOSED:
+                        break;
+
+                    default:
+                        abnormalClose = true;
+                        break;
+                }
+            }
+
+            if (abnormalClose)
+                server2Proxy.fail(new ClosedChannelException(), Callback.NOOP);
 
             closed.countDown();
             callback.succeeded();
@@ -568,6 +586,24 @@ class WebSocketProxy
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("[{}] onClosed {}", toString(), closeStatus);
+
+            boolean abnormalClose = false;
+            synchronized (lock)
+            {
+                switch (state)
+                {
+                    case CLOSED:
+                        break;
+
+                    default:
+                        abnormalClose = true;
+                        break;
+                }
+            }
+
+            if (abnormalClose)
+                client2Proxy.fail(new ClosedChannelException(), Callback.NOOP);
+
             closed.countDown();
             callback.succeeded();
         }
