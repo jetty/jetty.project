@@ -497,13 +497,9 @@ public class HttpChannelState
                     return Action.WAIT;
 
                 case EXPIRED:
-                    // onTimeout handling is complete, but did not dispatch as
-                    // we were handling.  So do the error dispatch here
-                    _state = State.DISPATCHED;
-                    _async = Async.NOT_ASYNC;
-                    return Action.ERROR_DISPATCH;
-
                 case ERRORED:
+                    // onTimeout or onError handling is complete, but did not dispatch as
+                    // we were handling.  So do the error dispatch here
                     _state = State.DISPATCHED;
                     _async = Async.NOT_ASYNC;
                     return Action.ERROR_DISPATCH;
@@ -591,7 +587,7 @@ public class HttpChannelState
                 return false;
 
             event = _event;
-            _async = Async.DISPATCH;
+            _async = Async.DISPATCH; // TODO ERRORED?????
 
             if (path != null)
                 _event.setDispatchPath(path);

@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -53,12 +54,15 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorPageTest
 {
     private Server _server;
     private LocalConnector _connector;
     private StacklessLogging _stackless;
+    private static CountDownLatch __asyncSendErrorCompleted;
+
 
     @BeforeEach
     public void init() throws Exception
@@ -93,6 +97,8 @@ public class ErrorPageTest
 
         _server.start();
         _stackless = new StacklessLogging(ServletHandler.class);
+
+        __asyncSendErrorCompleted = new CountDownLatch(1);
     }
 
     @AfterEach
@@ -208,6 +214,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
+            assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
         }
     }
 
@@ -224,6 +231,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
+            assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
         }
     }
 
@@ -261,17 +269,16 @@ public class ErrorPageTest
                     try
                     {
                         response.sendError(599);
-                        if (!lateComplete)
-                            async.complete();
-                        hold.countDown();
+
                         if (lateComplete)
                         {
+                            // Complete after original servlet
+                            hold.countDown();
                             // Wait until request is recycled
                             while (Request.getBaseRequest(request).getMetaData()!=null)
                             {
                                 try
                                 {
-                                    System.err.println("waiting "+request);
                                     Thread.sleep(100);
                                 }
                                 catch (InterruptedException e)
@@ -280,6 +287,14 @@ public class ErrorPageTest
                                 }
                             }
                             async.complete();
+                            __asyncSendErrorCompleted.countDown();
+                        }
+                        else
+                        {
+                            // Complete before original servlet
+                            async.complete();
+                            __asyncSendErrorCompleted.countDown();
+                            hold.countDown();
                         }
                     }
                     catch (IOException e)
@@ -332,6 +347,9 @@ public class ErrorPageTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
+            if (request.getDispatcherType()!=DispatcherType.ERROR && request.getDispatcherType()!=DispatcherType.ASYNC)
+                throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
+
             PrintWriter writer = response.getWriter();
             writer.println("DISPATCH: " + request.getDispatcherType().name());
             writer.println("ERROR_PAGE: " + request.getPathInfo());
