@@ -634,7 +634,6 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         session.addManaged(extensionStack);
         session.setFuture(fut);
-        wsClient.addManaged(session);
 
         if (upgradeListener != null)
         {

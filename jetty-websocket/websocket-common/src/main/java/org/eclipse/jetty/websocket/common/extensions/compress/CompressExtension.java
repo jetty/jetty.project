@@ -30,6 +30,8 @@ import java.util.zip.ZipException;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -84,10 +86,10 @@ public abstract class CompressExtension extends AbstractExtension
      */
     private static final int DECOMPRESS_BUF_SIZE = 8 * 1024;
 
-    private static final boolean NOWRAP = true;
-
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
+    private DeflaterPool deflaterPool;
+    private InflaterPool inflaterPool;
     private Deflater deflaterImpl;
     private Inflater inflaterImpl;
     protected AtomicInteger decompressCount = new AtomicInteger(0);
@@ -100,11 +102,21 @@ public abstract class CompressExtension extends AbstractExtension
         rsvUse = getRsvUseMode();
     }
 
+    public void setInflaterPool(InflaterPool inflaterPool)
+    {
+        this.inflaterPool = inflaterPool;
+    }
+
+    public void setDeflaterPool(DeflaterPool deflaterPool)
+    {
+        this.deflaterPool = deflaterPool;
+    }
+
     public Deflater getDeflater()
     {
         if (deflaterImpl == null)
         {
-            deflaterImpl = new Deflater(Deflater.DEFAULT_COMPRESSION, NOWRAP);
+            deflaterImpl = deflaterPool.acquire();
         }
         return deflaterImpl;
     }
@@ -113,7 +125,7 @@ public abstract class CompressExtension extends AbstractExtension
     {
         if (inflaterImpl == null)
         {
-            inflaterImpl = new Inflater(NOWRAP);
+            inflaterImpl = inflaterPool.acquire();
         }
         return inflaterImpl;
     }
@@ -389,9 +401,17 @@ public abstract class CompressExtension extends AbstractExtension
     protected void doStop() throws Exception
     {
         if (deflaterImpl != null)
-            deflaterImpl.end();
+        {
+            deflaterPool.release(deflaterImpl);
+            deflaterImpl = null;
+        }
+
         if (inflaterImpl != null)
-            inflaterImpl.end();
+        {
+            inflaterPool.release(inflaterImpl);
+            inflaterImpl = null;
+        }
+
         super.doStop();
     }
 
