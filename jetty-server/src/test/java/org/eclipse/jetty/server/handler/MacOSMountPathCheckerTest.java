@@ -26,9 +26,6 @@ import java.nio.file.Paths;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author sam
- */
 class MacOSMountPathCheckerTest
 {
     @Test
