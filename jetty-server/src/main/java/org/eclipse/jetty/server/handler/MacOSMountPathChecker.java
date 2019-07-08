@@ -72,6 +72,7 @@ public class MacOSMountPathChecker implements AliasCheck
             {
                 LOG.debug("Allow path by MacOS mount location {} --> {}", resource, pathResource.getAliasPath());
             }
+
             return valid;
         }
         catch (IOException e)
