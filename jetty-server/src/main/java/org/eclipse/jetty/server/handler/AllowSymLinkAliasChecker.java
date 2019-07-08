@@ -61,13 +61,6 @@ public class AllowSymLinkAliasChecker implements AliasCheck
                     LOG.debug("Allow symlink {} --> {}", resource, pathResource.getAliasPath());
                 return true;
             }
-
-            if (containsReservedPathByMacOS(alias) && Files.isSameFile(path, alias))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Allow path by MacOS mount location {} --> {}", resource, pathResource.getAliasPath());
-                return true;
-            }
         }
         catch (Exception e)
         {
@@ -75,10 +68,6 @@ public class AllowSymLinkAliasChecker implements AliasCheck
         }
 
         return false;
-    }
-
-    private boolean containsReservedPathByMacOS(Path path) {
-        return path.startsWith("/System/Volumes/Data");
     }
 
     private boolean hasSymbolicLink(Path path)
