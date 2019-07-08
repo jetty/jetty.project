@@ -26,12 +26,12 @@ import java.nio.file.Paths;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-class MacOSMountPathCheckerTest
+class MacOSMountPathCompatibleCheckerTest
 {
     @Test
     void pathContainingMacOSMountPathShouldBeTreatedAsAlias()
     {
         Path alias = Paths.get("/System/Volumes/Data/Users/jetty/app-config.xml");
-        assertThat(new MacOSMountPathChecker().isValidAlias(alias, true), is(true));
+        assertThat(new MacOSMountPathCompatibleChecker().isValidAlias(alias, true), is(true));
     }
 }

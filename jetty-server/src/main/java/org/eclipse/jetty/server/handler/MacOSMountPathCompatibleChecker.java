@@ -42,9 +42,9 @@ import java.nio.file.Path;
  * /dev/disk1s1   /System/Volumes/Data
  */
 
-public class MacOSMountPathChecker implements AliasCheck
+public class MacOSMountPathCompatibleChecker implements AliasCheck
 {
-    private static final Logger LOG = Log.getLogger(MacOSMountPathChecker.class);
+    private static final Logger LOG = Log.getLogger(MacOSMountPathCompatibleChecker.class);
 
     static final boolean RUNNING_ON_MAC_OS = System.getProperty("os.name").startsWith("Mac OS X");
 

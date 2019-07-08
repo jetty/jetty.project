@@ -244,8 +244,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         addAliasCheck(new ApproveNonExistentDirectoryAliases());
         if (File.separatorChar == '/')
             addAliasCheck(new AllowSymLinkAliasChecker());
-        if (MacOSMountPathChecker.RUNNING_ON_MAC_OS)
-            addAliasCheck(new MacOSMountPathChecker());
+        if (MacOSMountPathCompatibleChecker.RUNNING_ON_MAC_OS)
+            addAliasCheck(new MacOSMountPathCompatibleChecker());
 
         if (contextPath != null)
             setContextPath(contextPath);
