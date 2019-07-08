@@ -68,7 +68,8 @@ public class MacOSMountPathChecker implements AliasCheck
         try
         {
             boolean valid = isValidAlias(alias, Files.isSameFile(path, alias));
-            if (LOG.isDebugEnabled())
+
+            if (valid && LOG.isDebugEnabled())
             {
                 LOG.debug("Allow path by MacOS mount location {} --> {}", resource, pathResource.getAliasPath());
             }
