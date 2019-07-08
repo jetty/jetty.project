@@ -34,10 +34,12 @@ import java.nio.file.Path;
  *
  * Under 10.15
  * ---
- * /dev/disk1s1   489620264 230478144 255695688    48% 1975282 9223372036852800525    0%   /
+ * Filesystem      Mounted On
+ * /dev/disk1s1    /
  *
  * From 10.15
- * /dev/disk1s1   489620264 230478144 255695688    48% 1975282 9223372036852800525    0%   /System/Volumes/Data
+ * Filesystem      Mounted On
+ * /dev/disk1s1   /System/Volumes/Data
  */
 
 public class MacOSMountPathChecker implements AliasCheck
