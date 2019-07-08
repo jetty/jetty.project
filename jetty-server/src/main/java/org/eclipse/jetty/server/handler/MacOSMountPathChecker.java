@@ -43,7 +43,7 @@ import java.nio.file.Path;
 public class MacOSMountPathChecker implements AliasCheck
 {
     private static final Logger LOG = Log.getLogger(MacOSMountPathChecker.class);
-    private static final boolean RUNNING_ON_MAC_OS = System.getProperty("os.name").startsWith("Mac OS X");
+    static final boolean RUNNING_ON_MAC_OS = System.getProperty("os.name").startsWith("Mac OS X");
 
     @Override
     public boolean check(String uri, Resource resource)
