@@ -329,7 +329,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         }
 
         // Negotiate the extension stack
-        HttpClient httpClient = wsClient.getHttpClient();
         ExtensionStack extensionStack = new ExtensionStack(wsClient.getWebSocketComponents(), Behavior.CLIENT);
         extensionStack.negotiate(offeredExtensions, negotiatedExtensions);
 
@@ -370,6 +369,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         WebSocketCoreSession coreSession = newWebSocketCoreSession(frameHandler, negotiated);
         customizer.customize(coreSession);
 
+        HttpClient httpClient = wsClient.getHttpClient();
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
 
         for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
