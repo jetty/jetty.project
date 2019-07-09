@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -317,7 +316,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             connection.close();
 
         // Forward Errors to Local WebSocket EndPoint
-        if (closeStatus.isAbnormal())
+        if (closeStatus.isAbnormal() && closeStatus.getCause() != null)
         {
             Callback errorCallback = Callback.from(() ->
             {
@@ -332,7 +331,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 }
             });
 
-            Throwable cause = closeStatus.getCause() != null ? closeStatus.getCause() : new ClosedChannelException();
+            Throwable cause = closeStatus.getCause();
             try
             {
                 handler.onError(cause, errorCallback);
