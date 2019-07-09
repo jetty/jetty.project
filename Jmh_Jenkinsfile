@@ -38,7 +38,7 @@ node("linux") {
 // jmh run
 node( 'jmh-build-node' ) {
   stage("jmh-run") {
-    timeout( time: 180, unit: 'MINUTES' ) {
+    timeout( time: 210, unit: 'MINUTES' ) {
       withEnv( ["JAVA_HOME=${tool "$jdk"}"] ) {
         unstash name: 'perf-tests'
         sh "rm -rf jmh_results"
