@@ -121,7 +121,6 @@ public class HttpChannelState
     private boolean _asyncWritePossible;
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
-    private boolean _ignoreComplete;
 
     protected HttpChannelState(HttpChannel channel)
     {
@@ -326,7 +325,6 @@ public class HttpChannelState
             _event = event;
             lastAsyncListeners = _asyncListeners;
             _asyncListeners = null;
-            _ignoreComplete = false;
         }
 
         if (lastAsyncListeners != null)
@@ -592,7 +590,6 @@ public class HttpChannelState
             if (path != null)
                 _event.setDispatchPath(path);
 
-            _ignoreComplete = true;
             switch (_state)
             {
                 case DISPATCHED:
@@ -715,7 +712,6 @@ public class HttpChannelState
 
     public void complete()
     {
-        // just like resume, except don't set _dispatched=true;
         boolean handle = false;
         AsyncContextEvent event;
         try (Locker.Lock lock = _locker.lock())
@@ -738,11 +734,6 @@ public class HttpChannelState
                 case COMPLETE:
                     return;
                 default:
-                    if (_ignoreComplete)
-                    {
-                        _ignoreComplete = false;
-                        return;
-                    }
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
             _async = Async.COMPLETE;
@@ -995,7 +986,6 @@ public class HttpChannelState
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
-            _ignoreComplete = false;
         }
     }
 

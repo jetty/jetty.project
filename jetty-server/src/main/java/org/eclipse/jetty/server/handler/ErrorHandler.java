@@ -107,6 +107,12 @@ public class ErrorHandler extends AbstractHandler
                 {
                     LOG.warn("Error page loop {}", errorPage);
                 }
+
+
+                // TODO handle async and sync case the same.   Call the channelState to
+                // record there is an error dispatch needed, that will not be done until
+                // the current request cycle completes (or within that call if it already
+                // has.
                 else if (baseRequest.getHttpChannelState().asyncErrorDispatch(errorPage))
                 {
                     return;
