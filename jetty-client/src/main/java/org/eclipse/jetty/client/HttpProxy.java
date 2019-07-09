@@ -254,8 +254,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             @Override
             public void onComplete(Result result)
             {
-                // TODO: do we need this? For timeouts, I/O failures, etc?
-                if (!result.isSucceeded())
+                if (result.isFailed())
                     tunnelFailed(endPoint, result.getFailure());
             }
         }

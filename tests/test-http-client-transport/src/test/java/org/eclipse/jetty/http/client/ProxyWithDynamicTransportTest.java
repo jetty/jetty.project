@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.http.client;
 
+import java.net.ConnectException;
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -64,18 +66,20 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ProxyTestWithDynamicTransport
+public class ProxyWithDynamicTransportTest
 {
-    private static final Logger LOG = Log.getLogger(ProxyTestWithDynamicTransport.class);
+    private static final Logger LOG = Log.getLogger(ProxyWithDynamicTransportTest.class);
 
     private Server server;
     private ServerConnector serverConnector;
@@ -86,6 +90,13 @@ public class ProxyTestWithDynamicTransport
     private HttpClient client;
 
     private void start(Handler handler) throws Exception
+    {
+        startServer(handler);
+        startProxy(new ConnectHandler());
+        startClient();
+    }
+
+    private void startServer(Handler handler) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
@@ -114,13 +125,9 @@ public class ProxyTestWithDynamicTransport
         server.setHandler(handler);
         server.start();
         LOG.info("Started server on :{} and :{}", serverConnector.getLocalPort(), serverTLSConnector.getLocalPort());
-
-        startProxy();
-
-        startClient();
     }
 
-    private void startProxy() throws Exception
+    private void startProxy(ConnectHandler connectHandler) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
@@ -147,7 +154,6 @@ public class ProxyTestWithDynamicTransport
         proxyTLSConnector = new ServerConnector(proxy, 1, 1, ssl, alpn, h2, h1, h2c);
         proxy.addConnector(proxyTLSConnector);
 
-        ConnectHandler connectHandler = new ConnectHandler();
         proxy.setHandler(connectHandler);
         ServletContextHandler context = new ServletContextHandler(connectHandler, "/");
         ServletHolder holder = new ServletHolder(new AsyncProxyServlet()
@@ -313,5 +319,72 @@ public class ProxyTestWithDynamicTransport
                 .collect(Collectors.toList());
         assertEquals(1, serverConnections.size());
         assertTrue(serverConnections.get(0).getSession().getStreams().isEmpty());
+    }
+
+    @Test
+    public void testProxyDown() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        int proxyPort = proxyConnector.getLocalPort();
+        Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
+        HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new HttpDestination.Protocol(List.of("h2c"), false));
+        client.getProxyConfiguration().getProxies().add(httpProxy);
+        proxy.stop();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", serverConnector.getLocalPort())
+                .version(HttpVersion.HTTP_1_1)
+                .timeout(5, TimeUnit.SECONDS)
+                .send(result ->
+                {
+                    assertTrue(result.isFailed());
+                    assertThat(result.getFailure(), Matchers.instanceOf(ConnectException.class));
+                    latch.countDown();
+                });
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testHTTP2TunnelHardClosedByProxy() throws Exception
+    {
+        startServer(new EmptyServerHandler());
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        startProxy(new ConnectHandler()
+        {
+            @Override
+            protected void handleConnect(Request jettyRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+            {
+                jettyRequest.getHttpChannel().getEndPoint().close();
+                closeLatch.countDown();
+            }
+        });
+        startClient();
+
+        int proxyPort = proxyConnector.getLocalPort();
+        Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
+        HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new HttpDestination.Protocol(List.of("h2c"), false));
+        client.getProxyConfiguration().getProxies().add(httpProxy);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", serverConnector.getLocalPort())
+                .version(HttpVersion.HTTP_1_1)
+                .timeout(5, TimeUnit.SECONDS)
+                .send(result ->
+                {
+                    assertTrue(result.isFailed());
+                    assertThat(result.getFailure(), Matchers.instanceOf(ClosedChannelException.class));
+                    latch.countDown();
+                });
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        List<Destination> destinations = client.getDestinations().stream()
+            .filter(d -> d.getPort() == proxyPort)
+            .collect(Collectors.toList());
+        assertEquals(1, destinations.size());
+        HttpDestination destination = (HttpDestination)destinations.get(0);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+        assertEquals(0, connectionPool.getConnectionCount());
     }
 }
