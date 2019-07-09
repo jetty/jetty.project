@@ -47,11 +47,11 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         _pool = (_capacity == 0) ? null : new ConcurrentLinkedQueue<>();
     }
 
-    abstract protected T newObject();
+    protected abstract T newObject();
 
-    abstract protected void end(T object);
+    protected abstract void end(T object);
 
-    abstract protected void reset(T object);
+    protected abstract void reset(T object);
 
     /**
      * @return Object taken from the pool if it is not empty or a newly created Object
