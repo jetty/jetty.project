@@ -50,7 +50,7 @@ public class TestABCase1_1
     public void testGenerate125ByteTextCase1_1_2()
     {
         int length = 125;
-        byte buf[] = new byte[length];
+        byte[] buf = new byte[length];
         Arrays.fill(buf, (byte)'*');
         String text = new String(buf, StandardCharsets.UTF_8);
 

@@ -24,12 +24,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.Deflater;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -58,6 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
+    public DeflaterPool deflaterPool = new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
+    public InflaterPool inflaterPool = new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
 
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
     {
@@ -284,6 +290,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(bufferPool);
+        ext.setDeflaterPool(deflaterPool);
+        ext.setInflaterPool(inflaterPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
@@ -321,6 +329,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(bufferPool);
+        ext.setDeflaterPool(deflaterPool);
+        ext.setInflaterPool(inflaterPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
@@ -358,6 +368,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(bufferPool);
+        ext.setDeflaterPool(deflaterPool);
+        ext.setInflaterPool(inflaterPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
@@ -415,6 +427,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(bufferPool);
+        ext.setDeflaterPool(deflaterPool);
+        ext.setInflaterPool(inflaterPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
@@ -456,6 +470,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(bufferPool);
+        ext.setDeflaterPool(deflaterPool);
+        ext.setInflaterPool(inflaterPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);

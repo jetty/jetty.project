@@ -43,6 +43,10 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -64,7 +68,6 @@ public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
     }
 
     @Test
-    @SuppressWarnings("ReferenceEquality")
     public void testSessionScavenge() throws Exception
     {
         String contextPath = "/";
@@ -101,7 +104,7 @@ public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
                 ContentResponse response1 = client.GET(url + "?action=init");
                 assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
 
                 // Make a request which will invalidate the existing session and create a new one
                 Request request2 = client.newRequest(url + "?action=test");
@@ -109,12 +112,12 @@ public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
                 assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
 
                 // Wait for the scavenger to run
-                Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + scavengePeriod));
+                Thread.sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + 2 * scavengePeriod));
 
                 //test that the session created in the last test is scavenged:
                 //the HttpSessionListener should have been called when session1 was invalidated and session2 was scavenged
-                assertTrue(listener.destroys.size() == 2);
-                assertTrue(listener.destroys.get(0) != listener.destroys.get(1)); //ensure 2 different objects
+                assertEquals(2, listener.destroys.size());
+                assertNotSame(listener.destroys.get(0), listener.destroys.get(1)); //ensure 2 different objects
                 //session2's HttpSessionBindingListener should have been called when it was scavenged
                 assertTrue(servlet.listener.unbound);
             }
@@ -197,8 +200,8 @@ public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
                     //now make a new session
                     session = request.getSession(true);
                     String newId = session.getId();
-                    assertTrue(!newId.equals(oldId));
-                    assertTrue(session.getAttribute("identity") == null);
+                    assertNotEquals(newId, oldId);
+                    assertNull(session.getAttribute("identity"));
                     session.setAttribute("identity", "session2");
                     session.setAttribute("bindingListener", listener);
                 }

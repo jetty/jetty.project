@@ -38,12 +38,12 @@ node("linux") {
 // jmh run
 node( 'jmh-build-node' ) {
   stage("jmh-run") {
-    timeout( time: 180, unit: 'MINUTES' ) {
+    timeout( time: 210, unit: 'MINUTES' ) {
       withEnv( ["JAVA_HOME=${tool "$jdk"}"] ) {
         unstash name: 'perf-tests'
         sh "rm -rf jmh_results"
         sh "mkdir jmh_results"
-        sh "${env.JAVA_HOME}/bin/java -jar $jmhJarPath -rff jmh_results/jmh_result.json -rf json  -foe true"
+        sh "${env.JAVA_HOME}/bin/java -jar $jmhJarPath -rff jmh_results/jmh_result.json -rf json  -foe true -i 3 -t 3 -wi 3"
         jmhReport 'jmh_results/jmh_result.json'
       }
     }

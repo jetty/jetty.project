@@ -297,7 +297,7 @@ public class ConfigSourcesTest
 
         ConfigSources sources = new ConfigSources();
 
-        String cmdLine[] = new String[0];
+        String[] cmdLine = new String[0];
         sources.add(new CommandLineConfigSource(cmdLine));
         sources.add(new JettyHomeConfigSource(home));
         sources.add(new JettyBaseConfigSource(base));
@@ -337,7 +337,7 @@ public class ConfigSourcesTest
 
         ConfigSources sources = new ConfigSources();
 
-        String cmdLine[] = new String[0];
+        String[] cmdLine = new String[0];
         sources.add(new CommandLineConfigSource(cmdLine));
         sources.add(new JettyHomeConfigSource(home));
         sources.add(new JettyBaseConfigSource(base));
@@ -383,7 +383,7 @@ public class ConfigSourcesTest
 
         ConfigSources sources = new ConfigSources();
 
-        String cmdLine[] = new String[0];
+        String[] cmdLine = new String[0];
         sources.add(new CommandLineConfigSource(cmdLine));
         sources.add(new JettyHomeConfigSource(home));
         sources.add(new JettyBaseConfigSource(base));
@@ -431,7 +431,7 @@ public class ConfigSourcesTest
 
         ConfigSources sources = new ConfigSources();
 
-        String cmdLine[] = new String[0];
+        String[] cmdLine = new String[0];
         sources.add(new CommandLineConfigSource(cmdLine));
         sources.add(new JettyHomeConfigSource(home));
         sources.add(new JettyBaseConfigSource(base));
@@ -485,7 +485,7 @@ public class ConfigSourcesTest
 
         ConfigSources sources = new ConfigSources();
 
-        String cmdLine[] = new String[]{
+        String[] cmdLine = new String[]{
             // command line provided include-jetty-dir ref
             "--include-jetty-dir=" + devops.toString()
         };
@@ -536,7 +536,7 @@ public class ConfigSourcesTest
 
         ConfigSources sources = new ConfigSources();
 
-        String cmdLine[] = new String[]{
+        String[] cmdLine = new String[]{
             // command line property should override all others
             "jetty.http.port=7070"
         };
@@ -594,7 +594,7 @@ public class ConfigSourcesTest
 
         UsageException e = assertThrows(UsageException.class, () ->
         {
-            String cmdLine[] = new String[0];
+            String[] cmdLine = new String[0];
             sources.add(new CommandLineConfigSource(cmdLine));
             sources.add(new JettyHomeConfigSource(home));
             sources.add(new JettyBaseConfigSource(base));

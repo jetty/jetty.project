@@ -169,7 +169,7 @@ public class WebSocketServletRFCTest
     @Test
     public void testDetectBadUTF8()
     {
-        byte buf[] = new byte[]
+        byte[] buf = new byte[]
             {(byte)0xC2, (byte)0xC3};
 
         Utf8StringBuilder utf = new Utf8StringBuilder();
@@ -275,7 +275,7 @@ public class WebSocketServletRFCTest
         try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
              StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            byte buf[] = new byte[]
+            byte[] buf = new byte[]
                 {(byte)0xC2, (byte)0xC3};
 
             WebSocketFrame txt = new TextFrame().setPayload(ByteBuffer.wrap(buf));

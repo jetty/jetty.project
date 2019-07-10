@@ -60,9 +60,9 @@ public class BrowserSocket
         @Override
         public void run()
         {
-            char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
+            char[] letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
             int lettersLen = letters.length;
-            char randomText[] = new char[size];
+            char[] randomText = new char[size];
             Random rand = new Random(42);
             String msg;
 
@@ -189,7 +189,7 @@ public class BrowserSocket
                 }
                 case "many":
                 {
-                    String parts[] = val.split(",");
+                    String[] parts = val.split(",");
                     int size = Integer.parseInt(parts[0]);
                     int count = Integer.parseInt(parts[1]);
 
@@ -198,12 +198,12 @@ public class BrowserSocket
                 }
                 case "manythreads":
                 {
-                    String parts[] = val.split(",");
+                    String[] parts = val.split(",");
                     int threadCount = Integer.parseInt(parts[0]);
                     int size = Integer.parseInt(parts[1]);
                     int count = Integer.parseInt(parts[2]);
 
-                    Thread threads[] = new Thread[threadCount];
+                    Thread[] threads = new Thread[threadCount];
 
                     // Setup threads
                     for (int n = 0; n < threadCount; n++)
@@ -246,9 +246,9 @@ public class BrowserSocket
 
     private void writeManyAsync(int size, int count)
     {
-        char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
+        char[] letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
         int lettersLen = letters.length;
-        char randomText[] = new char[size];
+        char[] randomText = new char[size];
         Random rand = new Random(42);
 
         for (int n = 0; n < count; n++)

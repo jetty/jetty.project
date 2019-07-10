@@ -82,7 +82,7 @@ public class StatisticsHandlerTest
     @Test
     public void testRequest() throws Exception
     {
-        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
 
         _statsHandler.setHandler(new AbstractHandler()
         {
@@ -175,7 +175,7 @@ public class StatisticsHandlerTest
     @Test
     public void testTwoRequests() throws Exception
     {
-        final CyclicBarrier barrier[] = {new CyclicBarrier(3), new CyclicBarrier(3)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
         _statsHandler.setHandler(new AbstractHandler()
         {
@@ -239,7 +239,7 @@ public class StatisticsHandlerTest
         final long dispatchTime = 10;
         final long requestTime = 50;
         final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
@@ -369,7 +369,7 @@ public class StatisticsHandlerTest
         final long dispatchTime = 10;
         final long timeout = 100;
         final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
@@ -483,7 +483,7 @@ public class StatisticsHandlerTest
     {
         final long dispatchTime = 10;
         final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
         final CountDownLatch latch = new CountDownLatch(1);
 
         _statsHandler.setHandler(new AbstractHandler()

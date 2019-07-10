@@ -134,7 +134,7 @@ public class PerMessageDeflateExtensionTest
             assertThat("Response.extensions", getNegotiatedExtensionList(session), containsString("permessage-deflate"));
 
             // Create message
-            byte msg[] = new byte[scenario.msgSize.size];
+            byte[] msg = new byte[scenario.msgSize.size];
             Random rand = new Random();
             rand.setSeed(8080);
             rand.nextBytes(msg);

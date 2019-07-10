@@ -93,7 +93,7 @@ public class GeneratorParserRoundtripTest
             WebSocketFrame frame = new TextFrame().setPayload(message);
 
             // Add masking
-            byte mask[] = new byte[4];
+            byte[] mask = new byte[4];
             Arrays.fill(mask, (byte)0xFF);
             frame.setMask(mask);
 

@@ -98,7 +98,7 @@ public class HttpClientInitTest
     public void testXmlResourceInit() throws Exception
     {
         ClassLoader parent = Thread.currentThread().getContextClassLoader();
-        URL urls[] = new URL[]{
+        URL[] urls = new URL[]{
             MavenTestingUtils.getTestResourceDir("httpclient/simple").toURI().toURL()
         };
         URLClassLoader classLoader = new URLClassLoader(urls, parent);

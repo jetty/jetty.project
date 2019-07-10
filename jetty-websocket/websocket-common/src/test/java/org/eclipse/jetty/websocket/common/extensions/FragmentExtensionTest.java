@@ -336,7 +336,7 @@ public class FragmentExtensionTest
     public void testLargeSmallTextAlternating() throws Exception
     {
         final int largeMessageSize = 60000;
-        byte buf[] = new byte[largeMessageSize];
+        byte[] buf = new byte[largeMessageSize];
         Arrays.fill(buf, (byte)'x');
         String largeMessage = new String(buf, UTF_8);
 
