@@ -172,7 +172,7 @@ public class HpackEncoder
             String protocol = request.getProtocol();
             if (!isConnect || protocol != null)
             {
-                encode(buffer,new HttpField(HttpHeader.C_SCHEME,scheme==null?HttpScheme.HTTP.asString():scheme));
+                encode(buffer,new HttpField(HttpHeader.C_SCHEME,scheme == null ? HttpScheme.HTTP.asString() : scheme));
                 encode(buffer,new HttpField(HttpHeader.C_PATH,request.getURI().getPathQuery()));
                 if (protocol != null)
                     encode(buffer,new HttpField(HttpHeader.C_PROTOCOL,protocol));

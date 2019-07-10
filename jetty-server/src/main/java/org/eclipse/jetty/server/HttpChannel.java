@@ -861,9 +861,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             commit(response);
 
             // Wrap the callback to process 1xx responses.
-            Callback committed = HttpStatus.isInformational(response.getStatus()) ?
-                new Send100Callback(callback) :
-                new SendCallback(callback, content, true, complete);
+            Callback committed = HttpStatus.isInformational(response.getStatus())
+                ? new Send100Callback(callback) : new SendCallback(callback, content, true, complete);
 
             notifyResponseBegin(_request);
 

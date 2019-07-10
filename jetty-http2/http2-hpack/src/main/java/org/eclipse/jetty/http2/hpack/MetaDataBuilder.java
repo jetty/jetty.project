@@ -121,7 +121,7 @@ public class MetaDataBuilder
 
                 case C_METHOD:
                     if (checkPseudoHeader(header, _method))
-                       _method = value;
+                        _method = value;
                     _request = true;
                     break;
 
@@ -145,7 +145,7 @@ public class MetaDataBuilder
                 case C_PATH:
                     if (checkPseudoHeader(header, _path))
                     {
-                        if (value!=null && value.length()>0)
+                        if (value != null && value.length() > 0)
                             _path = value;
                         else
                             streamException("No Path");
