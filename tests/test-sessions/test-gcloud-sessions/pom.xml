@@ -57,6 +57,12 @@
       <artifactId>jetty-gcloud-session-manager</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- avoid depending on a range dependency from a transitive dependency -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-core</artifactId>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
