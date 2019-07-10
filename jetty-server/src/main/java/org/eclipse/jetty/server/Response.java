@@ -398,8 +398,11 @@ public class Response implements HttpServletResponse
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Aborting on sendError on committed response {} {}", code, message);
+            // TODO this is not in agreement with the sendError javadoc, which says:
+            // TODO * If the response has already been committed, this method throws an IllegalStateException.
             code = -1;
         }
+        // TODO should we also check isReady if we are async writing?  If so, should we remove the WriteListener?
         else
             resetBuffer();
 

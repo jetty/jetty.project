@@ -200,6 +200,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void reopen()
     {
+        // TODO can we reopen from PENDING or UNREADY?
         _state.set(OutputState.OPEN);
     }
 
