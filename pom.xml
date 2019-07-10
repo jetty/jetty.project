@@ -1060,6 +1060,12 @@
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.22</version>
       </dependency>
+      <!-- avoid depending on a range dependency from a transitive dependency -->
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-core</artifactId>
+        <version>1.0.1</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
