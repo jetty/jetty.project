@@ -215,6 +215,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (supplier == null)
             return null;
         HttpFields trailers = supplier.get();
+        if (trailers == null)
+            return null;
         return trailers.size() == 0 ? null : trailers;
     }
 
