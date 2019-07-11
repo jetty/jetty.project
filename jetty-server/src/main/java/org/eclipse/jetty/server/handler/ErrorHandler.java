@@ -96,7 +96,7 @@ public class ErrorHandler extends AbstractHandler
                 String oldErrorPage = (String)request.getAttribute(ERROR_PAGE);
                 request.setAttribute(ERROR_PAGE, errorPage);
 
-                ServletContext servletContext = request.getServletContext();
+                ContextHandler.Context servletContext = baseRequest.getErrorContext();
                 if (servletContext == null)
                     servletContext = ContextHandler.getCurrentContext();
                 if (servletContext == null)
