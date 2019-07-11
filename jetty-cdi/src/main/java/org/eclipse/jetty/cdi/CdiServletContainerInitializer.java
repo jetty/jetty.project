@@ -23,6 +23,7 @@ import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * implementation within a web application. If the CDI API is found, then
  * a {@link CdiDecorator} is registered as a {@link org.eclipse.jetty.util.Decorator}
  * for the context.
+ * @see AnnotationConfiguration.ServletContainerInitializerOrdering
  */
 public class CdiServletContainerInitializer implements ServletContainerInitializer
 {

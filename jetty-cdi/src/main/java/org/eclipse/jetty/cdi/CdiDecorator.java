@@ -32,6 +32,15 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * a webapplication to decorate objects created by the contexts {@link org.eclipse.jetty.util.DecoratedObjectFactory}
  * (typically Listeners, Filters and Servlets).
  * The CDI provide is invoked using {@link MethodHandle}s to avoid any CDI instance or dependencies within the server scope.
+ * The code invoked is equivalent to:
+ * <pre>
+ * public <T> T decorate(T o) {
+ *   BeanManager manager = CDI.current().getBeanManager();
+ *   manager.createInjectionTarget(manager.createAnnotatedType((Class<T>)o.getClass()))
+ *     .inject(o,manager.createCreationalContext(null));
+ *   return o;
+ * }
+ * </pre>
  */
 public class CdiDecorator implements Decorator
 {
