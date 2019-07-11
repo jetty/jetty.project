@@ -1,0 +1,77 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+:doctitle: Eclipse Jetty: Development Guide
+:author: Jetty Developers
+:email: jetty-dev@eclipse.org
+:revnumber: 1.0
+:revdate: {TIMESTAMP}
+:toc: left
+:toc-title: Development Guide
+:toc-image: jetty-logo.svg
+:toc-image-url: /jetty/index.html
+
+:imagesdir: ../common/images
+
+// docinfo lets you pull in shared content and/or influence via render type
+//:docinfodir: {DOCINFODIR}/documentation
+//:docinfo1:
+
+// html specific directives
+ifdef::backend-html5[]
+:safe-mode-unsafe:
+:stylesdir: ../common/css
+:stylesheet: jetty.css
+:linkcss:
+:scriptsdir: ../common/js
+endif::[]
+
+// options for special blocks, code snippets, screen, etc
+:sub-order: attributes+
+
+// suppress document footer generation
+//:nofooter:
+
+// suppress Eclipse footer
+:no-eclipse-footer:
+
+// uncomment to allow include::https:// style content inclusion
+//:allow-uri-read: true
+
+// use fonts for admonitions
+:icons: font
+
+// suppress automatic id generation
+:sectids!:
+
+include::development/embedding/chapter.adoc[]
+include::development/clients/http/chapter.adoc[]
+include::development/maven/chapter.adoc[]
+include::development/ant/chapter.adoc[]
+include::development/handlers/chapter.adoc[]
+include::development/websockets/intro/chapter.adoc[]
+include::development/websockets/jetty/chapter.adoc[]
+include::development/continuations/chapter.adoc[]
+include::development/frameworks/chapter.adoc[]
+include::reference/architecture/chapter.adoc[]
+include::reference/platforms/chapter.adoc[]
+include::reference/jetty-xml/chapter.adoc[]
+include::reference/troubleshooting/chapter.adoc[]
+include::reference/debugging/chapter.adoc[]
+include::reference/contributing/chapter.adoc[]
+include::reference/upgrading/chapter.adoc[]
