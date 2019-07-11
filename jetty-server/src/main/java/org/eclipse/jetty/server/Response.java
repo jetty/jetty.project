@@ -388,22 +388,29 @@ public class Response implements HttpServletResponse
         sendError(sc, null);
     }
 
+    /**
+     * Send an error response.
+     * <p>In addition to the servlet standard handling, this method supports some additional codes:
+     * <dl>
+     * <dt>102</dt><dd>Send a partial PROCESSING response and allow additional responses</dd>
+     * <dt>-1</dt><dd>Abort the HttpChannel and close the connection/stream</dd>
+     * </ul>
+     * </p>
+     * @param code The error code
+     * @param message The message
+     * @throws IOException If an IO problem occurred sending the error response.
+     */
     @Override
     public void sendError(int code, String message) throws IOException
     {
         if (isIncluding())
-            return;  // TODO GW why not ISE?
+            return;
 
         if (isCommitted())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Aborting on sendError on committed response {} {}", code, message);
-            // TODO GW this is not in agreement with the sendError javadoc, which says:
-            // TODO * If the response has already been committed, this method throws an IllegalStateException.
-            code = -1;
-        }
-        else
-            resetBuffer(); // TODO LO should we remove the WriteListener?
+            throw new IllegalStateException("Committed");
+
+        resetBuffer(); // TODO LO should we remove the WriteListener?
+        _outputType = OutputType.NONE;
 
         switch (code)
         {
@@ -417,7 +424,6 @@ public class Response implements HttpServletResponse
                 break;
         }
 
-        _outputType = OutputType.NONE;
         setContentType(null);
         setCharacterEncoding(null);
         setHeader(HttpHeader.EXPIRES, null);
