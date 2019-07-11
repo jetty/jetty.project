@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.servlets;
 
 import java.io.BufferedReader;
@@ -28,14 +27,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 
 /**
  * <p>A servlet that implements the <a href="http://www.w3.org/TR/eventsource/">event source protocol</a>,
@@ -45,8 +42,8 @@ import javax.servlet.http.HttpServletResponse;
  * and to emit event source events.</p>
  * <p>This servlet supports the following configuration parameters:</p>
  * <ul>
- *     <li><code>heartBeatPeriod</code>, that specifies the heartbeat period, in seconds, used to check
- *     whether the connection has been closed by the client; defaults to 10 seconds.</li>
+ * <li><code>heartBeatPeriod</code>, that specifies the heartbeat period, in seconds, used to check
+ * whether the connection has been closed by the client; defaults to 10 seconds.</li>
  * </ul>
  *
  * <p>NOTE: there is currently no support for <code>last-event-id</code>.</p>
@@ -216,7 +213,7 @@ public abstract class EventSourceServlet extends HttpServlet
         {
             async.getResponse().flushBuffer();
         }
-        
+
         @Override
         public void close()
         {

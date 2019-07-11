@@ -37,7 +37,7 @@ public class HttpRequestTesterTest
         request.setMethod("GET");
         request.setURI("/uri");
         request.setVersion("HTTP/1.0");
-        request.put("Host","fakehost");
+        request.put("Host", "fakehost");
 
         ByteBuffer bBuff = request.generate();
 
@@ -56,10 +56,9 @@ public class HttpRequestTesterTest
         request.setMethod("GET");
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setURI("/uri");
-        request.put("Host","fakehost");
+        request.put("Host", "fakehost");
         request.put("Connection", "close");
         request.setContent("aaa");
-       
 
         ByteBuffer bBuff = request.generate();
 
@@ -70,7 +69,6 @@ public class HttpRequestTesterTest
         expectedRequest.append("Content-Length: 3\r\n");
         expectedRequest.append("\r\n");
         expectedRequest.append("aaa");
-       
 
         assertEquals(expectedRequest.toString(), BufferUtil.toString(bBuff), "Basic Request");
     }

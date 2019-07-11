@@ -18,23 +18,23 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
-import org.eclipse.jetty.websocket.core.CloseException;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-import org.eclipse.jetty.websocket.javax.common.MessageSink;
-
-import javax.websocket.CloseReason;
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import javax.websocket.CloseReason;
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+
+import org.eclipse.jetty.websocket.core.CloseException;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.javax.common.MessageSink;
 
 public class DecodedBinaryStreamMessageSink<T> extends DecodedMessageSink<Decoder.BinaryStream<T>>
 {
     public DecodedBinaryStreamMessageSink(JavaxWebSocketSession session,
-        Decoder.BinaryStream<T> decoder,
-        MethodHandle methodHandle)
+                                          Decoder.BinaryStream<T> decoder,
+                                          MethodHandle methodHandle)
         throws NoSuchMethodException, IllegalAccessException
     {
         super(session, decoder, methodHandle);

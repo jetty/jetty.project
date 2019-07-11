@@ -25,7 +25,6 @@ import java.security.PrivilegedAction;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
@@ -290,7 +289,7 @@ public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implement
         @Override
         public AppConfigurationEntry[] getAppConfigurationEntry(String name)
         {
-            String principal = getServiceName() + "/" + getHostName();
+            final String principal = getServiceName() + "/" + getHostName();
             Map<String, Object> options = new HashMap<>();
             if (LOG.isDebugEnabled())
                 options.put("debug", "true");
@@ -321,7 +320,7 @@ public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implement
     {
         public static final String ATTRIBUTE = GSSContextHolder.class.getName();
 
-        private transient final GSSContext gssContext;
+        private final transient GSSContext gssContext;
 
         private GSSContextHolder(GSSContext gssContext)
         {

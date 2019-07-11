@@ -56,19 +56,6 @@ Modules for tag '*':
         LIB: lib/apache-jstl/*.jar
     Enabled: transitive provider of apache-jstl for jstl
 
-     Module: cdi
-           : Experimental CDI/Weld integration
-     Depend: cdi1
-
-     Module: cdi1
-           : Experimental CDI/Weld integration
-           : Deprecated in favour of cdi2 module.
-     Depend: deploy, annotations, plus, jsp
-        LIB: lib/cdi/*.jar
-        LIB: lib/cdi-core-${jetty.version}.jar
-        LIB: lib/cdi-servlet-${jetty.version}.jar
-        XML: etc/jetty-cdi.xml
-
      Module: cdi2
            : Jetty setup to support Weld/CDI2 with WELD inside the webapp
      Depend: deploy

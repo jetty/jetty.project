@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,10 +33,14 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+
 @ExtendWith(WorkDirExtension.class)
 public class ModulesTest
 {
-    private final static String TEST_SOURCE = "<test>";
+    private static final String TEST_SOURCE = "<test>";
 
     public WorkDir testdir;
 
@@ -50,7 +50,7 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyPathDir().toFile();
-        String cmdLine[] = new String[] { "jetty.version=TEST" };
+        String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
@@ -66,7 +66,7 @@ public class ModulesTest
         args.parse(config);
 
         // Test Modules
-        Modules modules = new Modules(basehome,args);
+        Modules modules = new Modules(basehome, args);
         modules.registerAll();
 
         // Check versions
@@ -90,7 +90,7 @@ public class ModulesTest
         expected.add("main");
         expected.add("optional");
 
-        ConfigurationAssert.assertContainsUnordered("All Modules",expected,moduleNames);
+        ConfigurationAssert.assertContainsUnordered("All Modules", expected, moduleNames);
     }
 
     /**
@@ -98,6 +98,7 @@ public class ModulesTest
      * In other words. ${search-dir}/modules/*.mod should be the only
      * valid references, but ${search-dir}/alt/foo/modules/*.mod should
      * not be considered valid.
+     *
      * @throws IOException on test failures
      */
     @Test
@@ -108,7 +109,7 @@ public class ModulesTest
         // intentionally setup top level resources dir (as this would have many
         // deep references)
         File baseDir = MavenTestingUtils.getTestResourcesDir();
-        String cmdLine[] = new String[] { "jetty.version=TEST" };
+        String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
@@ -124,7 +125,7 @@ public class ModulesTest
         args.parse(config);
 
         // Test Modules
-        Modules modules = new Modules(basehome,args);
+        Modules modules = new Modules(basehome, args);
         modules.registerAll();
 
         List<String> moduleNames = new ArrayList<>();
@@ -136,7 +137,7 @@ public class ModulesTest
         List<String> expected = new ArrayList<>();
         expected.add("base");
 
-        ConfigurationAssert.assertContainsUnordered("All Modules",expected,moduleNames);
+        ConfigurationAssert.assertContainsUnordered("All Modules", expected, moduleNames);
     }
 
     @Test
@@ -145,7 +146,7 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyPathDir().toFile();
-        String cmdLine[] = new String[] { "jetty.version=TEST" };
+        String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
@@ -161,12 +162,12 @@ public class ModulesTest
         args.parse(config);
 
         // Test Modules
-        Modules modules = new Modules(basehome,args);
+        Modules modules = new Modules(basehome, args);
         modules.registerAll();
 
         // Enable 2 modules
-        modules.enable("base",TEST_SOURCE);
-        modules.enable("optional",TEST_SOURCE);
+        modules.enable("base", TEST_SOURCE);
+        modules.enable("optional", TEST_SOURCE);
 
         // Collect active module list
         List<Module> active = modules.getEnabled();
@@ -182,7 +183,7 @@ public class ModulesTest
             actualNames.add(actual.getName());
         }
 
-        assertThat("Resolved Names: " + actualNames,actualNames,contains(expectedNames.toArray()));
+        assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
         // Assert Library List
         List<String> expectedLibs = new ArrayList<>();
@@ -190,7 +191,7 @@ public class ModulesTest
         expectedLibs.add("lib/base.jar");
 
         List<String> actualLibs = normalizeLibs(active);
-        assertThat("Resolved Libs: " + actualLibs,actualLibs,contains(expectedLibs.toArray()));
+        assertThat("Resolved Libs: " + actualLibs, actualLibs, contains(expectedLibs.toArray()));
 
         // Assert XML List
         List<String> expectedXmls = new ArrayList<>();
@@ -198,7 +199,7 @@ public class ModulesTest
         expectedXmls.add("etc/base.xml");
 
         List<String> actualXmls = normalizeXmls(active);
-        assertThat("Resolved XMLs: " + actualXmls,actualXmls,contains(expectedXmls.toArray()));
+        assertThat("Resolved XMLs: " + actualXmls, actualXmls, contains(expectedXmls.toArray()));
     }
 
     private List<String> normalizeLibs(List<Module> active)

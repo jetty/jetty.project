@@ -16,10 +16,8 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.spring;
 
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
@@ -69,18 +67,25 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
     private String _main;
 
     @Override
-    public void init(URL url, XmlParser.Node config, XmlConfiguration configuration)
+    public void init(org.eclipse.jetty.util.resource.Resource jettyResource, XmlParser.Node config, XmlConfiguration configuration)
     {
         try
         {
             _configuration = configuration;
 
-            Resource resource = url != null
-                    ? new UrlResource(url)
-                    : new ByteArrayResource(("" +
+            Resource springResource;
+
+            if (jettyResource != null)
+            {
+                springResource = new UrlResource(jettyResource.getURI());
+            }
+            else
+            {
+                springResource = new ByteArrayResource((
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                    "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
-                    config).getBytes(StandardCharsets.UTF_8));
+                        "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
+                        config).getBytes(StandardCharsets.UTF_8));
+            }
 
             _beanFactory = new DefaultListableBeanFactory()
             {
@@ -92,7 +97,7 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
                 }
             };
 
-            new XmlBeanDefinitionReader(_beanFactory).loadBeanDefinitions(resource);
+            new XmlBeanDefinitionReader(_beanFactory).loadBeanDefinitions(springResource);
         }
         catch (Exception e)
         {
@@ -158,6 +163,8 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
 
         // Extract id's for next time.
         for (String id : _beanFactory.getSingletonNames())
+        {
             idMap.put(id, _beanFactory.getBean(id));
+        }
     }
 }

@@ -20,8 +20,8 @@ package org.eclipse.jetty.util.log;
 
 import java.util.Properties;
 
-/* ------------------------------------------------------------ */
-/** Abstract Logger.
+/**
+ * Abstract Logger.
  * Manages the atomic registration of the logger by name.
  */
 public abstract class AbstractLogger implements Logger
@@ -32,7 +32,7 @@ public abstract class AbstractLogger implements Logger
     public static final int LEVEL_INFO = 2;
     public static final int LEVEL_WARN = 3;
     public static final int LEVEL_OFF = 10;
-        
+
     @Override
     public final Logger getLogger(String name)
     {
@@ -40,29 +40,27 @@ public abstract class AbstractLogger implements Logger
             return this;
 
         final String basename = getName();
-        final String fullname = (isBlank(basename) || Log.getRootLogger()==this)?name:(basename + "." + name);
-        
+        final String fullname = (isBlank(basename) || Log.getRootLogger() == this) ? name : (basename + "." + name);
+
         Logger logger = Log.getLoggers().get(fullname);
         if (logger == null)
         {
             Logger newlog = newLogger(fullname);
-            
-            logger = Log.getMutableLoggers().putIfAbsent(fullname,newlog);
+
+            logger = Log.getMutableLoggers().putIfAbsent(fullname, newlog);
             if (logger == null)
-                logger=newlog;
+                logger = newlog;
         }
 
         return logger;
     }
-    
 
     protected abstract Logger newLogger(String fullname);
 
     /**
      * A more robust form of name blank test. Will return true for null names, and names that have only whitespace
      *
-     * @param name
-     *            the name to test
+     * @param name the name to test
      * @return true for null or blank name, false if any non-whitespace character is found.
      */
     private static boolean isBlank(String name)
@@ -83,73 +81,69 @@ public abstract class AbstractLogger implements Logger
         }
         return true;
     }
-    
+
     /**
      * Get the Logging Level for the provided log name. Using the FQCN first, then each package segment from longest to
      * shortest.
      *
-     * @param props
-     *            the properties to check
-     * @param name
-     *            the name to get log for
+     * @param props the properties to check
+     * @param name the name to get log for
      * @return the logging level
      */
     public static int lookupLoggingLevel(Properties props, final String name)
     {
-        if ((props == null) || (props.isEmpty()) || name==null )
+        if ((props == null) || (props.isEmpty()) || name == null)
             return LEVEL_DEFAULT;
-        
+
         // Calculate the level this named logger should operate under.
         // Checking with FQCN first, then each package segment from longest to shortest.
         String nameSegment = name;
-    
+
         while ((nameSegment != null) && (nameSegment.length() > 0))
         {
             String levelStr = props.getProperty(nameSegment + ".LEVEL");
             // System.err.printf("[StdErrLog.CONFIG] Checking for property [%s.LEVEL] = %s%n",nameSegment,levelStr);
-            int level = getLevelId(nameSegment + ".LEVEL",levelStr);
+            int level = getLevelId(nameSegment + ".LEVEL", levelStr);
             if (level != (-1))
             {
                 return level;
             }
-    
+
             // Trim and try again.
             int idx = nameSegment.lastIndexOf('.');
             if (idx >= 0)
             {
-                nameSegment = nameSegment.substring(0,idx);
+                nameSegment = nameSegment.substring(0, idx);
             }
             else
             {
                 nameSegment = null;
             }
         }
-    
+
         // Default Logging Level
         return LEVEL_DEFAULT;
     }
-
 
     public static String getLoggingProperty(Properties props, String name, String property)
     {
         // Calculate the level this named logger should operate under.
         // Checking with FQCN first, then each package segment from longest to shortest.
         String nameSegment = name;
-    
+
         while ((nameSegment != null) && (nameSegment.length() > 0))
         {
-            String s = props.getProperty(nameSegment+"."+property);
-            if (s!=null)
+            String s = props.getProperty(nameSegment + "." + property);
+            if (s != null)
                 return s;
-    
+
             // Trim and try again.
             int idx = nameSegment.lastIndexOf('.');
-            nameSegment = (idx >= 0)?nameSegment.substring(0,idx):null;
+            nameSegment = (idx >= 0) ? nameSegment.substring(0, idx) : null;
         }
-    
+
         return null;
     }
-
 
     protected static int getLevelId(String levelSegment, String levelName)
     {
@@ -178,11 +172,10 @@ public abstract class AbstractLogger implements Logger
         {
             return LEVEL_OFF;
         }
-    
+
         System.err.println("Unknown StdErrLog level [" + levelSegment + "]=[" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN, OFF] as values.");
         return -1;
     }
-
 
     /**
      * Condenses a classname by stripping down the package name to just the first character of each package name
@@ -194,46 +187,71 @@ public abstract class AbstractLogger implements Logger
      * "org.eclipse.jetty.server.logging.LogTest" = "orjsl.LogTest"
      * </pre>
      *
-     * @param classname
-     *            the fully qualified class name
+     * @param classname the fully qualified class name
      * @return the condensed name
      */
+    @SuppressWarnings("Duplicates")
     protected static String condensePackageString(String classname)
     {
-        if(classname == null || classname.isEmpty())
+        if (classname == null || classname.isEmpty())
         {
             return "";
         }
-        // strip non-allowed character
-        String allowed = classname.replaceAll("[^\\w.]", "");
-        int len = allowed.length();
-        // find end of classname (strip empty sections. eg: "org.Foo.")
-        while(allowed.charAt(--len) == '.');
-        String parts[] = allowed.substring(0,len+1).split("\\.");
-        StringBuilder dense = new StringBuilder();
-        for (int i = 0; i < (parts.length - 1); i++)
+
+        int rawLen = classname.length();
+        StringBuilder dense = new StringBuilder(rawLen);
+        boolean foundStart = false;
+        boolean hasPackage = false;
+        int startIdx = -1;
+        int endIdx = -1;
+        for (int i = 0; i < rawLen; i++)
         {
-            String part = parts[i].trim();
-            if(!part.isEmpty())
+            char c = classname.charAt(i);
+            if (!foundStart)
             {
-                dense.append(part.charAt(0));
+                foundStart = Character.isJavaIdentifierStart(c);
+                if (foundStart)
+                {
+                    if (startIdx >= 0)
+                    {
+                        dense.append(classname.charAt(startIdx));
+                        hasPackage = true;
+                    }
+                    startIdx = i;
+                }
+            }
+
+            if (foundStart)
+            {
+                if (!Character.isJavaIdentifierPart(c))
+                {
+                    foundStart = false;
+                }
+                else
+                {
+                    endIdx = i;
+                }
             }
         }
-        if (dense.length() > 0)
+        // append remaining from startIdx
+        if ((startIdx >= 0) && (endIdx >= startIdx))
         {
-            dense.append('.');
+            if (hasPackage)
+            {
+                dense.append('.');
+            }
+            dense.append(classname, startIdx, endIdx + 1);
         }
-        dense.append(parts[parts.length - 1]);
+
         return dense.toString();
     }
-
 
     @Override
     public void debug(String msg, long arg)
     {
         if (isDebugEnabled())
         {
-            debug(msg,new Object[] {arg});
+            debug(msg, new Object[]{arg});
         }
     }
 }

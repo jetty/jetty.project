@@ -79,7 +79,11 @@ Below is an example of implementing this feature using Jetty IoC XML format:
 [[classloading-setting-system-classes]]
 ===== Setting System Classes
 
-You can call the methods link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setSystemClasses%28java.lang.String%5B%5D%29[org.eclipse.jetty.webapp.WebAppContext.setSystemClasses(String Array)] or link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#addSystemClass(java.lang.String)[org.eclipse.jetty.webapp.WebAppContext.addSystemClass(String)] to allow fine control over which classes are considered System classes.
+You can call the methods
+link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setSystemClasses%28java.lang.String%5B%5D%29[WebAppContext.setSystemClasses(String[\])]
+or
+link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#getSystemClasspathPattern()[WebAppContext.getSystemClasspathPattern().add(String)]
+to allow fine control over which classes are considered system classes.
 
 * A web application can see a System class.
 * A WEB-INF class cannot replace a System class.

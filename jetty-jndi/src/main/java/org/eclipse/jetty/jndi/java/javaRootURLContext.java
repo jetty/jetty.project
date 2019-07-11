@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.jndi.java;
 
-
 import java.util.Hashtable;
-
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NameParser;
@@ -31,13 +29,13 @@ import javax.naming.StringRefAddr;
 
 import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
-import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+// This is a required name for JNDI
+// @checkstyle-disable-check : TypeNameCheck
 
-
-
-/** 
+/**
  * javaRootURLContext
  * <p>
  * This is the root of the <code>java:</code> url namespace
@@ -46,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class javaRootURLContext implements Context
 {
-    private static Logger __log = NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(javaRootURLContext.class);
 
     public static final String URL_PREFIX = "java:";
 
@@ -56,33 +54,29 @@ public class javaRootURLContext implements Context
 
     protected static NameParser __javaNameParser;
 
-
     static
     {
         try
         {
             __javaNameParser = new javaNameParser();
-            __nameRoot = new NamingContext(null,null,null,__javaNameParser);
+            __nameRoot = new NamingContext(null, null, null, __javaNameParser);
 
             StringRefAddr parserAddr = new StringRefAddr("parser", __javaNameParser.getClass().getName());
 
-            Reference ref = new Reference ("javax.naming.Context",
-                                           parserAddr,
-                                           ContextFactory.class.getName(),
-                                           (String)null);
+            Reference ref = new Reference("javax.naming.Context",
+                parserAddr,
+                ContextFactory.class.getName(),
+                (String)null);
 
             // bind special object factory at comp
-            __nameRoot.bind ("comp", ref);
+            __nameRoot.bind("comp", ref);
         }
         catch (Exception e)
         {
-            __log.warn(e);
+            LOG.warn(e);
         }
     }
 
-
-
-    /*------------------------------------------------*/
     /**
      * Creates a new <code>javaRootURLContext</code> instance.
      *
@@ -99,7 +93,6 @@ public class javaRootURLContext implements Context
     {
         return getRoot().lookup(stripProtocol(name));
     }
-
 
     @Override
     public Object lookup(String name)
@@ -123,92 +116,88 @@ public class javaRootURLContext implements Context
     }
 
     @Override
-    public void unbind (String name)
+    public void unbind(String name)
         throws NamingException
     {
         getRoot().unbind(stripProtocol(name));
     }
 
     @Override
-    public void unbind (Name name)
+    public void unbind(Name name)
         throws NamingException
     {
         getRoot().unbind(stripProtocol(name));
     }
 
     @Override
-    public void rename (String oldStr, String newStr)
+    public void rename(String oldStr, String newStr)
         throws NamingException
     {
-        getRoot().rename (stripProtocol(oldStr), stripProtocol(newStr));
+        getRoot().rename(stripProtocol(oldStr), stripProtocol(newStr));
     }
 
     @Override
-    public void rename (Name oldName, Name newName)
+    public void rename(Name oldName, Name newName)
         throws NamingException
     {
-        getRoot().rename (stripProtocol(oldName), stripProtocol(newName));
+        getRoot().rename(stripProtocol(oldName), stripProtocol(newName));
     }
 
     @Override
-    public void rebind (Name name, Object obj)
+    public void rebind(Name name, Object obj)
         throws NamingException
     {
         getRoot().rebind(stripProtocol(name), obj);
     }
 
     @Override
-    public void rebind (String name, Object obj)
+    public void rebind(String name, Object obj)
         throws NamingException
     {
         getRoot().rebind(stripProtocol(name), obj);
     }
 
-
     @Override
-    public Object lookupLink (Name name)
+    public Object lookupLink(Name name)
         throws NamingException
     {
         return getRoot().lookupLink(stripProtocol(name));
     }
 
     @Override
-    public Object lookupLink (String name)
+    public Object lookupLink(String name)
         throws NamingException
     {
         return getRoot().lookupLink(stripProtocol(name));
     }
 
-
     @Override
-    public Context createSubcontext (Name name)
+    public Context createSubcontext(Name name)
         throws NamingException
     {
         return getRoot().createSubcontext(stripProtocol(name));
     }
 
     @Override
-    public Context createSubcontext (String name)
+    public Context createSubcontext(String name)
         throws NamingException
     {
         return getRoot().createSubcontext(stripProtocol(name));
     }
 
-
     @Override
-    public void destroySubcontext (Name name)
+    public void destroySubcontext(Name name)
         throws NamingException
     {
         getRoot().destroySubcontext(stripProtocol(name));
     }
 
     @Override
-    public void destroySubcontext (String name)
+    public void destroySubcontext(String name)
         throws NamingException
     {
         getRoot().destroySubcontext(stripProtocol(name));
     }
-
 
     @Override
     public NamingEnumeration list(Name name)
@@ -216,7 +205,6 @@ public class javaRootURLContext implements Context
     {
         return getRoot().list(stripProtocol(name));
     }
-
 
     @Override
     public NamingEnumeration list(String name)
@@ -239,115 +227,110 @@ public class javaRootURLContext implements Context
         return getRoot().listBindings(stripProtocol(name));
     }
 
-
     @Override
-    public Name composeName (Name name,
-                             Name prefix)
+    public Name composeName(Name name,
+                            Name prefix)
         throws NamingException
     {
         return getRoot().composeName(name, prefix);
     }
 
     @Override
-    public String composeName (String name,
-                               String prefix)
+    public String composeName(String name,
+                              String prefix)
         throws NamingException
     {
         return getRoot().composeName(name, prefix);
     }
 
-
     @Override
-    public void close ()
+    public void close()
         throws NamingException
     {
     }
 
     @Override
-    public String getNameInNamespace ()
+    public String getNameInNamespace()
         throws NamingException
     {
         return URL_PREFIX;
     }
 
     @Override
-    public NameParser getNameParser (Name name)
+    public NameParser getNameParser(Name name)
         throws NamingException
     {
         return __javaNameParser;
     }
 
     @Override
-    public NameParser getNameParser (String name)
+    public NameParser getNameParser(String name)
         throws NamingException
     {
         return __javaNameParser;
     }
-
 
     @Override
     public Object addToEnvironment(String propName,
                                    Object propVal)
         throws NamingException
     {
-       return _env.put (propName,propVal);
+        return _env.put(propName, propVal);
     }
 
     @Override
     public Object removeFromEnvironment(String propName)
         throws NamingException
     {
-        return _env.remove (propName);
+        return _env.remove(propName);
     }
 
     @Override
-    public Hashtable getEnvironment ()
+    public Hashtable getEnvironment()
     {
         return _env;
     }
 
-    public static NamingContext getRoot ()
+    public static NamingContext getRoot()
     {
         return __nameRoot;
     }
 
-
-    protected Name stripProtocol (Name name)
+    protected Name stripProtocol(Name name)
         throws NamingException
     {
         if ((name != null) && (name.size() > 0))
         {
             String head = name.get(0);
 
-            if(__log.isDebugEnabled())__log.debug("Head element of name is: "+head);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Head element of name is: " + head);
 
             if (head.startsWith(URL_PREFIX))
             {
-                head = head.substring (URL_PREFIX.length());
+                head = head.substring(URL_PREFIX.length());
                 name.remove(0);
                 if (head.length() > 0)
                     name.add(0, head);
 
-                if(__log.isDebugEnabled())__log.debug("name modified to "+name.toString());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("name modified to " + name.toString());
             }
         }
 
         return name;
     }
 
-
-
-    protected String stripProtocol (String name)
+    protected String stripProtocol(String name)
     {
         String newName = name;
 
         if ((name != null) && (!name.equals("")))
         {
             if (name.startsWith(URL_PREFIX))
-               newName = name.substring(URL_PREFIX.length());
+                newName = name.substring(URL_PREFIX.length());
         }
 
         return newName;
     }
-
 }

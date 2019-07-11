@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
+import java.nio.charset.StandardCharsets;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.PongMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 @ServerEndpoint(value = "/pong-socket", configurator = PongContextListener.Config.class)
 public class PongSocket
@@ -49,7 +49,7 @@ public class PongSocket
     {
         if (LOG.isDebugEnabled())
             LOG.debug("PongSocket.onPong(): PongMessage.appData={}", BufferUtil.toDetailString(pong.getApplicationData()));
-        byte buf[] = BufferUtil.toArray(pong.getApplicationData());
+        byte[] buf = BufferUtil.toArray(pong.getApplicationData());
         String message = new String(buf, StandardCharsets.UTF_8);
         this.session.getAsyncRemote().sendText("PongSocket.onPong(PongMessage)[" + path + "]:" + message);
     }

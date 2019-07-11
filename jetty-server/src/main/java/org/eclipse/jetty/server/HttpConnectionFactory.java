@@ -23,7 +23,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.Name;
 
-/** A Connection Factory for HTTP Connections.
+/**
+ * A Connection Factory for HTTP Connections.
  * <p>Accepts connections either directly or via SSL and/or ALPN chained connection factories.  The accepted
  * {@link HttpConnection}s are configured by a {@link HttpConfiguration} instance that is either created by
  * default or passed in to the constructor.
@@ -37,12 +38,12 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     {
         this(new HttpConfiguration());
     }
-    
+
     public HttpConnectionFactory(@Name("config") HttpConfiguration config)
     {
         super(HttpVersion.HTTP_1_1.asString());
-        _config=config;
-        if (config==null)
+        _config = config;
+        if (config == null)
             throw new IllegalArgumentException("Null HttpConfiguration");
         addBean(_config);
     }
@@ -64,8 +65,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         HttpConnection conn = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
         return configure(conn, connector, endPoint);
     }
-    
-    
+
     public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
     {
         this._recordHttpComplianceViolations = recordHttpComplianceViolations;

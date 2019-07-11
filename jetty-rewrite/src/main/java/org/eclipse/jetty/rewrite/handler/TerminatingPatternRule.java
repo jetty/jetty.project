@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,7 +32,7 @@ public class TerminatingPatternRule extends PatternRule
     {
         this(null);
     }
-    
+
     public TerminatingPatternRule(String pattern)
     {
         super(pattern);

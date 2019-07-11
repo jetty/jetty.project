@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanRegistrationException;
@@ -39,6 +38,7 @@ import javax.management.ObjectName;
 import javax.management.modelmbean.ModelMBean;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
@@ -78,9 +78,9 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     /**
      * Constructs MBeanContainer
      *
-     * @param server                 instance of MBeanServer for use by container
+     * @param server instance of MBeanServer for use by container
      * @param cacheOtherClassLoaders If true,  MBeans from other classloaders (eg WebAppClassLoader) will be cached.
-     *                               The cache is never flushed, so this should be false if some classloaders do not live forever.
+     * The cache is never flushed, so this should be false if some classloaders do not live forever.
      */
     public MBeanContainer(MBeanServer server, boolean cacheOtherClassLoaders)
     {
@@ -161,9 +161,13 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             {
                 MBeanInfo info = ((ObjectMBean)mbean).getMBeanInfo();
                 for (Object a : info.getAttributes())
+                {
                     LOG.debug("  {}", a);
+                }
                 for (Object a : info.getOperations())
+                {
                     LOG.debug("  {}", a);
+                }
             }
         }
         return mbean;
@@ -196,8 +200,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             return new MetaData(klass, null, null, Collections.emptyList());
 
         List<MetaData> interfaces = Arrays.stream(klass.getInterfaces())
-                .map(intf -> findMetaData(container, intf))
-                .collect(Collectors.toList());
+            .map(intf -> findMetaData(container, intf))
+            .collect(Collectors.toList());
         MetaData metaData = new MetaData(klass, findConstructor(klass), findMetaData(container, klass.getSuperclass()), interfaces);
 
         if (container != null)
@@ -227,8 +231,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         {
             Class<?> mbeanClass = Loader.loadClass(klass, mName);
             Constructor<?> constructor = ModelMBean.class.isAssignableFrom(mbeanClass)
-                    ? mbeanClass.getConstructor()
-                    : mbeanClass.getConstructor(Object.class);
+                ? mbeanClass.getConstructor()
+                : mbeanClass.getConstructor(Object.class);
             if (LOG.isDebugEnabled())
                 LOG.debug("Found MBean wrapper: {} for {}", mName, klass.getName());
             return constructor;
@@ -315,7 +319,9 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             {
                 Class<?> klass = obj.getClass();
                 while (klass.isArray())
+                {
                     klass = klass.getComponentType();
+                }
 
                 // If no explicit domain, create one.
                 String domain = _domain;
@@ -394,15 +400,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
      */
     public String makeName(String basis)
     {
-        if (basis == null)
-            return null;
-        return basis
-                .replace(':', '_')
-                .replace('*', '_')
-                .replace('?', '_')
-                .replace('=', '_')
-                .replace(',', '_')
-                .replace(' ', '_');
+        return StringUtil.sanitizeFileSystemName(basis);
     }
 
     @Override
@@ -422,8 +420,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     {
         _metaData.clear();
         _mbeans.values().stream()
-                .filter(Objects::nonNull)
-                .forEach(this::unregister);
+            .filter(Objects::nonNull)
+            .forEach(this::unregister);
         _mbeans.clear();
         _beans.clear();
     }

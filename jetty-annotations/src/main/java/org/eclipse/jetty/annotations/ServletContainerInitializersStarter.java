@@ -27,27 +27,27 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-
 /**
  * ServletContainerInitializersStarter
  *
- * Call the onStartup() method on all ServletContainerInitializers, after having 
+ * Call the onStartup() method on all ServletContainerInitializers, after having
  * found all applicable classes (if any) to pass in as args.
  */
 public class ServletContainerInitializersStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
 {
     private static final Logger LOG = Log.getLogger(ServletContainerInitializersStarter.class);
     WebAppContext _context;
-    
+
     public ServletContainerInitializersStarter(WebAppContext context)
     {
         _context = context;
     }
- 
-   /** 
-    * Call the doStart method of the ServletContainerInitializers
-    * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-    */
+
+    /**
+     * Call the doStart method of the ServletContainerInitializers
+     *
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
     @Override
     public void doStart()
     {
@@ -60,7 +60,7 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle imple
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Calling ServletContainerInitializer "+i.getTarget().getClass().getName());
+                    LOG.debug("Calling ServletContainerInitializer " + i.getTarget().getClass().getName());
                 i.callStartup(_context);
             }
             catch (Exception e)

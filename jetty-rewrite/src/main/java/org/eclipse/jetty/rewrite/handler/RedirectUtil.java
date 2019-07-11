@@ -29,12 +29,10 @@ public final class RedirectUtil
 {
     /**
      * Common point to generate a proper "Location" header for redirects.
-     * 
-     * @param request
-     *            the request the redirect should be based on (needed when relative locations are provided, so that
-     *            server name, scheme, port can be built out properly)
-     * @param location
-     *            the location URL to redirect to (can be a relative path)
+     *
+     * @param request the request the redirect should be based on (needed when relative locations are provided, so that
+     * server name, scheme, port can be built out properly)
+     * @param location the location URL to redirect to (can be a relative path)
      * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
      */
     public static String toRedirectURL(final HttpServletRequest request, String location)
@@ -42,7 +40,7 @@ public final class RedirectUtil
         if (!URIUtil.hasScheme(location))
         {
             StringBuilder url = new StringBuilder(128);
-            URIUtil.appendSchemeHostPort(url,request.getScheme(),request.getServerName(),request.getServerPort());
+            URIUtil.appendSchemeHostPort(url, request.getScheme(), request.getServerName(), request.getServerPort());
 
             if (location.startsWith("/"))
             {
@@ -54,7 +52,7 @@ public final class RedirectUtil
                 // relative to request
                 String path = request.getRequestURI();
                 String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.canonicalPath(URIUtil.addEncodedPaths(parent,location));
+                location = URIUtil.canonicalPath(URIUtil.addEncodedPaths(parent, location));
                 if (!location.startsWith("/"))
                     url.append('/');
             }

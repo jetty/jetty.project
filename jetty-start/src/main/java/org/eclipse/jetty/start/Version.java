@@ -25,17 +25,17 @@ package org.eclipse.jetty.start;
  */
 public class Version implements Comparable<Version>
 {
-    
+
     /**
      * Original String version
      */
     private String string = null;
-    
+
     /**
      * Short String version
      */
     private String shortString = null;
-    
+
     /**
      * The major version for java is always "1" (per
      * <a href="http://www.oracle.com/technetwork/java/javase/namechange-140185.html">legacy versioning history</a>)
@@ -56,12 +56,12 @@ public class Version implements Comparable<Version>
      * The update (where bug fixes are placed)
      */
     private int update = -1;
-    
+
     /**
      * Update strings may be zero padded!
      */
     private String updateString = null;
-    
+
     /**
      * Extra versioning information present on the version string, but not relevant for version comparison reason.
      * (eg: with "1.8.0_45-internal", the suffix would be "-internal")
@@ -84,7 +84,7 @@ public class Version implements Comparable<Version>
     @Override
     /**
      * Compares with other version. Does not take extension into account, as there is no reliable way to order them.
-     * 
+     *
      * @param other the other version to compare this to 
      * @return -1 if this is older version that other, 0 if its same version, 1 if it's newer version than other
      */
@@ -178,11 +178,9 @@ public class Version implements Comparable<Version>
 
     /**
      * Check whether this version is in range of versions specified
-     * 
-     * @param low
-     *            the low part of the range
-     * @param high
-     *            the high part of the range
+     *
+     * @param low the low part of the range
+     * @param high the high part of the range
      * @return true if this version is within the provided range
      */
     public boolean isInRange(Version low, Version high)
@@ -192,9 +190,8 @@ public class Version implements Comparable<Version>
 
     /**
      * parses version string in the form legacy[.major[.revision[_update[-suffix]]]] into this instance.
-     * 
-     * @param versionStr
-     *            the version string
+     *
+     * @param versionStr the version string
      */
     private void parse(String versionStr)
     {
@@ -212,8 +209,8 @@ public class Version implements Comparable<Version>
         while (offset < len)
         {
             char c = versionStr.charAt(offset);
-            if (c=='-')
-                shortString=versionStr.substring(0,offset);
+            if (c == '-')
+                shortString = versionStr.substring(0, offset);
             boolean isSeparator = !Character.isLetterOrDigit(c);
             if (isSeparator)
             {
@@ -255,12 +252,14 @@ public class Version implements Comparable<Version>
                         update = val;
                     }
                     break;
+                default:
+                    throw new IllegalStateException(state.toString());
             }
 
             offset++;
         }
-        if (shortString==null)
-            shortString=versionStr;
+        if (shortString == null)
+            shortString = versionStr;
     }
 
     /**
@@ -271,9 +270,10 @@ public class Version implements Comparable<Version>
     {
         return string;
     }
-    
+
     /**
      * Return short string form (without suffix)
+     *
      * @return string the short version string form
      */
     public String toShortString()

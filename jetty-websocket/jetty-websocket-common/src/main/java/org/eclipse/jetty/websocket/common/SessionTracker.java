@@ -25,6 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 
 public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener
 {
@@ -36,15 +37,17 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
     }
 
     @Override
-    public void onWebSocketSessionOpened(WebSocketSession session)
+    public void onWebSocketSessionOpened(Session session)
     {
+        LifeCycle.start(session);
         sessions.add(session);
     }
 
     @Override
-    public void onWebSocketSessionClosed(WebSocketSession session)
+    public void onWebSocketSessionClosed(Session session)
     {
         sessions.remove(session);
+        LifeCycle.stop(session);
     }
 
     @Override

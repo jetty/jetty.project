@@ -40,38 +40,36 @@ public class HttpCookieTest
     public void testSetRFC2965Cookie() throws Exception
     {
         HttpCookie httpCookie;
-        
-        httpCookie = new HttpCookie("null", null, null, null, -1, false, false, null, -1);
-        assertEquals("null=",httpCookie.getRFC2965SetCookie());
 
+        httpCookie = new HttpCookie("null", null, null, null, -1, false, false, null, -1);
+        assertEquals("null=", httpCookie.getRFC2965SetCookie());
 
         httpCookie = new HttpCookie("minimal", "value", null, null, -1, false, false, null, -1);
-        assertEquals("minimal=value",httpCookie.getRFC2965SetCookie());
+        assertEquals("minimal=value", httpCookie.getRFC2965SetCookie());
 
         httpCookie = new HttpCookie("everything", "something", "domain", "path", 0, true, true, "noncomment", 0);
-        assertEquals("everything=something;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=noncomment",httpCookie.getRFC2965SetCookie());
-        
+        assertEquals("everything=something;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=noncomment", httpCookie.getRFC2965SetCookie());
+
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, "comment", 0);
-        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",httpCookie.getRFC2965SetCookie());
-        
+        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment", httpCookie.getRFC2965SetCookie());
 
         httpCookie = new HttpCookie("ev erything", "va lue", "do main", "pa th", 1, true, true, "co mment", 1);
-        String setCookie=httpCookie.getRFC2965SetCookie();
+        String setCookie = httpCookie.getRFC2965SetCookie();
         assertThat(setCookie, Matchers.startsWith("\"ev erything\"=\"va lue\";Version=1;Path=\"pa th\";Domain=\"do main\";Expires="));
-        assertThat(setCookie,Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
+        assertThat(setCookie, Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
 
         httpCookie = new HttpCookie("name", "value", null, null, -1, false, false, null, 0);
-        setCookie=httpCookie.getRFC2965SetCookie();
-        assertEquals(-1,setCookie.indexOf("Version="));
+        setCookie = httpCookie.getRFC2965SetCookie();
+        assertEquals(-1, setCookie.indexOf("Version="));
         httpCookie = new HttpCookie("name", "v a l u e", null, null, -1, false, false, null, 0);
-        setCookie=httpCookie.getRFC2965SetCookie();
+        setCookie = httpCookie.getRFC2965SetCookie();
 
-        httpCookie = new HttpCookie("json","{\"services\":[\"cwa\",  \"aa\"]}", null, null, -1, false, false, null, -1);
-        assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\"",httpCookie.getRFC2965SetCookie());
-        
+        httpCookie = new HttpCookie("json", "{\"services\":[\"cwa\",  \"aa\"]}", null, null, -1, false, false, null, -1);
+        assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\"", httpCookie.getRFC2965SetCookie());
+
         httpCookie = new HttpCookie("name", "value%=", null, null, -1, false, false, null, 0);
-        setCookie=httpCookie.getRFC2965SetCookie();
-        assertEquals("name=value%=",setCookie);
+        setCookie = httpCookie.getRFC2965SetCookie();
+        assertEquals("name=value%=", setCookie);
     }
 
     @Test
@@ -79,20 +77,20 @@ public class HttpCookieTest
     {
         HttpCookie httpCookie;
 
-        httpCookie = new HttpCookie("null",null,null,null,-1,false,false, null, -1);
-        assertEquals("null=",httpCookie.getRFC6265SetCookie());
+        httpCookie = new HttpCookie("null", null, null, null, -1, false, false, null, -1);
+        assertEquals("null=", httpCookie.getRFC6265SetCookie());
 
-        httpCookie = new HttpCookie("minimal","value",null,null,-1,false,false, null, -1);
-        assertEquals("minimal=value",httpCookie.getRFC6265SetCookie());
+        httpCookie = new HttpCookie("minimal", "value", null, null, -1, false, false, null, -1);
+        assertEquals("minimal=value", httpCookie.getRFC6265SetCookie());
 
         //test cookies with same name, domain and path
-        httpCookie = new HttpCookie("everything","something","domain","path",0,true,true, null, -1);
-        assertEquals("everything=something; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",httpCookie.getRFC6265SetCookie());
+        httpCookie = new HttpCookie("everything", "something", "domain", "path", 0, true, true, null, -1);
+        assertEquals("everything=something; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", httpCookie.getRFC6265SetCookie());
 
-        httpCookie = new HttpCookie("everything","value","domain","path",0,true,true, null, -1);
-        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",httpCookie.getRFC6265SetCookie());
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", httpCookie.getRFC6265SetCookie());
 
-        String badNameExamples[] = {
+        String[] badNameExamples = {
             "\"name\"",
             "name\t",
             "na me",
@@ -120,7 +118,7 @@ public class HttpCookieTest
             }
         }
 
-        String badValueExamples[] = {
+        String[] badValueExamples = {
             "va\tlue",
             "\t",
             "value\u0000",
@@ -149,7 +147,7 @@ public class HttpCookieTest
             }
         }
 
-        String goodNameExamples[] = {
+        String[] goodNameExamples = {
             "name",
             "n.a.m.e",
             "na-me",
@@ -165,7 +163,7 @@ public class HttpCookieTest
             // should not throw an exception
         }
 
-        String goodValueExamples[] = {
+        String[] goodValueExamples = {
             "value",
             "",
             null,

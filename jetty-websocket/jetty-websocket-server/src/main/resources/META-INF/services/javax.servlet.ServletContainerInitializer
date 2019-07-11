@@ -1,1 +1,1 @@
-org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer
+org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer

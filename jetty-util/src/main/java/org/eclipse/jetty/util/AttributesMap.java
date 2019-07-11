@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import org.eclipse.jetty.util.component.Dumpable;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +28,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.eclipse.jetty.util.component.Dumpable;
 
 public class AttributesMap implements Attributes, Dumpable
 {
@@ -161,6 +161,6 @@ public class AttributesMap implements Attributes, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,String.format("%s@%x",this.getClass().getSimpleName(),hashCode()),map());
+        Dumpable.dumpObjects(out, indent, String.format("%s@%x", this.getClass().getSimpleName(), hashCode()), map());
     }
 }

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class MessageHandler implements FrameHandler
 {
-
     public static MessageHandler from(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
     {
         return new MessageHandler()
@@ -86,56 +85,38 @@ public class MessageHandler implements FrameHandler
         };
     }
 
-    private Logger LOG = Log.getLogger(MessageHandler.class);
-
-    private final int factor;
+    protected static final Logger LOG = Log.getLogger(MessageHandler.class);
 
     private CoreSession coreSession;
-    private Utf8StringBuilder utf8StringBuilder = null;
-    private ByteBuffer binaryMessage = null;
+    private Utf8StringBuilder textMessageBuffer;
+    private ByteArrayOutputStream binaryMessageBuffer;
     private byte dataType = OpCode.UNDEFINED;
-
-    private int maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
-    private int maxBinaryMessageSize = WebSocketConstants.DEFAULT_MAX_BINARY_MESSAGE_SIZE;
-
-    public MessageHandler()
-    {
-        this(3);
-    }
-
-    public MessageHandler(int factor)
-    {
-        this.factor = factor;
-    }
-
-    public int getMaxTextMessageSize()
-    {
-        return maxTextMessageSize;
-    }
-
-    public void setMaxTextMessageSize(int maxTextMessageSize)
-    {
-        this.maxTextMessageSize = maxTextMessageSize;
-    }
-
-    public int getMaxBinaryMessageSize()
-    {
-        return maxBinaryMessageSize;
-    }
-
-    public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
-    {
-        this.maxBinaryMessageSize = maxBinaryMessageSize;
-    }
 
     public CoreSession getCoreSession()
     {
         return coreSession;
     }
 
+    private Utf8StringBuilder getTextMessageBuffer()
+    {
+        if (textMessageBuffer == null)
+            textMessageBuffer = new Utf8StringBuilder();
+        return textMessageBuffer;
+    }
+
+    private ByteArrayOutputStream getBinaryMessageBuffer()
+    {
+        if (binaryMessageBuffer == null)
+            binaryMessageBuffer = new ByteArrayOutputStream();
+        return binaryMessageBuffer;
+    }
+
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen {}", coreSession);
+
         this.coreSession = coreSession;
         callback.succeeded();
     }
@@ -143,90 +124,35 @@ public class MessageHandler implements FrameHandler
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        try
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFrame {}", frame);
+
+        switch (frame.getOpCode())
         {
-            byte opcode = frame.getOpCode();
-            if (LOG.isDebugEnabled())
-                LOG.debug("{}: {}", OpCode.name(opcode), BufferUtil.toDetailString(frame.getPayload()));
-
-            switch (opcode)
-            {
-                case OpCode.PING:
-                case OpCode.PONG:
-                case OpCode.CLOSE:
-                    if (isDemanding())
-                        getCoreSession().demand(1);
-                    callback.succeeded();
-                    break;
-
-                case OpCode.BINARY:
-                    if (frame.isFin())
-                    {
-                        final int maxSize = getMaxBinaryMessageSize();
-                        if (frame.hasPayload() && frame.getPayload().remaining() > maxSize)
-                            throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
-
-                        onBinary(frame.getPayload(), callback); //bypass buffer aggregation
-                    }
-                    else
-                    {
-                        dataType = OpCode.BINARY;
-                        binaryMessage = getCoreSession().getByteBufferPool().acquire(frame.getPayloadLength() * factor, false);
-                        onBinaryFrame(frame, callback);
-                    }
-                    break;
-
-                case OpCode.TEXT:
-                    dataType = OpCode.TEXT;
-                    if (utf8StringBuilder == null)
-                    {
-                        final int maxSize = getMaxTextMessageSize();
-                        utf8StringBuilder = (maxSize < 0)?new Utf8StringBuilder():new Utf8StringBuilder()
-                        {
-                            @Override
-                            protected void appendByte(byte b) throws IOException
-                            {
-                                // TODO can we avoid byte by byte length check?
-                                if (length() >= maxSize)
-                                    throw new MessageTooLargeException("Message larger than " + maxSize + " characters");
-                                super.appendByte(b);
-                            }
-                        };
-                    }
-                    onTextFrame(frame, callback);
-                    break;
-
-                case OpCode.CONTINUATION:
-                    switch (dataType)
-                    {
-                        case OpCode.BINARY:
-                            onBinaryFrame(frame, callback);
-                            break;
-
-                        case OpCode.TEXT:
-                            onTextFrame(frame, callback);
-                            break;
-
-                        default:
-                            throw new IllegalStateException();
-                    }
-                    break;
-
-                default:
-                    throw new IllegalStateException();
-            }
-        }
-        catch (Utf8Appendable.NotUtf8Exception bple)
-        {
-            utf8StringBuilder.reset();
-            callback.failed(new BadPayloadException(bple));
-        }
-        catch (Throwable th)
-        {
-            if (utf8StringBuilder != null)
-                utf8StringBuilder.reset();
-
-            callback.failed(th);
+            case OpCode.CLOSE:
+                onCloseFrame(frame, callback);
+                break;
+            case OpCode.PING:
+                onPingFrame(frame, callback);
+                break;
+            case OpCode.PONG:
+                onPongFrame(frame, callback);
+                break;
+            case OpCode.TEXT:
+                dataType = OpCode.TEXT;
+                onTextFrame(frame, callback);
+                break;
+            case OpCode.BINARY:
+                dataType = OpCode.BINARY;
+                onBinaryFrame(frame, callback);
+                break;
+            case OpCode.CONTINUATION:
+                onContinuationFrame(frame, callback);
+                if (frame.isFin())
+                    dataType = OpCode.UNDEFINED;
+                break;
+            default:
+                callback.failed(new IllegalStateException());
         }
     }
 
@@ -234,7 +160,8 @@ public class MessageHandler implements FrameHandler
     public void onError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(this + " onError ", cause);
+            LOG.debug("onError ", cause);
+
         callback.succeeded();
     }
 
@@ -242,98 +169,128 @@ public class MessageHandler implements FrameHandler
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onClosed {}", this, closeStatus);
-        if (utf8StringBuilder != null && utf8StringBuilder.length() > 0 && closeStatus.isNormal())
-            LOG.warn("{} closed with partial message: {} chars", utf8StringBuilder.length());
+            LOG.debug("onClosed {}", closeStatus);
 
-        if (binaryMessage != null)
+        if (textMessageBuffer != null)
         {
-            if (BufferUtil.hasContent(binaryMessage))
-                LOG.warn("{} closed with partial message: {} bytes", binaryMessage.remaining());
-
-            getCoreSession().getByteBufferPool().release(binaryMessage);
-            binaryMessage = null;
+            textMessageBuffer.reset();
+            textMessageBuffer = null;
         }
 
-        if (utf8StringBuilder != null)
+        if (binaryMessageBuffer != null)
         {
-            utf8StringBuilder.reset();
-            utf8StringBuilder = null;
+            binaryMessageBuffer.reset();
+            binaryMessageBuffer = null;
         }
-        coreSession = null;
+
         callback.succeeded();
     }
 
-    private void onTextFrame(Frame frame, Callback callback)
+    protected void onTextFrame(Frame frame, Callback callback)
     {
-        if (frame.hasPayload())
-            utf8StringBuilder.append(frame.getPayload());
-
-        if (frame.isFin())
+        try
         {
-            dataType = OpCode.UNDEFINED;
+            Utf8StringBuilder textBuffer = getTextMessageBuffer();
 
-            String message = utf8StringBuilder.toString();
-            utf8StringBuilder.reset();
-            onText(message, callback);
+            if (frame.hasPayload())
+            {
+                long maxSize = coreSession.getMaxTextMessageSize();
+                long currentSize = frame.getPayload().remaining() + textBuffer.length();
+                if (currentSize > maxSize)
+                    throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
+
+                textBuffer.append(frame.getPayload());
+            }
+
+            if (frame.isFin())
+            {
+                onText(textBuffer.toString(), callback);
+                textBuffer.reset();
+            }
+            else
+            {
+                callback.succeeded();
+            }
         }
-        else
+        catch (Utf8Appendable.NotUtf8Exception e)
         {
-            if (isDemanding())
-                getCoreSession().demand(1);
-            callback.succeeded();
+            callback.failed(new BadPayloadException(e));
+        }
+        catch (Throwable t)
+        {
+            callback.failed(t);
+        }
+
+    }
+
+    protected void onBinaryFrame(Frame frame, Callback callback)
+    {
+        try
+        {
+            ByteArrayOutputStream binaryBuffer = getBinaryMessageBuffer();
+
+            if (frame.hasPayload())
+            {
+                long maxSize = coreSession.getMaxBinaryMessageSize();
+                long currentSize = frame.getPayload().remaining() + binaryBuffer.size();
+                if (currentSize > maxSize)
+                    throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
+
+                BufferUtil.writeTo(frame.getPayload(), binaryBuffer);
+            }
+
+            if (frame.isFin())
+            {
+                onBinary(BufferUtil.toBuffer(binaryBuffer.toByteArray()), callback);
+                binaryBuffer.reset();
+            }
+            else
+            {
+                callback.succeeded();
+            }
+        }
+        catch (Throwable t)
+        {
+            callback.failed(t);
         }
     }
 
-    private void onBinaryFrame(Frame frame, Callback callback)
+    protected void onContinuationFrame(Frame frame, Callback callback)
     {
-        if (frame.hasPayload())
+        switch (dataType)
         {
-            if (BufferUtil.space(binaryMessage) < frame.getPayloadLength())
-                binaryMessage = BufferUtil
-                    .ensureCapacity(binaryMessage, binaryMessage.capacity() + Math.max(binaryMessage.capacity(), frame.getPayloadLength() * factor));
+            case OpCode.BINARY:
+                onBinaryFrame(frame, callback);
+                break;
 
-            BufferUtil.append(binaryMessage, frame.getPayload());
+            case OpCode.TEXT:
+                onTextFrame(frame, callback);
+                break;
+
+            default:
+                throw new IllegalStateException();
         }
+    }
 
-        final int maxSize = getMaxBinaryMessageSize();
-        if (binaryMessage.remaining() > maxSize)
-        {
-            getCoreSession().getByteBufferPool().release(binaryMessage);
-            binaryMessage = null;
-            throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
-        }
+    protected void onPingFrame(Frame frame, Callback callback)
+    {
+        coreSession.sendFrame(new Frame(OpCode.PONG, true, frame.getPayload()), callback, false);
+    }
 
-        if (frame.isFin())
-        {
-            dataType = OpCode.UNDEFINED;
+    protected void onPongFrame(Frame frame, Callback callback)
+    {
+        callback.succeeded();
+    }
 
-            final ByteBuffer completeMessage = binaryMessage;
-            binaryMessage = null;
-
-            callback = new Callback.Nested(callback)
-            {
-                @Override
-                public void completed()
-                {
-                    getCoreSession().getByteBufferPool().release(completeMessage);
-                }
-            };
-
-            onBinary(completeMessage, callback);
-        }
-        else
-        {
-            if (isDemanding())
-                getCoreSession().demand(1);
-            callback.succeeded();
-        }
+    protected void onCloseFrame(Frame frame, Callback callback)
+    {
+        callback.succeeded();
     }
 
     /**
      * Method called when a complete text message is received.
      *
-     * @param message the received text payload
+     * @param message  the received text payload
      * @param callback The callback to signal completion of handling.
      */
     protected void onText(String message, Callback callback)
@@ -344,7 +301,7 @@ public class MessageHandler implements FrameHandler
     /**
      * Method called when a complete binary message is received.
      *
-     * @param message The binary payload
+     * @param message  The binary payload
      * @param callback The callback to signal completion of handling.
      */
     protected void onBinary(ByteBuffer message, Callback callback)
@@ -361,7 +318,6 @@ public class MessageHandler implements FrameHandler
      */
     public void sendText(String message, Callback callback, boolean batch)
     {
-        // TODO if autofragment is on, enforce max buffer size
         getCoreSession().sendFrame(new Frame(OpCode.TEXT, true, message), callback, batch);
     }
 
@@ -400,8 +356,8 @@ public class MessageHandler implements FrameHandler
 
                 String part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
-                    i == 1?OpCode.TEXT:OpCode.CONTINUATION,
-                    i == parts.length, part), this, batch);
+                        i == 1 ? OpCode.TEXT : OpCode.CONTINUATION,
+                        i == parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }
         }.iterate();
@@ -452,8 +408,8 @@ public class MessageHandler implements FrameHandler
 
                 ByteBuffer part = parts[i++];
                 getCoreSession().sendFrame(new Frame(
-                    i == 1?OpCode.BINARY:OpCode.CONTINUATION,
-                    i == parts.length, part), this, batch);
+                        i == 1 ? OpCode.BINARY : OpCode.CONTINUATION,
+                        i == parts.length, part), this, batch);
                 return Action.SCHEDULED;
             }
         }.iterate();

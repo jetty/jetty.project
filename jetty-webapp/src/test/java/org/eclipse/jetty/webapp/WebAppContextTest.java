@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -101,18 +100,18 @@ public class WebAppContextTest
     {
         Configurations.cleanKnown();
         String[] known_and_enabled = Configurations.getKnown().stream()
-                .filter(c -> !c.isDisabledByDefault())
-                .map(c -> c.getClass().getName())
-                .toArray(String[]::new);
+            .filter(c -> !c.isDisabledByDefault())
+            .map(c -> c.getClass().getName())
+            .toArray(String[]::new);
 
         Server server = new Server();
 
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
         assertThat(wac.getWebAppConfigurations().stream()
-                        .map(c -> c.getClass().getName())
-                        .collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(known_and_enabled));
+                .map(c -> c.getClass().getName())
+                .collect(Collectors.toList()),
+            Matchers.containsInAnyOrder(known_and_enabled));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -128,14 +127,14 @@ public class WebAppContextTest
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
         assertThat(wac.getWebAppConfigurations().stream().map(c -> c.getClass().getName()).collect(Collectors.toList()),
-                Matchers.contains(
-                        "org.eclipse.jetty.webapp.JmxConfiguration",
-                        "org.eclipse.jetty.webapp.WebInfConfiguration",
-                        "org.eclipse.jetty.webapp.WebXmlConfiguration",
-                        "org.eclipse.jetty.webapp.MetaInfConfiguration",
-                        "org.eclipse.jetty.webapp.FragmentConfiguration",
-                        "org.eclipse.jetty.webapp.WebAppConfiguration",
-                        "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"));
+            Matchers.contains(
+                "org.eclipse.jetty.webapp.JmxConfiguration",
+                "org.eclipse.jetty.webapp.WebInfConfiguration",
+                "org.eclipse.jetty.webapp.WebXmlConfiguration",
+                "org.eclipse.jetty.webapp.MetaInfConfiguration",
+                "org.eclipse.jetty.webapp.FragmentConfiguration",
+                "org.eclipse.jetty.webapp.WebAppConfiguration",
+                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"));
     }
 
     @Test
@@ -271,7 +270,7 @@ public class WebAppContextTest
         HandlerList handlers = new HandlerList();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
-                ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
+            ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
         context.setBaseResource(Resource.newResource("./src/test/webapp"));
         server.setHandler(handlers);
@@ -319,7 +318,7 @@ public class WebAppContextTest
         server.start();
 
         ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.setResourceBase(System.getProperty("java.io.tmpdir"));
 
@@ -402,7 +401,9 @@ public class WebAppContextTest
             catch (Exception e)
             {
                 while (e.getCause() instanceof Exception)
+                {
                     e = (Exception)e.getCause();
+                }
                 history.add(e.getMessage());
             }
         }
@@ -423,7 +424,6 @@ public class WebAppContextTest
         context.setServer(new Server());
         new MetaInfConfiguration().preConfigure(context);
         assertEquals(Arrays.asList("acme.jar", "alpha.jar", "omega.jar"),
-                context.getMetaData().getWebInfJars().stream().map(r -> r.getURI().toString().replaceFirst(".+/", "")).collect(Collectors.toList()));
+            context.getMetaData().getWebInfJars().stream().map(r -> r.getURI().toString().replaceFirst(".+/", "")).collect(Collectors.toList()));
     }
-
 }

@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ContainerProvider;
 import javax.websocket.DecodeException;
@@ -95,7 +94,7 @@ public class DecoderReaderManySmallTest
         final int from = 1000;
         final int to = 2000;
 
-        try(Session clientSession = client.connectToServer(clientSocket, wsUri))
+        try (Session clientSession = client.connectToServer(clientSocket, wsUri))
         {
             clientSession.getAsyncRemote().sendText("seq|" + from + "|" + to);
         }
@@ -175,7 +174,7 @@ public class DecoderReaderManySmallTest
         {
             if (text.startsWith("seq|"))
             {
-                String parts[] = text.split("\\|");
+                String[] parts = text.split("\\|");
                 int from = Integer.parseInt(parts[1]);
                 int to = Integer.parseInt(parts[2]);
 

@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -156,7 +155,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException
+        throws IOException, ServletException
     {
         // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
         HttpChannel channel = baseRequest.getHttpChannel();
@@ -181,9 +180,9 @@ public class InetAccessHandler extends HandlerWrapper
     /**
      * Checks if specified address and request are allowed by current InetAddress rules.
      *
-     * @param addr     the inetAddress to check
+     * @param addr the inetAddress to check
      * @param baseRequest the base request to check
-     * @param request     the HttpServletRequest request to check
+     * @param request the HttpServletRequest request to check
      * @return true if inetAddress and request are allowed
      */
     protected boolean isAllowed(InetAddress addr, Request baseRequest, HttpServletRequest request)

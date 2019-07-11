@@ -20,8 +20,6 @@ package org.eclipse.jetty.server.session;
 
 /**
  * SessionDataMapFactory
- *
- *
  */
 public interface SessionDataMapFactory
 {

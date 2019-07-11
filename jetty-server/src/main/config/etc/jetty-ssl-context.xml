@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <!-- ============================================================= -->
 <!-- SSL ContextFactory configuration                              -->
@@ -11,24 +11,24 @@
 -->
 
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
-  <Set name="Provider"><Property name="jetty.sslContext.provider"/></Set>
+  <Set name="Provider" property="jetty.sslContext.provider"/>
   <Set name="KeyStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore"/></Set>
   <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
-  <Set name="KeyStoreType"><Property name="jetty.sslContext.keyStoreType" default="JKS"/></Set>
-  <Set name="KeyStoreProvider"><Property name="jetty.sslContext.keyStoreProvider"/></Set>
+  <Set name="KeyStoreType" property="jetty.sslContext.keyStoreType"/>
+  <Set name="KeyStoreProvider" property="jetty.sslContext.keyStoreProvider"/>
   <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword" default="OBF:1u2u1wml1z7s1z7a1wnl1u2g"/></Set>
   <Set name="TrustStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore"/></Set>
-  <Set name="TrustStorePassword"><Property name="jetty.sslContext.trustStorePassword"/></Set>
-  <Set name="TrustStoreType"><Property name="jetty.sslContext.trustStoreType"/></Set>
-  <Set name="TrustStoreProvider"><Property name="jetty.sslContext.trustStoreProvider"/></Set>
-  <Set name="EndpointIdentificationAlgorithm"><Property name="jetty.sslContext.endpointIdentificationAlgorithm" default="HTTPS"/></Set>
-  <Set name="NeedClientAuth"><Property name="jetty.sslContext.needClientAuth" default="false"/></Set>
-  <Set name="WantClientAuth"><Property name="jetty.sslContext.wantClientAuth" default="false"/></Set>
-  <Set name="useCipherSuitesOrder"><Property name="jetty.sslContext.useCipherSuitesOrder" default="true"/></Set>
-  <Set name="sslSessionCacheSize"><Property name="jetty.sslContext.sslSessionCacheSize" default="-1"/></Set>
-  <Set name="sslSessionTimeout"><Property name="jetty.sslContext.sslSessionTimeout" default="-1"/></Set>
-  <Set name="RenegotiationAllowed"><Property name="jetty.sslContext.renegotiationAllowed" default="true"/></Set>
-  <Set name="RenegotiationLimit"><Property name="jetty.sslContext.renegotiationLimit" default="5"/></Set>
+  <Set name="TrustStorePassword" property="jetty.sslContext.trustStorePassword"/>
+  <Set name="TrustStoreType" property="jetty.sslContext.trustStoreType"/>
+  <Set name="TrustStoreProvider" property="jetty.sslContext.trustStoreProvider"/>
+  <Set name="EndpointIdentificationAlgorithm" property="jetty.sslContext.endpointIdentificationAlgorithm"/>
+  <Set name="NeedClientAuth" property="jetty.sslContext.needClientAuth"/>
+  <Set name="WantClientAuth" property="jetty.sslContext.wantClientAuth"/>
+  <Set name="useCipherSuitesOrder" property="jetty.sslContext.useCipherSuitesOrder"/>
+  <Set name="sslSessionCacheSize" property="jetty.sslContext.sslSessionCacheSize"/>
+  <Set name="sslSessionTimeout" property="jetty.sslContext.sslSessionTimeout"/>
+  <Set name="RenegotiationAllowed" property="jetty.sslContext.renegotiationAllowed"/>
+  <Set name="RenegotiationLimit" property="jetty.sslContext.renegotiationLimit"/>
 
   <!-- Example of how to configure a PKIX Certificate Path revocation Checker
   <Call id="pkixPreferCrls" class="java.security.cert.PKIXRevocationChecker$Option" name="valueOf"><Arg>PREFER_CRLS</Arg></Call>

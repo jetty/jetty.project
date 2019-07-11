@@ -23,9 +23,6 @@ import java.util.LinkedList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
@@ -42,25 +39,25 @@ public class ParserCapture
     public boolean closed = false;
     public boolean copy;
 
-    public ParserCapture(Parser parser)
+    public ParserCapture()
     {
-        this(parser, true);
+        this(true);
     }
 
-    public ParserCapture(Parser parser, boolean copy)
+    public ParserCapture(boolean copy)
     {
-        this(parser, copy, Behavior.CLIENT);
+        this(copy, Behavior.CLIENT);
     }
 
-    public ParserCapture(Parser parser, boolean copy, Behavior behavior)
+    public ParserCapture(boolean copy, Behavior behavior)
     {
-        this.parser = parser;
         this.copy = copy;
 
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
-        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
-        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
-        this.coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), behavior, Negotiated.from(exStack));
+        WebSocketComponents components = new WebSocketComponents();
+        ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
+        exStack.negotiate(new LinkedList<>(), new LinkedList<>());
+        this.coreSession = new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack));
+        this.parser = new Parser(components.getBufferPool(), coreSession);
     }
 
     public void parse(ByteBuffer buffer)
@@ -91,9 +88,19 @@ public class ParserCapture
 
     public boolean onFrame(Frame frame)
     {
-        framesQueue.offer(copy?Frame.copy(frame):frame);
+        framesQueue.offer(copy ? Frame.copy(frame) : frame);
         if (frame.getOpCode() == OpCode.CLOSE)
             closed = true;
         return true; // it is consumed
+    }
+
+    public Parser getParser()
+    {
+        return parser;
+    }
+
+    public WebSocketCoreSession getCoreSession()
+    {
+        return coreSession;
     }
 }

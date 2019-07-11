@@ -85,5 +85,4 @@ public class WSURITest
     {
         assertURI(WSURI.toWebsocket(URI.create("ws://localhost/")), URI.create("ws://localhost/"));
     }
-
 }

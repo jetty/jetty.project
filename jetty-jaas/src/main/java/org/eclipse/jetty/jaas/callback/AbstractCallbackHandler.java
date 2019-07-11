@@ -19,43 +19,38 @@
 package org.eclipse.jetty.jaas.callback;
 
 import java.io.IOException;
-
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
-
 
 public abstract class AbstractCallbackHandler implements CallbackHandler
 {
     protected String _userName;
     protected Object _credential;
 
-    public void setUserName (String userName)
+    public void setUserName(String userName)
     {
         _userName = userName;
     }
 
-    public String getUserName ()
+    public String getUserName()
     {
         return _userName;
     }
 
-
-    public void setCredential (Object credential)
+    public void setCredential(Object credential)
     {
         _credential = credential;
     }
 
-    public Object getCredential ()
+    public Object getCredential()
     {
         return _credential;
     }
 
     @Override
-    public  void handle (Callback[] callbacks)
+    public void handle(Callback[] callbacks)
         throws IOException, UnsupportedCallbackException
     {
     }
-
-
 }

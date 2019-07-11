@@ -51,25 +51,25 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
-        HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
-        ByteBufferPool byteBufferPool = client.getByteBufferPool();
-        Executor executor = client.getExecutor();
-        Scheduler scheduler = client.getScheduler();
-        Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
+        final HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
+        final ByteBufferPool byteBufferPool = client.getByteBufferPool();
+        final Executor executor = client.getExecutor();
+        final Scheduler scheduler = client.getScheduler();
+        final Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
+        final Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
-        Generator generator = new Generator(byteBufferPool);
-        FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
-        HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
+        final Generator generator = new Generator(byteBufferPool);
+        final FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
+        final HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
 
-        Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
+        final Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
         parser.setMaxFrameLength(client.getMaxFrameLength());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
-        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
-                parser, session, client.getInputBufferSize(), promise, listener);
+        final HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
+            parser, session, client.getInputBufferSize(), promise, listener);
         connection.addListener(connectionListener);
         return customize(connection, context);
     }

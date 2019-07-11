@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -33,11 +34,11 @@ public abstract class JettyWebSocketServlet extends WebSocketServlet
     }
 
     @Override
-    public FrameHandlerFactory getFactory()
+    protected FrameHandlerFactory getFactory()
     {
         JettyServerFrameHandlerFactory frameHandlerFactory = JettyServerFrameHandlerFactory.getFactory(getServletContext());
 
-        if (frameHandlerFactory==null)
+        if (frameHandlerFactory == null)
             throw new IllegalStateException("JettyServerFrameHandlerFactory not found");
 
         return frameHandlerFactory;

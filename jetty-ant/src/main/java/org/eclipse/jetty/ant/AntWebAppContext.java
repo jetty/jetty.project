@@ -52,6 +52,7 @@ import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
@@ -64,36 +65,45 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class AntWebAppContext extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(WebAppContext.class);
-    
-    public final static String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN =
-    ".*/.*jsp-api-[^/]*\\.jar$|.*/.*jsp-[^/]*\\.jar$|.*/.*taglibs[^/]*\\.jar$|.*/.*jstl[^/]*\\.jar$|.*/.*jsf-impl-[^/]*\\.jar$|.*/.*javax.faces-[^/]*\\.jar$|.*/.*myfaces-impl-[^/]*\\.jar$";
 
+    public static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN =
+        ".*/.*jsp-api-[^/]*\\.jar$|.*/.*jsp-[^/]*\\.jar$|.*/.*taglibs[^/]*\\.jar$|.*/.*jstl[^/]*\\.jar$|.*/.*jsf-impl-[^/]*\\.jar$|.*/.*javax.faces-[^/]*\\.jar$|.*/.*myfaces-impl-[^/]*\\.jar$";
 
-    /** Location of jetty-env.xml file. */
+    /**
+     * Location of jetty-env.xml file.
+     */
     private File jettyEnvXml;
-    
-    /** List of web application libraries. */
+
+    /**
+     * List of web application libraries.
+     */
     private List<FileSet> libraries = new ArrayList<>();
 
-    /** List of web application class directories. */
+    /**
+     * List of web application class directories.
+     */
     private List<FileSet> classes = new ArrayList<>();
-    
-    /** context xml file to apply to the webapp */
+
+    /**
+     * context xml file to apply to the webapp
+     */
     private File contextXml;
-    
-    /** List of extra scan targets for this web application. */
+
+    /**
+     * List of extra scan targets for this web application.
+     */
     private FileSet scanTargets;
-    
-    /** context attributes to set **/
+
+    /**
+     * context attributes to set
+     **/
     private Attributes attributes;
-    
+
     private Project project;
-    
+
     private List<File> scanFiles;
-    
 
     private FileMatchingConfiguration librariesConfiguration;
-    
 
     public static void dump(ClassLoader loader)
     {
@@ -105,15 +115,16 @@ public class AntWebAppContext extends WebAppContext
                 URL[] urls = ((URLClassLoader)loader).getURLs();
                 if (urls != null)
                 {
-                    for (URL u:urls)
-                        System.err.println("\t"+u+"\n");
+                    for (URL u : urls)
+                    {
+                        System.err.println("\t" + u + "\n");
+                    }
                 }
             }
             loader = loader.getParent();
         }
     }
 
-    
     /**
      * AntURLClassLoader
      *
@@ -123,11 +134,11 @@ public class AntWebAppContext extends WebAppContext
     public static class AntURLClassLoader extends URLClassLoader
     {
         private AntClassLoader antLoader;
-        
+
         public AntURLClassLoader(AntClassLoader antLoader)
         {
-            super(new URL[] {}, antLoader);
-            this.antLoader = antLoader;      
+            super(new URL[]{}, antLoader);
+            this.antLoader = antLoader;
         }
 
         @Override
@@ -152,17 +163,17 @@ public class AntWebAppContext extends WebAppContext
         public URL[] getURLs()
         {
             Set<URL> urls = new HashSet<URL>();
-            
+
             //convert urls from antLoader
             String[] paths = antLoader.getClasspath().split(new String(new char[]{File.pathSeparatorChar}));
             if (paths != null)
             {
-                for (String p:paths)
+                for (String p : paths)
                 {
                     File f = new File(p);
                     try
                     {
-                        urls.add(f.toURI().toURL());   
+                        urls.add(f.toURI().toURL());
                     }
                     catch (Exception e)
                     {
@@ -170,15 +181,17 @@ public class AntWebAppContext extends WebAppContext
                     }
                 }
             }
-            
+
             //add in any that may have been added to us as a URL directly
             URL[] ourURLS = super.getURLs();
             if (ourURLS != null)
             {
-                for (URL u:ourURLS)
+                for (URL u : ourURLS)
+                {
                     urls.add(u);
+                }
             }
-            
+
             return urls.toArray(new URL[urls.size()]);
         }
 
@@ -186,12 +199,6 @@ public class AntWebAppContext extends WebAppContext
         protected Class<?> findClass(String name) throws ClassNotFoundException
         {
             return super.findClass(name);
-        }
-
-        @Override
-        protected Package definePackage(String name, Manifest man, URL url) throws IllegalArgumentException
-        {
-            return super.definePackage(name, man, url);
         }
 
         @Override
@@ -243,6 +250,12 @@ public class AntWebAppContext extends WebAppContext
         }
 
         @Override
+        protected Package definePackage(String name, Manifest man, URL url) throws IllegalArgumentException
+        {
+            return super.definePackage(name, man, url);
+        }
+
+        @Override
         protected Package definePackage(String name, String specTitle, String specVersion, String specVendor, String implTitle, String implVersion,
                                         String implVendor, URL sealBase) throws IllegalArgumentException
         {
@@ -285,12 +298,9 @@ public class AntWebAppContext extends WebAppContext
             super.clearAssertionStatus();
         }
     }
-    
-    
+
     /**
      * AntServletHolder
-     *
-     *
      */
     public static class AntServletHolder extends ServletHolder
     {
@@ -300,33 +310,29 @@ public class AntWebAppContext extends WebAppContext
             super();
         }
 
-
         public AntServletHolder(Class<? extends Servlet> servlet)
         {
             super(servlet);
         }
-
 
         public AntServletHolder(Servlet servlet)
         {
             super(servlet);
         }
 
-
         public AntServletHolder(String name, Class<? extends Servlet> servlet)
         {
             super(name, servlet);
         }
-
 
         public AntServletHolder(String name, Servlet servlet)
         {
             super(name, servlet);
         }
 
-        protected String getSystemClassPath (ClassLoader loader) throws Exception
+        protected String getSystemClassPath(ClassLoader loader) throws Exception
         {
-            StringBuilder classpath=new StringBuilder();
+            StringBuilder classpath = new StringBuilder();
             while (loader != null)
             {
                 if (loader instanceof URLClassLoader)
@@ -334,13 +340,13 @@ public class AntWebAppContext extends WebAppContext
                     URL[] urls = ((URLClassLoader)loader).getURLs();
                     if (urls != null)
                     {
-                        for (int i=0;i<urls.length;i++)
+                        for (int i = 0; i < urls.length; i++)
                         {
                             Resource resource = Resource.newResource(urls[i]);
-                            File file=resource.getFile();
-                            if (file!=null && file.exists())
+                            File file = resource.getFile();
+                            if (file != null && file.exists())
                             {
-                                if (classpath.length()>0)
+                                if (classpath.length() > 0)
                                     classpath.append(File.pathSeparatorChar);
                                 classpath.append(file.getAbsolutePath());
                             }
@@ -357,15 +363,10 @@ public class AntWebAppContext extends WebAppContext
 
             return classpath.toString();
         }
-
     }
 
-    
-    
     /**
      * AntServletHandler
-     *
-     *
      */
     public static class AntServletHandler extends ServletHandler
     {
@@ -375,10 +376,7 @@ public class AntWebAppContext extends WebAppContext
         {
             return new AntServletHolder();
         }
-
     }
-
-
 
     /**
      * Default constructor. Takes project as an argument
@@ -392,12 +390,12 @@ public class AntWebAppContext extends WebAppContext
         this.project = project;
         setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN);
         setParentLoaderPriority(true);
-        addConfiguration(new AntWebInfConfiguration(),new AntWebXmlConfiguration(),new AntMetaInfConfiguration());
+        addConfiguration(new AntWebInfConfiguration(), new AntWebXmlConfiguration(), new AntMetaInfConfiguration());
     }
-    
 
     /**
      * Adds a new Ant's attributes tag object if it have not been created yet.
+     *
      * @param atts the attributes
      */
     public void addAttributes(Attributes atts)
@@ -410,19 +408,15 @@ public class AntWebAppContext extends WebAppContext
         this.attributes = atts;
     }
 
-    
     public void addLib(FileSet lib)
     {
         libraries.add(lib);
     }
 
-
     public void addClasses(FileSet classes)
     {
         this.classes.add(classes);
     }
-    
-    
 
     @Override
     protected ServletHandler newServletHandler()
@@ -430,27 +424,22 @@ public class AntWebAppContext extends WebAppContext
         return new AntServletHandler();
     }
 
-
     public void setJettyEnvXml(File jettyEnvXml)
     {
         this.jettyEnvXml = jettyEnvXml;
         TaskLog.log("jetty-env.xml file: = " + (jettyEnvXml == null ? null : jettyEnvXml.getAbsolutePath()));
     }
 
-    public File getJettyEnvXml ()
+    public File getJettyEnvXml()
     {
         return this.jettyEnvXml;
     }
-
-    
-
 
     public List<File> getLibraries()
     {
         return librariesConfiguration.getBaseDirectories();
     }
 
- 
     public void addScanTargets(FileSet scanTargets)
     {
         if (this.scanTargets != null)
@@ -460,39 +449,36 @@ public class AntWebAppContext extends WebAppContext
 
         this.scanTargets = scanTargets;
     }
-    
-    public List<File> getScanTargetFiles () 
+
+    public List<File> getScanTargetFiles()
     {
         if (this.scanTargets == null)
             return null;
-        
-      
+
         FileMatchingConfiguration configuration = new FileMatchingConfiguration();
         configuration.addDirectoryScanner(scanTargets.getDirectoryScanner(project));
         return configuration.getBaseDirectories();
     }
-    
+
     public List<File> getScanFiles()
     {
         if (scanFiles == null)
             scanFiles = initScanFiles();
         return scanFiles;
     }
-    
-    
-    public boolean isScanned (File file)
+
+    public boolean isScanned(File file)
     {
-       List<File> files = getScanFiles();
-       if (files == null || files.isEmpty())
-           return false;
-       return files.contains(file);
+        List<File> files = getScanFiles();
+        if (files == null || files.isEmpty())
+            return false;
+        return files.contains(file);
     }
-    
-    
-    public List<File> initScanFiles ()
+
+    public List<File> initScanFiles()
     {
         List<File> scanList = new ArrayList<File>();
-        
+
         if (getDescriptor() != null)
         {
             try (Resource r = Resource.newResource(getDescriptor());)
@@ -522,7 +508,7 @@ public class AntWebAppContext extends WebAppContext
             try (Resource r = Resource.newResource(getDefaultsDescriptor());)
             {
                 if (!WebAppContext.WEB_DEFAULTS_XML.equals(getDefaultsDescriptor()))
-                {   
+                {
                     scanList.add(r.getFile());
                 }
             }
@@ -549,17 +535,15 @@ public class AntWebAppContext extends WebAppContext
         List<File> cpFiles = getClassPathFiles();
         if (cpFiles != null)
             scanList.addAll(cpFiles);
-        
+
         //any extra scan targets
         List<File> scanFiles = (List<File>)getScanTargetFiles();
         if (scanFiles != null)
             scanList.addAll(scanFiles);
-        
+
         return scanList;
     }
-    
-    
-    
+
     @Override
     public void setWar(String path)
     {
@@ -580,20 +564,19 @@ public class AntWebAppContext extends WebAppContext
         }
     }
 
-
     /**
-     * 
+     *
      */
     @Override
     public void doStart()
     {
         try
         {
-            TaskLog.logWithTimestamp("Starting web application "+this.getDescriptor());
-            
+            TaskLog.logWithTimestamp("Starting web application " + this.getDescriptor());
+
             if (jettyEnvXml != null && jettyEnvXml.exists())
-                getConfiguration(EnvConfiguration.class).setJettyEnvXml(Resource.toURL(jettyEnvXml));
-            
+                getConfiguration(EnvConfiguration.class).setJettyEnvResource(new PathResource(jettyEnvXml));
+
             ClassLoader parentLoader = this.getClass().getClassLoader();
             if (parentLoader instanceof AntClassLoader)
                 parentLoader = new AntURLClassLoader((AntClassLoader)parentLoader);
@@ -601,18 +584,20 @@ public class AntWebAppContext extends WebAppContext
             setClassLoader(new WebAppClassLoader(parentLoader, this));
             if (attributes != null && attributes.getAttributes() != null)
             {
-                for (Attribute a:attributes.getAttributes())
+                for (Attribute a : attributes.getAttributes())
+                {
                     setAttribute(a.getName(), a.getValue());
+                }
             }
-            
+
             //apply a context xml file if one was supplied
             if (contextXml != null)
             {
-                XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(contextXml));
-                TaskLog.log("Applying context xml file "+contextXml);
-                xmlConfiguration.configure(this);   
+                XmlConfiguration xmlConfiguration = new XmlConfiguration(new PathResource(contextXml));
+                TaskLog.log("Applying context xml file " + contextXml);
+                xmlConfiguration.configure(this);
             }
-            
+
             super.doStart();
         }
         catch (Exception e)
@@ -627,7 +612,7 @@ public class AntWebAppContext extends WebAppContext
         try
         {
             scanFiles = null;
-            TaskLog.logWithTimestamp("Stopping web application "+this);
+            TaskLog.logWithTimestamp("Stopping web application " + this);
             Thread.currentThread().sleep(500L);
             super.doStop();
             //remove all filters, servlets and listeners. They will be recreated
@@ -648,8 +633,6 @@ public class AntWebAppContext extends WebAppContext
         }
     }
 
-
-    
     /**
      * @return a list of classpath files (libraries and class directories).
      */
@@ -676,15 +659,13 @@ public class AntWebAppContext extends WebAppContext
             }
         }
 
-
         return classPathFiles;
     }
 
-    
     /**
      * @return a <code>FileMatchingConfiguration</code> object describing the
-     *         configuration of all libraries added to this particular web app
-     *         (both classes and libraries).
+     * configuration of all libraries added to this particular web app
+     * (both classes and libraries).
      */
     public FileMatchingConfiguration getLibrariesConfiguration()
     {
@@ -707,16 +688,13 @@ public class AntWebAppContext extends WebAppContext
         return config;
     }
 
-
     public File getContextXml()
     {
         return contextXml;
     }
 
-
     public void setContextXml(File contextXml)
     {
         this.contextXml = contextXml;
     }
-    
 }

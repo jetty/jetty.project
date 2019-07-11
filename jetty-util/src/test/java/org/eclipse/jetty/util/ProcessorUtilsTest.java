@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.util;
 
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import org.junit.jupiter.api.Test;
 
 public class ProcessorUtilsTest
 {
@@ -48,7 +47,7 @@ public class ProcessorUtilsTest
         int original = ProcessorUtils.availableProcessors();
         try
         {
-            assertThrows(IllegalArgumentException.class, ()-> ProcessorUtils.setAvailableProcessors(0));
+            assertThrows(IllegalArgumentException.class, () -> ProcessorUtils.setAvailableProcessors(0));
 
             int processors = 42;
             ProcessorUtils.setAvailableProcessors(processors);

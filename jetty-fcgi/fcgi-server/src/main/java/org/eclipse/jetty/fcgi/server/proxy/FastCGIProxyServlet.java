@@ -24,7 +24,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -51,18 +50,18 @@ import org.eclipse.jetty.util.ProcessorUtils;
  * <p>
  * This servlet accepts two additional init-params:
  * <ul>
- *     <li>{@code scriptRoot}, mandatory, that must be set to the directory where
- *     the application that must be served via FastCGI is installed and corresponds to
- *     the FastCGI DOCUMENT_ROOT parameter</li>
- *     <li>{@code scriptPattern}, optional, defaults to {@code (.+?\.php)},
- *     that specifies a regular expression with at least 1 and at most 2 groups that specify
- *     respectively:
- *     <ul>
- *         <li>the FastCGI SCRIPT_NAME parameter</li>
- *         <li>the FastCGI PATH_INFO parameter</li>
- *     </ul></li>
- *     <li>{@code fastCGI.HTTPS}, optional, defaults to false, that specifies whether
- *     to force the FastCGI {@code HTTPS} parameter to the value {@code on}</li>
+ * <li>{@code scriptRoot}, mandatory, that must be set to the directory where
+ * the application that must be served via FastCGI is installed and corresponds to
+ * the FastCGI DOCUMENT_ROOT parameter</li>
+ * <li>{@code scriptPattern}, optional, defaults to {@code (.+?\.php)},
+ * that specifies a regular expression with at least 1 and at most 2 groups that specify
+ * respectively:
+ * <ul>
+ * <li>the FastCGI SCRIPT_NAME parameter</li>
+ * <li>the FastCGI PATH_INFO parameter</li>
+ * </ul></li>
+ * <li>{@code fastCGI.HTTPS}, optional, defaults to false, that specifies whether
+ * to force the FastCGI {@code HTTPS} parameter to the value {@code on}</li>
  * </ul>
  *
  * @see TryFilesFilter
@@ -112,7 +111,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         String scriptRoot = config.getInitParameter(SCRIPT_ROOT_INIT_PARAM);
         if (scriptRoot == null)
             throw new IllegalArgumentException("Mandatory parameter '" + SCRIPT_ROOT_INIT_PARAM + "' not configured");
-        int selectors = Math.max( 1, ProcessorUtils.availableProcessors() / 2);
+        int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
         String value = config.getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
@@ -257,11 +256,13 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             {
                 TreeMap<String, String> fcgi = new TreeMap<>();
                 for (HttpField field : fastCGIHeaders)
+                {
                     fcgi.put(field.getName(), field.getValue());
+                }
                 String eol = System.lineSeparator();
                 _log.debug("FastCGI variables{}{}", eol, fcgi.entrySet().stream()
-                        .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
-                        .collect(Collectors.joining(eol)));
+                    .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
+                    .collect(Collectors.joining(eol)));
             }
         }
     }

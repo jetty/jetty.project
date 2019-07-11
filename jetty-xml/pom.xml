@@ -1,6 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
@@ -29,10 +27,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Require-Capability>osgi.serviceloader;
-              filter:="(osgi.serviceloader=org.eclipse.jetty.xml.ConfigurationProcessorFactory)";resolution:=optional;cardinality:=multiple,
-              osgi.extender;
-              filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
+            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.xml.ConfigurationProcessorFactory)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
             </Require-Capability>
           </instructions>
         </configuration>

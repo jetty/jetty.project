@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
 
 /**
@@ -41,7 +42,7 @@ public class ContainerEndpoint extends AbstractCloseEndpoint
     @Override
     public void onWebSocketText(String message)
     {
-        LOG.debug("onWebSocketText({})",message);
+        LOG.debug("onWebSocketText({})", message);
         if (message.equalsIgnoreCase("openSessions"))
         {
             Collection<Session> sessions = container.getOpenSessions();
@@ -53,15 +54,15 @@ public class ContainerEndpoint extends AbstractCloseEndpoint
             {
                 ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
             }
-            session.getRemote().sendStringByFuture(ret.toString());
+            session.getRemote().sendString(ret.toString(), WriteCallback.NOOP);
         }
-        session.close(StatusCode.NORMAL,"ContainerEndpoint");
+        session.close(StatusCode.NORMAL, "ContainerEndpoint");
     }
 
     @Override
     public void onWebSocketConnect(Session sess)
     {
-        LOG.debug("onWebSocketConnect({})",sess);
+        LOG.debug("onWebSocketConnect({})", sess);
         this.session = sess;
     }
 }

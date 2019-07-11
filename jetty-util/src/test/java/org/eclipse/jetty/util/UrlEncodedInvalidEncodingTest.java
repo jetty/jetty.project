@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.stream.Stream;
@@ -29,19 +26,22 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class UrlEncodedInvalidEncodingTest
 {
     public static Stream<Arguments> data()
     {
         ArrayList<Arguments> data = new ArrayList<>();
-        data.add(Arguments.of( "Name=xx%zzyy", UTF_8, IllegalArgumentException.class ));
-        data.add(Arguments.of( "Name=%FF%FF%FF", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "Name=%EF%EF%EF", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "Name=%E%F%F", UTF_8, IllegalArgumentException.class ));
-        data.add(Arguments.of( "Name=x%", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "Name=x%2", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "Name=xxx%", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "name=X%c0%afZ", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
+        data.add(Arguments.of("Name=xx%zzyy", UTF_8, IllegalArgumentException.class));
+        data.add(Arguments.of("Name=%FF%FF%FF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("Name=%EF%EF%EF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("Name=%E%F%F", UTF_8, IllegalArgumentException.class));
+        data.add(Arguments.of("Name=x%", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("Name=x%2", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("Name=xxx%", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("name=X%c0%afZ", UTF_8, Utf8Appendable.NotUtf8Exception.class));
         return data.stream();
     }
 
@@ -49,7 +49,8 @@ public class UrlEncodedInvalidEncodingTest
     @MethodSource("data")
     public void testDecode(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
     {
-        assertThrows(expectedThrowable, ()->{
+        assertThrows(expectedThrowable, () ->
+        {
             UrlEncoded url_encoded = new UrlEncoded();
             url_encoded.decode(inputString, charset);
         });
@@ -59,9 +60,10 @@ public class UrlEncodedInvalidEncodingTest
     @MethodSource("data")
     public void testDecodeUtf8ToMap(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
     {
-        assertThrows(expectedThrowable, ()->{
+        assertThrows(expectedThrowable, () ->
+        {
             MultiMap<String> map = new MultiMap<>();
-            UrlEncoded.decodeUtf8To(inputString,map);
+            UrlEncoded.decodeUtf8To(inputString, map);
         });
     }
 
@@ -69,9 +71,10 @@ public class UrlEncodedInvalidEncodingTest
     @MethodSource("data")
     public void testDecodeTo(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
     {
-        assertThrows(expectedThrowable, ()->{
+        assertThrows(expectedThrowable, () ->
+        {
             MultiMap<String> map = new MultiMap<>();
-            UrlEncoded.decodeTo(inputString,map,charset);
+            UrlEncoded.decodeTo(inputString, map, charset);
         });
     }
 }

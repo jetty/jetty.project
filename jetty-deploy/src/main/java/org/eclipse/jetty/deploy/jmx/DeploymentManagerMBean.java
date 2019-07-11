@@ -42,7 +42,7 @@ public class DeploymentManagerMBean extends ObjectMBean
     public DeploymentManagerMBean(Object managedObject)
     {
         super(managedObject);
-        _manager = (DeploymentManager) managedObject;
+        _manager = (DeploymentManager)managedObject;
     }
 
     @ManagedAttribute(value = "list apps being tracked")
@@ -54,12 +54,6 @@ public class DeploymentManagerMBean extends ObjectMBean
             ret.add(toRef(entry.getApp()));
         }
         return ret;
-    }
-
-    @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
-    public Collection<String> getNodes()
-    {
-        return _manager.getNodes().stream().map(Node::getName).collect(Collectors.toList());
     }
 
     @ManagedOperation(value = "list apps that are located at specified App LifeCycle nodes", impact = "ACTION")
@@ -82,6 +76,12 @@ public class DeploymentManagerMBean extends ObjectMBean
         return ret;
     }
 
+    @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
+    public Collection<String> getNodes()
+    {
+        return _manager.getNodes().stream().map(Node::getName).collect(Collectors.toList());
+    }
+
     private String toRef(App app)
     {
         return String.format("originId=%s,contextPath=%s,appProvider=%s", app.getContextPath(), app.getOriginId(), app.getAppProvider().getClass().getName());
@@ -91,7 +91,9 @@ public class DeploymentManagerMBean extends ObjectMBean
     {
         List<ContextHandler> apps = new ArrayList<ContextHandler>();
         for (App app : _manager.getApps())
+        {
             apps.add(app.getContextHandler());
+        }
         return apps;
     }
 

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.nio.ByteBuffer;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -55,10 +54,9 @@ public class StatisticsServletTest
     public void createServer()
     {
         _server = new Server();
-        _connector = new LocalConnector( _server );
-        _server.addConnector( _connector );
+        _connector = new LocalConnector(_server);
+        _server.addConnector(_connector);
     }
-
 
     @AfterEach
     public void destroyServer()
@@ -75,84 +73,81 @@ public class StatisticsServletTest
         StatisticsHandler statsHandler = new StatisticsHandler();
         _server.setHandler(statsHandler);
         ServletContextHandler statsContext = new ServletContextHandler(statsHandler, "/");
-        statsContext.addServlet( new ServletHolder( new TestServlet() ), "/test1" );
-        ServletHolder servletHolder = new ServletHolder( new StatisticsServlet() );
-        servletHolder.setInitParameter( "restrictToLocalhost", "false" );
-        statsContext.addServlet( servletHolder, "/stats" );
-        statsContext.setSessionHandler( new SessionHandler() );
+        statsContext.addServlet(new ServletHolder(new TestServlet()), "/test1");
+        ServletHolder servletHolder = new ServletHolder(new StatisticsServlet());
+        servletHolder.setInitParameter("restrictToLocalhost", "false");
+        statsContext.addServlet(servletHolder, "/stats");
+        statsContext.setSessionHandler(new SessionHandler());
         _server.start();
 
-        getResponse("/test1" );
-        String response = getResponse("/stats?xml=true" );
-        Stats stats = parseStats( response );
+        getResponse("/test1");
+        String response = getResponse("/stats?xml=true");
+        Stats stats = parseStats(response);
 
         assertEquals(1, stats.responses2xx);
 
-        getResponse("/stats?statsReset=true" );
-        response = getResponse("/stats?xml=true" );
-        stats = parseStats( response );
+        getResponse("/stats?statsReset=true");
+        response = getResponse("/stats?xml=true");
+        stats = parseStats(response);
 
         assertEquals(1, stats.responses2xx);
 
-        getResponse("/test1" );
-        getResponse("/nothing" );
-        response = getResponse("/stats?xml=true" );
-        stats = parseStats( response );
+        getResponse("/test1");
+        getResponse("/nothing");
+        response = getResponse("/stats?xml=true");
+        stats = parseStats(response);
 
         assertThat("2XX Response Count" + response, stats.responses2xx, is(3));
         assertThat("4XX Response Count" + response, stats.responses4xx, is(1));
     }
 
-    public String getResponse( String path )
+    public String getResponse(String path)
         throws Exception
     {
         HttpTester.Request request = new HttpTester.Request();
-        request.setMethod( "GET" );
-        request.setURI( path );
-        request.setVersion( HttpVersion.HTTP_1_1 );
-        request.setHeader( "Host", "test" );
+        request.setMethod("GET");
+        request.setURI(path);
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = _connector.getResponse( request.generate() );
-        return HttpTester.parseResponse( responseBuffer ).getContent();
+        ByteBuffer responseBuffer = _connector.getResponse(request.generate());
+        return HttpTester.parseResponse(responseBuffer).getContent();
     }
 
-
-    public Stats parseStats( String xml )
+    public Stats parseStats(String xml)
         throws Exception
     {
         XPath xPath = XPathFactory.newInstance().newXPath();
 
-        String responses4xx = xPath.evaluate( "//responses4xx", new InputSource( new StringReader( xml ) ) );
+        String responses4xx = xPath.evaluate("//responses4xx", new InputSource(new StringReader(xml)));
 
-        String responses2xx = xPath.evaluate( "//responses2xx", new InputSource( new StringReader( xml ) ) );
+        String responses2xx = xPath.evaluate("//responses2xx", new InputSource(new StringReader(xml)));
 
-        return new Stats(Integer.parseInt( responses2xx), Integer.parseInt( responses4xx ));
+        return new Stats(Integer.parseInt(responses2xx), Integer.parseInt(responses4xx));
     }
 
     public static class Stats
     {
-        int responses2xx,responses4xx;
+        int responses2xx, responses4xx;
 
-        public Stats( int responses2xx, int responses4xx )
+        public Stats(int responses2xx, int responses4xx)
         {
             this.responses2xx = responses2xx;
             this.responses4xx = responses4xx;
         }
     }
 
-
     public static class TestServlet
         extends HttpServlet
     {
 
         @Override
-        protected void doGet( HttpServletRequest req, HttpServletResponse resp )
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
         {
-            resp.setStatus( HttpServletResponse.SC_OK );
+            resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter writer = resp.getWriter();
-            writer.write( "Yup!!" );
+            writer.write("Yup!!");
         }
     }
-
 }

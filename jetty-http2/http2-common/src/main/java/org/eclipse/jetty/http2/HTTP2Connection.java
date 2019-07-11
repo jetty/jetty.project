@@ -44,10 +44,10 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 public class HTTP2Connection extends AbstractConnection implements WriteFlusher.Listener
 {
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
-    
+
     // TODO remove this once we are sure EWYK is OK for http2
     private static final boolean PEC_MODE = Boolean.getBoolean("org.eclipse.jetty.http2.PEC_MODE");
-    
+
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
@@ -163,6 +163,14 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             produce();
     }
 
+    private void offerTask(Runnable task)
+    {
+        synchronized (this)
+        {
+            tasks.offer(task);
+        }
+    }
+
     protected void produce()
     {
         if (LOG.isDebugEnabled())
@@ -183,14 +191,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         // We don't call super from here, otherwise we close the
         // endPoint and we're not able to read or write anymore.
         session.close(ErrorCode.NO_ERROR.code, "close", Callback.NOOP);
-    }
-
-    private void offerTask(Runnable task)
-    {
-        synchronized (this)
-        {
-            tasks.offer(task);
-        }
     }
 
     private Runnable pollTask()
@@ -389,7 +389,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     {
         private NetworkBuffer()
         {
-            super(byteBufferPool,bufferSize,false);
+            super(byteBufferPool, bufferSize, false);
         }
 
         private void put(ByteBuffer source)

@@ -29,21 +29,21 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class DumpableTest
 {
     @Test
-    public void testNullDumpableCollection () throws Exception
+    public void testNullDumpableCollection() throws Exception
     {
         DumpableCollection dc = new DumpableCollection("null test", null);
         String dump = dc.dump();
         assertThat(dump, Matchers.containsString("size=0"));
     }
-    
+
     @Test
-    public void testNonNullDumpableCollection () throws Exception
+    public void testNonNullDumpableCollection() throws Exception
     {
         Collection<String> collection = new ArrayList<>();
         collection.add("one");
         collection.add("two");
         collection.add("three");
-        
+
         DumpableCollection dc = new DumpableCollection("non null test", collection);
         String dump = dc.dump();
         assertThat(dump, Matchers.containsString("one"));

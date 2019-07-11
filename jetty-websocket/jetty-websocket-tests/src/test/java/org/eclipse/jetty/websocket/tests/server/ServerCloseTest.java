@@ -38,8 +38,8 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +67,6 @@ public class ServerCloseTest
         server = new Server();
 
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
@@ -90,7 +89,7 @@ public class ServerCloseTest
         handlers.addHandler(new DefaultHandler());
 
         server.setHandler(handlers);
-        JettyWebSocketServletContainerInitializer.configureContext(context);
+        JettyWebSocketServletContainerInitializer.configure(context, null);
 
         server.start();
     }
@@ -173,7 +172,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketCoreSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(WebSocketCoreSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -212,7 +211,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 
@@ -231,7 +230,6 @@ public class ServerCloseTest
             close(session);
         }
     }
-
 
     /**
      * Test session open session cleanup (bug #474936)
@@ -253,7 +251,7 @@ public class ServerCloseTest
         Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
 
         Session session = null;
-        try(StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
             session = futSession.get(5, SECONDS);
 

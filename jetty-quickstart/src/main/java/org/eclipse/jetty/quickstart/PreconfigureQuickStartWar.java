@@ -30,8 +30,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class PreconfigureQuickStartWar
 {
     private static final Logger LOG = Log.getLogger(PreconfigureQuickStartWar.class);
-    static final boolean ORIGIN=LOG.isDebugEnabled();
-    
+    static final boolean ORIGIN = LOG.isDebugEnabled();
+
     public static void main(String... args) throws Exception
     {
         Resource war = null;
@@ -74,8 +74,7 @@ public class PreconfigureQuickStartWar
                 break;
         }
 
-        
-        preconfigure(war,dir,xml);
+        preconfigure(war, dir, xml);
     }
 
     /**
@@ -84,7 +83,7 @@ public class PreconfigureQuickStartWar
      * @param xml A context XML to apply (or null if none)
      * @throws Exception if unable to pre configure
      */
-    public static void preconfigure(Resource war, Resource dir, Resource xml) throws Exception 
+    public static void preconfigure(Resource war, Resource dir, Resource xml) throws Exception
     {
         // Do we need to unpack a war?
         if (war != null)
@@ -96,7 +95,7 @@ public class PreconfigureQuickStartWar
                 dir.getFile().mkdirs();
             JarResource.newJarResource(war).copyTo(dir.getFile());
         }
-        
+
         final Server server = new Server();
 
         QuickStartWebApp webapp = new QuickStartWebApp();
@@ -104,8 +103,8 @@ public class PreconfigureQuickStartWar
         if (xml != null)
         {
             if (xml.isDirectory() || !xml.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
-                error("Bad context.xml: "+xml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(xml.getURI());
+                error("Bad context.xml: " + xml);
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(xml);
             xmlConfiguration.configure(webapp);
         }
         webapp.setResourceBase(dir.getFile().getAbsolutePath());
@@ -124,5 +123,4 @@ public class PreconfigureQuickStartWar
         System.err.println("       java -jar PreconfigureQuickStartWar.jar <war-file> <target-war-directory> <context-xml-file>");
         System.exit(1);
     }
-
 }

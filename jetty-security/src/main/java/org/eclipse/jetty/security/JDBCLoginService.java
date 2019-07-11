@@ -28,19 +28,16 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-
 import javax.servlet.ServletRequest;
 
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
 
-/* ------------------------------------------------------------ */
 /**
- * HashMapped User Realm with JDBC as data source. 
+ * HashMapped User Realm with JDBC as data source.
  * The {@link #login(String, Object, ServletRequest)} method checks the inherited Map for the user. If the user is not
  * found, it will fetch details from the database and populate the inherited
  * Map. It then calls the superclass {@link #login(String, Object, ServletRequest)} method to perform the actual
@@ -48,7 +45,7 @@ import org.eclipse.jetty.util.security.Credential;
  * internal hashes are cleared. Caching can be disabled by setting cache refresh
  * interval to zero. Uses one database connection that is initialized at
  * startup. Reconnect on failures.
- * <p> 
+ * <p>
  * An example properties file for configuration is in
  * <code>${jetty.home}/etc/jdbcRealm.properties</code>
  */
@@ -68,49 +65,43 @@ public class JDBCLoginService extends AbstractLoginService
     protected String _userSql;
     protected String _roleSql;
 
-    
     /**
      * JDBCKnownUser
      */
     public class JDBCUserPrincipal extends UserPrincipal
     {
         int _userKey;
-        
+
         public JDBCUserPrincipal(String name, Credential credential, int key)
         {
             super(name, credential);
             _userKey = key;
         }
-        
-        
-        public int getUserKey ()
+
+        public int getUserKey()
         {
             return _userKey;
         }
     }
 
-    /* ------------------------------------------------------------ */
     public JDBCLoginService()
         throws IOException
     {
     }
-    
-    /* ------------------------------------------------------------ */
+
     public JDBCLoginService(String name)
         throws IOException
     {
         setName(name);
     }
-    
-    /* ------------------------------------------------------------ */
+
     public JDBCLoginService(String name, String config)
         throws IOException
     {
         setName(name);
         setConfig(config);
     }
-    
-    /* ------------------------------------------------------------ */
+
     public JDBCLoginService(String name, IdentityService identityService, String config)
         throws IOException
     {
@@ -119,8 +110,6 @@ public class JDBCLoginService extends AbstractLoginService
         setConfig(config);
     }
 
-
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
@@ -134,67 +123,53 @@ public class JDBCLoginService extends AbstractLoginService
         _url = properties.getProperty("url");
         _userName = properties.getProperty("username");
         _password = properties.getProperty("password");
-        String _userTable = properties.getProperty("usertable");
         _userTableKey = properties.getProperty("usertablekey");
-        String _userTableUserField = properties.getProperty("usertableuserfield");
         _userTablePasswordField = properties.getProperty("usertablepasswordfield");
-        String _roleTable = properties.getProperty("roletable");
-        String _roleTableKey = properties.getProperty("roletablekey");
         _roleTableRoleField = properties.getProperty("roletablerolefield");
-        String _userRoleTable = properties.getProperty("userroletable");
-        String _userRoleTableUserKey = properties.getProperty("userroletableuserkey");
-        String _userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
-      
 
-        if (_jdbcDriver == null || _jdbcDriver.equals("")
-            || _url == null
-            || _url.equals("")
-            || _userName == null
-            || _userName.equals("")
-            || _password == null)
+        final String userTable = properties.getProperty("usertable");
+        final String userTableUserField = properties.getProperty("usertableuserfield");
+        final String roleTable = properties.getProperty("roletable");
+        final String roleTableKey = properties.getProperty("roletablekey");
+        final String userRoleTable = properties.getProperty("userroletable");
+        final String userRoleTableUserKey = properties.getProperty("userroletableuserkey");
+        final String userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
+
+        if (_jdbcDriver == null || _jdbcDriver.equals("") ||
+            _url == null || _url.equals("") ||
+            _userName == null || _userName.equals("") ||
+            _password == null)
         {
             LOG.warn("UserRealm " + getName() + " has not been properly configured");
         }
 
-        _userSql = "select " + _userTableKey + "," + _userTablePasswordField + " from " + _userTable + " where " + _userTableUserField + " = ?";
-        _roleSql = "select r." + _roleTableRoleField
-                   + " from "
-                   + _roleTable
-                   + " r, "
-                   + _userRoleTable
-                   + " u where u."
-                   + _userRoleTableUserKey
-                   + " = ?"
-                   + " and r."
-                   + _roleTableKey
-                   + " = u."
-                   + _userRoleTableRoleKey;
-        
+        _userSql = "select " + _userTableKey + "," + _userTablePasswordField + " from " + userTable + " where " + userTableUserField + " = ?";
+        _roleSql = "select r." + _roleTableRoleField +
+            " from " + roleTable + " r, " + userRoleTable +
+            " u where u." + userRoleTableUserKey + " = ?" +
+            " and r." + roleTableKey + " = u." + userRoleTableRoleKey;
+
         Loader.loadClass(_jdbcDriver).getDeclaredConstructor().newInstance();
         super.doStart();
     }
 
-
-    /* ------------------------------------------------------------ */
     public String getConfig()
     {
         return _config;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Load JDBC connection configuration from properties file.
-     * 
+     *
      * @param config Filename or url of user properties file.
      */
     public void setConfig(String config)
-    {        
+    {
         if (isRunning())
             throw new IllegalStateException("Running");
-        _config=config;
+        _config = config;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * (re)Connect to database with parameters setup by loadConfig()
      */
@@ -215,19 +190,15 @@ public class JDBCLoginService extends AbstractLoginService
         }
     }
 
- 
-    
-
-    /* ------------------------------------------------------------ */
     @Override
-    public UserPrincipal loadUserInfo (String username)
+    public UserPrincipal loadUserInfo(String username)
     {
         try
         {
-            if (null == _con) 
+            if (null == _con)
                 connectDatabase();
 
-            if (null == _con) 
+            if (null == _con)
                 throw new SQLException("Can't connect to database");
 
             try (PreparedStatement stat1 = _con.prepareStatement(_userSql))
@@ -240,7 +211,7 @@ public class JDBCLoginService extends AbstractLoginService
                         int key = rs1.getInt(_userTableKey);
                         String credentials = rs1.getString(_userTablePasswordField);
 
-                        return new JDBCUserPrincipal (username, Credential.getCredential(credentials), key);
+                        return new JDBCUserPrincipal(username, Credential.getCredential(credentials), key);
                     }
                 }
             }
@@ -250,26 +221,23 @@ public class JDBCLoginService extends AbstractLoginService
             LOG.warn("UserRealm " + getName() + " could not load user information from database", e);
             closeConnection();
         }
-        
+
         return null;
     }
 
-    
-    /* ------------------------------------------------------------ */
     @Override
-    public String[] loadRoleInfo (UserPrincipal user)
+    public String[] loadRoleInfo(UserPrincipal user)
     {
         JDBCUserPrincipal jdbcUser = (JDBCUserPrincipal)user;
-        
+
         try
         {
-            if (null == _con) 
+            if (null == _con)
                 connectDatabase();
 
-            if (null == _con) 
+            if (null == _con)
                 throw new SQLException("Can't connect to database");
-            
-            
+
             List<String> roles = new ArrayList<String>();
 
             try (PreparedStatement stat2 = _con.prepareStatement(_roleSql))
@@ -278,7 +246,9 @@ public class JDBCLoginService extends AbstractLoginService
                 try (ResultSet rs2 = stat2.executeQuery())
                 {
                     while (rs2.next())
+                    {
                         roles.add(rs2.getString(_roleTableRoleField));
+                    }
                     return roles.toArray(new String[roles.size()]);
                 }
             }
@@ -288,13 +258,11 @@ public class JDBCLoginService extends AbstractLoginService
             LOG.warn("UserRealm " + getName() + " could not load user information from database", e);
             closeConnection();
         }
-        
+
         return null;
     }
-    
 
-    /* ------------------------------------------------------------ */
-    /** 
+    /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
     @Override
@@ -304,16 +272,23 @@ public class JDBCLoginService extends AbstractLoginService
         super.doStop();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Close an existing connection
      */
-    private void closeConnection ()
+    private void closeConnection()
     {
         if (_con != null)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Closing db connection for JDBCUserRealm");
-            try { _con.close(); }catch (Exception e) {LOG.ignore(e);}
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing db connection for JDBCUserRealm");
+            try
+            {
+                _con.close();
+            }
+            catch (Exception e)
+            {
+                LOG.ignore(e);
+            }
         }
         _con = null;
     }

@@ -30,20 +30,22 @@ import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
-
 /*
  * Used to switch between the old and new implementation of MultiPart Form InputStream Parsing.
  * The new implementation is preferred will be used as default unless specified otherwise constructor.
  */
 public interface MultiParts extends Closeable
-{   
-    Collection<Part> getParts();
-    Part getPart(String name);
+{
+    Collection<Part> getParts() throws IOException;
+
+    Part getPart(String name) throws IOException;
+
     boolean isEmpty();
+
     ContextHandler.Context getContext();
 
     class MultiPartsHttpParser implements MultiParts
-    {   
+    {
         private final MultiPartFormInputStream _httpParser;
         private final ContextHandler.Context _context;
 
@@ -51,32 +53,18 @@ public interface MultiParts extends Closeable
         {
             _httpParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
             _context = request.getContext();
-            _httpParser.getParts();
         }
 
         @Override
-        public Collection<Part> getParts() 
+        public Collection<Part> getParts() throws IOException
         {
-            try
-            {
-                return _httpParser.getParts();
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
+            return _httpParser.getParts();
         }
 
         @Override
-        public Part getPart(String name) {
-            try
-            {
-                return _httpParser.getPart(name);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
+        public Part getPart(String name) throws IOException
+        {
+            return _httpParser.getPart(name);
         }
 
         @Override
@@ -96,6 +84,5 @@ public interface MultiParts extends Closeable
         {
             return _context;
         }
-
     }
 }

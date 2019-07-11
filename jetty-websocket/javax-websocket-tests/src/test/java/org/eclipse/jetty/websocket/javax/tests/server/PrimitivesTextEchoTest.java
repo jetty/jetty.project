@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -30,15 +39,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Test various {@link javax.websocket.Decoder.Text Decoder.Text} / {@link javax.websocket.Encoder.Text Encoder.Text} echo behavior of Java Primitives

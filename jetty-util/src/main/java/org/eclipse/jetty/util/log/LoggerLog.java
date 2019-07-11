@@ -42,21 +42,21 @@ public class LoggerLog extends AbstractLogger
         try
         {
             _logger = logger;
-            Class<?> lc = logger.getClass();
+            final Class<?> lc = logger.getClass();
             _debugMT = lc.getMethod("debug", new Class[]{String.class, Throwable.class});
             _debugMAA = lc.getMethod("debug", new Class[]{String.class, Object[].class});
             _infoMT = lc.getMethod("info", new Class[]{String.class, Throwable.class});
             _infoMAA = lc.getMethod("info", new Class[]{String.class, Object[].class});
             _warnMT = lc.getMethod("warn", new Class[]{String.class, Throwable.class});
             _warnMAA = lc.getMethod("warn", new Class[]{String.class, Object[].class});
-            Method _isDebugEnabled = lc.getMethod("isDebugEnabled");
+            final Method isDebugEnabled = lc.getMethod("isDebugEnabled");
             _setDebugEnabledE = lc.getMethod("setDebugEnabled", new Class[]{Boolean.TYPE});
             _getLoggerN = lc.getMethod("getLogger", new Class[]{String.class});
             _getName = lc.getMethod("getName");
 
-            _debug = (Boolean)_isDebugEnabled.invoke(_logger);
+            _debug = (Boolean)isDebugEnabled.invoke(_logger);
         }
-        catch(Exception x)
+        catch (Exception x)
         {
             throw new IllegalStateException(x);
         }
@@ -160,7 +160,6 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
-    
     @Override
     public void debug(String msg, Object... args)
     {
@@ -214,7 +213,7 @@ public class LoggerLog extends AbstractLogger
             e.printStackTrace();
         }
     }
-    
+
     @Override
     public void ignore(Throwable ignored)
     {
@@ -232,7 +231,7 @@ public class LoggerLog extends AbstractLogger
     {
         try
         {
-            Object logger=_getLoggerN.invoke(_logger, fullname);
+            Object logger = _getLoggerN.invoke(_logger, fullname);
             return new LoggerLog(logger);
         }
         catch (Exception e)

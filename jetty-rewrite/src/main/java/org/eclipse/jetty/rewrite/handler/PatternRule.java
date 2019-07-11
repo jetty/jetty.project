@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,28 +32,24 @@ public abstract class PatternRule extends Rule
 {
     protected String _pattern;
 
-    /* ------------------------------------------------------------ */
     protected PatternRule()
     {
     }
 
-    /* ------------------------------------------------------------ */
     protected PatternRule(String pattern)
     {
         this();
         setPattern(pattern);
     }
-    
-    /* ------------------------------------------------------------ */
+
     public String getPattern()
     {
         return _pattern;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the rule pattern.
-     * 
+     *
      * @param pattern the pattern
      */
     public void setPattern(String pattern)
@@ -62,7 +57,6 @@ public abstract class PatternRule extends Rule
         _pattern = pattern;
     }
 
-    /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#matchAndApply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
@@ -71,18 +65,19 @@ public abstract class PatternRule extends Rule
     {
         if (ServletPathSpec.match(_pattern, target))
         {
-            return apply(target,request, response);
+            return apply(target, request, response);
         }
         return null;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Apply the rule to the request
+    /**
+     * Apply the rule to the request
+     *
      * @param target field to attempt match
      * @param request request object
      * @param response response object
      * @return The target (possible updated)
-     * @throws IOException exceptions dealing with operating on request or response objects  
+     * @throws IOException exceptions dealing with operating on request or response objects
      */
     protected abstract String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException;
 
@@ -92,6 +87,6 @@ public abstract class PatternRule extends Rule
     @Override
     public String toString()
     {
-        return super.toString()+"["+_pattern+"]";                
+        return super.toString() + "[" + _pattern + "]";
     }
 }

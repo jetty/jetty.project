@@ -27,7 +27,7 @@ public final class Node
 
     public Node(String name)
     {
-        assert name!=null;
+        assert name != null;
         this._name = name;
     }
 

@@ -25,10 +25,10 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.ExecutionStrategy.Producer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.openjdk.jmh.infra.Blackhole;
-
 
 public class TestConnection implements Producer
 {
@@ -36,42 +36,43 @@ public class TestConnection implements Producer
     private final String _sessionid;
     private final boolean _sleeping;
     private final Queue<CompletableFuture<String>> _queue = new ConcurrentLinkedQueue<>();
-    
+
     public TestConnection(TestServer server, boolean sleeping)
     {
         _server = server;
-        _sessionid = "SESSION-"+server.getRandom(100000000);
+        _sessionid = "SESSION-" + server.getRandom(100000000);
         _sleeping = sleeping;
     }
-    
+
     @Override
     public Runnable produce()
     {
         CompletableFuture<String> futureResult = _queue.poll();
-        if (futureResult==null)
+        if (futureResult == null)
             return null;
-        
+
         // The map will represent the request object
-        Map<String,String> request = new HashMap<>();
-        request.put("sessionid",_sessionid);
-        
+        Map<String, String> request = new HashMap<>();
+        request.put("sessionid", _sessionid);
+
         int random = _server.getRandom(1000);
-        int uri = random%100;
-        boolean blocking = (random/10)>2;
-        int delay = (blocking && uri%4==1)?random/2:0;
-        request.put("uri",uri+".txt"); // one of 100 resources on server
-        request.put("blocking",blocking?"True":"False"); // one of 100 resources on server
-        request.put("delay",Integer.toString(delay)); // random processing delay 0-100ms on 25% of requests
+        int uri = random % 100;
+        boolean blocking = (random / 10) > 2;
+        int delay = (blocking && uri % 4 == 1) ? random / 2 : 0;
+        request.put("uri", uri + ".txt"); // one of 100 resources on server
+        request.put("blocking", blocking ? "True" : "False"); // one of 100 resources on server
+        request.put("delay", Integer.toString(delay)); // random processing delay 0-100ms on 25% of requests
         Blackhole.consumeCPU(_server.getRandom(500)); // random CPU
-        Handler handler = new Handler(request,futureResult);
+        Handler handler = new Handler(request, futureResult);
         return handler;
     }
 
     private class Handler implements Runnable, Invocable
     {
-        private final Map<String,String> _request;
+        private final Map<String, String> _request;
         private final CompletableFuture<String> _futureResult;
         private final boolean _blocking;
+
         public Handler(Map<String, String> request, CompletableFuture<String> futureResult)
         {
             _request = request;
@@ -82,7 +83,7 @@ public class TestConnection implements Producer
         @Override
         public InvocationType getInvocationType()
         {
-            return _blocking?InvocationType.BLOCKING:InvocationType.NON_BLOCKING;
+            return _blocking ? InvocationType.BLOCKING : InvocationType.NON_BLOCKING;
         }
 
         @Override
@@ -90,14 +91,14 @@ public class TestConnection implements Producer
         {
             // Build a response
             StringBuilder response = new StringBuilder(4096);
-            
+
             try
             {
                 // Get the request
                 String uri = _request.get("uri");
-                
+
                 // Obtain the session
-                Map<String,String> session = _server.getSession(_request.get("sessionid"));
+                Map<String, String> session = _server.getSession(_request.get("sessionid"));
 
                 // Check we are authenticated
                 String userid;
@@ -105,30 +106,32 @@ public class TestConnection implements Producer
                 {
                     userid = session.get("userid");
                     Blackhole.consumeCPU(100);
-                    if (userid==null)
+                    if (userid == null)
                     {
-                        userid="USER-"+Math.abs(session.hashCode());
-                        session.put("userid",userid);
+                        userid = "USER-" + Math.abs(session.hashCode());
+                        session.put("userid", userid);
                     }
                 }
 
                 // simulate processing delay, blocking, etc.
                 int delay = Integer.parseInt(_request.get("delay"));
-                if (delay>0)
+                if (delay > 0)
                 {
                     if (_sleeping)
                     {
                         try
                         {
-                            Thread.sleep(delay/8);
+                            Thread.sleep(delay / 8);
                         }
-                        catch(InterruptedException e)
-                        {}
-                    } 
+                        catch (InterruptedException e)
+                        {
+                            Log.getLogger(TestConnection.class).ignore(e);
+                        }
+                    }
                     else
-                        Blackhole.consumeCPU(delay*150);
+                        Blackhole.consumeCPU(delay * 150);
                 }
-                
+
                 // get the uri 
                 response.append("URI: ").append(uri).append(System.lineSeparator());
 
@@ -145,21 +148,21 @@ public class TestConnection implements Producer
                 {
                     response.append("contentType: ").append("dynamic").append(System.lineSeparator());
                     response.append("This is content for ").append(uri)
-                    .append(" generated for ").append(userid)
-                    .append(" with session ").append(_request.get("sessionid"))
-                    .append(" for user ").append(userid)
-                    .append(" on thread ").append(Thread.currentThread());
+                        .append(" generated for ").append(userid)
+                        .append(" with session ").append(_request.get("sessionid"))
+                        .append(" for user ").append(userid)
+                        .append(" on thread ").append(Thread.currentThread());
                 }
-                
+
                 Blackhole.consumeCPU(1000);
             }
             finally
             {
                 _futureResult.complete(response.toString());
             }
-        }      
+        }
     }
-    
+
     public void submit(CompletableFuture<String> futureResult)
     {
         _queue.offer(futureResult);

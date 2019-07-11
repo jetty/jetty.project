@@ -20,11 +20,9 @@ package org.eclipse.jetty.websocket.javax.tests.client;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.websocket.ClientEndpointConfig;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -34,8 +32,6 @@ import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
 import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseReasonSessionSocket;
 import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseReasonSocket;
@@ -56,7 +52,7 @@ public class OnCloseTest
         public static Case add(List<Case[]> data, Class<?> closeClass)
         {
             Case tcase = new Case(closeClass);
-            data.add(new Case[] { tcase });
+            data.add(new Case[]{tcase});
             return tcase;
         }
 
@@ -107,10 +103,7 @@ public class OnCloseTest
         container.start();
 
         UpgradeRequest request = new UpgradeRequestAdapter();
-        UpgradeResponse response = new UpgradeResponseAdapter();
-        CompletableFuture<Session> futureSession = new CompletableFuture<>();
-
-        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, request, response, futureSession);
+        JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, request);
         frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
 
         // Execute onClose call

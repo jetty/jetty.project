@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.security.IdentityService;
@@ -46,7 +45,7 @@ public class LoginCallbackImpl implements LoginCallback
     private String[] roles = IdentityService.NO_ROLES;
 
     //TODO could use Credential instance instead of Object if Basic/Form create a Password object
-    public LoginCallbackImpl (Subject subject, String userName, Object credential)
+    public LoginCallbackImpl(Subject subject, String userName, Object credential)
     {
         this.subject = subject;
         this.userName = userName;
@@ -115,5 +114,4 @@ public class LoginCallbackImpl implements LoginCallback
             credential = null;
         }
     }
-
 }

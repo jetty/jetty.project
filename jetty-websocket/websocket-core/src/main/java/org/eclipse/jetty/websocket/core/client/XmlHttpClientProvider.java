@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
-import java.io.InputStream;
 import java.net.URL;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 class XmlHttpClientProvider implements HttpClientProvider
@@ -36,9 +36,9 @@ class XmlHttpClientProvider implements HttpClientProvider
             return null;
         }
 
-        try (InputStream in = resource.openStream())
+        try
         {
-            XmlConfiguration configuration = new XmlConfiguration(in);
+            XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(resource));
             return (HttpClient)configuration.configure();
         }
         catch (Throwable t)

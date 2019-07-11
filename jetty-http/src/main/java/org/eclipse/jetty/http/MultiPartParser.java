@@ -29,8 +29,6 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
-
 /**
  * A parser for MultiPart content type.
  *
@@ -40,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class MultiPartParser
 {
     public static final Logger LOG = Log.getLogger(MultiPartParser.class);
-        
+
     // States
     public enum FieldState
     {
@@ -50,7 +48,7 @@ public class MultiPartParser
         VALUE,
         IN_VALUE
     }
-    
+
     // States
     public enum State
     {
@@ -64,93 +62,83 @@ public class MultiPartParser
         EPILOGUE,
         END
     }
-    
-    private final static EnumSet<State> __delimiterStates = EnumSet.of(State.DELIMITER, State.DELIMITER_CLOSE, State.DELIMITER_PADDING);
-    private final static int MAX_HEADER_LINE_LENGTH = 998;
-    
-    private final boolean DEBUG = LOG.isDebugEnabled();
+
+    private static final EnumSet<State> __delimiterStates = EnumSet.of(State.DELIMITER, State.DELIMITER_CLOSE, State.DELIMITER_PADDING);
+    private static final int MAX_HEADER_LINE_LENGTH = 998;
+
+    private final boolean debugEnabled = LOG.isDebugEnabled();
     private final Handler _handler;
     private final SearchPattern _delimiterSearch;
-    
+
     private String _fieldName;
     private String _fieldValue;
-    
+
     private State _state = State.PREAMBLE;
     private FieldState _fieldState = FieldState.FIELD;
     private int _partialBoundary = 2; // No CRLF if no preamble
     private boolean _cr;
     private ByteBuffer _patternBuffer;
-    
+
     private final Utf8StringBuilder _string = new Utf8StringBuilder();
     private int _length;
-    
+
     private int _totalHeaderLineLength = -1;
-    
-    /* ------------------------------------------------------------------------------- */
+
     public MultiPartParser(Handler handler, String boundary)
     {
         _handler = handler;
-        
+
         String delimiter = "\r\n--" + boundary;
         _patternBuffer = ByteBuffer.wrap(delimiter.getBytes(StandardCharsets.US_ASCII));
         _delimiterSearch = SearchPattern.compile(_patternBuffer.array());
     }
-    
+
     public void reset()
     {
         _state = State.PREAMBLE;
         _fieldState = FieldState.FIELD;
         _partialBoundary = 2; // No CRLF if no preamble
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     public Handler getHandler()
     {
         return _handler;
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     public State getState()
     {
         return _state;
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     public boolean isState(State state)
     {
         return _state == state;
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     private static boolean hasNextByte(ByteBuffer buffer)
     {
         return BufferUtil.hasContent(buffer);
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     private HttpTokens.Token next(ByteBuffer buffer)
     {
         byte ch = buffer.get();
-
         HttpTokens.Token t = HttpTokens.TOKENS[0xff & ch];
-        
-        if (DEBUG)
-            LOG.debug("token={}",t);
-        
-        switch(t.getType())
+
+        switch (t.getType())
         {
             case CNTL:
-                throw new IllegalCharacterException(_state,t,buffer);
+                throw new IllegalCharacterException(_state, t, buffer);
 
             case LF:
-                _cr=false;
+                _cr = false;
                 break;
 
             case CR:
                 if (_cr)
                     throw new BadMessageException("Bad EOL");
 
-                _cr=true;
+                _cr = true;
                 return null;
 
             case ALPHA:
@@ -164,23 +152,21 @@ public class MultiPartParser
                 if (_cr)
                     throw new BadMessageException("Bad EOL");
                 break;
-                
+
             default:
                 break;
         }
 
         return t;
-    }    
-    
-    /* ------------------------------------------------------------------------------- */
+    }
+
     private void setString(String s)
     {
         _string.reset();
         _string.append(s);
         _length = s.length();
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     /*
      * Mime Field strings are treated as UTF-8 as per https://tools.ietf.org/html/rfc7578#section-5.1
      */
@@ -194,14 +180,12 @@ public class MultiPartParser
         _length = -1;
         return s;
     }
-    
-    /* ------------------------------------------------------------------------------- */
-    
+
     /**
      * Parse until next Event.
      *
      * @param buffer the buffer to parse
-     * @param last   whether this buffer contains last bit of content
+     * @param last whether this buffer contains last bit of content
      * @return True if an {@link RequestHandler} method was called and it returned true;
      */
     public boolean parse(ByteBuffer buffer, boolean last)
@@ -214,63 +198,64 @@ public class MultiPartParser
                 case PREAMBLE:
                     parsePreamble(buffer);
                     continue;
-                
+
                 case DELIMITER:
                 case DELIMITER_PADDING:
                 case DELIMITER_CLOSE:
                     parseDelimiter(buffer);
                     continue;
-                
+
                 case BODY_PART:
                     handle = parseMimePartHeaders(buffer);
                     break;
-                
+
                 case FIRST_OCTETS:
                 case OCTETS:
                     handle = parseOctetContent(buffer);
                     break;
-                
+
                 case EPILOGUE:
                     BufferUtil.clear(buffer);
                     break;
-                
+
                 case END:
                     handle = true;
                     break;
-                
+
                 default:
                     throw new IllegalStateException();
-                
             }
         }
-        
+
         if (last && BufferUtil.isEmpty(buffer))
         {
             if (_state == State.EPILOGUE)
             {
                 _state = State.END;
-                
+
                 if (LOG.isDebugEnabled())
                     LOG.debug("messageComplete {}", this);
-                
+
                 return _handler.messageComplete();
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("earlyEOF {}", this);
-                
+
                 _handler.earlyEOF();
                 return true;
             }
         }
-        
+
         return handle;
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     private void parsePreamble(ByteBuffer buffer)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("parsePreamble({})", BufferUtil.toDetailString(buffer));
+
         if (_partialBoundary > 0)
         {
             int partial = _delimiterSearch.startsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), _partialBoundary);
@@ -283,15 +268,15 @@ public class MultiPartParser
                     setState(State.DELIMITER);
                     return;
                 }
-                
+
                 _partialBoundary = partial;
                 BufferUtil.clear(buffer);
                 return;
             }
-            
+
             _partialBoundary = 0;
         }
-        
+
         int delimiter = _delimiterSearch.match(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         if (delimiter >= 0)
         {
@@ -299,31 +284,33 @@ public class MultiPartParser
             setState(State.DELIMITER);
             return;
         }
-        
+
         _partialBoundary = _delimiterSearch.endsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         BufferUtil.clear(buffer);
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     private void parseDelimiter(ByteBuffer buffer)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("parseDelimiter({})", BufferUtil.toDetailString(buffer));
+
         while (__delimiterStates.contains(_state) && hasNextByte(buffer))
         {
             HttpTokens.Token t = next(buffer);
             if (t == null)
                 return;
-            
-            if (t.getType()==HttpTokens.Type.LF)
+
+            if (t.getType() == HttpTokens.Type.LF)
             {
                 setState(State.BODY_PART);
-                
+
                 if (LOG.isDebugEnabled())
                     LOG.debug("startPart {}", this);
-                
+
                 _handler.startPart();
                 return;
             }
-            
+
             switch (_state)
             {
                 case DELIMITER:
@@ -332,7 +319,7 @@ public class MultiPartParser
                     else
                         setState(State.DELIMITER_PADDING);
                     continue;
-                
+
                 case DELIMITER_CLOSE:
                     if (t.getChar() == '-')
                     {
@@ -341,19 +328,21 @@ public class MultiPartParser
                     }
                     setState(State.DELIMITER_PADDING);
                     continue;
-                
+
                 case DELIMITER_PADDING:
                 default:
             }
         }
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     /*
      * Parse the message headers and return true if the handler has signaled for a return
      */
     protected boolean parseMimePartHeaders(ByteBuffer buffer)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("parseMimePartHeaders({})", BufferUtil.toDetailString(buffer));
+
         // Process headers
         while (_state == State.BODY_PART && hasNextByte(buffer))
         {
@@ -361,13 +350,13 @@ public class MultiPartParser
             HttpTokens.Token t = next(buffer);
             if (t == null)
                 break;
-                        
+
             if (t.getType() != HttpTokens.Type.LF)
                 _totalHeaderLineLength++;
-            
+
             if (_totalHeaderLineLength > MAX_HEADER_LINE_LENGTH)
                 throw new IllegalStateException("Header Line Exceeded Max Length");
-            
+
             switch (_fieldState)
             {
                 case FIELD:
@@ -377,10 +366,10 @@ public class MultiPartParser
                         case HTAB:
                         {
                             // Folded field value!
-                            
+
                             if (_fieldName == null)
                                 throw new IllegalStateException("First field folded");
-                            
+
                             if (_fieldValue == null)
                             {
                                 _string.reset();
@@ -396,15 +385,15 @@ public class MultiPartParser
                             setState(FieldState.VALUE);
                             break;
                         }
-                        
+
                         case LF:
                             handleField();
                             setState(State.FIRST_OCTETS);
                             _partialBoundary = 2; // CRLF is option for empty parts
-                            
+
                             if (LOG.isDebugEnabled())
                                 LOG.debug("headerComplete {}", this);
-                            
+
                             if (_handler.headerComplete())
                                 return true;
                             break;
@@ -414,39 +403,39 @@ public class MultiPartParser
                         case TCHAR:
                             // process previous header
                             handleField();
-                            
+
                             // New header
                             setState(FieldState.IN_NAME);
                             _string.reset();
                             _string.append(t.getChar());
                             _length = 1;
-                        
+
                             break;
 
                         default:
-                            throw new IllegalCharacterException(_state,t,buffer);
+                            throw new IllegalCharacterException(_state, t, buffer);
                     }
                     break;
-                
+
                 case IN_NAME:
-                    switch(t.getType())
+                    switch (t.getType())
                     {
                         case COLON:
                             _fieldName = takeString();
                             _length = -1;
                             setState(FieldState.VALUE);
                             break;
-                        
+
                         case SPACE:
                             // Ignore trailing whitespaces
                             setState(FieldState.AFTER_NAME);
                             break;
-                        
+
                         case LF:
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Line Feed in Name {}", this);
-                            
+
                             handleField();
                             setState(FieldState.FIELD);
                             break;
@@ -458,47 +447,47 @@ public class MultiPartParser
                             _string.append(t.getChar());
                             _length = _string.length();
                             break;
-                            
+
                         default:
-                            throw new IllegalCharacterException(_state,t,buffer);
+                            throw new IllegalCharacterException(_state, t, buffer);
                     }
                     break;
-                
+
                 case AFTER_NAME:
-                    switch(t.getType())
+                    switch (t.getType())
                     {
                         case COLON:
                             _fieldName = takeString();
                             _length = -1;
                             setState(FieldState.VALUE);
                             break;
-                        
+
                         case LF:
                             _fieldName = takeString();
                             _string.reset();
                             _fieldValue = "";
                             _length = -1;
                             break;
-                        
+
                         case SPACE:
                             break;
-                        
+
                         default:
                             throw new IllegalCharacterException(_state, t, buffer);
                     }
                     break;
-                
+
                 case VALUE:
-                    switch(t.getType())
+                    switch (t.getType())
                     {
                         case LF:
                             _string.reset();
                             _fieldValue = "";
                             _length = -1;
-                            
+
                             setState(FieldState.FIELD);
                             break;
-                        
+
                         case SPACE:
                         case HTAB:
                             break;
@@ -515,18 +504,18 @@ public class MultiPartParser
                             break;
 
                         default:
-                            throw new IllegalCharacterException(_state,t,buffer);
+                            throw new IllegalCharacterException(_state, t, buffer);
                     }
                     break;
-                
+
                 case IN_VALUE:
-                    switch(t.getType())
+                    switch (t.getType())
                     {
                         case SPACE:
                         case HTAB:
                             _string.append(' ');
                             break;
-                        
+
                         case LF:
                             if (_length > 0)
                             {
@@ -536,7 +525,7 @@ public class MultiPartParser
                             }
                             setState(FieldState.FIELD);
                             break;
-                            
+
                         case ALPHA:
                         case DIGIT:
                         case TCHAR:
@@ -544,38 +533,36 @@ public class MultiPartParser
                         case COLON:
                         case OTEXT:
                             _string.append(t.getByte());
-                            _length=_string.length();
+                            _length = _string.length();
                             break;
 
                         default:
-                            throw new IllegalCharacterException(_state,t,buffer);
+                            throw new IllegalCharacterException(_state, t, buffer);
                     }
                     break;
-                
+
                 default:
                     throw new IllegalStateException(_state.toString());
-                
             }
         }
         return false;
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     private void handleField()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parsedField:  _fieldName={} _fieldValue={} {}", _fieldName, _fieldValue, this);
-        
+
         if (_fieldName != null && _fieldValue != null)
             _handler.parsedField(_fieldName, _fieldValue);
         _fieldName = _fieldValue = null;
     }
-    
-    /* ------------------------------------------------------------------------------- */
-    
+
     protected boolean parseOctetContent(ByteBuffer buffer)
     {
-        
+        if (LOG.isDebugEnabled())
+            LOG.debug("parseOctetContent({})", BufferUtil.toDetailString(buffer));
+
         // Starts With
         if (_partialBoundary > 0)
         {
@@ -587,13 +574,13 @@ public class MultiPartParser
                     buffer.position(buffer.position() + _delimiterSearch.getLength() - _partialBoundary);
                     setState(State.DELIMITER);
                     _partialBoundary = 0;
-                    
+
                     if (LOG.isDebugEnabled())
                         LOG.debug("Content={}, Last={} {}", BufferUtil.toDetailString(BufferUtil.EMPTY_BUFFER), true, this);
-                    
+
                     return _handler.content(BufferUtil.EMPTY_BUFFER, true);
                 }
-                
+
                 _partialBoundary = partial;
                 BufferUtil.clear(buffer);
                 return false;
@@ -609,81 +596,75 @@ public class MultiPartParser
                 }
                 content.limit(_partialBoundary);
                 _partialBoundary = 0;
-                
+
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content={}, Last={} {}", BufferUtil.toDetailString(content), false, this);
-                
+
                 if (_handler.content(content, false))
                     return true;
             }
         }
-        
+
         // Contains
         int delimiter = _delimiterSearch.match(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         if (delimiter >= 0)
         {
             ByteBuffer content = buffer.slice();
             content.limit(delimiter - buffer.arrayOffset() - buffer.position());
-            
+
             buffer.position(delimiter - buffer.arrayOffset() + _delimiterSearch.getLength());
             setState(State.DELIMITER);
-            
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Content={}, Last={} {}", BufferUtil.toDetailString(content), true, this);
-            
+
             return _handler.content(content, true);
         }
-        
+
         // Ends With
         _partialBoundary = _delimiterSearch.endsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         if (_partialBoundary > 0)
         {
             ByteBuffer content = buffer.slice();
             content.limit(content.limit() - _partialBoundary);
-            
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Content={}, Last={} {}", BufferUtil.toDetailString(content), false, this);
-            
+
             BufferUtil.clear(buffer);
             return _handler.content(content, false);
         }
-        
+
         // There is normal content with no delimiter
         ByteBuffer content = buffer.slice();
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("Content={}, Last={} {}", BufferUtil.toDetailString(content), false, this);
-        
+
         BufferUtil.clear(buffer);
         return _handler.content(content, false);
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     private void setState(State state)
     {
-        if (DEBUG)
+        if (debugEnabled)
             LOG.debug("{} --> {}", _state, state);
         _state = state;
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     private void setState(FieldState state)
     {
-        if (DEBUG)
+        if (debugEnabled)
             LOG.debug("{}:{} --> {}", _state, _fieldState, state);
         _fieldState = state;
     }
-    
-    /* ------------------------------------------------------------------------------- */
+
     @Override
     public String toString()
     {
         return String.format("%s{s=%s}", getClass().getSimpleName(), _state);
     }
-    
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
     /*
      * Event Handler interface These methods return true if the caller should process the events so far received (eg return from parseNext and call
      * HttpChannel.handle). If multiple callbacks are called in sequence (eg headerComplete then messageComplete) from the same point in the parsing then it is
@@ -694,42 +675,41 @@ public class MultiPartParser
         default void startPart()
         {
         }
-        
+
         @SuppressWarnings("unused")
         default void parsedField(String name, String value)
         {
         }
-        
+
         default boolean headerComplete()
         {
             return false;
         }
-        
+
         @SuppressWarnings("unused")
         default boolean content(ByteBuffer item, boolean last)
         {
             return false;
         }
-        
+
         default boolean messageComplete()
         {
             return false;
         }
-        
+
         default void earlyEOF()
         {
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
     @SuppressWarnings("serial")
     private static class IllegalCharacterException extends BadMessageException
     {
-        private IllegalCharacterException(State state,HttpTokens.Token token,ByteBuffer buffer)
+        private IllegalCharacterException(State state, HttpTokens.Token token, ByteBuffer buffer)
         {
-            super(400,String.format("Illegal character %s",token));
+            super(400, String.format("Illegal character %s", token));
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("Illegal character %s in state=%s for buffer %s",token,state,BufferUtil.toDetailString(buffer)));
+                LOG.debug(String.format("Illegal character %s in state=%s for buffer %s", token, state, BufferUtil.toDetailString(buffer)));
         }
     }
 }

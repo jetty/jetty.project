@@ -25,11 +25,9 @@ import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
-
-/* ------------------------------------------------------------ */
-/** 
+/**
  * ServletResponseHttpWrapper
- * 
+ *
  * Wrapper to tunnel a ServletResponse via a HttpServletResponse
  */
 public class ServletResponseHttpWrapper extends ServletResponseWrapper implements HttpServletResponse
@@ -167,5 +165,4 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
     {
         return 0;
     }
-
 }

@@ -73,11 +73,11 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
 
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        latch.countDown();
-                });
+            .send(result ->
+            {
+                if (result.isFailed())
+                    latch.countDown();
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -105,11 +105,11 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
 
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .send(result ->
-                {
-                    if (result.isSucceeded())
-                        latch.countDown();
-                });
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            });
 
         assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }

@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.util.log.Log;
@@ -45,14 +44,14 @@ public class MetaData
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
     public static final Resource NON_FRAG_RESOURCE = EmptyResource.INSTANCE;
 
-    protected Map<String, OriginInfo> _origins  =new HashMap<String,OriginInfo>();
+    protected Map<String, OriginInfo> _origins = new HashMap<String, OriginInfo>();
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
-    protected final List<WebDescriptor> _webOverrideRoots=new ArrayList<WebDescriptor>();
-    protected boolean _metaDataComplete;  
+    protected final List<WebDescriptor> _webOverrideRoots = new ArrayList<WebDescriptor>();
+    protected boolean _metaDataComplete;
     protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
     protected final List<FragmentDescriptor> _webFragmentRoots = new ArrayList<FragmentDescriptor>();
-    protected final Map<String,FragmentDescriptor> _webFragmentNameMap = new HashMap<String,FragmentDescriptor>();
+    protected final Map<String, FragmentDescriptor> _webFragmentNameMap = new HashMap<String, FragmentDescriptor>();
     protected final Map<Resource, FragmentDescriptor> _webFragmentResourceMap = new HashMap<Resource, FragmentDescriptor>();
     protected final Map<Resource, List<DiscoveredAnnotation>> _annotations = new HashMap<Resource, List<DiscoveredAnnotation>>();
     protected final List<Resource> _webInfClasses = new ArrayList<Resource>();
@@ -71,29 +70,29 @@ public class MetaData
         private final Annotation annotation;
         private final Class<?> annotated;
 
-        public OriginInfo (String n, Annotation a,Class<?> ac)
+        public OriginInfo(String n, Annotation a, Class<?> ac)
         {
-            name=n;
-            origin=Origin.Annotation;
-            descriptor=null;
-            annotation=a;
-            annotated=ac;
+            name = n;
+            origin = Origin.Annotation;
+            descriptor = null;
+            annotation = a;
+            annotated = ac;
         }
-        
-        public OriginInfo (String n, Descriptor d)
+
+        public OriginInfo(String n, Descriptor d)
         {
             name = n;
             descriptor = d;
-            annotation=null;
-            annotated=null;
+            annotation = null;
+            annotated = null;
             if (d == null)
                 throw new IllegalArgumentException("No descriptor");
             if (d instanceof FragmentDescriptor)
                 origin = Origin.WebFragment;
             else if (d instanceof OverrideDescriptor)
-                origin =  Origin.WebOverride;
+                origin = Origin.WebOverride;
             else if (d instanceof DefaultsDescriptor)
-                origin =  Origin.WebDefaults;
+                origin = Origin.WebDefaults;
             else
                 origin = Origin.WebXml;
         }
@@ -102,9 +101,9 @@ public class MetaData
         {
             name = n;
             origin = Origin.API;
-            annotation=null;
-            descriptor=null;
-            annotated=null;
+            annotation = null;
+            descriptor = null;
+            annotated = null;
         }
 
         public String getName()
@@ -121,26 +120,26 @@ public class MetaData
         {
             return descriptor;
         }
-        
+
         @Override
         public String toString()
         {
-            if (descriptor!=null)
+            if (descriptor != null)
                 return descriptor.toString();
-            if (annotation!=null)
-                return "@"+annotation.annotationType().getSimpleName()+"("+annotated.getName()+")";
+            if (annotation != null)
+                return "@" + annotation.annotationType().getSimpleName() + "(" + annotated.getName() + ")";
             return origin.toString();
         }
     }
 
-    public MetaData ()
+    public MetaData()
     {
     }
 
     /**
      * Empty ready for reuse
      */
-    public void clear ()
+    public void clear()
     {
         _webDefaultsRoot = null;
         _origins.clear();
@@ -160,39 +159,39 @@ public class MetaData
         _allowDuplicateFragmentNames = false;
     }
 
-    public void setDefaults (Resource webDefaults)
-    throws Exception
+    public void setDefaults(Resource webDefaults)
+        throws Exception
     {
-        _webDefaultsRoot =  new DefaultsDescriptor(webDefaults);
+        _webDefaultsRoot = new DefaultsDescriptor(webDefaults);
         _webDefaultsRoot.setValidating(isValidateXml());
         _webDefaultsRoot.parse();
         if (_webDefaultsRoot.isOrdered())
         {
             Ordering ordering = getOrdering();
             if (ordering == null)
-               ordering = new AbsoluteOrdering(this);
+                ordering = new AbsoluteOrdering(this);
 
             List<String> order = _webDefaultsRoot.getOrdering();
-            for (String s:order)
+            for (String s : order)
             {
                 if (s.equalsIgnoreCase("others"))
                     ((AbsoluteOrdering)ordering).addOthers();
                 else
                     ((AbsoluteOrdering)ordering).add(s);
             }
-            
+
             //(re)set the ordering to cause webinf jar order to be recalculated
             setOrdering(ordering);
         }
     }
 
-    public void setWebXml (Resource webXml)
-    throws Exception
+    public void setWebXml(Resource webXml)
+        throws Exception
     {
         _webXmlRoot = new WebDescriptor(webXml);
         _webXmlRoot.setValidating(isValidateXml());
         _webXmlRoot.parse();
-        _metaDataComplete=_webXmlRoot.getMetaDataComplete() == MetaDataComplete.True;
+        _metaDataComplete = _webXmlRoot.getMetaDataComplete() == MetaDataComplete.True;
 
         if (_webXmlRoot.isOrdered())
         {
@@ -201,60 +200,59 @@ public class MetaData
                 ordering = new AbsoluteOrdering(this);
 
             List<String> order = _webXmlRoot.getOrdering();
-            for (String s:order)
+            for (String s : order)
             {
                 if (s.equalsIgnoreCase("others"))
                     ((AbsoluteOrdering)ordering).addOthers();
                 else
                     ((AbsoluteOrdering)ordering).add(s);
             }
-            
+
             //(re)set the ordering to cause webinf jar order to be recalculated
             setOrdering(ordering);
         }
     }
 
-    public void addOverride (Resource override)
-    throws Exception
+    public void addOverride(Resource override)
+        throws Exception
     {
         OverrideDescriptor webOverrideRoot = new OverrideDescriptor(override);
         webOverrideRoot.setValidating(false);
         webOverrideRoot.parse();
 
-        switch(webOverrideRoot.getMetaDataComplete())
+        switch (webOverrideRoot.getMetaDataComplete())
         {
             case True:
-                _metaDataComplete=true;
+                _metaDataComplete = true;
                 break;
             case False:
-                _metaDataComplete=false;
+                _metaDataComplete = false;
                 break;
-            case NotSet:
+            default:
                 break;
         }
 
         if (webOverrideRoot.isOrdered())
         {
             Ordering ordering = getOrdering();
-            
+
             if (ordering == null)
-               ordering = new AbsoluteOrdering(this);
+                ordering = new AbsoluteOrdering(this);
 
             List<String> order = webOverrideRoot.getOrdering();
-            for (String s:order)
+            for (String s : order)
             {
                 if (s.equalsIgnoreCase("others"))
                     ((AbsoluteOrdering)ordering).addOthers();
                 else
                     ((AbsoluteOrdering)ordering).add(s);
             }
-            
+
             //set or reset the ordering to cause the webinf jar ordering to be recomputed
             setOrdering(ordering);
         }
         _webOverrideRoots.add(webOverrideRoot);
     }
-
 
     /**
      * Add a web-fragment.xml
@@ -263,8 +261,8 @@ public class MetaData
      * @param xmlResource the resource representing the xml file
      * @throws Exception if unable to add fragment
      */
-    public void addFragment (Resource jarResource, Resource xmlResource)
-    throws Exception
+    public void addFragment(Resource jarResource, Resource xmlResource)
+        throws Exception
     {
         if (_metaDataComplete)
             return; //do not process anything else if web.xml/web-override.xml set metadata-complete
@@ -282,12 +280,11 @@ public class MetaData
             Descriptor existing = _webFragmentNameMap.get(descriptor.getName());
             if (existing != null && !isAllowDuplicateFragmentNames())
             {
-                throw new IllegalStateException("Duplicate fragment name: "+descriptor.getName()+" for "+existing.getResource()+" and "+descriptor.getResource());
+                throw new IllegalStateException("Duplicate fragment name: " + descriptor.getName() + " for " + existing.getResource() + " and " + descriptor.getResource());
             }
             else
                 _webFragmentNameMap.put(descriptor.getName(), descriptor);
         }
-
 
         //only accept an ordering from the fragment if there is no ordering already established
         if (_ordering == null && descriptor.isOrdered())
@@ -295,7 +292,7 @@ public class MetaData
             setOrdering(new RelativeOrdering(this));
             return;
         }
-        
+
         //recompute the ordering with the new fragment name
         orderFragments();
     }
@@ -303,37 +300,37 @@ public class MetaData
     /**
      * Annotations not associated with a WEB-INF/lib fragment jar.
      * These are from WEB-INF/classes or the ??container path??
+     *
      * @param annotations the list of discovered annotations to add
      */
     public void addDiscoveredAnnotations(List<DiscoveredAnnotation> annotations)
     {
         if (annotations == null)
             return;
-        for (DiscoveredAnnotation a:annotations)
+        for (DiscoveredAnnotation a : annotations)
         {
-            addDiscoveredAnnotation(a);       
+            addDiscoveredAnnotation(a);
         }
     }
 
-    
     /**
      * Add an annotation that has been discovered on a class, method or field within a resource
      * eg a jar or dir.
-     * 
+     *
      * This method is synchronized as it is anticipated that it may be called by many threads
      * during the annotation scanning phase.
-     * 
+     *
      * @param annotation the discovered annotation
      */
-    public synchronized void addDiscoveredAnnotation (DiscoveredAnnotation annotation)
+    public synchronized void addDiscoveredAnnotation(DiscoveredAnnotation annotation)
     {
         if (annotation == null)
             return;
-        
+
         //if no resource associated with an annotation or the resource is not one of the WEB-INF/lib jars,
         //map it to empty resource
         Resource resource = annotation.getResource();
-        if (resource == null ||  !_webInfJars.contains(resource))
+        if (resource == null || !_webInfJars.contains(resource))
             resource = EmptyResource.INSTANCE;
 
         List<DiscoveredAnnotation> list = _annotations.get(resource);
@@ -342,39 +339,36 @@ public class MetaData
             list = new ArrayList<DiscoveredAnnotation>();
             _annotations.put(resource, list);
         }
-        list.add(annotation);           
+        list.add(annotation);
     }
-
 
     public void addDescriptorProcessor(DescriptorProcessor p)
     {
         _descriptorProcessors.add(p);
     }
-    
+
     public void removeDescriptorProcessor(DescriptorProcessor p)
     {
         _descriptorProcessors.remove(p);
     }
 
-    
-    public void orderFragments ()
+    public void orderFragments()
     {
         _orderedWebInfResources.clear();
         if (getOrdering() != null)
             _orderedWebInfResources.addAll(getOrdering().order(_webInfJars));
     }
 
-
     /**
      * Resolve all servlet/filter/listener metadata from all sources: descriptors and annotations.
-     * 
-     * @param context the context to resolve servlets / filters / listeners metadata from 
+     *
+     * @param context the context to resolve servlets / filters / listeners metadata from
      * @throws Exception if unable to resolve metadata
      */
-    public void resolve (WebAppContext context)
-    throws Exception
+    public void resolve(WebAppContext context)
+        throws Exception
     {
-        LOG.debug("metadata resolve {}",context);
+        LOG.debug("metadata resolve {}", context);
 
         //Ensure origins is fresh
         _origins.clear();
@@ -385,13 +379,13 @@ public class MetaData
         {
             orderedWebInfJars = getOrderedWebInfJars();
             List<String> orderedLibs = new ArrayList<String>();
-            for (Resource webInfJar:orderedWebInfJars)
+            for (Resource webInfJar : orderedWebInfJars)
             {
                 //get just the name of the jar file
                 String fullname = webInfJar.getName();
                 int i = fullname.indexOf(".jar");
                 int j = fullname.lastIndexOf("/", i);
-                orderedLibs.add(fullname.substring(j+1,i+4));
+                orderedLibs.add(fullname.substring(j + 1, i + 4));
             }
             context.setAttribute(ServletContext.ORDERED_LIBS, orderedLibs);
         }
@@ -403,14 +397,14 @@ public class MetaData
             context.getServletContext().setEffectiveMinorVersion(_webXmlRoot.getMinorVersion());
         }
 
-        for (DescriptorProcessor p:_descriptorProcessors)
+        for (DescriptorProcessor p : _descriptorProcessors)
         {
-            p.process(context,getWebDefault());
-            p.process(context,getWebXml());
+            p.process(context, getWebDefault());
+            p.process(context, getWebXml());
             for (WebDescriptor wd : getOverrideWebs())
             {
-                LOG.debug("process {} {}",context,wd);
-                p.process(context,wd);
+                LOG.debug("process {} {}", context, wd);
+                p.process(context, wd);
             }
         }
 
@@ -419,86 +413,86 @@ public class MetaData
         List<DiscoveredAnnotation> nonFragAnnotations = _annotations.get(NON_FRAG_RESOURCE);
         if (nonFragAnnotations != null)
         {
-            for (DiscoveredAnnotation a:nonFragAnnotations)
+            for (DiscoveredAnnotation a : nonFragAnnotations)
             {
-                LOG.debug("apply {}",a);
+                LOG.debug("apply {}", a);
                 a.apply();
             }
         }
-      
+
         //apply the annotations that are associated with a fragment, according to the 
         //established ordering
         List<Resource> resources = null;
-        
+
         if (getOrdering() != null)
             resources = orderedWebInfJars;
         else
             resources = getWebInfJars();
-        
-        for (Resource r:resources)
+
+        for (Resource r : resources)
         {
             FragmentDescriptor fd = _webFragmentResourceMap.get(r);
             if (fd != null)
             {
-                for (DescriptorProcessor p:_descriptorProcessors)
+                for (DescriptorProcessor p : _descriptorProcessors)
                 {
-                    LOG.debug("process {} {}",context,fd);
-                    p.process(context,fd);
+                    LOG.debug("process {} {}", context, fd);
+                    p.process(context, fd);
                 }
             }
 
             List<DiscoveredAnnotation> fragAnnotations = _annotations.get(r);
             if (fragAnnotations != null)
             {
-                for (DiscoveredAnnotation a:fragAnnotations)
+                for (DiscoveredAnnotation a : fragAnnotations)
                 {
-                    LOG.debug("apply {}",a);
+                    LOG.debug("apply {}", a);
                     a.apply();
                 }
             }
         }
-
     }
 
-    public boolean isDistributable ()
+    public boolean isDistributable()
     {
         boolean distributable = (
-                (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable())
-                || (_webXmlRoot != null && _webXmlRoot.isDistributable()));
+            (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) ||
+                (_webXmlRoot != null && _webXmlRoot.isDistributable()));
 
         for (WebDescriptor d : _webOverrideRoots)
-            distributable&=d.isDistributable();
+        {
+            distributable &= d.isDistributable();
+        }
 
         if (getOrdering() != null)
         {
             List<Resource> orderedResources = getOrderedWebInfJars();
-            for (Resource r: orderedResources)
+            for (Resource r : orderedResources)
             {
                 FragmentDescriptor d = _webFragmentResourceMap.get(r);
-                if (d!=null)
+                if (d != null)
                     distributable = distributable && d.isDistributable();
             }
         }
         return distributable;
     }
 
-
-    public WebDescriptor getWebXml ()
+    public WebDescriptor getWebXml()
     {
         return _webXmlRoot;
     }
 
-    public List<WebDescriptor> getOverrideWebs ()
+    public List<WebDescriptor> getOverrideWebs()
     {
         return _webOverrideRoots;
     }
 
-    public WebDescriptor getWebDefault ()
+    public WebDescriptor getWebDefault()
     {
         return _webDefaultsRoot;
     }
 
-    public List<FragmentDescriptor> getFragments ()
+    public List<FragmentDescriptor> getFragments()
     {
         return _webFragmentRoots;
     }
@@ -508,13 +502,13 @@ public class MetaData
         return _orderedWebInfResources;
     }
 
-    public List<FragmentDescriptor> getOrderedFragments ()
+    public List<FragmentDescriptor> getOrderedFragments()
     {
         List<FragmentDescriptor> list = new ArrayList<FragmentDescriptor>();
         if (getOrdering() == null)
             return list;
 
-        for (Resource r:getOrderedWebInfJars())
+        for (Resource r : getOrderedWebInfJars())
         {
             FragmentDescriptor fd = _webFragmentResourceMap.get(r);
             if (fd != null)
@@ -528,13 +522,13 @@ public class MetaData
         return _ordering;
     }
 
-    public void setOrdering (Ordering o)
-    {    
+    public void setOrdering(Ordering o)
+    {
         _ordering = o;
         orderFragments();
     }
 
-    public FragmentDescriptor getFragment (Resource jar)
+    public FragmentDescriptor getFragment(Resource jar)
     {
         return _webFragmentResourceMap.get(jar);
     }
@@ -544,14 +538,14 @@ public class MetaData
         return _webFragmentNameMap.get(name);
     }
 
-    public Resource getJarForFragment (String name)
+    public Resource getJarForFragment(String name)
     {
         FragmentDescriptor f = getFragment(name);
         if (f == null)
             return null;
 
         Resource jar = null;
-        for (Resource r: _webFragmentResourceMap.keySet())
+        for (Resource r : _webFragmentResourceMap.keySet())
         {
             if (_webFragmentResourceMap.get(r).equals(f))
                 jar = r;
@@ -559,31 +553,30 @@ public class MetaData
         return jar;
     }
 
-    public Map<String,FragmentDescriptor> getNamedFragments ()
+    public Map<String, FragmentDescriptor> getNamedFragments()
     {
         return Collections.unmodifiableMap(_webFragmentNameMap);
     }
 
-
-    public Origin getOrigin (String name)
+    public Origin getOrigin(String name)
     {
-        OriginInfo x =  _origins.get(name);
+        OriginInfo x = _origins.get(name);
         if (x == null)
             return Origin.NotSet;
 
         return x.getOriginType();
     }
 
-    public OriginInfo getOriginInfo (String name)
+    public OriginInfo getOriginInfo(String name)
     {
-        OriginInfo x =  _origins.get(name);
+        OriginInfo x = _origins.get(name);
         if (x == null)
             return null;
 
         return x;
     }
 
-    public Descriptor getOriginDescriptor (String name)
+    public Descriptor getOriginDescriptor(String name)
     {
         OriginInfo o = _origins.get(name);
         if (o == null)
@@ -591,27 +584,27 @@ public class MetaData
         return o.getDescriptor();
     }
 
-    public void setOrigin (String name, Descriptor d)
+    public void setOrigin(String name, Descriptor d)
     {
-        OriginInfo x = new OriginInfo (name, d);
+        OriginInfo x = new OriginInfo(name, d);
         _origins.put(name, x);
     }
 
-    public void setOrigin (String name, Annotation annotation, Class<?> annotated)
+    public void setOrigin(String name, Annotation annotation, Class<?> annotated)
     {
         if (name == null)
             return;
 
-        OriginInfo x = new OriginInfo (name, annotation, annotated);
+        OriginInfo x = new OriginInfo(name, annotation, annotated);
         _origins.put(name, x);
     }
-    
+
     public void setOriginAPI(String name)
     {
         if (name == null)
             return;
-       
-        OriginInfo x = new OriginInfo (name);
+
+        OriginInfo x = new OriginInfo(name);
         _origins.put(name, x);
     }
 
@@ -619,7 +612,6 @@ public class MetaData
     {
         return _metaDataComplete;
     }
-
 
     public void addWebInfJar(Resource newResource)
     {
@@ -640,17 +632,17 @@ public class MetaData
     {
         _orderedContainerResources.add(jar);
     }
-    
-    public void setWebInfClassesDirs (List<Resource> dirs)
+
+    public void setWebInfClassesDirs(List<Resource> dirs)
     {
         _webInfClasses.addAll(dirs);
     }
-    
-    public List<Resource> getWebInfClassesDirs ()
+
+    public List<Resource> getWebInfClassesDirs()
     {
         return _webInfClasses;
     }
-    
+
     public boolean isAllowDuplicateFragmentNames()
     {
         return _allowDuplicateFragmentNames;
@@ -677,7 +669,7 @@ public class MetaData
         _validateXml = validateXml;
     }
 
-    public Map<String,OriginInfo> getOrigins()
+    public Map<String, OriginInfo> getOrigins()
     {
         return Collections.unmodifiableMap(_origins);
     }

@@ -29,14 +29,13 @@ import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-
 public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
     private static final Logger LOG = Log.getLogger(RunAsAnnotationHandler.class);
 
     protected WebAppContext _context;
 
-    public RunAsAnnotationHandler (WebAppContext wac)
+    public RunAsAnnotationHandler(WebAppContext wac)
     {
         //Introspect only the given class for a RunAs annotation, as it is a class level annotation,
         //and according to Common Annotation Spec p2-6 a class-level annotation is not inheritable.
@@ -45,7 +44,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
     }
 
     @Override
-    public void doHandle (Class clazz)
+    public void doHandle(Class clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
@@ -56,19 +55,16 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
             String role = runAs.value();
             if (role != null)
             {
-                ServletHolder holder = getServletHolderForClass(clazz);
-                if (holder != null)
+                for (ServletHolder holder : _context.getServletHandler().getServlets(clazz))
                 {
                     MetaData metaData = _context.getMetaData();
-                    Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.run-as");
+                    Descriptor d = metaData.getOriginDescriptor(holder.getName() + ".servlet.run-as");
                     //if a descriptor has already set the value for run-as, do not
                     //let the annotation override it
                     if (d == null)
                     {
-                        metaData.setOrigin(holder.getName()+".servlet.run-as",runAs,clazz);
-                        org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
-                        ra.setTargetClassName(clazz.getCanonicalName());
-                        ra.setRoleName(role);
+                        metaData.setOrigin(holder.getName() + ".servlet.run-as", runAs, clazz);
+                        org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs(clazz.getName(), role);
                         RunAsCollection raCollection = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
                         if (raCollection == null)
                         {
@@ -80,35 +76,17 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                 }
             }
             else
-                LOG.warn("Bad value for @RunAs annotation on class "+clazz.getName());
+                LOG.warn("Bad value for @RunAs annotation on class " + clazz.getName());
         }
-
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation)
     {
-       LOG.warn ("@RunAs annotation not applicable for fields: "+className+"."+fieldName);
+        LOG.warn("@RunAs annotation not applicable for fields: " + className + "." + fieldName);
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation)
     {
-        LOG.warn("@RunAs annotation ignored on method: "+className+"."+methodName+" "+signature);
-    }
-
-    private ServletHolder getServletHolderForClass (Class clazz)
-    {
-        ServletHolder holder = null;
-        ServletHolder[] holders = _context.getServletHandler().getServlets();
-        if (holders != null)
-        {
-            for (ServletHolder h : holders)
-            {
-                if (h.getClassName() != null && h.getClassName().equals(clazz.getName()))
-                {
-                    holder = h;
-                }
-            }
-        }
-        return holder;
+        LOG.warn("@RunAs annotation ignored on method: " + className + "." + methodName + " " + signature);
     }
 }

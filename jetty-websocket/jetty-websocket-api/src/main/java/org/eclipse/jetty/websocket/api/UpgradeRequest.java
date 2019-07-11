@@ -227,7 +227,7 @@ public interface UpgradeRequest
      * <p>
      * Overrides any previous value for this named header
      *
-     * @param name   the name of the header
+     * @param name the name of the header
      * @param values the multi-value field
      */
     void setHeader(String name, List<String> values);
@@ -237,7 +237,7 @@ public interface UpgradeRequest
      * <p>
      * Overrides any previous value for this named header
      *
-     * @param name  the header to set
+     * @param name the header to set
      * @param value the value to set it to
      */
     void setHeader(String name, String value);

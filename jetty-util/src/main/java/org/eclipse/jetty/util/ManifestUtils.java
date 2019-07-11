@@ -67,7 +67,7 @@ public class ManifestUtils
     public static Optional<String> getVersion(Class<?> klass)
     {
         Optional<String> version = getManifest(klass).map(Manifest::getMainAttributes)
-                .map(attributes -> attributes.getValue("Implementation-Version"));
+            .map(attributes -> attributes.getValue("Implementation-Version"));
         if (version.isPresent())
             return version;
 

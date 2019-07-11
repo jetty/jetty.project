@@ -20,7 +20,6 @@ package org.eclipse.jetty.osgi.test;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -63,10 +62,12 @@ public class TestJettyOSGiBootWithAnnotations
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-annotations.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
-     
+            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+
         options.addAll(TestOSGiUtil.coreJettyDependencies());
+        // TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
+        // options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").version("9.4.19.v????????").noStart());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
@@ -112,24 +113,24 @@ public class TestJettyOSGiBootWithAnnotations
             client.start();
             String port = System.getProperty("boot.annotations.port");
             assertNotNull(port);
-            
+
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/index.html");
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
 
             String content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content, "Test WebApp");
-            
+
             Request req = client.POST("http://127.0.0.1:" + port + "/test");
             response = req.send();
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content,
-                    "<p><b>Result: <span class=\"pass\">PASS</span></p>");
-            
+                "<p><b>Result: <span class=\"pass\">PASS</span></p>");
+
             response = client.GET("http://127.0.0.1:" + port + "/frag.html");
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
-            TestOSGiUtil.assertContains("Response contents", content,"<h1>FRAGMENT</h1>");
+            TestOSGiUtil.assertContains("Response contents", content, "<h1>FRAGMENT</h1>");
         }
         finally
         {

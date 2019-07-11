@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -37,22 +32,25 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * ImmortalSessionTest
  */
 public class ImmortalSessionTest
 {
-   
+
     @Test
     public void testImmortalSessionNoEviction() throws Exception
     {
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new NullSessionDataStoreFactory();
-       doTest(2, cacheFactory, storeFactory);
+        doTest(2, cacheFactory, storeFactory);
     }
-    
+
     @Test
     public void testImmortalSessionEvictOnExit() throws Exception
     {
@@ -61,7 +59,7 @@ public class ImmortalSessionTest
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         doTest(2, cacheFactory, storeFactory);
     }
-    
+
     @Test
     public void testImmortalSessionEvictOnIdle() throws Exception
     {
@@ -70,35 +68,34 @@ public class ImmortalSessionTest
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         doTest(2, cacheFactory, storeFactory);
     }
-    
-    
-    public void doTest (int scavengeInterval, SessionCacheFactory cacheFactory, SessionDataStoreFactory storeFactory)
-    throws Exception
+
+    public void doTest(int scavengeInterval, SessionCacheFactory cacheFactory, SessionDataStoreFactory storeFactory)
+        throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
 
         //turn off session expiry by setting maxInactiveInterval to -1
-        TestServer server = new TestServer (0, -1, scavengeInterval, cacheFactory, storeFactory);
+        TestServer server = new TestServer(0, -1, scavengeInterval, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
 
         try
         {
             server.start();
-            int port=server.getPort();
+            int port = server.getPort();
             HttpClient client = new HttpClient();
             client.start();
             try
             {
                 int value = 42;
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=set&value=" + value);
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 String resp = response.getContentAsString();
-                assertEquals(resp.trim(),String.valueOf(value));
+                assertEquals(resp.trim(), String.valueOf(value));
 
                 // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                 Thread.sleep(scavengeInterval * 2500L);
@@ -107,10 +104,10 @@ public class ImmortalSessionTest
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=get");
 
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 resp = response.getContentAsString();
-                assertEquals(String.valueOf(value),resp.trim());
-                
+                assertEquals(String.valueOf(value), resp.trim());
+
                 assertEquals(1, context.getSessionHandler().getSessionsCreated());
             }
             finally
@@ -124,11 +121,6 @@ public class ImmortalSessionTest
         }
     }
 
-    
-    
-    
-    
-    
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
@@ -149,7 +141,7 @@ public class ImmortalSessionTest
             {
                 HttpSession session = request.getSession(false);
                 assertNotNull(session);
-                if (session!=null)
+                if (session != null)
                     result = (String)session.getAttribute("value");
             }
             PrintWriter writer = response.getWriter();
@@ -157,6 +149,4 @@ public class ImmortalSessionTest
             writer.flush();
         }
     }
-
-
 }

@@ -71,11 +71,10 @@ public class SpecExampleConstraintTest
 
         TestLoginService _loginService = new TestLoginService(TEST_REALM);
 
-        _loginService.putUser("fred",new Password("password"), IdentityService.NO_ROLES);
-        _loginService.putUser("harry",new Password("password"), new String[] {"HOMEOWNER"});
-        _loginService.putUser("chris",new Password("password"), new String[] {"CONTRACTOR"});
-        _loginService.putUser("steven", new Password("password"), new String[] {"SALESCLERK"});
-        
+        _loginService.putUser("fred", new Password("password"), IdentityService.NO_ROLES);
+        _loginService.putUser("harry", new Password("password"), new String[]{"HOMEOWNER"});
+        _loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
+        _loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
 
         _context.setContextPath("/ctx");
         _server.setHandler(_context);
@@ -107,7 +106,7 @@ public class SpecExampleConstraintTest
         <auth-constraint/>
         </security-constraint>
         */
-        
+
         Constraint constraint0 = new Constraint();
         constraint0.setAuthenticate(true);
         constraint0.setName("precluded methods");
@@ -115,12 +114,12 @@ public class SpecExampleConstraintTest
         mapping0.setPathSpec("/*");
         mapping0.setConstraint(constraint0);
         mapping0.setMethodOmissions(new String[]{"GET", "POST"});
-        
+
         ConstraintMapping mapping1 = new ConstraintMapping();
         mapping1.setPathSpec("/acme/wholesale/*");
         mapping1.setConstraint(constraint0);
         mapping1.setMethodOmissions(new String[]{"GET", "POST"});
-        
+
         ConstraintMapping mapping2 = new ConstraintMapping();
         mapping2.setPathSpec("/acme/retail/*");
         mapping2.setConstraint(constraint0);
@@ -209,19 +208,17 @@ public class SpecExampleConstraintTest
         mapping8.setPathSpec("/acme/retail/*");
         mapping8.setMethod("POST");
         mapping8.setConstraint(constraint4);
-        
-        
-        
-        
-        Set<String> knownRoles=new HashSet<String>();
+
+        Set<String> knownRoles = new HashSet<String>();
         knownRoles.add("CONTRACTOR");
         knownRoles.add("HOMEOWNER");
         knownRoles.add("SALESCLERK");
-        
+
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                {
-                        mapping0, mapping1, mapping2, mapping3, mapping4, mapping5, mapping6, mapping7, mapping8
-                }), knownRoles);
+            {
+                mapping0, mapping1, mapping2, mapping3, mapping4, mapping5,
+                mapping6, mapping7, mapping8
+            }), knownRoles);
     }
 
     @AfterEach
@@ -240,11 +237,11 @@ public class SpecExampleConstraintTest
         _security.setAuthenticator(new BasicAuthenticator());
         _server.start();
 
-       Set<String> paths =  _security.getPathsWithUncoveredHttpMethods();
-       assertEquals(1, paths.size());
-       assertEquals("/*", paths.iterator().next());
+        Set<String> paths = _security.getPathsWithUncoveredHttpMethods();
+        assertEquals(1, paths.size());
+        assertEquals("/*", paths.iterator().next());
     }
-    
+
     @Test
     public void testUncoveredHttpMethodsDenied() throws Exception
     {
@@ -253,16 +250,16 @@ public class SpecExampleConstraintTest
             _security.setDenyUncoveredHttpMethods(false);
             _security.setAuthenticator(new BasicAuthenticator());
             _server.start();
-            
+
             //There are uncovered methods for GET/POST at url /*
             //without deny-uncovered-http-methods they should be accessible
             String response;
             response = _connector.getResponse("GET /ctx/index.html HTTP/1.0\r\n\r\n");
-            assertThat(response,startsWith("HTTP/1.1 200 OK"));   
-            
+            assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
             //set deny-uncovered-http-methods true
             _security.setDenyUncoveredHttpMethods(true);
-            
+
             //check they cannot be accessed
             response = _connector.getResponse("GET /ctx/index.html HTTP/1.0\r\n\r\n");
             assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
@@ -271,14 +268,12 @@ public class SpecExampleConstraintTest
         {
             _security.setDenyUncoveredHttpMethods(false);
         }
-        
     }
-  
 
     @Test
     public void testBasic() throws Exception
     {
-        
+
         _security.setAuthenticator(new BasicAuthenticator());
         _server.start();
 
@@ -302,56 +297,54 @@ public class SpecExampleConstraintTest
         String encodedChris = authEncoder.encodeToString("chris:password".getBytes(ISO_8859_1));
 
         response = _connector.getResponse("HEAD /ctx/index.html HTTP/1.0\r\n" +
-                "Authorization: Basic " + encodedHarry + "\r\n" +
-                "\r\n");
-        assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
+            "Authorization: Basic " + encodedHarry + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
 
         response = _connector.getResponse("HEAD /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + encodedHarry + "\r\n" +
-                                           "\r\n");
-        assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
-        
+            "Authorization: Basic " + encodedHarry + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
+
         response = _connector.getResponse("HEAD /ctx/acme/retail/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + encodedHarry + "\r\n" +
-                                           "\r\n");
-        assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
-        
+            "Authorization: Basic " + encodedHarry + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
+
         //a user in role CONTRACTOR can do a GET
         response = _connector.getResponse("GET /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + encodedChris + "\r\n" +
-                                           "\r\n");
+            "Authorization: Basic " + encodedChris + "\r\n" +
+            "\r\n");
 
-        assertThat(response,startsWith("HTTP/1.1 200 OK"));
-        
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
         //a user in role CONTRACTOR can only do a post if confidential
         response = _connector.getResponse("POST /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + encodedChris + "\r\n" +
-                                           "\r\n");
-        assertThat(response,startsWith("HTTP/1.1 403 "));
-        
+            "Authorization: Basic " + encodedChris + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 "));
+
         //a user in role HOMEOWNER can do a GET
         response = _connector.getResponse("GET /ctx/acme/retail/index.html HTTP/1.0\r\n" +
-                                           "Authorization: Basic " + encodedHarry + "\r\n" +
-                                           "\r\n");
-        assertThat(response,startsWith("HTTP/1.1 200 OK"));   
+            "Authorization: Basic " + encodedHarry + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
-    
-  
+
     private class RequestHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
 
             response.setStatus(200);
             response.setContentType("text/plain; charset=UTF-8");
-            response.getWriter().println("URI="+request.getRequestURI());
+            response.getWriter().println("URI=" + request.getRequestURI());
             String user = request.getRemoteUser();
-            response.getWriter().println("user="+user);
-            if (request.getParameter("test_parameter")!=null)
+            response.getWriter().println("user=" + user);
+            if (request.getParameter("test_parameter") != null)
                 response.getWriter().println(request.getParameter("test_parameter"));
         }
     }
-
 }

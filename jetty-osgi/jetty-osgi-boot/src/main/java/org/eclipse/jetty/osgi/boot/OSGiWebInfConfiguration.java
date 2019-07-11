@@ -21,12 +21,10 @@ package org.eclipse.jetty.osgi.boot;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 
-
-
 /**
  * OSGiWebInfConfiguration
  *
- * Handle adding resources found in bundle fragments, and add them into the 
+ * Handle adding resources found in bundle fragments, and add them into the
  */
 public class OSGiWebInfConfiguration extends WebInfConfiguration
 {

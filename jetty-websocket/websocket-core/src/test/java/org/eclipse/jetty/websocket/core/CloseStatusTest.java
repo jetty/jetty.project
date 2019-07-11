@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -123,7 +123,7 @@ public class CloseStatusTest
     private ByteBuffer asByteBuffer(int statusCode, String reason)
     {
         int len = 2; // status code length
-        byte utf[] = null;
+        byte[] utf = null;
         if (StringUtil.isNotBlank(reason))
         {
             utf = StringUtil.getUtf8Bytes(reason);
@@ -190,7 +190,9 @@ public class CloseStatusTest
         String utf4Bytes = "\uD801\uDC00";
         String reason = utf4Bytes;
         for (int i = 5; i-- > 0; )
+        {
             reason = reason + reason;
+        }
 
         ByteBuffer bb = CloseStatus.asPayloadBuffer(code, reason);
         assertThat(bb.limit(), lessThanOrEqualTo(Frame.MAX_CONTROL_PAYLOAD));

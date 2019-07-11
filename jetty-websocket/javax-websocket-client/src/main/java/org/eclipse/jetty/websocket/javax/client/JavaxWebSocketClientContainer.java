@@ -22,12 +22,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -37,15 +37,14 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtensionConfig;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 
 /**
@@ -59,45 +58,27 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     protected WebSocketCoreClient coreClient;
     protected Supplier<WebSocketCoreClient> coreClientFactory;
     private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
-    private DecoratedObjectFactory objectFactory;
-    private WebSocketExtensionRegistry extensionRegistry;
 
     public JavaxWebSocketClientContainer()
     {
-        this(() -> {
-            WebSocketCoreClient coreClient = new WebSocketCoreClient();
+        this(new WebSocketComponents());
+    }
+
+    public JavaxWebSocketClientContainer(WebSocketComponents components)
+    {
+        this(components, () ->
+        {
+            WebSocketCoreClient coreClient = new WebSocketCoreClient(components);
             coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
             return coreClient;
         });
     }
 
-    public JavaxWebSocketClientContainer(Supplier<WebSocketCoreClient> coreClientFactory)
+    public JavaxWebSocketClientContainer(WebSocketComponents components, Supplier<WebSocketCoreClient> coreClientFactory)
     {
-        this((WebSocketCoreClient)null);
+        super(components);
         this.coreClientFactory = coreClientFactory;
-        this.addBean(coreClientFactory);
-    }
-
-    public JavaxWebSocketClientContainer(WebSocketCoreClient coreClient)
-    {
-        super();
-        this.coreClient = coreClient;
-        this.addBean(coreClient);
-        this.objectFactory = new DecoratedObjectFactory();
-        this.extensionRegistry = new WebSocketExtensionRegistry();
         this.frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(this);
-    }
-
-    @Override
-    public JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory()
-    {
-        return frameHandlerFactory;
-    }
-
-    @Override
-    protected WebSocketExtensionRegistry getExtensionRegistry()
-    {
-        return this.extensionRegistry;
     }
 
     protected HttpClient getHttpClient()
@@ -110,10 +91,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         if (coreClient == null)
         {
             coreClient = coreClientFactory.get();
-            if (coreClient.isRunning())
-                addBean(coreClient,false);
-            else
-                addManaged(coreClient);
+            addManaged(coreClient);
         }
 
         return coreClient;
@@ -127,17 +105,30 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
      */
     private CompletableFuture<Session> connect(JavaxClientUpgradeRequest upgradeRequest)
     {
-        CompletableFuture<Session> fut = upgradeRequest.getFutureSession();
+        upgradeRequest.setConfiguration(defaultCustomizer);
+        CompletableFuture<Session> futureSession = new CompletableFuture<>();
+
         try
         {
-            getWebSocketCoreClient().connect(upgradeRequest);
-            return fut;
+            WebSocketCoreClient coreClient = getWebSocketCoreClient();
+            coreClient.connect(upgradeRequest).whenComplete((coreSession, error) ->
+            {
+                if (error != null)
+                {
+                    futureSession.completeExceptionally(error);
+                    return;
+                }
+
+                JavaxWebSocketFrameHandler frameHandler = (JavaxWebSocketFrameHandler)upgradeRequest.getFrameHandler();
+                futureSession.complete(frameHandler.getSession());
+            });
         }
         catch (Exception e)
         {
-            fut.completeExceptionally(e);
-            return fut;
+            futureSession.completeExceptionally(e);
         }
+
+        return futureSession;
     }
 
     private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI) throws IOException
@@ -148,7 +139,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         JavaxClientUpgradeRequest upgradeRequest = new JavaxClientUpgradeRequest(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
 
         EndpointConfig config = configuredEndpoint.getConfig();
-        if (config != null && config instanceof ClientEndpointConfig)
+        if (config instanceof ClientEndpointConfig)
         {
             ClientEndpointConfig clientEndpointConfig = (ClientEndpointConfig)config;
 
@@ -156,33 +147,43 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             upgradeRequest.addListener(jsrUpgradeListener);
 
             for (Extension ext : clientEndpointConfig.getExtensions())
+            {
                 upgradeRequest.addExtensions(new JavaxWebSocketExtensionConfig(ext));
+            }
 
             if (clientEndpointConfig.getPreferredSubprotocols().size() > 0)
                 upgradeRequest.setSubProtocols(clientEndpointConfig.getPreferredSubprotocols());
         }
 
+        long timeout = getWebSocketCoreClient().getHttpClient().getConnectTimeout();
         try
         {
             Future<Session> sessionFuture = connect(upgradeRequest);
-            long timeout = coreClient.getHttpClient().getConnectTimeout();
-            if (timeout>0)
-                return sessionFuture.get(timeout+1000, TimeUnit.MILLISECONDS);
+            if (timeout > 0)
+                return sessionFuture.get(timeout + 1000, TimeUnit.MILLISECONDS);
             return sessionFuture.get();
+        }
+        catch (ExecutionException e)
+        {
+            var cause = e.getCause();
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException)cause;
+            if (cause instanceof IOException)
+                throw (IOException)cause;
+            throw new IOException(cause);
         }
         catch (TimeoutException e)
         {
-            throw new IOException("Connection future not completed " + destURI, e);
+            throw new IOException("Connection future timeout " + timeout + " ms for " + destURI, e);
         }
-        catch (Exception e)
+        catch (Throwable e)
         {
             throw new IOException("Unable to connect to " + destURI, e);
         }
     }
 
     @Override
-    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path)
-        throws DeploymentException, IOException
+    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws IOException
     {
         ClientEndpointConfig clientEndpointConfig = config;
         if (clientEndpointConfig == null)
@@ -194,7 +195,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     }
 
     @Override
-    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws IOException
     {
         ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, new EmptyClientEndpointConfig());
         return connect(instance, path);
@@ -220,21 +221,9 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     }
 
     @Override
-    public long getDefaultMaxSessionIdleTimeout()
+    public JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory()
     {
-        return getHttpClient().getIdleTimeout();
-    }
-
-    @Override
-    public void setDefaultMaxSessionIdleTimeout(long timeout)
-    {
-        getHttpClient().setIdleTimeout(timeout);
-    }
-
-    @Override
-    public ByteBufferPool getBufferPool()
-    {
-        return getHttpClient().getByteBufferPool();
+        return frameHandlerFactory;
     }
 
     @Override
@@ -247,17 +236,12 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     {
         try
         {
-            return newConfiguredEndpoint(endpointClass.newInstance(), config);
+            return newConfiguredEndpoint(endpointClass.getConstructor().newInstance(), config);
         }
-        catch (DeploymentException | InstantiationException | IllegalAccessException e)
+        catch (Throwable e)
         {
-            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass());
+            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getName());
         }
-    }
-
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return objectFactory;
     }
 
     public ConfiguredEndpoint newConfiguredEndpoint(Object endpoint, EndpointConfig providedConfig) throws DeploymentException

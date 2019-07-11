@@ -47,8 +47,8 @@ public interface Response
 
     /**
      * @param listenerClass the listener class
-     * @return the response listener passed to {@link org.eclipse.jetty.client.api.Request#send(org.eclipse.jetty.client.api.Response.CompleteListener)}
      * @param <T> the type of class
+     * @return the response listener passed to {@link org.eclipse.jetty.client.api.Request#send(org.eclipse.jetty.client.api.Response.CompleteListener)}
      */
     <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass);
 

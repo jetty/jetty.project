@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.api.annotations;
 
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.StatusCode;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.StatusCode;
 
 /**
  * Tags a POJO as being a WebSocket class.
@@ -33,32 +33,32 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value =
-    { ElementType.TYPE })
+    {ElementType.TYPE})
 public @interface WebSocket
 {
     /**
      * The size of the buffer (in bytes) used to read from the network layer.
      */
-    int inputBufferSize() default -2;
+    int inputBufferSize() default -1;
 
     /**
      * The maximum size of a binary message (in bytes) during parsing/generating.
      * <p>
      * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      */
-    int maxBinaryMessageSize() default -2;
+    int maxBinaryMessageSize() default -1;
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
      */
-    int maxIdleTime() default -2;
+    int idleTimeout() default -1;
 
     /**
      * The maximum size of a text message during parsing/generating.
      * <p>
      * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      */
-    int maxTextMessageSize() default -2;
+    int maxTextMessageSize() default -1;
 
     /**
      * The output frame buffering mode.

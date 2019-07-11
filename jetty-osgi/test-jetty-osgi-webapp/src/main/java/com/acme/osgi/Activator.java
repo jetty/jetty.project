@@ -35,8 +35,6 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * Bootstrap a webapp
- * 
- * 
  */
 public class Activator implements BundleActivator
 {
@@ -47,7 +45,7 @@ public class Activator implements BundleActivator
     public static class TestServlet extends HttpServlet
     {
 
-        /** 
+        /**
          * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
          */
         @Override
@@ -57,17 +55,13 @@ public class Activator implements BundleActivator
             String mimetype = req.getServletContext().getMimeType("file.gz");
             resp.setContentType("text/html");
             PrintWriter writer = resp.getWriter();
-            writer.write("<html><body><p>MIMETYPE="+mimetype+"</p></body</html>");
+            writer.write("<html><body><p>MIMETYPE=" + mimetype + "</p></body</html>");
             writer.flush();
         }
-        
     }
 
-    
-    
     /**
-     * 
-     * @param context
+     *
      */
     @Override
     public void start(BundleContext context) throws Exception
@@ -76,14 +70,14 @@ public class Activator implements BundleActivator
         WebAppContext webapp = new WebAppContext();
         webapp.addServlet(new ServletHolder(new TestServlet()), "/mime");
         Dictionary props = new Hashtable();
-        props.put("Jetty-WarResourcePath","webappA");
-        props.put("Web-ContextPath","/acme");
+        props.put("Jetty-WarResourcePath", "webappA");
+        props.put("Web-ContextPath", "/acme");
         props.put("managedServerName", "defaultJettyServer");
-        _srA = context.registerService(WebAppContext.class.getName(),webapp,props);
-        
+        _srA = context.registerService(WebAppContext.class.getName(), webapp, props);
+
         //Create a second webappB as a Service and target it at a custom Server
         //deployed by another bundle
-        WebAppContext webappB = new WebAppContext();
+        final WebAppContext webappB = new WebAppContext();
         Dictionary propsB = new Hashtable();
         propsB.put("Jetty-WarResourcePath", "webappB");
         propsB.put("Web-ContextPath", "/acme");
@@ -93,14 +87,13 @@ public class Activator implements BundleActivator
 
     /**
      * Stop the activator.
-     * 
-     * @see
-     * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
+     *
+     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
     @Override
     public void stop(BundleContext context) throws Exception
     {
-        _srA.unregister(); 
+        _srA.unregister();
         _srB.unregister();
     }
 }

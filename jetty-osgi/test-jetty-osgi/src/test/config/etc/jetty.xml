@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 
 <!-- =============================================================== -->
@@ -42,18 +42,18 @@
     </Set>
 
      <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-      <Set name="secureScheme"><Property name="jetty.httpConfig.secureScheme" default="https" /></Set>
-      <Set name="securePort"><Property name="jetty.httpConfig.securePort" default="8443" /></Set>
-      <Set name="outputBufferSize"><Property name="jetty.httpConfig.outputBufferSize" default="32768" /></Set>
-      <Set name="outputAggregationSize"><Property name="jetty.httpConfig.outputAggregationSize" default="8192" /></Set>
-      <Set name="requestHeaderSize"><Property name="jetty.httpConfig.requestHeaderSize" default="8192" /></Set>
-      <Set name="responseHeaderSize"><Property name="jetty.httpConfig.responseHeaderSize" default="8192" /></Set>
-      <Set name="sendServerVersion"><Property name="jetty.httpConfig.sendServerVersion" default="true" /></Set>
-      <Set name="sendDateHeader"><Property name="jetty.httpConfig.sendDateHeader" default="false" /></Set>
-      <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="4096" /></Set>
-      <Set name="delayDispatchUntilContent"><Property name="jetty.httpConfig.delayDispatchUntilContent" default="true"/></Set>
-      <Set name="maxErrorDispatches"><Property name="jetty.httpConfig.maxErrorDispatches" default="10"/></Set>
-      <Set name="persistentConnectionsEnabled"><Property name="jetty.httpConfig.persistentConnectionsEnabled" default="true"/></Set>
+      <Set name="secureScheme"><Property name="jetty.httpConfig.secureScheme" default="https"/></Set>
+      <Set name="secureScheme"><Property name="jetty.httpConfig.secureScheme" default="https"/></Set>
+      <Set name="outputBufferSize" property="jetty.httpConfig.outputBufferSize"/>
+      <Set name="outputAggregationSize" property="jetty.httpConfig.outputAggregationSize"/>
+      <Set name="requestHeaderSize" property="jetty.httpConfig.requestHeaderSize"/>
+      <Set name="responseHeaderSize" property="jetty.httpConfig.responseHeaderSize"/>
+      <Set name="sendServerVersion" property="jetty.httpConfig.sendServerVersion"/>
+      <Set name="sendDateHeader" property="jetty.httpConfig.sendDateHeader"/>
+      <Set name="headerCacheSize" property="jetty.httpConfig.headerCacheSize"/>
+      <Set name="delayDispatchUntilContent" property="jetty.httpConfig.delayDispatchUntilContent"/>
+      <Set name="maxErrorDispatches" property="jetty.httpConfig.maxErrorDispatches"/>
+      <Set name="persistentConnectionsEnabled" property="jetty.httpConfig.persistentConnectionsEnabled"/>
       <Set name="requestCookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.requestCookieCompliance" default="RFC6265"/></Arg></Call></Set>
       <Set name="responseCookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.responseCookieCompliance" default="RFC6265"/></Arg></Call></Set>
     </New>
@@ -62,10 +62,10 @@
     <!-- =========================================================== -->
     <!-- extra options                                               -->
     <!-- =========================================================== -->
-    <Set name="stopAtShutdown"><Property name="jetty.server.stopAtShutdown" default="true"/></Set>
+    <Set name="stopAtShutdown" property="jetty.server.stopAtShutdown"/>
     <Set name="stopTimeout"><Property name="jetty.server.stopTimeout" default="5000"/></Set>
-    <Set name="dumpAfterStart"><Property name="jetty.server.dumpAfterStart" default="false"/></Set>
-    <Set name="dumpBeforeStop"><Property name="jetty.server.dumpBeforeStop" default="false"/></Set>
+    <Set name="dumpAfterStart" property="jetty.server.dumpAfterStart"/>
+    <Set name="dumpBeforeStop" property="jetty.server.dumpBeforeStop"/>
 
     <Call class="org.eclipse.jetty.webapp.Configurations" name="setServerDefault">
       <Arg><Ref refid="Server"/></Arg>
@@ -84,7 +84,7 @@
             <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
             <Item>org.eclipse.jetty.webapp.JmxConfiguration</Item>
             <Item>org.eclipse.jetty.osgi.annotations.AnnotationConfiguration</Item>
-            <Item>org.eclipse.jetty.websocket.server.JettyWebSocketConfiguration</Item>
+            <Item>org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration</Item>
             <Item>org.eclipse.jetty.websocket.javax.server.JavaxWebSocketConfiguration</Item>
             <Item>org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration</Item>
             <Item>org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration</Item>

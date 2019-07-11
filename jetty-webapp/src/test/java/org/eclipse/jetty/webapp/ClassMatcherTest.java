@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.TypeUtil;
@@ -33,6 +28,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClassMatcherTest
 {
@@ -47,18 +46,18 @@ public class ClassMatcherTest
         _pattern.add("org.example.FooBar");
         _pattern.add("-org.example.Excluded");
         _pattern.addAll(Arrays.asList(
-                "-org.example.Nested$Minus",
-                "org.example.Nested",
-                "org.example.Nested$Something"));
+            "-org.example.Nested$Minus",
+            "org.example.Nested",
+            "org.example.Nested$Something"));
 
         assertThat(_pattern, Matchers.containsInAnyOrder(
-                "org.package.",
-                "-org.excluded.",
-                "org.example.FooBar",
-                "-org.example.Excluded",
-                "-org.example.Nested$Minus",
-                "org.example.Nested",
-                "org.example.Nested$Something"
+            "org.package.",
+            "-org.excluded.",
+            "org.example.FooBar",
+            "-org.example.Excluded",
+            "-org.example.Nested$Minus",
+            "org.example.Nested",
+            "org.example.Nested$Something"
         ));
     }
 
@@ -122,15 +121,12 @@ public class ClassMatcherTest
     {
         // jar from JVM classloader
         URI loc_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(loc_string);
 
         // a jar from maven repo jar
         URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
 
         // class file 
         URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(loc_test);
 
         ClassMatcher pattern = new ClassMatcher();
         pattern.include("something");
@@ -139,7 +135,7 @@ public class ClassMatcherTest
         assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
 
         // Add directory for both JVM classes
-        pattern.include(Paths.get(loc_string).getParent().toUri().toString());
+        pattern.include(loc_string.toASCIIString());
 
         // Add jar for individual class and classes directory
         pattern.include(loc_junit.toString(), loc_test.toString());
@@ -220,7 +216,7 @@ public class ClassMatcherTest
         assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
 
         // Add directory for both JVM classes
-        pattern.exclude(Paths.get(loc_string).getParent().toUri().toString());
+        pattern.exclude(loc_string.toString());
 
         // Add jar for individual class and classes directory
         pattern.exclude(loc_junit.toString(), loc_test.toString());
@@ -281,7 +277,6 @@ public class ClassMatcherTest
             assertTrue(pattern.match("n" + i + "." + Integer.toHexString(100 + i) + ".Name"));
         }
     }
-
 
     @Test
     public void testJvmModule()

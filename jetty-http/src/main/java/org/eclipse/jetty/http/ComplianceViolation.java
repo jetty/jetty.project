@@ -23,7 +23,9 @@ import java.util.Set;
 public interface ComplianceViolation
 {
     String getName();
+
     String getURL();
+
     String getDescription();
 
     default boolean isAllowedBy(Mode mode)
@@ -34,8 +36,11 @@ public interface ComplianceViolation
     interface Mode
     {
         String getName();
+
         boolean allows(ComplianceViolation violation);
+
         Set<? extends ComplianceViolation> getKnown();
+
         Set<? extends ComplianceViolation> getAllowed();
     }
 

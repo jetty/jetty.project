@@ -31,7 +31,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -62,9 +61,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class WebSocketCloseTest extends WebSocketTester
 {
     private static Logger LOG = Log.getLogger(WebSocketCloseTest.class);
-    private final static String WS_SCHEME = "ws";
-    private final static String WSS_SCHEME = "wss";
-    
+    private static final String WS_SCHEME = "ws";
+    private static final String WSS_SCHEME = "wss";
+
     private WebSocketServer server;
     private Socket client;
 
@@ -103,7 +102,7 @@ public class WebSocketCloseTest extends WebSocketTester
         client = newClient(server.getLocalPort(), tls);
         assertTrue(server.handler.opened.await(5, TimeUnit.SECONDS));
         assertThat(server.handler.state, containsString("CONNECTED"));
-        while(true)
+        while (true)
         {
             Thread.yield();
             if (server.handler.getCoreSession().toString().contains("OPEN"))
@@ -317,8 +316,9 @@ public class WebSocketCloseTest extends WebSocketTester
         client.close();
         assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
 
-        assertTimeoutPreemptively(Duration.ofSeconds(1), ()->{
-            while(true)
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () ->
+        {
+            while (true)
             {
                 if (!server.isOpen())
                     break;
@@ -410,6 +410,20 @@ public class WebSocketCloseTest extends WebSocketTester
         assertThat(server.handler.closeStatus.getReason(), containsString("onReceiveFrame throws for binary frames"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    public void abnormalCloseStatusIsHardClose(String scheme) throws Exception
+    {
+        setup(State.OPEN, scheme);
+
+        server.handler.getCoreSession().close(CloseStatus.SERVER_ERROR, "manually sent server error", Callback.NOOP);
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
+        assertThat(server.handler.closeStatus.getReason(), containsString("manually sent server error"));
+
+        Frame frame = receiveFrame(client.getInputStream());
+        assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.SERVER_ERROR));
+    }
 
     static class DemandingTestFrameHandler implements SynchronousFrameHandler
     {
@@ -536,8 +550,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
             ContextHandler context = new ContextHandler("/");
             server.setHandler(context);
-            WebSocketNegotiator negotiator = new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(),
-                connector.getByteBufferPool(), frameHandler);
+            WebSocketNegotiator negotiator = new TestWebSocketNegotiator(frameHandler);
 
             WebSocketUpgradeHandler upgradeHandler = new TestWebSocketUpgradeHandler(negotiator);
             context.setHandler(upgradeHandler);

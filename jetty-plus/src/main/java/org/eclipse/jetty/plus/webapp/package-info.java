@@ -20,4 +20,3 @@
  * Jetty Plus : Limited Additional JEE Webapp Support
  */
 package org.eclipse.jetty.plus.webapp;
-

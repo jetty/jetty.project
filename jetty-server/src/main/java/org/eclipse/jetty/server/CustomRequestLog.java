@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -60,7 +59,7 @@ import static java.lang.invoke.MethodType.methodType;
  *
  *
  * <br><br>Percent codes are specified in the format %MODIFIERS{PARAM}CODE
- *<pre>
+ * <pre>
  * MODIFIERS:
  *     Optional list of comma separated HTTP status codes which may be preceded by a single "!" to indicate
  *     negation. If the status code is not in the list the literal string "-" will be logged instead of
@@ -351,7 +350,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     /**
      * Extract the user authentication
      *
-     * @param request       The request to extract from
+     * @param request The request to extract from
      * @param checkDeferred Whether to check for deferred authentication
      * @return The string to log for authenticated user.
      */
@@ -417,7 +416,9 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         {
             _ignorePathMap = new PathMappings<>();
             for (int i = 0; i < _ignorePaths.length; i++)
+            {
                 _ignorePathMap.put(_ignorePaths[i], _ignorePaths[i]);
+            }
         }
         else
             _ignorePathMap = null;
@@ -469,7 +470,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             {PARAM} is an optional string parameter to the percent code.
             CODE is a 1 to 2 character string corresponding to a format code.
          */
-        final Pattern PATTERN = Pattern.compile("^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)", Pattern.DOTALL|Pattern.MULTILINE);
+        final Pattern PATTERN = Pattern.compile("^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)", Pattern.DOTALL | Pattern.MULTILINE);
 
         List<Token> tokens = new ArrayList<>();
         String remaining = formatString;
@@ -518,7 +519,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         return tokens;
     }
 
-
     private static class Token
     {
         public final String code;
@@ -559,13 +559,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         }
     }
 
-
-    private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
-    {
-        return foldArguments(logHandle, dropArguments(dropArguments(append.bindTo(literal), 1, Request.class), 2, Response.class));
-    }
-
-
     //TODO use integer comparisons instead of strings
     private static boolean modify(List<String> modifiers, Boolean negated, StringBuilder b, Request request, Response response)
     {
@@ -578,6 +571,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         {
             return (modifiers.contains(responseCode));
         }
+    }
+
+    private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
+    {
+        return foldArguments(logHandle, dropArguments(dropArguments(append.bindTo(literal), 1, Request.class), 2, Response.class));
     }
 
     private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String code, String arg, List<String> modifiers, boolean negated) throws NoSuchMethodException, IllegalAccessException
@@ -742,7 +740,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 specificHandle = MethodHandles.lookup().findStatic(CustomRequestLog.class, method, logType);
                 break;
             }
-
 
             case "H":
             {
@@ -946,7 +943,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         return foldArguments(logHandle, specificHandle);
     }
 
-
     //-----------------------------------------------------------------------------------//
 
     private static void logNothing(StringBuilder b, Request request, Response response)
@@ -1053,7 +1049,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         else
             b.append(transferred);
     }
-
 
     private static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
     {
@@ -1172,10 +1167,10 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         long currentTime = System.currentTimeMillis();
         long requestTime = request.getTimeStamp();
 
-        long latency_ms = currentTime - requestTime;
-        long latency_us = TimeUnit.MILLISECONDS.toMicros(latency_ms);
+        long latencyMs = currentTime - requestTime;
+        long latencyUs = TimeUnit.MILLISECONDS.toMicros(latencyMs);
 
-        b.append(latency_us);
+        b.append(latencyUs);
     }
 
     private static void logLatencyMilliseconds(StringBuilder b, Request request, Response response)
@@ -1209,7 +1204,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     {
         b.append(request.getHttpChannel().isResponseCompleted() ? (request.getHttpChannel().isPersistent() ? '+' : '-') : 'X');
     }
-
 
     private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
     {

@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client.misbehaving;
 
+import java.util.LinkedList;
+import java.util.concurrent.CountDownLatch;
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
-import java.util.LinkedList;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * A JSR-356 Endpoint that tosses a RuntimeException during its onOpen call

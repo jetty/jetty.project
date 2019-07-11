@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.http.spi.DelegatingThreadPool;
 import org.eclipse.jetty.http.spi.JettyHttpServer;
 import org.eclipse.jetty.server.Handler;
@@ -36,33 +37,31 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 
 /**
  * This is a utility class. Test cases uses this utility class
- *
- *
  */
 public class SpiUtility
 {
 
     public static ThreadPoolExecutor getThreadPoolExecutor(int poolSize, int[] poolInfo)
     {
-        return new ThreadPoolExecutor(poolSize,poolInfo[0],poolInfo[1],TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(poolInfo[2]));
+        return new ThreadPoolExecutor(poolSize, poolInfo[0], poolInfo[1], TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(poolInfo[2]));
     }
 
     public static DelegatingThreadPool getDelegatingThreadPool()
     {
-        ThreadPoolExecutor threadPoolExecutor = SpiUtility.getThreadPoolExecutor(Pool.CORE_POOL_SIZE.getValue(),SpiConstants.poolInfo);
+        ThreadPoolExecutor threadPoolExecutor = SpiUtility.getThreadPoolExecutor(Pool.CORE_POOL_SIZE.getValue(), SpiConstants.poolInfo);
         DelegatingThreadPool delegatingThreadPool = new DelegatingThreadPool(threadPoolExecutor);
         return delegatingThreadPool;
     }
 
     public static InetSocketAddress getInetSocketAddress()
     {
-        return new InetSocketAddress(SpiConstants.LOCAL_HOST,SpiConstants.DEFAULT_PORT);
+        return new InetSocketAddress(SpiConstants.LOCAL_HOST, SpiConstants.DEFAULT_PORT);
     }
 
     public static void callBind(JettyHttpServer jettyHttpServer) throws Exception
     {
         InetSocketAddress inetSocketAddress = SpiUtility.getInetSocketAddress();
-        jettyHttpServer.bind(inetSocketAddress,SpiConstants.BACK_LOG);
+        jettyHttpServer.bind(inetSocketAddress, SpiConstants.BACK_LOG);
     }
 
     public static Server getServerForContextHandler()
@@ -85,7 +84,7 @@ public class SpiUtility
     {
         ContextHandler handler = new ContextHandler();
         Handler[] handles =
-        { handler };
+            {handler};
         HandlerCollection contextHandler = new HandlerCollection();
         contextHandler.setHandlers(handles);
         Server server = new Server();
@@ -98,7 +97,7 @@ public class SpiUtility
         ArrayList<String> valueSet = new ArrayList<String>();
         valueSet.add(SpiConstants.UTF_8);
         Map<String, List<String>> headers = new Hashtable<>();
-        headers.put(SpiConstants.ACCEPT_CHARSET,valueSet);
+        headers.put(SpiConstants.ACCEPT_CHARSET, valueSet);
         return headers;
     }
 

@@ -30,7 +30,7 @@ public interface MessageSink
     /**
      * Consume the frame payload to the message.
      *
-     * @param frame    the frame, its payload (and fin state) to append
+     * @param frame the frame, its payload (and fin state) to append
      * @param callback the callback for how the frame was consumed
      */
     void accept(Frame frame, Callback callback);

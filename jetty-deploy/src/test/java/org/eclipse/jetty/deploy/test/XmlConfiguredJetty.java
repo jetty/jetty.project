@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.deploy.test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -53,18 +46,25 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Allows for setting up a Jetty server for testing based on XML configuration files.
  */
 public class XmlConfiguredJetty
 {
-    private List<URL> _xmlConfigurations;
-    private Map<String,String> _properties = new HashMap<>();
+    private List<Resource> _xmlConfigurations;
+    private Map<String, String> _properties = new HashMap<>();
     private Server _server;
     private int _serverPort;
     private String _scheme = HttpScheme.HTTP.asString();
@@ -88,29 +88,29 @@ public class XmlConfiguredJetty
         // Prepare Jetty.Home (Test) dir
         _jettyHome.mkdirs();
 
-        File logsDir = new File(_jettyHome,"logs");
+        File logsDir = new File(_jettyHome, "logs");
         logsDir.mkdirs();
 
-        File etcDir = new File(_jettyHome,"etc");
+        File etcDir = new File(_jettyHome, "etc");
         etcDir.mkdirs();
-        IO.copyFile(MavenTestingUtils.getTestResourceFile("etc/realm.properties"),new File(etcDir,"realm.properties"));
-        IO.copyFile(MavenTestingUtils.getTestResourceFile("etc/webdefault.xml"),new File(etcDir,"webdefault.xml"));
+        IO.copyFile(MavenTestingUtils.getTestResourceFile("etc/realm.properties"), new File(etcDir, "realm.properties"));
+        IO.copyFile(MavenTestingUtils.getTestResourceFile("etc/webdefault.xml"), new File(etcDir, "webdefault.xml"));
 
-        File webappsDir = new File(_jettyHome,"webapps");
+        File webappsDir = new File(_jettyHome, "webapps");
         if (webappsDir.exists())
         {
             deleteContents(webappsDir);
         }
         webappsDir.mkdirs();
 
-        File tmpDir = new File(_jettyHome,"tmp");
+        File tmpDir = new File(_jettyHome, "tmp");
         if (tmpDir.exists())
         {
             deleteContents(tmpDir);
         }
         tmpDir.mkdirs();
 
-        File workishDir = new File(_jettyHome,"workish");
+        File workishDir = new File(_jettyHome, "workish");
         if (workishDir.exists())
         {
             deleteContents(workishDir);
@@ -118,28 +118,30 @@ public class XmlConfiguredJetty
         workishDir.mkdirs();
 
         // Setup properties
-        System.setProperty("java.io.tmpdir",tmpDir.getAbsolutePath());
-        properties.setProperty("jetty.home",_jettyHome.getAbsolutePath());
-        System.setProperty("jetty.home",_jettyHome.getAbsolutePath());
-        properties.setProperty("test.basedir",MavenTestingUtils.getBaseDir().getAbsolutePath());
-        properties.setProperty("test.resourcesdir",MavenTestingUtils.getTestResourcesDir().getAbsolutePath());
-        properties.setProperty("test.webapps",webappsDir.getAbsolutePath());
-        properties.setProperty("test.targetdir",MavenTestingUtils.getTargetDir().getAbsolutePath());
-        properties.setProperty("test.workdir",workishDir.getAbsolutePath());
+        System.setProperty("java.io.tmpdir", tmpDir.getAbsolutePath());
+        properties.setProperty("jetty.home", _jettyHome.getAbsolutePath());
+        System.setProperty("jetty.home", _jettyHome.getAbsolutePath());
+        properties.setProperty("test.basedir", MavenTestingUtils.getBaseDir().getAbsolutePath());
+        properties.setProperty("test.resourcesdir", MavenTestingUtils.getTestResourcesDir().getAbsolutePath());
+        properties.setProperty("test.webapps", webappsDir.getAbsolutePath());
+        properties.setProperty("test.targetdir", MavenTestingUtils.getTargetDir().getAbsolutePath());
+        properties.setProperty("test.workdir", workishDir.getAbsolutePath());
 
         // Write out configuration for use by ConfigurationManager.
         File testConfig = new File(_jettyHome, "xml-configured-jetty.properties");
         try (OutputStream out = new FileOutputStream(testConfig))
         {
-            properties.store(out,"Generated by " + XmlConfiguredJetty.class.getName());
+            properties.store(out, "Generated by " + XmlConfiguredJetty.class.getName());
         }
-        for (Object key:properties.keySet())
-            setProperty(String.valueOf(key),String.valueOf(properties.get(key)));
+        for (Object key : properties.keySet())
+        {
+            setProperty(String.valueOf(key), String.valueOf(properties.get(key)));
+        }
     }
 
-    public void addConfiguration(File xmlConfigFile) throws MalformedURLException
+    public void addConfiguration(File xmlConfigFile)
     {
-        addConfiguration(Resource.toURL(xmlConfigFile));
+        addConfiguration(new PathResource(xmlConfigFile));
     }
 
     public void addConfiguration(String testConfigName) throws MalformedURLException
@@ -147,7 +149,7 @@ public class XmlConfiguredJetty
         addConfiguration(MavenTestingUtils.getTestResourceFile(testConfigName));
     }
 
-    public void addConfiguration(URL xmlConfig)
+    public void addConfiguration(Resource xmlConfig)
     {
         _xmlConfigurations.add(xmlConfig);
     }
@@ -203,7 +205,7 @@ public class XmlConfiguredJetty
             System.err.println("## Actual Contexts");
             for (WebAppContext context : contexts)
             {
-                System.err.printf("%s ## %s%n",context.getContextPath(),context);
+                System.err.printf("%s ## %s%n", context.getContextPath(), context);
             }
             assertEquals(expectedContextPaths.length, contexts.size(), "Contexts.size");
         }
@@ -220,29 +222,29 @@ public class XmlConfiguredJetty
                     break;
                 }
             }
-            assertTrue(found,"Did not find Expected Context Path " + expectedPath);
+            assertTrue(found, "Did not find Expected Context Path " + expectedPath);
         }
     }
 
     private void copyFile(String type, File srcFile, File destFile) throws IOException
     {
-        PathAssert.assertFileExists(type + " File",srcFile);
-        IO.copyFile(srcFile,destFile);
-        PathAssert.assertFileExists(type + " File",destFile);
-        System.err.printf("Copy %s: %s%n  To %s: %s%n",type,srcFile,type,destFile);
-        System.err.printf("Destination Exists: %s - %s%n",destFile.exists(),destFile);
+        PathAssert.assertFileExists(type + " File", srcFile);
+        IO.copyFile(srcFile, destFile);
+        PathAssert.assertFileExists(type + " File", destFile);
+        System.err.printf("Copy %s: %s%n  To %s: %s%n", type, srcFile, type, destFile);
+        System.err.printf("Destination Exists: %s - %s%n", destFile.exists(), destFile);
     }
 
     public void copyWebapp(String srcName, String destName) throws IOException
     {
-        System.err.printf("Copying Webapp: %s -> %s%n",srcName,destName);
+        System.err.printf("Copying Webapp: %s -> %s%n", srcName, destName);
         File srcDir = MavenTestingUtils.getTestResourceDir("webapps");
-        File destDir = new File(_jettyHome,"webapps");
+        File destDir = new File(_jettyHome, "webapps");
 
-        File srcFile = new File(srcDir,srcName);
-        File destFile = new File(destDir,destName);
+        File srcFile = new File(srcDir, srcName);
+        File destFile = new File(destDir, destName);
 
-        copyFile("Webapp",srcFile,destFile);
+        copyFile("Webapp", srcFile, destFile);
     }
 
     private void deleteContents(File dir)
@@ -262,11 +264,11 @@ public class XmlConfiguredJetty
                 if (file.isDirectory() && file.getAbsolutePath().contains("target" + File.separator))
                 {
                     deleteContents(file);
-                    assertTrue(file.delete(),"Delete failed: " + file.getAbsolutePath());
+                    assertTrue(file.delete(), "Delete failed: " + file.getAbsolutePath());
                 }
                 else
                 {
-                    assertTrue(file.delete(),"Delete failed: " + file.getAbsolutePath());
+                    assertTrue(file.delete(), "Delete failed: " + file.getAbsolutePath());
                 }
             }
         }
@@ -274,7 +276,7 @@ public class XmlConfiguredJetty
 
     public File getJettyDir(String name)
     {
-        return new File(_jettyHome,name);
+        return new File(_jettyHome, name);
     }
 
     public File getJettyHome()
@@ -308,7 +310,7 @@ public class XmlConfiguredJetty
     {
         List<WebAppContext> contexts = new ArrayList<>();
         HandlerCollection handlers = (HandlerCollection)_server.getHandler();
-        Handler children[] = handlers.getChildHandlers();
+        Handler[] children = handlers.getChildHandlers();
 
         for (Handler handler : children)
         {
@@ -330,8 +332,8 @@ public class XmlConfiguredJetty
         // Configure everything
         for (int i = 0; i < this._xmlConfigurations.size(); i++)
         {
-            URL configURL = this._xmlConfigurations.get(i);
-            XmlConfiguration configuration = new XmlConfiguration(configURL);
+            Resource configResource = this._xmlConfigurations.get(i);
+            XmlConfiguration configuration = new XmlConfiguration(configResource);
             if (last != null)
                 configuration.getIdMap().putAll(last.getIdMap());
             configuration.getProperties().putAll(_properties);
@@ -369,17 +371,17 @@ public class XmlConfiguredJetty
 
     public void removeWebapp(String name)
     {
-        File destDir = new File(_jettyHome,"webapps");
-        File contextFile = new File(destDir,name);
+        File destDir = new File(_jettyHome, "webapps");
+        File contextFile = new File(destDir, name);
         if (contextFile.exists())
         {
-            assertTrue(contextFile.delete(),"Delete of Webapp file: " + contextFile.getAbsolutePath());
+            assertTrue(contextFile.delete(), "Delete of Webapp file: " + contextFile.getAbsolutePath());
         }
     }
 
     public void setProperty(String key, String value)
     {
-        _properties.put(key,value);
+        _properties.put(key, value);
     }
 
     public void setScheme(String scheme)
@@ -395,18 +397,18 @@ public class XmlConfiguredJetty
 
         // Find the active server port.
         _serverPort = -1;
-        Connector connectors[] = _server.getConnectors();
-        for (int i = 0; _serverPort<0 && i < connectors.length; i++)
+        Connector[] connectors = _server.getConnectors();
+        for (int i = 0; _serverPort < 0 && i < connectors.length; i++)
         {
             if (connectors[i] instanceof NetworkConnector)
             {
                 int port = ((NetworkConnector)connectors[i]).getLocalPort();
-                if (port>0)
-                    _serverPort=port;
+                if (port > 0)
+                    _serverPort = port;
             }
         }
 
-        assertTrue((1 <= this._serverPort) && (this._serverPort <= 65535),"Server Port is between 1 and 65535. Was actually <" + _serverPort + ">");
+        assertTrue((1 <= this._serverPort) && (this._serverPort <= 65535), "Server Port is between 1 and 65535. Was actually <" + _serverPort + ">");
 
         // Uncomment to have server start and continue to run (without exiting)
         // System.err.printf("Listening to port %d%n",this.serverPort);

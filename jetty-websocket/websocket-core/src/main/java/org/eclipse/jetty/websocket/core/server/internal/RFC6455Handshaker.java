@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -47,6 +46,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
@@ -68,9 +68,9 @@ public final class RFC6455Handshaker implements Handshaker
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response,
                                   FrameHandler.Customizer defaultCustomizer) throws IOException
     {
-        Request baseRequest = Request.getBaseRequest(request);
-        HttpChannel httpChannel = baseRequest.getHttpChannel();
-        Connector connector = httpChannel.getConnector();
+        final Request baseRequest = Request.getBaseRequest(request);
+        final HttpChannel httpChannel = baseRequest.getHttpChannel();
+        final Connector connector = httpChannel.getConnector();
 
         if (negotiator == null)
         {
@@ -101,9 +101,7 @@ public final class RFC6455Handshaker implements Handshaker
             baseRequest,
             request,
             response,
-            negotiator.getExtensionRegistry(),
-            negotiator.getObjectFactory(),
-            pool);
+            new WebSocketComponents());
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
 
@@ -194,7 +192,7 @@ public final class RFC6455Handshaker implements Handshaker
 
         // Create the Session
         WebSocketCoreSession coreSession = newWebSocketCoreSession(handler, negotiated);
-        if (defaultCustomizer!=null)
+        if (defaultCustomizer != null)
             defaultCustomizer.customize(coreSession);
         negotiator.customize(coreSession);
 
@@ -209,7 +207,9 @@ public final class RFC6455Handshaker implements Handshaker
             throw new WebSocketException("not upgraded: no connection");
 
         for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
+        {
             connection.addListener(listener);
+        }
 
         coreSession.setWebSocketConnection(connection);
 

@@ -18,6 +18,16 @@
 
 package org.eclipse.jetty.websocket.javax.server.internal;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.websocket.Extension;
+import javax.websocket.Extension.Parameter;
+import javax.websocket.server.ServerEndpointConfig;
+
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.StringUtil;
@@ -31,16 +41,6 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtension;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-
-import javax.websocket.Extension;
-import javax.websocket.Extension.Parameter;
-import javax.websocket.server.ServerEndpointConfig;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class JavaxWebSocketCreator implements WebSocketCreator
 {
@@ -62,8 +62,8 @@ public class JavaxWebSocketCreator implements WebSocketCreator
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
-        JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
-        JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);
+        final JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
+        final JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);
 
         // Establish a copy of the config, so that the UserProperties are unique
         // per upgrade request.
@@ -183,19 +183,19 @@ public class JavaxWebSocketCreator implements WebSocketCreator
 
         JavaxWebSocketCreator that = (JavaxWebSocketCreator)o;
 
-        return baseConfig != null?baseConfig.equals(that.baseConfig):that.baseConfig == null;
+        return baseConfig != null ? baseConfig.equals(that.baseConfig) : that.baseConfig == null;
     }
 
     @Override
     public int hashCode()
     {
-        int result = (baseConfig != null?baseConfig.hashCode():0);
+        int result = (baseConfig != null ? baseConfig.hashCode() : 0);
         return result;
     }
 
     @Override
     public String toString()
     {
-        return String.format("JsrCreator[%s%s]", (baseConfig instanceof AnnotatedServerEndpointConfig?"@":""), baseConfig.getEndpointClass().getName());
+        return String.format("JsrCreator[%s%s]", (baseConfig instanceof AnnotatedServerEndpointConfig ? "@" : ""), baseConfig.getEndpointClass().getName());
     }
 }

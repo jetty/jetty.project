@@ -22,7 +22,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.Locale;
-
+import java.util.Objects;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
@@ -41,18 +41,71 @@ public class Injection
 {
     private static final Logger LOG = Log.getLogger(Injection.class);
 
-    private Class<?> _targetClass;
-    private String _jndiName;
-    private String _mappingName;
-    private Member _target;
-    private Class<?> _paramClass;
-    private Class<?> _resourceClass;
+    private final Class<?> _targetClass;
+    private final String _jndiName;
+    private final String _mappingName;
+    private final Member _target;
+    private final Class<?> _paramClass;
+    private final Class<?> _resourceClass;
 
-
-    public Injection ()
+    public Injection(Class<?> clazz, Field field, Class<?> resourceType, String jndiName, String mappingName)
     {
+        _targetClass = Objects.requireNonNull(clazz);
+        _target = Objects.requireNonNull(field);
+        _resourceClass = resourceType;
+        _paramClass = null;
+        _jndiName = jndiName;
+        _mappingName = mappingName;
     }
 
+    public Injection(Class<?> clazz, Method method, Class<?> arg, Class<?> resourceType, String jndiName, String mappingName)
+    {
+        _targetClass = Objects.requireNonNull(clazz);
+        _target = Objects.requireNonNull(method);
+        _resourceClass = resourceType;
+        _paramClass = arg;
+        _jndiName = jndiName;
+        _mappingName = mappingName;
+    }
+
+    public Injection(Class<?> clazz, String target, Class<?> resourceType, String jndiName, String mappingName)
+    {
+        _targetClass = Objects.requireNonNull(clazz);
+        Objects.requireNonNull(target);
+        _resourceClass = resourceType;
+        _jndiName = jndiName;
+        _mappingName = mappingName;
+
+        Member tmpTarget = null;
+        Class<?> tmpParamClass = null;
+
+        //first look for a javabeans style setter matching the targetName
+        String setter = "set" + target.substring(0, 1).toUpperCase(Locale.ENGLISH) + target.substring(1);
+        try
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Looking for method for setter: " + setter + " with arg {}", _resourceClass);
+            tmpTarget = IntrospectionUtil.findMethod(clazz, setter, new Class[]{_resourceClass}, true, false);
+            tmpParamClass = _resourceClass;
+        }
+        catch (NoSuchMethodException nsme)
+        {
+            //try as a field
+            try
+            {
+                tmpTarget = IntrospectionUtil.findField(clazz, target, resourceType, true, false);
+                tmpParamClass = null;
+            }
+            catch (NoSuchFieldException nsfe)
+            {
+                nsme.addSuppressed(nsfe);
+                throw new IllegalArgumentException("No such field or method " + target + " on class " + _targetClass, nsme);
+            }
+        }
+
+        _target = tmpTarget;
+        _paramClass = tmpParamClass;
+    }
 
     /**
      * @return the _className
@@ -62,24 +115,24 @@ public class Injection
         return _targetClass;
     }
 
-    public Class<?> getParamClass ()
+    public Class<?> getParamClass()
     {
         return _paramClass;
     }
 
-    public Class<?> getResourceClass ()
+    public Class<?> getResourceClass()
     {
         return _resourceClass;
     }
 
-    public boolean isField ()
+    public boolean isField()
     {
-        return (_target != null && _target instanceof Field);
+        return (Field.class.isInstance(_target));
     }
 
-    public boolean isMethod ()
+    public boolean isMethod()
     {
-        return (_target != null && _target instanceof Method);
+        return (Method.class.isInstance(_target));
     }
 
     /**
@@ -89,26 +142,14 @@ public class Injection
     {
         return _jndiName;
     }
+
     /**
-     * @param jndiName the jndiName to set
-     */
-    public void setJndiName(String jndiName)
-    {
-        this._jndiName = jndiName;
-    }
-    /**
+    
      * @return the mappingName
      */
     public String getMappingName()
     {
         return _mappingName;
-    }
-    /**
-     * @param mappingName the mappingName to set
-     */
-    public void setMappingName(String mappingName)
-    {
-        this._mappingName = mappingName;
     }
 
     /**
@@ -119,90 +160,41 @@ public class Injection
         return _target;
     }
 
-
-    public void setTarget(Class<?> clazz, Field field, Class<?> resourceType)
-    {
-        _targetClass = clazz;
-        _target = field;
-        _resourceClass = resourceType;
-    }
-
-    public void setTarget(Class<?> clazz, Method method, Class<?> arg, Class<?> resourceType)
-    {
-        _targetClass = clazz;
-        _target = method;
-        _resourceClass = resourceType;
-        _paramClass = arg;
-    }
-
-    public void setTarget (Class<?> clazz, String target, Class<?> resourceType)
-    {
-        _targetClass = clazz;
-        _resourceClass = resourceType;
-
-        //first look for a javabeans style setter matching the targetName
-        String setter = "set"+target.substring(0,1).toUpperCase(Locale.ENGLISH)+target.substring(1);
-        try
-        {
-            LOG.debug("Looking for method for setter: "+setter+" with arg "+_resourceClass);
-            _target = IntrospectionUtil.findMethod(clazz, setter, new Class[] {_resourceClass}, true, false);
-            _targetClass = clazz;
-            _paramClass = _resourceClass;
-        }
-        catch (NoSuchMethodException me)
-        {
-            //try as a field
-            try
-            {
-                _target = IntrospectionUtil.findField(clazz, target, resourceType, true, false);
-                _targetClass = clazz;
-            }
-            catch (NoSuchFieldException fe)
-            {
-                throw new IllegalArgumentException("No such field or method "+target+" on class "+_targetClass);
-            }
-        }
-
-    }
-
     /**
      * Inject a value for a Resource from JNDI into an object
-     * @param injectable the object to inject 
+     *
+     * @param injectable the object to inject
      */
-    public void inject (Object injectable)
+    public void inject(Object injectable)
     {
-        if (_target != null)
-        {
-            if (_target instanceof Field)
-                injectField((Field)_target, injectable);
-            else
-                injectMethod((Method)_target, injectable);
-        }
+        if (isField())
+            injectField((Field)_target, injectable);
+        else if (isMethod())
+            injectMethod((Method)_target, injectable);
         else
-            throw new IllegalStateException ("No method or field to inject with "+getJndiName());
+            throw new IllegalStateException("Neither field nor method injection");
     }
-
 
     /**
      * The Resource must already exist in the ENC of this webapp.
+     *
      * @return the injected valud
      * @throws NamingException if unable to lookup value
      */
-    public Object lookupInjectedValue ()
-    throws NamingException
+    public Object lookupInjectedValue()
+        throws NamingException
     {
         InitialContext context = new InitialContext();
-        return context.lookup("java:comp/env/"+getJndiName());
+        return context.lookup("java:comp/env/" + getJndiName());
     }
-
-
 
     /**
      * Inject value from jndi into a field of an instance
+     *
      * @param field the field to inject into
      * @param injectable the value to inject
      */
-    protected void injectField (Field field, Object injectable)
+    protected void injectField(Field field, Object injectable)
     {
         try
         {
@@ -214,29 +206,29 @@ public class Injection
         catch (Exception e)
         {
             LOG.warn(e);
-            throw new IllegalStateException("Inject failed for field "+field.getName());
+            throw new IllegalStateException("Inject failed for field " + field.getName());
         }
     }
 
     /**
      * Inject value from jndi into a setter method of an instance
+     *
      * @param method the method to inject into
      * @param injectable the value to inject
      */
-    protected void injectMethod (Method method, Object injectable)
+    protected void injectMethod(Method method, Object injectable)
     {
         try
         {
             boolean accessibility = method.isAccessible();
             method.setAccessible(true);
-            method.invoke(injectable, new Object[] {lookupInjectedValue()});
+            method.invoke(injectable, new Object[]{lookupInjectedValue()});
             method.setAccessible(accessibility);
         }
         catch (Exception e)
         {
             LOG.warn(e);
-            throw new IllegalStateException("Inject failed for method "+method.getName());
+            throw new IllegalStateException("Inject failed for method " + method.getName());
         }
     }
-
 }

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
-import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.toolchain.test.IO;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +30,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.toolchain.test.IO;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,17 +54,17 @@ public class Sha1Sum
         }
 
         @Override
+        public void write(int b) throws IOException
+        {
+        }
+
+        @Override
         public void flush() throws IOException
         {
         }
 
         @Override
         public void close() throws IOException
-        {
-        }
-
-        @Override
-        public void write(int b) throws IOException
         {
         }
     }
@@ -108,5 +108,4 @@ public class Sha1Sum
         assertTrue(mat.find(), "Should have found HEX code in SHA1 file: " + sha1File);
         return mat.group();
     }
-
 }

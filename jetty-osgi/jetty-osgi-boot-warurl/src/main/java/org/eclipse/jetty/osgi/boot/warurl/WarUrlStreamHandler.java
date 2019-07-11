@@ -63,18 +63,18 @@ public class WarUrlStreamHandler extends AbstractURLStreamHandlerService
         }
 
         // if (actual.toString().startsWith("file:/") && ! actual.to)
-        URLConnection ori = (URLConnection) actual.openConnection();
+        URLConnection ori = (URLConnection)actual.openConnection();
         ori.setDefaultUseCaches(Resource.getDefaultUseCaches());
         JarURLConnection jarOri = null;
         try
         {
             if (ori instanceof JarURLConnection)
             {
-                jarOri = (JarURLConnection) ori;
+                jarOri = (JarURLConnection)ori;
             }
             else
             {
-                jarOri = (JarURLConnection) new URL("jar:" + actual.toString() + "!/").openConnection();
+                jarOri = (JarURLConnection)new URL("jar:" + actual.toString() + "!/").openConnection();
                 jarOri.setDefaultUseCaches(Resource.getDefaultUseCaches());
             }
             Manifest mf = WarBundleManifestGenerator.createBundleManifest(jarOri.getManifest(), url, jarOri.getJarFile());
@@ -83,22 +83,21 @@ public class WarUrlStreamHandler extends AbstractURLStreamHandlerService
                 jarOri.getJarFile().close();
                 jarOri = null;
             }
-            catch (Throwable t)
+            catch (Throwable ignored)
             {
             }
             return new WarURLConnection(actual, mf);
         }
         finally
         {
-            if (jarOri != null) try
-            {
-                jarOri.getJarFile().close();
-            }
-            catch (Throwable t)
-            {
-            }
+            if (jarOri != null)
+                try
+                {
+                    jarOri.getJarFile().close();
+                }
+                catch (Throwable ignored)
+                {
+                }
         }
-
     }
-
 }

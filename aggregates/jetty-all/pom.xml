@@ -188,7 +188,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-client</artifactId>
+      <artifactId>jetty-websocket-client</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- http/2 support -->

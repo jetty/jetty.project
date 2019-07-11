@@ -188,7 +188,7 @@ public class AvailableDecodersTest
     public void testCoreDecode_ByteArray() throws IllegalAccessException, InstantiationException, DecodeException
     {
         ByteBuffer val = Hex.asByteBuffer("112233445566778899");
-        byte expected[] = Hex.asByteArray("112233445566778899");
+        byte[] expected = Hex.asByteArray("112233445566778899");
         assertBinaryDecoder(byte[].class, val, expected);
     }
 

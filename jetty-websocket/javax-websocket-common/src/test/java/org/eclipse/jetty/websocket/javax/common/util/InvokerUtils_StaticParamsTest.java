@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.javax.common.util;
 
-import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils.Arg;
-import org.junit.jupiter.api.Test;
-
-import javax.websocket.Session;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import javax.websocket.Session;
+
+import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils.Arg;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -64,7 +64,7 @@ public class InvokerUtils_StaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onFruit", String.class);
 
         // Declared Variable Names
-        final String namedVariables[] = new String[] {
+        final String[] namedVariables = new String[]{
             "fruit"
         };
 
@@ -95,7 +95,7 @@ public class InvokerUtils_StaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onCount", int.class);
 
         // Declared Variable Names - as seen in url-template-pattern
-        final String namedVariables[] = new String[] {
+        final String[] namedVariables = new String[]{
             "count"
         };
 
@@ -124,7 +124,7 @@ public class InvokerUtils_StaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onLabeledCount", String.class, int.class);
 
         // Declared Variable Names - as seen in url-template-pattern
-        final String namedVariables[] = new String[] {
+        final String[] namedVariables = new String[]{
             "count"
         };
 

@@ -60,7 +60,9 @@ public class ClientParserTest
         final int[] primes = new int[]{2, 3, 5};
         int value = 1;
         for (int prime : primes)
+        {
             value *= prime;
+        }
 
         final AtomicInteger params = new AtomicInteger(1);
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()

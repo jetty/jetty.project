@@ -22,6 +22,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
@@ -41,9 +42,9 @@ public class WebSocketServer
     public static class EchoSocket
     {
         @OnWebSocketMessage
-        public void onMessage( Session session, String message )
+        public void onMessage(Session session, String message)
         {
-            session.getRemote().sendStringByFuture(message);
+            session.getRemote().sendString(message, WriteCallback.NOOP);
         }
     }
 
@@ -56,16 +57,16 @@ public class WebSocketServer
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping(factory.parsePathSpec("/"), (req,res)->new EchoSocket());
+            factory.addMapping("/", (req, res) -> new EchoSocket());
         }
     }
 
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
 
         ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 

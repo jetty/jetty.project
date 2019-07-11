@@ -28,6 +28,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -113,7 +114,7 @@ public class MessageReceivingTest
         {
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("", UTF_8));
             session.getBasicRemote().sendBinary(BufferUtil.toBuffer("Echo", UTF_8));
-            byte bigBuf[] = new byte[1024 * 1024];
+            byte[] bigBuf = new byte[1024 * 1024];
             Arrays.fill(bigBuf, (byte)'x');
             // allocate fresh ByteBuffer and copy array contents, not wrap
             // as the send will modify the wrapped array (for client masking purposes)
@@ -214,7 +215,7 @@ public class MessageReceivingTest
             .preferredSubprotocols(Collections.singletonList("echo"))
             .build();
 
-        byte raw[] = new byte[1024 * 1024];
+        byte[] raw = new byte[1024 * 1024];
         Arrays.fill(raw, (byte)'x');
         String veryLongString = new String(raw, UTF_8);
 
@@ -244,13 +245,13 @@ public class MessageReceivingTest
         @Override
         public void onText(String wholeMessage, Callback callback)
         {
-            String parts[] = wholeMessage.split(" ");
+            String[] parts = wholeMessage.split(" ");
             for (int i = 0; i < parts.length; i++)
             {
                 if (i > 0)
                     getCoreSession().sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, true);
                 boolean last = (i >= (parts.length - 1));
-                Frame frame = new Frame((i == 0)?OpCode.TEXT:OpCode.CONTINUATION);
+                Frame frame = new Frame((i == 0) ? OpCode.TEXT : OpCode.CONTINUATION);
                 frame.setPayload(BufferUtil.toBuffer(parts[i], UTF_8));
                 frame.setFin(last);
                 getCoreSession().sendFrame(frame, Callback.NOOP, !last);
@@ -343,6 +344,8 @@ public class MessageReceivingTest
 
     public static class ServerMessageNegotiator extends CoreServer.BaseNegotiator
     {
+        private static final int MAX_MESSAGE_SIZE = (1024 * 1024) + 2;
+
         public ServerMessageNegotiator()
         {
             super();
@@ -363,7 +366,6 @@ public class MessageReceivingTest
             {
                 negotiation.setSubprotocol("partial-binary");
                 SendPartialBinaryFrameHandler frameHandler = new SendPartialBinaryFrameHandler();
-                frameHandler.setMaxBinaryMessageSize((1024 * 1024) + 2);
                 return frameHandler;
             }
 
@@ -371,11 +373,17 @@ public class MessageReceivingTest
             {
                 negotiation.setSubprotocol("echo");
                 EchoWholeMessageFrameHandler frameHandler = new EchoWholeMessageFrameHandler();
-                frameHandler.setMaxTextMessageSize((1024 * 1024) + 2);
                 return frameHandler;
             }
 
             return null;
+        }
+
+        @Override
+        public void customize(FrameHandler.Configuration configurable)
+        {
+            configurable.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            configurable.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
         }
     }
 
@@ -413,7 +421,7 @@ public class MessageReceivingTest
     /**
      * Abstract message handler implementation, used for tests.
      */
-    private static abstract class AbstractHandler implements javax.websocket.MessageHandler
+    private abstract static class AbstractHandler implements javax.websocket.MessageHandler
     {
         public final BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     }

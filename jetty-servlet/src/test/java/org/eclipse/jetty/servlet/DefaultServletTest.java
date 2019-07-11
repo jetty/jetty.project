@@ -113,7 +113,7 @@ public class DefaultServletTest
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
         File extraJarResources = MavenTestingUtils.getTestResourceFile(ODD_JAR);
-        URL urls[] = new URL[] { extraJarResources.toURI().toURL() };
+        URL[] urls = new URL[]{extraJarResources.toURI().toURL()};
 
         ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
         URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
@@ -184,7 +184,7 @@ public class DefaultServletTest
          * encoded characters '<', '>', and '"'.
          */
         String req1 = "GET /context/;<script>window.alert(\"hi\");</script> HTTP/1.0\r\n" +
-                "\r\n";
+            "\r\n";
         String rawResponse = connector.getResponse(req1);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -192,7 +192,7 @@ public class DefaultServletTest
         assertThat(body, not(containsString("<script>")));
 
         req1 = "GET /context/one/;\"onmouseover='alert(document.location)' HTTP/1.0\r\n" +
-                "\r\n";
+            "\r\n";
 
         rawResponse = connector.getResponse(req1);
         response = HttpTester.parseResponse(rawResponse);
@@ -411,17 +411,17 @@ public class DefaultServletTest
         Scenarios scenarios = new Scenarios();
 
         scenarios.addScenario(
-                "GET normal",
-                "GET /context/ HTTP/1.0\r\n\r\n",
-                HttpStatus.OK_200,
-                (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
+            "GET normal",
+            "GET /context/ HTTP/1.0\r\n\r\n",
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
         );
 
         scenarios.addScenario(
-                "GET /context/index.html",
-                "GET /context/index.html HTTP/1.0\r\n\r\n",
-                HttpStatus.OK_200,
-                (response) -> assertThat(response.getContent(), containsString("Hello Index"))
+            "GET /context/index.html",
+            "GET /context/index.html HTTP/1.0\r\n\r\n",
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("Hello Index"))
         );
 
         List<String> notEncodedPrefixes = new ArrayList<>();
@@ -434,71 +434,72 @@ public class DefaultServletTest
         for (String prefix : notEncodedPrefixes)
         {
             scenarios.addScenario(
-                    "GET " + prefix,
-                    "GET " + prefix + " HTTP/1.0\r\n\r\n",
-                    HttpStatus.NOT_FOUND_404
+                "GET " + prefix,
+                "GET " + prefix + " HTTP/1.0\r\n\r\n",
+                HttpStatus.NOT_FOUND_404
             );
 
             scenarios.addScenario(
-                    "GET " + prefix + "/",
-                    "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
-                    HttpStatus.NOT_FOUND_404
+                "GET " + prefix + "/",
+                "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
+                HttpStatus.NOT_FOUND_404
             );
 
             scenarios.addScenario(
-                    "GET " + prefix + "/../../sekret/pass",
-                    "GET " + prefix + "/../../sekret/pass HTTP/1.0\r\n\r\n",
-                    HttpStatus.NOT_FOUND_404,
-                    (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+                "GET " + prefix + "/../../sekret/pass",
+                "GET " + prefix + "/../../sekret/pass HTTP/1.0\r\n\r\n",
+                HttpStatus.NOT_FOUND_404,
+                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
             scenarios.addScenario(
-                    "GET " + prefix + "/%2E%2E/%2E%2E/sekret/pass",
-                    "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
-                    HttpStatus.NOT_FOUND_404,
-                    (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+                "GET " + prefix + "/%2E%2E/%2E%2E/sekret/pass",
+                "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
+                HttpStatus.NOT_FOUND_404,
+                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
             // A Raw Question mark in the prefix can be interpreted as a query section
             if (prefix.contains("?"))
             {
                 scenarios.addScenario(
-                        "GET " + prefix + "/../index.html",
-                        "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
-                        HttpStatus.NOT_FOUND_404
+                    "GET " + prefix + "/../index.html",
+                    "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
+                    HttpStatus.NOT_FOUND_404
                 );
 
                 scenarios.addScenario(
-                        "GET " + prefix + "/%2E%2E/index.html",
-                        "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
-                        HttpStatus.NOT_FOUND_404
+                    "GET " + prefix + "/%2E%2E/index.html",
+                    "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
+                    HttpStatus.NOT_FOUND_404
                 );
             }
             else
             {
                 scenarios.addScenario(
-                        "GET " + prefix + "/../index.html",
-                        "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
-                        HttpStatus.OK_200,
-                        (response) -> assertThat(response.getContent(), containsString("Hello Index"))
+                    "GET " + prefix + "/../index.html",
+                    "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
+                    HttpStatus.OK_200,
+                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
                 );
 
                 scenarios.addScenario(
-                        "GET " + prefix + "/%2E%2E/index.html",
-                        "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
-                        HttpStatus.OK_200,
-                        (response) -> assertThat(response.getContent(), containsString("Hello Index"))
+                    "GET " + prefix + "/%2E%2E/index.html",
+                    "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
+                    HttpStatus.OK_200,
+                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
                 );
             }
 
             scenarios.addScenario(
-                    "GET " + prefix + "/../../",
-                    "GET " + prefix + "/../../ HTTP/1.0\r\n\r\n",
-                    HttpStatus.NOT_FOUND_404,
-                    (response) -> {
-                        String body = response.getContent();
-                        assertThat(body, not(containsString("Directory: ")));
-                    }
+                "GET " + prefix + "/../../",
+                "GET " + prefix + "/../../ HTTP/1.0\r\n\r\n",
+                HttpStatus.NOT_FOUND_404,
+                (response) ->
+                {
+                    String body = response.getContent();
+                    assertThat(body, not(containsString("Directory: ")));
+                }
             );
         }
 
@@ -513,55 +514,56 @@ public class DefaultServletTest
         for (String prefix : encodedPrefixes)
         {
             scenarios.addScenario(
-                    "GET " + prefix,
-                    "GET " + prefix + " HTTP/1.0\r\n\r\n",
-                    HttpStatus.MOVED_TEMPORARILY_302,
-                    (response) -> assertThat("Location header", response.get(HttpHeader.LOCATION), endsWith(prefix + "/"))
+                "GET " + prefix,
+                "GET " + prefix + " HTTP/1.0\r\n\r\n",
+                HttpStatus.MOVED_TEMPORARILY_302,
+                (response) -> assertThat("Location header", response.get(HttpHeader.LOCATION), endsWith(prefix + "/"))
             );
 
             scenarios.addScenario(
-                    "GET " + prefix + "/",
-                    "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
-                    HttpStatus.OK_200
+                "GET " + prefix + "/",
+                "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
+                HttpStatus.OK_200
             );
 
             scenarios.addScenario(
-                    "GET " + prefix + "/.%2E/.%2E/sekret/pass",
-                    "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
-                    HttpStatus.OK_200,
-                    (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+                "GET " + prefix + "/.%2E/.%2E/sekret/pass",
+                "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
+                HttpStatus.OK_200,
+                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
             scenarios.addScenario(
-                    "GET " + prefix + "/../index.html",
-                    "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
-                    HttpStatus.OK_200,
-                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
+                "GET " + prefix + "/../index.html",
+                "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
+                HttpStatus.OK_200,
+                (response) -> assertThat(response.getContent(), containsString("Hello Index"))
             );
 
             scenarios.addScenario(
-                    "GET " + prefix + "/../../",
-                    "GET " + prefix + "/../../ HTTP/1.0\r\n\r\n",
-                    HttpStatus.NOT_FOUND_404,
-                    (response) -> {
-                        String body = response.getContent();
-                        assertThat(body, containsString("/../../"));
-                        assertThat(body, not(containsString("Directory: ")));
-                    }
+                "GET " + prefix + "/../../",
+                "GET " + prefix + "/../../ HTTP/1.0\r\n\r\n",
+                HttpStatus.NOT_FOUND_404,
+                (response) ->
+                {
+                    String body = response.getContent();
+                    assertThat(body, containsString("/../../"));
+                    assertThat(body, not(containsString("Directory: ")));
+                }
             );
 
             scenarios.addScenario(
-                    "GET " + prefix + "/../../sekret/pass",
-                    "GET " + prefix + "/../../sekret/pass HTTP/1.0\r\n\r\n",
-                    HttpStatus.NOT_FOUND_404,
-                    (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+                "GET " + prefix + "/../../sekret/pass",
+                "GET " + prefix + "/../../sekret/pass HTTP/1.0\r\n\r\n",
+                HttpStatus.NOT_FOUND_404,
+                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
             scenarios.addScenario(
-                    "GET " + prefix + "/../index.html",
-                    "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
-                    HttpStatus.OK_200,
-                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
+                "GET " + prefix + "/../index.html",
+                "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
+                HttpStatus.OK_200,
+                (response) -> assertThat(response.getContent(), containsString("Hello Index"))
             );
         }
 
@@ -618,24 +620,24 @@ public class DefaultServletTest
     private static void addBasicWelcomeScenarios(Scenarios scenarios)
     {
         scenarios.addScenario(
-                "GET /context/one/ (index.htm match)",
-                "GET /context/one/ HTTP/1.0\r\n\r\n",
-                HttpStatus.OK_200,
-                (response) -> assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>"))
+            "GET /context/one/ (index.htm match)",
+            "GET /context/one/ HTTP/1.0\r\n\r\n",
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>"))
         );
 
         scenarios.addScenario(
-                "GET /context/two/ (index.html match)",
-                "GET /context/two/ HTTP/1.0\r\n\r\n",
-                HttpStatus.OK_200,
-                (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
+            "GET /context/two/ (index.html match)",
+            "GET /context/two/ HTTP/1.0\r\n\r\n",
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"))
         );
 
         scenarios.addScenario(
-                "GET /context/three/ (index.html wins over index.htm)",
-                "GET /context/three/ HTTP/1.0\r\n\r\n",
-                HttpStatus.OK_200,
-                (response) -> assertThat(response.getContent(), containsString("<h1>Three Index</h1>"))
+            "GET /context/three/ (index.html wins over index.htm)",
+            "GET /context/three/ HTTP/1.0\r\n\r\n",
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("<h1>Three Index</h1>"))
         );
     }
 
@@ -644,9 +646,9 @@ public class DefaultServletTest
         Scenarios scenarios = new Scenarios();
 
         scenarios.addScenario(
-                "GET /context/ - (no match)",
-                "GET /context/ HTTP/1.0\r\n\r\n",
-                HttpStatus.FORBIDDEN_403
+            "GET /context/ - (no match)",
+            "GET /context/ HTTP/1.0\r\n\r\n",
+            HttpStatus.FORBIDDEN_403
         );
 
         addBasicWelcomeScenarios(scenarios);
@@ -775,7 +777,6 @@ public class DefaultServletTest
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             }
         }
-
 
         // Test normal default
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
@@ -946,7 +947,6 @@ public class DefaultServletTest
         defholder.setInitParameter("welcomeServlets", "true");
         defholder.setInitParameter("gzip", "false");
 
-
         @SuppressWarnings("unused")
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
 
@@ -1082,10 +1082,10 @@ public class DefaultServletTest
         Scenarios scenarios = new Scenarios();
 
         scenarios.addScenario(
-                "GET /context/ - (/index.jsp servlet match)",
-                "GET /context/ HTTP/1.0\r\n\r\n",
-                HttpStatus.INTERNAL_SERVER_ERROR_500,
-                (response) -> assertThat(response.getContent(), containsString("JSP support not configured"))
+            "GET /context/ - (/index.jsp servlet match)",
+            "GET /context/ HTTP/1.0\r\n\r\n",
+            HttpStatus.INTERNAL_SERVER_ERROR_500,
+            (response) -> assertThat(response.getContent(), containsString("JSP support not configured"))
         );
 
         addBasicWelcomeScenarios(scenarios);
@@ -1153,7 +1153,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
 
-        ResourceContentFactory factory = (ResourceContentFactory) context.getServletContext().getAttribute("resourceCache");
+        ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
 
         HttpContent content = factory.getContent("/index.html", 200);
         ByteBuffer buffer = content.getDirectBuffer();
@@ -1169,202 +1169,207 @@ public class DefaultServletTest
         Scenarios scenarios = new Scenarios();
 
         scenarios.addScenario(
-                "No range requested",
-                "GET /context/data.txt HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Connection: close\r\n\r\n",
-                HttpStatus.OK_200,
-                (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
-        );
-
-
-        scenarios.addScenario(
-                "Simple range request (no-close)",
-                "GET /context/data.txt HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Range: bytes=0-9\r\n" +
-                        "\r\n",
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) -> {
-                    assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
-                    assertThat(response, containsHeaderValue("Content-Length", "10"));
-                    assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
-                }
+            "No range requested",
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n\r\n",
+            HttpStatus.OK_200,
+            (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
         );
 
         scenarios.addScenario(
-                "Simple range request w/close",
-                "GET /context/data.txt HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Range: bytes=0-9\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n",
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) -> {
-                    assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
-                    assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
-                });
-
+            "Simple range request (no-close)",
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Range: bytes=0-9\r\n" +
+                "\r\n",
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
+                assertThat(response, containsHeaderValue("Content-Length", "10"));
+                assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
+            }
+        );
 
         scenarios.addScenario(
-                "Multiple ranges (x3)",
-                "GET /context/data.txt HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Range: bytes=0-9,20-29,40-49\r\n" +
-                        "\r\n",
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) -> {
-                    String body = response.getContent();
+            "Simple range request w/close",
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Range: bytes=0-9\r\n" +
+                "Connection: close\r\n" +
+                "\r\n",
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
+                assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
+            });
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+        scenarios.addScenario(
+            "Multiple ranges (x3)",
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Range: bytes=0-9,20-29,40-49\r\n" +
+                "\r\n",
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                String body = response.getContent();
 
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
 
-                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                    String boundary = getContentTypeBoundary(contentType);
+                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                String boundary = getContentTypeBoundary(contentType);
 
-                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
 
-                    assertThat(response.getContent(), startsWith("--" + boundary));
-                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-                }
+                assertThat(response.getContent(), startsWith("--" + boundary));
+                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+            }
         );
 
         scenarios.addScenario("Multiple ranges (x4)",
-                "GET /context/data.txt HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Range: bytes=0-9,20-29,40-49,70-79\r\n" +
-                        "\r\n",
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) -> {
-                    String body = response.getContent();
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Range: bytes=0-9,20-29,40-49,70-79\r\n" +
+                "\r\n",
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                String body = response.getContent();
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
 
-                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                    String boundary = getContentTypeBoundary(contentType);
+                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                String boundary = getContentTypeBoundary(contentType);
 
-                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
-                    assertThat(body, containsString("Content-Range: bytes 70-79/80"));
+                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                assertThat(body, containsString("Content-Range: bytes 70-79/80"));
 
-                    assertThat(response.getContent(), startsWith("--" + boundary));
-                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-                }
+                assertThat(response.getContent(), startsWith("--" + boundary));
+                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+            }
         );
 
         scenarios.addScenario(
-                "Multiple ranges (x4) with empty range request",
-                "GET /context/data.txt HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
-                        "\r\n",
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) -> {
-                    String body = response.getContent();
+            "Multiple ranges (x4) with empty range request",
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
+                "\r\n",
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                String body = response.getContent();
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
 
-                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                    String boundary = getContentTypeBoundary(contentType);
+                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                String boundary = getContentTypeBoundary(contentType);
 
-                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
-                    assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range request
-                    assertThat(body, containsString("Content-Range: bytes 70-79/80"));
+                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range request
+                assertThat(body, containsString("Content-Range: bytes 70-79/80"));
 
-                    assertThat(response.getContent(), startsWith("--" + boundary));
-                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-                }
+                assertThat(response.getContent(), startsWith("--" + boundary));
+                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+            }
         );
 
         //test a range request with a file with no suffix, therefore no mimetype
 
         scenarios.addScenario(
-                "No mimetype resource - no range requested",
-                "GET /context/nofilesuffix HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "\r\n",
-                HttpStatus.OK_200,
-                (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
+            "No mimetype resource - no range requested",
+            "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n",
+            HttpStatus.OK_200,
+            (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
         );
 
         scenarios.addScenario(
-                "No mimetype resource - simple range request",
-                "GET /context/nofilesuffix HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Range: bytes=0-9\r\n" +
-                        "\r\n",
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) -> {
-                    assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "10"));
-                    assertThat(response, containsHeaderValue(HttpHeader.CONTENT_RANGE, "bytes 0-9/80"));
-                    assertThat(response, not(containsHeader(HttpHeader.CONTENT_TYPE)));
-                }
+            "No mimetype resource - simple range request",
+            "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Range: bytes=0-9\r\n" +
+                "\r\n",
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "10"));
+                assertThat(response, containsHeaderValue(HttpHeader.CONTENT_RANGE, "bytes 0-9/80"));
+                assertThat(response, not(containsHeader(HttpHeader.CONTENT_TYPE)));
+            }
         );
 
         scenarios.addScenario(
-                "No mimetype resource - multiple ranges (x3)",
-                "GET /context/nofilesuffix HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Range: bytes=0-9,20-29,40-49\r\n" +
-                        "\r\n",
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) -> {
-                    String body = response.getContent();
+            "No mimetype resource - multiple ranges (x3)",
+            "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Range: bytes=0-9,20-29,40-49\r\n" +
+                "\r\n",
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                String body = response.getContent();
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
 
-                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                    String boundary = getContentTypeBoundary(contentType);
+                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                String boundary = getContentTypeBoundary(contentType);
 
-                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
 
-                    assertThat(response.getContent(), startsWith("--" + boundary));
-                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-                }
+                assertThat(response.getContent(), startsWith("--" + boundary));
+                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+            }
         );
 
         scenarios.addScenario(
-                "No mimetype resource - multiple ranges (x5) with empty range request",
-                "GET /context/nofilesuffix HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
-                        "\r\n",
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) -> {
-                    String body = response.getContent();
+            "No mimetype resource - multiple ranges (x5) with empty range request",
+            "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
+                "\r\n",
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                String body = response.getContent();
 
-                    assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                    assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
+                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
 
-                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                    String boundary = getContentTypeBoundary(contentType);
+                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                String boundary = getContentTypeBoundary(contentType);
 
-                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
-                    assertThat(body, containsString("Content-Range: bytes 40-49/80"));
-                    assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range
-                    assertThat(body, containsString("Content-Range: bytes 70-79/80"));
+                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                assertThat(body, containsString("Content-Range: bytes 40-49/80"));
+                assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range
+                assertThat(body, containsString("Content-Range: bytes 70-79/80"));
 
-                    assertThat(response.getContent(), startsWith("--" + boundary));
-                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-                }
+                assertThat(response.getContent(), startsWith("--" + boundary));
+                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+            }
         );
 
         return scenarios.stream();
@@ -1396,7 +1401,6 @@ public class DefaultServletTest
             scenario.extraAsserts.accept(response);
     }
 
-
     @Test
     public void testFiltered() throws Exception
     {
@@ -1405,7 +1409,6 @@ public class DefaultServletTest
         createFile(file0, "Hello Text 0");
         Path image = docRoot.resolve("image.jpg");
         createFile(image, "not an image");
-
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -1565,7 +1568,6 @@ public class DefaultServletTest
         createFile(file0, "Hello Text 0");
         Path file0gz = docRoot.resolve("data0.txt.gz");
         createFile(file0gz, "fake gzip");
-
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -1899,8 +1901,8 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "Hello World",
-            "Now is the time for all good men to come to the aid of the party"
+        "Hello World",
+        "Now is the time for all good men to come to the aid of the party"
     })
     public void testIfModified(String content) throws Exception
     {
@@ -1951,8 +1953,8 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "Hello World",
-            "Now is the time for all good men to come to the aid of the party"
+        "Hello World",
+        "Now is the time for all good men to come to the aid of the party"
     })
     public void testIfETag(String content) throws Exception
     {

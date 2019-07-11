@@ -34,14 +34,13 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.EchoCreator;
 import org.junit.jupiter.api.AfterEach;
@@ -64,7 +63,6 @@ public class ClientSessionsTest
         server = new Server();
 
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
@@ -85,7 +83,7 @@ public class ClientSessionsTest
         handlers.addHandler(context);
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
-        JettyWebSocketServletContainerInitializer.configureContext(context);
+        JettyWebSocketServletContainerInitializer.configure(context, null);
 
         server.start();
     }
@@ -95,7 +93,7 @@ public class ClientSessionsTest
     {
         server.stop();
     }
-    
+
     @Test
     public void testBasicEcho_FromClient() throws Exception
     {
@@ -103,14 +101,10 @@ public class ClientSessionsTest
 
         CountDownLatch onSessionCloseLatch = new CountDownLatch(1);
 
-        client.addSessionListener(new WebSocketSessionListener() {
+        client.addSessionListener(new WebSocketSessionListener()
+        {
             @Override
-            public void onWebSocketSessionOpened(WebSocketSession session)
-            {
-            }
-
-            @Override
-            public void onWebSocketSessionClosed(WebSocketSession session)
+            public void onWebSocketSessionClosed(Session session)
             {
                 onSessionCloseLatch.countDown();
             }
@@ -125,7 +119,7 @@ public class ClientSessionsTest
             URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             request.setSubProtocols("echo");
-            Future<Session> future = client.connect(cliSock,wsUri,request);
+            Future<Session> future = client.connect(cliSock, wsUri, request);
 
             try (Session sess = future.get(30000, TimeUnit.MILLISECONDS))
             {

@@ -81,11 +81,11 @@ public class CorrectMavenCentralRefs
         PathMatcher targetMatcher = PathMatchers.getMatcher("glob:**/target/**");
         PathMatcher testMatcher = PathMatchers.getMatcher("glob:**/test/**");
 
-        System.out.printf("Walking path: %s%n",buildRoot);
+        System.out.printf("Walking path: %s%n", buildRoot);
         Set<FileVisitOption> options = Collections.emptySet();
-        Files.walkFileTree(buildRoot,options,30,finder);
+        Files.walkFileTree(buildRoot, options, 30, finder);
 
-        System.out.printf("Found: %d hits%n",finder.getHits().size());
+        System.out.printf("Found: %d hits%n", finder.getHits().size());
         int count = 0;
         for (Path path : finder.getHits())
         {
@@ -113,7 +113,7 @@ public class CorrectMavenCentralRefs
             }
         }
 
-        System.out.printf("Processed %,d modules",count);
+        System.out.printf("Processed %,d modules", count);
     }
 
     private boolean processFileRefs(List<String> lines)
@@ -164,10 +164,10 @@ public class CorrectMavenCentralRefs
             if (idx > 0)
             {
                 int pipe = line.indexOf('|');
-                String rawpath = line.substring(idx + keyword.length(),pipe);
+                String rawpath = line.substring(idx + keyword.length(), pipe);
                 String destpath = line.substring(pipe + 1);
 
-                String parts[] = rawpath.split("/");
+                String[] parts = rawpath.split("/");
                 int rev = parts.length;
                 String filename = parts[--rev];
 
@@ -179,10 +179,10 @@ public class CorrectMavenCentralRefs
                 }
                 String version = parts[--rev];
                 String artifactId = parts[--rev];
-                String groupId = Utils.join(parts,0,rev,".");
+                String groupId = Utils.join(parts, 0, rev, ".");
 
-                String classifier = filename.replaceFirst(artifactId + '-' + version,"");
-                classifier = classifier.replaceFirst('.' + type + '$',"");
+                String classifier = filename.replaceFirst(artifactId + '-' + version, "");
+                classifier = classifier.replaceFirst('.' + type + '$', "");
                 if (Utils.isNotBlank(classifier) && (classifier.charAt(0) == '-'))
                 {
                     classifier = classifier.substring(1);
@@ -202,7 +202,7 @@ public class CorrectMavenCentralRefs
                     }
                 }
 
-                lines.set(i,murl.toString()+'|'+destpath);
+                lines.set(i, murl.toString() + '|' + destpath);
 
                 updated++;
             }
@@ -217,8 +217,8 @@ public class CorrectMavenCentralRefs
         if (processFileRefs(lines))
         {
             // the lines are now dirty, save them.
-            System.out.printf("Updating: %s%n",path);
-            saveLines(path,lines);
+            System.out.printf("Updating: %s%n", path);
+            saveLines(path, lines);
             return true;
         }
 
@@ -230,7 +230,7 @@ public class CorrectMavenCentralRefs
     {
         List<String> lines = new ArrayList<>();
 
-        try (BufferedReader reader = Files.newBufferedReader(path,StandardCharsets.UTF_8))
+        try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8))
         {
             String line;
             while ((line = reader.readLine()) != null)
@@ -244,7 +244,7 @@ public class CorrectMavenCentralRefs
 
     private void saveLines(Path path, List<String> lines) throws IOException
     {
-        try (BufferedWriter writer = Files.newBufferedWriter(path,StandardCharsets.UTF_8,StandardOpenOption.TRUNCATE_EXISTING))
+        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING))
         {
             for (String line : lines)
             {

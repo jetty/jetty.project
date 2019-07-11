@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.is;
 
 public class CookieCutterTest
 {
-    private Cookie[] parseCookieHeaders(CookieCompliance compliance,String... headers)
+    private Cookie[] parseCookieHeaders(CookieCompliance compliance, String... headers)
     {
         TestCutter cutter = new TestCutter(compliance, null);
         for (String header : headers)
@@ -38,7 +38,7 @@ public class CookieCutterTest
         }
         return cutter.cookies.toArray(new Cookie[cutter.cookies.size()]);
     }
-    
+
     private void assertCookie(String prefix, Cookie cookie,
                               String expectedName,
                               String expectedValue,
@@ -50,7 +50,7 @@ public class CookieCutterTest
         assertThat(prefix + ".version", cookie.getVersion(), is(expectedVersion));
         assertThat(prefix + ".path", cookie.getPath(), is(expectedPath));
     }
-    
+
     /**
      * Example from RFC2109 and RFC2965
      */
@@ -58,13 +58,13 @@ public class CookieCutterTest
     public void testRFC_Single()
     {
         String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965,rawCookie);
-        
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
     }
-    
+
     /**
      * Example from RFC2109 and RFC2965
      */
@@ -72,16 +72,16 @@ public class CookieCutterTest
     public void testRFC_Double()
     {
         String rawCookie = "$Version=\"1\"; " +
-                "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-                "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965,rawCookie);
-        
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
         assertCookie("Cookies[1]", cookies[1], "Part_Number", "Rocket_Launcher_0001", 1, "/acme");
     }
-    
+
     /**
      * Example from RFC2109 and RFC2965
      */
@@ -89,18 +89,18 @@ public class CookieCutterTest
     public void testRFC_Triple()
     {
         String rawCookie = "$Version=\"1\"; " +
-                "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-                "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
-                "Shipping=\"FedEx\"; $Path=\"/acme\"";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965,rawCookie);
-        
+            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
+            "Shipping=\"FedEx\"; $Path=\"/acme\"";
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(3));
         assertCookie("Cookies[0]", cookies[0], "Customer", "WILE_E_COYOTE", 1, "/acme");
         assertCookie("Cookies[1]", cookies[1], "Part_Number", "Rocket_Launcher_0001", 1, "/acme");
         assertCookie("Cookies[2]", cookies[2], "Shipping", "FedEx", 1, "/acme");
     }
-    
+
     /**
      * Example from RFC2109 and RFC2965
      */
@@ -108,16 +108,16 @@ public class CookieCutterTest
     public void testRFC_PathExample()
     {
         String rawCookie = "$Version=\"1\"; " +
-                "Part_Number=\"Riding_Rocket_0023\"; $Path=\"/acme/ammo\"; " +
-                "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965,rawCookie);
-        
+            "Part_Number=\"Riding_Rocket_0023\"; $Path=\"/acme/ammo\"; " +
+            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "Part_Number", "Riding_Rocket_0023", 1, "/acme/ammo");
         assertCookie("Cookies[1]", cookies[1], "Part_Number", "Rocket_Launcher_0001", 1, "/acme");
     }
-    
+
     /**
      * Example from RFC2109
      */
@@ -125,16 +125,16 @@ public class CookieCutterTest
     public void testRFC2109_CookieSpoofingExample()
     {
         String rawCookie = "$Version=\"1\"; " +
-                "session_id=\"1234\"; " +
-                "session_id=\"1111\"; $Domain=\".cracker.edu\"";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965,rawCookie);
-        
+            "session_id=\"1234\"; " +
+            "session_id=\"1111\"; $Domain=\".cracker.edu\"";
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 1, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 1, null);
     }
-    
+
     /**
      * Example from RFC2965
      */
@@ -142,21 +142,20 @@ public class CookieCutterTest
     public void testRFC2965_CookieSpoofingExample()
     {
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
-                "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
+            "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
-
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC2965,rawCookie);
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234", 1, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 1, null);
 
-        cookies = parseCookieHeaders(CookieCompliance.RFC6265,rawCookie);
+        cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "session_id", "1234\", $Version=\"1", 0, null);
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);
     }
-    
+
     /**
      * Example from RFC6265
      */
@@ -164,13 +163,13 @@ public class CookieCutterTest
     public void testRFC6265_SidExample()
     {
         String rawCookie = "SID=31d4d96e407aad42";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC6265,rawCookie);
-        
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "SID", "31d4d96e407aad42", 0, null);
     }
-    
+
     /**
      * Example from RFC6265
      */
@@ -178,14 +177,14 @@ public class CookieCutterTest
     public void testRFC6265_SidLangExample()
     {
         String rawCookie = "SID=31d4d96e407aad42; lang=en-US";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC6265,rawCookie);
-        
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(2));
         assertCookie("Cookies[0]", cookies[0], "SID", "31d4d96e407aad42", 0, null);
         assertCookie("Cookies[1]", cookies[1], "lang", "en-US", 0, null);
     }
-    
+
     /**
      * Basic name=value, following RFC6265 rules
      */
@@ -193,13 +192,13 @@ public class CookieCutterTest
     public void testKeyValue()
     {
         String rawCookie = "key=value";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC6265,rawCookie);
-        
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "key", "value", 0, null);
     }
-    
+
     /**
      * Basic name=value, following RFC6265 rules
      */
@@ -207,12 +206,11 @@ public class CookieCutterTest
     public void testDollarName()
     {
         String rawCookie = "$key=value";
-        
-        Cookie cookies[] = parseCookieHeaders(CookieCompliance.RFC6265,rawCookie);
-        
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+
         assertThat("Cookies.length", cookies.length, is(0));
     }
-
 
     static class Cookie
     {
@@ -276,12 +274,14 @@ public class CookieCutterTest
         @Override
         protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
         {
-            cookies.add(new Cookie(cookieName,cookieValue,cookieDomain,cookiePath,cookieVersion,cookieComment));
+            cookies.add(new Cookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment));
         }
 
         public void parseFields(String... fields)
         {
             super.parseFields(Arrays.asList(fields));
         }
-    };
+    }
+
+    ;
 }

@@ -30,8 +30,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 import org.xml.sax.InputSource;
 
-
-
 /**
  * Descriptor
  *
@@ -59,7 +57,7 @@ public class WebDescriptor extends Descriptor
             if (_nonValidatingStaticParser == null)
                 _nonValidatingStaticParser = newParser(false);
         }
-        
+
         if (!isValidating())
             return _nonValidatingStaticParser;
         else
@@ -68,55 +66,55 @@ public class WebDescriptor extends Descriptor
 
     public static XmlParser newParser(boolean validating) throws ClassNotFoundException
     {
-        XmlParser xmlParser=new XmlParser(validating)
+        XmlParser xmlParser = new XmlParser(validating)
         {
-            boolean mapped=false;
-            
+            boolean mapped = false;
+
             @Override
             protected InputSource resolveEntity(String pid, String sid)
             {
                 if (!mapped)
                 {
                     mapResources();
-                    mapped=true;
+                    mapped = true;
                 }
-                InputSource is = super.resolveEntity(pid,sid);
+                InputSource is = super.resolveEntity(pid, sid);
                 return is;
             }
-            
+
             void mapResources()
             {
                 //set up cache of DTDs and schemas locally
-                URL dtd22=Loader.getResource("javax/servlet/resources/web-app_2_2.dtd");
-                URL dtd23=Loader.getResource("javax/servlet/resources/web-app_2_3.dtd");
-                URL j2ee14xsd=Loader.getResource("javax/servlet/resources/j2ee_1_4.xsd");
-                URL javaee5=Loader.getResource("javax/servlet/resources/javaee_5.xsd");
-                URL javaee6=Loader.getResource("javax/servlet/resources/javaee_6.xsd");
-                URL javaee7=Loader.getResource("javax/servlet/resources/javaee_7.xsd");
-                URL javaee8=Loader.getResource("javax/servlet/resources/javaee_8.xsd");
-                
-                URL webapp24xsd=Loader.getResource("javax/servlet/resources/web-app_2_4.xsd");
-                URL webapp25xsd=Loader.getResource("javax/servlet/resources/web-app_2_5.xsd");
-                URL webapp30xsd=Loader.getResource("javax/servlet/resources/web-app_3_0.xsd");
-                URL webapp31xsd=Loader.getResource("javax/servlet/resources/web-app_3_1.xsd");
-                URL webapp40xsd=Loader.getResource("javax/servlet/resources/web-app_4_0.xsd");
-                
-                URL webcommon30xsd=Loader.getResource("javax/servlet/resources/web-common_3_0.xsd");
-                URL webcommon31xsd=Loader.getResource("javax/servlet/resources/web-common_3_1.xsd");
-                URL webcommon40xsd=Loader.getResource("javax/servlet/resources/web-common_4_0.xsd");
-            
-                URL webfragment30xsd=Loader.getResource("javax/servlet/resources/web-fragment_3_0.xsd");
-                URL webfragment31xsd=Loader.getResource("javax/servlet/resources/web-fragment_3_1.xsd");
-                URL webfragment40xsd=Loader.getResource("javax/servlet/resources/web-fragment_4_0.xsd");
-                
-                URL schemadtd=Loader.getResource("javax/servlet/resources/XMLSchema.dtd");
-                URL xmlxsd=Loader.getResource("javax/servlet/resources/xml.xsd");
-                URL webservice11xsd=Loader.getResource("javax/servlet/resources/j2ee_web_services_client_1_1.xsd");
-                URL webservice12xsd=Loader.getResource("javax/servlet/resources/javaee_web_services_client_1_2.xsd");
-                URL webservice13xsd=Loader.getResource("javax/servlet/resources/javaee_web_services_client_1_3.xsd");
-                URL webservice14xsd=Loader.getResource("javax/servlet/resources/javaee_web_services_client_1_4.xsd");
-                URL datatypesdtd=Loader.getResource("javax/servlet/resources/datatypes.dtd");
-                
+                final URL dtd22 = Loader.getResource("javax/servlet/resources/web-app_2_2.dtd");
+                final URL dtd23 = Loader.getResource("javax/servlet/resources/web-app_2_3.dtd");
+                final URL j2ee14xsd = Loader.getResource("javax/servlet/resources/j2ee_1_4.xsd");
+                final URL javaee5 = Loader.getResource("javax/servlet/resources/javaee_5.xsd");
+                final URL javaee6 = Loader.getResource("javax/servlet/resources/javaee_6.xsd");
+                final URL javaee7 = Loader.getResource("javax/servlet/resources/javaee_7.xsd");
+                final URL javaee8 = Loader.getResource("javax/servlet/resources/javaee_8.xsd");
+
+                final URL webapp24xsd = Loader.getResource("javax/servlet/resources/web-app_2_4.xsd");
+                final URL webapp25xsd = Loader.getResource("javax/servlet/resources/web-app_2_5.xsd");
+                final URL webapp30xsd = Loader.getResource("javax/servlet/resources/web-app_3_0.xsd");
+                final URL webapp31xsd = Loader.getResource("javax/servlet/resources/web-app_3_1.xsd");
+                final URL webapp40xsd = Loader.getResource("javax/servlet/resources/web-app_4_0.xsd");
+
+                final URL webcommon30xsd = Loader.getResource("javax/servlet/resources/web-common_3_0.xsd");
+                final URL webcommon31xsd = Loader.getResource("javax/servlet/resources/web-common_3_1.xsd");
+                final URL webcommon40xsd = Loader.getResource("javax/servlet/resources/web-common_4_0.xsd");
+
+                final URL webfragment30xsd = Loader.getResource("javax/servlet/resources/web-fragment_3_0.xsd");
+                final URL webfragment31xsd = Loader.getResource("javax/servlet/resources/web-fragment_3_1.xsd");
+                final URL webfragment40xsd = Loader.getResource("javax/servlet/resources/web-fragment_4_0.xsd");
+
+                final URL schemadtd = Loader.getResource("javax/servlet/resources/XMLSchema.dtd");
+                final URL xmlxsd = Loader.getResource("javax/servlet/resources/xml.xsd");
+                final URL webservice11xsd = Loader.getResource("javax/servlet/resources/j2ee_web_services_client_1_1.xsd");
+                final URL webservice12xsd = Loader.getResource("javax/servlet/resources/javaee_web_services_client_1_2.xsd");
+                final URL webservice13xsd = Loader.getResource("javax/servlet/resources/javaee_web_services_client_1_3.xsd");
+                final URL webservice14xsd = Loader.getResource("javax/servlet/resources/javaee_web_services_client_1_4.xsd");
+                final URL datatypesdtd = Loader.getResource("javax/servlet/resources/datatypes.dtd");
+
                 URL jsp20xsd = null;
                 URL jsp21xsd = null;
                 URL jsp22xsd = null;
@@ -136,89 +134,92 @@ public class WebDescriptor extends Descriptor
                 }
                 finally
                 {
-                    if (jsp20xsd == null) jsp20xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_0.xsd");
-                    if (jsp21xsd == null) jsp21xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_1.xsd");
-                    if (jsp22xsd == null) jsp22xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_2.xsd");
-                    if (jsp23xsd == null) jsp23xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_3.xsd");
+                    if (jsp20xsd == null)
+                        jsp20xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_0.xsd");
+                    if (jsp21xsd == null)
+                        jsp21xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_1.xsd");
+                    if (jsp22xsd == null)
+                        jsp22xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_2.xsd");
+                    if (jsp23xsd == null)
+                        jsp23xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_3.xsd");
                 }
-                
-                redirectEntity("web-app_2_2.dtd",dtd22);
-                redirectEntity("-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN",dtd22);
-                redirectEntity("web.dtd",dtd23);
-                redirectEntity("web-app_2_3.dtd",dtd23);
-                redirectEntity("-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN",dtd23);
-                redirectEntity("XMLSchema.dtd",schemadtd);
-                redirectEntity("http://www.w3.org/2001/XMLSchema.dtd",schemadtd);
-                redirectEntity("-//W3C//DTD XMLSCHEMA 200102//EN",schemadtd);
-                
-                redirectEntity("jsp_2_0.xsd",jsp20xsd);
-                redirectEntity("http://java.sun.com/xml/ns/j2ee/jsp_2_0.xsd",jsp20xsd);
-                redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_1.xsd",jsp21xsd);
-                redirectEntity("jsp_2_2.xsd",jsp22xsd);
-                redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_2.xsd",jsp22xsd);
-                redirectEntity("jsp_2_3.xsd",jsp23xsd);
-                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/jsp_2_3.xsd",jsp23xsd);
-                
-                redirectEntity("j2ee_1_4.xsd",j2ee14xsd);
-                redirectEntity("http://java.sun.com/xml/ns/j2ee/j2ee_1_4.xsd",j2ee14xsd);
-                redirectEntity( "http://java.sun.com/xml/ns/javaee/javaee_5.xsd",javaee5);
-                redirectEntity( "http://java.sun.com/xml/ns/javaee/javaee_6.xsd",javaee6);
-                redirectEntity( "http://xmlns.jcp.org/xml/ns/javaee/javaee_7.xsd",javaee7);
-                redirectEntity( "http://xmlns.jcp.org/xml/ns/javaee/javaee_8.xsd",javaee8);
-                
-                redirectEntity("web-common_3_0.xsd",webcommon30xsd);
-                redirectEntity("http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd",webcommon30xsd);
-                redirectEntity("web-common_3_1.xsd",webcommon31xsd);
-                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_3_1.xsd",webcommon31xsd);
-                redirectEntity("web-common_4_0.xsd",webcommon40xsd);
-                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_4_0.xsd",webcommon40xsd);
-                
-                redirectEntity("web-app_2_4.xsd",webapp24xsd);
-                redirectEntity("http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd",webapp24xsd);
-                redirectEntity("web-app_2_5.xsd",webapp25xsd);
-                redirectEntity("http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd",webapp25xsd);
-                redirectEntity("web-app_3_0.xsd",webapp30xsd);
-                redirectEntity("http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd",webapp30xsd);
-                redirectEntity("web-app_3_1.xsd",webapp31xsd);
-                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd",webapp31xsd);
-                redirectEntity("web-app_4_0.xsd",webapp40xsd);
-                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd",webapp40xsd);
-                
-                redirectEntity("web-fragment_3_0.xsd",webfragment30xsd);
-                redirectEntity("http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd",webfragment30xsd);
-                redirectEntity("web-fragment_3_1.xsd",webfragment31xsd);
-                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd",webfragment31xsd);
-                redirectEntity("web-fragment_4_0.xsd",webfragment40xsd);
-                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_4_0.xsd",webfragment40xsd);
-                
-                redirectEntity("xml.xsd",xmlxsd);
-                redirectEntity("http://www.w3.org/2001/xml.xsd",xmlxsd);
-                redirectEntity("datatypes.dtd",datatypesdtd);
-                redirectEntity("http://www.w3.org/2001/datatypes.dtd",datatypesdtd);
-                
-                redirectEntity("j2ee_web_services_client_1_1.xsd",webservice11xsd);
-                redirectEntity("http://www.ibm.com/webservices/xsd/j2ee_web_services_client_1_1.xsd",webservice11xsd);
-                redirectEntity("javaee_web_services_client_1_2.xsd",webservice12xsd);   
-                redirectEntity("http://www.ibm.com/webservices/xsd/javaee_web_services_client_1_2.xsd",webservice12xsd);
-                redirectEntity("javaee_web_services_client_1_3.xsd",webservice13xsd);
-                redirectEntity("http://java.sun.com/xml/ns/javaee/javaee_web_services_client_1_3.xsd",webservice13xsd);
-                redirectEntity("javaee_web_services_client_1_4.xsd",webservice14xsd);
-                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/javaee_web_services_client_1_4.xsd",webservice14xsd);
+
+                redirectEntity("web-app_2_2.dtd", dtd22);
+                redirectEntity("-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN", dtd22);
+                redirectEntity("web.dtd", dtd23);
+                redirectEntity("web-app_2_3.dtd", dtd23);
+                redirectEntity("-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN", dtd23);
+                redirectEntity("XMLSchema.dtd", schemadtd);
+                redirectEntity("http://www.w3.org/2001/XMLSchema.dtd", schemadtd);
+                redirectEntity("-//W3C//DTD XMLSCHEMA 200102//EN", schemadtd);
+
+                redirectEntity("jsp_2_0.xsd", jsp20xsd);
+                redirectEntity("http://java.sun.com/xml/ns/j2ee/jsp_2_0.xsd", jsp20xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_1.xsd", jsp21xsd);
+                redirectEntity("jsp_2_2.xsd", jsp22xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_2.xsd", jsp22xsd);
+                redirectEntity("jsp_2_3.xsd", jsp23xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/jsp_2_3.xsd", jsp23xsd);
+
+                redirectEntity("j2ee_1_4.xsd", j2ee14xsd);
+                redirectEntity("http://java.sun.com/xml/ns/j2ee/j2ee_1_4.xsd", j2ee14xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/javaee_5.xsd", javaee5);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/javaee_6.xsd", javaee6);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/javaee_7.xsd", javaee7);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/javaee_8.xsd", javaee8);
+
+                redirectEntity("web-common_3_0.xsd", webcommon30xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd", webcommon30xsd);
+                redirectEntity("web-common_3_1.xsd", webcommon31xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_3_1.xsd", webcommon31xsd);
+                redirectEntity("web-common_4_0.xsd", webcommon40xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_4_0.xsd", webcommon40xsd);
+
+                redirectEntity("web-app_2_4.xsd", webapp24xsd);
+                redirectEntity("http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd", webapp24xsd);
+                redirectEntity("web-app_2_5.xsd", webapp25xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd", webapp25xsd);
+                redirectEntity("web-app_3_0.xsd", webapp30xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd", webapp30xsd);
+                redirectEntity("web-app_3_1.xsd", webapp31xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd", webapp31xsd);
+                redirectEntity("web-app_4_0.xsd", webapp40xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd", webapp40xsd);
+
+                redirectEntity("web-fragment_3_0.xsd", webfragment30xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd", webfragment30xsd);
+                redirectEntity("web-fragment_3_1.xsd", webfragment31xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd", webfragment31xsd);
+                redirectEntity("web-fragment_4_0.xsd", webfragment40xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_4_0.xsd", webfragment40xsd);
+
+                redirectEntity("xml.xsd", xmlxsd);
+                redirectEntity("http://www.w3.org/2001/xml.xsd", xmlxsd);
+                redirectEntity("datatypes.dtd", datatypesdtd);
+                redirectEntity("http://www.w3.org/2001/datatypes.dtd", datatypesdtd);
+
+                redirectEntity("j2ee_web_services_client_1_1.xsd", webservice11xsd);
+                redirectEntity("http://www.ibm.com/webservices/xsd/j2ee_web_services_client_1_1.xsd", webservice11xsd);
+                redirectEntity("javaee_web_services_client_1_2.xsd", webservice12xsd);
+                redirectEntity("http://www.ibm.com/webservices/xsd/javaee_web_services_client_1_2.xsd", webservice12xsd);
+                redirectEntity("javaee_web_services_client_1_3.xsd", webservice13xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/javaee_web_services_client_1_3.xsd", webservice13xsd);
+                redirectEntity("javaee_web_services_client_1_4.xsd", webservice14xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/javaee_web_services_client_1_4.xsd", webservice14xsd);
             }
         };
-        
+
         return xmlParser;
     }
 
-
-    public WebDescriptor (Resource xml)
+    public WebDescriptor(Resource xml)
     {
         super(xml);
     }
 
     @Override
-    public void parse ()
-    throws Exception
+    public void parse()
+        throws Exception
     {
         super.parse();
         processVersion();
@@ -230,9 +231,7 @@ public class WebDescriptor extends Descriptor
         return _metaDataComplete;
     }
 
-
-
-    public int getMajorVersion ()
+    public int getMajorVersion()
     {
         return _majorVersion;
     }
@@ -242,8 +241,7 @@ public class WebDescriptor extends Descriptor
         return _minorVersion;
     }
 
-
-    public void processVersion ()
+    public void processVersion()
     {
         String version = _root.getAttribute("version", "DTD");
         if ("DTD".equals(version))
@@ -259,12 +257,12 @@ public class WebDescriptor extends Descriptor
         }
         else
         {
-           int dot = version.indexOf(".");
-           if (dot > 0)
-           {
-               _majorVersion = Integer.parseInt(version.substring(0,dot));
-               _minorVersion = Integer.parseInt(version.substring(dot+1));
-           }
+            int dot = version.indexOf(".");
+            if (dot > 0)
+            {
+                _majorVersion = Integer.parseInt(version.substring(0, dot));
+                _minorVersion = Integer.parseInt(version.substring(dot + 1));
+            }
         }
 
         if (_majorVersion <= 2 && _minorVersion < 5)
@@ -275,53 +273,54 @@ public class WebDescriptor extends Descriptor
             if (s == null)
                 _metaDataComplete = MetaDataComplete.NotSet;
             else
-                _metaDataComplete = Boolean.valueOf(s).booleanValue()?MetaDataComplete.True:MetaDataComplete.False;
+                _metaDataComplete = Boolean.valueOf(s).booleanValue() ? MetaDataComplete.True : MetaDataComplete.False;
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug(_xml.toString()+": Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);
+            LOG.debug(_xml.toString() + ": Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);
     }
 
-    public void processOrdering ()
+    public void processOrdering()
     {
         //Process the web.xml's optional <absolute-ordering> element
         XmlParser.Node ordering = _root.get("absolute-ordering");
         if (ordering == null)
-           return;
+            return;
 
         _isOrdered = true;
         //If an absolute-ordering was already set, then ignore it in favor of this new one
-       // _processor.setOrdering(new AbsoluteOrdering());
+        // _processor.setOrdering(new AbsoluteOrdering());
 
         Iterator<Object> iter = ordering.iterator();
         XmlParser.Node node = null;
         while (iter.hasNext())
         {
             Object o = iter.next();
-            if (!(o instanceof XmlParser.Node)) continue;
-            node = (XmlParser.Node) o;
+            if (!(o instanceof XmlParser.Node))
+                continue;
+            node = (XmlParser.Node)o;
 
             if (node.getTag().equalsIgnoreCase("others"))
                 //((AbsoluteOrdering)_processor.getOrdering()).addOthers();
                 _ordering.add("others");
             else if (node.getTag().equalsIgnoreCase("name"))
                 //((AbsoluteOrdering)_processor.getOrdering()).add(node.toString(false,true));
-                _ordering.add(node.toString(false,true));
+                _ordering.add(node.toString(false, true));
         }
     }
 
-    public void addClassName (String className)
+    public void addClassName(String className)
     {
         if (!_classNames.contains(className))
             _classNames.add(className);
     }
 
-    public ArrayList<String> getClassNames ()
+    public ArrayList<String> getClassNames()
     {
         return _classNames;
     }
 
-    public void setDistributable (boolean distributable)
+    public void setDistributable(boolean distributable)
     {
         _distributable = distributable;
     }
@@ -332,14 +331,14 @@ public class WebDescriptor extends Descriptor
     }
 
     @Override
-    public void setValidating (boolean validating)
+    public void setValidating(boolean validating)
     {
-       _validating = validating;
+        _validating = validating;
     }
-    
-    public boolean isValidating ()
+
+    public boolean isValidating()
     {
-       return _validating;
+        return _validating;
     }
 
     public boolean isOrdered()
@@ -351,6 +350,4 @@ public class WebDescriptor extends Descriptor
     {
         return _ordering;
     }
-
-
 }

@@ -96,6 +96,6 @@ public class MappedResource<E> implements Comparable<MappedResource<E>>
     @Override
     public String toString()
     {
-        return String.format("MappedResource[pathSpec=%s,resource=%s]",pathSpec,resource);
+        return String.format("MappedResource[pathSpec=%s,resource=%s]", pathSpec, resource);
     }
 }

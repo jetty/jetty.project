@@ -29,8 +29,7 @@ public class StandardDeployer implements AppLifeCycle.Binding
     @Override
     public String[] getBindingTargets()
     {
-        return new String[]
-        { "deploying" };
+        return new String[]{"deploying"};
     }
 
     @Override

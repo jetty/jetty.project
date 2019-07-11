@@ -21,17 +21,15 @@ package org.eclipse.jetty.websocket.client.impl;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -42,17 +40,14 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 public class JettyClientUpgradeRequest extends ClientUpgradeRequest
 {
     private final WebSocketClient containerContext;
-    private final Object websocketPojo;
-    private final CompletableFuture<Session> futureSession;
     private final DelegatedJettyClientUpgradeRequest handshakeRequest;
+    private final JettyWebSocketFrameHandler frameHandler;
 
     public JettyClientUpgradeRequest(WebSocketClient clientContainer, WebSocketCoreClient coreClient, UpgradeRequest request,
                                      URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
-        this.websocketPojo = websocketPojo;
-        this.futureSession = new CompletableFuture<>();
 
         if (request != null)
         {
@@ -77,8 +72,8 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
 
             // Copy extensions
             setExtensions(request.getExtensions().stream()
-                    .map(c -> new ExtensionConfig(c.getName(), c.getParameters()))
-                    .collect(Collectors.toList()));
+                .map(c -> new ExtensionConfig(c.getName(), c.getParameters()))
+                .collect(Collectors.toList()));
 
             // Copy method from upgradeRequest object
             if (request.getMethod() != null)
@@ -90,6 +85,7 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         }
 
         handshakeRequest = new DelegatedJettyClientUpgradeRequest(this);
+        frameHandler = containerContext.newFrameHandler(websocketPojo);
     }
 
     @Override
@@ -99,25 +95,17 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         handshakeRequest.configure(endp);
     }
 
-    protected void handleException(Throwable failure)
+    @Override
+    public void upgrade(HttpResponse response, HttpConnectionOverHTTP httpConnection)
     {
-        super.handleException(failure);
-        futureSession.completeExceptionally(failure);
+        frameHandler.setUpgradeRequest(new DelegatedJettyClientUpgradeRequest(this));
+        frameHandler.setUpgradeResponse(new DelegatedJettyClientUpgradeResponse(response));
+        super.upgrade(response, httpConnection);
     }
 
     @Override
-    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+    public FrameHandler getFrameHandler()
     {
-        UpgradeResponse upgradeResponse = new DelegatedJettyClientUpgradeResponse(response);
-
-        JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo,
-            handshakeRequest, upgradeResponse, futureSession);
-
         return frameHandler;
-    }
-
-    public CompletableFuture<Session> getFutureSession()
-    {
-        return futureSession;
     }
 }

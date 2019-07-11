@@ -34,26 +34,26 @@ import org.eclipse.jetty.util.resource.Resource;
 public class RelativeOrdering implements Ordering
 {
     protected MetaData _metaData;
-    
-    public RelativeOrdering (MetaData metaData)
+
+    public RelativeOrdering(MetaData metaData)
     {
         _metaData = metaData;
     }
 
     @Override
     public List<Resource> order(List<Resource> jars)
-    {    
+    {
         TopologicalSort<Resource> sort = new TopologicalSort<>();
         List<Resource> sorted = new ArrayList<>(jars);
         Set<Resource> others = new HashSet<>();
-        Set<Resource> before_others = new HashSet<>();
-        Set<Resource> after_others = new HashSet<>();
-        
+        Set<Resource> beforeOthers = new HashSet<>();
+        Set<Resource> afterOthers = new HashSet<>();
+
         // Pass 1: split the jars into 'before others', 'others' or 'after others'
         for (Resource jar : jars)
         {
-            FragmentDescriptor fragment=_metaData.getFragment(jar);
-            
+            FragmentDescriptor fragment = _metaData.getFragment(jar);
+
             if (fragment == null)
                 others.add(jar);
             else
@@ -64,38 +64,40 @@ public class RelativeOrdering implements Ordering
                         others.add(jar);
                         break;
                     case Before:
-                        before_others.add(jar);
+                        beforeOthers.add(jar);
                         break;
                     case After:
-                        after_others.add(jar);
+                        afterOthers.add(jar);
                         break;
-                } 
+                    default:
+                        throw new IllegalStateException(fragment.toString());
+                }
             }
         }
-        
+
         // Pass 2: Add sort dependencies for each jar
         Set<Resource> referenced = new HashSet<>();
         for (Resource jar : jars)
         {
-            FragmentDescriptor fragment=_metaData.getFragment(jar);
+            FragmentDescriptor fragment = _metaData.getFragment(jar);
 
             if (fragment != null)
             {
                 // Add each explicit 'after' ordering as a sort dependency
                 // and remember that the dependency has been referenced.
-                for (String name: fragment.getAfters())
+                for (String name : fragment.getAfters())
                 {
-                    Resource after=_metaData.getJarForFragment(name);
-                    sort.addDependency(jar,after);
+                    Resource after = _metaData.getJarForFragment(name);
+                    sort.addDependency(jar, after);
                     referenced.add(after);
                 }
 
                 // Add each explicit 'before' ordering as a sort dependency
                 // and remember that the dependency has been referenced.
-                for (String name: fragment.getBefores())
+                for (String name : fragment.getBefores())
                 {
-                    Resource before=_metaData.getJarForFragment(name);
-                    sort.addDependency(before,jar);
+                    Resource before = _metaData.getJarForFragment(name);
+                    sort.addDependency(before, jar);
                     referenced.add(before);
                 }
 
@@ -109,36 +111,38 @@ public class RelativeOrdering implements Ordering
                         // jars in the 'others' and 'after others' sets, but
                         // exclude any jars we have already explicitly 
                         // referenced above.
-                        Consumer<Resource> add_before = other -> 
+                        Consumer<Resource> addBefore = other ->
                         {
-                            if (!referenced.contains(other)) 
-                                sort.addDependency(other,jar);
+                            if (!referenced.contains(other))
+                                sort.addDependency(other, jar);
                         };
-                        others.forEach(add_before);
-                        after_others.forEach(add_before);
+                        others.forEach(addBefore);
+                        afterOthers.forEach(addBefore);
                         break;
-                        
+
                     case After:
                         // Add a dependency from this jar to all 
                         // jars in the 'before others' and 'others' sets, but
                         // exclude any jars we have already explicitly 
                         // referenced above.
-                        Consumer<Resource> add_after = other -> 
+                        Consumer<Resource> addAfter = other ->
                         {
-                            if (!referenced.contains(other)) 
-                                sort.addDependency(jar,other);
+                            if (!referenced.contains(other))
+                                sort.addDependency(jar, other);
                         };
-                        before_others.forEach(add_after);
-                        others.forEach(add_after);
+                        beforeOthers.forEach(addAfter);
+                        others.forEach(addAfter);
                         break;
-                } 
+                    default:
+                        throw new IllegalStateException(fragment.toString());
+                }
             }
             referenced.clear();
         }
 
         // sort the jars according to the added dependencies
         sort.sort(sorted);
-        
+
         return sorted;
     }
 }

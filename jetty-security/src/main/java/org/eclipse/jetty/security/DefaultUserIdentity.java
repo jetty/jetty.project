@@ -19,16 +19,12 @@
 package org.eclipse.jetty.security;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;
 
-
-/* ------------------------------------------------------------ */
 /**
  * The default implementation of UserIdentity.
- *
  */
 public class DefaultUserIdentity implements UserIdentity
 {
@@ -38,9 +34,9 @@ public class DefaultUserIdentity implements UserIdentity
 
     public DefaultUserIdentity(Subject subject, Principal userPrincipal, String[] roles)
     {
-        _subject=subject;
-        _userPrincipal=userPrincipal;
-        _roles=roles;
+        _subject = subject;
+        _userPrincipal = userPrincipal;
+        _roles = roles;
     }
 
     @Override
@@ -61,24 +57,26 @@ public class DefaultUserIdentity implements UserIdentity
         //Servlet Spec 3.1, pg 125
         if ("*".equals(role))
             return false;
-        
+
         String roleToTest = null;
-        if (scope!=null && scope.getRoleRefMap()!=null)
-            roleToTest=scope.getRoleRefMap().get(role);
+        if (scope != null && scope.getRoleRefMap() != null)
+            roleToTest = scope.getRoleRefMap().get(role);
 
         //Servlet Spec 3.1, pg 125
         if (roleToTest == null)
             roleToTest = role;
-       
-        for (String r :_roles)
+
+        for (String r : _roles)
+        {
             if (r.equals(roleToTest))
                 return true;
+        }
         return false;
     }
 
     @Override
     public String toString()
     {
-        return DefaultUserIdentity.class.getSimpleName()+"('"+_userPrincipal+"')";
+        return DefaultUserIdentity.class.getSimpleName() + "('" + _userPrincipal + "')";
     }
 }

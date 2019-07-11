@@ -24,7 +24,6 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
-
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-@ServerEndpoint(value = "/", subprotocols = { "tool" }, configurator = JsrBrowserConfigurator.class)
+@ServerEndpoint(value = "/", subprotocols = {"tool"}, configurator = JsrBrowserConfigurator.class)
 public class JsrBrowserSocket
 {
     private static class WriteMany implements Runnable
@@ -56,9 +55,9 @@ public class JsrBrowserSocket
         @Override
         public void run()
         {
-            char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
+            char[] letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
             int lettersLen = letters.length;
-            char randomText[] = new char[size];
+            char[] randomText = new char[size];
             Random rand = new Random(42);
             String msg;
 
@@ -142,7 +141,7 @@ public class JsrBrowserSocket
                 }
                 case "many":
                 {
-                    String parts[] = StringUtil.csvSplit(val);
+                    String[] parts = StringUtil.csvSplit(val);
                     int size = Integer.parseInt(parts[0]);
                     int count = Integer.parseInt(parts[1]);
 
@@ -151,12 +150,12 @@ public class JsrBrowserSocket
                 }
                 case "manythreads":
                 {
-                    String parts[] = StringUtil.csvSplit(val);
+                    String[] parts = StringUtil.csvSplit(val);
                     int threadCount = Integer.parseInt(parts[0]);
                     int size = Integer.parseInt(parts[1]);
                     int count = Integer.parseInt(parts[2]);
 
-                    Thread threads[] = new Thread[threadCount];
+                    Thread[] threads = new Thread[threadCount];
 
                     // Setup threads
                     for (int n = 0; n < threadCount; n++)
@@ -195,9 +194,9 @@ public class JsrBrowserSocket
 
     private void writeManyAsync(int size, int count)
     {
-        char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
+        char[] letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-|{}[]():".toCharArray();
         int lettersLen = letters.length;
-        char randomText[] = new char[size];
+        char[] randomText = new char[size];
         Random rand = new Random(42);
 
         for (int n = 0; n < count; n++)

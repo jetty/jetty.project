@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.tests.coders;
 
-import org.junit.jupiter.api.Test;
-
-import javax.websocket.DecodeException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
+import javax.websocket.DecodeException;
+
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

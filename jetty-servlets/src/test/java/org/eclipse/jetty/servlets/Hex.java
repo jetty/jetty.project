@@ -26,10 +26,10 @@ public final class Hex
     {
         if ((id.length() < 0) || (id.length() > (size * 2)))
         {
-            throw new IllegalArgumentException(String.format("Invalid ID length of <%d> expected range of <0> to <%d>",id.length(),(size * 2)));
+            throw new IllegalArgumentException(String.format("Invalid ID length of <%d> expected range of <0> to <%d>", id.length(), (size * 2)));
         }
 
-        byte buf[] = new byte[size];
+        byte[] buf = new byte[size];
         byte hex;
         int len = id.length();
 
@@ -45,10 +45,10 @@ public final class Hex
             hex = 0;
             if (i >= 0)
             {
-                hex = (byte)(Character.digit(id.charAt(i),16) << 4);
+                hex = (byte)(Character.digit(id.charAt(i), 16) << 4);
             }
             i++;
-            hex += (byte)(Character.digit(id.charAt(i),16));
+            hex += (byte)(Character.digit(id.charAt(i), 16));
 
             buf[idx] = hex;
             idx++;
@@ -60,7 +60,7 @@ public final class Hex
     public static String asHex(byte buf[])
     {
         int len = buf.length;
-        char out[] = new char[len * 2];
+        char[] out = new char[len * 2];
         for (int i = 0; i < len; i++)
         {
             out[i * 2] = hexcodes[(buf[i] & 0xF0) >> 4];

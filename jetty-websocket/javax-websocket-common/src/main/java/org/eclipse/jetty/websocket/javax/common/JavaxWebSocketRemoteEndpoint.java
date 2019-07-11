@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
@@ -97,12 +96,12 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         coreSession.setIdleTimeout(Duration.ofMillis(ms));
     }
 
-    public long getWriteIdleTimeout()
+    public long getWriteTimeout()
     {
         return coreSession.getWriteTimeout().toMillis();
     }
 
-    public void setWriteIdleTimeout(long ms)
+    public void setWriteTimeout(long ms)
     {
         coreSession.setWriteTimeout(Duration.ofMillis(ms));
     }
@@ -135,7 +134,6 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
                 {
                     throw new WebSocketException("Cannot start BINARY message when TEXT message is not complete yet");
                 }
-
             }
             catch (Throwable t)
             {

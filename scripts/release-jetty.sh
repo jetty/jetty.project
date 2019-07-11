@@ -69,8 +69,6 @@ VER_CURRENT=`sed -e "s/xmlns/ignore/" pom.xml | xmllint --xpath "/project/versio
 echo "Current pom.xml Version: ${VER_CURRENT}"
 read -e -p "Release Version  ? " VER_RELEASE
 read -e -p "Next Dev Version ? " VER_NEXT
-# VER_RELEASE=9.3.5.v20151012
-# VER_NEXT=9.3.6-SNAPSHOT
 TAG_NAME="jetty-$VER_RELEASE"
 
 # Ensure tag doesn't exist (yet)
@@ -89,8 +87,11 @@ if [ ! -d "$ALT_DEPLOY_DIR" ] ; then
 fi
 
 # DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
-DEPLOY_OPTS="-Dtest=None"
+DEPLOY_OPTS="-DskipTests -Dtest=None"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
+
+# Uncomment for Java 1.7
+export MAVEN_OPTS="-Xmx1g -XX:MaxPermSize=128m"
 
 echo ""
 echo "-----------------------------------------------"
@@ -103,6 +104,7 @@ echo "Current Version  : $VER_CURRENT"
 echo "Release Version  : $VER_RELEASE"
 echo "Next Dev Version : $VER_NEXT"
 echo "Tag name         : $TAG_NAME"
+echo "MAVEN_OPTS       : $MAVEN_OPTS"
 echo "Maven Deploy Opts: $DEPLOY_OPTS"
 
 reportMavenTestFailures() {
@@ -130,13 +132,20 @@ echo ""
 if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
+        # Uncomment alternate JVM for jetty 9.2 builds
+        # JAVA_HOME_ORIG=$JAVA_HOME
+        # PATH_ORIG=$PATH
+        # JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_171.jdk/Contents/Home
+        # PATH=$JAVA_HOME/bin:$PATH
         mvn -N -Pupdate-version generate-resources
         cp VERSION.txt VERSION.txt.backup
         cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
         rm VERSION.txt.backup
+        # JAVA_HOME=$JAVA_HOME_ORIG
+        # PATH=$PATH_ORIG
         echo "VERIFY the following files (in a different console window) before continuing."
         echo "   VERSION.txt - top section"
-        echo "   target/vers-tag.txt - for the tag commit message"
+        echo "   target/version-tag.txt - for the tag commit message"
     fi
 
     # This is equivalent to 'mvn release:prepare'
@@ -151,14 +160,14 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     fi
     if proceedyn "Create Tag $TAG_NAME? (Y/n)" y; then
         echo "TODO: Sign tags with GIT_USER_EMAIL=$GIT_USER_EMAIL"
-        echo "Using target/vers-tag.txt as tag text"
-        git tag --file=target/vers-tag.txt $TAG_NAME
+        echo "Using target/version-tag.txt as tag text"
+        git tag --file=target/version-tag.txt $TAG_NAME
     fi
 
     # This is equivalent to 'mvn release:perform'
     if proceedyn "Build/Deploy from tag $TAG_NAME? (Y/n)" y; then
         git checkout $TAG_NAME
-        mvn clean package source:jar javadoc:jar gpg:sign javadoc:aggregate-jar deploy \
+        mvn clean package source:jar javadoc:jar gpg:sign deploy \
             -Peclipse-release $DEPLOY_OPTS
         reportMavenTestFailures
         git checkout $GIT_BRANCH_ID
@@ -170,9 +179,10 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         echo "" >> VERSION.txt
         cat VERSION.txt.backup >> VERSION.txt
         echo "Update project.versions for $VER_NEXT"
-        mvn org.codehaus.mojo:versions-maven-plugin:2.1:set \
+        mvn org.codehaus.mojo:versions-maven-plugin:2.7:set \
             -DoldVersion="$VER_RELEASE" \
-            -DnewVersion="$VER_NEXT"
+            -DnewVersion="$VER_NEXT" \
+            -DprocessAllModules=true 
         echo "Commit $VER_NEXT"
         if proceedyn "Commit updates in working directory for $VER_NEXT? (Y/n)" y; then
             git commit -a -m "Updating to version $VER_NEXT"

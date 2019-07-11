@@ -31,7 +31,6 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
@@ -40,8 +39,6 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -119,52 +116,36 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
-        CompletableFuture<Session> futureSession)
+    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance)
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
-        MethodHandle openHandle = metadata.getOpenHandle();
-        MethodHandle closeHandle = metadata.getCloseHandle();
-        MethodHandle errorHandle = metadata.getErrorHandle();
-        MethodHandle textHandle = metadata.getTextHandle();
-        MethodHandle binaryHandle = metadata.getBinaryHandle();
-        Class<? extends MessageSink> textSinkClass = metadata.getTextSink();
-        Class<? extends MessageSink> binarySinkClass = metadata.getBinarySink();
-        MethodHandle frameHandle = metadata.getFrameHandle();
-        MethodHandle pingHandle = metadata.getPingHandle();
-        MethodHandle pongHandle = metadata.getPongHandle();
+        final MethodHandle openHandle = bindTo(metadata.getOpenHandle(), endpointInstance);
+        final MethodHandle closeHandle = bindTo(metadata.getCloseHandle(), endpointInstance);
+        final MethodHandle errorHandle = bindTo(metadata.getErrorHandle(), endpointInstance);
+        final MethodHandle textHandle = bindTo(metadata.getTextHandle(), endpointInstance);
+        final MethodHandle binaryHandle = bindTo(metadata.getBinaryHandle(), endpointInstance);
+        final Class<? extends MessageSink> textSinkClass = metadata.getTextSink();
+        final Class<? extends MessageSink> binarySinkClass = metadata.getBinarySink();
+        final MethodHandle frameHandle = bindTo(metadata.getFrameHandle(), endpointInstance);
+        final MethodHandle pingHandle = bindTo(metadata.getPingHandle(), endpointInstance);
+        final MethodHandle pongHandle = bindTo(metadata.getPongHandle(), endpointInstance);
         BatchMode batchMode = metadata.getBatchMode();
-
-        openHandle = bindTo(openHandle, endpointInstance);
-        closeHandle = bindTo(closeHandle, endpointInstance);
-        errorHandle = bindTo(errorHandle, endpointInstance);
-        textHandle = bindTo(textHandle, endpointInstance);
-        binaryHandle = bindTo(binaryHandle, endpointInstance);
-        frameHandle = bindTo(frameHandle, endpointInstance);
-        pingHandle = bindTo(pingHandle, endpointInstance);
-        pongHandle = bindTo(pongHandle, endpointInstance);
-
-        CompletableFuture<Session> future = futureSession;
-        if (future == null)
-            future = new CompletableFuture<>();
 
         JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
             container,
             endpointInstance,
-            upgradeRequest, upgradeResponse,
             openHandle, closeHandle, errorHandle,
             textHandle, binaryHandle,
             textSinkClass, binarySinkClass,
             frameHandle, pingHandle, pongHandle,
-            future,
             batchMode,
             metadata);
 
         return frameHandler;
     }
 
-    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, long maxMessageSize)
+    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, WebSocketSession session)
     {
         if (msgHandle == null)
             return null;
@@ -175,8 +156,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             try
             {
-                Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class, Long.TYPE);
-                MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle, maxMessageSize);
+                Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class, Session.class);
+                MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle, session);
                 return messageSink;
             }
             catch (NoSuchMethodException e)
@@ -296,14 +277,18 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
 
-        if (anno.inputBufferSize()>=0)
-            metadata.setInputBufferSize(anno.inputBufferSize());
-        if (anno.maxBinaryMessageSize()>=0)
-           metadata.setMaxBinaryMessageSize(anno.maxBinaryMessageSize());
-        if (anno.maxTextMessageSize()>=0)
-        metadata.setMaxTextMessageSize(anno.maxTextMessageSize());
-        if (anno.maxIdleTime()>=0)
-            metadata.setIdleTimeout(Duration.ofMillis(anno.maxIdleTime()));
+        int max = anno.inputBufferSize();
+        if (max >= 0)
+            metadata.setInputBufferSize(max);
+        max = anno.maxBinaryMessageSize();
+        if (max >= 0)
+            metadata.setMaxBinaryMessageSize(max);
+        max = anno.maxTextMessageSize();
+        if (max >= 0)
+            metadata.setMaxTextMessageSize(max);
+        max = anno.idleTimeout();
+        if (max >= 0)
+            metadata.setIdleTimeout(Duration.ofMillis(max));
         metadata.setBatchMode(anno.batchMode());
 
         Method onmethod;
@@ -359,34 +344,34 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         }
 
         // OnWebSocketMessage [0..2]
-        Method onMessages[] = ReflectUtils.findAnnotatedMethods(endpointClass, OnWebSocketMessage.class);
+        Method[] onMessages = ReflectUtils.findAnnotatedMethods(endpointClass, OnWebSocketMessage.class);
         if (onMessages != null && onMessages.length > 0)
         {
             // The different kind of @OnWebSocketMessage method parameter signatures expected
 
-            InvokerUtils.Arg textCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(String.class).required()
             };
 
-            InvokerUtils.Arg binaryBufferCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(ByteBuffer.class).required()
             };
 
-            InvokerUtils.Arg binaryArrayCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(byte[].class).required(),
                 new InvokerUtils.Arg(int.class), // offset
                 new InvokerUtils.Arg(int.class) // length
             };
 
-            InvokerUtils.Arg inputStreamCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(InputStream.class).required()
             };
 
-            InvokerUtils.Arg readerCallingArgs[] = new InvokerUtils.Arg[] {
+            InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
                 new InvokerUtils.Arg(Session.class),
                 new InvokerUtils.Arg(Reader.class).required()
             };

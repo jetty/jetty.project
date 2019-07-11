@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <!-- ============================================================= -->
 <!-- Configure the Jetty Server instance with an ID "Server"       -->
@@ -38,8 +38,8 @@
             </New>
           </Arg>
         </Call>
-        <Set name="host"><Property name="jetty.http.host" /></Set>
-        <Set name="port"><Property name="jetty.http.port" default="80" /></Set>
+        <Set name="host" property="jetty.http.host"/>
+        <Set name="port"><Property name="jetty.http.port" default="80"/></Set>
         <Set name="idleTimeout"><Property name="jetty.http.idleTimeout" default="30000"/></Set>
       </New>
     </Arg>

@@ -138,7 +138,7 @@ public class QuotesDecoderTest
 
         URI wsUri = server.getWsUri().resolve("/quoter");
         QuotesSocket clientSocket = new QuotesSocket(testInfo.getTestMethod().toString());
-        try(Session clientSession = client.connectToServer(clientSocket, wsUri))
+        try (Session clientSession = client.connectToServer(clientSocket, wsUri))
         {
             clientSession.getAsyncRemote().sendText("quotes-ben.txt");
             clientSession.getAsyncRemote().sendText("quotes-twain.txt");

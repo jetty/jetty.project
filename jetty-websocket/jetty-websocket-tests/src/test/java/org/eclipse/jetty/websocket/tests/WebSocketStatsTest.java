@@ -40,8 +40,8 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,11 +58,12 @@ public class WebSocketStatsTest
         public void configure(JettyWebSocketServletFactory factory)
         {
             factory.setAutoFragment(false);
-            factory.addMapping("/",(req, resp)->new EchoSocket());
+            factory.addMapping("/", (req, resp) -> new EchoSocket());
         }
     }
 
     private Server server;
+    private ServerConnector connector;
     private WebSocketClient client;
     private ConnectionStatistics statistics;
     private CountDownLatch wsUpgradeComplete = new CountDownLatch(1);
@@ -86,8 +87,7 @@ public class WebSocketStatsTest
         };
 
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector = new ServerConnector(server);
         connector.addBean(statistics);
         server.addConnector(connector);
 
@@ -96,7 +96,7 @@ public class WebSocketStatsTest
         contextHandler.addServlet(MyWebSocketServlet.class, "/testPath");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
         client = new WebSocketClient();
 
         server.start();
@@ -114,17 +114,16 @@ public class WebSocketStatsTest
     {
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator generator = new Generator(bufferPool);
-        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength()+10, true);
+        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength() + 10, true);
         int pos = BufferUtil.flipToFill(buffer);
         generator.generateWholeFrame(frame, buffer);
         return buffer.position() - pos;
     }
 
-
     @Test
     public void echoStatsTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/testPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/testPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
 
@@ -140,8 +139,10 @@ public class WebSocketStatsTest
             upgradeSentBytes = statistics.getSentBytes();
             upgradeReceivedBytes = statistics.getReceivedBytes();
 
-            for (int i=0; i<numMessages; i++)
+            for (int i = 0; i < numMessages; i++)
+            {
                 session.getRemote().sendString(msgText);
+            }
         }
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
@@ -159,8 +160,8 @@ public class WebSocketStatsTest
         final long closeFrameSize = getFrameByteSize(closeFrame);
         final int maskSize = 4; // We use 4 byte mask for client frames in WSConnection
 
-        final long expectedSent = upgradeSentBytes + numMessages*textFrameSize + closeFrameSize;
-        final long expectedReceived = upgradeReceivedBytes + numMessages*(textFrameSize+maskSize) + closeFrameSize+maskSize;
+        final long expectedSent = upgradeSentBytes + numMessages * textFrameSize + closeFrameSize;
+        final long expectedReceived = upgradeReceivedBytes + numMessages * (textFrameSize + maskSize) + closeFrameSize + maskSize;
 
         assertThat(statistics.getSentBytes(), is(expectedSent));
         assertThat(statistics.getReceivedBytes(), is(expectedReceived));

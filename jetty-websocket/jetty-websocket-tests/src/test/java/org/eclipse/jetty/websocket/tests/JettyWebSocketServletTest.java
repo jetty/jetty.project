@@ -28,8 +28,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,19 +45,19 @@ public class JettyWebSocketServletTest
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.addMapping("/",(req, resp)->new EchoSocket());
+            factory.addMapping("/", (req, resp) -> new EchoSocket());
         }
     }
 
     private Server server;
+    private ServerConnector connector;
     private WebSocketClient client;
 
     @BeforeEach
     public void start() throws Exception
     {
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -66,7 +66,7 @@ public class JettyWebSocketServletTest
 
         contextHandler.addServlet(MyWebSocketServlet.class, "/servletPath");
 
-        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
         server.start();
 
         client = new WebSocketClient();
@@ -81,12 +81,12 @@ public class JettyWebSocketServletTest
     }
 
     @Test
-    public void test() throws Exception
+    public void echoTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/servletPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/servletPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
-        try(Session session = connect.get(5, TimeUnit.SECONDS))
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
             session.getRemote().sendString("hello world");
         }

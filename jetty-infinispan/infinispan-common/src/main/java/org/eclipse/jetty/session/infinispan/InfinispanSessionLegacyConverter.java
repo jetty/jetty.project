@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.session.infinispan;
 
 import java.util.List;
@@ -31,28 +30,25 @@ import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 
-
 /**
  * InfinispanSessionLegacyConverter
  *
  * Converts sessions saved in the old serialization
  * format into the new protobuf-based serialization.
- * 
+ *
  * Use the -Dverbose=true system property to
  * print out more information about conversion failures.
- *
  */
 public class InfinispanSessionLegacyConverter
 {
     RemoteCacheManager _protoManager;
-    RemoteCache<String,InfinispanSessionData> _protoCache;
+    RemoteCache<String, InfinispanSessionData> _protoCache;
     RemoteCacheManager _legacyManager;
-    RemoteCache<String,SessionData> _legacyCache;
+    RemoteCache<String, SessionData> _legacyCache;
     boolean _verbose = false;
- 
 
-    public InfinispanSessionLegacyConverter (String cacheName)
-    throws Exception
+    public InfinispanSessionLegacyConverter(String cacheName)
+        throws Exception
     {
         //legacy serialization
         _legacyManager = new RemoteCacheManager();
@@ -77,7 +73,7 @@ public class InfinispanSessionLegacyConverter
     /**
      * Convert all sessions to protobuf format sessions.
      */
-    public void convert ()
+    public void convert()
     {
         long conversions = 0;
         List<String> keys = null;
@@ -90,11 +86,12 @@ public class InfinispanSessionLegacyConverter
         catch (Exception e)
         {
             System.err.println("Error listing legacy sessions, assuming previously converted. Run again using 'check' argument to verify conversion");
-            if (_verbose) e.printStackTrace();
+            if (_verbose)
+                e.printStackTrace();
             System.exit(1);
         }
 
-        for (String s:keys)
+        for (String s : keys)
         {
             SessionData data = null;
             try
@@ -103,11 +100,12 @@ public class InfinispanSessionLegacyConverter
             }
             catch (Exception e)
             {
-                System.err.println("Read of session "+s+" failed. Assuming session already converted and skipping.");
-                if (_verbose) e.printStackTrace();
+                System.err.println("Read of session " + s + " failed. Assuming session already converted and skipping.");
+                if (_verbose)
+                    e.printStackTrace();
                 continue;
             }
-            
+
             if (data != null)
             {
                 try
@@ -116,15 +114,16 @@ public class InfinispanSessionLegacyConverter
                 }
                 catch (Exception e)
                 {
-                    System.err.println("Remove legacy session failed for "+s+" skipping conversion.");
-                    if (_verbose) e.printStackTrace();
+                    System.err.println("Remove legacy session failed for " + s + " skipping conversion.");
+                    if (_verbose)
+                        e.printStackTrace();
                     continue;
                 }
 
                 try
                 {
                     InfinispanSessionData isd = new InfinispanSessionData(data.getId(), data.getContextPath(), data.getVhost(), data.getCreated(),
-                                                                          data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs());
+                        data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs());
                     isd.putAllAttributes(data.getAllAttributes());
                     isd.setExpiry(data.getExpiry());
                     isd.setCookieSet(data.getCookieSet());
@@ -137,7 +136,8 @@ public class InfinispanSessionLegacyConverter
                 }
                 catch (Exception e)
                 {
-                    if (_verbose) e.printStackTrace();
+                    if (_verbose)
+                        e.printStackTrace();
                     System.err.println("Conversion failed for " + s + " re-instating legacy session.");
                     try
                     {
@@ -152,17 +152,17 @@ public class InfinispanSessionLegacyConverter
                 }
             }
             else
-                    System.err.println("Unreadable legacy session "+s);
+                System.err.println("Unreadable legacy session " + s);
         }
-        
-        System.err.println("Total sessions converted: "+conversions);
+
+        System.err.println("Total sessions converted: " + conversions);
     }
 
     /**
-     * Retrieve the sessions using protobuf format and print them out to 
+     * Retrieve the sessions using protobuf format and print them out to
      * confirm they're ok.
      */
-    public void checkConverted ()
+    public void checkConverted()
     {
         List<String> keys = null;
         try
@@ -176,27 +176,27 @@ public class InfinispanSessionLegacyConverter
             System.exit(1);
         }
 
-        for (String s:keys)
+        for (String s : keys)
         {
-            InfinispanSessionData converted = (InfinispanSessionData)_protoCache.get(s);
+            InfinispanSessionData converted = _protoCache.get(s);
             if (converted != null)
             {
-                System.err.println("OK: "+converted);
-                converted.getKeys().stream().forEach((ss)->{System.err.println(ss+":"+converted.getAttribute(ss));});
+                System.err.println("OK: " + converted);
+                converted.getKeys().stream().forEach((ss) -> System.err.println(ss + ":" + converted.getAttribute(ss)));
             }
             else
-                System.err.println("Failed: "+s);
+                System.err.println("Failed: " + s);
         }
 
-        System.err.println("Total converted sessions: "+keys.size());
+        System.err.println("Total converted sessions: " + keys.size());
     }
 
-    public static final void usage ()
+    public static final void usage()
     {
         System.err.println("Usage:  InfinispanSessionLegacyConverter [-Dhost=127.0.0.1] [-Dverbose=true] <cache-name> [check]");
     }
-    
-    public static final void main (String... args)
+
+    public static final void main(String... args)
     {
         if (args == null || args.length < 1)
         {
@@ -213,7 +213,7 @@ public class InfinispanSessionLegacyConverter
             else if (args[1].equals("check"))
                 converter.checkConverted();
             else
-               usage();
+                usage();
         }
         catch (Exception e)
         {

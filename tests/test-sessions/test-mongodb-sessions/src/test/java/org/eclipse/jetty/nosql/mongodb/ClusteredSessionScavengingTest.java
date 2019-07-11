@@ -26,7 +26,6 @@ import org.junit.jupiter.api.BeforeAll;
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
 
-    
     @BeforeAll
     public static void beforeClass() throws Exception
     {
@@ -40,7 +39,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
         MongoTestHelper.dropCollection();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
@@ -48,5 +47,4 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     {
         return MongoTestHelper.newSessionDataStoreFactory();
     }
-
 }

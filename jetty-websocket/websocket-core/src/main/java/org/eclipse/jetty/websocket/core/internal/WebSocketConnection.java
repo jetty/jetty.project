@@ -39,8 +39,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 /**
@@ -79,27 +77,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * </p>
      */
     public WebSocketConnection(EndPoint endp,
-        Executor executor,
-        Scheduler scheduler,
-        ByteBufferPool bufferPool,
-        WebSocketCoreSession coreSession)
-    {
-        this(endp, executor, scheduler, bufferPool, coreSession, true);
-    }
-
-    /**
-     * Create a WSConnection.
-     * <p>
-     * It is assumed that the WebSocket Upgrade Handshake has already
-     * completed successfully before creating this connection.
-     * </p>
-     */
-    public WebSocketConnection(EndPoint endp,
-        Executor executor,
-        Scheduler scheduler,
-        ByteBufferPool bufferPool,
-        WebSocketCoreSession coreSession,
-        boolean validating)
+                               Executor executor,
+                               Scheduler scheduler,
+                               ByteBufferPool bufferPool,
+                               WebSocketCoreSession coreSession)
     {
         super(endp, executor);
 
@@ -113,22 +94,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.coreSession = coreSession;
 
         this.generator = new Generator(bufferPool);
-        this.parser = new Parser(bufferPool, coreSession.isAutoFragment())
-        {
-            @Override
-            protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
-            {
-                super.checkFrameSize(opcode, payloadLength);
-                if (!coreSession.isAutoFragment() && coreSession.getMaxFrameSize() > 0 && payloadLength > coreSession.getMaxFrameSize())
-                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + coreSession.getMaxFrameSize());
-            }
-
-        };
-
+        this.parser = new Parser(bufferPool, coreSession);
         this.flusher = new Flusher(scheduler, coreSession.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(coreSession.getInputBufferSize());
 
-        this.random = this.coreSession.getBehavior() == Behavior.CLIENT?new Random(endp.hashCode()):null;
+        this.random = this.coreSession.getBehavior() == Behavior.CLIENT ? new Random(endp.hashCode()) : null;
     }
 
     @Override
@@ -179,7 +149,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         super.onClose(cause);
     }
 
-
     @Override
     public boolean onIdleExpired()
     {
@@ -187,7 +156,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onIdleExpired()");
 
         // treat as a handler error because socket is still open
-        coreSession.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"),Callback.NOOP);
+        coreSession.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"), Callback.NOOP);
         return true;
     }
 
@@ -203,7 +172,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onReadTimeout()");
 
         // treat as a handler error because socket is still open
-        coreSession.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout),Callback.NOOP);
+        coreSession.processHandlerError(new WebSocketTimeoutException("Timeout on Read", timeout), Callback.NOOP);
         return false;
     }
 
@@ -212,7 +181,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
-        final RetainableByteBuffer referenced = frame.hasPayload() && !frame.isReleaseable()?networkBuffer:null;
+        final RetainableByteBuffer referenced = frame.hasPayload() && !frame.isReleaseable() ? networkBuffer : null;
         if (referenced != null)
             referenced.retain();
 
@@ -243,7 +212,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     referenced.release();
 
                 // notify session & endpoint
-                coreSession.processHandlerError(cause,NOOP);
+                coreSession.processHandlerError(cause, NOOP);
             }
         });
     }
@@ -454,7 +423,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.warn(t.toString());
             BufferUtil.clear(networkBuffer.getBuffer());
             releaseNetworkBuffer();
-            coreSession.processConnectionError(t,Callback.NOOP);
+            coreSession.processConnectionError(t, Callback.NOOP);
         }
     }
 
@@ -580,6 +549,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     /**
      * Enqueue a Frame to be sent.
+     *
      * @param frame The frame to queue
      * @param callback The callback to call once the frame is sent
      * @param batch True if batch mode is to be used

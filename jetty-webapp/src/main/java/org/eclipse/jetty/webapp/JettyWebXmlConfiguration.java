@@ -26,15 +26,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-
 /**
- *
  * JettyWebConfiguration.
  *
  * Looks for XmlConfiguration files in WEB-INF.  Searches in order for the first of jetty6-web.xml, jetty-web.xml or web-jetty.xml
- *
- *
- *
  */
 public class JettyWebXmlConfiguration extends AbstractConfiguration
 {
@@ -49,46 +44,51 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     {
         addDependencies(WebXmlConfiguration.class, FragmentConfiguration.class, MetaInfConfiguration.class);
     }
-    
+
     /**
      * Configure
      * Apply web-jetty.xml configuration
+     *
      * @see Configuration#configure(WebAppContext)
      */
     @Override
-    public void configure (WebAppContext context) throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
         LOG.debug("Configuring web-jetty.xml");
 
-        Resource web_inf = context.getWebInf();
+        Resource webInf = context.getWebInf();
         // handle any WEB-INF descriptors
-        if(web_inf!=null&&web_inf.isDirectory())
+        if (webInf != null && webInf.isDirectory())
         {
             // do jetty.xml file
-            Resource jetty=web_inf.addPath("jetty8-web.xml");
-            if(!jetty.exists())
-                jetty=web_inf.addPath(JETTY_WEB_XML);
-            if(!jetty.exists())
-                jetty=web_inf.addPath("web-jetty.xml");
+            Resource jetty = webInf.addPath("jetty8-web.xml");
+            if (!jetty.exists())
+                jetty = webInf.addPath(JETTY_WEB_XML);
+            if (!jetty.exists())
+                jetty = webInf.addPath("web-jetty.xml");
 
-            if(jetty.exists())
-            {             
-                if(LOG.isDebugEnabled())
-                    LOG.debug("Configure: "+jetty);
+            if (jetty.exists())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Configure: " + jetty);
 
-                Object xml_attr=context.getAttribute(XML_CONFIGURATION);
+                Object xmlAttr = context.getAttribute(XML_CONFIGURATION);
                 context.removeAttribute(XML_CONFIGURATION);
-                final XmlConfiguration jetty_config = xml_attr instanceof XmlConfiguration?(XmlConfiguration)xml_attr:new XmlConfiguration(jetty.getURI().toURL());
+                final XmlConfiguration jetty_config = xmlAttr instanceof XmlConfiguration ? (XmlConfiguration)xmlAttr : new XmlConfiguration(jetty);
 
-                setupXmlConfiguration(context, jetty_config, web_inf);
+                setupXmlConfiguration(context, jetty_config, webInf);
 
                 try
                 {
-                    WebAppClassLoader.runWithServerClassAccess(()->{jetty_config.configure(context);return null;});
+                    WebAppClassLoader.runWithServerClassAccess(() ->
+                    {
+                        jetty_config.configure(context);
+                        return null;
+                    });
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    LOG.warn("Error applying {}",jetty);
+                    LOG.warn("Error applying {}", jetty);
                     throw e;
                 }
             }
@@ -98,14 +98,15 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     /**
      * Configures some well-known properties before the XmlConfiguration reads
      * the configuration.
-     * @param jetty_config The configuration object.
-     * @param web_inf the WEB-INF location
+     *
+     * @param jettyConfig The configuration object.
+     * @param webInf the WEB-INF location
      */
-    private void setupXmlConfiguration(WebAppContext context, XmlConfiguration jetty_config, Resource web_inf) throws IOException
+    private void setupXmlConfiguration(WebAppContext context, XmlConfiguration jettyConfig, Resource webInf) throws IOException
     {
-        jetty_config.setJettyStandardIdsAndProperties(context.getServer(),null);
-        Map<String,String> props = jetty_config.getProperties();
-        props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(web_inf.getURI().toString()));
-        props.put(PROPERTY_WEB_INF, web_inf.toString());
+        jettyConfig.setJettyStandardIdsAndProperties(context.getServer(), null);
+        Map<String, String> props = jettyConfig.getProperties();
+        props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(webInf.getURI().toString()));
+        props.put(PROPERTY_WEB_INF, webInf.toString());
     }
 }

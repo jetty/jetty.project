@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.ant;
 
 import java.io.File;
@@ -41,11 +40,10 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.xml.sax.SAXException;
-
-
 
 /**
  * A proxy class for interaction with Jetty server object. Used to have some
@@ -54,62 +52,84 @@ import org.xml.sax.SAXException;
 public class ServerProxyImpl implements ServerProxy
 {
 
-    /** Proxied Jetty server object. */
+    /**
+     * Proxied Jetty server object.
+     */
     private Server server;
-    
-    /** Temporary files directory. */
+
+    /**
+     * Temporary files directory.
+     */
     private File tempDirectory;
-    
-    /** Collection of context handlers (web application contexts). */
+
+    /**
+     * Collection of context handlers (web application contexts).
+     */
     private ContextHandlerCollection contexts;
 
-    /** Location of jetty.xml file. */
+    /**
+     * Location of jetty.xml file.
+     */
     private File jettyXml;
 
-    /** List of connectors. */
+    /**
+     * List of connectors.
+     */
     private List<Connector> connectors;
 
-    /** Request logger. */
+    /**
+     * Request logger.
+     */
     private RequestLog requestLog;
 
-    /** User realms. */
+    /**
+     * User realms.
+     */
     private List<LoginService> loginServices;
 
-    /** List of added web applications. */
+    /**
+     * List of added web applications.
+     */
     private List<AntWebAppContext> webApplications = new ArrayList<AntWebAppContext>();
 
-    /** other contexts to deploy */
+    /**
+     * other contexts to deploy
+     */
     private ContextHandlers contextHandlers;
 
-    /** scan interval for changed files */
+    /**
+     * scan interval for changed files
+     */
     private int scanIntervalSecs;
 
-    /** port to listen for stop command */
+    /**
+     * port to listen for stop command
+     */
     private int stopPort;
 
-    /** security key for stop command */
+    /**
+     * security key for stop command
+     */
     private String stopKey;
 
-    /** wait for all jetty threads to exit or continue */
+    /**
+     * wait for all jetty threads to exit or continue
+     */
     private boolean daemon;
-
 
     private boolean configured = false;
 
-
-    
     /**
      * WebAppScannerListener
      *
      * Handle notifications that files we are interested in have changed
      * during execution.
-     * 
      */
     public static class WebAppScannerListener implements Scanner.BulkListener
-    {     
+    {
         AntWebAppContext awc;
 
-        public WebAppScannerListener (AntWebAppContext awc)
+        public WebAppScannerListener(AntWebAppContext awc)
         {
             this.awc = awc;
         }
@@ -136,25 +156,22 @@ public class ServerProxyImpl implements ServerProxy
                 TaskLog.log(e.getMessage());
             }
         }
-
     }
-
 
     /**
      * Default constructor. Creates a new Jetty server with a standard connector
      * listening on a given port.
      */
-    public ServerProxyImpl ()
+    public ServerProxyImpl()
     {
         server = new Server();
         server.setStopAtShutdown(true);
     }
 
-   
     @Override
     public void addWebApplication(AntWebAppContext webApp)
     {
-       webApplications.add(webApp);
+        webApplications.add(webApp);
     }
 
     public int getStopPort()
@@ -227,18 +244,15 @@ public class ServerProxyImpl implements ServerProxy
         this.webApplications = webApplications;
     }
 
-    
     public File getTempDirectory()
     {
         return tempDirectory;
     }
 
-
     public void setTempDirectory(File tempDirectory)
     {
         this.tempDirectory = tempDirectory;
     }
-
 
     /**
      * @see org.eclipse.jetty.ant.utils.ServerProxy#start()
@@ -249,15 +263,15 @@ public class ServerProxyImpl implements ServerProxy
         try
         {
             configure();
-            
+
             configureWebApps();
-            
+
             server.start();
-         
-            System.setProperty("jetty.ant.server.port","" + ((ServerConnector)server.getConnectors()[0]).getLocalPort());
-            
+
+            System.setProperty("jetty.ant.server.port", "" + ((ServerConnector)server.getConnectors()[0]).getLocalPort());
+
             String host = ((ServerConnector)server.getConnectors()[0]).getHost();
-            
+
             if (host == null)
             {
                 System.setProperty("jetty.ant.server.host", "localhost");
@@ -266,9 +280,9 @@ public class ServerProxyImpl implements ServerProxy
             {
                 System.setProperty("jetty.ant.server.host", host);
             }
-            
+
             startScanners();
-            
+
             TaskLog.log("Jetty AntTask Started");
 
             if (!daemon)
@@ -285,9 +299,6 @@ public class ServerProxyImpl implements ServerProxy
         }
     }
 
-
-
-  
     /**
      * @see org.eclipse.jetty.ant.utils.ServerProxy#getProxiedObject()
      */
@@ -297,7 +308,6 @@ public class ServerProxyImpl implements ServerProxy
         return server;
     }
 
-
     /**
      * @return the daemon
      */
@@ -306,15 +316,13 @@ public class ServerProxyImpl implements ServerProxy
         return daemon;
     }
 
-
     /**
      * @param daemon the daemon to set
      */
     public void setDaemon(boolean daemon)
-    {       
+    {
         this.daemon = daemon;
     }
-
 
     /**
      * @return the contextHandlers
@@ -324,27 +332,23 @@ public class ServerProxyImpl implements ServerProxy
         return contextHandlers;
     }
 
-
     /**
      * @param contextHandlers the contextHandlers to set
      */
-    public void setContextHandlers (ContextHandlers contextHandlers)
+    public void setContextHandlers(ContextHandlers contextHandlers)
     {
         this.contextHandlers = contextHandlers;
     }
-
 
     public int getScanIntervalSecs()
     {
         return scanIntervalSecs;
     }
 
-
     public void setScanIntervalSecs(int scanIntervalSecs)
     {
         this.scanIntervalSecs = scanIntervalSecs;
     }
-    
 
     /**
      * Configures Jetty server before adding any web applications to it.
@@ -353,27 +357,27 @@ public class ServerProxyImpl implements ServerProxy
     {
         if (configured)
             return;
-        
+
         configured = true;
 
-        if(stopPort>0 && stopKey!=null)
+        if (stopPort > 0 && stopKey != null)
         {
             ShutdownMonitor monitor = ShutdownMonitor.getInstance();
             monitor.setPort(stopPort);
             monitor.setKey(stopKey);
             monitor.setExitVm(false);
         }
-        
+
         if (tempDirectory != null && !tempDirectory.exists())
             tempDirectory.mkdirs();
-        
+
         // Applies external configuration via jetty.xml
         applyJettyXml();
 
         // Configures connectors for this server instance.
         if (connectors != null)
         {
-            for (Connector c:connectors)
+            for (Connector c : connectors)
             {
                 ServerConnector jc = new ServerConnector(server);
 
@@ -387,7 +391,7 @@ public class ServerProxyImpl implements ServerProxy
         // Configures login services
         if (loginServices != null)
         {
-            for (LoginService ls:loginServices)
+            for (LoginService ls : loginServices)
             {
                 server.addBean(ls);
             }
@@ -399,46 +403,44 @@ public class ServerProxyImpl implements ServerProxy
         // Set default server handlers
         configureHandlers();
     }
-    
-    
+
     /**
-     * 
+     *
      */
     private void configureHandlers()
     {
         if (requestLog != null)
             server.setRequestLog(requestLog);
 
-        contexts = (ContextHandlerCollection) server
-                .getChildHandlerByClass(ContextHandlerCollection.class);
+        contexts = (ContextHandlerCollection)server
+            .getChildHandlerByClass(ContextHandlerCollection.class);
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
-            HandlerCollection handlers = (HandlerCollection) server
-                    .getChildHandlerByClass(HandlerCollection.class);
+            HandlerCollection handlers = (HandlerCollection)server
+                .getChildHandlerByClass(HandlerCollection.class);
             if (handlers == null)
             {
                 handlers = new HandlerCollection();
                 server.setHandler(handlers);
-                handlers.setHandlers(new Handler[] { contexts, new DefaultHandler() });
+                handlers.setHandlers(new Handler[]{contexts, new DefaultHandler()});
             }
             else
             {
                 handlers.addHandler(contexts);
             }
         }
-        
+
         //if there are any extra contexts to deploy
         if (contextHandlers != null && contextHandlers.getContextHandlers() != null)
         {
-            for (ContextHandler c:contextHandlers.getContextHandlers())
+            for (ContextHandler c : contextHandlers.getContextHandlers())
+            {
                 contexts.addHandler(c);
+            }
         }
     }
 
-
-
-    
     /**
      * Applies jetty.xml configuration to the Jetty server instance.
      */
@@ -446,12 +448,11 @@ public class ServerProxyImpl implements ServerProxy
     {
         if (jettyXml != null && jettyXml.exists())
         {
-            TaskLog.log("Configuring jetty from xml configuration file = "
-                    + jettyXml.getAbsolutePath());
+            TaskLog.log("Configuring jetty from xml configuration file = " + jettyXml.getAbsolutePath());
             XmlConfiguration configuration;
             try
             {
-                configuration = new XmlConfiguration(Resource.toURL(jettyXml));
+                configuration = new XmlConfiguration(new PathResource(jettyXml));
                 configuration.configure(server);
             }
             catch (MalformedURLException e)
@@ -473,43 +474,37 @@ public class ServerProxyImpl implements ServerProxy
         }
     }
 
-    
     /**
      * Starts web applications' scanners.
      */
     private void startScanners() throws Exception
     {
-        for (AntWebAppContext awc:webApplications)
+        for (AntWebAppContext awc : webApplications)
         {
             if (scanIntervalSecs <= 0)
                 return;
 
-            List<File> scanList = awc.getScanFiles();
- 
-            TaskLog.log("Web application '" + awc + "': starting scanner at interval of "
-                    + scanIntervalSecs + " seconds.");
+            TaskLog.log("Web application '" + awc + "': starting scanner at interval of " + scanIntervalSecs + " seconds.");
             Scanner.Listener changeListener = new WebAppScannerListener(awc);
             Scanner scanner = new Scanner();
             scanner.setScanInterval(scanIntervalSecs);
             scanner.addListener(changeListener);
-            scanner.setScanDirs(scanList);
+            scanner.setScanDirs(awc.getScanFiles());
             scanner.setReportExistingFilesOnStartup(false);
             scanner.start();
-        }  
+        }
     }
-    
-    
+
     /**
-     * 
+     *
      */
     private void configureWebApps()
     {
-        for (AntWebAppContext awc:webApplications)
+        for (AntWebAppContext awc : webApplications)
         {
             awc.setAttribute(AntWebAppContext.BASETEMPDIR, tempDirectory);
             if (contexts != null)
                 contexts.addHandler(awc);
         }
     }
-    
 }

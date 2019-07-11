@@ -58,9 +58,8 @@ public class GlobalWebappConfigBindingTest
         jetty.addConfiguration("jetty-http.xml");
 
         // Setup initial context
-        jetty.copyWebapp("foo.xml","foo.xml");
-        jetty.copyWebapp("foo-webapp-1.war","foo.war");
-
+        jetty.copyWebapp("foo.xml", "foo.xml");
+        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
     }
 
     @AfterEach
@@ -74,10 +73,10 @@ public class GlobalWebappConfigBindingTest
     public void testServerAndSystemClassesOverride() throws Exception
     {
         File srcXml = MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml");
-        File destXml = new File(jetty.getJettyHome(),"context-binding-test-1.xml");
-        IO.copy(srcXml,destXml);
+        File destXml = new File(jetty.getJettyHome(), "context-binding-test-1.xml");
+        IO.copy(srcXml, destXml);
 
-        PathAssert.assertFileExists("Context Binding XML",destXml);
+        PathAssert.assertFileExists("Context Binding XML", destXml);
 
         jetty.addConfiguration("binding-test-contexts-1.xml");
         jetty.load();
@@ -89,10 +88,10 @@ public class GlobalWebappConfigBindingTest
         WebAppContext context = contexts.get(0);
 
         assertNotNull(context, "Context should not be null");
-        String currentClasses[] = context.getServerClasses();
+        String[] currentClasses = context.getServerClasses();
 
         String addedClass = "org.eclipse.foo."; // What was added by the binding
-        assertThat("Current Server Classes",addedClass,is(in(currentClasses)));
+        assertThat("Current Server Classes", addedClass, is(in(currentClasses)));
 
         //  boolean jndiPackage = false;
 

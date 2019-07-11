@@ -18,19 +18,16 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.internal.Generator;
-import org.eclipse.jetty.websocket.core.internal.Parser;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -60,14 +57,11 @@ public class ParsePayloadLengthTest
         );
     }
 
-    private ByteBufferPool bufferPool = new MappedByteBufferPool();
-
     @ParameterizedTest(name = "size={0} {1}")
     @MethodSource("data")
     public void testPayloadLength(int size, String description) throws InterruptedException
     {
-        Parser parser = new Parser(bufferPool);
-        ParserCapture capture = new ParserCapture(parser);
+        ParserCapture capture = new ParserCapture();
 
         ByteBuffer raw = BufferUtil.allocate(size + Generator.MAX_HEADER_LENGTH);
         BufferUtil.clearToFill(raw);
@@ -75,7 +69,7 @@ public class ParsePayloadLengthTest
         // Create text frame
         RawFrameBuilder.putOpFin(raw, OpCode.TEXT, true);
         RawFrameBuilder.putLength(raw, size, false); // len of closeCode
-        byte payload[] = new byte[size];
+        byte[] payload = new byte[size];
         Arrays.fill(payload, (byte)'x');
         raw.put(payload);
 

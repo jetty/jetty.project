@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -173,15 +172,15 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
         return Collections.enumeration(values);
     }
 
+    public Map<String, List<String>> getHeaders()
+    {
+        return Collections.unmodifiableMap(headers);
+    }
+
     @Override
     public Enumeration<String> getHeaderNames()
     {
         return Collections.enumeration(headers.keySet());
-    }
-
-    public Map<String, List<String>> getHeaders()
-    {
-        return Collections.unmodifiableMap(headers);
     }
 
     @Override

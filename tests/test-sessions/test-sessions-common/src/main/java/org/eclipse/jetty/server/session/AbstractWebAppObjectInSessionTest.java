@@ -18,13 +18,9 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -34,6 +30,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * AbstractWebAppObjectInSessionTest
@@ -46,13 +45,13 @@ import org.junit.jupiter.api.Test;
  */
 public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
 {
- 
+
     @Test
     public void testWebappObjectInSession() throws Exception
     {
-        String contextName = "webappObjectInSessionTest";
-        String contextPath = "/" + contextName;
-        String servletMapping = "/server";
+        final String contextName = "webappObjectInSessionTest";
+        final String contextPath = "/" + contextName;
+        final String servletMapping = "/server";
 
         File targetDir = new File(System.getProperty("basedir"), "target");
         File warDir = new File(targetDir, contextName);
@@ -62,7 +61,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
         // Write web.xml
         File webXml = new File(webInfDir, "web.xml");
         String xml =
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<web-app xmlns=\"http://java.sun.com/xml/ns/j2ee\"\n" +
                 "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
                 "         xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\"\n" +
@@ -97,25 +96,25 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
-        
-        TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE,  TestServer.DEFAULT_SCAVENGE_SEC,
-                                                            cacheFactory, storeFactory);
+
+        TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+            cacheFactory, storeFactory);
         server1.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
         try
         {
             server1.start();
             int port1 = server1.getPort();
-            
-            TestServer server2 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE,  TestServer.DEFAULT_SCAVENGE_SEC,
-                                                      cacheFactory, storeFactory);
+
+            TestServer server2 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+                cacheFactory, storeFactory);
             server2.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
             try
             {
                 server2.start();
                 int port2 = server2.getPort();
-                
+
                 HttpClient client = new HttpClient();
                 client.start();
                 try
@@ -125,7 +124,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
                     request.method(HttpMethod.GET);
 
                     ContentResponse response = request.send();
-                    assertEquals( HttpServletResponse.SC_OK, response.getStatus());
+                    assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                     String sessionCookie = response.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
@@ -137,7 +136,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
                     request2.header("Cookie", sessionCookie);
                     ContentResponse response2 = request2.send();
 
-                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
                 }
                 finally
                 {

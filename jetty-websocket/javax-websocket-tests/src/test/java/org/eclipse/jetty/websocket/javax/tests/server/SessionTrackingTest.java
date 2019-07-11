@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
@@ -63,7 +62,7 @@ public class SessionTrackingTest
                 return;
             }
 
-            String parts[] = msg.split("\\|");
+            String[] parts = msg.split("\\|");
 
             if ("openSessions".equals(parts[0]))
             {
@@ -163,6 +162,8 @@ public class SessionTrackingTest
     private static void sendTextFrameToAll(String msg, Session... sessions) throws IOException
     {
         for (Session session : sessions)
+        {
             session.getBasicRemote().sendText(msg);
+        }
     }
 }

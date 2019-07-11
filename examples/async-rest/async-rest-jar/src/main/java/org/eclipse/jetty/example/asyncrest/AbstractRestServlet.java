@@ -24,7 +24,6 @@ import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.util.Map;
 import java.util.Queue;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -43,18 +42,18 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class AbstractRestServlet extends HttpServlet
 {
-    protected final static String __DEFAULT_APPID = "Webtide81-adf4-4f0a-ad58-d91e41bbe85";
-    protected final static String STYLE = 
-        "<style type='text/css'>"+
-        "  img.thumb:hover {height:50px}"+
-        "  img.thumb {vertical-align:text-top}"+
-        "  span.red {color: #ff0000}"+
-        "  span.green {color: #00ff00}"+
-        "  iframe {border: 0px}"+
-        "</style>";
+    protected static final String __DEFAULT_APPID = "Webtide81-adf4-4f0a-ad58-d91e41bbe85";
+    protected static final String STYLE =
+        "<style type='text/css'>" +
+            "  img.thumb:hover {height:50px}" +
+            "  img.thumb {vertical-align:text-top}" +
+            "  span.red {color: #ff0000}" +
+            "  span.green {color: #00ff00}" +
+            "  iframe {border: 0px}" +
+            "</style>";
 
-    protected final static String ITEMS_PARAM = "items";
-    protected final static String APPID_PARAM = "appid";
+    protected static final String ITEMS_PARAM = "items";
+    protected static final String APPID_PARAM = "appid";
 
     protected String _appid;
 
@@ -67,41 +66,54 @@ public class AbstractRestServlet extends HttpServlet
             _appid = servletConfig.getInitParameter(APPID_PARAM);
     }
 
-
-    public static String sanitize(String s)
+    // TODO: consider using StringUtil.sanitizeFileSystemName instead of this?
+    // might introduce jetty-util dependency though
+    public static String sanitize(String str)
     {
-        if (s==null)
+        if (str == null)
             return null;
-        return s.replace("<","?").replace("&","?").replace("\n","?");
+
+        char[] chars = str.toCharArray();
+        int len = chars.length;
+        for (int i = 0; i < len; i++)
+        {
+            char c = chars[i];
+            if ((c <= 0x1F) || // control characters
+                (c == '<') || (c == '&'))
+            {
+                chars[i] = '?';
+            }
+        }
+        return String.valueOf(chars);
     }
-    
-    protected String restURL(String item) 
+
+    protected String restURL(String item)
     {
         try
         {
-            return ("http://open.api.ebay.com/shopping?MaxEntries=3&appid=" + _appid + 
-                    "&version=573&siteid=0&callname=FindItems&responseencoding=JSON&QueryKeywords=" + 
-                    URLEncoder.encode(item,"UTF-8"));
+            return ("http://open.api.ebay.com/shopping?MaxEntries=3&appid=" + _appid +
+                "&version=573&siteid=0&callname=FindItems&responseencoding=JSON&QueryKeywords=" +
+                URLEncoder.encode(item, "UTF-8"));
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
     }
-    
-    protected String generateThumbs(Queue<Map<String,String>> results)
+
+    protected String generateThumbs(Queue<Map<String, String>> results)
     {
         StringBuilder thumbs = new StringBuilder();
         for (Map<String, String> m : results)
         {
             if (!m.containsKey("GalleryURL"))
                 continue;
-                
-            thumbs.append("<a href=\""+m.get("ViewItemURLForNaturalSearch")+"\">");
-            thumbs.append("<img class='thumb' border='1px' height='25px'"+
-                        " src='"+m.get("GalleryURL")+"'"+
-                        " title='"+m.get("Title")+"'"+
-                        "/>");
+
+            thumbs.append("<a href=\"" + m.get("ViewItemURLForNaturalSearch") + "\">");
+            thumbs.append("<img class='thumb' border='1px' height='25px'" +
+                " src='" + m.get("GalleryURL") + "'" +
+                " title='" + m.get("Title") + "'" +
+                "/>");
             thumbs.append("</a>&nbsp;");
         }
         return thumbs.toString();
@@ -110,21 +122,20 @@ public class AbstractRestServlet extends HttpServlet
     protected String ms(long nano)
     {
         BigDecimal dec = new BigDecimal(nano);
-        return dec.divide(new BigDecimal(1000000L)).setScale(1,RoundingMode.UP).toString();
+        return dec.divide(new BigDecimal(1000000L)).setScale(1, RoundingMode.UP).toString();
     }
-    
+
     protected int width(long nano)
     {
-        int w=(int)((nano+999999L)/5000000L);
-        if (w==0)
-            w=2;
+        int w = (int)((nano + 999999L) / 5000000L);
+        if (w == 0)
+            w = 2;
         return w;
     }
-    
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
-
 }

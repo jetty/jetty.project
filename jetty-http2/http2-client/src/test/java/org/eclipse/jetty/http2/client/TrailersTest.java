@@ -58,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 public class TrailersTest extends AbstractTest
 {
     @Test
@@ -252,7 +251,7 @@ public class TrailersTest extends AbstractTest
                 Response jettyResponse = jettyRequest.getResponse();
                 HttpFields trailers = new HttpFields();
                 jettyResponse.setTrailerFields(() ->
-                        trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
+                    trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
 
                 jettyResponse.getOutputStream().write("hello_trailers".getBytes(StandardCharsets.UTF_8));
                 jettyResponse.flushBuffer();
@@ -286,7 +285,7 @@ public class TrailersTest extends AbstractTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        assertTrue( frames.size()==3, frames.toString());
+        assertEquals(3, frames.size(), frames.toString());
 
         HeadersFrame headers = (HeadersFrame)frames.get(0);
         DataFrame data = (DataFrame)frames.get(1);
@@ -295,7 +294,7 @@ public class TrailersTest extends AbstractTest
         assertFalse(headers.isEndStream());
         assertFalse(data.isEndStream());
         assertTrue(trailers.isEndStream());
-        assertTrue(trailers.getMetaData().getFields().get(trailerName).equals(trailerValue));
+        assertEquals(trailers.getMetaData().getFields().get(trailerName), trailerValue);
     }
 
     @Test
@@ -340,7 +339,7 @@ public class TrailersTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap( StringUtil.getUtf8Bytes( "hello"));
+        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         Callback.Completable completable = new Callback.Completable();
         stream.data(new DataFrame(stream.getId(), data, false), completable);
         completable.thenRun(() ->
@@ -355,6 +354,5 @@ public class TrailersTest extends AbstractTest
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
-
     }
 }

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -66,13 +65,13 @@ public abstract class AbstractLoginModule implements LoginModule
         private Principal principal;
         private List<JAASRole> roles;
 
-        public JAASUserInfo (UserInfo u)
+        public JAASUserInfo(UserInfo u)
         {
             this.user = u;
             this.principal = new JAASPrincipal(u.getUserName());
         }
 
-        public String getUserName ()
+        public String getUserName()
         {
             return this.user.getUserName();
         }
@@ -82,30 +81,37 @@ public abstract class AbstractLoginModule implements LoginModule
             return this.principal;
         }
 
- 
-        public void setJAASInfo (Subject subject)
+        /**
+         * @param subject The subject
+         */
+        public void setJAASInfo(Subject subject)
         {
             subject.getPrincipals().add(this.principal);
-            if (this.user.getCredential() != null) {
+            if (this.user.getCredential() != null)
+            {
                 subject.getPrivateCredentials().add(this.user.getCredential());
             }
             subject.getPrincipals().addAll(roles);
         }
 
-        public void unsetJAASInfo (Subject subject)
+        /**
+         * @param subject The subject
+         */
+        public void unsetJAASInfo(Subject subject)
         {
             subject.getPrincipals().remove(this.principal);
-            if (this.user.getCredential() != null) {
+            if (this.user.getCredential() != null)
+            {
                 subject.getPrivateCredentials().remove(this.user.getCredential());
             }
             subject.getPrincipals().removeAll(this.roles);
         }
 
-        public boolean checkCredential (Object suppliedCredential)
+        public boolean checkCredential(Object suppliedCredential)
         {
             return this.user.checkCredential(suppliedCredential);
         }
-        
+
         public void fetchRoles() throws Exception
         {
             this.user.fetchRoles();
@@ -114,23 +120,21 @@ public abstract class AbstractLoginModule implements LoginModule
             {
                 Iterator<String> itor = this.user.getRoleNames().iterator();
                 while (itor.hasNext())
+                {
                     this.roles.add(new JAASRole((String)itor.next()));
+                }
             }
         }
     }
 
-    
-    
-    public abstract UserInfo getUserInfo (String username) throws Exception;
-    
-    
-    
-    public Subject getSubject ()
+    public abstract UserInfo getUserInfo(String username) throws Exception;
+
+    public Subject getSubject()
     {
         return this.subject;
     }
 
-    public void setSubject (Subject s)
+    public void setSubject(Subject s)
     {
         this.subject = s;
     }
@@ -140,7 +144,7 @@ public abstract class AbstractLoginModule implements LoginModule
         return this.currentUser;
     }
 
-    public void setCurrentUser (JAASUserInfo u)
+    public void setCurrentUser(JAASUserInfo u)
     {
         this.currentUser = u;
     }
@@ -160,23 +164,24 @@ public abstract class AbstractLoginModule implements LoginModule
         return this.authState;
     }
 
-    public boolean isCommitted ()
+    public boolean isCommitted()
     {
         return this.commitState;
     }
 
-    public void setAuthenticated (boolean authState)
+    public void setAuthenticated(boolean authState)
     {
         this.authState = authState;
     }
 
-    public void setCommitted (boolean commitState)
+    public void setCommitted(boolean commitState)
     {
         this.commitState = commitState;
     }
+
     /**
-     * @see javax.security.auth.spi.LoginModule#abort()
      * @throws LoginException if unable to abort
+     * @see javax.security.auth.spi.LoginModule#abort()
      */
     @Override
     public boolean abort() throws LoginException
@@ -186,9 +191,9 @@ public abstract class AbstractLoginModule implements LoginModule
     }
 
     /**
-     * @see javax.security.auth.spi.LoginModule#commit()
      * @return true if committed, false if not (likely not authenticated)
      * @throws LoginException if unable to commit
+     * @see javax.security.auth.spi.LoginModule#commit()
      */
     @Override
     public boolean commit() throws LoginException
@@ -205,8 +210,7 @@ public abstract class AbstractLoginModule implements LoginModule
         return true;
     }
 
-
-    public Callback[] configureCallbacks ()
+    public Callback[] configureCallbacks()
     {
         Callback[] callbacks = new Callback[3];
         callbacks[0] = new NameCallback("Enter user name");
@@ -214,31 +218,27 @@ public abstract class AbstractLoginModule implements LoginModule
         callbacks[2] = new PasswordCallback("Enter password", false); //only used if framework does not support the ObjectCallback
         return callbacks;
     }
-    
-    
-    public boolean isIgnored ()
+
+    public boolean isIgnored()
     {
         return false;
     }
 
-
-
-
     /**
-     * @see javax.security.auth.spi.LoginModule#login()
      * @return true if is authenticated, false otherwise
      * @throws LoginException if unable to login
+     * @see javax.security.auth.spi.LoginModule#login()
      */
     @Override
     public boolean login() throws LoginException
     {
         try
-        {  
+        {
             if (isIgnored())
                 return false;
-            
+
             if (callbackHandler == null)
-                throw new LoginException ("No callback handler");
+                throw new LoginException("No callback handler");
 
             Callback[] callbacks = configureCallbacks();
             callbackHandler.handle(callbacks);
@@ -266,7 +266,7 @@ public abstract class AbstractLoginModule implements LoginModule
 
             currentUser = new JAASUserInfo(userInfo);
             setAuthenticated(currentUser.checkCredential(webCredential));
-          
+
             if (isAuthenticated())
             {
                 currentUser.fetchRoles();
@@ -277,24 +277,24 @@ public abstract class AbstractLoginModule implements LoginModule
         }
         catch (IOException e)
         {
-            throw new LoginException (e.toString());
+            throw new LoginException(e.toString());
         }
         catch (UnsupportedCallbackException e)
         {
-            throw new LoginException (e.toString());
+            throw new LoginException(e.toString());
         }
         catch (Exception e)
         {
             if (e instanceof LoginException)
                 throw (LoginException)e;
-            throw new LoginException (e.toString());
+            throw new LoginException(e.toString());
         }
     }
 
     /**
-     * @see javax.security.auth.spi.LoginModule#logout()
      * @return true always
      * @throws LoginException if unable to logout
+     * @see javax.security.auth.spi.LoginModule#logout()
      */
     @Override
     public boolean logout() throws LoginException
@@ -305,18 +305,17 @@ public abstract class AbstractLoginModule implements LoginModule
     }
 
     /**
-     * @see javax.security.auth.spi.LoginModule#initialize(javax.security.auth.Subject, javax.security.auth.callback.CallbackHandler, java.util.Map, java.util.Map)
      * @param subject the subject
      * @param callbackHandler the callback handler
      * @param sharedState the shared state map
      * @param options the option map
+     * @see javax.security.auth.spi.LoginModule#initialize(javax.security.auth.Subject, javax.security.auth.callback.CallbackHandler, java.util.Map, java.util.Map)
      */
     @Override
     public void initialize(Subject subject, CallbackHandler callbackHandler,
-            Map<String,?> sharedState, Map<String,?> options)
+                           Map<String, ?> sharedState, Map<String, ?> options)
     {
         this.callbackHandler = callbackHandler;
         this.subject = subject;
     }
-
 }

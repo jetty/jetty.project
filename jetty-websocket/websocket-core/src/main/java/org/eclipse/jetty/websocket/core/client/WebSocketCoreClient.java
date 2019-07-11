@@ -31,16 +31,16 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
-public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHandler.Customizer
+public class WebSocketCoreClient extends ContainerLifeCycle
 {
+    public static final String WEBSOCKET_CORECLIENT_ATTRIBUTE = WebSocketCoreClient.class.getName();
 
     private static final Logger LOG = Log.getLogger(WebSocketCoreClient.class);
     private final HttpClient httpClient;
-    private WebSocketExtensionRegistry extensionRegistry;
-    private DecoratedObjectFactory objectFactory;
-    private final FrameHandler.Customizer customizer;
+    private WebSocketComponents components;
 
     // TODO: Things to consider for inclusion in this class (or removal if they can be set elsewhere, like HttpClient)
     // - AsyncWrite Idle Timeout
@@ -51,31 +51,22 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 
     public WebSocketCoreClient()
     {
-        this(null,null);
+        this(null, new WebSocketComponents());
     }
 
-    public WebSocketCoreClient(HttpClient httpClient)
+    public WebSocketCoreClient(WebSocketComponents webSocketComponents)
     {
-        this(httpClient, null);
+        this(null, webSocketComponents);
     }
 
-    public WebSocketCoreClient(HttpClient httpClient, FrameHandler.Customizer customizer)
+    public WebSocketCoreClient(HttpClient httpClient, WebSocketComponents webSocketComponents)
     {
         if (httpClient == null)
             httpClient = Objects.requireNonNull(HttpClientProvider.get());
 
         this.httpClient = httpClient;
-        this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.objectFactory = new DecoratedObjectFactory();
-        this.customizer = customizer;
+        this.components = webSocketComponents;
         addBean(httpClient);
-    }
-
-    @Override
-    public void customize(FrameHandler.CoreSession coreSession)
-    {
-        if (customizer != null)
-            customizer.customize(coreSession);
     }
 
     public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
@@ -92,7 +83,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
         // Validate Requested Extensions
         for (ExtensionConfig reqExt : request.getExtensions())
         {
-            if (!extensionRegistry.isAvailable(reqExt.getName()))
+            if (!components.getExtensionRegistry().isAvailable(reqExt.getName()))
             {
                 throw new IllegalArgumentException("Requested extension [" + reqExt.getName() + "] is not installed");
             }
@@ -117,7 +108,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 
     public WebSocketExtensionRegistry getExtensionRegistry()
     {
-        return extensionRegistry;
+        return components.getExtensionRegistry();
     }
 
     public HttpClient getHttpClient()
@@ -127,6 +118,11 @@ public class WebSocketCoreClient extends ContainerLifeCycle implements FrameHand
 
     public DecoratedObjectFactory getObjectFactory()
     {
-        return objectFactory;
+        return components.getObjectFactory();
+    }
+
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
     }
 }

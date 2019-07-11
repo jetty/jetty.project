@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 /**
@@ -25,10 +24,9 @@ package org.eclipse.jetty.server.session;
  * Factory for NullSessionCaches.
  */
 public class NullSessionCacheFactory implements SessionCacheFactory
-{    
+{
     boolean _saveOnCreate;
     boolean _removeUnloadableSessions;
-    
 
     /**
      * @return the saveOnCreate
@@ -38,8 +36,6 @@ public class NullSessionCacheFactory implements SessionCacheFactory
         return _saveOnCreate;
     }
 
-
-
     /**
      * @param saveOnCreate the saveOnCreate to set
      */
@@ -47,8 +43,6 @@ public class NullSessionCacheFactory implements SessionCacheFactory
     {
         _saveOnCreate = saveOnCreate;
     }
-
-
 
     /**
      * @return the removeUnloadableSessions
@@ -58,8 +52,6 @@ public class NullSessionCacheFactory implements SessionCacheFactory
         return _removeUnloadableSessions;
     }
 
-
-
     /**
      * @param removeUnloadableSessions the removeUnloadableSessions to set
      */
@@ -68,9 +60,7 @@ public class NullSessionCacheFactory implements SessionCacheFactory
         _removeUnloadableSessions = removeUnloadableSessions;
     }
 
-
-
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionCache(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
@@ -80,7 +70,5 @@ public class NullSessionCacheFactory implements SessionCacheFactory
         cache.setSaveOnCreate(isSaveOnCreate());
         cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
         return cache;
-        
     }
-
 }

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 /**
@@ -29,7 +28,7 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 public interface Extension extends IncomingFrames, OutgoingFrames
 {
 
-    void init(ExtensionConfig config, ByteBufferPool bufferPool);
+    void init(ExtensionConfig config, WebSocketComponents components);
 
     /**
      * The active configuration for this extension.
@@ -90,8 +89,6 @@ public interface Extension extends IncomingFrames, OutgoingFrames
 
     /**
      * Set the {@link WebSocketCoreSession} for this Extension
-     *
-     * @param coreSession
      */
     void setWebSocketCoreSession(WebSocketCoreSession coreSession);
 }

@@ -191,15 +191,17 @@ public class DistributionTester
      *
      * @param warFile the war file to install
      * @param context the context path
+     * @return the path to the installed webapp exploded directory
      * @throws IOException if the installation fails
      */
-    public void installWarFile(File warFile, String context) throws IOException
+    public Path installWarFile(File warFile, String context) throws IOException
     {
         //webapps
         Path webapps = config.jettyBase.resolve("webapps").resolve(context);
         if (!Files.exists(webapps))
             Files.createDirectories(webapps);
         unzip(warFile, webapps.toFile());
+        return webapps;
     }
 
     /**
@@ -318,7 +320,7 @@ public class DistributionTester
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception)
             {
                 LOGGER.warn("Service creation failed for {} implementation {}: {}",
-                        type, impl, exception.getMessage(), exception);
+                    type, impl, exception.getMessage(), exception);
             }
         });
 
@@ -363,13 +365,13 @@ public class DistributionTester
         public String toString()
         {
             return String.format("%s@%x{jettyBase=%s, jettyHome=%s, jettyVersion=%s, mavenLocalRepository=%s, mavenRemoteRepositories=%s}",
-                    getClass().getSimpleName(),
-                    hashCode(),
-                    jettyBase,
-                    jettyHome,
-                    jettyVersion,
-                    mavenLocalRepository,
-                    mavenRemoteRepositories);
+                getClass().getSimpleName(),
+                hashCode(),
+                jettyBase,
+                jettyHome,
+                jettyVersion,
+                mavenLocalRepository,
+                mavenRemoteRepositories);
         }
     }
 
@@ -473,7 +475,7 @@ public class DistributionTester
         @Override
         public void close()
         {
-            destroy();
+            stop();
         }
 
         /**
@@ -551,7 +553,7 @@ public class DistributionTester
 
         /**
          * @param jettyVersion the version to use (format: 9.4.14.v20181114 9.4.15-SNAPSHOT).
-         *                     The distribution will be downloaded from local repository or remote
+         * The distribution will be downloaded from local repository or remote
          * @return the {@link Builder}
          */
         public Builder jettyVersion(String jettyVersion)
@@ -562,7 +564,7 @@ public class DistributionTester
 
         /**
          * @param jettyHome Path to the local exploded jetty distribution
-         *                  if configured the jettyVersion parameter will not be used
+         * if configured the jettyVersion parameter will not be used
          * @return the {@link Builder}
          */
         public Builder jettyHome(Path jettyHome)
@@ -597,7 +599,7 @@ public class DistributionTester
         /**
          * If needed to resolve the Jetty distribution from another Maven remote repositories
          *
-         * @param id  the id
+         * @param id the id
          * @param url the Maven remote repository url
          * @return the {@link Builder}
          */

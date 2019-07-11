@@ -27,7 +27,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -62,12 +61,16 @@ public class ConnectionPoolTest
     public static Stream<Arguments> pools()
     {
         List<Object[]> pools = new ArrayList<>();
-        pools.add(new Object[] { DuplexConnectionPool.class,
-                (ConnectionPool.Factory)
-                        destination -> new DuplexConnectionPool(destination, 8, destination)});
-        pools.add(new Object[] { RoundRobinConnectionPool.class,
-                (ConnectionPool.Factory)
-                        destination -> new RoundRobinConnectionPool(destination, 8, destination)});
+        pools.add(new Object[]{
+            DuplexConnectionPool.class,
+            (ConnectionPool.Factory)
+                destination -> new DuplexConnectionPool(destination, 8, destination)
+        });
+        pools.add(new Object[]{
+            RoundRobinConnectionPool.class,
+            (ConnectionPool.Factory)
+                destination -> new RoundRobinConnectionPool(destination, 8, destination)
+        });
         return pools.stream().map(Arguments::of);
     }
 
@@ -153,8 +156,8 @@ public class ConnectionPoolTest
         CountDownLatch latch = new CountDownLatch(parallelism * runs);
         List<Throwable> failures = new CopyOnWriteArrayList<>();
         IntStream.range(0, parallelism).parallel().forEach(i ->
-                IntStream.range(0, runs).forEach(j ->
-                        run(latch, iterations, failures)));
+            IntStream.range(0, runs).forEach(j ->
+                run(latch, iterations, failures)));
         assertTrue(latch.await(iterations, TimeUnit.SECONDS));
         assertTrue(failures.isEmpty(), failures.toString());
     }
@@ -163,7 +166,9 @@ public class ConnectionPoolTest
     {
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)
+        {
             test(failures);
+        }
         long end = System.nanoTime();
         long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
         System.err.printf("%d requests in %d ms, %.3f req/s%n", iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D);
@@ -193,8 +198,8 @@ public class ConnectionPoolTest
     private void test(HttpMethod method, boolean clientClose, boolean serverClose, int contentLength, List<Throwable> failures)
     {
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .path("/")
-                .method(method);
+            .path("/")
+            .method(method);
 
         if (clientClose)
             request.header(HttpHeader.CONNECTION, "close");

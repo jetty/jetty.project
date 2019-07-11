@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.server;
 
-import static java.util.Arrays.asList;
-
 import java.util.ArrayList;
+
+import static java.util.Arrays.asList;
 
 class RequestLogCollection
     implements RequestLog
@@ -40,7 +40,9 @@ class RequestLogCollection
     @Override
     public void log(Request request, Response response)
     {
-        for (RequestLog delegate:delegates)
+        for (RequestLog delegate : delegates)
+        {
             delegate.log(request, response);
+        }
     }
 }

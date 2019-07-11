@@ -48,14 +48,14 @@ public class CommandLineConfigSource implements ConfigSource
     private final Path homePath;
     private final Path basePath;
 
-    public CommandLineConfigSource(String rawargs[])
+    public CommandLineConfigSource(String[] rawargs)
     {
         this.args = new RawArgs();
         this.props = new Props();
         for (String arg : rawargs)
         {
-            this.args.addArg(arg,ORIGIN_CMD_LINE);
-            this.props.addPossibleProperty(arg,ORIGIN_CMD_LINE);
+            this.args.addArg(arg, ORIGIN_CMD_LINE);
+            this.props.addPossibleProperty(arg, ORIGIN_CMD_LINE);
         }
 
         // Setup ${jetty.base} and ${jetty.home}
@@ -63,14 +63,14 @@ public class CommandLineConfigSource implements ConfigSource
         this.basePath = findJettyBasePath().toAbsolutePath();
 
         // Update System Properties
-        setSystemProperty(BaseHome.JETTY_HOME,homePath.toAbsolutePath().toString());
-        setSystemProperty(BaseHome.JETTY_BASE,basePath.toAbsolutePath().toString());
+        setSystemProperty(BaseHome.JETTY_HOME, homePath.toAbsolutePath().toString());
+        setSystemProperty(BaseHome.JETTY_BASE, basePath.toAbsolutePath().toString());
     }
 
     private final Path findJettyBasePath()
     {
         // If a jetty property is defined, use it
-        Prop prop = this.props.getProp(BaseHome.JETTY_BASE,false);
+        Prop prop = this.props.getProp(BaseHome.JETTY_BASE, false);
         if (prop != null && !Utils.isBlank(prop.value))
         {
             return FS.toPath(prop.value);
@@ -80,20 +80,20 @@ public class CommandLineConfigSource implements ConfigSource
         String val = System.getProperty(BaseHome.JETTY_BASE);
         if (!Utils.isBlank(val))
         {
-            setProperty(BaseHome.JETTY_BASE,val,ORIGIN_SYSTEM_PROPERTY);
+            setProperty(BaseHome.JETTY_BASE, val, ORIGIN_SYSTEM_PROPERTY);
             return FS.toPath(val);
         }
 
         // Lastly, fall back to base == ${user.dir}
-        Path base = FS.toPath(this.props.getString("user.dir","."));
-        setProperty(BaseHome.JETTY_BASE,base.toString(),ORIGIN_INTERNAL_FALLBACK);
+        Path base = FS.toPath(this.props.getString("user.dir", "."));
+        setProperty(BaseHome.JETTY_BASE, base.toString(), ORIGIN_INTERNAL_FALLBACK);
         return base;
     }
 
     private final Path findJettyHomePath()
     {
         // If a jetty property is defined, use it
-        Prop prop = this.props.getProp(BaseHome.JETTY_HOME,false);
+        Prop prop = this.props.getProp(BaseHome.JETTY_HOME, false);
         if (prop != null && !Utils.isBlank(prop.value))
         {
             return FS.toPath(prop.value);
@@ -103,7 +103,7 @@ public class CommandLineConfigSource implements ConfigSource
         String val = System.getProperty(BaseHome.JETTY_HOME);
         if (!Utils.isBlank(val))
         {
-            setProperty(BaseHome.JETTY_HOME,val,ORIGIN_SYSTEM_PROPERTY);
+            setProperty(BaseHome.JETTY_HOME, val, ORIGIN_SYSTEM_PROPERTY);
             return FS.toPath(val);
         }
 
@@ -120,19 +120,19 @@ public class CommandLineConfigSource implements ConfigSource
                 try
                 {
                     Path home = new File(new URI(m.group(1))).getParentFile().toPath();
-                    setProperty(BaseHome.JETTY_HOME,home.toString(),ORIGIN_INTERNAL_FALLBACK);
+                    setProperty(BaseHome.JETTY_HOME, home.toString(), ORIGIN_INTERNAL_FALLBACK);
                     return home;
                 }
                 catch (URISyntaxException e)
                 {
-                    throw new UsageException(UsageException.ERR_UNKNOWN,e);
+                    throw new UsageException(UsageException.ERR_UNKNOWN, e);
                 }
             }
         }
 
         // Lastly, fall back to ${user.dir} default
-        Path home = FS.toPath(System.getProperty("user.dir","."));
-        setProperty(BaseHome.JETTY_HOME,home.toString(),"<user.dir>");
+        Path home = FS.toPath(System.getProperty("user.dir", "."));
+        setProperty(BaseHome.JETTY_HOME, home.toString(), "<user.dir>");
         return home;
     }
 
@@ -211,23 +211,23 @@ public class CommandLineConfigSource implements ConfigSource
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((args == null)?0:args.hashCode());
+        result = (prime * result) + ((args == null) ? 0 : args.hashCode());
         return result;
     }
 
     public void setProperty(String key, String value, String origin)
     {
-        this.props.setProperty(key,value,origin);
+        this.props.setProperty(key, value, origin);
     }
 
     public void setSystemProperty(String key, String value)
     {
-        this.props.setSystemProperty(key,value);
+        this.props.setSystemProperty(key, value);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s[%s,args.length=%d]",this.getClass().getSimpleName(),getId(),getArgs().size());
+        return String.format("%s[%s,args.length=%d]", this.getClass().getSimpleName(), getId(), getArgs().size());
     }
 }

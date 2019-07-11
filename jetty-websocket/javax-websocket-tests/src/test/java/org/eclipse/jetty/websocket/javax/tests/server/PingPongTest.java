@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
@@ -84,7 +83,7 @@ public class PingPongTest
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("PongSocket.onPong(): PongMessage.appData={}", BufferUtil.toDetailString(pong.getApplicationData()));
-            byte buf[] = BufferUtil.toArray(pong.getApplicationData());
+            byte[] buf = BufferUtil.toArray(pong.getApplicationData());
             String message = new String(buf, StandardCharsets.UTF_8);
             this.session.getAsyncRemote().sendText("PongSocket.onPong(PongMessage)[" + path + "]:" + message);
         }
@@ -106,7 +105,7 @@ public class PingPongTest
         @Override
         public void onMessage(PongMessage pong)
         {
-            byte buf[] = BufferUtil.toArray(pong.getApplicationData());
+            byte[] buf = BufferUtil.toArray(pong.getApplicationData());
             String message = new String(buf, StandardCharsets.UTF_8);
             this.session.getAsyncRemote().sendText("PongMessageEndpoint.onMessage(PongMessage):[" + path + "]:" + message);
         }

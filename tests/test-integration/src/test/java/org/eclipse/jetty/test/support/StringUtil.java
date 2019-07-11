@@ -71,17 +71,17 @@ public class StringUtil
 
         if (s.length() <= 0)
         {
-            return new String[] {}; // empty array
+            return new String[]{}; // empty array
         }
 
-        String ret[];
+        String[] ret;
 
         int count = 0;
         int offset = 0;
         int idx;
 
         // Calculate entry length to not waste memory.
-        while ((idx = s.indexOf(delim,offset)) != (-1))
+        while ((idx = s.indexOf(delim, offset)) != (-1))
         {
             if (idx > offset)
             {
@@ -98,11 +98,11 @@ public class StringUtil
         offset = 0;
         ret = new String[count];
         int retIdx = 0;
-        while ((idx = s.indexOf(delim,offset)) != (-1))
+        while ((idx = s.indexOf(delim, offset)) != (-1))
         {
             if (idx > offset)
             {
-                ret[retIdx] = s.substring(offset,idx);
+                ret[retIdx] = s.substring(offset, idx);
                 retIdx++;
             }
             offset = idx + 1;
@@ -117,9 +117,8 @@ public class StringUtil
 
     /**
      * Utility method to convert "\n" found to "\r\n" if running on windows.
-     * 
-     * @param str
-     *            input string.
+     *
+     * @param str input string.
      * @return the same string, with any LF or CR returned as system default.
      */
     public static String toSystemLN(String str)
@@ -142,7 +141,7 @@ public class StringUtil
                         ret.append(LN);
                         linesep = false;
                     }
-                ret.append(c);
+                    ret.append(c);
             }
         }
 

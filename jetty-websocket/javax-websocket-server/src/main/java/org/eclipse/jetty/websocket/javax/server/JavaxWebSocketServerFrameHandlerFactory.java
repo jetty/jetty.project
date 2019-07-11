@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.websocket.javax.server;
 
-import java.util.concurrent.CompletableFuture;
-
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -32,7 +29,6 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactor
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata;
 import org.eclipse.jetty.websocket.javax.server.internal.DelegatedJavaxServletUpgradeRequest;
 import org.eclipse.jetty.websocket.javax.server.internal.PathParamIdentifier;
-import org.eclipse.jetty.websocket.javax.server.internal.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -68,7 +64,6 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrame
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse)
     {
-        CompletableFuture<Session> completableFuture = new CompletableFuture<>();
-        return newJavaxWebSocketFrameHandler(websocketPojo, new DelegatedJavaxServletUpgradeRequest(upgradeRequest), new UpgradeResponseAdapter(upgradeResponse), completableFuture);
+        return newJavaxWebSocketFrameHandler(websocketPojo, new DelegatedJavaxServletUpgradeRequest(upgradeRequest));
     }
 }

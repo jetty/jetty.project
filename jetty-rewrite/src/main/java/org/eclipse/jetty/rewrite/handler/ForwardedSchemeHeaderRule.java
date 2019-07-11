@@ -18,29 +18,23 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 
-
 /**
- * Set the scheme for the request 
- *
- * 
- * 
+ * Set the scheme for the request
  */
-public class ForwardedSchemeHeaderRule extends HeaderRule {
-    private String _scheme="https";
+public class ForwardedSchemeHeaderRule extends HeaderRule
+{
+    private String _scheme = "https";
 
-    /* ------------------------------------------------------------ */
-    public String getScheme() 
+    public String getScheme()
     {
         return _scheme;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param scheme the scheme to set on the request. Defaults to "https"
      */
@@ -48,12 +42,11 @@ public class ForwardedSchemeHeaderRule extends HeaderRule {
     {
         _scheme = scheme;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
-    protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response) 
+    protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response)
     {
-        ((Request) request).setScheme(_scheme);
+        ((Request)request).setScheme(_scheme);
         return target;
-    }    
+    }
 }

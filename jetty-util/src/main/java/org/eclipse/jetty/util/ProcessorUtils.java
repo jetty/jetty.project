@@ -36,7 +36,7 @@ public class ProcessorUtils
         {
             try
             {
-                return Integer.parseInt( processors );
+                return Integer.parseInt(processors);
             }
             catch (NumberFormatException ignored)
             {

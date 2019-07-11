@@ -18,14 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.core.TestUpgradeHandler;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
 /**
@@ -67,26 +62,17 @@ public class AutobahnWebSocketServer
     public static void main(String[] args) throws Exception
     {
         int port = 9001; // same port as found in fuzzing-client.json
-        if(args != null && args.length>0)
-        {
-            port = Integer.parseInt( args[0] );
-        }
-        Server server = new Server( port );
+        if (args != null && args.length > 0)
+            port = Integer.parseInt(args[0]);
 
-        ServerConnector connector = new ServerConnector(
-            server,
-            new HttpConnectionFactory()
-        );
-
+        Server server = new Server(port);
+        ServerConnector connector = new ServerConnector(server);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
-
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
-        WebSocketNegotiator negotiator =
-            new AutobahnWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool());
 
-        WebSocketUpgradeHandler handler = new TestUpgradeHandler(negotiator);
+        WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler((neg) -> new AutobahnFrameHandler());
         context.setHandler(handler);
 
         server.start();

@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.websocket.core.client.UpgradeListener;
-
-import javax.websocket.ClientEndpointConfig.Configurator;
-import javax.websocket.HandshakeResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import javax.websocket.ClientEndpointConfig.Configurator;
+import javax.websocket.HandshakeResponse;
+
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 
 public class JsrUpgradeListener implements UpgradeListener
 {

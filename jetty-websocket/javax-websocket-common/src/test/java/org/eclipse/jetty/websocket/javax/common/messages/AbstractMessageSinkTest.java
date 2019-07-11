@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
-import org.eclipse.jetty.websocket.javax.common.AbstractSessionTest;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.function.Consumer;
+
+import org.eclipse.jetty.websocket.javax.common.AbstractSessionTest;
 
 public abstract class AbstractMessageSinkTest extends AbstractSessionTest
 {

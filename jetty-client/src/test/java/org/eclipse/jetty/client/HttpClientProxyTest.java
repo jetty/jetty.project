@@ -68,9 +68,9 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
 
         ContentResponse response = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response.getStatus());
     }
@@ -116,9 +116,9 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
 
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         // No Authentication available => 407
         assertEquals(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407, response1.getStatus());
@@ -137,9 +137,9 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         });
         // ...and perform the request again => 407 + 204
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response2.getStatus());
         assertEquals(2, requests.get());
@@ -147,9 +147,9 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         // Now the authentication result is cached => 204
         requests.set(0);
         ContentResponse response3 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response3.getStatus());
         assertEquals(1, requests.get());
@@ -210,10 +210,10 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
 
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .path("/proxy")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/proxy")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         // No Authentication available => 407.
         assertEquals(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407, response1.getStatus());
@@ -232,10 +232,10 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         });
         // ...and perform the request again => 407 + 302 + 204.
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .path("/proxy")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/proxy")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response2.getStatus());
         assertEquals(3, requests.get());
@@ -243,10 +243,10 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         // Now the authentication result is cached => 204.
         requests.set(0);
         ContentResponse response3 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .path("/server")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/server")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response3.getStatus());
         assertEquals(1, requests.get());
@@ -307,9 +307,9 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         });
         // Make a request, expect 407 + 401 + 204.
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response1.getStatus());
         assertEquals(3, requests.get());
@@ -317,9 +317,9 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         // Make again the request, only the server authentication is cached, expect 407 + 204.
         requests.set(0);
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response2.getStatus());
         assertEquals(2, requests.get());
@@ -378,10 +378,10 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         });
         // Make a request, expect 407 + 204.
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.AUTHORIZATION, "Basic foobar")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .header(HttpHeader.AUTHORIZATION, "Basic foobar")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response1.getStatus());
         assertEquals(2, requests.get());
@@ -389,10 +389,10 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         // Make again the request, authentication is cached, expect 204.
         requests.set(0);
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.AUTHORIZATION, "Basic foobar")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .header(HttpHeader.AUTHORIZATION, "Basic foobar")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(status, response2.getStatus());
         assertEquals(1, requests.get());

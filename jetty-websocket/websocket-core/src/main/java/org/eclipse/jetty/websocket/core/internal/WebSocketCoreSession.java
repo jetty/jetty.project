@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -53,6 +51,7 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
+import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 
@@ -62,7 +61,7 @@ import static org.eclipse.jetty.util.Callback.NOOP;
 public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSession, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketCoreSession.class);
-    private final static CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
+    private static final CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
     private final Behavior behavior;
     private final WebSocketSessionState sessionState = new WebSocketSessionState();
@@ -81,9 +80,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
 
-    public WebSocketCoreSession(FrameHandler handler,
-                                Behavior behavior,
-                                Negotiated negotiated)
+    public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated)
     {
         this.handler = handler;
         this.behavior = behavior;
@@ -102,9 +99,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
     public void assertValidIncoming(Frame frame)
     {
-        assertValid(frame);
+        assertValidFrame(frame);
 
-        // Assert Behavior Required by RFC-6455 / Section 5.1
+        // Assert Incoming Frame Behavior Required by RFC-6455 / Section 5.1
         switch (behavior)
         {
             case SERVER:
@@ -116,20 +113,50 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 if (frame.isMasked())
                     throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
                 break;
+
+            default:
+                throw new IllegalStateException(behavior.toString());
+        }
+
+        /*
+         * RFC 6455 Section 5.5.1
+         * close frame payload is specially formatted which is checked in CloseStatus
+         */
+        if (frame.getOpCode() == OpCode.CLOSE)
+        {
+            if (!(frame instanceof ParsedFrame)) // already check in parser
+                CloseStatus.getCloseStatus(frame); // return ignored as get used to validate there is a closeStatus
         }
     }
 
     public void assertValidOutgoing(Frame frame) throws CloseException
     {
-        // TODO check that it is not masked, since masking is done later
+        assertValidFrame(frame);
 
+        /*
+         * RFC 6455 Section 5.5.1
+         * close frame payload is specially formatted which is checked in CloseStatus
+         */
+        if (frame.getOpCode() == OpCode.CLOSE)
+        {
+            if (!(frame instanceof ParsedFrame)) // already check in parser
+            {
+                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+                if (!CloseStatus.isTransmittableStatusCode(closeStatus.getCode()) && (closeStatus.getCode() != CloseStatus.NO_CODE))
+                {
+                    throw new ProtocolException("Frame has non-transmittable status code");
+                }
+            }
+
+        }
+    }
+
+    public void assertValidFrame(Frame frame)
+    {
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
 
-        assertValid(frame);
-
-        int payloadLength = (frame.getPayload() == null)?0:frame.getPayload().remaining();
-
+        int payloadLength = (frame.getPayload() == null) ? 0 : frame.getPayload().remaining();
         if (frame.isControlFrame())
         {
             if (!frame.isFin())
@@ -137,73 +164,30 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
             if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
                 throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
-        }
-    }
 
-    private void assertValid(Frame frame)
-    {
-
-        // Control Frame Validation
-        if (frame.isControlFrame())
-        {
             if (frame.isRsv1())
                 throw new ProtocolException("Cannot have RSV1==true on Control frames");
-
             if (frame.isRsv2())
                 throw new ProtocolException("Cannot have RSV2==true on Control frames");
-
             if (frame.isRsv3())
                 throw new ProtocolException("Cannot have RSV3==true on Control frames");
-
-
-            /*
-             * RFC 6455 Section 5.5.1
-             * close frame payload is specially formatted which is checked in CloseStatus
-             */
-            if (frame.getOpCode() == OpCode.CLOSE)
-            {
-                if (!(frame instanceof ParsedFrame)) // already check in parser
-                    CloseStatus.getCloseStatus(frame); // return ignored as get used to validate there is a closeStatus
-            }
         }
         else
         {
-            // TODO should we validate UTF-8 for text frames
-            if (frame.getOpCode() == OpCode.TEXT)
-            {
-            }
+            /*
+             * RFC 6455 Section 5.2
+             *
+             * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
+             * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
+             */
+            ExtensionStack extensionStack = negotiated.getExtensions();
+            if (frame.isRsv1() && !extensionStack.isRsv1Used())
+                throw new ProtocolException("RSV1 not allowed to be set");
+            if (frame.isRsv2() && !extensionStack.isRsv2Used())
+                throw new ProtocolException("RSV2 not allowed to be set");
+            if (frame.isRsv3() && !extensionStack.isRsv3Used())
+                throw new ProtocolException("RSV3 not allowed to be set");
         }
-
-        /*
-         * RFC 6455 Section 5.2
-         *
-         * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
-         * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
-         */
-        //TODO save these values to not iterate through extensions every frame
-        List<? extends Extension> exts = getExtensionStack().getExtensions();
-
-        boolean isRsv1InUse = false;
-        boolean isRsv2InUse = false;
-        boolean isRsv3InUse = false;
-        for (Extension ext : exts)
-        {
-            if (ext.isRsv1User())
-                isRsv1InUse = true;
-            if (ext.isRsv2User())
-                isRsv2InUse = true;
-            if (ext.isRsv3User())
-                isRsv3InUse = true;
-        }
-
-        if (frame.isRsv1() && !isRsv1InUse)
-            throw new ProtocolException("RSV1 not allowed to be set");
-
-        if (frame.isRsv2() && !isRsv2InUse)
-            throw new ProtocolException("RSV2 not allowed to be set");
-
-        if (frame.isRsv3() && !isRsv3InUse)
-            throw new ProtocolException("RSV3 not allowed to be set");
     }
 
     public ExtensionStack getExtensionStack()
@@ -293,8 +277,8 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
      * Send Close Frame with specified Status Code and optional Reason
      *
      * @param statusCode a valid WebSocket status code
-     * @param reason     an optional reason phrase
-     * @param callback   the callback on successful send of close frame
+     * @param reason an optional reason phrase
+     * @param callback the callback on successful send of close frame
      */
     @Override
     public void close(int statusCode, String reason, Callback callback)
@@ -319,22 +303,22 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             LOG.debug("onEof() {}", this);
 
         if (sessionState.onEof())
-            closeConnection(new ClosedChannelException(), sessionState.getCloseStatus(), Callback.NOOP);
+            closeConnection(sessionState.getCloseStatus(), Callback.NOOP);
     }
 
-    public void closeConnection(Throwable cause, CloseStatus closeStatus, Callback callback)
+    public void closeConnection(CloseStatus closeStatus, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closeConnection() {} {} {}", closeStatus, this, cause);
+            LOG.debug("closeConnection() {} {} {}", closeStatus, this);
 
         connection.cancelDemand();
         if (connection.getEndPoint().isOpen())
             connection.close();
 
         // Forward Errors to Local WebSocket EndPoint
-        if (cause!=null)
+        if (closeStatus.isAbnormal() && closeStatus.getCause() != null)
         {
-            Callback errorCallback = Callback.from(()->
+            Callback errorCallback = Callback.from(() ->
             {
                 try
                 {
@@ -347,9 +331,10 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 }
             });
 
+            Throwable cause = closeStatus.getCause();
             try
             {
-                handler.onError(cause,errorCallback);
+                handler.onError(cause, errorCallback);
             }
             catch (Throwable e)
             {
@@ -398,13 +383,13 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         else
             code = CloseStatus.NO_CLOSE;
 
-        AbnormalCloseStatus closeStatus = new AbnormalCloseStatus(code, cause);
+        CloseStatus closeStatus = new CloseStatus(code, cause);
         if (CloseStatus.isTransmittableStatusCode(code))
             close(closeStatus, callback);
         else
         {
             if (sessionState.onClosed(closeStatus))
-                closeConnection(cause, closeStatus, callback);
+                closeConnection(closeStatus, callback);
         }
     }
 
@@ -432,7 +417,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         else
             code = CloseStatus.SERVER_ERROR;
 
-        close(new AbnormalCloseStatus(code, cause), callback);
+        close(new CloseStatus(code, cause), callback);
     }
 
     /**
@@ -448,19 +433,20 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (LOG.isDebugEnabled())
             LOG.debug("ConnectionState: Transition to CONNECTED");
 
-        Callback openCallback = Callback.from(()->
-                {
-                    sessionState.onOpen();
-                    if (!demanding)
-                        connection.demand(1);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("ConnectionState: Transition to OPEN");
-                },
-                x->
-                {
-                    LOG.warn("Error during OPEN", x);
-                    processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
-                });
+        Callback openCallback = Callback.from(
+            () ->
+            {
+                sessionState.onOpen();
+                if (!demanding)
+                    connection.demand(1);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ConnectionState: Transition to OPEN");
+            },
+            x ->
+            {
+                LOG.warn("Error during OPEN", x);
+                processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
+            });
 
         try
         {
@@ -476,7 +462,6 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             and the CompletableFuture require the exception. */
             throw new RuntimeException(t);
         }
-
     }
 
     @Override
@@ -491,17 +476,20 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
     public WebSocketConnection getConnection()
     {
-        return this.connection;
+        return connection;
     }
 
     public Executor getExecutor()
     {
-        return this.connection.getExecutor();
+        return connection.getExecutor();
     }
 
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFrame({})", frame);
+
         try
         {
             assertValidIncoming(frame);
@@ -525,7 +513,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.warn("Invalid outgoing frame: {}", frame);
+                LOG.warn("Invalid outgoing frame: " + frame, t);
 
             callback.failed(t);
             return;
@@ -533,7 +521,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
         try
         {
-            synchronized(flusher)
+            synchronized (flusher)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
@@ -541,11 +529,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 boolean closeConnection = sessionState.onOutgoingFrame(frame);
                 if (closeConnection)
                 {
-                    Throwable cause = AbnormalCloseStatus.getCause(CloseStatus.getCloseStatus(frame));
-
                     Callback closeConnectionCallback = Callback.from(
-                            ()->closeConnection(cause, sessionState.getCloseStatus(), callback),
-                            t->closeConnection(cause, sessionState.getCloseStatus(), Callback.from(callback, t)));
+                        () -> closeConnection(sessionState.getCloseStatus(), callback),
+                        t -> closeConnection(sessionState.getCloseStatus(), Callback.from(callback, t)));
 
                     flusher.queue.offer(new FrameEntry(frame, closeConnectionCallback, false));
                 }
@@ -564,8 +550,8 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             if (frame.getOpCode() == OpCode.CLOSE)
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                if (closeStatus instanceof AbnormalCloseStatus && sessionState.onClosed(closeStatus))
-                    closeConnection(AbnormalCloseStatus.getCause(closeStatus), closeStatus, Callback.from(callback, t));
+                if (closeStatus.isAbnormal() && sessionState.onClosed(closeStatus))
+                    closeConnection(closeStatus, Callback.from(callback, t));
                 else
                     callback.failed(t);
             }
@@ -577,7 +563,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void flush(Callback callback)
     {
-        synchronized(flusher)
+        synchronized (flusher)
         {
             flusher.queue.offer(new FrameEntry(FrameFlusher.FLUSH_FRAME, callback, false));
         }
@@ -587,6 +573,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void abort()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("abort(): {}", this);
+
         connection.cancelDemand();
         connection.getEndPoint().close();
     }
@@ -600,6 +589,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void setAutoFragment(boolean autoFragment)
     {
+        // TODO: consider adding extensible/generic mechanism for extensions to validate configuration changes if more examples occur
+        if (autoFragment && getExtensionStack().getRsv1User() instanceof DeflateFrameExtension)
+            LOG.warn("Frame auto-fragmentation must not be used with DeflateFrameExtension");
         this.autoFragment = autoFragment;
     }
 
@@ -637,6 +629,8 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     public void setInputBufferSize(int inputBufferSize)
     {
         this.inputBufferSize = inputBufferSize;
+        if (connection != null)
+            connection.setInputBufferSize(inputBufferSize);
     }
 
     @Override
@@ -671,8 +665,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}",
-                            frame, callback, sessionState, handler);
+                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}", frame, callback, sessionState, handler);
 
                 boolean closeConnection = sessionState.onIncomingFrame(frame);
 
@@ -685,29 +678,30 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
                 // Handle inbound CLOSE
                 connection.cancelDemand();
-                Callback closeCallback ;
+                Callback closeCallback;
 
                 if (closeConnection)
                 {
-                    closeCallback = Callback.from(()-> closeConnection(null, sessionState.getCloseStatus(), callback));
+                    closeCallback = Callback.from(() -> closeConnection(sessionState.getCloseStatus(), callback));
                 }
                 else
                 {
-                    closeCallback = Callback.from(()->
-                    {
-                        if (sessionState.isOutputOpen())
+                    closeCallback = Callback.from(
+                        () ->
                         {
-                            CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("ConnectionState: sending close response {}", closeStatus);
-                            close(closeStatus==null ? CloseStatus.NO_CODE_STATUS : closeStatus, callback);
-                        }
-                        else
-                        {
-                            callback.succeeded();
-                        }
-                    },
-                    x->processHandlerError(x,callback));
+                            if (sessionState.isOutputOpen())
+                            {
+                                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("ConnectionState: sending close response {}", closeStatus);
+                                close(closeStatus == null ? CloseStatus.NO_CODE_STATUS : closeStatus, callback);
+                            }
+                            else
+                            {
+                                callback.succeeded();
+                            }
+                        },
+                        x -> processHandlerError(x, callback));
                 }
 
                 handler.onFrame(frame, closeCallback);
@@ -745,7 +739,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this,
-            "subprotocol="+negotiated.getSubProtocol(),
+            "subprotocol=" + negotiated.getSubProtocol(),
             negotiated.getExtensions(),
             handler);
     }
@@ -792,41 +786,13 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         return String.format("WSCoreSession@%x{%s,%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
             hashCode(),
             behavior,
-                sessionState,
+            sessionState,
             negotiated,
             autoFragment,
             inputBufferSize,
             outputBufferSize,
             maxFrameSize,
             handler);
-    }
-
-    static class AbnormalCloseStatus extends CloseStatus
-    {
-        final Throwable cause;
-        public AbnormalCloseStatus(int statusCode, Throwable cause)
-        {
-            super(statusCode, cause.getMessage());
-            this.cause = cause;
-        }
-
-        public Throwable getCause()
-        {
-            return cause;
-        }
-
-        public static Throwable getCause(CloseStatus status)
-        {
-            if (status instanceof AbnormalCloseStatus)
-                return ((AbnormalCloseStatus)status).getCause();
-            return null;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Abnormal" + super.toString() + ":" + cause;
-        }
     }
 
     private class Flusher extends IteratingCallback
@@ -841,7 +807,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             {
                 entry = queue.poll();
             }
-            if (entry==null)
+            if (entry == null)
                 return Action.IDLE;
 
             negotiated.getExtensions().sendFrame(entry.frame, this, entry.batch);
@@ -865,7 +831,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 entries = new ArrayDeque<>(queue);
                 queue.clear();
             }
-            entries.forEach(e-> failEntry(cause, e));
+            entries.forEach(e -> failEntry(cause, e));
         }
 
         private void failEntry(Throwable cause, FrameEntry e)
@@ -874,7 +840,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             {
                 e.callback.failed(cause);
             }
-            catch(Throwable x)
+            catch (Throwable x)
             {
                 if (cause != x)
                     cause.addSuppressed(x);
@@ -882,5 +848,4 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             }
         }
     }
-
 }

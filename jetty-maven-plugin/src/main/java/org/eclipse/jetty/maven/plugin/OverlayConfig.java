@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.util.ArrayList;
@@ -40,20 +39,22 @@ public class OverlayConfig
     private List<String> excludes;
     private boolean skip;
     private boolean filtered;
-    
-    public OverlayConfig() {}
-    
+
+    public OverlayConfig()
+    {
+    }
+
     public OverlayConfig(String fmt, List<String> defaultIncludes, List<String> defaultExcludes)
     {
         if (fmt == null)
             return;
         String[] atoms = StringUtil.csvSplit(fmt);
-        for (int i=0;i<atoms.length;i++)
+        for (int i = 0; i < atoms.length; i++)
         {
             String s = atoms[i].trim();
             switch (i)
             {
-                case 0: 
+                case 0:
                 {
                     if (!"".equals(s))
                         groupId = s;
@@ -71,8 +72,8 @@ public class OverlayConfig
                         classifier = s;
                     break;
                 }
-                case 3: 
-                { 
+                case 3:
+                {
                     if (!"".equals(s))
                         targetPath = s;
                     break;
@@ -103,7 +104,7 @@ public class OverlayConfig
                     break;
                 }
                 case 7:
-                { 
+                {
                     if ("".equals(s))
                         break;
                     String[] exs = s.split(";");
@@ -111,6 +112,8 @@ public class OverlayConfig
                         excludes = Arrays.asList(exs);
                     break;
                 }
+                default:
+                    break;
             }
         }
     }
@@ -118,29 +121,29 @@ public class OverlayConfig
     public OverlayConfig(Xpp3Dom root, List<String> defaultIncludes, List<String> defaultExcludes)
     {
         Xpp3Dom node = root.getChild("groupId");
-        setGroupId(node==null?null:node.getValue());
-        
+        setGroupId(node == null ? null : node.getValue());
+
         node = root.getChild("artifactId");
-        setArtifactId(node==null?null:node.getValue());   
-        
+        setArtifactId(node == null ? null : node.getValue());
+
         node = root.getChild("classifier");
-        setClassifier(node==null?null:node.getValue());
-       
+        setClassifier(node == null ? null : node.getValue());
+
         node = root.getChild("targetPath");
-        setTargetPath(node==null?null:node.getValue());
-        
+        setTargetPath(node == null ? null : node.getValue());
+
         node = root.getChild("skip");
-        setSkip(node==null?false:Boolean.valueOf(node.getValue()));
+        setSkip(node == null ? false : Boolean.valueOf(node.getValue()));
 
         node = root.getChild("filtered");
-        setFiltered(node==null?false:Boolean.valueOf(node.getValue()));
+        setFiltered(node == null ? false : Boolean.valueOf(node.getValue()));
 
         node = root.getChild("includes");
         List<String> includes = null;
         if (node != null && node.getChildCount() > 0)
         {
             Xpp3Dom[] list = node.getChildren("include");
-            for (int j=0; list != null && j < list.length;j++)
+            for (int j = 0; list != null && j < list.length; j++)
             {
                 if (includes == null)
                     includes = new ArrayList<>();
@@ -153,14 +156,13 @@ public class OverlayConfig
             includes.addAll(defaultIncludes);
         }
         setIncludes(includes);
-        
-       
+
         node = root.getChild("excludes");
         List<String> excludes = null;
         if (node != null && node.getChildCount() > 0)
         {
             Xpp3Dom[] list = node.getChildren("exclude");
-            for (int j=0; list != null && j < list.length;j++)
+            for (int j = 0; list != null && j < list.length; j++)
             {
                 if (excludes == null)
                     excludes = new ArrayList<>();
@@ -174,7 +176,7 @@ public class OverlayConfig
         }
         setExcludes(excludes);
     }
-    
+
     public String getTargetPath()
     {
         return targetPath;
@@ -254,60 +256,59 @@ public class OverlayConfig
     {
         this.filtered = filtered;
     }
-    
+
     public boolean isCurrentProject()
     {
         if (this.groupId == null && this.artifactId == null)
             return true;
         return false;
     }
-    
 
     /**
      * Check if this overlay configuration matches an Artifact's info
-     * 
+     *
      * @param gid Artifact groupId
      * @param aid Artifact artifactId
      * @param cls Artifact classifier
      * @return true if matched
      */
-    public boolean matchesArtifact (String gid, String aid, String cls)
+    public boolean matchesArtifact(String gid, String aid, String cls)
     {
-        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid)))
-           &&((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid)))
-           &&((getClassifier() == null) || (getClassifier().equals(cls))))
+        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) &&
+            ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))) &&
+            ((getClassifier() == null) || (getClassifier().equals(cls))))
             return true;
 
         return false;
     }
-    
+
     /**
      * Check if this overlay configuration matches an Artifact's info
-     * 
+     *
      * @param gid the group id
      * @param aid the artifact id
      * @return true if matched
      */
-    public boolean matchesArtifact (String gid, String aid)
+    public boolean matchesArtifact(String gid, String aid)
     {
-        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid)))
-           &&((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))))
+        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) &&
+            ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))))
             return true;
 
         return false;
     }
-    
+
     @Override
     public String toString()
     {
         StringBuilder strbuff = new StringBuilder();
-        strbuff.append((groupId != null ? groupId : "")+",");
-        strbuff.append((artifactId != null ? artifactId : "")+",");
-        strbuff.append((classifier != null ? classifier : "")+",");
-        strbuff.append((targetPath != null ? targetPath : "")+",");
-        strbuff.append(""+skip+",");
-        strbuff.append(""+filtered+",");
-     
+        strbuff.append((groupId != null ? groupId : "") + ",");
+        strbuff.append((artifactId != null ? artifactId : "") + ",");
+        strbuff.append((classifier != null ? classifier : "") + ",");
+        strbuff.append((targetPath != null ? targetPath : "") + ",");
+        strbuff.append("" + skip + ",");
+        strbuff.append("" + filtered + ",");
+
         if (includes != null)
         {
             Iterator<String> itor = includes.iterator();
@@ -318,7 +319,7 @@ public class OverlayConfig
                     strbuff.append(";");
             }
         }
-        
+
         strbuff.append(", ");
 
         if (excludes != null)
@@ -331,7 +332,7 @@ public class OverlayConfig
                     strbuff.append(";");
             }
         }
-  
+
         return strbuff.toString();
     }
 }

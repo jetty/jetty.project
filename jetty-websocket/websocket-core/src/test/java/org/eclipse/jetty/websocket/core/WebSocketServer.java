@@ -68,7 +68,6 @@ public class WebSocketServer
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
         server.addConnector(connector);
 
         ContextHandler context = new ContextHandler("/");

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.quickstart;
 
 import java.util.Collection;
@@ -32,8 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * FooContextListener
- *
- *
  */
 public class FooContextListener implements ServletContextListener
 {
@@ -43,7 +40,7 @@ public class FooContextListener implements ServletContextListener
         ServletRegistration defaultRego = sce.getServletContext().getServletRegistration("default");
         Collection<String> mappings = defaultRego.getMappings();
         assertThat("/", is(in(mappings)));
-        
+
         Set<String> otherMappings = sce.getServletContext().getServletRegistration("foo").addMapping("/");
         assertTrue(otherMappings.isEmpty());
         Collection<String> fooMappings = sce.getServletContext().getServletRegistration("foo").getMappings();

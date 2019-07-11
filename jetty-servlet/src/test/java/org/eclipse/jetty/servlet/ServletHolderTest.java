@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -31,7 +25,14 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
-public class ServletHolderTest {
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+public class ServletHolderTest
+{
 
     @Test
     public void testTransitiveCompareTo() throws Exception
@@ -59,7 +60,6 @@ public class ServletHolderTest {
         assertTrue(two.compareTo(three) < 0);
         assertTrue(one.compareTo(three) < 0);
     }
-    
 
     @Test // TODO: Parameterize
     public void testJspFileNameToClassName() throws Exception
@@ -67,18 +67,17 @@ public class ServletHolderTest {
         ServletHolder h = new ServletHolder();
         h.setName("test");
 
+        assertEquals(null, h.getClassNameForJsp(null));
 
-        assertEquals(null,  h.getClassNameForJsp(null));
+        assertEquals(null, h.getClassNameForJsp(""));
 
-        assertEquals(null,  h.getClassNameForJsp(""));
+        assertEquals(null, h.getClassNameForJsp("/blah/"));
 
-        assertEquals(null,  h.getClassNameForJsp("/blah/"));
+        assertEquals(null, h.getClassNameForJsp("//blah///"));
 
-        assertEquals(null,  h.getClassNameForJsp("//blah///"));
+        assertEquals(null, h.getClassNameForJsp("/a/b/c/blah/"));
 
-        assertEquals(null,  h.getClassNameForJsp("/a/b/c/blah/"));
-
-        assertEquals("org.apache.jsp.a.b.c.blah",  h.getClassNameForJsp("/a/b/c/blah"));
+        assertEquals("org.apache.jsp.a.b.c.blah", h.getClassNameForJsp("/a/b/c/blah"));
 
         assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("/blah.jsp"));
 
@@ -91,13 +90,12 @@ public class ServletHolderTest {
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("a/b/c/blah.jsp"));
     }
 
-
     @Test
     public void testNoClassName() throws Exception
     {
         try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
-            ServletContextHandler context = new ServletContextHandler(); 
+            ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();
             ServletHolder holder = new ServletHolder();
             holder.setName("foo");
@@ -115,13 +113,13 @@ public class ServletHolderTest {
             assertThat(m.getCause().getMessage(), containsString("foo"));
         }
     }
-    
+
     @Test
     public void testUnloadableClassName() throws Exception
     {
         try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
-            ServletContextHandler context = new ServletContextHandler(); 
+            ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();
             ServletHolder holder = new ServletHolder();
             holder.setName("foo");
@@ -139,5 +137,4 @@ public class ServletHolderTest {
             assertThat(m.getCause().getMessage(), containsString("foo"));
         }
     }
-   
 }

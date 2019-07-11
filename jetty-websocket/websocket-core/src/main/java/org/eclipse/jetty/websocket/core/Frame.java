@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
@@ -149,12 +149,12 @@ public class Frame
 
     protected void copyHeaders(Frame frame)
     {
-        byte opCode = (byte)(finRsvOp & 0x0F);
+        final byte opCode = (byte)(finRsvOp & 0x0F);
         finRsvOp = 0x00;
-        finRsvOp |= frame.isFin()?0x80:0x00;
-        finRsvOp |= frame.isRsv1()?0x40:0x00;
-        finRsvOp |= frame.isRsv2()?0x20:0x00;
-        finRsvOp |= frame.isRsv3()?0x10:0x00;
+        finRsvOp |= frame.isFin() ? 0x80 : 0x00;
+        finRsvOp |= frame.isRsv1() ? 0x40 : 0x00;
+        finRsvOp |= frame.isRsv2() ? 0x20 : 0x00;
+        finRsvOp |= frame.isRsv3() ? 0x10 : 0x00;
         finRsvOp |= opCode;
         if (frame.isMasked())
             mask = Arrays.copyOf(frame.getMask(), frame.getMask().length);
@@ -243,7 +243,7 @@ public class Frame
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((payload == null)?0:payload.hashCode());
+        result = (prime * result) + ((payload == null) ? 0 : payload.hashCode());
         result = (prime * result) + finRsvOp;
         result = (prime * result) + Arrays.hashCode(mask);
         return result;
@@ -289,7 +289,7 @@ public class Frame
     public Frame setFin(boolean fin)
     {
         // set bit 1
-        this.finRsvOp = (byte)((finRsvOp & 0x7F) | (fin?0x80:0x00));
+        this.finRsvOp = (byte)((finRsvOp & 0x7F) | (fin ? 0x80 : 0x00));
         return this;
     }
 
@@ -336,21 +336,21 @@ public class Frame
     public Frame setRsv1(boolean rsv1)
     {
         // set bit 2
-        this.finRsvOp = (byte)((finRsvOp & 0xBF) | (rsv1?0x40:0x00));
+        this.finRsvOp = (byte)((finRsvOp & 0xBF) | (rsv1 ? 0x40 : 0x00));
         return this;
     }
 
     public Frame setRsv2(boolean rsv2)
     {
         // set bit 3
-        this.finRsvOp = (byte)((finRsvOp & 0xDF) | (rsv2?0x20:0x00));
+        this.finRsvOp = (byte)((finRsvOp & 0xDF) | (rsv2 ? 0x20 : 0x00));
         return this;
     }
 
     public Frame setRsv3(boolean rsv3)
     {
         // set bit 4
-        this.finRsvOp = (byte)((finRsvOp & 0xEF) | (rsv3?0x10:0x00));
+        this.finRsvOp = (byte)((finRsvOp & 0xEF) | (rsv3 ? 0x10 : 0x00));
         return this;
     }
 
@@ -370,7 +370,9 @@ public class Frame
         {
             int maskInt = 0;
             for (byte maskByte : mask)
+            {
                 maskInt = (maskInt << 8) + (maskByte & 0xFF);
+            }
 
             int maskOffset = 0;
 
@@ -396,7 +398,6 @@ public class Frame
 
             Arrays.fill(mask, (byte)0);
         }
-
     }
 
     @Override
@@ -410,10 +411,10 @@ public class Frame
         b.append("len=").append(getPayloadLength());
         b.append(",fin=").append((finRsvOp & 0x80) != 0);
         b.append(",rsv=");
-        b.append(((finRsvOp & 0x40) != 0)?'1':'0');
-        b.append(((finRsvOp & 0x20) != 0)?'1':'0');
-        b.append(((finRsvOp & 0x10) != 0)?'1':'0');
-        b.append(",m=").append(mask == null?"null":TypeUtil.toHexString(mask));
+        b.append(((finRsvOp & 0x40) != 0) ? '1' : '0');
+        b.append(((finRsvOp & 0x20) != 0) ? '1' : '0');
+        b.append(((finRsvOp & 0x10) != 0) ? '1' : '0');
+        b.append(",m=").append(mask == null ? "null" : TypeUtil.toHexString(mask));
         b.append(']');
         if (payload != null)
             b.append(BufferUtil.toDetailString(payload));
@@ -427,7 +428,7 @@ public class Frame
     {
         private ReadOnly(Frame frame)
         {
-            super(frame.finRsvOp, frame.isMasked()?frame.getMask():null, frame.getPayload());
+            super(frame.finRsvOp, frame.isMasked() ? frame.getMask() : null, frame.getPayload());
         }
 
         @Override

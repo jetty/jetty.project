@@ -18,74 +18,79 @@
 
 package org.eclipse.jetty.http;
 
-
 /**
  * Implements a quoted comma separated list parser
  * in accordance with RFC7230.
  * OWS is removed and quoted characters ignored for parsing.
+ *
  * @see "https://tools.ietf.org/html/rfc7230#section-3.2.6"
  * @see "https://tools.ietf.org/html/rfc7230#section-7"
  */
 public abstract class QuotedCSVParser
 {
-    private enum State { VALUE, PARAM_NAME, PARAM_VALUE}
+    private enum State
+    {
+        VALUE, PARAM_NAME, PARAM_VALUE
+    }
 
     protected final boolean _keepQuotes;
 
     public QuotedCSVParser(boolean keepQuotes)
     {
-        _keepQuotes=keepQuotes;
+        _keepQuotes = keepQuotes;
     }
 
     public static String unquote(String s)
     {
         // handle trivial cases
-        int l=s.length();
-        if (s==null || l==0)
+        int l = s.length();
+        if (s == null || l == 0)
             return s;
 
         // Look for any quotes
-        int i=0;
-        for (;i<l;i++)
+        int i = 0;
+        for (; i < l; i++)
         {
-            char c=s.charAt(i);
-            if (c=='"')
+            char c = s.charAt(i);
+            if (c == '"')
                 break;
         }
-        if (i==l)
+        if (i == l)
             return s;
 
-        boolean quoted=true;
-        boolean sloshed=false;
+        boolean quoted = true;
+        boolean sloshed = false;
         StringBuffer buffer = new StringBuffer();
-        buffer.append(s,0,i);
+        buffer.append(s, 0, i);
         i++;
-        for (;i<l;i++)
+        for (; i < l; i++)
         {
-            char c=s.charAt(i);
+            char c = s.charAt(i);
             if (quoted)
             {
                 if (sloshed)
                 {
                     buffer.append(c);
-                    sloshed=false;
+                    sloshed = false;
                 }
-                else if (c=='"')
-                    quoted=false;
-                else if (c=='\\')
-                    sloshed=true;
+                else if (c == '"')
+                    quoted = false;
+                else if (c == '\\')
+                    sloshed = true;
                 else
                     buffer.append(c);
             }
-            else if (c=='"')
-                quoted=true;
+            else if (c == '"')
+                quoted = true;
             else
                 buffer.append(c);
         }
         return buffer.toString();
     }
 
-    /** Add and parse a value string(s)
+    /**
+     * Add and parse a value string(s)
+     *
      * @param value A value that may contain one or more Quoted CSV items.
      */
     public void addValue(String value)
@@ -95,108 +100,113 @@ public abstract class QuotedCSVParser
 
         StringBuffer buffer = new StringBuffer();
 
-        int l=value.length();
-        State state=State.VALUE;
-        boolean quoted=false;
-        boolean sloshed=false;
-        int nws_length=0;
-        int last_length=0;
-        int value_length=-1;
-        int param_name=-1;
-        int param_value=-1;
+        int l = value.length();
+        State state = State.VALUE;
+        boolean quoted = false;
+        boolean sloshed = false;
+        int nwsLength = 0;
+        int lastLength = 0;
+        int valueLength = -1;
+        int paramName = -1;
+        int paramValue = -1;
 
-        for (int i=0;i<=l;i++)
+        for (int i = 0; i <= l; i++)
         {
-            char c=i==l?0:value.charAt(i);
+            char c = i == l ? 0 : value.charAt(i);
 
             // Handle quoting https://tools.ietf.org/html/rfc7230#section-3.2.6
-            if (quoted && c!=0)
+            if (quoted && c != 0)
             {
                 if (sloshed)
-                    sloshed=false;
+                    sloshed = false;
                 else
                 {
-                    switch(c)
+                    switch (c)
                     {
                         case '\\':
-                            sloshed=true;
+                            sloshed = true;
                             if (!_keepQuotes)
                                 continue;
                             break;
                         case '"':
-                            quoted=false;
+                            quoted = false;
                             if (!_keepQuotes)
                                 continue;
+                            break;
+                        default:
                             break;
                     }
                 }
 
                 buffer.append(c);
-                nws_length=buffer.length();
+                nwsLength = buffer.length();
                 continue;
             }
 
             // Handle common cases
-            switch(c)
+            switch (c)
             {
                 case ' ':
                 case '\t':
-                    if (buffer.length()>last_length) // not leading OWS
+                    if (buffer.length() > lastLength) // not leading OWS
                         buffer.append(c);
                     continue;
 
                 case '"':
-                    quoted=true;
+                    quoted = true;
                     if (_keepQuotes)
                     {
-                        if (state==State.PARAM_VALUE && param_value<0)
-                            param_value=nws_length;
+                        if (state == State.PARAM_VALUE && paramValue < 0)
+                            paramValue = nwsLength;
                         buffer.append(c);
                     }
-                    else if (state==State.PARAM_VALUE && param_value<0)
-                        param_value=nws_length;
-                    nws_length=buffer.length();
+                    else if (state == State.PARAM_VALUE && paramValue < 0)
+                        paramValue = nwsLength;
+                    nwsLength = buffer.length();
                     continue;
 
                 case ';':
-                    buffer.setLength(nws_length); // trim following OWS
-                    if (state==State.VALUE)
+                    buffer.setLength(nwsLength); // trim following OWS
+                    if (state == State.VALUE)
                     {
                         parsedValue(buffer);
-                        value_length=buffer.length();
+                        valueLength = buffer.length();
                     }
                     else
-                        parsedParam(buffer,value_length,param_name,param_value);
-                    nws_length=buffer.length();
-                    param_name=param_value=-1;
+                        parsedParam(buffer, valueLength, paramName, paramValue);
+                    nwsLength = buffer.length();
+                    paramName = paramValue = -1;
                     buffer.append(c);
-                    last_length=++nws_length;
-                    state=State.PARAM_NAME;
+                    lastLength = ++nwsLength;
+                    state = State.PARAM_NAME;
                     continue;
 
                 case ',':
                 case 0:
-                    if (nws_length>0)
+                    if (nwsLength > 0)
                     {
-                        buffer.setLength(nws_length); // trim following OWS
-                        switch(state)
+                        buffer.setLength(nwsLength); // trim following OWS
+                        switch (state)
                         {
                             case VALUE:
                                 parsedValue(buffer);
-                                value_length=buffer.length();
+                                valueLength = buffer.length();
                                 break;
                             case PARAM_NAME:
                             case PARAM_VALUE:
-                                parsedParam(buffer,value_length,param_name,param_value);
+                                parsedParam(buffer, valueLength, paramName, paramValue);
                                 break;
+                            default:
+                                throw new IllegalStateException(state.toString());
                         }
+
                         parsedValueAndParams(buffer);
                     }
                     buffer.setLength(0);
-                    last_length=0;
-                    nws_length=0;
-                    value_length=param_name=param_value=-1;
-                    state=State.VALUE;
+                    lastLength = 0;
+                    nwsLength = 0;
+                    valueLength = paramName = paramValue = -1;
+                    state = State.VALUE;
                     continue;
 
                 case '=':
@@ -204,33 +214,35 @@ public abstract class QuotedCSVParser
                     {
                         case VALUE:
                             // It wasn't really a value, it was a param name
-                            value_length=param_name=0;
-                            buffer.setLength(nws_length); // trim following OWS
-                            String param = buffer.toString();
+                            paramName = 0;
+                            buffer.setLength(nwsLength); // trim following OWS
+                            final String param = buffer.toString();
                             buffer.setLength(0);
                             parsedValue(buffer);
-                            value_length=buffer.length();
+                            valueLength = buffer.length();
                             buffer.append(param);
                             buffer.append(c);
-                            last_length=++nws_length;
-                            state=State.PARAM_VALUE;
+                            lastLength = ++nwsLength;
+                            state = State.PARAM_VALUE;
                             continue;
 
                         case PARAM_NAME:
-                            buffer.setLength(nws_length); // trim following OWS
+                            buffer.setLength(nwsLength); // trim following OWS
                             buffer.append(c);
-                            last_length=++nws_length;
-                            state=State.PARAM_VALUE;
+                            lastLength = ++nwsLength;
+                            state = State.PARAM_VALUE;
                             continue;
 
                         case PARAM_VALUE:
-                            if (param_value<0)
-                                param_value=nws_length;
+                            if (paramValue < 0)
+                                paramValue = nwsLength;
                             buffer.append(c);
-                            nws_length=buffer.length();
+                            nwsLength = buffer.length();
                             continue;
+
+                        default:
+                            throw new IllegalStateException(state.toString());
                     }
-                    continue;
 
                 default:
                 {
@@ -239,27 +251,30 @@ public abstract class QuotedCSVParser
                         case VALUE:
                         {
                             buffer.append(c);
-                            nws_length=buffer.length();
+                            nwsLength = buffer.length();
                             continue;
                         }
 
                         case PARAM_NAME:
                         {
-                            if (param_name<0)
-                                param_name=nws_length;
+                            if (paramName < 0)
+                                paramName = nwsLength;
                             buffer.append(c);
-                            nws_length=buffer.length();
+                            nwsLength = buffer.length();
                             continue;
                         }
 
                         case PARAM_VALUE:
                         {
-                            if (param_value<0)
-                                param_value=nws_length;
+                            if (paramValue < 0)
+                                paramValue = nwsLength;
                             buffer.append(c);
-                            nws_length=buffer.length();
+                            nwsLength = buffer.length();
                             continue;
                         }
+
+                        default:
+                            throw new IllegalStateException(state.toString());
                     }
                 }
             }
@@ -268,6 +283,7 @@ public abstract class QuotedCSVParser
 
     /**
      * Called when a value and it's parameters has been parsed
+     *
      * @param buffer Containing the trimmed value and parameters
      */
     protected void parsedValueAndParams(StringBuffer buffer)
@@ -276,6 +292,7 @@ public abstract class QuotedCSVParser
 
     /**
      * Called when a value has been parsed (prior to any parameters)
+     *
      * @param buffer Containing the trimmed value, which may be mutated
      */
     protected void parsedValue(StringBuffer buffer)
@@ -284,6 +301,7 @@ public abstract class QuotedCSVParser
 
     /**
      * Called when a parameter has been parsed
+     *
      * @param buffer Containing the trimmed value and all parameters, which may be mutated
      * @param valueLength The length of the value
      * @param paramName The index of the start of the parameter just parsed
@@ -292,5 +310,4 @@ public abstract class QuotedCSVParser
     protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
     {
     }
-
 }

@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 @ManagedObject("Identity Extension")
 public class IdentityExtension extends AbstractExtension
@@ -57,9 +57,9 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void init(ExtensionConfig config, ByteBufferPool bufferPool)
+    public void init(ExtensionConfig config, WebSocketComponents components)
     {
-        super.init(config, bufferPool);
+        super.init(config, components);
 
         StringBuilder s = new StringBuilder();
         s.append(config.getName());

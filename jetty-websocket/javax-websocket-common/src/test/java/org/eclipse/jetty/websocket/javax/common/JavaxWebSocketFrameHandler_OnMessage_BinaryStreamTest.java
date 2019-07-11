@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 

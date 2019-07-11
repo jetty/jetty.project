@@ -105,13 +105,15 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             throw new IllegalArgumentException("Missing ClientConnectionFactory");
         this.factoryInfos = Arrays.asList(factoryInfos);
         this.protocols = Arrays.stream(factoryInfos)
-                .flatMap(info -> info.getProtocols().stream())
-                .distinct()
-                .collect(Collectors.toList());
+            .flatMap(info -> info.getProtocols().stream())
+            .distinct()
+            .collect(Collectors.toList());
         for (ClientConnectionFactory.Info factoryInfo : factoryInfos)
+        {
             addBean(factoryInfo);
+        }
         setConnectionPoolFactory(destination ->
-                new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
+            new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
     }
 
     @Override
@@ -130,8 +132,8 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         {
             // Preserve the order of protocols chosen by the application.
             protocols = this.protocols.stream()
-                    .filter(p -> p.equals("http/1.1") || p.equals(http2))
-                    .collect(Collectors.toList());
+                .filter(p -> p.equals("http/1.1") || p.equals(http2))
+                .collect(Collectors.toList());
         }
         if (protocols.isEmpty())
             return new HttpDestination.Key(origin, null);
@@ -164,7 +166,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             else
             {
                 factoryInfo = findClientConnectionFactoryInfo(protocol.getProtocols())
-                        .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for " + protocol));
+                    .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for " + protocol));
             }
         }
         return factoryInfo.getClientConnectionFactory().newConnection(endPoint, context);
@@ -182,7 +184,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
                 throw new IOException("Could not negotiate protocol among " + alpnConnection.getProtocols());
             List<String> protocols = List.of(protocol);
             Info factoryInfo = findClientConnectionFactoryInfo(protocols)
-                    .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for negotiated protocol " + protocol));
+                .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for negotiated protocol " + protocol));
             return factoryInfo.getClientConnectionFactory().newConnection(endPoint, context);
         }
         catch (Throwable failure)
@@ -195,7 +197,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     private Optional<Info> findClientConnectionFactoryInfo(List<String> protocols)
     {
         return factoryInfos.stream()
-                .filter(info -> info.matches(protocols))
-                .findFirst();
+            .filter(info -> info.matches(protocols))
+            .findFirst();
     }
 }

@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.jaas.spi;
 
-import java.security.Principal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
+import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.PropertyUserStore;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
@@ -48,23 +48,20 @@ public class PropertyFileLoginModule extends AbstractLoginModule
     private int _refreshInterval = 0;
     private String _filename = DEFAULT_FILENAME;
 
-    
-   
     /**
      * Read contents of the configured property file.
      *
-     * @see javax.security.auth.spi.LoginModule#initialize(javax.security.auth.Subject, javax.security.auth.callback.CallbackHandler, java.util.Map,
-     *      java.util.Map)
-     *      
      * @param subject the subject
      * @param callbackHandler the callback handler
      * @param sharedState the shared state map
      * @param options the options map
+     * @see javax.security.auth.spi.LoginModule#initialize(javax.security.auth.Subject, javax.security.auth.callback.CallbackHandler, java.util.Map,
+     * java.util.Map)
      */
     @Override
     public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
-        super.initialize(subject,callbackHandler,sharedState,options);
+        super.initialize(subject, callbackHandler, sharedState, options);
         setupPropertyUserStore(options);
     }
 
@@ -88,7 +85,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Exception while starting propertyUserStore: ",e);
+                    LOG.warn("Exception while starting propertyUserStore: ", e);
                 }
             }
         }
@@ -97,14 +94,12 @@ public class PropertyFileLoginModule extends AbstractLoginModule
     private void parseConfig(Map<String, ?> options)
     {
         String tmp = (String)options.get("file");
-        _filename = (tmp == null? DEFAULT_FILENAME : tmp);
+        _filename = (tmp == null ? DEFAULT_FILENAME : tmp);
         tmp = (String)options.get("refreshInterval");
-        _refreshInterval = (tmp == null?_refreshInterval:Integer.parseInt(tmp));
+        _refreshInterval = (tmp == null ? _refreshInterval : Integer.parseInt(tmp));
     }
 
     /**
-     * 
-     *
      * @param userName the user name
      * @throws Exception if unable to get the user information
      */
@@ -114,26 +109,22 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         PropertyUserStore propertyUserStore = _propertyUserStores.get(_filename);
         if (propertyUserStore == null)
             throw new IllegalStateException("PropertyUserStore should never be null here!");
-        
-        LOG.debug("Checking PropertyUserStore "+_filename+" for "+userName);
+
+        LOG.debug("Checking PropertyUserStore " + _filename + " for " + userName);
         UserIdentity userIdentity = propertyUserStore.getUserIdentity(userName);
-        if (userIdentity==null)
+        if (userIdentity == null)
             return null;
 
         //TODO in future versions change the impl of PropertyUserStore so its not
         //storing Subjects etc, just UserInfo
-        Set<Principal> principals = userIdentity.getSubject().getPrincipals();
+        Set<AbstractLoginService.RolePrincipal> principals = userIdentity.getSubject().getPrincipals(AbstractLoginService.RolePrincipal.class);
 
-        List<String> roles = new ArrayList<String>();
-
-        for ( Principal principal : principals )
-        {
-            roles.add( principal.getName() );
-        }
+        List<String> roles = principals.stream()
+            .map(AbstractLoginService.RolePrincipal::getName)
+            .collect(Collectors.toList());
 
         Credential credential = (Credential)userIdentity.getSubject().getPrivateCredentials().iterator().next();
-        LOG.debug("Found: " + userName + " in PropertyUserStore "+_filename);
+        LOG.debug("Found: " + userName + " in PropertyUserStore " + _filename);
         return new UserInfo(userName, credential, roles);
     }
-
 }

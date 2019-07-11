@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.time.Duration;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -71,7 +70,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
  * <b>Configuration / Init-Parameters:</b>
  * </p>
  * <dl>
- * <dt>maxIdleTime</dt>
+ * <dt>idleTimeout</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
  * <dt>maxTextMessageSize</dt>
  * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
@@ -100,6 +99,7 @@ public abstract class WebSocketServlet extends HttpServlet
      * configuration (which may be overriden by annotations) and mapping {@link WebSocketCreator}s.
      * This method assumes a single {@link FrameHandlerFactory} will be available as a bean on the
      * {@link ContextHandler}, which in practise will mostly the the Jetty WebSocket API factory.
+     *
      * @param factory the WebSocketServletFactory
      */
     protected abstract void configure(WebSocketServletFactory factory);
@@ -107,7 +107,7 @@ public abstract class WebSocketServlet extends HttpServlet
     /**
      * @return the instance of {@link FrameHandlerFactory} to be used to create the FrameHandler
      */
-    public abstract FrameHandlerFactory getFactory();
+    protected abstract FrameHandlerFactory getFactory();
 
     @Override
     public void init() throws ServletException
@@ -119,7 +119,13 @@ public abstract class WebSocketServlet extends HttpServlet
             components = WebSocketComponents.ensureWebSocketComponents(servletContext);
             mapping = new WebSocketMapping(components);
 
-            String max = getInitParameter("maxIdleTime");
+            String max = getInitParameter("idleTimeout");
+            if (max == null)
+            {
+                max = getInitParameter("maxIdleTime");
+                if (max != null)
+                    LOG.warn("'maxIdleTime' init param is deprecated, use 'idleTimeout' instead");
+            }
             if (max != null)
                 customizer.setIdleTimeout(Duration.ofMillis(Long.parseLong(max)));
 
@@ -140,7 +146,7 @@ public abstract class WebSocketServlet extends HttpServlet
                 customizer.setOutputBufferSize(Integer.parseInt(max));
 
             max = getInitParameter("maxFrameSize");
-            if (max==null)
+            if (max == null)
                 max = getInitParameter("maxAllowedFrameSize");
             if (max != null)
                 customizer.setMaxFrameSize(Long.parseLong(max));
@@ -161,7 +167,8 @@ public abstract class WebSocketServlet extends HttpServlet
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        if (mapping.upgrade(req, resp, customizer))
+        // provide a null default customizer the customizer will be on the negotiator in the mapping
+        if (mapping.upgrade(req, resp, null))
             return;
 
         // If we reach this point, it means we had an incoming request to upgrade
@@ -173,7 +180,6 @@ public abstract class WebSocketServlet extends HttpServlet
         // Handle normally
         super.service(req, resp);
     }
-
 
     private class CustomizedWebSocketServletFactory extends FrameHandler.ConfigurationCustomizer implements WebSocketServletFactory
     {

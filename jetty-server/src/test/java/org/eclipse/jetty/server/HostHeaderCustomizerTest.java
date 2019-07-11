@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -64,17 +63,17 @@ public class HostHeaderCustomizerTest
         {
             try (Socket socket = new Socket("localhost", connector.getLocalPort()))
             {
-                try(OutputStream output = socket.getOutputStream())
+                try (OutputStream output = socket.getOutputStream())
                 {
-                    String request = "" +
-                            "GET / HTTP/1.0\r\n" +
+                    String request =
+                        "GET / HTTP/1.0\r\n" +
                             "\r\n";
                     output.write(request.getBytes(StandardCharsets.UTF_8));
                     output.flush();
-    
+
                     HttpTester.Input input = HttpTester.from(socket.getInputStream());
                     HttpTester.Response response = HttpTester.parseResponse(input);
-    
+
                     String location = response.get("location");
                     assertNotNull(location);
                     String schemePrefix = "http://";

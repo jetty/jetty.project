@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -47,17 +46,13 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
 
-    public WebSocketSession(
-            FrameHandler.CoreSession coreSession,
-            JettyWebSocketFrameHandler frameHandler, BatchMode batchMode,
-            UpgradeRequest upgradeRequest,
-            UpgradeResponse upgradeResponse)
+    public WebSocketSession(FrameHandler.CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
     {
-        this.coreSession = Objects.requireNonNull(coreSession);
         this.frameHandler = Objects.requireNonNull(frameHandler);
-        this.remoteEndpoint = new JettyWebSocketRemoteEndpoint(coreSession, batchMode);
-        this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
+        this.coreSession = Objects.requireNonNull(coreSession);
+        this.upgradeRequest = frameHandler.getUpgradeRequest();
+        this.upgradeResponse = frameHandler.getUpgradeResponse();
+        this.remoteEndpoint = new JettyWebSocketRemoteEndpoint(coreSession, frameHandler.getBatchMode());
     }
 
     @Override
@@ -253,9 +248,9 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     public String dumpSelf()
     {
         return String.format("%s@%x[behavior=%s,idleTimeout=%dms]",
-                this.getClass().getSimpleName(), hashCode(),
-                getPolicy().getBehavior(),
-                getIdleTimeout().toMillis());
+            this.getClass().getSimpleName(), hashCode(),
+            getPolicy().getBehavior(),
+            getIdleTimeout().toMillis());
     }
 
     @Override

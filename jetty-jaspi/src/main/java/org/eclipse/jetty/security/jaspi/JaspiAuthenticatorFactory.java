@@ -45,12 +45,10 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     private static final Logger LOG = Log.getLogger(JaspiAuthenticatorFactory.class);
 
     private static String MESSAGE_LAYER = "HTTP";
-    
+
     private Subject _serviceSubject;
     private String _serverName;
-    
 
-    /* ------------------------------------------------------------ */
     /**
      * @return the serviceSubject
      */
@@ -59,7 +57,6 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         return _serviceSubject;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param serviceSubject the serviceSubject to set
      */
@@ -68,7 +65,6 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         _serviceSubject = serviceSubject;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return the serverName
      */
@@ -77,7 +73,6 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         return _serverName;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param serverName the serverName to set
      */
@@ -86,86 +81,91 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         _serverName = serverName;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
     {
-        Authenticator authenticator=null;
-        try 
+        Authenticator authenticator = null;
+        try
         {
             AuthConfigFactory authConfigFactory = AuthConfigFactory.getFactory();
-            RegistrationListener listener = (layer, appContext) -> {};
+            RegistrationListener listener = (layer, appContext) ->
+            {
+            };
 
-            Subject serviceSubject=findServiceSubject(server);
-            String serverName=findServerName(server);
+            Subject serviceSubject = findServiceSubject(server);
+            String serverName = findServerName(server);
 
-            String contextPath=context.getContextPath();
-            if (contextPath==null || contextPath.length()==0)
-                contextPath="/";
+            String contextPath = context.getContextPath();
+            if (contextPath == null || contextPath.length() == 0)
+                contextPath = "/";
             String appContext = serverName + " " + contextPath;
 
-            AuthConfigProvider authConfigProvider = authConfigFactory.getConfigProvider(MESSAGE_LAYER,appContext,listener);
-  
+            AuthConfigProvider authConfigProvider = authConfigFactory.getConfigProvider(MESSAGE_LAYER, appContext, listener);
+
             if (authConfigProvider != null)
             {
                 ServletCallbackHandler servletCallbackHandler = new ServletCallbackHandler(loginService);
-                ServerAuthConfig serverAuthConfig = authConfigProvider.getServerAuthConfig(MESSAGE_LAYER,appContext,servletCallbackHandler);
+                ServerAuthConfig serverAuthConfig = authConfigProvider.getServerAuthConfig(MESSAGE_LAYER, appContext, servletCallbackHandler);
                 if (serverAuthConfig != null)
                 {
                     Map map = new HashMap();
                     for (String key : configuration.getInitParameterNames())
-                        map.put(key,configuration.getInitParameter(key));
-                    authenticator= new JaspiAuthenticator(serverAuthConfig,map,servletCallbackHandler,
-                                serviceSubject,true, identityService);
+                    {
+                        map.put(key, configuration.getInitParameter(key));
+                    }
+                    authenticator = new JaspiAuthenticator(serverAuthConfig, map, servletCallbackHandler,
+                        serviceSubject, true, identityService);
                 }
             }
-        } 
-        catch (AuthException e) 
+        }
+        catch (AuthException e)
         {
             LOG.warn(e);
         }
         return authenticator;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Find a service Subject.
-     * If {@link #setServiceSubject(Subject)} has not been used to 
+    /**
+     * Find a service Subject.
+     * If {@link #setServiceSubject(Subject)} has not been used to
      * set a subject, then the {@link Server#getBeans(Class)} method is
      * used to look for a Subject.
+     *
      * @param server the server to pull the Subject from
      * @return the subject
      */
     protected Subject findServiceSubject(Server server)
     {
-        if (_serviceSubject!=null)
+        if (_serviceSubject != null)
             return _serviceSubject;
         List<Subject> subjects = (List<Subject>)server.getBeans(Subject.class);
-        if (subjects.size()>0)
+        if (subjects.size() > 0)
             return subjects.get(0);
         return null;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Find a servername.
+    /**
+     * Find a servername.
      * If {@link #setServerName(String)} has not been called, then
      * use the name of the a principal in the service subject.
      * If not found, return "server".
+     *
      * @param server the server to find the name of
      * @return the server name from the service Subject (or default value if not found in subject or principals)
      */
     protected String findServerName(Server server)
     {
-        if (_serverName!=null)
+        if (_serverName != null)
             return _serverName;
 
         Subject subject = findServiceSubject(server);
-        if (subject!=null)
+        if (subject != null)
         {
             Set<Principal> principals = subject.getPrincipals();
-            if (principals!=null && !principals.isEmpty())
+            if (principals != null && !principals.isEmpty())
                 return principals.iterator().next().getName();
         }
-        
+
         return "server";
     }
 }

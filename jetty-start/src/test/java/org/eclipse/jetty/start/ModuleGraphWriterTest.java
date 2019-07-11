@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -34,6 +31,9 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 @ExtendWith(WorkDirExtension.class)
 public class ModuleGraphWriterTest
 {
@@ -45,18 +45,18 @@ public class ModuleGraphWriterTest
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
         Path baseDir = testdir.getEmptyPathDir();
-        String cmdLine[] = new String[] {"jetty.version=TEST"};
-        
+        String[] cmdLine = new String[]{"jetty.version=TEST"};
+
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
         config.add(new JettyHomeConfigSource(homeDir));
         config.add(new JettyBaseConfigSource(baseDir));
-        
+
         // Initialize
         BaseHome basehome = new BaseHome(config);
-        
+
         StartArgs args = new StartArgs(basehome);
         args.parse(config);
 
@@ -66,8 +66,8 @@ public class ModuleGraphWriterTest
         Path outputFile = basehome.getBasePath("graph.dot");
 
         ModuleGraphWriter writer = new ModuleGraphWriter();
-        writer.write(modules,outputFile);
+        writer.write(modules, outputFile);
 
-        assertThat("Output File Exists",FS.exists(outputFile),is(true));
+        assertThat("Output File Exists", FS.exists(outputFile), is(true));
     }
 }

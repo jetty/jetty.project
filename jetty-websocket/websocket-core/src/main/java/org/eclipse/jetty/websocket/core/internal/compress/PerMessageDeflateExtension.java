@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.
@@ -74,6 +74,8 @@ public class PerMessageDeflateExtension extends CompressExtension
                 if (frame.isRsv1())
                     callback.failed(new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
                 break;
+            default:
+                break;
         }
 
         if (OpCode.isControlFrame(frame.getOpCode()) || !incomingCompressed)
@@ -115,7 +117,7 @@ public class PerMessageDeflateExtension extends CompressExtension
         {
             LOG.debug("Incoming Context Reset");
             decompressCount.set(0);
-            getInflater().reset();
+            releaseInflater();
         }
         super.nextIncomingFrame(frame, callback);
     }
@@ -126,7 +128,7 @@ public class PerMessageDeflateExtension extends CompressExtension
         if (frame.isFin() && !outgoingContextTakeover)
         {
             LOG.debug("Outgoing Context Reset");
-            getDeflater().reset();
+            releaseDeflater();
         }
         super.nextOutgoingFrame(frame, callback, batch);
     }
@@ -144,10 +146,10 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    public void init(final ExtensionConfig config, ByteBufferPool bufferPool)
+    public void init(final ExtensionConfig config, WebSocketComponents components)
     {
         configRequested = new ExtensionConfig(config);
-        Map<String, String> params_negotiated = new HashMap<>();
+        Map<String, String> paramsNegotiated = new HashMap<>();
 
         for (String key : config.getParameterKeys())
         {
@@ -163,13 +165,13 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
                 case "client_no_context_takeover":
                 {
-                    params_negotiated.put("client_no_context_takeover", null);
+                    paramsNegotiated.put("client_no_context_takeover", null);
                     incomingContextTakeover = false;
                     break;
                 }
                 case "server_no_context_takeover":
                 {
-                    params_negotiated.put("server_no_context_takeover", null);
+                    paramsNegotiated.put("server_no_context_takeover", null);
                     outgoingContextTakeover = false;
                     break;
                 }
@@ -180,10 +182,10 @@ public class PerMessageDeflateExtension extends CompressExtension
             }
         }
 
-        configNegotiated = new ExtensionConfig(config.getName(), params_negotiated);
+        configNegotiated = new ExtensionConfig(config.getName(), paramsNegotiated);
         LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
-        super.init(configNegotiated, bufferPool);
+        super.init(configNegotiated, components);
     }
 
     @Override

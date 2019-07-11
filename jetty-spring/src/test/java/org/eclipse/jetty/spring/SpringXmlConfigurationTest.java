@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.spring;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,16 +26,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 public class SpringXmlConfigurationTest
 {
-    protected String _configure="org/eclipse/jetty/spring/configure.xml";
+    protected String _configure = "org/eclipse/jetty/spring/configure.xml";
 
     @BeforeEach
-    public void init() throws Exception
+    public void init()
     {
         // Jetty's XML configuration will make use of java.util.ServiceLoader
         // to load the proper ConfigurationProcessorFactory, so these tests
@@ -57,24 +58,24 @@ public class SpringXmlConfigurationTest
     @Test
     public void testPassedObject() throws Exception
     {
-        TestConfiguration.VALUE=77;
+        TestConfiguration.VALUE = 77;
 
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource(_configure);
-        XmlConfiguration configuration = new XmlConfiguration(url);
+        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url));
 
-        Map<String,String> properties = new HashMap<>();
+        Map<String, String> properties = new HashMap<>();
         properties.put("test", "xxx");
 
         TestConfiguration nested = new TestConfiguration();
         nested.setTestString0("nested");
-        configuration.getIdMap().put("nested",nested);
+        configuration.getIdMap().put("nested", nested);
 
         TestConfiguration tc = new TestConfiguration();
         tc.setTestString0("preconfig");
         tc.setTestInt0(42);
         configuration.getProperties().putAll(properties);
 
-        tc=(TestConfiguration)configuration.configure(tc);
+        tc = (TestConfiguration)configuration.configure(tc);
 
         assertEquals("preconfig", tc.getTestString0());
         assertEquals(42, tc.getTestInt0());
@@ -96,11 +97,11 @@ public class SpringXmlConfigurationTest
     public void testNewObject() throws Exception
     {
         final String newDefaultValue = "NEW DEFAULT";
-        TestConfiguration.VALUE=71;
+        TestConfiguration.VALUE = 71;
 
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource(_configure);
         final AtomicInteger count = new AtomicInteger(0);
-        XmlConfiguration configuration = new XmlConfiguration(url)
+        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url))
         {
             @Override
             public void initializeDefaults(Object object)
@@ -115,7 +116,7 @@ public class SpringXmlConfigurationTest
             }
         };
 
-        Map<String,String> properties = new HashMap<String,String>();
+        Map<String, String> properties = new HashMap<String, String>();
         properties.put("test", "xxx");
 
         TestConfiguration nested = new TestConfiguration();
@@ -125,7 +126,7 @@ public class SpringXmlConfigurationTest
         configuration.getProperties().putAll(properties);
         TestConfiguration tc = (TestConfiguration)configuration.configure();
 
-        assertEquals(3,count.get());
+        assertEquals(3, count.get());
 
         assertEquals(newDefaultValue, tc.getTestString0());
         assertEquals(-1, tc.getTestInt0());
@@ -147,7 +148,7 @@ public class SpringXmlConfigurationTest
     public void testJettyXml() throws Exception
     {
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource("org/eclipse/jetty/spring/jetty.xml");
-        XmlConfiguration configuration = new XmlConfiguration(url);
+        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(url));
 
         Server server = (Server)configuration.configure();
 

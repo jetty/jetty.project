@@ -140,7 +140,7 @@ public class InvokerUtils
      * Bind optional arguments to provided method handle
      *
      * @param methodHandle the method handle to bind to
-     * @param objs         the list of optional objects to bind to.
+     * @param objs the list of optional objects to bind to.
      * @return the bound MethodHandle, or null if the provided {@code methodHandle} was null.
      */
     public static MethodHandle bindTo(MethodHandle methodHandle, Object... objs)
@@ -166,9 +166,9 @@ public class InvokerUtils
      * </p>
      *
      * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
-     * @param method      the method to invoke
+     * @param method the method to invoke
      * @param callingArgs the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
-     *                    They will be present in the {@link MethodHandle#type()} in the order specified in this array.
+     * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      */
     public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, Arg... callingArgs)
     {
@@ -193,57 +193,32 @@ public class InvokerUtils
      * <li>The next parameters are all of the provided {@code callingArg} types</li>
      * </ol>
      *
-     * @param targetClass     the target class for invocations of the resulting MethodHandle (also known as parameter 0)
-     * @param method          the method to invoke
+     * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
+     * @param method the method to invoke
      * @param paramIdentifier the mechanism to identify parameters in method
-     * @param namedVariables  the array of named variables.  This is the array of named arguments that the target method might have.
-     *                        The resulting MethodHandle will include all of these namedVariables as the first non-object arguments in the {@link MethodType}
-     *                        found on the returned {@link MethodHandle#type()}
-     * @param callingArgs     the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
-     *                        They will be present in the {@link MethodHandle#type()} in the order specified in this array.
+     * @param namedVariables the array of named variables.  This is the array of named arguments that the target method might have.
+     * The resulting MethodHandle will include all of these namedVariables as the first non-object arguments in the {@link MethodType}
+     * found on the returned {@link MethodHandle#type()}
+     * @param callingArgs the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
+     * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      * @return the MethodHandle for this set of CallingArgs
      * @throws RuntimeException when unable to fit Calling Args to Parameter Types
      */
-    public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String namedVariables[], Arg... callingArgs)
+    public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String[] namedVariables, Arg... callingArgs)
     {
         return mutatedInvoker(targetClass, true, method, paramIdentifier, namedVariables, callingArgs);
     }
 
-    /**
-     * Create an optional MethodHandle that performs the following layers.
-     * <ol>
-     * <li>{@link MethodHandles#permuteArguments(MethodHandle, MethodType, int...)} - moving calling Args around
-     * to fit actual actual method parameter arguments (in proper order), with remaining (unused) calling args afterwords</li>
-     * <li>{@link MethodHandles#dropArguments(MethodHandle, int, Class[])} - to drop the unused calling args</li>
-     * <li>{@link MethodHandle#invoke(Object...)} - to call the specific method</li>
-     * </ol>
-     *
-     * @param targetClass     the target class for invocations of the resulting MethodHandle (also known as parameter 0)
-     * @param method          the method to invoke
-     * @param paramIdentifier the mechanism to identify parameters in method
-     * @param namedVariables  the array of named variables.  This is the array of named arguments that the target method might have.
-     *                        The resulting MethodHandle will include all of these namedVariables as the first non-object arguments in the {@link MethodType}
-     *                        found on the returned {@link MethodHandle#type()}
-     * @param callingArgs     the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
-     *                        They will be present in the {@link MethodHandle#type()} in the order specified in this array.
-     * @return the MethodHandle for this set of CallingArgs, or null if not possible to create MethodHandle with CallingArgs to provided method
-     */
-    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String namedVariables[],
-        Arg... callingArgs)
-    {
-        return mutatedInvoker(targetClass, false, method, paramIdentifier, namedVariables, callingArgs);
-    }
-
     @SuppressWarnings("Duplicates")
     private static MethodHandle mutatedInvoker(Class<?> targetClass, boolean throwOnFailure, Method method, ParamIdentifier paramIdentifier,
-        String namedVariables[], Arg... rawCallingArgs)
+                                               String[] namedVariables, Arg... rawCallingArgs)
     {
-        Class<?> parameterTypes[] = method.getParameterTypes();
+        Class<?>[] parameterTypes = method.getParameterTypes();
 
         // Construct Actual Calling Args.
         // This is the array of args, arriving as all of the named variables (usually static in nature),
         // then the raw calling arguments (very dynamic in nature)
-        Arg callingArgs[] = new Arg[rawCallingArgs.length + (namedVariables == null?0:namedVariables.length)];
+        Arg[] callingArgs = new Arg[rawCallingArgs.length + (namedVariables == null ? 0 : namedVariables.length)];
         {
             int callingArgIdx = 0;
             if (namedVariables != null)
@@ -263,7 +238,7 @@ public class InvokerUtils
         // Build up Arg list representing the MethodHandle parameters
         // ParamIdentifier is used to find named parameters (like javax.websocket's @PathParam declaration)
         boolean hasNamedParamArgs = false;
-        Arg parameterArgs[] = new Arg[parameterTypes.length + 1];
+        Arg[] parameterArgs = new Arg[parameterTypes.length + 1];
         {
             parameterArgs[0] = new Arg(targetClass); // first type is always the calling object instance type
             for (int i = 0; i < parameterTypes.length; i++)
@@ -340,13 +315,13 @@ public class InvokerUtils
             // match, so we have to drop and/or permute(reorder) the arguments
 
             // Mapping will be same size as callingType (to compensate for targetClass at index 0)
-            int reorderMap[] = new int[callingType.parameterCount()];
+            int[] reorderMap = new int[callingType.parameterCount()];
             Arrays.fill(reorderMap, -1);
             reorderMap[0] = 0; // always references targetClass
 
             // To track which callingArgs have been used.
             // If a callingArg is used, it is used only once.
-            boolean usedCallingArgs[] = new boolean[callingArgs.length];
+            boolean[] usedCallingArgs = new boolean[callingArgs.length];
             Arrays.fill(usedCallingArgs, false);
 
             // Iterate through each parameterArg and attempt to find an associated callingArg
@@ -458,6 +433,31 @@ public class InvokerUtils
 
             throw new InvalidSignatureException("Unable to obtain MethodHandle for " + method, e);
         }
+    }
+
+    /**
+     * Create an optional MethodHandle that performs the following layers.
+     * <ol>
+     * <li>{@link MethodHandles#permuteArguments(MethodHandle, MethodType, int...)} - moving calling Args around
+     * to fit actual actual method parameter arguments (in proper order), with remaining (unused) calling args afterwords</li>
+     * <li>{@link MethodHandles#dropArguments(MethodHandle, int, Class[])} - to drop the unused calling args</li>
+     * <li>{@link MethodHandle#invoke(Object...)} - to call the specific method</li>
+     * </ol>
+     *
+     * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
+     * @param method the method to invoke
+     * @param paramIdentifier the mechanism to identify parameters in method
+     * @param namedVariables the array of named variables.  This is the array of named arguments that the target method might have.
+     * The resulting MethodHandle will include all of these namedVariables as the first non-object arguments in the {@link MethodType}
+     * found on the returned {@link MethodHandle#type()}
+     * @param callingArgs the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
+     * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
+     * @return the MethodHandle for this set of CallingArgs, or null if not possible to create MethodHandle with CallingArgs to provided method
+     */
+    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String[] namedVariables,
+                                                      Arg... callingArgs)
+    {
+        return mutatedInvoker(targetClass, false, method, paramIdentifier, namedVariables, callingArgs);
     }
 
     private static void appendTypeList(StringBuilder str, Arg[] args)

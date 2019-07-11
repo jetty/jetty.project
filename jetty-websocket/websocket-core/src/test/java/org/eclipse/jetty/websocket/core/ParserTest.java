@@ -58,17 +58,8 @@ public class ParserTest
 
     private ParserCapture parse(Behavior behavior, int maxAllowedFrameSize, ByteBuffer buffer, boolean copy)
     {
-        Parser parser = new Parser(new MappedByteBufferPool())
-        {
-            @Override
-            protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
-            {
-                super.checkFrameSize(opcode, payloadLength);
-                if (payloadLength > maxAllowedFrameSize)
-                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxAllowedFrameSize);
-            }
-        };
-        ParserCapture capture = new ParserCapture(parser, copy, behavior);
+        ParserCapture capture = new ParserCapture(copy, behavior);
+        capture.getCoreSession().setMaxFrameSize(maxAllowedFrameSize);
         capture.parse(buffer);
         return capture;
     }
@@ -87,7 +78,7 @@ public class ParserTest
         ByteBuffer buffer = ByteBuffer.allocate(messageBytes.length + 8);
 
         buffer.put((byte)(0x80 | opcode));
-        byte b = (byte)(masked?0x80:0x00);
+        byte b = (byte)(masked ? 0x80 : 0x00);
         b |= messageBytes.length & 0x7F;
         buffer.put(b);
         if (masked)
@@ -114,7 +105,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
@@ -144,7 +135,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -177,7 +168,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -209,7 +200,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
@@ -241,11 +232,11 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
-        expected.put(new byte[] { (byte)0xff, (byte)0xff });
+        expected.put(new byte[]{(byte)0xff, (byte)0xff});
 
         for (int i = 0; i < length; ++i)
         {
@@ -273,11 +264,11 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-            { (byte)0x82 });
+            {(byte)0x82});
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
-        expected.put(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 });
+        expected.put(new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
 
         for (int i = 0; i < length; ++i)
         {
@@ -302,7 +293,7 @@ public class ParserTest
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 
-        expected.put(new byte[] { (byte)0x82, (byte)0x00 });
+        expected.put(new byte[]{(byte)0x82, (byte)0x00});
 
         expected.flip();
 
@@ -335,7 +326,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-            { (byte)0x88, (byte)0x00 });
+            {(byte)0x88, (byte)0x00});
 
         expected.flip();
 
@@ -394,7 +385,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-            { (byte)0x88, (byte)0x02, 0x03, (byte)0xe8 });
+            {(byte)0x88, (byte)0x02, 0x03, (byte)0xe8});
 
         expected.flip();
 
@@ -423,7 +414,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(132);
 
         expected.put(new byte[]
-            { (byte)0x88 });
+            {(byte)0x88});
         byte b = 0x00; // no masking
 
         b |= (messageBytes.length + 2) & 0x7F;
@@ -453,7 +444,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-            { (byte)0x88 });
+            {(byte)0x88});
         byte b = 0x00; // no masking
         b |= (messageBytes.length + 2) & 0x7F;
         expected.put(b);
@@ -479,13 +470,13 @@ public class ParserTest
     public void testParse_Continuation_ManySmall()
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
-        byte msg[] = StringUtil.getUtf8Bytes(utf8);
+        byte[] msg = StringUtil.getUtf8Bytes(utf8);
 
         List<Frame> send = new ArrayList<>();
         int textCount = 0;
         int continuationCount = 0;
         int len = msg.length;
-        byte mini[];
+        byte[] mini;
         for (int i = 0; i < len; i++)
         {
             Frame frame;
@@ -507,7 +498,6 @@ public class ParserTest
             send.add(frame);
         }
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-
 
         ByteBuffer completeBuf = generate(Behavior.SERVER, send);
 
@@ -567,7 +557,7 @@ public class ParserTest
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[] { (byte)0x8b, 0x00 });
+        expected.put(new byte[]{(byte)0x8b, 0x00});
 
         expected.flip();
 
@@ -583,7 +573,7 @@ public class ParserTest
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[] { (byte)0x8c, 0x01, 0x00 });
+        expected.put(new byte[]{(byte)0x8c, 0x01, 0x00});
 
         expected.flip();
 
@@ -599,7 +589,7 @@ public class ParserTest
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[] { (byte)0x83, 0x00 });
+        expected.put(new byte[]{(byte)0x83, 0x00});
 
         expected.flip();
 
@@ -615,7 +605,7 @@ public class ParserTest
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[] { (byte)0x84, 0x01, 0x00 });
+        expected.put(new byte[]{(byte)0x84, 0x01, 0x00});
 
         expected.flip();
 
@@ -633,13 +623,13 @@ public class ParserTest
 
         for (int i = 0; i < bytes.length; ++i)
         {
-            bytes[i] = (byte) (i & 0xff);
+            bytes[i] = (byte)(i & 0xff);
         }
 
         ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
 
         expected.put(new byte[]
-            { (byte)0x89 });
+            {(byte)0x89});
 
         byte b = 0x00; // no masking
         b |= bytes.length & 0x7F;
@@ -663,7 +653,7 @@ public class ParserTest
         ByteBuffer buf = ByteBuffer.allocate(16);
         BufferUtil.clearToFill(buf);
         buf.put(new byte[]
-            { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
+            {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
         BufferUtil.flipToFlush(buf, 0);
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -681,12 +671,12 @@ public class ParserTest
     @Test
     public void testParse_Ping_BinaryPayload() throws InterruptedException
     {
-        byte[] bytes = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+        byte[] bytes = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-            { (byte)0x89 });
+            {(byte)0x89});
 
         byte b = 0x00; // no masking
         b |= bytes.length & 0x7F;
@@ -713,7 +703,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-            { (byte)0x89, (byte)0x00 });
+            {(byte)0x89, (byte)0x00});
 
         expected.flip();
 
@@ -738,7 +728,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-            { (byte)0x89 });
+            {(byte)0x89});
 
         byte b = 0x00; // no masking
         b |= messageBytes.length & 0x7F;
@@ -860,7 +850,7 @@ public class ParserTest
     @Test
     public void testParse_RFC6455_FragmentedUnmaskedTextMessage() throws InterruptedException
     {
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture();
 
         ByteBuffer buf = ByteBuffer.allocate(16);
         BufferUtil.clearToFill(buf);
@@ -868,7 +858,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A fragmented unmasked text message (part 1 of 2 "Hel")
         buf.put(new byte[]
-            { (byte)0x01, (byte)0x03, 0x48, (byte)0x65, 0x6c });
+            {(byte)0x01, (byte)0x03, 0x48, (byte)0x65, 0x6c});
 
         // Parse #1
         BufferUtil.flipToFlush(buf, 0);
@@ -877,7 +867,7 @@ public class ParserTest
         // part 2 of 2 "lo" (A continuation frame of the prior text message)
         BufferUtil.flipToFill(buf);
         buf.put(new byte[]
-            { (byte)0x80, 0x02, 0x6c, 0x6f });
+            {(byte)0x80, 0x02, 0x6c, 0x6f});
 
         // Parse #2
         BufferUtil.flipToFlush(buf, 0);
@@ -907,7 +897,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Pong request
         buf.put(new byte[]
-            { (byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58 });
+            {(byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -932,7 +922,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame masked text message
         buf.put(new byte[]
-            { (byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58 });
+            {(byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -959,7 +949,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         buf.put(new byte[]
-            { (byte)0x82, 0x7E });
+            {(byte)0x82, 0x7E});
         buf.putShort((short)0x01_00); // 16 bit size
         for (int i = 0; i < dataSize; i++)
         {
@@ -999,7 +989,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 64 KiloByte binary message in a single unmasked frame
         buf.put(new byte[]
-            { (byte)0x82, 0x7F });
+            {(byte)0x82, 0x7F});
         buf.putLong(dataSize); // 64bit size
         for (int i = 0; i < dataSize; i++)
         {
@@ -1007,7 +997,7 @@ public class ParserTest
         }
         buf.flip();
 
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture();
         capture.parse(buf);
 
         capture.assertHasFrame(OpCode.BINARY, 1);
@@ -1037,7 +1027,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Ping request
         buf.put(new byte[]
-            { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
+            {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
         buf.flip();
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1062,7 +1052,7 @@ public class ParserTest
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame unmasked text message
         buf.put(new byte[]
-            { (byte)0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
+            {(byte)0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
         buf.flip();
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1085,7 +1075,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
@@ -1117,7 +1107,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -1150,7 +1140,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -1183,7 +1173,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
@@ -1216,12 +1206,12 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-            { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
         expected.put(new byte[]
-            { (byte)0xff, (byte)0xff });
+            {(byte)0xff, (byte)0xff});
 
         for (int i = 0; i < length; ++i)
         {
@@ -1248,12 +1238,12 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-            { (byte)0x81 });
+            {(byte)0x81});
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
         expected.put(new byte[]
-            { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 });
+            {0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00});
 
         for (int i = 0; i < length; ++i)
         {
@@ -1279,7 +1269,7 @@ public class ParserTest
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-            { (byte)0x81, (byte)0x00 });
+            {(byte)0x81, (byte)0x00});
 
         expected.flip();
 
@@ -1297,7 +1287,7 @@ public class ParserTest
         // Artificially small buffer/payload
         final int maxAllowedFrameSize = 1024;
 
-        byte utf[] = new byte[2048];
+        byte[] utf = new byte[2048];
         Arrays.fill(utf, (byte)'a');
 
         assertThat("Must be a medium length payload", utf.length, allOf(greaterThan(0x7E), lessThan(0xFFFF)));
@@ -1310,7 +1300,10 @@ public class ParserTest
         Generator.putPayload(buf, utf);
         buf.flip();
 
-        assertThrows(MessageTooLargeException.class, () -> parse(Behavior.SERVER, maxAllowedFrameSize, buf, true));
+        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
+        capture.getCoreSession().setMaxFrameSize(maxAllowedFrameSize);
+        capture.getCoreSession().setAutoFragment(false);
+        assertThrows(MessageTooLargeException.class, () -> capture.parse(buf));
     }
 
     @Test
@@ -1324,7 +1317,7 @@ public class ParserTest
         sb.append(". The end.");
 
         String expectedText = sb.toString();
-        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
         assertThat("Must be a long length payload", utf.length, greaterThan(0xFFFF));
 
@@ -1347,7 +1340,7 @@ public class ParserTest
     public void testParse_Text_ManySmallBuffers_NoAutoFragmentation() throws InterruptedException
     {
         // Create frames
-        byte payload[] = new byte[65536];
+        byte[] payload = new byte[65536];
         Arrays.fill(payload, (byte)'*');
 
         List<Frame> frames = new ArrayList<>();
@@ -1361,7 +1354,8 @@ public class ParserTest
         ByteBuffer networkBytes = generate(Behavior.CLIENT, frames);
 
         // Parse, in 4096 sized windows
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(), false), true, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
+        capture.getCoreSession().setAutoFragment(false);
 
         while (networkBytes.remaining() > 0)
         {
@@ -1395,7 +1389,7 @@ public class ParserTest
         sb.append(". The end.");
 
         String expectedText = sb.toString();
-        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
         assertThat("Must be a medium length payload", utf.length, allOf(greaterThan(0x7E), lessThan(0xFFFF)));
 
@@ -1418,7 +1412,7 @@ public class ParserTest
     public void testParse_Text_ShortMasked() throws Exception
     {
         String expectedText = "Hello World";
-        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
@@ -1474,7 +1468,7 @@ public class ParserTest
     {
         String expectedText = "Hell\uFF4f W\uFF4Frld";
 
-        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
@@ -1496,7 +1490,6 @@ public class ParserTest
         ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("8882c2887e61c164"));
         Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true));
         assertThat(e.getMessage(), Matchers.containsString("Invalid CLOSE Code: "));
-
     }
 
     @Test
@@ -1548,7 +1541,7 @@ public class ParserTest
         int limit = data.limit();
         ByteBuffer buffer = BufferUtil.allocate(32);
 
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()), false, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(false, Behavior.SERVER);
 
         data.limit(6 + 5);
         BufferUtil.append(buffer, data);
@@ -1592,7 +1585,8 @@ public class ParserTest
         int limit = data.limit();
         ByteBuffer buffer = BufferUtil.allocate(32);
 
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(), false), false);
+        ParserCapture capture = new ParserCapture(false);
+        capture.getCoreSession().setAutoFragment(false);
 
         data.limit(5);
         BufferUtil.append(buffer, data);
@@ -1626,7 +1620,7 @@ public class ParserTest
         int limit = data.limit();
         ByteBuffer buffer = BufferUtil.allocate(32);
 
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(), true), false);
+        ParserCapture capture = new ParserCapture(false);
 
         data.limit(5);
         BufferUtil.append(buffer, data);
@@ -1659,8 +1653,8 @@ public class ParserTest
         int length = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
         ByteBuffer buffer = ByteBuffer.allocate(length);
         frames.stream()
-                .peek(frame -> maskIfClient(behavior, frame))
-                .forEach(frame -> generator.generateWholeFrame(frame, buffer));
+            .peek(frame -> maskIfClient(behavior, frame))
+            .forEach(frame -> generator.generateWholeFrame(frame, buffer));
         BufferUtil.flipToFlush(buffer, 0);
         return buffer;
     }

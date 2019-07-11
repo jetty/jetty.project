@@ -42,39 +42,36 @@ import org.eclipse.jetty.util.resource.Resource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-
-/* ------------------------------------------------------------ */
-/** Default Handler.
+/**
+ * Default Handler.
  *
  * This handle will deal with unhandled requests in the server.
  * For requests for favicon.ico, the Jetty icon is served.
  * For reqests to '/' a 404 with a list of known contexts is served.
  * For all other requests a normal 404 is served.
- *
- *
  */
 public class DefaultHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(DefaultHandler.class);
 
-    final long _faviconModified=(System.currentTimeMillis()/1000)*1000L;
+    final long _faviconModified = (System.currentTimeMillis() / 1000) * 1000L;
     final byte[] _favicon;
-    boolean _serveIcon=true;
-    boolean _showContexts=true;
+    boolean _serveIcon = true;
+    boolean _showContexts = true;
 
     public DefaultHandler()
     {
-        byte[] favbytes=null;
+        byte[] favbytes = null;
         try
         {
             URL fav = getClass().getResource("/org/eclipse/jetty/favicon.ico");
-            if (fav!=null)
+            if (fav != null)
             {
                 Resource r = Resource.newResource(fav);
-                favbytes=IO.readBytes(r.getInputStream());
+                favbytes = IO.readBytes(r.getInputStream());
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             LOG.warn(e);
         }
@@ -84,7 +81,6 @@ public class DefaultHandler extends AbstractHandler
         }
     }
 
-    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
@@ -96,12 +92,12 @@ public class DefaultHandler extends AbstractHandler
 
         baseRequest.setHandled(true);
 
-        String method=request.getMethod();
+        String method = request.getMethod();
 
         // little cheat for common request
-        if (_serveIcon && _favicon!=null && HttpMethod.GET.is(method) && target.equals("/favicon.ico"))
+        if (_serveIcon && _favicon != null && HttpMethod.GET.is(method) && target.equals("/favicon.ico"))
         {
-            if (request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.toString())==_faviconModified)
+            if (request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.toString()) == _faviconModified)
                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
             else
             {
@@ -109,7 +105,7 @@ public class DefaultHandler extends AbstractHandler
                 response.setContentType("image/x-icon");
                 response.setContentLength(_favicon.length);
                 response.setDateHeader(HttpHeader.LAST_MODIFIED.toString(), _faviconModified);
-                response.setHeader(HttpHeader.CACHE_CONTROL.toString(),"max-age=360000,public");
+                response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 response.getOutputStream().write(_favicon);
             }
             return;
@@ -137,9 +133,6 @@ public class DefaultHandler extends AbstractHandler
             writer.append("<p>No context on this server matched or handled this request.</p>\n");
             writer.append("<p>Contexts known to this server are:</p>\n");
 
-            Server server = getServer();
-            Handler[] handlers = server==null?null:server.getChildHandlersByClass(ContextHandler.class);
-
             writer.append("<table class=\"contexts\"><thead><tr>");
             writer.append("<th>Context Path</th>");
             writer.append("<th>Display Name</th>");
@@ -147,7 +140,10 @@ public class DefaultHandler extends AbstractHandler
             writer.append("<th>LifeCycle</th>");
             writer.append("</tr></thead><tbody>\n");
 
-            for (int i=0;handlers!=null && i<handlers.length;i++)
+            Server server = getServer();
+            Handler[] handlers = server == null ? null : server.getChildHandlersByClass(ContextHandler.class);
+
+            for (int i = 0; handlers != null && i < handlers.length; i++)
             {
                 writer.append("<tr><td>");
                 // Context Path
@@ -164,7 +160,7 @@ public class DefaultHandler extends AbstractHandler
                 {
                     writer.append("<a href=\"").append(href).append("\">");
                 }
-                writer.append(contextPath.replaceAll("%", "&#37;"));
+                writer.append(StringUtil.replace(contextPath, "%", "&#37;"));
                 if (context.isRunning())
                 {
                     writer.append("</a>");
@@ -198,7 +194,7 @@ public class DefaultHandler extends AbstractHandler
             writer.append("<a href=\"http://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
             writer.append("</body>\n</html>\n");
             writer.flush();
-            byte content[] = outputStream.toByteArray();
+            byte[] content = outputStream.toByteArray();
             response.setContentLength(content.length);
             try (OutputStream out = response.getOutputStream())
             {
@@ -207,7 +203,6 @@ public class DefaultHandler extends AbstractHandler
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns true if the handle can server the jetty favicon.ico
      */
@@ -216,7 +211,6 @@ public class DefaultHandler extends AbstractHandler
         return _serveIcon;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param serveIcon true if the handle can server the jetty favicon.ico
      */
@@ -234,5 +228,4 @@ public class DefaultHandler extends AbstractHandler
     {
         _showContexts = show;
     }
-
 }

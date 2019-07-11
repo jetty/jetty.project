@@ -20,7 +20,6 @@ package org.eclipse.jetty.embedded;
 
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
-import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.server.Server;
@@ -41,34 +40,31 @@ public class WebSocketJsrServer
     public static class EchoJsrSocket
     {
         @OnMessage
-        public void onMessage( Session session, String message )
+        public void onMessage(Session session, String message)
         {
             session.getAsyncRemote().sendText(message);
         }
     }
 
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
-        Server server = new Server(8080);
+        final Server server = new Server(8080);
 
         HandlerList handlers = new HandlerList();
 
-        ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
-        context.setContextPath("/");
-        handlers.addHandler(context);
+        ServletContextHandler contextHandler = new ServletContextHandler(
+            ServletContextHandler.SESSIONS);
+        contextHandler.setContextPath("/");
+        handlers.addHandler(contextHandler);
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
 
         // Enable javax.websocket configuration for the context
-        ServerContainer wsContainer = JavaxWebSocketServletContainerInitializer
-                .configureContext(context);
-
-        // Add your websockets to the container
-        wsContainer.addEndpoint(EchoJsrSocket.class);
+        JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+            container.addEndpoint(EchoJsrSocket.class));
 
         server.start();
-        context.dumpStdErr();
+        contextHandler.dumpStdErr();
         server.join();
     }
 }

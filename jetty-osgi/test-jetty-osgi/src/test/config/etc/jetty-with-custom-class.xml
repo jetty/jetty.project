@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 
 <!-- =============================================================== -->
@@ -81,7 +81,7 @@
          <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
          <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
          <Item>org.eclipse.jetty.webapp.JmxConfiguration</Item>
-         <Item>org.eclipse.jetty.websocket.server.JettyWebSocketConfiguration</Item>
+         <Item>org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration</Item>
          <Item>org.eclipse.jetty.websocket.javax.server.JavaxWebSocketConfiguration</Item>
          <Item>org.eclipse.jetty.osgi.annotations.AnnotationConfiguration</Item>
          <Item>org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration</Item>

@@ -52,16 +52,18 @@ public class ProduceExecuteConsume implements ExecutionStrategy
     {
         try (Lock locked = _locker.lock())
         {
-            switch(_state)
+            switch (_state)
             {
                 case IDLE:
-                    _state=State.PRODUCE;
+                    _state = State.PRODUCE;
                     break;
 
                 case PRODUCE:
                 case EXECUTE:
-                    _state=State.EXECUTE;
+                    _state = State.EXECUTE;
                     return;
+                default:
+                    throw new IllegalStateException(_state.toString());
             }
         }
 
@@ -77,32 +79,34 @@ public class ProduceExecuteConsume implements ExecutionStrategy
             {
                 try (Lock locked = _locker.lock())
                 {
-                    switch(_state)
+                    switch (_state)
                     {
                         case IDLE:
                             throw new IllegalStateException();
                         case PRODUCE:
-                            _state=State.IDLE;
+                            _state = State.IDLE;
                             return;
                         case EXECUTE:
-                            _state=State.PRODUCE;
+                            _state = State.PRODUCE;
                             continue;
+                        default:
+                            throw new IllegalStateException(_state.toString());
                     }
                 }
             }
 
             // Execute the task.
-            if (Invocable.getInvocationType(task)==InvocationType.NON_BLOCKING)
+            if (Invocable.getInvocationType(task) == InvocationType.NON_BLOCKING)
                 task.run();
             else
                 _executor.execute(task);
-        }        
+        }
     }
 
     @Override
     public void dispatch()
     {
-        _executor.execute(()->produce());
+        _executor.execute(() -> produce());
     }
 
     private enum State

@@ -19,15 +19,14 @@
 package org.eclipse.jetty.jaas;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 
-/** 
+/**
  * JAASUserPrincipal
  * <p>
  * Implements the JAAS version of the
- *  org.eclipse.jetty.http.UserPrincipal interface.
+ * org.eclipse.jetty.http.UserPrincipal interface.
  */
 public class JAASUserPrincipal implements Principal
 {
@@ -35,7 +34,6 @@ public class JAASUserPrincipal implements Principal
     private final Subject _subject;
     private final LoginContext _loginContext;
 
-    /* ------------------------------------------------ */
     public JAASUserPrincipal(String name, Subject subject, LoginContext loginContext)
     {
         this._name = name;
@@ -43,26 +41,26 @@ public class JAASUserPrincipal implements Principal
         this._loginContext = loginContext;
     }
 
-    /* ------------------------------------------------ */
-    /** Get the name identifying the user
+    /**
+     * Get the name identifying the user
      */
     @Override
-    public String getName ()
+    public String getName()
     {
         return _name;
     }
 
-
-    /* ------------------------------------------------ */
-    /** Provide access to the Subject
+    /**
+     * Provide access to the Subject
+     *
      * @return subject
      */
-    public Subject getSubject ()
+    public Subject getSubject()
     {
         return this._subject;
     }
 
-    LoginContext getLoginContext ()
+    LoginContext getLoginContext()
     {
         return this._loginContext;
     }
@@ -72,5 +70,4 @@ public class JAASUserPrincipal implements Principal
     {
         return getName();
     }
-
 }

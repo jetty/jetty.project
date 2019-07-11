@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import java.io.ByteArrayInputStream;
@@ -29,7 +28,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Locale;
-
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
@@ -45,16 +43,15 @@ import org.eclipse.jetty.util.log.Logger;
  * Postgres uses the getBytes and setBinaryStream methods to access
  * a "bytea" datatype, which can be up to 1Gb of binary data. MySQL
  * is happy to use the "blob" type and getBlob() methods instead.
- *
  */
 public class DatabaseAdaptor
 {
-    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
-    
+    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+
     String _dbName;
     boolean _isLower;
     boolean _isUpper;
-    
+
     protected String _blobType; //if not set, is deduced from the type of the database at runtime
     protected String _longType; //if not set, is deduced from the type of the database at runtime
     protected String _stringType; //if not set defaults to 'varchar'
@@ -62,34 +59,29 @@ public class DatabaseAdaptor
     private String _connectionUrl;
     private Driver _driver;
     private DataSource _datasource;
- 
-
 
     private String _jndiName;
 
-
-    public DatabaseAdaptor ()
-    {           
+    public DatabaseAdaptor()
+    {
     }
-    
-    
-    public void adaptTo(DatabaseMetaData dbMeta)  
-    throws SQLException
+
+    public void adaptTo(DatabaseMetaData dbMeta)
+        throws SQLException
     {
         _dbName = dbMeta.getDatabaseProductName().toLowerCase(Locale.ENGLISH);
         if (LOG.isDebugEnabled())
-            LOG.debug ("Using database {}",_dbName);
+            LOG.debug("Using database {}", _dbName);
         _isLower = dbMeta.storesLowerCaseIdentifiers();
-        _isUpper = dbMeta.storesUpperCaseIdentifiers(); 
+        _isUpper = dbMeta.storesUpperCaseIdentifiers();
     }
-    
 
     public void setBlobType(String blobType)
     {
         _blobType = blobType;
     }
-    
-    public String getBlobType ()
+
+    public String getBlobType()
     {
         if (_blobType != null)
             return _blobType;
@@ -99,39 +91,36 @@ public class DatabaseAdaptor
 
         return "blob";
     }
-    
 
     public void setLongType(String longType)
     {
         _longType = longType;
     }
-    
 
-    public String getLongType ()
+    public String getLongType()
     {
         if (_longType != null)
             return _longType;
 
         if (_dbName == null)
-            throw new IllegalStateException ("DbAdaptor missing metadata");
-        
+            throw new IllegalStateException("DbAdaptor missing metadata");
+
         if (_dbName.startsWith("oracle"))
             return "number(20)";
 
         return "bigint";
     }
-    
-    public void setStringType (String stringType)
+
+    public void setStringType(String stringType)
     {
         _stringType = stringType;
     }
-    
-    
-    public String getStringType ()
+
+    public String getStringType()
     {
         if (_stringType != null)
             return _stringType;
-        
+
         return "varchar";
     }
 
@@ -142,14 +131,14 @@ public class DatabaseAdaptor
      * @param identifier the raw identifier
      * @return the converted identifier
      */
-    public String convertIdentifier (String identifier)
+    public String convertIdentifier(String identifier)
     {
         if (identifier == null)
             return null;
-        
+
         if (_dbName == null)
-            throw new IllegalStateException ("DbAdaptor missing metadata");
-        
+            throw new IllegalStateException("DbAdaptor missing metadata");
+
         if (_isLower)
             return identifier.toLowerCase(Locale.ENGLISH);
         if (_isUpper)
@@ -158,19 +147,17 @@ public class DatabaseAdaptor
         return identifier;
     }
 
-    
-    public String getDBName ()
+    public String getDBName()
     {
         return _dbName;
     }
 
-
-    public InputStream getBlobInputStream (ResultSet result, String columnName)
-    throws SQLException
+    public InputStream getBlobInputStream(ResultSet result, String columnName)
+        throws SQLException
     {
         if (_dbName == null)
-            throw new IllegalStateException ("DbAdaptor missing metadata");
-        
+            throw new IllegalStateException("DbAdaptor missing metadata");
+
         if (_dbName.startsWith("postgres"))
         {
             byte[] bytes = result.getBytes(columnName);
@@ -181,24 +168,24 @@ public class DatabaseAdaptor
         return blob.getBinaryStream();
     }
 
-
-    public boolean isEmptyStringNull ()
+    public boolean isEmptyStringNull()
     {
         if (_dbName == null)
-            throw new IllegalStateException ("DbAdaptor missing metadata");
-        
+            throw new IllegalStateException("DbAdaptor missing metadata");
+
         return (_dbName.startsWith("oracle"));
     }
-    
+
     /**
      * rowId is a reserved word for Oracle, so change the name of this column
+     *
      * @return true if db in use is oracle
      */
-    public boolean isRowIdReserved ()
+    public boolean isRowIdReserved()
     {
         if (_dbName == null)
-            throw new IllegalStateException ("DbAdaptor missing metadata");
-        
+            throw new IllegalStateException("DbAdaptor missing metadata");
+
         return (_dbName != null && _dbName.startsWith("oracle"));
     }
 
@@ -208,10 +195,10 @@ public class DatabaseAdaptor
      * @param driverClassName the driver classname
      * @param connectionUrl the driver connection url
      */
-    public void setDriverInfo (String driverClassName, String connectionUrl)
+    public void setDriverInfo(String driverClassName, String connectionUrl)
     {
-        _driverClassName=driverClassName;
-        _connectionUrl=connectionUrl;
+        _driverClassName = driverClassName;
+        _connectionUrl = connectionUrl;
     }
 
     /**
@@ -220,41 +207,36 @@ public class DatabaseAdaptor
      * @param driverClass the driver class
      * @param connectionUrl the driver connection url
      */
-    public void setDriverInfo (Driver driverClass, String connectionUrl)
+    public void setDriverInfo(Driver driverClass, String connectionUrl)
     {
-        _driver=driverClass;
-        _connectionUrl=connectionUrl;
+        _driver = driverClass;
+        _connectionUrl = connectionUrl;
     }
 
-
-    public void setDatasource (DataSource ds)
+    public void setDatasource(DataSource ds)
     {
         _datasource = ds;
     }
-    
-    public void setDatasourceName (String jndi)
+
+    public void setDatasourceName(String jndi)
     {
-        _jndiName=jndi;
+        _jndiName = jndi;
     }
 
-    
-    public String getDatasourceName ()
+    public String getDatasourceName()
     {
         return _jndiName;
     }
-    
 
     public DataSource getDatasource()
     {
         return _datasource;
     }
 
-    
     public String getDriverClassName()
     {
         return _driverClassName;
     }
-
 
     public Driver getDriver()
     {
@@ -265,21 +247,19 @@ public class DatabaseAdaptor
     {
         return _connectionUrl;
     }
-   
-    
-    
-    public void initialize ()
-    throws Exception
+
+    public void initialize()
+        throws Exception
     {
         if (_datasource != null)
             return; //already set up
-        
-        if (_jndiName!=null)
+
+        if (_jndiName != null)
         {
             InitialContext ic = new InitialContext();
             _datasource = (DataSource)ic.lookup(_jndiName);
         }
-        else if ( _driver != null && _connectionUrl != null )
+        else if (_driver != null && _connectionUrl != null)
         {
             DriverManager.registerDriver(_driver);
         }
@@ -300,16 +280,15 @@ public class DatabaseAdaptor
             }
         }
     }
-   
-    
+
     /**
      * Get a connection from the driver or datasource.
      *
      * @return the connection for the datasource
      * @throws SQLException if unable to get the connection
      */
-    protected Connection getConnection ()
-    throws SQLException
+    protected Connection getConnection()
+        throws SQLException
     {
         if (_datasource != null)
             return _datasource.getConnection();
@@ -317,13 +296,12 @@ public class DatabaseAdaptor
             return DriverManager.getConnection(_connectionUrl);
     }
 
-
-    /** 
+    /**
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString()
     {
-        return String.format("%s[jndi=%s,driver=%s]", super.toString(),_jndiName, _driverClassName);
-    } 
+        return String.format("%s[jndi=%s,driver=%s]", super.toString(), _jndiName, _driverClassName);
+    }
 }

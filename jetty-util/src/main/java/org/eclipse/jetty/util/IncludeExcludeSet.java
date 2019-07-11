@@ -23,18 +23,19 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
-
-/** Utility class to maintain a set of inclusions and exclusions.
+/**
+ * Utility class to maintain a set of inclusions and exclusions.
  * <p>Maintains a set of included and excluded elements.  The method {@link #test(Object)}
- * will return true IFF the passed object is not in the excluded set AND ( either the 
- * included set is empty OR the object is in the included set) 
- * <p>The type of the underlying {@link Set} used may be passed into the 
+ * will return true IFF the passed object is not in the excluded set AND ( either the
+ * included set is empty OR the object is in the included set)
+ * <p>The type of the underlying {@link Set} used may be passed into the
  * constructor, so special sets like Servlet PathMap may be used.
  * <p>
+ *
  * @param <T> The type of element of the set (often a pattern)
- * @param <P> The type of the instance passed to the predicate 
+ * @param <P> The type of the instance passed to the predicate
  */
-public class IncludeExcludeSet<T,P> implements Predicate<P>
+public class IncludeExcludeSet<T, P> implements Predicate<P>
 {
     private final Set<T> _includes;
     private final Predicate<P> _includePredicate;
@@ -44,19 +45,19 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     private static class SetContainsPredicate<T> implements Predicate<T>
     {
         private final Set<T> set;
-        
+
         public SetContainsPredicate(Set<T> set)
         {
             this.set = set;
         }
-        
+
         @Override
         public boolean test(T item)
         {
             return set.contains(item);
         }
     }
-    
+
     /**
      * Default constructor over {@link HashSet}
      */
@@ -64,9 +65,10 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     {
         this(HashSet.class);
     }
-    
+
     /**
      * Construct an IncludeExclude.
+     *
      * @param setClass The type of {@link Set} to using internally to hold patterns. Two instances will be created.
      * one for include patterns and one for exclude patters.  If the class is also a {@link Predicate},
      * then it is also used as the item test for the set, otherwise a {@link SetContainsPredicate} instance
@@ -79,21 +81,21 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
         {
             _includes = setClass.getDeclaredConstructor().newInstance();
             _excludes = setClass.getDeclaredConstructor().newInstance();
-            
-            if(_includes instanceof Predicate) 
+
+            if (_includes instanceof Predicate)
             {
                 _includePredicate = (Predicate<P>)_includes;
-            } 
-            else 
+            }
+            else
             {
                 _includePredicate = new SetContainsPredicate(_includes);
             }
-            
-            if(_excludes instanceof Predicate) 
+
+            if (_excludes instanceof Predicate)
             {
                 _excludePredicate = (Predicate<P>)_excludes;
-            } 
-            else 
+            }
+            else
             {
                 _excludePredicate = new SetContainsPredicate(_excludes);
             }
@@ -107,11 +109,11 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
             throw new RuntimeException(e);
         }
     }
-    
+
     /**
      * Construct an IncludeExclude
-     * 
-     * @param includeSet the Set of items that represent the included space 
+     *
+     * @param includeSet the Set of items that represent the included space
      * @param includePredicate the Predicate for included item testing (null for simple {@link Set#contains(Object)} test)
      * @param excludeSet the Set of items that represent the excluded space
      * @param excludePredicate the Predicate for excluded item testing (null for simple {@link Set#contains(Object)} test)
@@ -119,39 +121,43 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
      */
     public <SET extends Set<T>> IncludeExcludeSet(Set<T> includeSet, Predicate<P> includePredicate, Set<T> excludeSet, Predicate<P> excludePredicate)
     {
-        Objects.requireNonNull(includeSet,"Include Set");
-        Objects.requireNonNull(includePredicate,"Include Predicate");
-        Objects.requireNonNull(excludeSet,"Exclude Set");
-        Objects.requireNonNull(excludePredicate,"Exclude Predicate");
-        
+        Objects.requireNonNull(includeSet, "Include Set");
+        Objects.requireNonNull(includePredicate, "Include Predicate");
+        Objects.requireNonNull(excludeSet, "Exclude Set");
+        Objects.requireNonNull(excludePredicate, "Exclude Predicate");
+
         _includes = includeSet;
         _includePredicate = includePredicate;
         _excludes = excludeSet;
         _excludePredicate = excludePredicate;
     }
-    
+
     public void include(T element)
     {
         _includes.add(element);
     }
-    
+
     public void include(T... element)
     {
-        for (T e: element)
+        for (T e : element)
+        {
             _includes.add(e);
+        }
     }
 
     public void exclude(T element)
     {
         _excludes.add(element);
     }
-    
+
     public void exclude(T... element)
     {
-        for (T e: element)
+        for (T e : element)
+        {
             _excludes.add(e);
+        }
     }
-    
+
     @Override
     public boolean test(P t)
     {
@@ -159,11 +165,12 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
             return false;
         return !_excludePredicate.test(t);
     }
-    
+
     /**
      * Test Included and not Excluded
+     *
      * @param item The item to test
-     * @return Boolean.TRUE if item is included, Boolean.FALSE if item is excluded and null if neither
+     * @return Boolean.TRUE if item is included, Boolean.FALSE if item is excluded or null if neither
      */
     public Boolean isIncludedAndNotExcluded(P item)
     {
@@ -171,25 +178,30 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
             return Boolean.FALSE;
         if (_includePredicate.test(item))
             return Boolean.TRUE;
-        
+
         return null;
     }
-    
+
     public boolean hasIncludes()
     {
         return !_includes.isEmpty();
     }
-    
+
+    public boolean hasExcludes()
+    {
+        return !_excludes.isEmpty();
+    }
+
     public int size()
     {
-        return _includes.size()+_excludes.size();
+        return _includes.size() + _excludes.size();
     }
-    
+
     public Set<T> getIncluded()
     {
         return _includes;
     }
-    
+
     public Set<T> getExcluded()
     {
         return _excludes;
@@ -204,11 +216,11 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     @Override
     public String toString()
     {
-        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}",this.getClass().getSimpleName(),hashCode(),
+        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}", this.getClass().getSimpleName(), hashCode(),
             _includes,
-            _includePredicate==_includes?"SELF":_includePredicate,
+            _includePredicate == _includes ? "SELF" : _includePredicate,
             _excludes,
-            _excludePredicate==_excludes?"SELF":_excludePredicate);
+            _excludePredicate == _excludes ? "SELF" : _excludePredicate);
     }
 
     public boolean isEmpty()

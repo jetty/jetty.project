@@ -30,31 +30,32 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.objectweb.asm.Opcodes;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
 /**
- * 
+ *
  */
 public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationParser
 {
     private Set<URI> _alreadyParsed = ConcurrentHashMap.newKeySet();
-    
-    private ConcurrentHashMap<URI,Bundle> _uriToBundle = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Bundle,Resource> _bundleToResource = new ConcurrentHashMap<>();
+
+    private ConcurrentHashMap<URI, Bundle> _uriToBundle = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Bundle, Resource> _bundleToResource = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Bundle,URI> _bundleToUri = new ConcurrentHashMap<>();
-    
+    private ConcurrentHashMap<Bundle, URI> _bundleToUri = new ConcurrentHashMap<>();
+
     public AnnotationParser(int javaPlatform)
     {
         super(javaPlatform, Opcodes.ASM7);
     }
-    
+
     /**
      * Keep track of a jetty URI Resource and its associated OSGi bundle.
-     * 
+     *
      * @param bundle the bundle to index
      * @return the resource for the bundle
      * @throws Exception if unable to create the resource reference
@@ -64,32 +65,34 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
         File bundleFile = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         Resource resource = Resource.newResource(bundleFile.toURI());
         URI uri = resource.getURI();
-        _uriToBundle.putIfAbsent(uri,bundle);
-        _bundleToUri.putIfAbsent(bundle,uri);
-        _bundleToResource.putIfAbsent(bundle,resource);
-        _resourceToBundle.putIfAbsent(resource,bundle);
+        _uriToBundle.putIfAbsent(uri, bundle);
+        _bundleToUri.putIfAbsent(bundle, uri);
+        _bundleToResource.putIfAbsent(bundle, resource);
+        _resourceToBundle.putIfAbsent(resource, bundle);
         return resource;
     }
+
     protected URI getURI(Bundle bundle)
     {
         return _bundleToUri.get(bundle);
     }
+
     protected Resource getResource(Bundle bundle)
     {
         return _bundleToResource.get(bundle);
     }
-    protected Bundle getBundle (Resource resource)
+
+    protected Bundle getBundle(Resource resource)
     {
         return _resourceToBundle.get(resource);
     }
-    
-    
+
     /**
-     * 
+     *
      */
     @Override
-    public void parse (Set<? extends Handler> handlers, URI[] uris)
-    throws Exception
+    public void parse(Set<? extends Handler> handlers, URI[] uris)
+        throws Exception
     {
         for (URI uri : uris)
         {
@@ -102,7 +105,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
                 }
                 //a jar in WEB-INF/lib or the WEB-INF/classes
                 //use the behavior of the super class for a standard jar.
-                super.parse(handlers, new URI[] {uri});
+                super.parse(handlers, new URI[]{uri});
             }
             else
             {
@@ -110,16 +113,16 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
             }
         }
     }
-    
+
     protected void parse(Set<? extends Handler> handlers, Bundle bundle)
-    throws Exception
+        throws Exception
     {
         URI uri = _bundleToUri.get(bundle);
         if (!_alreadyParsed.add(uri))
         {
             return;
         }
-        
+
         String bundleClasspath = (String)bundle.getHeaders().get(Constants.BUNDLE_CLASSPATH);
         if (bundleClasspath == null)
         {
@@ -127,20 +130,20 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
         }
         //order the paths first by the number of tokens in the path second alphabetically.
         TreeSet<String> paths = new TreeSet<>(
-                new Comparator<String>()
+            new Comparator<String>()
+            {
+                @Override
+                public int compare(String o1, String o2)
                 {
-                    @Override
-                    public int compare(String o1, String o2)
+                    int paths1 = new StringTokenizer(o1, "/", false).countTokens();
+                    int paths2 = new StringTokenizer(o2, "/", false).countTokens();
+                    if (paths1 == paths2)
                     {
-                        int paths1 = new StringTokenizer(o1,"/",false).countTokens();
-                        int paths2 = new StringTokenizer(o2,"/",false).countTokens();
-                        if (paths1 == paths2)
-                        {
-                            return o1.compareTo(o2);
-                        }
-                        return paths2 - paths1;
+                        return o1.compareTo(o2);
                     }
-                });
+                    return paths2 - paths1;
+                }
+            });
         boolean hasDotPath = false;
         StringTokenizer tokenizer = new StringTokenizer(bundleClasspath, ",;", false);
         while (tokenizer.hasMoreTokens())
@@ -156,7 +159,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
             }
             else if (!token.endsWith(".jar") && !token.endsWith("/"))
             {
-                paths.add(token+"/");
+                paths.add(token + "/");
             }
             else
             {
@@ -178,14 +181,14 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
             }
         }
         @SuppressWarnings("rawtypes")
-        Enumeration classes = bundle.findEntries("/","*.class",true);
+        Enumeration classes = bundle.findEntries("/", "*.class", true);
         if (classes == null)
         {
             return;
         }
         while (classes.hasMoreElements())
         {
-            URL classUrl = (URL) classes.nextElement();
+            URL classUrl = (URL)classes.nextElement();
             String path = classUrl.getPath();
             //remove the longest path possible:
             String name = null;
@@ -209,7 +212,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
                 continue;
             }
             //transform into a classname to pass to the resolver
-            String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+            String shortName = StringUtil.replace(name, '/', '.').substring(0, name.length() - 6);
 
             addParsedClass(shortName, getResource(bundle));
             try (InputStream classInputStream = classUrl.openStream())

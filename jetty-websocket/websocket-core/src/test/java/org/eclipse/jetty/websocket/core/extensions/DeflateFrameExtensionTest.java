@@ -28,18 +28,14 @@ import java.util.Random;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CapturedHexPayloads;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -47,7 +43,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingNetworkBytesCapture;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
@@ -78,7 +74,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         // Wire up stack
         ext.setNextIncomingFrames(capture);
 
-        Parser parser = new Parser(bufferPool);
+        Parser parser = new Parser(components.getBufferPool());
         ByteBuffer buffer = ByteBuffer.wrap(raw);
         while (BufferUtil.hasContent(buffer))
         {
@@ -113,7 +109,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         DeflateFrameExtension ext = new DeflateFrameExtension();
         init(ext);
 
-        Generator generator = new Generator(bufferPool);
+        Generator generator = new Generator(components.getBufferPool());
 
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
@@ -217,8 +213,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     public void testCompress_TimeTimeTime()
     {
         // What pywebsocket produces for "time:", "time:", "time:"
-        String expected[] = new String[]
-            { "2AC9CC4DB50200", "2A01110000", "02130000" };
+        String[] expected = new String[]
+            {"2AC9CC4DB50200", "2A01110000", "02130000"};
 
         // Lets see what we produce
         CapturedHexPayloads capture = new CapturedHexPayloads();
@@ -238,7 +234,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     private void init(DeflateFrameExtension ext)
     {
         ext.setWebSocketCoreSession(sessionWithMaxMessageSize(20 * 1024 * 1024));
-        ext.init(new ExtensionConfig(ext.getName()), bufferPool);
+        ext.init(new ExtensionConfig(ext.getName()), components);
     }
 
     @Test
@@ -250,7 +246,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         // Text to compress
         String text = "info:";
-        byte uncompressed[] = StringUtil.getUtf8Bytes(text);
+        byte[] uncompressed = StringUtil.getUtf8Bytes(text);
 
         // Prime the compressor
         compressor.reset();
@@ -263,7 +259,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         while (!compressor.finished())
         {
-            byte out[] = new byte[64];
+            byte[] out = new byte[64];
             int len = compressor.deflate(out, 0, out.length, Deflater.SYNC_FLUSH);
             if (len > 0)
             {
@@ -273,7 +269,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         compressor.end();
 
         BufferUtil.flipToFlush(outbuf, 0);
-        byte compressed[] = BufferUtil.toArray(outbuf);
+        byte[] compressed = BufferUtil.toArray(outbuf);
         // Clear the BFINAL bit that has been set by the compressor.end() call.
         // In the real implementation we never end() the compressor.
         compressed[0] &= 0xFE;
@@ -290,7 +286,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         DeflateFrameExtension ext = new DeflateFrameExtension();
         init(ext);
 
-        Generator generator = new Generator(bufferPool);
+        Generator generator = new Generator(components.getBufferPool());
 
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
@@ -305,14 +301,14 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     public void testInflateBasics() throws Exception
     {
         // should result in "info:" text if properly inflated
-        byte rawbuf[] = TypeUtil.fromHexString("CaCc4bCbB70200"); // what pywebsocket produces
-        // byte rawbuf[] = TypeUtil.fromHexString("CbCc4bCbB70200"); // what java produces
+        byte[] rawbuf = TypeUtil.fromHexString("CaCc4bCbB70200"); // what pywebsocket produces
+        // byte[] rawbuf = TypeUtil.fromHexString("CbCc4bCbB70200"); // what java produces
 
         Inflater inflater = new Inflater(true);
         inflater.reset();
         inflater.setInput(rawbuf, 0, rawbuf.length);
 
-        byte outbuf[] = new byte[64];
+        byte[] outbuf = new byte[64];
         int len = inflater.inflate(outbuf);
         inflater.end();
         assertThat("Inflated length", len, greaterThan(4));
@@ -325,7 +321,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     public void testPyWebSocketServer_Hello()
     {
         // Captured from PyWebSocket - "Hello" (echo from server)
-        byte rawbuf[] = TypeUtil.fromHexString("c107f248cdc9c90700");
+        byte[] rawbuf = TypeUtil.fromHexString("c107f248cdc9c90700");
         assertIncoming(rawbuf, "Hello");
     }
 
@@ -333,7 +329,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     public void testPyWebSocketServer_Long()
     {
         // Captured from PyWebSocket - Long Text (echo from server)
-        byte rawbuf[] = TypeUtil.fromHexString("c1421cca410a80300c44d1abccce9df7" + "f018298634d05631138ab7b7b8fdef1f" + "dc0282e2061d575a45f6f2686bab25e1"
+        byte[] rawbuf = TypeUtil.fromHexString("c1421cca410a80300c44d1abccce9df7" + "f018298634d05631138ab7b7b8fdef1f" + "dc0282e2061d575a45f6f2686bab25e1"
             + "3fb7296fa02b5885eb3b0379c394f461" + "98cafd03");
         assertIncoming(rawbuf, "It's a big enough umbrella but it's always me that ends up getting wet.");
     }
@@ -342,7 +338,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     public void testPyWebSocketServer_Medium()
     {
         // Captured from PyWebSocket - "stackoverflow" (echo from server)
-        byte rawbuf[] = TypeUtil.fromHexString("c10f2a2e494ccece2f4b2d4acbc92f0700");
+        byte[] rawbuf = TypeUtil.fromHexString("c10f2a2e494ccece2f4b2d4acbc92f0700");
         assertIncoming(rawbuf, "stackoverflow");
     }
 
@@ -415,14 +411,12 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         assertArrayEquals(input, result.toByteArray());
     }
 
-
     private WebSocketCoreSession sessionWithMaxMessageSize(int maxMessageSize)
     {
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
-        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
-        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
+        ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
+        exStack.negotiate(new LinkedList<>(), new LinkedList<>());
 
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack));
         coreSession.setMaxFrameSize(maxMessageSize);
         return coreSession;
     }

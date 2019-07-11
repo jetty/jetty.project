@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server.sockets.streaming;
 
-import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
+import java.io.IOException;
+import java.io.Reader;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
-import java.io.Reader;
+
+import org.eclipse.jetty.toolchain.test.StackUtils;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 @ServerEndpoint("/echo/streaming/reader")
 public class ReaderSocket

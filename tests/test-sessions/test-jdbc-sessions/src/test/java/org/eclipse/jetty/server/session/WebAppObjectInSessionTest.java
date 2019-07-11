@@ -24,34 +24,29 @@ import org.junit.jupiter.api.Test;
 
 /**
  * WebAppObjectInSessionTest
- *
- *
  */
 public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 {
-    
-    /** 
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         Resource.setDefaultUseCaches(false);
-       return JdbcTestHelper.newSessionDataStoreFactory();
+        return JdbcTestHelper.newSessionDataStoreFactory();
     }
-    
-    
+
     @Test
     public void testWebappObjectInSession() throws Exception
     {
         super.testWebappObjectInSession();
     }
-    
 
     @AfterEach
-    public void tearDown() throws Exception 
+    public void tearDown() throws Exception
     {
         JdbcTestHelper.shutdown(null);
     }
-  
 }

@@ -21,7 +21,9 @@ package org.eclipse.jetty.websocket.common;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -29,6 +31,12 @@ import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.SuspendToken;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -98,7 +106,7 @@ public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty imple
                 String event = String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new StringMessageSink(null, wholeTextHandle, maxMessageSize);
+                messageSink = new StringMessageSink(null, wholeTextHandle, getFakeSession());
             }
             break;
             case OpCode.BINARY:
@@ -106,7 +114,7 @@ public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty imple
                 String event = String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new ByteBufferMessageSink(null, wholeBinaryHandle, maxMessageSize);
+                messageSink = new ByteBufferMessageSink(null, wholeBinaryHandle, getFakeSession());
             }
             break;
             case OpCode.CONTINUATION:
@@ -171,5 +179,146 @@ public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty imple
         }
         hint.append(']');
         return hint.toString();
+    }
+
+    private Session getFakeSession()
+    {
+        return new Session()
+        {
+            @Override
+            public void close()
+            {
+            }
+
+            @Override
+            public void close(org.eclipse.jetty.websocket.api.CloseStatus closeStatus)
+            {
+            }
+
+            @Override
+            public void close(int statusCode, String reason)
+            {
+            }
+
+            @Override
+            public void disconnect()
+            {
+            }
+
+            @Override
+            public SocketAddress getLocalAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public String getProtocolVersion()
+            {
+                return null;
+            }
+
+            @Override
+            public RemoteEndpoint getRemote()
+            {
+                return null;
+            }
+
+            @Override
+            public SocketAddress getRemoteAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public UpgradeRequest getUpgradeRequest()
+            {
+                return null;
+            }
+
+            @Override
+            public UpgradeResponse getUpgradeResponse()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean isOpen()
+            {
+                return false;
+            }
+
+            @Override
+            public boolean isSecure()
+            {
+                return false;
+            }
+
+            @Override
+            public SuspendToken suspend()
+            {
+                return null;
+            }
+
+            @Override
+            public WebSocketBehavior getBehavior()
+            {
+                return null;
+            }
+
+            @Override
+            public Duration getIdleTimeout()
+            {
+                return null;
+            }
+
+            @Override
+            public int getInputBufferSize()
+            {
+                return 0;
+            }
+
+            @Override
+            public int getOutputBufferSize()
+            {
+                return 0;
+            }
+
+            @Override
+            public long getMaxBinaryMessageSize()
+            {
+                return maxMessageSize;
+            }
+
+            @Override
+            public long getMaxTextMessageSize()
+            {
+                return maxMessageSize;
+            }
+
+            @Override
+            public void setIdleTimeout(Duration duration)
+            {
+            }
+
+            @Override
+            public void setInputBufferSize(int size)
+            {
+            }
+
+            @Override
+            public void setOutputBufferSize(int size)
+            {
+            }
+
+            @Override
+            public void setMaxBinaryMessageSize(long size)
+            {
+            }
+
+            @Override
+            public void setMaxTextMessageSize(long size)
+            {
+            }
+        };
     }
 }

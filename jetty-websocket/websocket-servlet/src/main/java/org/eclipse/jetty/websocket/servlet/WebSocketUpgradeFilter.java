@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -55,7 +54,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
  * <b>Configuration / Init-Parameters:</b>
  * </p>
  * <dl>
- * <dt>maxIdleTime</dt>
+ * <dt>idleTimeout</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
  * <dt>maxTextMessageSize</dt>
  * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
@@ -76,7 +75,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
 
-
     private static FilterHolder getFilter(ServletContext servletContext)
     {
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
@@ -90,28 +88,42 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return null;
     }
 
+    /**
+     * Configure the default WebSocketUpgradeFilter.
+     *
+     * <p>
+     * This will return the default {@link WebSocketUpgradeFilter} on the
+     * provided {@link ServletContext}, creating the filter if necessary.
+     * </p>
+     * <p>
+     * The default {@link WebSocketUpgradeFilter} is also available via
+     * the {@link ServletContext} attribute named {@code org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
+     * </p>
+     *
+     * @param servletContext the {@link ServletContext} to use
+     * @return the configured default {@link WebSocketUpgradeFilter} instance
+     */
     public static FilterHolder ensureFilter(ServletContext servletContext)
     {
         FilterHolder existingFilter = WebSocketUpgradeFilter.getFilter(servletContext);
         if (existingFilter != null)
             return existingFilter;
 
-        String name = "WebSocketUpgradeFilter";
-        String pathSpec = "/*";
-        EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
+        final String name = "WebSocketUpgradeFilter";
+        final String pathSpec = "/*";
         FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
         holder.setName(name);
         holder.setInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
 
         holder.setAsyncSupported(true);
         ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
-        servletHandler.addFilterWithMapping(holder, pathSpec, dispatcherTypes);
+        servletHandler.addFilterWithMapping(holder, pathSpec, EnumSet.of(DispatcherType.REQUEST));
         if (LOG.isDebugEnabled())
             LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
         return holder;
     }
 
-    public final static String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
+    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
 
     private final FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
     private WebSocketMapping mapping;
@@ -164,7 +176,13 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         else
             mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(context));
 
-        String max = config.getInitParameter("maxIdleTime");
+        String max = config.getInitParameter("idleTimeout");
+        if (max == null)
+        {
+            max = config.getInitParameter("maxIdleTime");
+            if (max != null)
+                LOG.warn("'maxIdleTime' init param is deprecated, use 'idleTimeout' instead");
+        }
         if (max != null)
             defaultCustomizer.setIdleTimeout(Duration.ofMillis(Long.parseLong(max)));
 

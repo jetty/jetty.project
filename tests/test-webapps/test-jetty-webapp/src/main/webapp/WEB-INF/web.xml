@@ -188,6 +188,18 @@
     <url-pattern>/jsp/foo/</url-pattern>
   </servlet-mapping>
 
+
+  <servlet>
+    <servlet-name>TestServlet</servlet-name>
+    <servlet-class>com.acme.TestServlet</servlet-class>
+    <load-on-startup>10</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>TestServlet</servlet-name>
+    <url-pattern>/testservlet/*</url-pattern>
+  </servlet-mapping>
+
   <error-page>
     <error-code>404</error-code>
     <location>/error404.html</location>

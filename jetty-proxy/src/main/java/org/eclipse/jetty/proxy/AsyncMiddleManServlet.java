@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
@@ -74,6 +73,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     private static final String CLIENT_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
     private static final String SERVER_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".serverTransformer";
     private static final String CONTINUE_ACTION_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".continueAction";
+    private static final String WRITE_LISTENER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".writeListener";
 
     @Override
     protected void service(HttpServletRequest clientRequest, HttpServletResponse proxyResponse) throws ServletException, IOException
@@ -93,8 +93,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
 
         final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-                .method(clientRequest.getMethod())
-                .version(HttpVersion.fromString(clientRequest.getProtocol()));
+            .method(clientRequest.getMethod())
+            .version(HttpVersion.fromString(clientRequest.getProtocol()));
 
         copyRequestHeaders(clientRequest, proxyRequest);
 
@@ -411,8 +411,6 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     protected class ProxyResponseListener extends Response.Listener.Adapter implements Callback
     {
-        private final String WRITE_LISTENER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".writeListener";
-
         private final Callback complete = new CountingCallback(this, 2);
         private final List<ByteBuffer> buffers = new ArrayList<>();
         private final HttpServletRequest clientRequest;
@@ -454,7 +452,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 hasContent = true;
 
                 ProxyWriter proxyWriter = (ProxyWriter)clientRequest.getAttribute(WRITE_LISTENER_ATTRIBUTE);
-                boolean committed = proxyWriter != null;
+                final boolean committed = proxyWriter != null;
                 if (proxyWriter == null)
                 {
                     proxyWriter = newProxyWriteListener(clientRequest, serverResponse);
@@ -831,7 +829,9 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         private ByteBuffer gzip(List<ByteBuffer> buffers, boolean finished) throws IOException
         {
             for (ByteBuffer buffer : buffers)
+            {
                 write(gzipOut, buffer);
+            }
             if (finished)
                 gzipOut.close();
             byte[] gzipBytes = out.toByteArray();

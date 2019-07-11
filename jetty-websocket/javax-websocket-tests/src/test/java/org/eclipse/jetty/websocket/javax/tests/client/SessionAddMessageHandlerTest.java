@@ -21,12 +21,9 @@ package org.eclipse.jetty.websocket.javax.tests.client;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.MessageHandler;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -42,8 +39,6 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactor
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponse;
-import org.eclipse.jetty.websocket.javax.common.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.javax.tests.MessageType;
 import org.eclipse.jetty.websocket.javax.tests.SessionMatchers;
 import org.eclipse.jetty.websocket.javax.tests.handlers.ByteArrayWholeHandler;
@@ -80,11 +75,9 @@ public class SessionAddMessageHandlerTest
         ConfiguredEndpoint ei = new ConfiguredEndpoint(new DummyEndpoint(), endpointConfig);
 
         UpgradeRequest handshakeRequest = new UpgradeRequestAdapter();
-        UpgradeResponse handshakeResponse = new UpgradeResponseAdapter();
 
         JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(container);
-        CompletableFuture<Session> futureSession = new CompletableFuture<>();
-        frameHandler = frameHandlerFactory.newJavaxWebSocketFrameHandler(ei, handshakeRequest, handshakeResponse, futureSession);
+        frameHandler = frameHandlerFactory.newJavaxWebSocketFrameHandler(ei, handshakeRequest);
         frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
 
         // Session
@@ -263,7 +256,7 @@ public class SessionAddMessageHandlerTest
             ByteBuffer copy = ByteBuffer.allocate(partialMsg.remaining());
             copy.put(partialMsg);
             copy.flip();
-            received.add(new Object[] { copy, isLast });
+            received.add(new Object[]{copy, isLast});
         });
 
         assertThat("session", session, SessionMatchers.isMessageHandlerTypeRegistered(MessageType.BINARY));

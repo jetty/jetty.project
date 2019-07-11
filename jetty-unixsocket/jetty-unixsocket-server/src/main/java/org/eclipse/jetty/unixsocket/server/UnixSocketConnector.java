@@ -82,7 +82,7 @@ public class UnixSocketConnector extends AbstractConnector
     /**
      * <p>Constructs a UnixSocketConnector with the given number of selectors</p>
      *
-     * @param server    the {@link Server} this connector will accept connections for.
+     * @param server the {@link Server} this connector will accept connections for.
      * @param selectors the number of selectors, or &lt;=0 for a default value.
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("selectors") int selectors)
@@ -93,7 +93,7 @@ public class UnixSocketConnector extends AbstractConnector
     /**
      * <p>Constructs a UnixSocketConnector with the given ConnectionFactories.</p>
      *
-     * @param server    the {@link Server} this connector will accept connections for.
+     * @param server the {@link Server} this connector will accept connections for.
      * @param factories zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("factories") ConnectionFactory... factories)
@@ -104,7 +104,7 @@ public class UnixSocketConnector extends AbstractConnector
     /**
      * <p>Constructs a UnixSocketConnector with the given selectors and ConnectionFactories.</p>
      *
-     * @param server    the {@link Server} this connector will accept connections for.
+     * @param server the {@link Server} this connector will accept connections for.
      * @param selectors the number of selectors, or &lt;=0 for a default value.
      * @param factories zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
@@ -116,7 +116,7 @@ public class UnixSocketConnector extends AbstractConnector
     /**
      * <p>Constructs a UnixSocketConnector with the given SslContextFactory.</p>
      *
-     * @param server            the {@link Server} this connector will accept connections for.
+     * @param server the {@link Server} this connector will accept connections for.
      * @param sslContextFactory when non null a {@link SslConnectionFactory} prepended to the other ConnectionFactories
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
@@ -127,9 +127,9 @@ public class UnixSocketConnector extends AbstractConnector
     /**
      * <p>Constructs a UnixSocketConnector with the given selectors and SslContextFactory.</p>.
      *
-     * @param server            the {@link Server} this connector will accept connections for.
+     * @param server the {@link Server} this connector will accept connections for.
      * @param sslContextFactory when non null a {@link SslConnectionFactory} prepended to the other ConnectionFactories
-     * @param selectors         the number of selectors, or &lt;=0 for a default value.
+     * @param selectors the number of selectors, or &lt;=0 for a default value.
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("selectors") int selectors, @Name("sslContextFactory") SslContextFactory.Server sslContextFactory)
     {
@@ -139,9 +139,9 @@ public class UnixSocketConnector extends AbstractConnector
     /**
      * <p>Constructs a UnixSocketConnector with the given SslContextFactory and ConnectionFactories.</p>.
      *
-     * @param server            the {@link Server} this connector will accept connections for.
+     * @param server the {@link Server} this connector will accept connections for.
      * @param sslContextFactory when non null a {@link SslConnectionFactory} prepended to the other ConnectionFactories
-     * @param factories         zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     * @param factories zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("sslContextFactory") SslContextFactory.Server sslContextFactory, @Name("factories") ConnectionFactory... factories)
     {
@@ -151,12 +151,12 @@ public class UnixSocketConnector extends AbstractConnector
     /**
      * <p>Constructs a UnixSocketConnector with the given parameters.</p>.
      *
-     * @param server     the {@link Server} this connector will accept connections for.
-     * @param executor   the executor that runs tasks for handling requests, acceptors and selectors.
-     * @param scheduler  the scheduler used to schedule timed tasks.
+     * @param server the {@link Server} this connector will accept connections for.
+     * @param executor the executor that runs tasks for handling requests, acceptors and selectors.
+     * @param scheduler the scheduler used to schedule timed tasks.
      * @param bufferPool the ByteBufferPool used to allocate buffers.
-     * @param selectors  the number of selectors, or &lt;=0 for a default value.
-     * @param factories  zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     * @param selectors the number of selectors, or &lt;=0 for a default value.
+     * @param factories zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public UnixSocketConnector(@Name("server") Server server, @Name("executor") Executor executor, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") ByteBufferPool bufferPool, @Name("selectors") int selectors, @Name("factories") ConnectionFactory... factories)
     {

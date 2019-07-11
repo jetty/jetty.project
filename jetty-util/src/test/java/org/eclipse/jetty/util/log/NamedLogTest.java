@@ -31,14 +31,14 @@ public class NamedLogTest
 
         StdErrCapture output = new StdErrCapture();
 
-        setLoggerOptions(Red.class,output);
-        setLoggerOptions(Green.class,output);
-        setLoggerOptions(Blue.class,output);
+        setLoggerOptions(Red.class, output);
+        setLoggerOptions(Green.class, output);
+        setLoggerOptions(Blue.class, output);
 
         red.generateLogs();
         green.generateLogs();
         blue.generateLogs();
-        
+
         output.assertContains(Red.class.getName());
         output.assertContains(Green.class.getName());
         output.assertContains(Blue.class.getName());

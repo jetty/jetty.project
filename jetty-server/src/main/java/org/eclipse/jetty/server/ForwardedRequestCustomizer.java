@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
-
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -40,7 +39,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import static java.lang.invoke.MethodType.methodType;
-
 
 /**
  * Customize Requests for Proxy Forwarding.
@@ -68,6 +66,8 @@ public class ForwardedRequestCustomizer implements Customizer
     private static final Logger LOG = Log.getLogger(ForwardedRequestCustomizer.class);
 
     private HostPortHttpField _forcedHost;
+    private boolean _proxyAsAuthority = false;
+    private boolean _forwardedPortAsAuthority = true;
     private String _forwardedHeader = HttpHeader.FORWARDED.toString();
     private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
     private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
@@ -77,7 +77,6 @@ public class ForwardedRequestCustomizer implements Customizer
     private String _forwardedHttpsHeader = "X-Proxied-Https";
     private String _forwardedCipherSuiteHeader = "Proxy-auth-cert";
     private String _forwardedSslSessionIdHeader = "Proxy-ssl-id";
-    private boolean _proxyAsAuthority = false;
     private boolean _sslIsSecure = true;
     private Trie<MethodHandle> _handles;
 
@@ -98,7 +97,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param proxyAsAuthority if true, use the proxy address obtained via
-     *                         {@code X-Forwarded-Server} or RFC7239 "by" as the request authority.
+     * {@code X-Forwarded-Server} or RFC7239 "by" as the request authority.
      */
     public void setProxyAsAuthority(boolean proxyAsAuthority)
     {
@@ -107,9 +106,9 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param rfc7239only Configure to only support the RFC7239 Forwarded header and to
-     *                    not support any {@code X-Forwarded-} headers.   This convenience method
-     *                    clears all the non RFC headers if passed true and sets them to
-     *                    the default values (if not already set) if passed false.
+     * not support any {@code X-Forwarded-} headers.   This convenience method
+     * clears all the non RFC headers if passed true and sets them to
+     * the default values (if not already set) if passed false.
      */
     public void setForwardedOnly(boolean rfc7239only)
     {
@@ -253,6 +252,26 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
+     * @return if true, the X-Forwarded-Port header applies to the authority,
+     * else it applies to the remote client address
+     */
+    public boolean getForwardedPortAsAuthority()
+    {
+        return _forwardedPortAsAuthority;
+    }
+
+    /**
+     * Set if the X-Forwarded-Port header will be used for Authority
+     *
+     * @param forwardedPortAsAuthority if true, the X-Forwarded-Port header applies to the authority,
+     * else it applies to the remote client address
+     */
+    public void setForwardedPortAsAuthority(boolean forwardedPortAsAuthority)
+    {
+        _forwardedPortAsAuthority = forwardedPortAsAuthority;
+    }
+
+    /**
      * Get the forwardedProtoHeader.
      *
      * @return the forwardedProtoHeader (default {@code X-Forwarded-Proto})
@@ -347,7 +366,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     /**
      * @param sslIsSecure true if the presence of a SSL session or certificate header is sufficient
-     *                    to indicate a secure request (default is true)
+     * to indicate a secure request (default is true)
      */
     public void setSslIsSecure(boolean sslIsSecure)
     {
@@ -375,23 +394,23 @@ public class ForwardedRequestCustomizer implements Customizer
             throw new RuntimeException(e);
         }
 
-        if (forwarded._proto!=null)
+        if (forwarded._proto != null)
         {
             request.setScheme(forwarded._proto);
             if (forwarded._proto.equalsIgnoreCase(config.getSecureScheme()))
                 request.setSecure(true);
         }
 
-        if (forwarded._host!=null)
+        if (forwarded._host != null)
         {
             httpFields.put(new HostPortHttpField(forwarded._host));
             request.setAuthority(forwarded._host.getHost(), forwarded._host.getPort());
         }
 
-        if (forwarded._for!=null)
+        if (forwarded._for != null)
         {
-            int port = forwarded._for.getPort()>0 ? forwarded._for.getPort() : request.getRemotePort();
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for.getHost(),port));
+            int port = forwarded._for.getPort() > 0 ? forwarded._for.getPort() : request.getRemotePort();
+            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for.getHost(), port));
         }
     }
 
@@ -481,14 +500,22 @@ public class ForwardedRequestCustomizer implements Customizer
         }
     }
 
-    private static class XHostPort extends HostPort
+    private static class PossiblyPartialHostPort extends HostPort
     {
-        XHostPort(String authority)
+        PossiblyPartialHostPort(String authority)
         {
             super(authority);
         }
 
-        XHostPort(String host, int port)
+        protected PossiblyPartialHostPort(String host, int port)
+        {
+            super(host, port);
+        }
+    }
+
+    private static class PortSetHostPort extends PossiblyPartialHostPort
+    {
+        PortSetHostPort(String host, int port)
         {
             super(host, port);
         }
@@ -517,7 +544,7 @@ public class ForwardedRequestCustomizer implements Customizer
             super(false);
             _request = request;
             _config = config;
-            if (_forcedHost!=null)
+            if (_forcedHost != null)
                 _host = _forcedHost.getHostPort();
         }
 
@@ -543,41 +570,68 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void handleHost(HttpField field)
         {
-            if (_host==null)
-                _host = new XHostPort(getLeftMost(field.getValue()));
+            if (_forwardedPortAsAuthority && !StringUtil.isEmpty(_forwardedPortHeader))
+            {
+                if (_host == null)
+                    _host = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
+                else if (_for instanceof PortSetHostPort)
+                    _host = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _host.getPort());
+            }
+            else if (_host == null)
+            {
+                _host = new HostPort(getLeftMost(field.getValue()));
+            }
         }
 
         public void handleServer(HttpField field)
         {
-            if (_proxyAsAuthority && _host==null)
-                _host = new XHostPort(getLeftMost(field.getValue()));
+            if (_proxyAsAuthority)
+                return;
+            handleHost(field);
         }
 
         public void handleProto(HttpField field)
         {
-            if (_proto==null)
+            if (_proto == null)
                 _proto = getLeftMost(field.getValue());
         }
 
         public void handleFor(HttpField field)
         {
-            if (_for==null)
-                _for = new XHostPort(getLeftMost(field.getValue()));
-            else if (_for instanceof XHostPort && "unknown".equals(_for.getHost()))
-                _for = new XHostPort(HostPort.normalizeHost(getLeftMost(field.getValue())),_for.getPort());
+            if (!_forwardedPortAsAuthority && !StringUtil.isEmpty(_forwardedPortHeader))
+            {
+                if (_for == null)
+                    _for = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
+                else if (_for instanceof PortSetHostPort)
+                    _for = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _for.getPort());
+            }
+            else if (_for == null)
+            {
+                _for = new HostPort(getLeftMost(field.getValue()));
+            }
         }
 
         public void handlePort(HttpField field)
         {
-            if (_for == null)
-                _for = new XHostPort("unknown", field.getIntValue());
-            else if (_for instanceof XHostPort && _for.getPort()<=0)
-                _for = new XHostPort(HostPort.normalizeHost(_for.getHost()), field.getIntValue());
+            if (!_forwardedPortAsAuthority)
+            {
+                if (_for == null)
+                    _for = new PortSetHostPort(_request.getRemoteHost(), field.getIntValue());
+                else if (_for instanceof PossiblyPartialHostPort && _for.getPort() <= 0)
+                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), field.getIntValue());
+            }
+            else
+            {
+                if (_host == null)
+                    _host = new PortSetHostPort(_request.getServerName(), field.getIntValue());
+                else if (_host instanceof PossiblyPartialHostPort && _host.getPort() <= 0)
+                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), field.getIntValue());
+            }
         }
 
         public void handleHttps(HttpField field)
         {
-            if (_proto==null && ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue())))
+            if (_proto == null && ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue())))
                 _proto = HttpScheme.HTTPS.asString();
         }
 
@@ -600,19 +654,19 @@ public class ForwardedRequestCustomizer implements Customizer
                             break;
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        if (_host == null || _host instanceof XHostPort)
+                        if (_proxyAsAuthority && (_host == null || !(_host instanceof Rfc7239HostPort)))
                             _host = new Rfc7239HostPort(value);
                         break;
                     case "for":
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        if (_for == null || _for instanceof XHostPort)
+                        if (_for == null || !(_for instanceof Rfc7239HostPort))
                             _for = new Rfc7239HostPort(value);
                         break;
                     case "host":
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        if (_host == null || _host instanceof XHostPort)
+                        if (_host == null || !(_host instanceof Rfc7239HostPort))
                             _host = new Rfc7239HostPort(value);
                         break;
                     case "proto":
@@ -621,6 +675,8 @@ public class ForwardedRequestCustomizer implements Customizer
                             _protoRfc7239 = true;
                             _proto = value;
                         }
+                        break;
+                    default:
                         break;
                 }
             }

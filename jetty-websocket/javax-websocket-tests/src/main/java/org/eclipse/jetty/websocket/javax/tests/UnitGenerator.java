@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.core.internal.Generator;
 public class UnitGenerator extends Generator
 {
     // Client side framing mask
-    private static final byte[] MASK = { 0x11, 0x22, 0x33, 0x44 };
+    private static final byte[] MASK = {0x11, 0x22, 0x33, 0x44};
     private final boolean applyMask;
 
     public UnitGenerator(Behavior behavior)
@@ -48,7 +48,9 @@ public class UnitGenerator extends Generator
     {
         int bufferLength = 0;
         for (Frame f : frames)
+        {
             bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
+        }
 
         ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
         generate(buffer, frames);

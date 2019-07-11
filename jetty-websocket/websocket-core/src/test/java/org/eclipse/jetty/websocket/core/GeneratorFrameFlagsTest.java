@@ -22,9 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
@@ -40,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 public class GeneratorFrameFlagsTest
 {
-    private static ByteBufferPool bufferPool = new MappedByteBufferPool();
+    private static WebSocketComponents components = new WebSocketComponents();
     private WebSocketCoreSession coreSession;
 
     public static Stream<Arguments> data()
@@ -63,9 +60,9 @@ public class GeneratorFrameFlagsTest
 
     public void setup(Frame invalidFrame)
     {
-        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry(), Behavior.SERVER);
-        exStack.negotiate(new DecoratedObjectFactory(), bufferPool, new LinkedList<>(), new LinkedList<>());
-        this.coreSession = new WebSocketCoreSession(new AbstractTestFrameHandler(), Behavior.CLIENT, Negotiated.from(exStack));
+        ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
+        exStack.negotiate(new LinkedList<>(), new LinkedList<>());
+        this.coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.CLIENT, Negotiated.from(exStack));
     }
 
     @ParameterizedTest
@@ -75,7 +72,7 @@ public class GeneratorFrameFlagsTest
         setup(invalidFrame);
 
         ByteBuffer buffer = ByteBuffer.allocate(100);
-        new Generator(bufferPool).generateWholeFrame(invalidFrame, buffer);
+        new Generator(components.getBufferPool()).generateWholeFrame(invalidFrame, buffer);
         assertThrows(ProtocolException.class, () -> coreSession.assertValidOutgoing(invalidFrame));
     }
 }

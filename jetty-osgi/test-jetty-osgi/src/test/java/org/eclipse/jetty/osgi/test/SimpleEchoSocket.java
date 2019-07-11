@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.test;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -46,13 +45,12 @@ public class SimpleEchoSocket
 
     public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException
     {
-        return this.closeLatch.await(duration,unit);
+        return this.closeLatch.await(duration, unit);
     }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        //System.out.printf("Connection closed: %d - %s%n",statusCode,reason);
         this.session = null;
         this.closeLatch.countDown(); // trigger latch
     }
@@ -60,18 +58,11 @@ public class SimpleEchoSocket
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
-        //System.out.printf("Got connect: %s%n",session);
         this.session = session;
         try
         {
-            Future<Void> fut;
-            //System.err.println("Sending Foo!");
-            fut = session.getRemote().sendStringByFuture("Foo");
-
-            fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
-            //System.err.println("Foo complete");
-
-            session.close(StatusCode.NORMAL,"I'm done");
+            session.getRemote().sendString("Foo");
+            session.close(StatusCode.NORMAL, "I'm done");
         }
         catch (Throwable t)
         {
@@ -82,6 +73,5 @@ public class SimpleEchoSocket
     @OnWebSocketMessage
     public void onMessage(String msg)
     {
-        //System.out.printf("Got msg: %s%n",msg);
     }
 }

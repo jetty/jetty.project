@@ -787,7 +787,7 @@ To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` file (this can 
 [source, xml, subs="{sub-order}"]
 ----
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN"
-          "http://www.eclipse.org/jetty/configure_9_3.dtd">
+          "https://www.eclipse.org/jetty/configure_9_3.dtd">
 <!-- Tweak SsslContextFactory Includes / Excludes -->
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
   <!-- Mitigate SLOTH Attack -->

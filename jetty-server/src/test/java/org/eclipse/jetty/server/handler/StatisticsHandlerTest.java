@@ -24,7 +24,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -41,10 +40,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StatisticsHandlerTest
 {
@@ -81,7 +82,7 @@ public class StatisticsHandlerTest
     @Test
     public void testRequest() throws Exception
     {
-        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
 
         _statsHandler.setHandler(new AbstractHandler()
         {
@@ -93,7 +94,6 @@ public class StatisticsHandlerTest
                 {
                     barrier[0].await();
                     barrier[1].await();
-
                 }
                 catch (Exception x)
                 {
@@ -105,8 +105,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         barrier[0].await();
@@ -120,7 +120,6 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
         assertEquals(1, _statsHandler.getDispatchedActiveMax());
-
 
         barrier[1].await();
         assertTrue(_latchHandler.await());
@@ -156,7 +155,6 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getDispatchedActive());
         assertEquals(1, _statsHandler.getDispatchedActiveMax());
 
-
         barrier[1].await();
         assertTrue(_latchHandler.await());
 
@@ -174,11 +172,10 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getResponses2xx());
     }
 
-
     @Test
     public void testTwoRequests() throws Exception
     {
-        final CyclicBarrier barrier[] = {new CyclicBarrier(3), new CyclicBarrier(3)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
         _statsHandler.setHandler(new AbstractHandler()
         {
@@ -201,9 +198,9 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
-    
+            "Host: localhost\r\n" +
+            "\r\n";
+
         _connector.executeRequest(request);
         _connector.executeRequest(request);
 
@@ -242,7 +239,7 @@ public class StatisticsHandlerTest
         final long dispatchTime = 10;
         final long requestTime = 50;
         final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
@@ -277,8 +274,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         barrier[0].await();
@@ -372,7 +369,7 @@ public class StatisticsHandlerTest
         final long dispatchTime = 10;
         final long timeout = 100;
         final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
@@ -411,8 +408,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         barrier[0].await();
@@ -486,9 +483,9 @@ public class StatisticsHandlerTest
     {
         final long dispatchTime = 10;
         final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-        final CyclicBarrier barrier[] = {new CyclicBarrier(2), new CyclicBarrier(2)};
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
         final CountDownLatch latch = new CountDownLatch(1);
-        
+
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
@@ -521,14 +518,13 @@ public class StatisticsHandlerTest
                     {
                     }
                 }
-
             }
         });
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         barrier[0].await();
@@ -633,8 +629,8 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "\r\n";
         _connector.executeRequest(request);
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));

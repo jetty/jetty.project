@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util.log;
 
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -37,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LogTest
 {
     private static Logger originalLogger;
-    private static Map<String,Logger> originalLoggers;
+    private static Map<String, Logger> originalLoggers;
 
     @BeforeAll
     public static void rememberOriginalLogger()
@@ -54,14 +53,14 @@ public class LogTest
         Log.getMutableLoggers().clear();
         Log.getMutableLoggers().putAll(originalLoggers);
     }
-    
+
     @Test
     public void testDefaultLogging()
     {
         Logger log = Log.getLogger(LogTest.class);
         log.info("Test default logging");
     }
-    
+
     @Test
     public void testNamedLogNamed_StdErrLog()
     {
@@ -101,20 +100,41 @@ public class LogTest
     public static Stream<Arguments> packageCases()
     {
         return Stream.of(
-                Arguments.of(null, ""),
-                Arguments.of("org.eclipse.Foo.\u0000", "oe.Foo"),
-                Arguments.of(".foo", "foo"),
-                Arguments.of(".bar.Foo", "b.Foo"),
-                Arguments.of("org...bar..Foo", "ob.Foo")
+            // null entry
+            Arguments.of(null, ""),
+            // empty entry
+            Arguments.of("", ""),
+            // all whitespace entry
+            Arguments.of("  \t  ", ""),
+            // bad / invalid characters
+            Arguments.of("org.eclipse.Foo.\u0000", "oe.Foo"),
+            Arguments.of("org.eclipse.\u20ac.Euro", "oe\u20ac.Euro"),
+            // bad package segments
+            Arguments.of(".foo", "foo"),
+            Arguments.of(".bar.Foo", "b.Foo"),
+            Arguments.of("org...bar..Foo", "ob.Foo"),
+            Arguments.of("org . . . bar . . Foo ", "ob.Foo"),
+            Arguments.of("org . . . bar . . Foo ", "ob.Foo"),
+            // long-ish classname
+            Arguments.of("org.eclipse.jetty.websocket.common.extensions.compress.DeflateFrameExtension", "oejwcec.DeflateFrameExtension"),
+            // internal class
+            Arguments.of("org.eclipse.jetty.foo.Bar$Internal", "oejf.Bar$Internal")
         );
     }
-    
+
     @ParameterizedTest
     @MethodSource("packageCases")
-    public void testCondensePackage(String input, String expected)
+    public void testCondensePackageViaLogger(String input, String expected)
     {
         StdErrLog log = new StdErrLog();
-        StdErrLog logger = (StdErrLog) log.newLogger(input);
+        StdErrLog logger = (StdErrLog)log.newLogger(input);
         assertThat("log[" + input + "] condenses to name", logger._abbrevname, is(expected));
+    }
+
+    @ParameterizedTest
+    @MethodSource("packageCases")
+    public void testCondensePackageDirect(String input, String expected)
+    {
+        assertThat("log[" + input + "] condenses to name", AbstractLogger.condensePackageString(input), is(expected));
     }
 }

@@ -28,15 +28,15 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 
 public class OneServletContextJmxStats
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
         // Add JMX tracking to Server
         server.addBean(new MBeanContainer(ManagementFactory
-                .getPlatformMBeanServer()));
+            .getPlatformMBeanServer()));
 
         ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 

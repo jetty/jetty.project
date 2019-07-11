@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.javax.server.examples;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpSession;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;

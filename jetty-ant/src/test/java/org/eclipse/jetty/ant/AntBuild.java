@@ -46,7 +46,7 @@ public class AntBuild
 
     private int _port;
     private String _host;
-    
+
     public AntBuild(String ant)
     {
         _ant = ant;
@@ -55,22 +55,22 @@ public class AntBuild
     private class AntBuildProcess implements Runnable
     {
         List<String[]> connList;
-        
+
         @Override
         public void run()
         {
             File buildFile = new File(_ant);
-            
+
             Project antProject = new Project();
             try
             {
                 antProject.setBaseDir(MavenTestingUtils.getBaseDir());
-                antProject.setUserProperty("ant.file",buildFile.getAbsolutePath());
+                antProject.setUserProperty("ant.file", buildFile.getAbsolutePath());
                 DefaultLogger logger = new DefaultLogger();
 
                 ConsoleParser parser = new ConsoleParser();
                 //connList = parser.newPattern(".*([0-9]+\\.[0-9]*\\.[0-9]*\\.[0-9]*):([0-9]*)",1);
-                connList = parser.newPattern("Jetty AntTask Started",1);
+                connList = parser.newPattern("Jetty AntTask Started", 1);
 
                 PipedOutputStream pos = new PipedOutputStream();
                 PipedInputStream pis = new PipedInputStream(pos);
@@ -78,9 +78,9 @@ public class AntBuild
                 PipedOutputStream pose = new PipedOutputStream();
                 PipedInputStream pise = new PipedInputStream(pose);
 
-                startPump("STDOUT",parser,pis);
-                startPump("STDERR",parser,pise);
-                
+                startPump("STDOUT", parser, pis);
+                startPump("STDERR", parser, pise);
+
                 logger.setErrorPrintStream(new PrintStream(pos));
                 logger.setOutputPrintStream(new PrintStream(pose));
                 logger.setMessageOutputLevel(Project.MSG_VERBOSE);
@@ -91,21 +91,20 @@ public class AntBuild
 
                 ProjectHelper helper = ProjectHelper.getProjectHelper();
 
-                antProject.addReference("ant.projectHelper",helper);
+                antProject.addReference("ant.projectHelper", helper);
 
-                helper.parse(antProject,buildFile);
+                helper.parse(antProject, buildFile);
 
                 antProject.executeTarget("jetty.run");
-            
-                parser.waitForDone(10000,TimeUnit.MILLISECONDS);
+
+                parser.waitForDone(10000, TimeUnit.MILLISECONDS);
             }
             catch (Exception e)
             {
                 antProject.fireBuildFinished(e);
             }
         }
-        
-        
+
         public void waitForStarted() throws Exception
         {
             while (connList == null || connList.isEmpty())
@@ -122,26 +121,25 @@ public class AntBuild
         _process = new Thread(abp);
 
         _process.start();
-        
+
         abp.waitForStarted();
-        
+
         // once this has returned we should have the connection info we need
         //_host = abp.getConnectionList().get(0)[0];
         //_port = Integer.parseInt(abp.getConnectionList().get(0)[1]);
-        
+
     }
-    
+
     public int getJettyPort()
     {
         return Integer.parseInt(System.getProperty("jetty.ant.server.port"));
     }
-    
+
     public String getJettyHost()
     {
         return System.getProperty("jetty.ant.server.host");
     }
-    
-    
+
     /**
      * Stop the jetty server
      */
@@ -159,7 +157,7 @@ public class AntBuild
 
         public List<String[]> newPattern(String exp, int cnt)
         {
-            ConsolePattern pat = new ConsolePattern(exp,cnt);
+            ConsolePattern pat = new ConsolePattern(exp, cnt);
             patterns.add(pat);
             count += cnt;
 
@@ -191,7 +189,7 @@ public class AntBuild
 
         public void waitForDone(long timeout, TimeUnit unit) throws InterruptedException
         {
-            getLatch().await(timeout,unit);
+            getLatch().await(timeout, unit);
         }
 
         private CountDownLatch getLatch()
@@ -239,9 +237,9 @@ public class AntBuild
 
     private void startPump(String mode, ConsoleParser parser, InputStream inputStream)
     {
-        ConsoleStreamer pump = new ConsoleStreamer(mode,inputStream);
+        ConsoleStreamer pump = new ConsoleStreamer(mode, inputStream);
         pump.setParser(parser);
-        Thread thread = new Thread(pump,"ConsoleStreamer/" + mode);
+        Thread thread = new Thread(pump, "ConsoleStreamer/" + mode);
         thread.start();
     }
 

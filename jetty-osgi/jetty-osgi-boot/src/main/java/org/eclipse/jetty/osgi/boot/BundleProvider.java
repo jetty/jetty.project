@@ -27,7 +27,7 @@ import org.osgi.framework.Bundle;
  */
 public interface BundleProvider
 {
-    public boolean bundleAdded (Bundle bundle) throws Exception;
-    
-    public boolean bundleRemoved (Bundle bundle) throws Exception;
+    public boolean bundleAdded(Bundle bundle) throws Exception;
+
+    public boolean bundleRemoved(Bundle bundle) throws Exception;
 }

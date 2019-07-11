@@ -112,7 +112,7 @@ public class InvokerUtilsTest
 
         public String sigByteArray(byte[] buf, @Name("offset") int offset, @Name("length") int len)
         {
-            return String.format("sigByteArray<%s,%d,%d>", buf == null?"<null>":("[" + buf.length + "]"), offset, len);
+            return String.format("sigByteArray<%s,%d,%d>", buf == null ? "<null>" : ("[" + buf.length + "]"), offset, len);
         }
 
         public String sigObjectArgs(A a, B b)
@@ -165,7 +165,7 @@ public class InvokerUtilsTest
     {
         Method method2 = ReflectUtils.findMethod(KeyValue.class, "onEntry", int.class, String.class);
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(int.class)
         };
@@ -182,7 +182,7 @@ public class InvokerUtilsTest
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(int.class)
         };
@@ -199,7 +199,7 @@ public class InvokerUtilsTest
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(int.class),
             new InvokerUtils.Arg(Boolean.class)
@@ -217,7 +217,7 @@ public class InvokerUtilsTest
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(Long.class),
             new InvokerUtils.Arg(int.class)
@@ -235,7 +235,7 @@ public class InvokerUtilsTest
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(Simple.class),
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(int.class)
@@ -253,7 +253,7 @@ public class InvokerUtilsTest
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(Simple.class),
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(Boolean.class),
@@ -273,7 +273,7 @@ public class InvokerUtilsTest
     {
         Method method = ReflectUtils.findMethod(NamedParams.class, "onMessage", String.class, String.class, int.class);
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(String.class, "fruit"),
             new InvokerUtils.Arg(String.class, "color"),
             new InvokerUtils.Arg(int.class, "cost")
@@ -291,7 +291,7 @@ public class InvokerUtilsTest
     {
         Method method = ReflectUtils.findMethod(NamedParams.class, "onMessage", String.class, String.class, int.class);
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(int.class, "cost"),
             new InvokerUtils.Arg(String.class, "fruit"),
             new InvokerUtils.Arg(String.class, "color")
@@ -310,7 +310,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigEmpty");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {};
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples);
@@ -323,7 +323,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigEmpty");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(File.class)
         };
 
@@ -338,7 +338,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigEmpty");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(File.class)
         };
 
@@ -353,7 +353,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStr");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(String.class)
         };
 
@@ -368,7 +368,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStr");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(File.class),
             new InvokerUtils.Arg(String.class)
         };
@@ -384,7 +384,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStr");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(File.class)
         };
@@ -400,7 +400,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStrFile");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(File.class)
         };
@@ -416,7 +416,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStrFile");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(File.class),
             new InvokerUtils.Arg(String.class)
         };
@@ -432,7 +432,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStr");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(File.class)
         };
@@ -448,7 +448,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStr");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(File.class),
             new InvokerUtils.Arg(String.class)
         };
@@ -464,7 +464,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(File.class),
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(boolean.class, "fin")
@@ -481,7 +481,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(File.class),
             new InvokerUtils.Arg(String.class),
             new InvokerUtils.Arg(boolean.class)
@@ -498,7 +498,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(boolean.class, "fin"),
             new InvokerUtils.Arg(File.class),
             new InvokerUtils.Arg(String.class)
@@ -515,7 +515,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(boolean.class),
             new InvokerUtils.Arg(File.class),
             new InvokerUtils.Arg(String.class)
@@ -532,7 +532,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");
 
-        InvokerUtils.Arg callingArgs[] = new InvokerUtils.Arg[] {
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
             new InvokerUtils.Arg(boolean.class, "fin"),
             new InvokerUtils.Arg(File.class),
             new InvokerUtils.Arg(String.class)

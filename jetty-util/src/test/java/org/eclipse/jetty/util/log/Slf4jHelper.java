@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.net.MalformedURLException;
@@ -28,6 +26,8 @@ import java.net.URLClassLoader;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 public final class Slf4jHelper
 {
     public static ClassLoader createTestClassLoader(ClassLoader parentClassLoader) throws MalformedURLException
@@ -35,7 +35,7 @@ public final class Slf4jHelper
         File testJarDir = MavenTestingUtils.getTargetFile("test-jars");
         assumeTrue(testJarDir.exists()); // trigger @Ignore if dir not there
 
-        File jarfiles[] = testJarDir.listFiles(new FileFilter()
+        File[] jarfiles = testJarDir.listFiles(new FileFilter()
         {
             public boolean accept(File path)
             {
@@ -49,13 +49,13 @@ public final class Slf4jHelper
 
         assumeTrue(jarfiles.length > 0); // trigger @Ignore if no jar files.
 
-        URL urls[] = new URL[jarfiles.length];
+        URL[] urls = new URL[jarfiles.length];
         for (int i = 0; i < jarfiles.length; i++)
         {
             urls[i] = jarfiles[i].toURI().toURL();
             // System.out.println("Adding test-jar => " + urls[i]);
         }
 
-        return new URLClassLoader(urls,parentClassLoader);
+        return new URLClassLoader(urls, parentClassLoader);
     }
 }

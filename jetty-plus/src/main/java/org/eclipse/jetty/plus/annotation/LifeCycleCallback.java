@@ -21,31 +21,49 @@ package org.eclipse.jetty.plus.annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.IntrospectionUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 
-
-
 /**
  * LifeCycleCallback
- *
- *
+ * 
+ * Holds information about a class and method
+ * that has either been configured in web.xml to have postconstruct or
+ * predestroy callbacks, or has the equivalent annotations.
  */
 public abstract class LifeCycleCallback
 {
-    public static final Object[] __EMPTY_ARGS = new Object[] {};
+    public static final Object[] __EMPTY_ARGS = new Object[]{};
     private Method _target;
-    private Class<?> _targetClass;
-    private String _className;
-    private String _methodName;
+    private Class<?> _targetClass; //Not final so we can do lazy load
+    private final String _className;
+    private final String _methodName;
 
-
-    public LifeCycleCallback()
+    public LifeCycleCallback(String className, String methodName)
     {
+        _className = Objects.requireNonNull(className);
+        _methodName = Objects.requireNonNull(methodName);
     }
 
+    public LifeCycleCallback(Class<?> clazz, String methodName)
+    {
+        _targetClass = Objects.requireNonNull(clazz);
+        _methodName = Objects.requireNonNull(methodName);
+        try
+        {
+            Method method = IntrospectionUtil.findMethod(clazz, methodName, null, true, true);
+            validate(clazz, method);
+            _target = method;
+            _className = clazz.getName();
+        }
+        catch (NoSuchMethodException e)
+        {
+            throw new IllegalArgumentException("Method " + methodName + " not found on class " + clazz.getName());
+        }
+    }
 
     /**
      * @return the _targetClass
@@ -73,37 +91,10 @@ public abstract class LifeCycleCallback
         return _target;
     }
 
-
-    public void setTarget (String className, String methodName)
+    public void callback(Object instance)
+        throws SecurityException, NoSuchMethodException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException
     {
-        _className = className;
-        _methodName = methodName;
-    }
-
-    public void setTarget (Class<?> clazz, String methodName)
-    {
-        try
-        {
-            Method method = IntrospectionUtil.findMethod(clazz, methodName, null, true, true);
-            validate(clazz, method);
-            _target = method;
-            _targetClass = clazz;
-            _className = clazz.getCanonicalName();
-            _methodName = methodName;
-        }
-        catch (NoSuchMethodException e)
-        {
-            throw new IllegalArgumentException ("Method "+methodName+" not found on class "+clazz.getName());
-        }
-    }
-
-
-
-
-    public void callback (Object instance)
-    throws SecurityException, NoSuchMethodException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException
-    {
-        if (_target == null)
+        if (_target == null) //lazy load the target class
         {
             if (_targetClass == null)
                 _targetClass = Loader.loadClass(_className);
@@ -119,8 +110,6 @@ public abstract class LifeCycleCallback
         }
     }
 
-
-
     /**
      * Find a method of the given name either directly in the given
      * class, or inherited.
@@ -131,7 +120,7 @@ public abstract class LifeCycleCallback
      * @param checkInheritance false on first entry, true if a superclass is being introspected
      * @return the method
      */
-    public Method findMethod (Package pack, Class<?> clazz, String methodName, boolean checkInheritance)
+    public Method findMethod(Package pack, Class<?> clazz, String methodName, boolean checkInheritance)
     {
         if (clazz == null)
             return null;
@@ -142,7 +131,7 @@ public abstract class LifeCycleCallback
             if (checkInheritance)
             {
                 int modifiers = method.getModifiers();
-                if (Modifier.isProtected(modifiers) || Modifier.isPublic(modifiers) || (!Modifier.isPrivate(modifiers)&&(pack.equals(clazz.getPackage()))))
+                if (Modifier.isProtected(modifiers) || Modifier.isPublic(modifiers) || (!Modifier.isPrivate(modifiers) && (pack.equals(clazz.getPackage()))))
                     return method;
                 else
                     return findMethod(clazz.getPackage(), clazz.getSuperclass(), methodName, true);
@@ -156,31 +145,30 @@ public abstract class LifeCycleCallback
     }
 
     @Override
-    public boolean equals (Object o)
+    public int hashCode()
     {
-        if (o==null)
-            return false;
-        if (!(o instanceof LifeCycleCallback))
-            return false;
-        LifeCycleCallback callback = (LifeCycleCallback)o;
-
-        if (callback.getTargetClass()==null)
-        {
-            if (getTargetClass() != null)
-                return false;
-        }
-        else if(!callback.getTargetClass().equals(getTargetClass()))
-           return false;
-        if (callback.getTarget()==null)
-        {
-            if (getTarget() != null)
-                return false;
-        }
-        else if (!callback.getTarget().equals(getTarget()))
-            return false;
-
-        return true;
+        return Objects.hash(_className, _methodName);
     }
 
-    public abstract void validate (Class<?> clazz, Method m);
+    @Override
+    public boolean equals(Object o)
+    {
+        if (o == null)
+            return false;
+
+        if (this == o)
+            return true;
+
+        if (!LifeCycleCallback.class.isInstance(o))
+            return false;
+
+        LifeCycleCallback callback = (LifeCycleCallback)o;
+
+        if (getTargetClassName().equals(callback.getTargetClassName()) && getMethodName().equals(callback.getMethodName()))
+            return true;
+
+        return false;
+    }
+
+    public abstract void validate(Class<?> clazz, Method m);
 }

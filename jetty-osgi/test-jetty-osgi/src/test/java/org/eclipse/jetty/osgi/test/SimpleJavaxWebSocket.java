@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.fail;
-
 import java.util.concurrent.CountDownLatch;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -30,19 +27,21 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
+import static org.junit.Assert.fail;
+
 @ClientEndpoint(
-                subprotocols = { "chat"})
+    subprotocols = {"chat"})
 public class SimpleJavaxWebSocket
 {
     private Session session;
     public CountDownLatch messageLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
-    
+
     @OnError
-    public void onError (Throwable t)
+    public void onError(Throwable t)
     {
         //t.printStackTrace();
-        fail (t.getMessage());
+        fail(t.getMessage());
     }
 
     @OnClose

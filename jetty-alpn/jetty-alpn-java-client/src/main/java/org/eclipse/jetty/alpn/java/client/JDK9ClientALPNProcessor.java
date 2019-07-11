@@ -19,7 +19,6 @@
 package org.eclipse.jetty.alpn.java.client;
 
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
@@ -39,15 +38,15 @@ public class JDK9ClientALPNProcessor implements ALPNProcessor.Client
     @Override
     public void init()
     {
-        if (JavaVersion.VERSION.getPlatform()<9)
-            throw new IllegalStateException(this + " not applicable for java "+JavaVersion.VERSION);
+        if (JavaVersion.VERSION.getPlatform() < 9)
+            throw new IllegalStateException(this + " not applicable for java " + JavaVersion.VERSION);
     }
 
     @Override
     public boolean appliesTo(SSLEngine sslEngine)
     {
         Module module = sslEngine.getClass().getModule();
-        return module!=null && "java.base".equals(module.getName());
+        return module != null && "java.base".equals(module.getName());
     }
 
     @Override
@@ -59,7 +58,7 @@ public class JDK9ClientALPNProcessor implements ALPNProcessor.Client
         sslParameters.setApplicationProtocols(protocols.toArray(new String[protocols.size()]));
         sslEngine.setSSLParameters(sslParameters);
         ((DecryptedEndPoint)connection.getEndPoint()).getSslConnection()
-                .addHandshakeListener(new ALPNListener(alpn));
+            .addHandshakeListener(new ALPNListener(alpn));
     }
 
     private final class ALPNListener implements SslHandshakeListener

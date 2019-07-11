@@ -115,16 +115,16 @@ public class DeploymentErrorTest
         // Server handlers
         HandlerCollection handlers = new HandlerCollection();
         handlers.setHandlers(new Handler[]
-                {contexts, new DefaultHandler()});
+            {contexts, new DefaultHandler()});
         server.setHandler(handlers);
 
         // Setup Configurations
         Configurations.setServerDefault(server)
-                .add("org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                        "org.eclipse.jetty.plus.webapp.PlusConfiguration",
-                        "org.eclipse.jetty.annotations.AnnotationConfiguration",
-                        TrackedConfiguration.class.getName()
-                        );
+            .add("org.eclipse.jetty.plus.webapp.EnvConfiguration",
+                "org.eclipse.jetty.plus.webapp.PlusConfiguration",
+                "org.eclipse.jetty.annotations.AnnotationConfiguration",
+                TrackedConfiguration.class.getName()
+            );
 
         server.start();
         return docroots;
@@ -163,7 +163,8 @@ public class DeploymentErrorTest
     @Test
     public void testInitial_BadApp_UnavailableTrue()
     {
-        assertThrows(NoClassDefFoundError.class, ()-> {
+        assertThrows(NoClassDefFoundError.class, () ->
+        {
             startServer(docroots -> copyBadApp("badapp.xml", docroots));
         });
 
@@ -190,12 +191,12 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
-        WebAppContext webapp = (WebAppContext) context;
+        WebAppContext webapp = (WebAppContext)context;
         TrackedConfiguration trackedConfiguration = null;
         for (Configuration webappConfig : webapp.getWebAppConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
-                trackedConfiguration = (TrackedConfiguration) webappConfig;
+                trackedConfiguration = (TrackedConfiguration)webappConfig;
         }
         assertThat("webapp TrackedConfiguration exists", trackedConfiguration, notNullValue());
         assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));
@@ -236,12 +237,12 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isStarted", context.isStarted(), is(false));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(true));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
-        WebAppContext webapp = (WebAppContext) context;
+        WebAppContext webapp = (WebAppContext)context;
         TrackedConfiguration trackedConfiguration = null;
         for (Configuration webappConfig : webapp.getWebAppConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
-                trackedConfiguration = (TrackedConfiguration) webappConfig;
+                trackedConfiguration = (TrackedConfiguration)webappConfig;
         }
         assertThat("webapp TrackedConfiguration exists", trackedConfiguration, notNullValue());
         assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));
@@ -282,12 +283,12 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
-        WebAppContext webapp = (WebAppContext) context;
+        WebAppContext webapp = (WebAppContext)context;
         TrackedConfiguration trackedConfiguration = null;
         for (Configuration webappConfig : webapp.getWebAppConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
-                trackedConfiguration = (TrackedConfiguration) webappConfig;
+                trackedConfiguration = (TrackedConfiguration)webappConfig;
         }
         assertThat("webapp TrackedConfiguration exists", trackedConfiguration, notNullValue());
         assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));

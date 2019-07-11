@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -117,7 +116,7 @@ public class SslBytesServerTest extends SslBytesTest
         sslFlushes.set(0);
         httpParses.set(0);
         serverEndPoint.set(null);
-        
+
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
         sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
@@ -133,7 +132,7 @@ public class SslBytesServerTest extends SslBytesTest
                     @Override
                     protected HttpParser newHttpParser(HttpCompliance compliance)
                     {
-                        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(),compliance)
+                        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance)
                         {
                             @Override
                             public boolean parseNext(ByteBuffer buffer)
@@ -187,12 +186,12 @@ public class SslBytesServerTest extends SslBytesTest
             }
         };
 
-        ServerConnector connector = new ServerConnector(server, null,null,null,1,1,sslFactory, httpFactory)
+        ServerConnector connector = new ServerConnector(server, null, null, null, 1, 1, sslFactory, httpFactory)
         {
             @Override
             protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                ChannelEndPoint endp = super.newEndPoint(channel,selectSet,key);
+                ChannelEndPoint endp = super.newEndPoint(channel, selectSet, key);
                 serverEndPoint.set(endp);
                 return endp;
             }
@@ -484,10 +483,10 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        if (record!=null)
+        if (record != null)
         {
-            assertEquals(record.getType(),Type.ALERT);
-            
+            assertEquals(record.getType(), Type.ALERT);
+
             // Now should be a raw close
             record = proxy.readFromServer();
             assertNull(record, String.valueOf(record));
@@ -582,8 +581,8 @@ public class SslBytesServerTest extends SslBytesTest
         threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
@@ -620,8 +619,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
@@ -671,7 +670,9 @@ public class SslBytesServerTest extends SslBytesTest
         // Client Hello
         TLSRecord record = proxy.readFromClient();
         for (byte b : record.getBytes())
+        {
             proxy.flushToServer(5, b);
+        }
 
         // Server Hello + Certificate + Server Done
         record = proxy.readFromServer();
@@ -680,17 +681,23 @@ public class SslBytesServerTest extends SslBytesTest
         // Client Key Exchange
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-            proxy.flushToServer(5,b);
+        {
+            proxy.flushToServer(5, b);
+        }
 
         // Change Cipher Spec
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
+        {
             proxy.flushToServer(5, b);
+        }
 
         // Client Done
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
+        {
             proxy.flushToServer(5, b);
+        }
 
         // Change Cipher Spec
         record = proxy.readFromServer();
@@ -705,8 +712,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
@@ -716,7 +723,9 @@ public class SslBytesServerTest extends SslBytesTest
         // Application data
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
+        {
             proxy.flushToServer(5, b);
+        }
         assertNull(request.get(1, TimeUnit.SECONDS));
 
         // Application data
@@ -747,7 +756,9 @@ public class SslBytesServerTest extends SslBytesTest
         // Close Alert
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
+        {
             proxy.flushToServer(5, b);
+        }
         // Socket close
         record = proxy.readFromClient();
         assertNull(record, String.valueOf(record));
@@ -756,10 +767,10 @@ public class SslBytesServerTest extends SslBytesTest
         // Socket close
         record = proxy.readFromServer();
         // Raw close or alert
-        if (record!=null)
+        if (record != null)
         {
-            assertEquals(record.getType(),Type.ALERT);
-            
+            assertEquals(record.getType(), Type.ALERT);
+
             // Now should be a raw close
             record = proxy.readFromServer();
             assertNull(record, String.valueOf(record));
@@ -779,8 +790,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
@@ -812,10 +823,10 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        if (record!=null)
+        if (record != null)
         {
-            assertEquals(record.getType(),Type.ALERT);
-            
+            assertEquals(record.getType(), Type.ALERT);
+
             // Now should be a raw close
             record = proxy.readFromServer();
             assertNull(record, String.valueOf(record));
@@ -850,8 +861,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
@@ -883,10 +894,10 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        if (record!=null)
+        if (record != null)
         {
-            assertEquals(record.getType(),Type.ALERT);
-            
+            assertEquals(record.getType(), Type.ALERT);
+
             // Now should be a raw close
             record = proxy.readFromServer();
             assertNull(record, String.valueOf(record));
@@ -916,8 +927,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
@@ -941,10 +952,10 @@ public class SslBytesServerTest extends SslBytesTest
         // Expect raw close from server OR ALERT
         record = proxy.readFromServer();
         // TODO check that this is OK?
-        if (record!=null)
+        if (record != null)
         {
-            assertEquals(record.getType(),Type.ALERT);
-            
+            assertEquals(record.getType(), Type.ALERT);
+
             // Now should be a raw close
             record = proxy.readFromServer();
             assertNull(record, String.valueOf(record));
@@ -971,8 +982,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
@@ -994,10 +1005,10 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Expect raw close from server
         record = proxy.readFromServer();
-        if (record!=null)
+        if (record != null)
         {
-            assertEquals(record.getType(),Type.ALERT);
-            
+            assertEquals(record.getType(), Type.ALERT);
+
             // Now should be a raw close
             record = proxy.readFromServer();
             assertNull(record, String.valueOf(record));
@@ -1028,8 +1039,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET /echo HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET /echo HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Content-Length: " + content.length() + "\r\n" +
                     "\r\n" +
@@ -1083,8 +1094,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET /echo_suppress_exception HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET /echo_suppress_exception HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Content-Length: " + content.length() + "\r\n" +
                     "\r\n" +
@@ -1140,8 +1151,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n").getBytes(StandardCharsets.UTF_8));
             clientOutput.flush();
@@ -1182,10 +1193,10 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        if (record!=null)
+        if (record != null)
         {
-            assertEquals(record.getType(),Type.ALERT);
-            
+            assertEquals(record.getType(), Type.ALERT);
+
             // Now should be a raw close
             record = proxy.readFromServer();
             assertNull(record, String.valueOf(record));
@@ -1212,8 +1223,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "POST / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "POST / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Content-Type: text/plain\r\n" +
                     "Content-Length: " + content.length() + "\r\n" +
@@ -1274,8 +1285,8 @@ public class SslBytesServerTest extends SslBytesTest
         Future<Object> request = threadPool.submit(() ->
         {
             OutputStream clientOutput = client.getOutputStream();
-            clientOutput.write(("" +
-                    "POST / HTTP/1.1\r\n" +
+            clientOutput.write((
+                "POST / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Content-Type: text/plain\r\n" +
                     "Content-Length: " + content.length() + "\r\n" +
@@ -1353,8 +1364,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Write only part of the body
         automaticProxyFlow = proxy.startAutomaticFlow();
-        clientOutput.write(("" +
-                "POST / HTTP/1.1\r\n" +
+        clientOutput.write((
+            "POST / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
@@ -1376,12 +1387,13 @@ public class SslBytesServerTest extends SslBytesTest
         proxy.flushToServer(record);
 
         // Renegotiation not allowed, server has closed
-        loop: while(true)
+        loop:
+        while (true)
         {
             record = proxy.readFromServer();
-            if (record==null)
+            if (record == null)
                 break;
-            switch(record.getType())
+            switch (record.getType())
             {
                 case APPLICATION:
                     fail("application data not allows after renegotiate");
@@ -1428,8 +1440,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Write only part of the body
         automaticProxyFlow = proxy.startAutomaticFlow();
-        clientOutput.write(("" +
-                "POST / HTTP/1.1\r\n" +
+        clientOutput.write((
+            "POST / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
@@ -1468,7 +1480,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Trigger a read to have the client write the final renegotiation steps
         client.setSoTimeout(100);
 
-        assertThrows(SocketTimeoutException.class, ()->client.getInputStream().read());
+        assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
 
         // Renegotiation Change Cipher
         record = proxy.readFromClient();
@@ -1547,8 +1559,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Write only part of the body
         automaticProxyFlow = proxy.startAutomaticFlow();
-        clientOutput.write(("" +
-                "POST / HTTP/1.1\r\n" +
+        clientOutput.write((
+            "POST / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
@@ -1593,7 +1605,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Trigger a read to have the client write the final renegotiation steps
         client.setSoTimeout(100);
 
-        assertThrows(SocketTimeoutException.class, ()->client.getInputStream().read());
+        assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
 
         // Renegotiation Change Cipher
         record = proxy.readFromClient();
@@ -1686,8 +1698,8 @@ public class SslBytesServerTest extends SslBytesTest
         Arrays.fill(data, (byte)'Y');
         String content = new String(data, StandardCharsets.UTF_8);
         automaticProxyFlow = proxy.startAutomaticFlow();
-        clientOutput.write(("" +
-                "POST / HTTP/1.1\r\n" +
+        clientOutput.write((
+            "POST / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + content.length() + "\r\n" +
@@ -1765,13 +1777,13 @@ public class SslBytesServerTest extends SslBytesTest
 
         idleHook = () ->
         {
-            if (latch.getCount()==0)
+            if (latch.getCount() == 0)
                 return;
             try
             {
                 // Send request
-                clientOutput.write(("" +
-                        "GET / HTTP/1.1\r\n" +
+                clientOutput.write((
+                    "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
                         "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
@@ -1856,9 +1868,9 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        if (record!=null)
+        if (record != null)
         {
-            assertEquals(record.getType(),Type.ALERT);
+            assertEquals(record.getType(), Type.ALERT);
             record = proxy.readFromServer();
         }
         assertNull(record);

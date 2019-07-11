@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.osgi.boot.jsp;
 
-
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.jasper.ContainerTldBundleDiscoverer;
 import org.osgi.framework.BundleActivator;
@@ -26,16 +25,16 @@ import org.osgi.framework.BundleContext;
 
 /**
  * FragmentActivator
- * 
+ *
  * Sets up support for jsp and jstl. All relevant jsp jars must also be installed
  * into the osgi environment.
- *  <p>
+ * <p>
  * Note that as this is part of a bundle fragment, this activator is NOT
  * called by the OSGi environment. Instead, the org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminTracker
  * simulates fragment activation and causes this class's start() method to
  * be called.
  * </p>
- *  <p>
+ * <p>
  * The package of this class MUST match the Bundle-SymbolicName of this fragment
  * in order for the PackageAdminTracker to find it.
  * </p>
@@ -43,7 +42,7 @@ import org.osgi.framework.BundleContext;
 public class FragmentActivator implements BundleActivator
 {
     /**
-     * 
+     *
      */
     @Override
     public void start(BundleContext context) throws Exception
@@ -51,11 +50,11 @@ public class FragmentActivator implements BundleActivator
         //set up some classes that will look for bundles with tlds that must be converted
         //to urls and treated as if they are on the Jetty container's classpath so that 
         //jasper can deal with them
-        ServerInstanceWrapper.addContainerTldBundleDiscoverer(new ContainerTldBundleDiscoverer());      
+        ServerInstanceWrapper.addContainerTldBundleDiscoverer(new ContainerTldBundleDiscoverer());
     }
 
     /**
-     * 
+     *
      */
     @Override
     public void stop(BundleContext context) throws Exception

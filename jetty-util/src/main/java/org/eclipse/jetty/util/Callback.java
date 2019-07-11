@@ -55,6 +55,7 @@ public interface Callback extends Invocable
 
     /**
      * <p>Callback invoked when the operation fails.</p>
+     *
      * @param x the reason for the operation failure
      */
     default void failed(Throwable x)
@@ -113,6 +114,7 @@ public interface Callback extends Invocable
 
     /**
      * Create a callback from the passed success and failure
+     *
      * @param success Called when the callback succeeds
      * @param failure Called when the callback fails
      * @return a new Callback
@@ -135,7 +137,9 @@ public interface Callback extends Invocable
         };
     }
 
-    /** Creaste a callback that runs completed when it succeeds or fails
+    /**
+     * Creaste a callback that runs completed when it succeeds or fails
+     *
      * @param completed The completion to run on success or failure
      * @return a new callback
      */
@@ -153,6 +157,7 @@ public interface Callback extends Invocable
     /**
      * Create a nested callback that runs completed after
      * completing the nested callback.
+     *
      * @param callback The nested callback
      * @param completed The completion to run after the nested callback is completed
      * @return a new callback.
@@ -171,9 +176,10 @@ public interface Callback extends Invocable
     /**
      * Create a nested callback that runs completed before
      * completing the nested callback.
+     *
      * @param callback The nested callback
      * @param completed The completion to run before the nested callback is completed. Any exceptions thrown
-     *                  from completed will result in a callback failure.
+     * from completed will result in a callback failure.
      * @return a new callback.
      */
     static Callback from(Runnable completed, Callback callback)
@@ -188,7 +194,7 @@ public interface Callback extends Invocable
                     completed.run();
                     callback.succeeded();
                 }
-                catch(Throwable t)
+                catch (Throwable t)
                 {
                     callback.failed(t);
                 }
@@ -201,7 +207,7 @@ public interface Callback extends Invocable
                 {
                     completed.run();
                 }
-                catch(Throwable t)
+                catch (Throwable t)
                 {
                     x.addSuppressed(t);
                 }
@@ -212,9 +218,10 @@ public interface Callback extends Invocable
 
     /**
      * Create a nested callback which always fails the nested callback on completion.
+     *
      * @param callback The nested callback
      * @param cause The cause to fail the nested callback, if the new callback is failed the reason
-     *             will be added to this cause as a suppressed exception.
+     * will be added to this cause as a suppressed exception.
      * @return a new callback.
      */
     static Callback from(Callback callback, Throwable cause)
@@ -236,6 +243,32 @@ public interface Callback extends Invocable
         };
     }
 
+    /**
+     * Create a callback which combines two other callbacks and will succeed or fail them both.
+     * @param callback1 The first callback
+     * @param callback2 The second callback
+     * @return a new callback.
+     */
+    static Callback from(Callback callback1, Callback callback2)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                callback1.succeeded();
+                callback2.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                callback1.failed(x);
+                callback2.failed(x);
+            }
+        };
+    }
+
     class Completing implements Callback
     {
         @Override
@@ -249,10 +282,10 @@ public interface Callback extends Invocable
         {
             completed();
         }
-        
+
         public void completed()
         {
-        }  
+        }
     }
 
     /**

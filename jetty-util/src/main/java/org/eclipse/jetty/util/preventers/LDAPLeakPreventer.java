@@ -25,14 +25,13 @@ package org.eclipse.jetty.util.preventers;
  * com.sun.jndi.ldap.connect.pool.timeout is set to a nonzero value, a daemon
  * thread is started which can pin a webapp classloader if it is the first to
  * load the LdapPoolManager.
- * 
- * Inspired by Tomcat JreMemoryLeakPrevention
  *
+ * Inspired by Tomcat JreMemoryLeakPrevention
  */
 public class LDAPLeakPreventer extends AbstractLeakPreventer
 {
-    /* ------------------------------------------------------------ */
-    /** 
+
+    /**
      * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
      */
     @Override
@@ -47,5 +46,4 @@ public class LDAPLeakPreventer extends AbstractLeakPreventer
             LOG.ignore(e);
         }
     }
-
 }

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.start.config;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
-
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -41,6 +39,8 @@ import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.StartIni;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.UsageException;
+
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * A Directory based {@link ConfigSource}.
@@ -81,17 +81,12 @@ public class DirConfigSource implements ConfigSource
 
     /**
      * Create DirConfigSource with specified identifier and directory.
-     * 
-     * @param id
-     *            the identifier for this {@link ConfigSource}
-     * @param dir
-     *            the directory for this {@link ConfigSource}
-     * @param weight
-     *            the configuration weight (used for search order)
-     * @param canHaveArgs
-     *            true if this directory can have start.ini or start.d entries. (false for directories like ${jetty.home}, for example)
-     * @throws IOException
-     *             if unable to load the configuration args
+     *
+     * @param id the identifier for this {@link ConfigSource}
+     * @param dir the directory for this {@link ConfigSource}
+     * @param weight the configuration weight (used for search order)
+     * @param canHaveArgs true if this directory can have start.ini or start.d entries. (false for directories like ${jetty.home}, for example)
+     * @throws IOException if unable to load the configuration args
      */
     public DirConfigSource(String id, Path dir, int weight, boolean canHaveArgs) throws IOException
     {
@@ -105,7 +100,7 @@ public class DirConfigSource implements ConfigSource
         if (canHaveArgs)
         {
             Path iniFile = dir.resolve("start.ini").normalize().toAbsolutePath();
-            
+
             try
             {
                 iniFile = iniFile.toRealPath();
@@ -113,8 +108,8 @@ public class DirConfigSource implements ConfigSource
                 {
                     StartIni ini = new StartIni(iniFile);
                     startInis.add(ini);
-                    args.addAll(ini.getLines(),iniFile);
-                    parseAllArgs(ini.getLines(),iniFile.toString());
+                    args.addAll(ini.getLines(), iniFile);
+                    parseAllArgs(ini.getLines(), iniFile.toString());
                 }
             }
             catch (NoSuchFileException ignore)
@@ -139,7 +134,7 @@ public class DirConfigSource implements ConfigSource
 
                 List<Path> paths = new ArrayList<>();
 
-                for (Path diniFile : Files.newDirectoryStream(startDdir,filter))
+                for (Path diniFile : Files.newDirectoryStream(startDdir, filter))
                 {
                     if (FS.canReadFile(diniFile))
                     {
@@ -147,26 +142,26 @@ public class DirConfigSource implements ConfigSource
                     }
                 }
 
-                Collections.sort(paths,new NaturalSort.Paths());
+                Collections.sort(paths, new NaturalSort.Paths());
 
                 for (Path diniFile : paths)
                 {
-                    StartLog.debug("Reading %s/start.d/%s - %s",id,diniFile.getFileName(),diniFile);
+                    StartLog.debug("Reading %s/start.d/%s - %s", id, diniFile.getFileName(), diniFile);
                     StartIni ini = new StartIni(diniFile);
                     startInis.add(ini);
-                    args.addAll(ini.getLines(),diniFile);
-                    parseAllArgs(ini.getLines(),diniFile.toString());
+                    args.addAll(ini.getLines(), diniFile);
+                    parseAllArgs(ini.getLines(), diniFile.toString());
                 }
             }
         }
     }
 
     @Override
-    public Set<StartIni> getStartInis() 
+    public Set<StartIni> getStartInis()
     {
         return startInis;
     }
-    
+
     private void parseAllArgs(List<String> lines, String origin)
     {
         for (String line : lines)
@@ -175,13 +170,13 @@ public class DirConfigSource implements ConfigSource
             int idx = line.indexOf('=');
             if (idx > 0)
             {
-                arg = line.substring(0,idx);
+                arg = line.substring(0, idx);
             }
             if (BANNED_ARGS.contains(arg))
             {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,origin);
+                throw new UsageException(ERR_BAD_ARG, "%s not allowed in %s", arg, origin);
             }
-            this.props.addPossibleProperty(line,origin);
+            this.props.addPossibleProperty(line, origin);
         }
     }
 
@@ -235,7 +230,7 @@ public class DirConfigSource implements ConfigSource
     @Override
     public String getProperty(String key)
     {
-        Prop prop = props.getProp(key,false);
+        Prop prop = props.getProp(key, false);
         if (prop == null)
         {
             return null;
@@ -260,7 +255,7 @@ public class DirConfigSource implements ConfigSource
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((dir == null)?0:dir.hashCode());
+        result = (prime * result) + ((dir == null) ? 0 : dir.hashCode());
         return result;
     }
 
@@ -272,6 +267,6 @@ public class DirConfigSource implements ConfigSource
     @Override
     public String toString()
     {
-        return String.format("%s[%s,%s,args.length=%d]",this.getClass().getSimpleName(),id,dir,getArgs().size());
+        return String.format("%s[%s,%s,args.length=%d]", this.getClass().getSimpleName(), id, dir, getArgs().size());
     }
 }

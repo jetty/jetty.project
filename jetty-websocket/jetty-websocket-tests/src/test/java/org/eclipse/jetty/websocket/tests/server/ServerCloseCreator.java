@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import java.util.concurrent.LinkedBlockingQueue;
-
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
@@ -60,7 +59,7 @@ public class ServerCloseCreator implements JettyWebSocketCreator
         {
             ServletContext context = req.getHttpServletRequest().getServletContext();
             WebSocketContainer container =
-                    (WebSocketContainer) context.getAttribute(WebSocketContainer.class.getName());
+                (WebSocketContainer)context.getAttribute(WebSocketContainer.class.getName());
             closeSocket = new ContainerEndpoint(container);
             resp.setAcceptedSubProtocol("container");
         }

@@ -27,20 +27,18 @@ public class HTTP2Cipher
 {
     public static final Comparator<String> COMPARATOR = new CipherComparator();
 
-    private final static Trie<Boolean> __blackProtocols = new ArrayTrie<>(6*5);
-    private final static Trie<Boolean> __blackCiphers = new ArrayTrie<>(275*40);
+    private static final Trie<Boolean> __blackProtocols = new ArrayTrie<>(6 * 5);
+    private static final Trie<Boolean> __blackCiphers = new ArrayTrie<>(275 * 40);
 
     static
     {
-        for (String p : new String[]
+        String[] protocols = {"TLSv1.2", "TLSv1.1", "TLSv1", "SSL", "SSLv2", "SSLv3"};
+        for (String p : protocols)
         {
-                "TLSv1.2","TLSv1.1", "TLSv1", "SSL", "SSLv2", "SSLv3"
-        })
-        {
-            __blackProtocols.put(p,Boolean.TRUE);
+            __blackProtocols.put(p, Boolean.TRUE);
         }
 
-        for (String c : new String[]
+        String[] ciphers =
         {
             "TLS_NULL_WITH_NULL_NULL",
             "TLS_RSA_WITH_NULL_MD5",
@@ -318,9 +316,10 @@ public class HTTP2Cipher
             "TLS_PSK_WITH_AES_256_CCM",
             "TLS_PSK_WITH_AES_128_CCM_8",
             "TLS_PSK_WITH_AES_256_CCM_8"
-        })
+        };
+        for (String c : ciphers)
         {
-            __blackCiphers.put(c,Boolean.TRUE);
+            __blackCiphers.put(c, Boolean.TRUE);
         }
     }
 
@@ -344,9 +343,9 @@ public class HTTP2Cipher
         @Override
         public int compare(String c1, String c2)
         {
-            boolean b1=isBlackListCipher(c1);
-            boolean b2=isBlackListCipher(c2);
-            if (b1==b2)
+            boolean b1 = isBlackListCipher(c1);
+            boolean b2 = isBlackListCipher(c2);
+            if (b1 == b2)
                 return 0;
             if (b1)
                 return 1;

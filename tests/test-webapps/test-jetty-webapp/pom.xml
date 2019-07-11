@@ -141,6 +141,7 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlets</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -223,36 +224,36 @@
       <id>precompile-jsp</id>
       <build>
         <plugins>
-         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-jspc-maven-plugin</artifactId>
-          <version>${project.version}</version>
-          <executions>
-            <execution>
-              <id>jspc</id>
-              <goals>
-                <goal>jspc</goal>
-              </goals>
-             <!-- example configuration
-              <configuration>
-                <includes>**/*.foo</includes>
-                <excludes>**/*.fff</excludes>
-                <sourceVersion>1.8</sourceVersion>
-                <targetVersion>1.8</targetVersion>
-              </configuration>
-              -->
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-war-plugin</artifactId>
-          <configuration>
-            <webXml>${basedir}/target/web.xml</webXml>
-          </configuration>
-        </plugin>
-       </plugins>
-     </build>
+          <plugin>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-jspc-maven-plugin</artifactId>
+            <version>${project.version}</version>
+            <executions>
+              <execution>
+                <id>jspc</id>
+                <goals>
+                  <goal>jspc</goal>
+                </goals>
+                <!-- example configuration
+                 <configuration>
+                   <includes>**/*.foo</includes>
+                   <excludes>**/*.fff</excludes>
+                   <sourceVersion>1.8</sourceVersion>
+                   <targetVersion>1.8</targetVersion>
+                 </configuration>
+                 -->
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <configuration>
+              <webXml>${basedir}/target/web.xml</webXml>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>

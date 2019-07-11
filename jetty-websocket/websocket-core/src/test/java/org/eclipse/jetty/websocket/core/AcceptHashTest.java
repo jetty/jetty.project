@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.B64Code;
+import java.util.Base64;
+import java.util.stream.Stream;
+
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -34,9 +34,9 @@ public class AcceptHashTest
 {
     private static String hexAsKey(String hex)
     {
-        byte key[] = TypeUtil.fromHexString(hex);
+        byte[] key = TypeUtil.fromHexString(hex);
         assertThat("Key size of hex:[" + hex + "]", key.length, is(16));
-        return String.valueOf(B64Code.encode(key));
+        return Base64.getEncoder().encodeToString(key);
     }
 
     public static Stream<Arguments> data()

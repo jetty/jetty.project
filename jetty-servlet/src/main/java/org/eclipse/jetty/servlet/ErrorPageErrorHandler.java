@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -39,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
 {
-    public final static String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
+    public static final String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
     private static final Logger LOG = Log.getLogger(ErrorPageErrorHandler.class);
 
     private enum PageLookupTechnique
@@ -54,7 +53,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     @Override
     public String getErrorPage(HttpServletRequest request)
     {
-        String error_page = null;
+        String errorPage = null;
 
         PageLookupTechnique pageSource = null;
 
@@ -62,23 +61,23 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         Throwable th = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
 
         // Walk the cause hierarchy
-        while (error_page == null && th != null)
+        while (errorPage == null && th != null)
         {
             pageSource = PageLookupTechnique.THROWABLE;
 
             Class<?> exClass = th.getClass();
-            error_page = _errorPages.get(exClass.getName());
+            errorPage = _errorPages.get(exClass.getName());
 
             // walk the inheritance hierarchy
-            while (error_page == null)
+            while (errorPage == null)
             {
                 exClass = exClass.getSuperclass();
                 if (exClass == null)
                     break;
-                error_page = _errorPages.get(exClass.getName());
+                errorPage = _errorPages.get(exClass.getName());
             }
 
-            if (error_page != null)
+            if (errorPage != null)
                 matchedThrowable = exClass;
 
             th = (th instanceof ServletException) ? ((ServletException)th).getRootCause() : null;
@@ -86,7 +85,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
         Integer errorStatusCode = null;
 
-        if (error_page == null)
+        if (errorPage == null)
         {
             pageSource = PageLookupTechnique.STATUS_CODE;
 
@@ -94,17 +93,17 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             errorStatusCode = (Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
             if (errorStatusCode != null)
             {
-                error_page = _errorPages.get(Integer.toString(errorStatusCode));
+                errorPage = _errorPages.get(Integer.toString(errorStatusCode));
 
                 // if still not found
-                if (error_page == null)
+                if (errorPage == null)
                 {
                     // look for an error code range match.
                     for (ErrorCodeRange errCode : _errorPageList)
                     {
                         if (errCode.isInRange(errorStatusCode))
                         {
-                            error_page = errCode.getUri();
+                            errorPage = errCode.getUri();
                             break;
                         }
                     }
@@ -113,10 +112,10 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         }
 
         // Try servlet 3.x global error page.
-        if (error_page == null)
+        if (errorPage == null)
         {
             pageSource = PageLookupTechnique.GLOBAL;
-            error_page = _errorPages.get(GLOBAL_ERROR_PAGE);
+            errorPage = _errorPages.get(GLOBAL_ERROR_PAGE);
         }
 
         if (LOG.isDebugEnabled())
@@ -125,7 +124,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             dbg.append("getErrorPage(");
             dbg.append(request.getMethod()).append(' ');
             dbg.append(request.getRequestURI());
-            dbg.append(") => error_page=").append(error_page);
+            dbg.append(") => error_page=").append(errorPage);
             switch (pageSource)
             {
                 case THROWABLE:
@@ -147,10 +146,12 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     dbg.append(" (from global default)");
                     LOG.debug(dbg.toString());
                     break;
+                default:
+                    throw new IllegalStateException(pageSource.toString());
             }
         }
 
-        return error_page;
+        return errorPage;
     }
 
     public Map<String, String> getErrorPages()
@@ -174,7 +175,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
      * or may be called directly
      *
      * @param exception The exception
-     * @param uri       The URI of the error page.
+     * @param uri The URI of the error page.
      */
     public void addErrorPage(Class<? extends Throwable> exception, String uri)
     {
@@ -187,7 +188,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
      * or may be called directly
      *
      * @param exceptionClassName The exception
-     * @param uri                The URI of the error page.
+     * @param uri The URI of the error page.
      */
     public void addErrorPage(String exceptionClassName, String uri)
     {
@@ -200,7 +201,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
      * or may be called directly.
      *
      * @param code The HTTP status code to match
-     * @param uri  The URI of the error page.
+     * @param uri The URI of the error page.
      */
     public void addErrorPage(int code, String uri)
     {
@@ -212,8 +213,8 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
      * This method is not available from web.xml and must be called directly.
      *
      * @param from The lowest matching status code
-     * @param to   The highest matching status code
-     * @param uri  The URI of the error page.
+     * @param to The highest matching status code
+     * @param uri The URI of the error page.
      */
     public void addErrorPage(int from, int to, String uri)
     {
@@ -234,7 +235,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         private String _uri;
 
         ErrorCodeRange(int from, int to, String uri)
-                throws IllegalArgumentException
+            throws IllegalArgumentException
         {
             if (from > to)
                 throw new IllegalArgumentException("from>to");

@@ -203,11 +203,10 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
 
-        Throwable t = assertThrows(ExecutionException.class, ()->connect.get(5, TimeUnit.SECONDS));
+        Throwable t = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));
         assertThat(t.getMessage(), containsString("Failed to upgrade to websocket:"));
         assertThat(t.getMessage(), containsString("400 Bad Request"));
     }
-
 
     @Test
     public void testNotAcceptingExtensions() throws Exception
@@ -239,7 +238,6 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         assertNull(extensionHeader.get(5, TimeUnit.SECONDS));
     }
-
 
     @Test
     public void testAcceptTwoExtensionsOfSameName() throws Exception

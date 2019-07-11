@@ -61,7 +61,7 @@ public class ValidationExtensionTest extends WebSocketTester
             {
                 List<ExtensionConfig> negotiatedExtensions = new ArrayList<>();
                 negotiatedExtensions.add(ExtensionConfig.parse(
-                        "@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame; incoming-utf8; outgoing-utf8"));
+                    "@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame; incoming-utf8; outgoing-utf8"));
                 negotiation.setNegotiatedExtensions(negotiatedExtensions);
 
                 return super.negotiate(negotiation);
@@ -80,7 +80,7 @@ public class ValidationExtensionTest extends WebSocketTester
     @Test
     public void testNonUtf8BinaryPayload() throws Exception
     {
-        byte[] nonUtf8Payload = { 0x7F, (byte)0xFF, (byte)0xFF };
+        byte[] nonUtf8Payload = {0x7F, (byte)0xFF, (byte)0xFF};
 
         try (Socket client = newClient(server.getLocalPort()))
         {
@@ -104,8 +104,8 @@ public class ValidationExtensionTest extends WebSocketTester
     public void testValidContinuationOnNonUtf8Boundary() throws Exception
     {
         // Testing with 4 byte UTF8 character "\uD842\uDF9F"
-        byte[] initialPayload = new byte[] { (byte)0xF0, (byte)0xA0 };
-        byte[] continuationPayload = new byte[] { (byte)0xAE, (byte)0x9F };
+        byte[] initialPayload = new byte[]{(byte)0xF0, (byte)0xA0};
+        byte[] continuationPayload = new byte[]{(byte)0xAE, (byte)0x9F};
 
         try (Socket client = newClient(server.getLocalPort()))
         {
@@ -135,8 +135,8 @@ public class ValidationExtensionTest extends WebSocketTester
     public void testInvalidContinuationOnNonUtf8Boundary() throws Exception
     {
         // Testing with 4 byte UTF8 character "\uD842\uDF9F"
-        byte[] initialPayload = new byte[] { (byte)0xF0, (byte)0xA0 };
-        byte[] incompleteContinuationPayload = new byte[] { (byte)0xAE };
+        byte[] initialPayload = new byte[]{(byte)0xF0, (byte)0xA0};
+        byte[] incompleteContinuationPayload = new byte[]{(byte)0xAE};
 
         try (Socket client = newClient(server.getLocalPort()))
         {

@@ -22,7 +22,6 @@ import java.net.URI;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -32,7 +31,6 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
-import javax.websocket.server.ServerContainer;
 
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -95,14 +93,14 @@ public class WebSocketServerExamplesTest
     }
 
     static Server _server;
+    static ServerConnector connector;
     static ServletContextHandler _context;
 
     @BeforeAll
     public static void setup() throws Exception
     {
         _server = new Server();
-        ServerConnector connector = new ServerConnector(_server);
-        connector.setPort(8080);
+        connector = new ServerConnector(_server);
         _server.addConnector(connector);
 
         _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -110,12 +108,15 @@ public class WebSocketServerExamplesTest
         _context.setSecurityHandler(getSecurityHandler("user", "password", "testRealm"));
         _server.setHandler(_context);
 
-        ServerContainer serverContainer = JavaxWebSocketServletContainerInitializer.configureContext(_context);
-        serverContainer.addEndpoint(MyAuthedSocket.class);
-        serverContainer.addEndpoint(StreamingEchoSocket.class);
-        serverContainer.addEndpoint(GetHttpSessionSocket.class);
+        JavaxWebSocketServletContainerInitializer.configure(_context, (context, container) ->
+        {
+            container.addEndpoint(MyAuthedSocket.class);
+            container.addEndpoint(StreamingEchoSocket.class);
+            container.addEndpoint(GetHttpSessionSocket.class);
+        });
 
         _server.start();
+        System.setProperty("org.eclipse.jetty.websocket.port", Integer.toString(connector.getLocalPort()));
     }
 
     @AfterAll
@@ -124,11 +125,12 @@ public class WebSocketServerExamplesTest
         _server.stop();
     }
 
-    private static SecurityHandler getSecurityHandler(String username, String password, String realm) {
+    private static SecurityHandler getSecurityHandler(String username, String password, String realm)
+    {
 
         HashLoginService loginService = new HashLoginService();
         UserStore userStore = new UserStore();
-        userStore.addUser(username, Credential.getCredential(password), new String[] {"websocket"});
+        userStore.addUser(username, Credential.getCredential(password), new String[]{"websocket"});
         loginService.setUserStore(userStore);
         loginService.setName(realm);
 
@@ -153,11 +155,11 @@ public class WebSocketServerExamplesTest
     public void testMyAuthedSocket() throws Exception
     {
         //HttpClient is configured for BasicAuthentication with the XmlHttpClientProvider
-        URI uri = URI.create("ws://localhost:8080/secured/socket");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/secured/socket");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();
-        try(Session session = clientContainer.connectToServer(clientEndpoint, uri))
+        try (Session session = clientContainer.connectToServer(clientEndpoint, uri))
         {
             session.getBasicRemote().sendText("hello world");
         }
@@ -170,11 +172,11 @@ public class WebSocketServerExamplesTest
     @Test
     public void testStreamingEchoSocket() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/echo");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();
-        try(Session session = clientContainer.connectToServer(clientEndpoint, uri))
+        try (Session session = clientContainer.connectToServer(clientEndpoint, uri))
         {
             session.getBasicRemote().sendText("hello world");
         }
@@ -187,11 +189,11 @@ public class WebSocketServerExamplesTest
     @Test
     public void testGetHttpSessionSocket() throws Exception
     {
-        URI uri = URI.create("ws://localhost:8080/example");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/example");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();
-        try(Session session = clientContainer.connectToServer(clientEndpoint, uri))
+        try (Session session = clientContainer.connectToServer(clientEndpoint, uri))
         {
             session.getBasicRemote().sendText("hello world");
         }

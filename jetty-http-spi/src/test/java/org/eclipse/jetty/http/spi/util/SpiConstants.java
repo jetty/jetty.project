@@ -19,15 +19,13 @@
 package org.eclipse.jetty.http.spi.util;
 
 /**
- * 
  * This class holds the constant required for test cases.
- *
  */
 public class SpiConstants
 {
 
     public static final int[] poolInfo =
-    { Pool.MAXIMUM_POOL_SIZE.getValue(), Pool.KEEP_ALIVE_TIME.getValue(), Pool.DEFAULT_WORK_QUEUE_SIZE.getValue() };
+        {Pool.MAXIMUM_POOL_SIZE.getValue(), Pool.KEEP_ALIVE_TIME.getValue(), Pool.DEFAULT_WORK_QUEUE_SIZE.getValue()};
 
     public static final String LOCAL_HOST = "localhost";
 

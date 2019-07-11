@@ -67,7 +67,7 @@ public abstract class HttpConnection implements IConnection
         HttpRequest httpRequest = (HttpRequest)request;
 
         ArrayList<Response.ResponseListener> listeners = new ArrayList<>(httpRequest.getResponseListeners());
-        
+
         httpRequest.sent();
         if (listener != null)
             listeners.add(listener);
@@ -79,12 +79,54 @@ public abstract class HttpConnection implements IConnection
             httpRequest.abort(result.failure);
     }
 
+    protected SendFailure send(HttpChannel channel, HttpExchange exchange)
+    {
+        // Forbid idle timeouts for the time window where
+        // the request is associated to the channel and sent.
+        // Use a counter to support multiplexed requests.
+        boolean send;
+        synchronized (this)
+        {
+            send = idleTimeoutGuard >= 0;
+            if (send)
+                ++idleTimeoutGuard;
+        }
+
+        if (send)
+        {
+            HttpRequest request = exchange.getRequest();
+            SendFailure result;
+            if (channel.associate(exchange))
+            {
+                channel.send();
+                result = null;
+            }
+            else
+            {
+                channel.release();
+                result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
+            }
+
+            synchronized (this)
+            {
+                --idleTimeoutGuard;
+                idleTimeoutStamp = System.nanoTime();
+            }
+
+            return result;
+        }
+        else
+        {
+            return new SendFailure(new TimeoutException(), true);
+        }
+    }
+
     protected void normalizeRequest(Request request)
     {
-        HttpVersion version = request.getVersion();
-        HttpFields headers = request.getHeaders();
-        ContentProvider content = request.getContent();
-        ProxyConfiguration.Proxy proxy = destination.getProxy();
+        final HttpVersion version = request.getVersion();
+        final HttpFields headers = request.getHeaders();
+        final ContentProvider content = request.getContent();
+        final ProxyConfiguration.Proxy proxy = destination.getProxy();
 
         // Make sure the path is there
         String path = request.getPath();
@@ -173,48 +215,6 @@ public abstract class HttpConnection implements IConnection
             Authentication.Result result = getHttpClient().getAuthenticationStore().findAuthenticationResult(uri);
             if (result != null)
                 result.apply(request);
-        }
-    }
-
-    protected SendFailure send(HttpChannel channel, HttpExchange exchange)
-    {
-        // Forbid idle timeouts for the time window where
-        // the request is associated to the channel and sent.
-        // Use a counter to support multiplexed requests.
-        boolean send;
-        synchronized (this)
-        {
-            send = idleTimeoutGuard >= 0;
-            if (send)
-                ++idleTimeoutGuard;
-        }
-
-        if (send)
-        {
-            HttpRequest request = exchange.getRequest();
-            SendFailure result;
-            if (channel.associate(exchange))
-            {
-                channel.send();
-                result = null;
-            }
-            else
-            {
-                channel.release();
-                result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
-            }
-
-            synchronized (this)
-            {
-                --idleTimeoutGuard;
-                idleTimeoutStamp = System.nanoTime();
-            }
-
-            return result;
-        }
-        else
-        {
-            return new SendFailure(new TimeoutException(), true);
         }
     }
 

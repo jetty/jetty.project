@@ -167,8 +167,8 @@ public class MultiPartCaptureTest
         {
             MultiPartFormInputStream parser = new MultiPartFormInputStream(in, multipartExpectations.contentType, config, outputDir.toFile());
 
-            multipartExpectations.checkParts(parser.getParts(),s->
-            { 
+            multipartExpectations.checkParts(parser.getParts(), s ->
+            {
                 try
                 {
                     return parser.getPart(s);
@@ -176,11 +176,11 @@ public class MultiPartCaptureTest
                 catch (Exception e)
                 {
                     throw new RuntimeException(e);
-                } 
+                }
             });
         }
     }
-    
+
     private MultipartConfigElement newMultipartConfigElement(Path path)
     {
         return new MultipartConfigElement(path.toString(), MAX_FILE_SIZE, MAX_REQUEST_SIZE, FILE_SIZE_THRESHOLD);
@@ -217,11 +217,11 @@ public class MultiPartCaptureTest
                         continue;
                     }
 
-                    String split[] = line.split("\\|");
+                    String[] split = line.split("\\|");
                     switch (split[0])
                     {
                         case "Request-Header":
-                            if(split[1].equalsIgnoreCase("Content-Type"))
+                            if (split[1].equalsIgnoreCase("Content-Type"))
                             {
                                 parsedContentType = split[2];
                             }
@@ -277,11 +277,10 @@ public class MultiPartCaptureTest
 
             String defaultCharset = UTF_8.toString();
             Part charSetPart = getPart.apply("_charset_");
-            if(charSetPart != null)
+            if (charSetPart != null)
             {
                 defaultCharset = IO.toString(charSetPart.getInputStream());
             }
-
 
             // Evaluate expected Contents
             for (NameValue expected : partContainsContents)
@@ -323,16 +322,16 @@ public class MultiPartCaptureTest
 
         private String getCharsetFromContentType(String contentType, String defaultCharset)
         {
-            if(StringUtil.isBlank(contentType))
+            if (StringUtil.isBlank(contentType))
             {
                 return defaultCharset;
             }
 
             QuotedStringTokenizer tok = new QuotedStringTokenizer(contentType, ";", false, false);
-            while(tok.hasMoreTokens())
+            while (tok.hasMoreTokens())
             {
                 String str = tok.nextToken().trim();
-                if(str.startsWith("charset="))
+                if (str.startsWith("charset="))
                 {
                     return str.substring("charset=".length());
                 }

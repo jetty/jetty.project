@@ -29,20 +29,19 @@ import org.eclipse.jetty.xml.XmlParser;
  * ExtraXmlDescriptorProcessor
  *
  * Saves literal XML snippets from web.xml.
- *
  */
 
 public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
 {
     private static final Logger LOG = Log.getLogger(ExtraXmlDescriptorProcessor.class);
-    
+
     private final StringBuilder _buffer = new StringBuilder();
     private final boolean _showOrigin;
     private String _origin;
 
-    public ExtraXmlDescriptorProcessor ()
+    public ExtraXmlDescriptorProcessor()
     {
-        _showOrigin=LOG.isDebugEnabled();
+        _showOrigin = LOG.isDebugEnabled();
         try
         {
             registerVisitor("env-entry", getClass().getMethod("saveSnippet", __signature));
@@ -60,29 +59,26 @@ public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
     @Override
     public void start(WebAppContext context, Descriptor descriptor)
     {
-        LOG.debug("process {}",descriptor);
-        _origin=("  <!-- "+descriptor+" -->\n");
+        LOG.debug("process {}", descriptor);
+        _origin = ("  <!-- " + descriptor + " -->\n");
     }
-
 
     @Override
-    public void end(WebAppContext context,Descriptor descriptor)
+    public void end(WebAppContext context, Descriptor descriptor)
     {
     }
 
-
-    public void saveSnippet (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
-    throws Exception
+    public void saveSnippet(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+        throws Exception
     {
-        LOG.debug("save {}",node.getTag());
+        LOG.debug("save {}", node.getTag());
         if (_showOrigin)
             _buffer.append(_origin);
         _buffer.append("  ").append(node.toString()).append("\n");
     }
-    
+
     public String getXML()
     {
         return _buffer.toString();
     }
-
 }

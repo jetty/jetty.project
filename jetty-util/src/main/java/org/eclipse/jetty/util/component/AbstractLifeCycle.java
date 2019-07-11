@@ -33,18 +33,22 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class AbstractLifeCycle implements LifeCycle
 {
     private static final Logger LOG = Log.getLogger(AbstractLifeCycle.class);
-    
-    public static final String STOPPED="STOPPED";
-    public static final String FAILED="FAILED";
-    public static final String STARTING="STARTING";
-    public static final String STARTED="STARTED";
-    public static final String STOPPING="STOPPING";
-    public static final String RUNNING="RUNNING";
 
-    private final CopyOnWriteArrayList<LifeCycle.Listener> _listeners=new CopyOnWriteArrayList<LifeCycle.Listener>();
+    public static final String STOPPED = "STOPPED";
+    public static final String FAILED = "FAILED";
+    public static final String STARTING = "STARTING";
+    public static final String STARTED = "STARTED";
+    public static final String STOPPING = "STOPPING";
+    public static final String RUNNING = "RUNNING";
+
+    private final CopyOnWriteArrayList<LifeCycle.Listener> _listeners = new CopyOnWriteArrayList<LifeCycle.Listener>();
     private final Object _lock = new Object();
-    private final int __FAILED = -1, __STOPPED = 0, __STARTING = 1, __STARTED = 2, __STOPPING = 3;
-    private volatile int _state = __STOPPED;
+    private static final int STATE_FAILED = -1;
+    private static final int STATE_STOPPED = 0;
+    private static final int STATE_STARTING = 1;
+    private static final int STATE_STARTED = 2;
+    private static final int STATE_STOPPING = 3;
+    private volatile int _state = STATE_STOPPED;
     private long _stopTimeout = 30000;
 
     protected void doStart() throws Exception
@@ -54,7 +58,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     protected void doStop() throws Exception
     {
     }
-    
+
     @Override
     public final void start() throws Exception
     {
@@ -62,7 +66,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         {
             try
             {
-                if (_state == __STARTED || _state == __STARTING)
+                if (_state == STATE_STARTED || _state == STATE_STARTING)
                     return;
                 setStarting();
                 doStart();
@@ -83,7 +87,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         {
             try
             {
-                if (_state == __STOPPING || _state == __STOPPED)
+                if (_state == STATE_STOPPING || _state == STATE_STOPPED)
                     return;
                 setStopping();
                 doStop();
@@ -102,37 +106,37 @@ public abstract class AbstractLifeCycle implements LifeCycle
     {
         final int state = _state;
 
-        return state == __STARTED || state == __STARTING;
+        return state == STATE_STARTED || state == STATE_STARTING;
     }
 
     @Override
     public boolean isStarted()
     {
-        return _state == __STARTED;
+        return _state == STATE_STARTED;
     }
 
     @Override
     public boolean isStarting()
     {
-        return _state == __STARTING;
+        return _state == STATE_STARTING;
     }
 
     @Override
     public boolean isStopping()
     {
-        return _state == __STOPPING;
+        return _state == STATE_STOPPING;
     }
 
     @Override
     public boolean isStopped()
     {
-        return _state == __STOPPED;
+        return _state == STATE_STOPPED;
     }
 
     @Override
     public boolean isFailed()
     {
-        return _state == __FAILED;
+        return _state == STATE_FAILED;
     }
 
     @Override
@@ -147,75 +151,95 @@ public abstract class AbstractLifeCycle implements LifeCycle
         _listeners.remove(listener);
     }
 
-    @ManagedAttribute(value="Lifecycle State for this instance", readonly=true)
+    @ManagedAttribute(value = "Lifecycle State for this instance", readonly = true)
     public String getState()
     {
-        switch(_state)
+        switch (_state)
         {
-            case __FAILED: return FAILED;
-            case __STARTING: return STARTING;
-            case __STARTED: return STARTED;
-            case __STOPPING: return STOPPING;
-            case __STOPPED: return STOPPED;
+            case STATE_FAILED:
+                return FAILED;
+            case STATE_STARTING:
+                return STARTING;
+            case STATE_STARTED:
+                return STARTED;
+            case STATE_STOPPING:
+                return STOPPING;
+            case STATE_STOPPED:
+                return STOPPED;
+            default:
+                return null;
         }
-        return null;
     }
 
     public static String getState(LifeCycle lc)
     {
-        if (lc.isStarting()) return STARTING;
-        if (lc.isStarted()) return STARTED;
-        if (lc.isStopping()) return STOPPING;
-        if (lc.isStopped()) return STOPPED;
+        if (lc.isStarting())
+            return STARTING;
+        if (lc.isStarted())
+            return STARTED;
+        if (lc.isStopping())
+            return STOPPING;
+        if (lc.isStopped())
+            return STOPPED;
         return FAILED;
     }
 
     private void setStarted()
     {
-        _state = __STARTED;
+        _state = STATE_STARTED;
         if (LOG.isDebugEnabled())
-            LOG.debug(STARTED+" @{}ms {}",Uptime.getUptime(),this);
+            LOG.debug(STARTED + " @{}ms {}", Uptime.getUptime(), this);
         for (Listener listener : _listeners)
+        {
             listener.lifeCycleStarted(this);
+        }
     }
 
     private void setStarting()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("starting {}",this);
-        _state = __STARTING;
+            LOG.debug("starting {}", this);
+        _state = STATE_STARTING;
         for (Listener listener : _listeners)
+        {
             listener.lifeCycleStarting(this);
+        }
     }
 
     private void setStopping()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("stopping {}",this);
-        _state = __STOPPING;
+            LOG.debug("stopping {}", this);
+        _state = STATE_STOPPING;
         for (Listener listener : _listeners)
+        {
             listener.lifeCycleStopping(this);
+        }
     }
 
     private void setStopped()
     {
-        _state = __STOPPED;
+        _state = STATE_STOPPED;
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {}",STOPPED,this);
+            LOG.debug("{} {}", STOPPED, this);
         for (Listener listener : _listeners)
+        {
             listener.lifeCycleStopped(this);
+        }
     }
 
     private void setFailed(Throwable th)
     {
-        _state = __FAILED;
+        _state = STATE_FAILED;
         if (LOG.isDebugEnabled())
-            LOG.warn(FAILED+" " + this+": "+th,th);
+            LOG.warn(FAILED + " " + this + ": " + th, th);
         for (Listener listener : _listeners)
-            listener.lifeCycleFailure(this,th);
+        {
+            listener.lifeCycleFailure(this, th);
+        }
     }
 
-    @ManagedAttribute(value="The stop timeout in milliseconds")
+    @ManagedAttribute(value = "The stop timeout in milliseconds")
     public long getStopTimeout()
     {
         return _stopTimeout;
@@ -225,26 +249,45 @@ public abstract class AbstractLifeCycle implements LifeCycle
     {
         this._stopTimeout = stopTimeout;
     }
-    
-    public static abstract class AbstractLifeCycleListener implements LifeCycle.Listener
+
+    public abstract static class AbstractLifeCycleListener implements LifeCycle.Listener
     {
-        @Override public void lifeCycleFailure(LifeCycle event, Throwable cause) {}
-        @Override public void lifeCycleStarted(LifeCycle event) {}
-        @Override public void lifeCycleStarting(LifeCycle event) {}
-        @Override public void lifeCycleStopped(LifeCycle event) {}
-        @Override public void lifeCycleStopping(LifeCycle event) {}
+        @Override
+        public void lifeCycleFailure(LifeCycle event, Throwable cause)
+        {
+        }
+
+        @Override
+        public void lifeCycleStarted(LifeCycle event)
+        {
+        }
+
+        @Override
+        public void lifeCycleStarting(LifeCycle event)
+        {
+        }
+
+        @Override
+        public void lifeCycleStopped(LifeCycle event)
+        {
+        }
+
+        @Override
+        public void lifeCycleStopping(LifeCycle event)
+        {
+        }
     }
-    
+
     @Override
     public String toString()
     {
         Class<?> clazz = getClass();
         String name = clazz.getSimpleName();
-        if ((name==null || name.length()==0) && clazz.getSuperclass()!=null)
+        if ((name == null || name.length() == 0) && clazz.getSuperclass() != null)
         {
             clazz = clazz.getSuperclass();
             name = clazz.getSimpleName();
         }
-        return String.format("%s@%x{%s}",name,hashCode(),getState());
+        return String.format("%s@%x{%s}", name, hashCode(), getState());
     }
 }

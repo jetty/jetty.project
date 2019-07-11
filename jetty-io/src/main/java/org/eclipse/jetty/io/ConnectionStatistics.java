@@ -213,7 +213,7 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out,indent,this,
+        Dumpable.dumpObjects(out, indent, this,
             String.format("connections=%s", _connections),
             String.format("durations=%s", _connectionsDuration),
             String.format("bytes in/out=%s/%s", getReceivedBytes(), getSentBytes()),

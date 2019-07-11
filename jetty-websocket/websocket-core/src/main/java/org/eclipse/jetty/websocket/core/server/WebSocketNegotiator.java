@@ -24,6 +24,7 @@ import java.util.function.Function;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
 public interface WebSocketNegotiator extends FrameHandler.Customizer
@@ -35,6 +36,8 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
     DecoratedObjectFactory getObjectFactory();
 
     ByteBufferPool getByteBufferPool();
+
+    WebSocketComponents getWebSocketComponents();
 
     static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate)
     {
@@ -50,7 +53,7 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
 
     static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate, FrameHandler.Customizer customizer)
     {
-        return new AbstractNegotiator(null, null, null, customizer)
+        return new AbstractNegotiator(null, customizer)
         {
             @Override
             public FrameHandler negotiate(Negotiation negotiation)
@@ -62,12 +65,10 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
 
     static WebSocketNegotiator from(
         Function<Negotiation, FrameHandler> negotiate,
-        WebSocketExtensionRegistry extensionRegistry,
-        DecoratedObjectFactory objectFactory,
-        ByteBufferPool bufferPool,
+        WebSocketComponents components,
         FrameHandler.Customizer customizer)
     {
-        return new AbstractNegotiator(extensionRegistry, objectFactory, bufferPool, customizer)
+        return new AbstractNegotiator(components, customizer)
         {
             @Override
             public FrameHandler negotiate(Negotiation negotiation)
@@ -79,51 +80,49 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
 
     abstract class AbstractNegotiator implements WebSocketNegotiator
     {
-        final WebSocketExtensionRegistry extensionRegistry;
-        final DecoratedObjectFactory objectFactory;
-        final ByteBufferPool bufferPool;
+        final WebSocketComponents components;
         final FrameHandler.Customizer customizer;
 
         public AbstractNegotiator()
         {
-            this(null, null, null, null);
+            this(null, null);
         }
 
-        public AbstractNegotiator(
-            WebSocketExtensionRegistry extensionRegistry,
-            DecoratedObjectFactory objectFactory,
-            ByteBufferPool bufferPool,
-            FrameHandler.Customizer customizer)
+        public AbstractNegotiator(WebSocketComponents components, FrameHandler.Customizer customizer)
         {
-            this.extensionRegistry = extensionRegistry == null?new WebSocketExtensionRegistry():extensionRegistry;
-            this.objectFactory = objectFactory == null?new DecoratedObjectFactory():objectFactory;
-            this.bufferPool = bufferPool;
+            this.components = components == null ? new WebSocketComponents() : components;
             this.customizer = customizer;
         }
 
         @Override
-        public void customize(FrameHandler.CoreSession coreSession)
+        public void customize(FrameHandler.Configuration configurable)
         {
             if (customizer != null)
-                customizer.customize(coreSession);
+                customizer.customize(configurable);
         }
 
         @Override
         public WebSocketExtensionRegistry getExtensionRegistry()
         {
-            return extensionRegistry;
+            return components.getExtensionRegistry();
         }
 
         @Override
         public DecoratedObjectFactory getObjectFactory()
         {
-            return objectFactory;
+            return components.getObjectFactory();
         }
 
         @Override
         public ByteBufferPool getByteBufferPool()
         {
-            return bufferPool;
+            return components.getBufferPool();
+        }
+
+        @Override
+        public WebSocketComponents getWebSocketComponents()
+        {
+            return components;
         }
 
         public FrameHandler.Customizer getCustomizer()

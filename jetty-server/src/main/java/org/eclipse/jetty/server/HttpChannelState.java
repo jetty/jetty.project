@@ -18,16 +18,10 @@
 
 package org.eclipse.jetty.server;
 
-import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
-import static javax.servlet.RequestDispatcher.ERROR_MESSAGE;
-import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -43,6 +37,11 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
+import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
+import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
+import static javax.servlet.RequestDispatcher.ERROR_MESSAGE;
+import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
+
 /**
  * Implementation of AsyncContext interface that holds the state of request-response cycle.
  */
@@ -50,7 +49,7 @@ public class HttpChannelState
 {
     private static final Logger LOG = Log.getLogger(HttpChannelState.class);
 
-    private final static long DEFAULT_TIMEOUT=Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT",30000L);
+    private static final long DEFAULT_TIMEOUT = Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
 
     /**
      * The state of the HttpChannel,used to control the overall lifecycle.
@@ -112,28 +111,28 @@ public class HttpChannelState
         READY           // isReady() was false, onContentAdded has been called
     }
 
-    private final Locker _locker=new Locker();
+    private final Locker _locker = new Locker();
     private final HttpChannel _channel;
     private List<AsyncListener> _asyncListeners;
     private State _state;
     private Async _async;
     private boolean _initial;
-    private AsyncRead _asyncRead=AsyncRead.IDLE;
+    private AsyncRead _asyncRead = AsyncRead.IDLE;
     private boolean _asyncWritePossible;
-    private long _timeoutMs=DEFAULT_TIMEOUT;
+    private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
 
     protected HttpChannelState(HttpChannel channel)
     {
-        _channel=channel;
-        _state=State.IDLE;
-        _async=Async.NOT_ASYNC;
-        _initial=true;
+        _channel = channel;
+        _state = State.IDLE;
+        _async = Async.NOT_ASYNC;
+        _initial = true;
     }
 
     public State getState()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             return _state;
         }
@@ -141,26 +140,26 @@ public class HttpChannelState
 
     public void addListener(AsyncListener listener)
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            if (_asyncListeners==null)
-                _asyncListeners=new ArrayList<>();
+            if (_asyncListeners == null)
+                _asyncListeners = new ArrayList<>();
             _asyncListeners.add(listener);
         }
     }
 
     public boolean hasListener(AsyncListener listener)
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            if (_asyncListeners==null)
+            if (_asyncListeners == null)
                 return false;
             for (AsyncListener l : _asyncListeners)
             {
-                if (l==listener)
+                if (l == listener)
                     return true;
 
-                if (l instanceof AsyncContextState.WrappedAsyncListener && ((AsyncContextState.WrappedAsyncListener)l).getListener()==listener)
+                if (l instanceof AsyncContextState.WrappedAsyncListener && ((AsyncContextState.WrappedAsyncListener)l).getListener() == listener)
                     return true;
             }
 
@@ -170,15 +169,15 @@ public class HttpChannelState
 
     public void setTimeout(long ms)
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            _timeoutMs=ms;
+            _timeoutMs = ms;
         }
     }
 
     public long getTimeout()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             return _timeoutMs;
         }
@@ -186,7 +185,7 @@ public class HttpChannelState
 
     public AsyncContextEvent getAsyncContextEvent()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             return _event;
         }
@@ -195,7 +194,7 @@ public class HttpChannelState
     @Override
     public String toString()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             return toStringLocked();
         }
@@ -212,16 +211,15 @@ public class HttpChannelState
             _asyncRead,
             _asyncWritePossible);
     }
-    
 
     private String getStatusStringLocked()
     {
-        return String.format("s=%s i=%b a=%s",_state,_initial,_async);
+        return String.format("s=%s i=%b a=%s", _state, _initial, _async);
     }
 
     public String getStatusString()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             return getStatusStringLocked();
         }
@@ -232,16 +230,16 @@ public class HttpChannelState
      */
     protected Action handling()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("handling {}",toStringLocked());
-            
-            switch(_state)
+                LOG.debug("handling {}", toStringLocked());
+
+            switch (_state)
             {
                 case IDLE:
-                    _initial=true;
-                    _state=State.DISPATCHED;
+                    _initial = true;
+                    _state = State.DISPATCHED;
                     return Action.DISPATCH;
 
                 case COMPLETING:
@@ -252,12 +250,12 @@ public class HttpChannelState
                     switch (_asyncRead)
                     {
                         case POSSIBLE:
-                            _state=State.ASYNC_IO;
-                            _asyncRead=AsyncRead.PRODUCING;
+                            _state = State.ASYNC_IO;
+                            _asyncRead = AsyncRead.PRODUCING;
                             return Action.READ_PRODUCE;
                         case READY:
-                            _state=State.ASYNC_IO;
-                            _asyncRead=AsyncRead.IDLE;
+                            _state = State.ASYNC_IO;
+                            _asyncRead = AsyncRead.IDLE;
                             return Action.READ_CALLBACK;
                         case REGISTER:
                         case PRODUCING:
@@ -270,35 +268,34 @@ public class HttpChannelState
 
                     if (_asyncWritePossible)
                     {
-                        _state=State.ASYNC_IO;
-                        _asyncWritePossible=false;
+                        _state = State.ASYNC_IO;
+                        _asyncWritePossible = false;
                         return Action.WRITE_CALLBACK;
                     }
 
-                    switch(_async)
+                    switch (_async)
                     {
                         case COMPLETE:
-                            _state=State.COMPLETING;
+                            _state = State.COMPLETING;
                             return Action.COMPLETE;
                         case DISPATCH:
-                            _state=State.DISPATCHED;
-                            _async=Async.NOT_ASYNC;
+                            _state = State.DISPATCHED;
+                            _async = Async.NOT_ASYNC;
                             return Action.ASYNC_DISPATCH;
                         case EXPIRED:
                         case ERRORED:
-                            _state=State.DISPATCHED;
-                            _async=Async.NOT_ASYNC;
+                            _state = State.DISPATCHED;
+                            _async = Async.NOT_ASYNC;
                             return Action.ERROR_DISPATCH;
                         case STARTED:
                         case EXPIRING:
                         case ERRORING:
-                            _state=State.ASYNC_WAIT;
+                            _state = State.ASYNC_WAIT;
                             return Action.NOOP;
                         case NOT_ASYNC:
                         default:
                             throw new IllegalStateException(getStatusStringLocked());
                     }
-
 
                 case ASYNC_ERROR:
                     return Action.ASYNC_ERROR;
@@ -309,7 +306,6 @@ public class HttpChannelState
                 case UPGRADED:
                 default:
                     throw new IllegalStateException(getStatusStringLocked());
-
             }
         }
     }
@@ -318,22 +314,22 @@ public class HttpChannelState
     {
         final List<AsyncListener> lastAsyncListeners;
 
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("startAsync {}",toStringLocked());
-            if (_state!=State.DISPATCHED || _async!=Async.NOT_ASYNC)
+                LOG.debug("startAsync {}", toStringLocked());
+            if (_state != State.DISPATCHED || _async != Async.NOT_ASYNC)
                 throw new IllegalStateException(this.getStatusStringLocked());
 
-            _async=Async.STARTED;
-            _event=event;
-            lastAsyncListeners=_asyncListeners;
-            _asyncListeners=null;            
+            _async = Async.STARTED;
+            _event = event;
+            lastAsyncListeners = _asyncListeners;
+            _asyncListeners = null;
         }
 
-        if (lastAsyncListeners!=null)
+        if (lastAsyncListeners != null)
         {
-            Runnable callback=new Runnable()
+            Runnable callback = new Runnable()
             {
                 @Override
                 public void run()
@@ -344,28 +340,29 @@ public class HttpChannelState
                         {
                             listener.onStartAsync(event);
                         }
-                        catch(Throwable e)
+                        catch (Throwable e)
                         {
                             // TODO Async Dispatch Error
                             LOG.warn(e);
                         }
                     }
                 }
+
                 @Override
                 public String toString()
                 {
                     return "startAsync";
                 }
             };
-                  
-            runInContext(event,callback);
+
+            runInContext(event, callback);
         }
     }
 
     public void asyncError(Throwable failure)
     {
         AsyncContextEvent event = null;
-        try (Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             switch (_state)
             {
@@ -383,8 +380,8 @@ public class HttpChannelState
                 case ASYNC_WAIT:
                 {
                     _event.addThrowable(failure);
-                    _state=State.ASYNC_ERROR;
-                    event=_event;
+                    _state = State.ASYNC_ERROR;
+                    event = _event;
                     break;
                 }
                 default:
@@ -405,28 +402,29 @@ public class HttpChannelState
      * Signal that the HttpConnection has finished handling the request.
      * For blocking connectors, this call may block if the request has
      * been suspended (startAsync called).
+     *
      * @return next actions
      * be handled again (eg because of a resume that happened before unhandle was called)
      */
     protected Action unhandle()
     {
-        boolean read_interested = false;
+        boolean readInterested = false;
 
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("unhandle {}",toStringLocked());
-            
-            switch(_state)
+                LOG.debug("unhandle {}", toStringLocked());
+
+            switch (_state)
             {
                 case COMPLETING:
                 case COMPLETED:
                     return Action.TERMINATED;
 
                 case THROWN:
-                    _state=State.DISPATCHED;
+                    _state = State.DISPATCHED;
                     return Action.ERROR_DISPATCH;
-                    
+
                 case DISPATCHED:
                 case ASYNC_IO:
                 case ASYNC_ERROR:
@@ -437,108 +435,111 @@ public class HttpChannelState
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
 
-            _initial=false;
-            switch(_async)
+            _initial = false;
+            switch (_async)
             {
                 case COMPLETE:
-                    _state=State.COMPLETING;
-                    _async=Async.NOT_ASYNC;
+                    _state = State.COMPLETING;
+                    _async = Async.NOT_ASYNC;
                     return Action.COMPLETE;
 
                 case DISPATCH:
-                    _state=State.DISPATCHED;
-                    _async=Async.NOT_ASYNC;
+                    _state = State.DISPATCHED;
+                    _async = Async.NOT_ASYNC;
                     return Action.ASYNC_DISPATCH;
 
                 case STARTED:
-                    switch(_asyncRead)
+                    switch (_asyncRead)
                     {
                         case READY:
-                            _state=State.ASYNC_IO;
-                            _asyncRead=AsyncRead.IDLE;
+                            _state = State.ASYNC_IO;
+                            _asyncRead = AsyncRead.IDLE;
                             return Action.READ_CALLBACK;
 
                         case POSSIBLE:
-                            _state=State.ASYNC_IO;
-                            _asyncRead=AsyncRead.PRODUCING;
+                            _state = State.ASYNC_IO;
+                            _asyncRead = AsyncRead.PRODUCING;
                             return Action.READ_PRODUCE;
-                            
+
                         case REGISTER:
                         case PRODUCING:
-                            _asyncRead=AsyncRead.REGISTERED;
-                            read_interested=true;
+                            _asyncRead = AsyncRead.REGISTERED;
+                            readInterested = true;
                             break;
-                        
+
                         case IDLE:
                         case REGISTERED:
                             break;
+
+                        default:
+                            throw new IllegalStateException(_asyncRead.toString());
                     }
 
                     if (_asyncWritePossible)
                     {
-                        _state=State.ASYNC_IO;
-                        _asyncWritePossible=false;
+                        _state = State.ASYNC_IO;
+                        _asyncWritePossible = false;
                         return Action.WRITE_CALLBACK;
                     }
                     else
                     {
-                        _state=State.ASYNC_WAIT;
-                        
-                        Scheduler scheduler=_channel.getScheduler();
-                        if (scheduler!=null && _timeoutMs>0 && !_event.hasTimeoutTask())
-                            _event.setTimeoutTask(scheduler.schedule(_event,_timeoutMs,TimeUnit.MILLISECONDS));
+                        _state = State.ASYNC_WAIT;
 
-                        return Action.WAIT; 
+                        Scheduler scheduler = _channel.getScheduler();
+                        if (scheduler != null && _timeoutMs > 0 && !_event.hasTimeoutTask())
+                            _event.setTimeoutTask(scheduler.schedule(_event, _timeoutMs, TimeUnit.MILLISECONDS));
+
+                        return Action.WAIT;
                     }
 
                 case EXPIRING:
                     // onTimeout callbacks still being called, so just WAIT
-                    _state=State.ASYNC_WAIT;
+                    _state = State.ASYNC_WAIT;
                     return Action.WAIT;
 
                 case EXPIRED:
                     // onTimeout handling is complete, but did not dispatch as
                     // we were handling.  So do the error dispatch here
-                    _state=State.DISPATCHED;
-                    _async=Async.NOT_ASYNC;
+                    _state = State.DISPATCHED;
+                    _async = Async.NOT_ASYNC;
                     return Action.ERROR_DISPATCH;
 
                 case ERRORED:
-                    _state=State.DISPATCHED;
-                    _async=Async.NOT_ASYNC;
+                    _state = State.DISPATCHED;
+                    _async = Async.NOT_ASYNC;
                     return Action.ERROR_DISPATCH;
 
                 case NOT_ASYNC:
-                    _state=State.COMPLETING;
+                    _state = State.COMPLETING;
                     return Action.COMPLETE;
 
                 default:
-                    _state=State.COMPLETING;
+                    _state = State.COMPLETING;
                     return Action.COMPLETE;
             }
         }
         finally
         {
-            if (read_interested)
+            if (readInterested)
                 _channel.onAsyncWaitForContent();
         }
     }
 
     public void dispatch(ServletContext context, String path)
     {
-        boolean dispatch=false;
+        boolean dispatch = false;
         AsyncContextEvent event;
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("dispatch {} -> {}",toStringLocked(),path);
-            
-            boolean started=false;
-            event=_event;
-            switch(_async)
+                LOG.debug("dispatch {} -> {}", toStringLocked(), path);
+
+            boolean started = false;
+            event = _event;
+            switch (_async)
             {
                 case STARTED:
-                    started=true;
+                    started = true;
                     break;
                 case EXPIRING:
                 case ERRORING:
@@ -547,27 +548,27 @@ public class HttpChannelState
                 default:
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
-            _async=Async.DISPATCH;
+            _async = Async.DISPATCH;
 
-            if (context!=null)
+            if (context != null)
                 _event.setDispatchContext(context);
-            if (path!=null)
+            if (path != null)
                 _event.setDispatchPath(path);
 
             if (started)
             {
-                switch(_state)
+                switch (_state)
                 {
                     case DISPATCHED:
                     case ASYNC_IO:
                     case ASYNC_WOKEN:
                         break;
                     case ASYNC_WAIT:
-                        _state=State.ASYNC_WOKEN;
-                        dispatch=true;
+                        _state = State.ASYNC_WOKEN;
+                        dispatch = true;
                         break;
                     default:
-                        LOG.warn("async dispatched when complete {}",this);
+                        LOG.warn("async dispatched when complete {}", this);
                         break;
                 }
             }
@@ -582,23 +583,22 @@ public class HttpChannelState
     {
         final List<AsyncListener> listeners;
         AsyncContextEvent event;
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onTimeout {}",toStringLocked());
-            
-            if (_async!=Async.STARTED)
-                return;
-            _async=Async.EXPIRING;
-            event=_event;
-            listeners=_asyncListeners;
+                LOG.debug("onTimeout {}", toStringLocked());
 
+            if (_async != Async.STARTED)
+                return;
+            _async = Async.EXPIRING;
+            event = _event;
+            listeners = _asyncListeners;
         }
 
-        final AtomicReference<Throwable> error=new AtomicReference<>();
-        if (listeners!=null)
+        final AtomicReference<Throwable> error = new AtomicReference<>();
+        if (listeners != null)
         {
-            Runnable task=new Runnable()
+            Runnable task = new Runnable()
             {
                 @Override
                 public void run()
@@ -609,9 +609,9 @@ public class HttpChannelState
                         {
                             listener.onTimeout(event);
                         }
-                        catch(Throwable x)
+                        catch (Throwable x)
                         {
-                            LOG.warn(x+" while invoking onTimeout listener " + listener);
+                            LOG.warn(x + " while invoking onTimeout listener " + listener);
                             LOG.debug(x);
                             Throwable failure = error.get();
                             if (failure == null)
@@ -621,32 +621,33 @@ public class HttpChannelState
                         }
                     }
                 }
+
                 @Override
                 public String toString()
                 {
                     return "onTimeout";
                 }
             };
-            
-            runInContext(event,task);
+
+            runInContext(event, task);
         }
 
-        Throwable th=error.get();
-        boolean dispatch=false;
-        try(Locker.Lock lock= _locker.lock())
+        Throwable th = error.get();
+        boolean dispatch = false;
+        try (Locker.Lock lock = _locker.lock())
         {
-            switch(_async)
+            switch (_async)
             {
                 case EXPIRING:
-                    _async=th==null ? Async.EXPIRED : Async.ERRORING;
+                    _async = th == null ? Async.EXPIRED : Async.ERRORING;
                     break;
 
                 case COMPLETE:
                 case DISPATCH:
-                    if (th!=null)
+                    if (th != null)
                     {
                         LOG.ignore(th);
-                        th=null;
+                        th = null;
                     }
                     break;
 
@@ -654,24 +655,24 @@ public class HttpChannelState
                     throw new IllegalStateException();
             }
 
-            if (_state==State.ASYNC_WAIT)
+            if (_state == State.ASYNC_WAIT)
             {
-                _state=State.ASYNC_WOKEN;
-                dispatch=true;
+                _state = State.ASYNC_WOKEN;
+                dispatch = true;
             }
         }
 
-        if (th!=null)
+        if (th != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Error after async timeout {}",this,th);
+                LOG.debug("Error after async timeout {}", this, th);
             onError(th);
         }
-        
+
         if (dispatch)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Dispatch after async timeout {}",this);
+                LOG.debug("Dispatch after async timeout {}", this);
             scheduleDispatch();
         }
     }
@@ -680,20 +681,20 @@ public class HttpChannelState
     {
 
         // just like resume, except don't set _dispatched=true;
-        boolean handle=false;
+        boolean handle = false;
         AsyncContextEvent event;
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("complete {}",toStringLocked());
-            
-            boolean started=false;
-            event=_event;
-            
-            switch(_async)
+                LOG.debug("complete {}", toStringLocked());
+
+            boolean started = false;
+            event = _event;
+
+            switch (_async)
             {
                 case STARTED:
-                    started=true;
+                    started = true;
                     break;
                 case EXPIRING:
                 case ERRORING:
@@ -704,44 +705,44 @@ public class HttpChannelState
                 default:
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
-            _async=Async.COMPLETE;
-            
-            if (started && _state==State.ASYNC_WAIT)
+            _async = Async.COMPLETE;
+
+            if (started && _state == State.ASYNC_WAIT)
             {
-                handle=true;
-                _state=State.ASYNC_WOKEN;
+                handle = true;
+                _state = State.ASYNC_WOKEN;
             }
         }
 
         cancelTimeout(event);
         if (handle)
-            runInContext(event,_channel);
+            runInContext(event, _channel);
     }
 
     public void errorComplete()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error complete {}",toStringLocked());
-            
-            _async=Async.COMPLETE;
+                LOG.debug("error complete {}", toStringLocked());
+
+            _async = Async.COMPLETE;
             _event.setDispatchContext(null);
             _event.setDispatchPath(null);
         }
 
         cancelTimeout();
     }
-    
+
     protected void onError(Throwable th)
     {
         final List<AsyncListener> listeners;
         final AsyncContextEvent event;
         final Request baseRequest = _channel.getRequest();
-        
-        int code=HttpStatus.INTERNAL_SERVER_ERROR_500;
-        String message=null;
-        Throwable cause = _channel.unwrap(th,BadMessageException.class,UnavailableException.class);
+
+        int code = HttpStatus.INTERNAL_SERVER_ERROR_500;
+        String message = null;
+        Throwable cause = _channel.unwrap(th, BadMessageException.class, UnavailableException.class);
         if (cause instanceof BadMessageException)
         {
             BadMessageException bme = (BadMessageException)cause;
@@ -755,53 +756,53 @@ public class HttpChannelState
             else
                 code = HttpStatus.SERVICE_UNAVAILABLE_503;
         }
-        
-        try(Locker.Lock lock= _locker.lock())
+
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onError {} {}",toStringLocked(),th);
-            
+                LOG.debug("onError {} {}", toStringLocked(), th);
+
             // Set error on request.
-            if(_event!=null)
+            if (_event != null)
             {
                 _event.addThrowable(th);
-                _event.getSuppliedRequest().setAttribute(ERROR_STATUS_CODE,code);
-                _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION,th);
-                _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION_TYPE,th==null?null:th.getClass());
-                _event.getSuppliedRequest().setAttribute(ERROR_MESSAGE,message);
+                _event.getSuppliedRequest().setAttribute(ERROR_STATUS_CODE, code);
+                _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION, th);
+                _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION_TYPE, th == null ? null : th.getClass());
+                _event.getSuppliedRequest().setAttribute(ERROR_MESSAGE, message);
             }
             else
             {
                 Throwable error = (Throwable)baseRequest.getAttribute(ERROR_EXCEPTION);
-                if (error!=null)
-                    throw new IllegalStateException("Error already set",error);
-                baseRequest.setAttribute(ERROR_STATUS_CODE,code);
-                baseRequest.setAttribute(ERROR_EXCEPTION,th);
-                baseRequest.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th==null?null:th.getClass());
-                baseRequest.setAttribute(ERROR_MESSAGE,message);
+                if (error != null)
+                    throw new IllegalStateException("Error already set", error);
+                baseRequest.setAttribute(ERROR_STATUS_CODE, code);
+                baseRequest.setAttribute(ERROR_EXCEPTION, th);
+                baseRequest.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE, th == null ? null : th.getClass());
+                baseRequest.setAttribute(ERROR_MESSAGE, message);
             }
-            
+
             // Are we blocking?
-            if (_async==Async.NOT_ASYNC)
+            if (_async == Async.NOT_ASYNC)
             {
                 // Only called from within HttpChannel Handling, so much be dispatched, let's stay dispatched!
-                if (_state==State.DISPATCHED)
+                if (_state == State.DISPATCHED)
                 {
-                    _state=State.THROWN;
+                    _state = State.THROWN;
                     return;
                 }
                 throw new IllegalStateException(this.getStatusStringLocked());
             }
-            
+
             // We are Async
-            _async=Async.ERRORING;
-            listeners=_asyncListeners;
-            event=_event;
+            _async = Async.ERRORING;
+            listeners = _asyncListeners;
+            event = _event;
         }
 
-        if(listeners!=null)
+        if (listeners != null)
         {
-            Runnable task=new Runnable()
+            Runnable task = new Runnable()
             {
                 @Override
                 public void run()
@@ -814,7 +815,7 @@ public class HttpChannelState
                         }
                         catch (Throwable x)
                         {
-                            LOG.warn(x+" while invoking onError listener " + listener);
+                            LOG.warn(x + " while invoking onError listener " + listener);
                             LOG.debug(x);
                         }
                     }
@@ -826,19 +827,19 @@ public class HttpChannelState
                     return "onError";
                 }
             };
-            runInContext(event,task);
+            runInContext(event, task);
         }
 
-        boolean dispatch=false;
-        try(Locker.Lock lock= _locker.lock())
+        boolean dispatch = false;
+        try (Locker.Lock lock = _locker.lock())
         {
-            switch(_async)
+            switch (_async)
             {
                 case ERRORING:
                 {
                     // Still in this state ? The listeners did not invoke API methods
                     // and the container must provide a default error dispatch.
-                    _async=Async.ERRORED;
+                    _async = Async.ERRORED;
                     break;
                 }
                 case DISPATCH:
@@ -853,17 +854,17 @@ public class HttpChannelState
                 }
             }
 
-            if(_state==State.ASYNC_WAIT)
+            if (_state == State.ASYNC_WAIT)
             {
-                _state=State.ASYNC_WOKEN;
-                dispatch=true;
+                _state = State.ASYNC_WOKEN;
+                dispatch = true;
             }
         }
 
-        if(dispatch)
+        if (dispatch)
         {
-            if(LOG.isDebugEnabled())
-                LOG.debug("Dispatch after error {}",this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Dispatch after error {}", this);
             scheduleDispatch();
         }
     }
@@ -873,18 +874,18 @@ public class HttpChannelState
         final List<AsyncListener> aListeners;
         final AsyncContextEvent event;
 
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onComplete {}",toStringLocked());
-            
-            switch(_state)
+                LOG.debug("onComplete {}", toStringLocked());
+
+            switch (_state)
             {
                 case COMPLETING:
-                    aListeners=_asyncListeners;
-                    event=_event;
-                    _state=State.COMPLETED;
-                    _async=Async.NOT_ASYNC;
+                    aListeners = _asyncListeners;
+                    event = _event;
+                    _state = State.COMPLETED;
+                    _async = Async.NOT_ASYNC;
                     break;
 
                 default:
@@ -892,9 +893,9 @@ public class HttpChannelState
             }
         }
 
-        if (event!=null)
+        if (event != null)
         {
-            if (aListeners!=null)
+            if (aListeners != null)
             {
                 Runnable callback = new Runnable()
                 {
@@ -907,21 +908,22 @@ public class HttpChannelState
                             {
                                 listener.onComplete(event);
                             }
-                            catch(Throwable e)
+                            catch (Throwable e)
                             {
-                                LOG.warn(e+" while invoking onComplete listener " + listener);
+                                LOG.warn(e + " while invoking onComplete listener " + listener);
                                 LOG.debug(e);
                             }
                         }
-                    }    
+                    }
+
                     @Override
                     public String toString()
                     {
                         return "onComplete";
                     }
                 };
-                
-                runInContext(event,callback);                
+
+                runInContext(event, callback);
             }
             event.completed();
         }
@@ -930,12 +932,12 @@ public class HttpChannelState
     protected void recycle()
     {
         cancelTimeout();
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("recycle {}",toStringLocked());
-            
-            switch(_state)
+                LOG.debug("recycle {}", toStringLocked());
+
+            switch (_state)
             {
                 case DISPATCHED:
                 case ASYNC_IO:
@@ -945,26 +947,26 @@ public class HttpChannelState
                 default:
                     break;
             }
-            _asyncListeners=null;
-            _state=State.IDLE;
-            _async=Async.NOT_ASYNC;
-            _initial=true;
-            _asyncRead=AsyncRead.IDLE;
-            _asyncWritePossible=false;
-            _timeoutMs=DEFAULT_TIMEOUT;
-            _event=null;
+            _asyncListeners = null;
+            _state = State.IDLE;
+            _async = Async.NOT_ASYNC;
+            _initial = true;
+            _asyncRead = AsyncRead.IDLE;
+            _asyncWritePossible = false;
+            _timeoutMs = DEFAULT_TIMEOUT;
+            _event = null;
         }
     }
 
     public void upgrade()
     {
         cancelTimeout();
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("upgrade {}",toStringLocked());
-            
-            switch(_state)
+                LOG.debug("upgrade {}", toStringLocked());
+
+            switch (_state)
             {
                 case IDLE:
                 case COMPLETED:
@@ -972,14 +974,14 @@ public class HttpChannelState
                 default:
                     throw new IllegalStateException(getStatusStringLocked());
             }
-            _asyncListeners=null;
-            _state=State.UPGRADED;
-            _async=Async.NOT_ASYNC;
-            _initial=true;
-            _asyncRead=AsyncRead.IDLE;
-            _asyncWritePossible=false;
-            _timeoutMs=DEFAULT_TIMEOUT;
-            _event=null;
+            _asyncListeners = null;
+            _state = State.UPGRADED;
+            _async = Async.NOT_ASYNC;
+            _initial = true;
+            _asyncRead = AsyncRead.IDLE;
+            _asyncWritePossible = false;
+            _timeoutMs = DEFAULT_TIMEOUT;
+            _event = null;
         }
     }
 
@@ -991,38 +993,38 @@ public class HttpChannelState
     protected void cancelTimeout()
     {
         final AsyncContextEvent event;
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            event=_event;
+            event = _event;
         }
         cancelTimeout(event);
     }
 
     protected void cancelTimeout(AsyncContextEvent event)
     {
-        if (event!=null)
+        if (event != null)
             event.cancelTimeoutTask();
     }
-    
+
     public boolean isIdle()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            return _state==State.IDLE;
+            return _state == State.IDLE;
         }
     }
 
     public boolean isExpired()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            return _async==Async.EXPIRED;
+            return _async == Async.EXPIRED;
         }
     }
 
     public boolean isInitial()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             return _initial;
         }
@@ -1030,23 +1032,23 @@ public class HttpChannelState
 
     public boolean isSuspended()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            return _state==State.ASYNC_WAIT || _state==State.DISPATCHED && _async==Async.STARTED;
+            return _state == State.ASYNC_WAIT || _state == State.DISPATCHED && _async == Async.STARTED;
         }
     }
 
     boolean isCompleting()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            return _state==State.COMPLETING;
+            return _state == State.COMPLETING;
         }
     }
 
     boolean isCompleted()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             return _state == State.COMPLETED;
         }
@@ -1054,27 +1056,27 @@ public class HttpChannelState
 
     public boolean isAsyncStarted()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            if (_state==State.DISPATCHED)
-                return _async!=Async.NOT_ASYNC;
-            return _async==Async.STARTED || _async==Async.EXPIRING;
+            if (_state == State.DISPATCHED)
+                return _async != Async.NOT_ASYNC;
+            return _async == Async.STARTED || _async == Async.EXPIRING;
         }
     }
 
     public boolean isAsyncComplete()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            return _async==Async.COMPLETE;
+            return _async == Async.COMPLETE;
         }
     }
 
     public boolean isAsync()
     {
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            return !_initial || _async!=Async.NOT_ASYNC;
+            return !_initial || _async != Async.NOT_ASYNC;
         }
     }
 
@@ -1091,19 +1093,19 @@ public class HttpChannelState
     public ContextHandler getContextHandler()
     {
         final AsyncContextEvent event;
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            event=_event;
+            event = _event;
         }
         return getContextHandler(event);
     }
 
     ContextHandler getContextHandler(AsyncContextEvent event)
     {
-        if (event!=null)
+        if (event != null)
         {
-            Context context=((Context)event.getServletContext());
-            if (context!=null)
+            Context context = ((Context)event.getServletContext());
+            if (context != null)
                 return context.getContextHandler();
         }
         return null;
@@ -1112,29 +1114,29 @@ public class HttpChannelState
     public ServletResponse getServletResponse()
     {
         final AsyncContextEvent event;
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
-            event=_event;
+            event = _event;
         }
         return getServletResponse(event);
     }
-    
+
     public ServletResponse getServletResponse(AsyncContextEvent event)
     {
-        if (event!=null && event.getSuppliedResponse()!=null)
+        if (event != null && event.getSuppliedResponse() != null)
             return event.getSuppliedResponse();
         return _channel.getResponse();
     }
-    
-    void runInContext(AsyncContextEvent event,Runnable runnable)
+
+    void runInContext(AsyncContextEvent event, Runnable runnable)
     {
         ContextHandler contextHandler = getContextHandler(event);
-        if (contextHandler==null)
+        if (contextHandler == null)
             runnable.run();
         else
-            contextHandler.handle(_channel.getRequest(),runnable);
+            contextHandler.handle(_channel.getRequest(), runnable);
     }
-    
+
     public Object getAttribute(String name)
     {
         return _channel.getRequest().getAttribute(name);
@@ -1147,7 +1149,7 @@ public class HttpChannelState
 
     public void setAttribute(String name, Object attribute)
     {
-        _channel.getRequest().setAttribute(name,attribute);
+        _channel.getRequest().setAttribute(name, attribute);
     }
 
     /**
@@ -1159,24 +1161,24 @@ public class HttpChannelState
      */
     public void onReadUnready()
     {
-        boolean interested=false;
-        try(Locker.Lock lock= _locker.lock())
+        boolean interested = false;
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onReadUnready {}",toStringLocked());
-            
-            switch(_asyncRead)
+                LOG.debug("onReadUnready {}", toStringLocked());
+
+            switch (_asyncRead)
             {
                 case IDLE:
                 case READY:
-                    if (_state==State.ASYNC_WAIT)
+                    if (_state == State.ASYNC_WAIT)
                     {
-                        interested=true;
-                        _asyncRead=AsyncRead.REGISTERED;
+                        interested = true;
+                        _asyncRead = AsyncRead.REGISTERED;
                     }
                     else
                     {
-                        _asyncRead=AsyncRead.REGISTER;
+                        _asyncRead = AsyncRead.REGISTER;
                     }
                     break;
 
@@ -1185,6 +1187,8 @@ public class HttpChannelState
                 case POSSIBLE:
                 case PRODUCING:
                     break;
+                default:
+                    throw new IllegalStateException(_asyncRead.toString());
             }
         }
 
@@ -1197,37 +1201,38 @@ public class HttpChannelState
      * If the channel is in ASYNC_WAIT state and unready (ie isReady() has
      * returned false), then the state is changed to ASYNC_WOKEN and true
      * is returned.
+     *
      * @return True IFF the channel was unready and in ASYNC_WAIT state
      */
     public boolean onContentAdded()
     {
-        boolean woken=false;
-        try(Locker.Lock lock= _locker.lock())
+        boolean woken = false;
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onContentAdded {}",toStringLocked());
-            
-            switch(_asyncRead)
+                LOG.debug("onContentAdded {}", toStringLocked());
+
+            switch (_asyncRead)
             {
                 case IDLE:
                 case READY:
                     break;
-                    
+
                 case PRODUCING:
-                    _asyncRead=AsyncRead.READY;
+                    _asyncRead = AsyncRead.READY;
                     break;
-                    
+
                 case REGISTER:
                 case REGISTERED:
-                    _asyncRead=AsyncRead.READY;
-                    if (_state==State.ASYNC_WAIT)
+                    _asyncRead = AsyncRead.READY;
+                    if (_state == State.ASYNC_WAIT)
                     {
-                        woken=true;
-                        _state=State.ASYNC_WOKEN;
+                        woken = true;
+                        _state = State.ASYNC_WOKEN;
                     }
                     break;
 
-                case POSSIBLE:
+                default:
                     throw new IllegalStateException(toStringLocked());
             }
         }
@@ -1239,24 +1244,25 @@ public class HttpChannelState
      * This is similar to calling {@link #onReadUnready()} followed by
      * {@link #onContentAdded()}, except that as content is already
      * available, read interest is never set.
+     *
      * @return true if woken
      */
     public boolean onReadReady()
     {
-        boolean woken=false;
-        try(Locker.Lock lock= _locker.lock())
+        boolean woken = false;
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onReadReady {}",toStringLocked());
+                LOG.debug("onReadReady {}", toStringLocked());
 
-            switch(_asyncRead)
+            switch (_asyncRead)
             {
                 case IDLE:
-                    _asyncRead=AsyncRead.READY;
-                    if (_state==State.ASYNC_WAIT)
+                    _asyncRead = AsyncRead.READY;
+                    if (_state == State.ASYNC_WAIT)
                     {
-                        woken=true;
-                        _state=State.ASYNC_WOKEN;
+                        woken = true;
+                        _state = State.ASYNC_WOKEN;
                     }
                     break;
 
@@ -1266,29 +1272,30 @@ public class HttpChannelState
         }
         return woken;
     }
-    
+
     /**
      * Called to indicate that more content may be available,
      * but that a handling thread may need to produce (fill/parse)
      * it.  Typically called by the async read success callback.
+     *
      * @return <code>true</code> if more content may be available
      */
     public boolean onReadPossible()
     {
-        boolean woken=false;
-        try(Locker.Lock lock= _locker.lock())
+        boolean woken = false;
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onReadPossible {}",toStringLocked());
+                LOG.debug("onReadPossible {}", toStringLocked());
 
-            switch(_asyncRead)
+            switch (_asyncRead)
             {
                 case REGISTERED:
-                    _asyncRead=AsyncRead.POSSIBLE;
-                    if (_state==State.ASYNC_WAIT)
+                    _asyncRead = AsyncRead.POSSIBLE;
+                    if (_state == State.ASYNC_WAIT)
                     {
-                        woken=true;
-                        _state=State.ASYNC_WOKEN;
+                        woken = true;
+                        _state = State.ASYNC_WOKEN;
                     }
                     break;
 
@@ -1302,22 +1309,23 @@ public class HttpChannelState
     /**
      * Called to signal that a read has read -1.
      * Will wake if the read was called while in ASYNC_WAIT state
+     *
      * @return <code>true</code> if woken
      */
     public boolean onReadEof()
     {
-        boolean woken=false;
-        try(Locker.Lock lock= _locker.lock())
+        boolean woken = false;
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onEof {}",toStringLocked());
+                LOG.debug("onEof {}", toStringLocked());
 
             // Force read ready so onAllDataRead can be called
-            _asyncRead=AsyncRead.READY;
-            if (_state==State.ASYNC_WAIT)
+            _asyncRead = AsyncRead.READY;
+            if (_state == State.ASYNC_WAIT)
             {
-                woken=true;
-                _state=State.ASYNC_WOKEN;
+                woken = true;
+                _state = State.ASYNC_WOKEN;
             }
         }
         return woken;
@@ -1325,18 +1333,18 @@ public class HttpChannelState
 
     public boolean onWritePossible()
     {
-        boolean wake=false;
+        boolean wake = false;
 
-        try(Locker.Lock lock= _locker.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onWritePossible {}",toStringLocked());
-            
-            _asyncWritePossible=true;
-            if (_state==State.ASYNC_WAIT)
+                LOG.debug("onWritePossible {}", toStringLocked());
+
+            _asyncWritePossible = true;
+            if (_state == State.ASYNC_WAIT)
             {
-                _state=State.ASYNC_WOKEN;
-                wake=true;
+                _state = State.ASYNC_WOKEN;
+                wake = true;
             }
         }
 

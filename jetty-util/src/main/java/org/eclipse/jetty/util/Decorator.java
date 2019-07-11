@@ -23,9 +23,6 @@ package org.eclipse.jetty.util;
  * <p>
  * Most common use is weld/CDI.
  * <p>
- * This was moved from org.eclipse.jetty.servlet.ServletContextHandler to allow
- * client applications to also use Weld/CDI to decorate objects.  
- * Such as websocket client (which has no servlet api requirement)
  */
 public interface Decorator
 {

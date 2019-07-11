@@ -27,66 +27,66 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
- * StdErr Logging implementation. 
+ * StdErr Logging implementation.
  * <p>
  * A Jetty {@link Logger} that sends all logs to STDERR ({@link System#err}) with basic formatting.
  * <p>
- * Supports named loggers, and properties based configuration. 
+ * Supports named loggers, and properties based configuration.
  * <p>
  * Configuration Properties:
  * <dl>
- *   <dt>${name|hierarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
- *   <dd>
- *   Sets the level that the Logger should log at.<br>
- *   Names can be a package name, or a fully qualified class name.<br>
- *   Default: INFO<br>
- *   <br>
- *   Examples:
- *   <dl>
- *   <dt>org.eclipse.jetty.LEVEL=WARN</dt>
- *   <dd>indicates that all of the jetty specific classes, in any package that 
- *   starts with <code>org.eclipse.jetty</code> should log at level WARN.</dd>
- *   <dt>org.eclipse.jetty.io.ChannelEndPoint.LEVEL=ALL</dt>
- *   <dd>indicates that the specific class, ChannelEndPoint, should log all
- *   logging events that it can generate, including DEBUG, INFO, WARN (and even special
- *   internally ignored exception cases).</dd>
- *   </dl>  
- *   </dd>
- *   
- *   <dt>${name}.SOURCE=(true|false)</dt>
- *   <dd>
- *   Logger specific, attempt to print the java source file name and line number
- *   where the logging event originated from.<br>
- *   Name must be a fully qualified class name (package name hierarchy is not supported
- *   by this configurable)<br>
- *   Warning: this is a slow operation and will have an impact on performance!<br>
- *   Default: false
- *   </dd>
- *   
- *   <dt>${name}.STACKS=(true|false)</dt>
- *   <dd>
- *   Logger specific, control the display of stacktraces.<br>
- *   Name must be a fully qualified class name (package name hierarchy is not supported
- *   by this configurable)<br>
- *   Default: true
- *   </dd>
- *   
- *   <dt>org.eclipse.jetty.util.log.stderr.SOURCE=(true|false)</dt>
- *   <dd>Special Global Configuration, attempt to print the java source file name and line number
- *   where the logging event originated from.<br>
- *   Default: false
- *   </dd>
- *   
- *   <dt>org.eclipse.jetty.util.log.stderr.LONG=(true|false)</dt>
- *   <dd>Special Global Configuration, when true, output logging events to STDERR using
- *   long form, fully qualified class names.  when false, use abbreviated package names<br>
- *   Default: false
- *   </dd>
- *   <dt>org.eclipse.jetty.util.log.stderr.ESCAPE=(true|false)</dt>
- *   <dd>Global Configuration, when true output logging events to STDERR are always
- *   escaped so that control characters are replaced with '?";  '\r' with '&lt;' and '\n' replaced '|'<br>
- *   Default: true
- *   </dd>
+ * <dt>${name|hierarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
+ * <dd>
+ * Sets the level that the Logger should log at.<br>
+ * Names can be a package name, or a fully qualified class name.<br>
+ * Default: INFO<br>
+ * <br>
+ * Examples:
+ * <dl>
+ * <dt>org.eclipse.jetty.LEVEL=WARN</dt>
+ * <dd>indicates that all of the jetty specific classes, in any package that
+ * starts with <code>org.eclipse.jetty</code> should log at level WARN.</dd>
+ * <dt>org.eclipse.jetty.io.ChannelEndPoint.LEVEL=ALL</dt>
+ * <dd>indicates that the specific class, ChannelEndPoint, should log all
+ * logging events that it can generate, including DEBUG, INFO, WARN (and even special
+ * internally ignored exception cases).</dd>
+ * </dl>
+ * </dd>
+ *
+ * <dt>${name}.SOURCE=(true|false)</dt>
+ * <dd>
+ * Logger specific, attempt to print the java source file name and line number
+ * where the logging event originated from.<br>
+ * Name must be a fully qualified class name (package name hierarchy is not supported
+ * by this configurable)<br>
+ * Warning: this is a slow operation and will have an impact on performance!<br>
+ * Default: false
+ * </dd>
+ *
+ * <dt>${name}.STACKS=(true|false)</dt>
+ * <dd>
+ * Logger specific, control the display of stacktraces.<br>
+ * Name must be a fully qualified class name (package name hierarchy is not supported
+ * by this configurable)<br>
+ * Default: true
+ * </dd>
+ *
+ * <dt>org.eclipse.jetty.util.log.stderr.SOURCE=(true|false)</dt>
+ * <dd>Special Global Configuration, attempt to print the java source file name and line number
+ * where the logging event originated from.<br>
+ * Default: false
+ * </dd>
+ *
+ * <dt>org.eclipse.jetty.util.log.stderr.LONG=(true|false)</dt>
+ * <dd>Special Global Configuration, when true, output logging events to STDERR using
+ * long form, fully qualified class names.  when false, use abbreviated package names<br>
+ * Default: false
+ * </dd>
+ * <dt>org.eclipse.jetty.util.log.stderr.ESCAPE=(true|false)</dt>
+ * <dd>Global Configuration, when true output logging events to STDERR are always
+ * escaped so that control characters are replaced with '?";  '\r' with '&lt;' and '\n' replaced '|'<br>
+ * Default: true
+ * </dd>
  * </dl>
  */
 @ManagedObject("Jetty StdErr Logging Implementation")
@@ -94,25 +94,25 @@ public class StdErrLog extends AbstractLogger
 {
     private static final String EOL = System.getProperty("line.separator");
     // Do not change output format lightly, people rely on this output format now.
-    private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD","0"));
+    private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD", "0"));
     private static DateCache _dateCache;
 
-    private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
-            Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
-    private final static boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
-    private final static boolean __escape = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.ESCAPE","true"));
-    
+    private static final boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
+        Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE", "false")));
+    private static final boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG", "false"));
+    private static final boolean __escape = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.ESCAPE", "true"));
+
     static
     {
-        String deprecatedProperties[] =
-        { "DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG" };
+        String[] deprecatedProperties =
+            {"DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG"};
 
         // Toss a message to users about deprecated system properties
         for (String deprecatedProp : deprecatedProperties)
         {
             if (System.getProperty(deprecatedProp) != null)
             {
-                System.err.printf("System Property [%s] has been deprecated! (Use org.eclipse.jetty.LEVEL=DEBUG instead)%n",deprecatedProp);
+                System.err.printf("System Property [%s] has been deprecated! (Use org.eclipse.jetty.LEVEL=DEBUG instead)%n", deprecatedProp);
             }
         }
 
@@ -128,9 +128,8 @@ public class StdErrLog extends AbstractLogger
 
     public static void setTagPad(int pad)
     {
-        __tagpad=pad;
+        __tagpad = pad;
     }
-    
 
     private int _level = LEVEL_INFO;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
@@ -145,30 +144,26 @@ public class StdErrLog extends AbstractLogger
     protected final String _abbrevname;
     private boolean _hideStacks = false;
 
-    
-    public static int getLoggingLevel(Properties props,String name)
+    public static int getLoggingLevel(Properties props, String name)
     {
-        int level = lookupLoggingLevel(props,name);
-        if (level==LEVEL_DEFAULT)
+        int level = lookupLoggingLevel(props, name);
+        if (level == LEVEL_DEFAULT)
         {
-            level = lookupLoggingLevel(props,"log");
-            if (level==LEVEL_DEFAULT)
-                level=LEVEL_INFO;
+            level = lookupLoggingLevel(props, "log");
+            if (level == LEVEL_DEFAULT)
+                level = LEVEL_INFO;
         }
         return level;
     }
-    
-    
+
     /**
      * Obtain a StdErrLog reference for the specified class, a convenience method used most often during testing to allow for control over a specific logger.
      * <p>
      * Must be actively using StdErrLog as the Logger implementation.
-     * 
-     * @param clazz
-     *            the Class reference for the logger to use.
+     *
+     * @param clazz the Class reference for the logger to use.
      * @return the StdErrLog logger
-     * @throws RuntimeException
-     *             if StdErrLog is not the active Logger implementation.
+     * @throws RuntimeException if StdErrLog is not the active Logger implementation.
      */
     public static StdErrLog getLogger(Class<?> clazz)
     {
@@ -192,38 +187,35 @@ public class StdErrLog extends AbstractLogger
 
     /**
      * Construct a named StdErrLog using the {@link Log} defined properties
-     * 
-     * @param name
-     *            the name of the logger
+     *
+     * @param name the name of the logger
      */
     public StdErrLog(String name)
     {
-        this(name,null);
+        this(name, null);
     }
 
     /**
      * Construct a named Logger using the provided properties to configure logger.
-     * 
-     * @param name
-     *            the name of the logger
-     * @param props
-     *            the configuration properties
+     *
+     * @param name the name of the logger
+     * @param props the configuration properties
      */
     public StdErrLog(String name, Properties props)
     {
         @SuppressWarnings("ReferenceEquality")
-        boolean sameObject = (props!=Log.__props);
-        if (props!=null && sameObject)
+        boolean sameObject = (props != Log.__props);
+        if (props != null && sameObject)
             Log.__props.putAll(props);
-        _name = name == null?"":name;
+        _name = name == null ? "" : name;
         _abbrevname = condensePackageString(this._name);
-        _level = getLoggingLevel(Log.__props,this._name);
+        _level = getLoggingLevel(Log.__props, this._name);
         _configuredLevel = _level;
 
         try
         {
-            String source = getLoggingProperty(Log.__props,_name,"SOURCE");
-            _source = source==null?__source:Boolean.parseBoolean(source);
+            String source = getLoggingProperty(Log.__props, _name, "SOURCE");
+            _source = source == null ? __source : Boolean.parseBoolean(source);
         }
         catch (AccessControlException ace)
         {
@@ -233,13 +225,13 @@ public class StdErrLog extends AbstractLogger
         try
         {
             // allow stacktrace display to be controlled by properties as well
-            String stacks = getLoggingProperty(Log.__props,_name,"STACKS");
-            _hideStacks = stacks==null?false:!Boolean.parseBoolean(stacks);
+            String stacks = getLoggingProperty(Log.__props, _name, "STACKS");
+            _hideStacks = stacks == null ? false : !Boolean.parseBoolean(stacks);
         }
         catch (AccessControlException ignore)
         {
             /* ignore */
-        }        
+        }
     }
 
     @Override
@@ -268,7 +260,6 @@ public class StdErrLog extends AbstractLogger
         _hideStacks = hideStacks;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Is the source of a log, logged
      *
@@ -279,12 +270,10 @@ public class StdErrLog extends AbstractLogger
         return _source;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set if a log source is logged.
      *
-     * @param source
-     *            true if the class, method, file and line number of a log is logged.
+     * @param source true if the class, method, file and line number of a log is logged.
      */
     public void setSource(boolean source)
     {
@@ -297,15 +286,15 @@ public class StdErrLog extends AbstractLogger
         if (_level <= LEVEL_WARN)
         {
             StringBuilder buffer = new StringBuilder(64);
-            format(buffer,":WARN:",msg,args);
-            (_stderr==null?System.err:_stderr).println(buffer);
+            format(buffer, ":WARN:", msg, args);
+            (_stderr == null ? System.err : _stderr).println(buffer);
         }
     }
 
     @Override
     public void warn(Throwable thrown)
     {
-        warn("",thrown);
+        warn("", thrown);
     }
 
     @Override
@@ -314,8 +303,8 @@ public class StdErrLog extends AbstractLogger
         if (_level <= LEVEL_WARN)
         {
             StringBuilder buffer = new StringBuilder(64);
-            format(buffer,":WARN:",msg,thrown);
-            (_stderr==null?System.err:_stderr).println(buffer);
+            format(buffer, ":WARN:", msg, thrown);
+            (_stderr == null ? System.err : _stderr).println(buffer);
         }
     }
 
@@ -325,15 +314,15 @@ public class StdErrLog extends AbstractLogger
         if (_level <= LEVEL_INFO)
         {
             StringBuilder buffer = new StringBuilder(64);
-            format(buffer,":INFO:",msg,args);
-            (_stderr==null?System.err:_stderr).println(buffer);
+            format(buffer, ":INFO:", msg, args);
+            (_stderr == null ? System.err : _stderr).println(buffer);
         }
     }
 
     @Override
     public void info(Throwable thrown)
     {
-        info("",thrown);
+        info("", thrown);
     }
 
     @Override
@@ -342,8 +331,8 @@ public class StdErrLog extends AbstractLogger
         if (_level <= LEVEL_INFO)
         {
             StringBuilder buffer = new StringBuilder(64);
-            format(buffer,":INFO:",msg,thrown);
-            (_stderr==null?System.err:_stderr).println(buffer);
+            format(buffer, ":INFO:", msg, thrown);
+            (_stderr == null ? System.err : _stderr).println(buffer);
         }
     }
 
@@ -366,7 +355,7 @@ public class StdErrLog extends AbstractLogger
             this._level = LEVEL_DEBUG;
 
             for (Logger log : Log.getLoggers().values())
-            {                
+            {
                 if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
                     ((StdErrLog)log).setLevel(LEVEL_DEBUG);
             }
@@ -394,8 +383,7 @@ public class StdErrLog extends AbstractLogger
      * Available values ({@link StdErrLog#LEVEL_ALL}, {@link StdErrLog#LEVEL_DEBUG}, {@link StdErrLog#LEVEL_INFO},
      * {@link StdErrLog#LEVEL_WARN})
      *
-     * @param level
-     *            the level to set the logger to
+     * @param level the level to set the logger to
      */
     public void setLevel(int level)
     {
@@ -404,7 +392,7 @@ public class StdErrLog extends AbstractLogger
 
     public void setStdErrStream(PrintStream stream)
     {
-        this._stderr = stream==System.err?null:stream;
+        this._stderr = stream == System.err ? null : stream;
     }
 
     @Override
@@ -413,8 +401,8 @@ public class StdErrLog extends AbstractLogger
         if (_level <= LEVEL_DEBUG)
         {
             StringBuilder buffer = new StringBuilder(64);
-            format(buffer,":DBUG:",msg,args);
-            (_stderr==null?System.err:_stderr).println(buffer);
+            format(buffer, ":DBUG:", msg, args);
+            (_stderr == null ? System.err : _stderr).println(buffer);
         }
     }
 
@@ -424,15 +412,15 @@ public class StdErrLog extends AbstractLogger
         if (isDebugEnabled())
         {
             StringBuilder buffer = new StringBuilder(64);
-            format(buffer,":DBUG:",msg,arg);
-            (_stderr==null?System.err:_stderr).println(buffer);
+            format(buffer, ":DBUG:", msg, arg);
+            (_stderr == null ? System.err : _stderr).println(buffer);
         }
     }
-    
+
     @Override
     public void debug(Throwable thrown)
     {
-        debug("",thrown);
+        debug("", thrown);
     }
 
     @Override
@@ -441,101 +429,31 @@ public class StdErrLog extends AbstractLogger
         if (_level <= LEVEL_DEBUG)
         {
             StringBuilder buffer = new StringBuilder(64);
-            format(buffer,":DBUG:",msg,thrown);
-            (_stderr==null?System.err:_stderr).println(buffer);
+            format(buffer, ":DBUG:", msg, thrown);
+            (_stderr == null ? System.err : _stderr).println(buffer);
         }
     }
 
     private void format(StringBuilder buffer, String level, String msg, Object... args)
     {
         long now = System.currentTimeMillis();
-        int ms=(int)(now%1000);
+        int ms = (int)(now % 1000);
         String d = _dateCache.formatNow(now);
-        tag(buffer,d,ms,level);
-        format(buffer,msg,args);
+        tag(buffer, d, ms, level);
+        format(buffer, msg, args);
     }
 
     private void format(StringBuilder buffer, String level, String msg, Throwable thrown)
     {
-        format(buffer,level,msg);
+        format(buffer, level, msg);
         if (isHideStacks())
         {
-            format(buffer,": "+String.valueOf(thrown));
+            format(buffer, ": " + String.valueOf(thrown));
         }
         else
         {
-            format(buffer,thrown);
+            format(buffer, thrown);
         }
-    }
-
-    private void tag(StringBuilder buffer, String d, int ms, String tag)
-    {
-        buffer.setLength(0);
-        buffer.append(d);
-        if (ms > 99)
-        {
-            buffer.append('.');
-        }
-        else if (ms > 9)
-        {
-            buffer.append(".0");
-        }
-        else
-        {
-            buffer.append(".00");
-        }
-        buffer.append(ms).append(tag);
-        
-        String name=_printLongNames?_name:_abbrevname;
-        String tname=Thread.currentThread().getName();
-
-        int p=__tagpad>0?(name.length()+tname.length()-__tagpad):0;
-
-        if (p<0)
-        {
-            buffer
-            .append(name)
-            .append(':')
-            .append("                                                  ",0,-p)
-            .append(tname);
-        }
-        else if (p==0)
-        {
-            buffer.append(name).append(':').append(tname);
-        }
-        buffer.append(':');
-        
-        if (_source)
-        {
-            Throwable source = new Throwable();
-            StackTraceElement[] frames = source.getStackTrace();
-            for (int i = 0; i < frames.length; i++)
-            {
-                final StackTraceElement frame = frames[i];
-                String clazz = frame.getClassName();
-                if (clazz.equals(StdErrLog.class.getName()) || clazz.equals(Log.class.getName()))
-                {
-                    continue;
-                }
-                if (!_printLongNames && clazz.startsWith("org.eclipse.jetty."))
-                {
-                    buffer.append(condensePackageString(clazz));
-                }
-                else
-                {
-                    buffer.append(clazz);
-                }
-                buffer.append('#').append(frame.getMethodName());
-                if (frame.getFileName() != null)
-                {
-                    buffer.append('(').append(frame.getFileName()).append(':').append(frame.getLineNumber()).append(')');
-                }
-                buffer.append(':');
-                break;
-            }
-        }
-
-        buffer.append(' ');
     }
 
     private void format(StringBuilder builder, String msg, Object... args)
@@ -552,22 +470,59 @@ public class StdErrLog extends AbstractLogger
         int start = 0;
         for (Object arg : args)
         {
-            int bracesIndex = msg.indexOf(braces,start);
+            int bracesIndex = msg.indexOf(braces, start);
             if (bracesIndex < 0)
             {
-                escape(builder,msg.substring(start));
+                escape(builder, msg.substring(start));
                 builder.append(" ");
                 builder.append(arg);
                 start = msg.length();
             }
             else
             {
-                escape(builder,msg.substring(start,bracesIndex));
+                escape(builder, msg.substring(start, bracesIndex));
                 builder.append(String.valueOf(arg));
                 start = bracesIndex + braces.length();
             }
         }
-        escape(builder,msg.substring(start));
+        escape(builder, msg.substring(start));
+    }
+
+    protected void format(StringBuilder buffer, Throwable thrown)
+    {
+        format(buffer, thrown, "");
+    }
+
+    protected void format(StringBuilder buffer, Throwable thrown, String indent)
+    {
+        if (thrown == null)
+        {
+            buffer.append("null");
+        }
+        else
+        {
+            buffer.append(EOL).append(indent);
+            format(buffer, thrown.toString());
+            StackTraceElement[] elements = thrown.getStackTrace();
+            for (int i = 0; elements != null && i < elements.length; i++)
+            {
+                buffer.append(EOL).append(indent).append("\tat ");
+                format(buffer, elements[i].toString());
+            }
+
+            for (Throwable suppressed : thrown.getSuppressed())
+            {
+                buffer.append(EOL).append(indent).append("Suppressed: ");
+                format(buffer, suppressed, "\t|" + indent);
+            }
+
+            Throwable cause = thrown.getCause();
+            if (cause != null && cause != thrown)
+            {
+                buffer.append(EOL).append(indent).append("Caused by: ");
+                format(buffer, cause, indent);
+            }
+        }
     }
 
     private void escape(StringBuilder builder, String string)
@@ -602,43 +557,75 @@ public class StdErrLog extends AbstractLogger
             builder.append(string);
     }
 
-    protected void format(StringBuilder buffer, Throwable thrown)
+    private void tag(StringBuilder buffer, String d, int ms, String tag)
     {
-        format(buffer,thrown,"");
-    }
-    
-    protected void format(StringBuilder buffer, Throwable thrown, String indent)
-    {
-        if (thrown == null)
+        buffer.setLength(0);
+        buffer.append(d);
+        if (ms > 99)
         {
-            buffer.append("null");
+            buffer.append('.');
+        }
+        else if (ms > 9)
+        {
+            buffer.append(".0");
         }
         else
         {
-            buffer.append(EOL).append(indent);
-            format(buffer,thrown.toString());
-            StackTraceElement[] elements = thrown.getStackTrace();
-            for (int i = 0; elements != null && i < elements.length; i++)
-            {
-                buffer.append(EOL).append(indent).append("\tat ");
-                format(buffer,elements[i].toString());
-            }
+            buffer.append(".00");
+        }
+        buffer.append(ms).append(tag);
 
-            for (Throwable suppressed:thrown.getSuppressed())
+        String name = _printLongNames ? _name : _abbrevname;
+        String tname = Thread.currentThread().getName();
+
+        int p = __tagpad > 0 ? (name.length() + tname.length() - __tagpad) : 0;
+
+        if (p < 0)
+        {
+            buffer
+                .append(name)
+                .append(':')
+                .append("                                                  ", 0, -p)
+                .append(tname);
+        }
+        else if (p == 0)
+        {
+            buffer.append(name).append(':').append(tname);
+        }
+        buffer.append(':');
+
+        if (_source)
+        {
+            Throwable source = new Throwable();
+            StackTraceElement[] frames = source.getStackTrace();
+            for (int i = 0; i < frames.length; i++)
             {
-                buffer.append(EOL).append(indent).append("Suppressed: ");
-                format(buffer,suppressed,"\t|"+indent);
-            }
-            
-            Throwable cause = thrown.getCause();
-            if (cause != null && cause != thrown)
-            {
-                buffer.append(EOL).append(indent).append("Caused by: ");
-                format(buffer,cause,indent);
+                final StackTraceElement frame = frames[i];
+                String clazz = frame.getClassName();
+                if (clazz.equals(StdErrLog.class.getName()) || clazz.equals(Log.class.getName()))
+                {
+                    continue;
+                }
+                if (!_printLongNames && clazz.startsWith("org.eclipse.jetty."))
+                {
+                    buffer.append(condensePackageString(clazz));
+                }
+                else
+                {
+                    buffer.append(clazz);
+                }
+                buffer.append('#').append(frame.getMethodName());
+                if (frame.getFileName() != null)
+                {
+                    buffer.append('(').append(frame.getFileName()).append(':').append(frame.getLineNumber()).append(')');
+                }
+                buffer.append(':');
+                break;
             }
         }
-    }
 
+        buffer.append(' ');
+    }
 
     /**
      * Create a Child Logger of this Logger.
@@ -652,8 +639,8 @@ public class StdErrLog extends AbstractLogger
         logger._stderr = this._stderr;
 
         // Force the child to have any programmatic configuration
-        if (_level!=_configuredLevel)
-            logger._level=_level;
+        if (_level != _configuredLevel)
+            logger._level = _level;
 
         return logger;
     }
@@ -692,8 +679,8 @@ public class StdErrLog extends AbstractLogger
         if (_level <= LEVEL_ALL)
         {
             StringBuilder buffer = new StringBuilder(64);
-            format(buffer,":IGNORED:","",ignored);
-            (_stderr==null?System.err:_stderr).println(buffer);
+            format(buffer, ":IGNORED:", "", ignored);
+            (_stderr == null ? System.err : _stderr).println(buffer);
         }
     }
 }

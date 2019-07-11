@@ -43,7 +43,7 @@ public final class StartMatchers
             {
                 description.appendText("Path should exist");
             }
-            
+
             @Override
             public void describeMismatch(Object item, Description description)
             {
@@ -51,7 +51,7 @@ public final class StartMatchers
             }
         };
     }
-    
+
     public static Matcher<Path> notPathExists()
     {
         return new BaseMatcher<Path>()
@@ -68,7 +68,7 @@ public final class StartMatchers
             {
                 description.appendText("Path should not exist");
             }
-            
+
             @Override
             public void describeMismatch(Object item, Description description)
             {
@@ -76,7 +76,7 @@ public final class StartMatchers
             }
         };
     }
-    
+
     public static Matcher<Path> fileExists()
     {
         return new BaseMatcher<Path>()
@@ -93,7 +93,7 @@ public final class StartMatchers
             {
                 description.appendText("File should exist");
             }
-            
+
             @Override
             public void describeMismatch(Object item, Description description)
             {

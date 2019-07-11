@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <!-- ============================================================= -->
 <!-- Base SSL configuration                                        -->
@@ -26,13 +26,13 @@
           </Array>
         </Arg>
 
-        <Set name="host"><Property name="jetty.ssl.host" /></Set>
+        <Set name="host" property="jetty.ssl.host"/>
         <Set name="port"><Property name="jetty.ssl.port" default="8443" /></Set>
         <Set name="idleTimeout"><Property name="jetty.ssl.idleTimeout" default="30000"/></Set>
-        <Set name="acceptorPriorityDelta"><Property name="jetty.ssl.acceptorPriorityDelta" default="0"/></Set>
-        <Set name="acceptQueueSize"><Property name="jetty.ssl.acceptQueueSize" default="0"/></Set>
+        <Set name="acceptorPriorityDelta" property="jetty.ssl.acceptorPriorityDelta"/>
+        <Set name="acceptQueueSize" property="jetty.ssl.acceptQueueSize"/>
         <Get name="SelectorManager">
-          <Set name="connectTimeout"><Property name="jetty.ssl.connectTimeout" default="15000"/></Set>
+          <Set name="connectTimeout" property="jetty.ssl.connectTimeout"/>
         </Get>
       </New>
     </Arg>

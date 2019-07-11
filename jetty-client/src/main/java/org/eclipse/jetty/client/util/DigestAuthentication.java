@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
 
 /**
  * Implementation of the HTTP "Digest" authentication defined in RFC 2617.
@@ -69,15 +68,14 @@ public class DigestAuthentication extends AbstractAuthentication
         return "Digest";
     }
 
-    
     @Override
     public boolean matches(String type, URI uri, String realm)
     {
         // digest authenication requires a realm
         if (realm == null)
             return false;
-        
-        return super.matches(type,uri,realm);
+
+        return super.matches(type, uri, realm);
     }
 
     @Override
@@ -87,7 +85,7 @@ public class DigestAuthentication extends AbstractAuthentication
         String nonce = params.get("nonce");
         if (nonce == null || nonce.length() == 0)
             return null;
-        String opaque = params.get("opaque");
+        final String opaque = params.get("opaque");
         String algorithm = params.get("algorithm");
         if (algorithm == null)
             algorithm = "MD5";
@@ -98,7 +96,7 @@ public class DigestAuthentication extends AbstractAuthentication
         String clientQOP = null;
         if (serverQOP != null)
         {
-            List<String> serverQOPValues = StringUtil.csvSplit(null,serverQOP,0,serverQOP.length());
+            List<String> serverQOPValues = StringUtil.csvSplit(null, serverQOP, 0, serverQOP.length());
             if (serverQOPValues.contains("auth"))
                 clientQOP = "auth";
             else if (serverQOPValues.contains("auth-int"))
@@ -162,33 +160,33 @@ public class DigestAuthentication extends AbstractAuthentication
             if (digester == null)
                 return;
 
-            String A1 = user + ":" + realm + ":" + password;
-            String hashA1 = toHexString(digester.digest(A1.getBytes(StandardCharsets.ISO_8859_1)));
+            String a1 = user + ":" + realm + ":" + password;
+            String hashA1 = toHexString(digester.digest(a1.getBytes(StandardCharsets.ISO_8859_1)));
 
             String query = request.getQuery();
             String path = request.getPath();
             String uri = (query == null) ? path : path + "?" + query;
-            String A2 = request.getMethod() + ":" + uri;
+            String a2 = request.getMethod() + ":" + uri;
             if ("auth-int".equals(qop))
-                A2 += ":" + toHexString(digester.digest(content));
-            String hashA2 = toHexString(digester.digest(A2.getBytes(StandardCharsets.ISO_8859_1)));
+                a2 += ":" + toHexString(digester.digest(content));
+            String hashA2 = toHexString(digester.digest(a2.getBytes(StandardCharsets.ISO_8859_1)));
 
             String nonceCount;
             String clientNonce;
-            String A3;
+            String a3;
             if (qop != null)
             {
                 nonceCount = nextNonceCount();
                 clientNonce = newClientNonce();
-                A3 = hashA1 + ":" + nonce + ":" +  nonceCount + ":" + clientNonce + ":" + qop + ":" + hashA2;
+                a3 = hashA1 + ":" + nonce + ":" + nonceCount + ":" + clientNonce + ":" + qop + ":" + hashA2;
             }
             else
             {
                 nonceCount = null;
                 clientNonce = null;
-                A3 = hashA1 + ":" + nonce + ":" + hashA2;
+                a3 = hashA1 + ":" + nonce + ":" + hashA2;
             }
-            String hashA3 = toHexString(digester.digest(A3.getBytes(StandardCharsets.ISO_8859_1)));
+            final String hashA3 = toHexString(digester.digest(a3.getBytes(StandardCharsets.ISO_8859_1)));
 
             StringBuilder value = new StringBuilder("Digest");
             value.append(" username=\"").append(user).append("\"");

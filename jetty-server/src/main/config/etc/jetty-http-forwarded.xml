@@ -1,20 +1,21 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
   <Call name="addCustomizer">
     <Arg>
       <New class="org.eclipse.jetty.server.ForwardedRequestCustomizer">
-        <Set name="forwardedOnly"><Property name="jetty.httpConfig.forwardedOnly" default="false"/></Set>
-        <Set name="proxyAsAuthority"><Property name="jetty.httpConfig.forwardedProxyAsAuthority" default="false"/></Set>
-        <Set name="forwardedHeader"><Property name="jetty.httpConfig.forwardedHeader" default="Forwarded"/></Set>
-        <Set name="forwardedHostHeader"><Property name="jetty.httpConfig.forwardedHostHeader" default="X-Forwarded-Host"/></Set>
-        <Set name="forwardedServerHeader"><Property name="jetty.httpConfig.forwardedServerHeader" default="X-Forwarded-Server"/></Set>
-        <Set name="forwardedProtoHeader"><Property name="jetty.httpConfig.forwardedProtoHeader" default="X-Forwarded-Proto"/></Set>
-        <Set name="forwardedForHeader"><Property name="jetty.httpConfig.forwardedForHeader" default="X-Forwarded-For"/></Set>
-        <Set name="forwardedPortHeader"><Property name="jetty.httpConfig.forwardedPortHeader" default="X-Forwarded-Port"/></Set>
-        <Set name="forwardedHttpsHeader"><Property name="jetty.httpConfig.forwardedHttpsHeader" default="X-Proxied-Https"/></Set>
-        <Set name="forwardedSslSessionIdHeader"><Property name="jetty.httpConfig.forwardedSslSessionIdHeader" default="Proxy-ssl-id" /></Set>
-        <Set name="forwardedCipherSuiteHeader"><Property name="jetty.httpConfig.forwardedCipherSuiteHeader" default="Proxy-auth-cert"/></Set>
+        <Set name="forwardedOnly" property="jetty.httpConfig.forwardedOnly"/>
+        <Set name="proxyAsAuthority" property="jetty.httpConfig.forwardedProxyAsAuthority"/>
+        <Set name="forwardedPortAsAuthority" property="jetty.httpConfig.forwardedPortAsAuthority"/>
+        <Set name="forwardedHeader" property="jetty.httpConfig.forwardedHeader"/>
+        <Set name="forwardedHostHeader" property="jetty.httpConfig.forwardedHostHeader"/>
+        <Set name="forwardedServerHeader" property="jetty.httpConfig.forwardedServerHeader"/>
+        <Set name="forwardedProtoHeader" property="jetty.httpConfig.forwardedProtoHeader"/>
+        <Set name="forwardedForHeader" property="jetty.httpConfig.forwardedForHeader"/>
+        <Set name="forwardedPortHeader" property="jetty.httpConfig.forwardedPortHeader"/>
+        <Set name="forwardedHttpsHeader" property="jetty.httpConfig.forwardedHttpsHeader"/>
+        <Set name="forwardedSslSessionIdHeader" property="jetty.httpConfig.forwardedSslSessionIdHeader"/>
+        <Set name="forwardedCipherSuiteHeader" property="jetty.httpConfig.forwardedCipherSuiteHeader"/>
       </New>
     </Arg>
   </Call>

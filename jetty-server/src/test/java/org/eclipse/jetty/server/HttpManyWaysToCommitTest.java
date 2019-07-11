@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -47,8 +46,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     public static Stream<Arguments> httpVersions()
     {
         return Stream.of(
-                HttpVersion.HTTP_1_0,
-                HttpVersion.HTTP_1_1
+            HttpVersion.HTTP_1_0,
+            HttpVersion.HTTP_1_1
         ).map(Arguments::of);
     }
 
@@ -58,7 +57,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     {
         server.setHandler(new DoesNotSetHandledHandler(false));
         server.start();
-    
+
         HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(404));
@@ -70,7 +69,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     {
         server.setHandler(new DoesNotSetHandledHandler(true));
         server.start();
-    
+
         HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(500));
@@ -187,7 +186,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code", response.getStatus(), is(200));
         assertThat(response.getContent(), is("foobar"));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     @ParameterizedTest
@@ -203,7 +202,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code", response.getStatus(), is(200));
         assertThat("response body", response.getContent(), is("foobar"));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     private class ExplicitFlushHandler extends ThrowExceptionOnDemandHandler
@@ -234,7 +233,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         assertThat("response code", response.getStatus(), is(200));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     @ParameterizedTest
@@ -248,7 +247,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         assertThat("response code", response.getStatus(), is(200));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     private class SetHandledAndFlushWithoutContentHandler extends ThrowExceptionOnDemandHandler
@@ -279,7 +278,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code", response.getStatus(), is(200));
         assertThat(response.getContent(), is("foobar"));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     @ParameterizedTest
@@ -294,7 +293,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         // Since the 200 was committed, the 500 did not get the chance to be written
         assertThat("response code", response.getStatus(), is(200));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     private class WriteFlushWriteMoreHandler extends ThrowExceptionOnDemandHandler
@@ -327,9 +326,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code", response.getStatus(), is(200));
         assertThat(response.getContent(), is("foobar"));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
-    
+
     @ParameterizedTest
     @MethodSource("httpVersions")
     public void testHandledOverflow2(HttpVersion httpVersion) throws Exception
@@ -342,9 +341,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code", response.getStatus(), is(200));
         assertThat(response.getContent(), is("foobarfoobar"));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
-    
+
     @ParameterizedTest
     @MethodSource("httpVersions")
     public void testHandledOverflow3(HttpVersion httpVersion) throws Exception
@@ -357,7 +356,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code", response.getStatus(), is(200));
         assertThat(response.getContent(), is("foobarfoobar"));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     @ParameterizedTest
@@ -373,7 +372,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code", response.getStatus(), is(200));
         assertThat(response.getContent(), is("foobar"));
         assumingThat(httpVersion == HttpVersion.HTTP_1_1,
-                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
+            () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     private class OverflowHandler extends ThrowExceptionOnDemandHandler
@@ -410,7 +409,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
             super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
-    
+
     private class Overflow3Handler extends ThrowExceptionOnDemandHandler
     {
         private Overflow3Handler(boolean throwException)
@@ -439,11 +438,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     {
         server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
         server.start();
-        
+
         HttpTester.Response response = executeRequest(httpVersion);
         assertThat("response code", response.getStatus(), is(200));
         assertThat(response, containsHeaderValue("content-length", "6"));
-        byte content[] = response.getContentBytes();
+        byte[] content = response.getContentBytes();
         assertThat("content bytes", content.length, is(0));
         assertTrue(response.isEarlyEOF(), "response eof");
     }
@@ -471,8 +470,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response has no status", response.getStatus(), is(200));
         assertTrue(response.isEarlyEOF(), "response eof");
     }
-    
-    
+
     @ParameterizedTest
     @MethodSource("httpVersions")
     public void testSetContentLengthAndWriteExactlyThatAmountOfBytes(HttpVersion httpVersion) throws Exception
@@ -504,6 +502,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     private class SetContentLengthAndWriteInsufficientBytesHandler extends AbstractHandler
     {
         boolean flush;
+
         private SetContentLengthAndWriteInsufficientBytesHandler(boolean flush)
         {
             this.flush = flush;
@@ -519,7 +518,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
             response.getWriter().write("foo");
         }
     }
-    
+
     private class SetContentLengthAndWriteThatAmountOfBytesHandler extends ThrowExceptionOnDemandHandler
     {
         private SetContentLengthAndWriteThatAmountOfBytesHandler(boolean throwException)

@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.junit.jupiter.api.Test;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -127,7 +127,7 @@ public class ExtensionConfigTest
     @Test
     public void testParseList_Simple()
     {
-        String rawHeaders[] = new String[] {
+        String[] rawHeaders = new String[]{
             "permessage-compress; client_max_window_bits",
             "capture; output=\"wscapture.log\"",
             "identity"
@@ -147,7 +147,7 @@ public class ExtensionConfigTest
     @Test
     public void testParseList_Unsplit()
     {
-        String rawHeaders[] = new String[] {
+        String[] rawHeaders = new String[]{
             "permessage-compress; client_max_window_bits, identity",
             "capture; output=\"wscapture.log\""
         };

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Mixin the Thread Limit Handler to the entire server             -->
@@ -10,8 +10,8 @@
     <Arg>
       <New id="ThreadLimitHandler" class="org.eclipse.jetty.server.handler.ThreadLimitHandler">
         <Arg name="forwardedHeader"><Property name="jetty.threadlimit.forwardedHeader"/></Arg> 
-        <Set name="enabled"><Property name="jetty.threadlimit.enabled" default="true"/></Set> 
-        <Set name="threadLimit"><Property name="jetty.threadlimit.threadLimit" default="10"/></Set> 
+        <Set name="enabled" property="jetty.threadlimit.enabled"/> 
+        <Set name="threadLimit" property="jetty.threadlimit.threadLimit"/> 
       </New>
     </Arg>
   </Call>

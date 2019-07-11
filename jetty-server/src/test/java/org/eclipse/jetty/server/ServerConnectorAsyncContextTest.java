@@ -35,7 +35,7 @@ public class ServerConnectorAsyncContextTest extends LocalAsyncContextTest
     protected String getResponse(String request) throws Exception
     {
         ServerConnector connector = (ServerConnector)_connector;
-        Socket socket = new Socket((String)null,connector.getLocalPort());
+        Socket socket = new Socket((String)null, connector.getLocalPort());
         socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
         return IO.toString(socket.getInputStream());
     }

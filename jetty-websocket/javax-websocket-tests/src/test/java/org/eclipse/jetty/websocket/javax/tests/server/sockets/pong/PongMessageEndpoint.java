@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server.sockets.pong;
 
-import org.eclipse.jetty.util.BufferUtil;
-
+import java.nio.charset.StandardCharsets;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.PongMessage;
 import javax.websocket.Session;
-import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.util.BufferUtil;
 
 public class PongMessageEndpoint extends Endpoint implements MessageHandler.Whole<PongMessage>
 {
@@ -43,7 +43,7 @@ public class PongMessageEndpoint extends Endpoint implements MessageHandler.Whol
     @Override
     public void onMessage(PongMessage pong)
     {
-        byte buf[] = BufferUtil.toArray(pong.getApplicationData());
+        byte[] buf = BufferUtil.toArray(pong.getApplicationData());
         String message = new String(buf, StandardCharsets.UTF_8);
         this.session.getAsyncRemote().sendText("PongMessageEndpoint.onMessage(PongMessage):[" + path + "]:" + message);
     }

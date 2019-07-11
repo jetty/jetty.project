@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.common.encoders;
 
-import javax.websocket.Encoder;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.websocket.Encoder;
 
 /**
  * A {@code Future&lt;Void&gt;} that is already failed as a result of an Encode error

@@ -79,7 +79,7 @@ public class MessageOutputStream extends OutputStream
     {
         try
         {
-            send(new byte[] { (byte)b }, 0, 1);
+            send(new byte[]{(byte)b}, 0, 1);
         }
         catch (Throwable x)
         {
@@ -95,26 +95,6 @@ public class MessageOutputStream extends OutputStream
         try
         {
             flush(false);
-        }
-        catch (Throwable x)
-        {
-            // Notify without holding locks.
-            notifyFailure(x);
-            throw x;
-        }
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        try
-        {
-            flush(true);
-            bufferPool.release(buffer);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Stream closed, {} frames ({} bytes) sent", frameCount, bytesSent);
-            // Notify without holding locks.
-            notifySuccess();
         }
         catch (Throwable x)
         {
@@ -179,6 +159,26 @@ public class MessageOutputStream extends OutputStream
                 }
             }
             bytesSent += length;
+        }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        try
+        {
+            flush(true);
+            bufferPool.release(buffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stream closed, {} frames ({} bytes) sent", frameCount, bytesSent);
+            // Notify without holding locks.
+            notifySuccess();
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
         }
     }
 

@@ -68,8 +68,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 
         String host = "::1";
         Request request = client.newRequest(host, connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS);
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS);
 
         assertEquals(host, request.getHost());
         StringBuilder uri = new StringBuilder();
@@ -84,7 +84,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     public void testIDNHost(Scenario scenario) throws Exception
     {
         startClient(scenario);
-        assertThrows(IllegalArgumentException.class, ()-> {
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             client.newRequest(scenario.getScheme() + "://пример.рф"); // example.com-like host in IDN domain
         });
     }
@@ -107,18 +108,19 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
             startClient(scenario);
 
             ContentResponse response = client.newRequest("localhost", server.getLocalPort())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .followRedirects(false)
-                    .send();
+                .timeout(5, TimeUnit.SECONDS)
+                .followRedirects(false)
+                .send();
 
             HttpField location = response.getHeaders().getField(HttpHeader.LOCATION);
             assertEquals(incorrectlyDecoded, location.getValue());
 
-            ExecutionException x = assertThrows(ExecutionException.class, ()-> {
+            ExecutionException x = assertThrows(ExecutionException.class, () ->
+            {
                 client.newRequest("localhost", server.getLocalPort())
-                        .timeout(5, TimeUnit.SECONDS)
-                        .followRedirects(true)
-                        .send();
+                    .timeout(5, TimeUnit.SECONDS)
+                    .followRedirects(true)
+                    .send();
             });
             assertThat(x.getCause(), instanceOf(IllegalArgumentException.class));
         }
@@ -144,9 +146,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .path(path);
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .path(path);
 
         assertEquals(path, request.getPath());
         assertNull(request.getQuery());
@@ -180,9 +182,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 
         String pathQuery = path + "?" + query;
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .path(pathQuery);
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .path(pathQuery);
 
         assertEquals(path, request.getPath());
         assertEquals(query, request.getQuery());
@@ -217,10 +219,10 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .path(path)
-                .param(name, value);
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .path(path)
+            .param(name, value);
 
         assertEquals(path, request.getPath());
         assertEquals(query, request.getQuery());
@@ -257,10 +259,10 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .path(path + "?" + name1 + "=" + value1)
-                .param(name2, value2);
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .path(path + "?" + name1 + "=" + value1)
+            .param(name2, value2);
 
         assertEquals(path, request.getPath());
         assertEquals(query, request.getQuery());
@@ -302,10 +304,10 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .path(path + "?" + name1 + "=" + encodedValue1)
-                .param(name2, value2);
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .path(path + "?" + name1 + "=" + encodedValue1)
+            .param(name2, value2);
 
         assertEquals(path, request.getPath());
         assertEquals(query, request.getQuery());
@@ -339,9 +341,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .path(pathQuery);
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .path(pathQuery);
 
         assertEquals(path, request.getPath());
         assertEquals(query, request.getQuery());
@@ -373,9 +375,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .path(pathQuery);
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .path(pathQuery);
 
         assertEquals(path, request.getPath());
         assertEquals(query, request.getQuery());
@@ -406,11 +408,11 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/path?" + name1 + "=" + name1)
-                .param(name2, name2)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/path?" + name1 + "=" + name1)
+            .param(name2, name2)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -436,7 +438,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 
         String uri = scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/path?" + rawQuery;
         Request request = client.newRequest(uri)
-                .timeout(5, TimeUnit.SECONDS);
+            .timeout(5, TimeUnit.SECONDS);
         assertEquals(rawQuery, request.getQuery());
 
         ContentResponse response = request.send();
@@ -464,9 +466,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/path?" + rawQuery)
-                .timeout(5, TimeUnit.SECONDS);
+            .scheme(scenario.getScheme())
+            .path("/path?" + rawQuery)
+            .timeout(5, TimeUnit.SECONDS);
         assertEquals(rawQuery, request.getQuery());
 
         ContentResponse response = request.send();
@@ -499,10 +501,10 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/path?" + rawQuery1)
-                .param(name2, value2)
-                .timeout(5, TimeUnit.SECONDS);
+            .scheme(scenario.getScheme())
+            .path("/path?" + rawQuery1)
+            .param(name2, value2)
+            .timeout(5, TimeUnit.SECONDS);
         assertEquals(query, request.getQuery());
 
         ContentResponse response = request.send();
@@ -524,9 +526,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme().toUpperCase(Locale.ENGLISH))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme().toUpperCase(Locale.ENGLISH))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -545,9 +547,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("LOCALHOST", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -568,10 +570,10 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .method(HttpMethod.OPTIONS)
-                .scheme(scenario.getScheme())
-                .path("*")
-                .timeout(5, TimeUnit.SECONDS);
+            .method(HttpMethod.OPTIONS)
+            .scheme(scenario.getScheme())
+            .path("*")
+            .timeout(5, TimeUnit.SECONDS);
 
         assertEquals("*", request.getPath());
         assertNull(request.getQuery());
@@ -615,10 +617,10 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
                         }
 
                         writer.append("HTTP/1.1 302 Found\r\n")
-                                .append("Location: ").append(location).append("\r\n")
-                                .append("Content-Length: 0\r\n")
-                                .append("Connection: close\r\n")
-                                .append("\r\n");
+                            .append("Location: ").append(location).append("\r\n")
+                            .append("Content-Length: 0\r\n")
+                            .append("Connection: close\r\n")
+                            .append("\r\n");
                         writer.flush();
                     }
                 }

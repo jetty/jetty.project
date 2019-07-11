@@ -28,13 +28,13 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 
 public class ExampleServer
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server();
 
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(8080);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
@@ -42,7 +42,7 @@ public class ExampleServer
         context.addServlet(AsyncEchoServlet.class, "/echo/*");
 
         HandlerCollection handlers = new HandlerCollection();
-        handlers.setHandlers(new Handler[] { context, new DefaultHandler() });
+        handlers.setHandlers(new Handler[]{context, new DefaultHandler()});
         server.setHandler(handlers);
 
         server.start();

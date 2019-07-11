@@ -21,7 +21,7 @@ package org.eclipse.jetty.server.jmh;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.server.DeflaterPool;
+import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -87,7 +87,6 @@ public class DeflaterPoolBenchmark
     {
     }
 
-
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
     @SuppressWarnings("deprecation")
@@ -97,7 +96,7 @@ public class DeflaterPoolBenchmark
         deflater.setInput(COMPRESSION_STRING.getBytes());
         deflater.finish();
 
-        byte[] output = new byte[COMPRESSION_STRING.length()+1];
+        byte[] output = new byte[COMPRESSION_STRING.length() + 1];
         int compressedDataLength = deflater.deflate(output);
         _pool.release(deflater);
 
@@ -107,13 +106,13 @@ public class DeflaterPoolBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                .include(DeflaterPoolBenchmark.class.getSimpleName())
-                .warmupIterations(20)
-                .measurementIterations(10)
-                .addProfiler(GCProfiler.class)
-                .forks(1)
-                .threads(100)
-                .build();
+            .include(DeflaterPoolBenchmark.class.getSimpleName())
+            .warmupIterations(20)
+            .measurementIterations(10)
+            .addProfiler(GCProfiler.class)
+            .forks(1)
+            .threads(100)
+            .build();
 
         new Runner(opt).run();
     }

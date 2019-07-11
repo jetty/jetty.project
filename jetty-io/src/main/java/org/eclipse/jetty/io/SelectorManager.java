@@ -74,9 +74,9 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         {
             int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
             int cpus = ProcessorUtils.availableProcessors();
-            return Math.max(1,Math.min(cpus/2,threads/16));
+            return Math.max(1, Math.min(cpus / 2, threads / 16));
         }
-        return Math.max(1,ProcessorUtils.availableProcessors()/2);
+        return Math.max(1, ProcessorUtils.availableProcessors() / 2);
     }
 
     protected SelectorManager(Executor executor, Scheduler scheduler)
@@ -97,7 +97,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
-        _selectorIndexUpdate = index -> (index+1)%_selectors.length;
+        _selectorIndexUpdate = index -> (index + 1) % _selectors.length;
     }
 
     @ManagedAttribute("The Executor")
@@ -163,7 +163,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * must be called prior to calling this method, and the connect operation must not be completed
      * (the return value of {@link SocketChannel#connect(SocketAddress)} must be false).</p>
      *
-     * @param channel    the channel to register
+     * @param channel the channel to register
      * @param attachment the attachment object
      * @see #accept(SelectableChannel, Object)
      */
@@ -189,7 +189,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * just after a non-blocking connect via {@link SocketChannel#connect(SocketAddress)} that completed
      * successfully.</p>
      *
-     * @param channel    the channel to register
+     * @param channel the channel to register
      * @param attachment the attachment object
      */
     public void accept(SelectableChannel channel, Object attachment)
@@ -253,6 +253,11 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return new ManagedSelector(this, id);
     }
 
+    protected Selector newSelector() throws IOException
+    {
+        return Selector.open();
+    }
+
     @Override
     protected void doStop() throws Exception
     {
@@ -265,10 +270,10 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             // Cleanup
             for (ManagedSelector selector : _selectors)
             {
-                if (selector!=null)
+                if (selector != null)
                     removeBean(selector);
             }
-            Arrays.fill(_selectors,null);
+            Arrays.fill(_selectors, null);
             if (_lease != null)
                 _lease.close();
         }
@@ -346,13 +351,12 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return ((ServerSocketChannel)server).accept();
     }
 
-
     /**
      * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
      * <p>By default it just logs with level warning.</p>
      *
-     * @param channel    the channel that attempted the connect
-     * @param ex         the exception that caused the connect to fail
+     * @param channel the channel that attempted the connect
+     * @param ex the exception that caused the connect to fail
      * @param attachment the attachment object associated at registration
      */
     protected void connectionFailed(SelectableChannel channel, Throwable ex, Object attachment)
@@ -360,18 +364,13 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         LOG.warn(String.format("%s - %s", channel, attachment), ex);
     }
 
-    protected Selector newSelector() throws IOException
-    {
-        return Selector.open();
-    }
-
     /**
      * <p>Factory method to create {@link EndPoint}.</p>
      * <p>This method is invoked as a result of the registration of a channel via {@link #connect(SelectableChannel, Object)}
      * or {@link #accept(SelectableChannel)}.</p>
      *
-     * @param channel      the channel associated to the endpoint
-     * @param selector     the selector the channel is registered to
+     * @param channel the channel associated to the endpoint
+     * @param selector the selector the channel is registered to
      * @param selectionKey the selection key
      * @return a new endpoint
      * @throws IOException if the endPoint cannot be created
@@ -382,8 +381,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     /**
      * <p>Factory method to create {@link Connection}.</p>
      *
-     * @param channel    the channel associated to the connection
-     * @param endpoint   the endpoint
+     * @param channel the channel associated to the connection
+     * @param endpoint the endpoint
      * @param attachment the attachment
      * @return a new connection
      * @throws IOException if unable to create new connection
@@ -396,8 +395,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             throw new IllegalStateException(this.toString());
         if (listener instanceof AcceptListener)
             addAcceptListener(AcceptListener.class.cast(listener));
-    }   
-    
+    }
+
     public void removeEventListener(EventListener listener)
     {
         if (isRunning())
@@ -414,9 +413,9 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
 
     public void removeAcceptListener(AcceptListener listener)
     {
-            _acceptListeners.remove(listener);
+        _acceptListeners.remove(listener);
     }
-    
+
     protected void onAccepting(SelectableChannel channel)
     {
         for (AcceptListener l : _acceptListeners)
@@ -431,14 +430,14 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             }
         }
     }
-    
+
     protected void onAcceptFailed(SelectableChannel channel, Throwable cause)
     {
         for (AcceptListener l : _acceptListeners)
         {
             try
             {
-                l.onAcceptFailed(channel,cause);
+                l.onAcceptFailed(channel, cause);
             }
             catch (Throwable x)
             {
@@ -446,7 +445,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             }
         }
     }
-    
+
     protected void onAccepted(SelectableChannel channel)
     {
         for (AcceptListener l : _acceptListeners)
@@ -472,24 +471,33 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         /**
          * Called immediately after a new SelectableChannel is accepted, but
          * before it has been submitted to the {@link SelectorManager}.
+         *
          * @param channel the accepted channel
          */
-        default void onAccepting(SelectableChannel channel) {}
-        
+        default void onAccepting(SelectableChannel channel)
+        {
+        }
+
         /**
          * Called if the processing of the accepted channel fails prior to calling
          * {@link #onAccepted(SelectableChannel)}.
+         *
          * @param channel the accepted channel
          * @param cause the cause of the failure
          */
-        default void onAcceptFailed(SelectableChannel channel, Throwable cause) {}
-        
+        default void onAcceptFailed(SelectableChannel channel, Throwable cause)
+        {
+        }
+
         /**
-         * Called after the accepted channel has been allocated an {@link EndPoint} 
+         * Called after the accepted channel has been allocated an {@link EndPoint}
          * and associated {@link Connection}, and after the onOpen notifications have
          * been called on both endPoint and connection.
+         *
          * @param channel the accepted channel
          */
-        default void onAccepted(SelectableChannel channel) {}
+        default void onAccepted(SelectableChannel channel)
+        {
+        }
     }
 }

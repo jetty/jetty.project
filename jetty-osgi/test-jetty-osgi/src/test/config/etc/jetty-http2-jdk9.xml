@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <!-- ============================================================= -->
 <!-- Configure a HTTP2 on the ssl connector.                       -->
@@ -9,9 +9,9 @@
     <Arg>
       <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
         <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
-        <Set name="maxConcurrentStreams"><Property name="jetty.http2.maxConcurrentStreams" default="128"/></Set>
-        <Set name="initialStreamRecvWindow"><Property name="jetty.http2.initialStreamRecvWindow" default="524288"/></Set>
-        <Set name="initialSessionRecvWindow"><Property name="jetty.http2.initialSessionRecvWindow" default="1048576"/></Set>
+        <Set name="maxConcurrentStreams" property="jetty.http2.maxConcurrentStreams"/>
+        <Set name="initialStreamRecvWindow" property="jetty.http2.initialStreamRecvWindow"/>
+        <Set name="initialSessionRecvWindow" property="jetty.http2.initialSessionRecvWindow"/>
       </New>
     </Arg>
   </Call>

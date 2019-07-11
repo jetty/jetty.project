@@ -32,10 +32,11 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -84,7 +85,7 @@ public class SuspendResumeTest
         server.setHandler(contextHandler);
         contextHandler.addServlet(new ServletHolder(new UpgradeServlet()), "/suspend");
 
-        JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
 
         server.start();
         client.start();
@@ -100,7 +101,7 @@ public class SuspendResumeTest
     @Test
     public void testSuspendWhenProcessingFrame() throws Exception
     {
-        URI uri = new URI("ws://localhost:"+connector.getLocalPort()+"/suspend");
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();
         Future<Session> connect = client.connect(clientSocket, uri);
         connect.get(5, TimeUnit.SECONDS);
@@ -133,7 +134,7 @@ public class SuspendResumeTest
     @Test
     public void testExternalSuspend() throws Exception
     {
-        URI uri = new URI("ws://localhost:"+connector.getLocalPort()+"/suspend");
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
         EventSocket clientSocket = new EventSocket();
         Future<Session> connect = client.connect(clientSocket, uri);
         connect.get(5, TimeUnit.SECONDS);
@@ -166,5 +167,33 @@ public class SuspendResumeTest
         // check no errors occurred
         assertNull(clientSocket.error);
         assertNull(serverSocket.error);
+    }
+
+    @Disabled
+    @Test
+    public void testSuspendAfterClose() throws Exception
+    {
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
+        EventSocket clientSocket = new EventSocket();
+        Future<Session> connect = client.connect(clientSocket, uri);
+        connect.get(5, TimeUnit.SECONDS);
+
+        // verify connection by sending a message from server to client
+        assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
+        serverSocket.session.getRemote().sendString("verification");
+        assertThat(clientSocket.messageQueue.poll(5, TimeUnit.SECONDS), is("verification"));
+
+        // make sure both sides are closed
+        clientSocket.session.close();
+        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+
+        // check no errors occurred
+        assertNull(clientSocket.error);
+        assertNull(serverSocket.error);
+
+        // suspend the client so that no read events occur
+        SuspendToken suspendToken = clientSocket.session.suspend();
+        suspendToken.resume();
     }
 }

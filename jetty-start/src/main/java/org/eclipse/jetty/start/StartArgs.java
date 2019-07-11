@@ -60,17 +60,17 @@ public class StartArgs
     static
     {
         // Use command line versions
-        String ver = System.getProperty("jetty.version",null);
-        String tag = System.getProperty("jetty.tag.version","master");
+        String ver = System.getProperty("jetty.version", null);
+        String tag = System.getProperty("jetty.tag.version", "master");
 
         // Use META-INF/MANIFEST.MF versions
         if (ver == null)
         {
             ver = ManifestUtils.getManifest(StartArgs.class)
-                    .map(Manifest::getMainAttributes)
-                    .filter(attributes -> "Eclipse Jetty Project".equals(attributes.getValue("Implementation-Vendor")))
-                    .map(attributes -> attributes.getValue("Implementation-Version"))
-                    .orElse(null);
+                .map(Manifest::getMainAttributes)
+                .filter(attributes -> "Eclipse Jetty Project".equals(attributes.getValue("Implementation-Vendor")))
+                .map(attributes -> attributes.getValue("Implementation-Version"))
+                .orElse(null);
         }
 
         // Use jetty-version.properties values
@@ -119,62 +119,94 @@ public class StartArgs
 
     private final BaseHome baseHome;
 
-    /** List of enabled modules */
+    /**
+     * List of enabled modules
+     */
     private List<String> modules = new ArrayList<>();
 
-    /** List of modules to skip [files] section validation */
+    /**
+     * List of modules to skip [files] section validation
+     */
     private Set<String> skipFileValidationModules = new HashSet<>();
 
-    /** Map of enabled modules to the source of where that activation occurred */
+    /**
+     * Map of enabled modules to the source of where that activation occurred
+     */
     Map<String, List<String>> sources = new HashMap<>();
 
-    /** List of all active [files] sections from enabled modules */
+    /**
+     * List of all active [files] sections from enabled modules
+     */
     private List<FileArg> files = new ArrayList<>();
 
-    /** List of all active [lib] sections from enabled modules */
+    /**
+     * List of all active [lib] sections from enabled modules
+     */
     private Classpath classpath;
 
-    /** List of all active [xml] sections from enabled modules */
+    /**
+     * List of all active [xml] sections from enabled modules
+     */
     private List<Path> xmls = new ArrayList<>();
 
-    /** List of all active [jpms] sections for enabled modules */
+    /**
+     * List of all active [jpms] sections for enabled modules
+     */
     private Set<String> jmodAdds = new LinkedHashSet<>();
     private Map<String, Set<String>> jmodPatch = new LinkedHashMap<>();
     private Map<String, Set<String>> jmodOpens = new LinkedHashMap<>();
     private Map<String, Set<String>> jmodExports = new LinkedHashMap<>();
     private Map<String, Set<String>> jmodReads = new LinkedHashMap<>();
 
-    /** JVM arguments, found via command line and in all active [exec] sections from enabled modules */
+    /**
+     * JVM arguments, found via command line and in all active [exec] sections from enabled modules
+     */
     private List<String> jvmArgs = new ArrayList<>();
 
-    /** List of all xml references found directly on command line or start.ini */
+    /**
+     * List of all xml references found directly on command line or start.ini
+     */
     private List<String> xmlRefs = new ArrayList<>();
 
-    /** List of all property references found directly on command line or start.ini */
+    /**
+     * List of all property references found directly on command line or start.ini
+     */
     private List<String> propertyFileRefs = new ArrayList<>();
 
-    /** List of all property files */
+    /**
+     * List of all property files
+     */
     private List<Path> propertyFiles = new ArrayList<>();
 
     private Props properties = new Props();
-    private Map<String,String> systemPropertySource = new HashMap<>();
+    private Map<String, String> systemPropertySource = new HashMap<>();
     private List<String> rawLibs = new ArrayList<>();
 
     // jetty.base - build out commands
-    /** --add-to-start[d]=[module,[module]] */
+    /**
+     * --add-to-start[d]=[module,[module]]
+     */
     private List<String> startModules = new ArrayList<>();
 
     // module inspection commands
-    /** --write-module-graph=[filename] */
+    /**
+     * --write-module-graph=[filename]
+     */
     private String moduleGraphFilename;
 
-    /** Collection of all modules */
+    /**
+     * Collection of all modules
+     */
     private Modules allModules;
 
-    /** Should the server be run? */
+    /**
+     * Should the server be run?
+     */
     private boolean run = true;
 
-    /** Files related args */
+    /**
+     * Files related args
+     */
     private boolean createFiles = false;
     private boolean licenseCheckRequired = false;
     private boolean testingMode = false;
@@ -192,7 +224,7 @@ public class StartArgs
     private String mavenBaseUri;
 
     private boolean exec = false;
-    private String exec_properties;
+    private String execProperties;
     private boolean approveAllLicenses = false;
 
     public StartArgs(BaseHome baseHome)
@@ -205,11 +237,11 @@ public class StartArgs
     {
         if (module.isSkipFilesValidation())
         {
-            StartLog.debug("Not validating %s [files] for %s",module,uriLocation);
+            StartLog.debug("Not validating %s [files] for %s", module, uriLocation);
             return;
         }
 
-        FileArg arg = new FileArg(module,properties.expand(uriLocation));
+        FileArg arg = new FileArg(module, properties.expand(uriLocation));
         if (!files.contains(arg))
         {
             files.add(arg);
@@ -255,7 +287,7 @@ public class StartArgs
 
         for (Path xml : xmls)
         {
-            System.out.printf(" %s%n",baseHome.toShortForm(xml.toAbsolutePath()));
+            System.out.printf(" %s%n", baseHome.toShortForm(xml.toAbsolutePath()));
         }
     }
 
@@ -292,13 +324,13 @@ public class StartArgs
         System.out.println("--------------------");
         for (ConfigSource config : baseHome.getConfigSources())
         {
-            System.out.printf(" %s",config.getId());
+            System.out.printf(" %s", config.getId());
             if (config instanceof DirConfigSource)
             {
                 DirConfigSource dirsource = (DirConfigSource)config;
                 if (dirsource.isPropertyBased())
                 {
-                    System.out.printf(" -> %s",dirsource.getDir());
+                    System.out.printf(" -> %s", dirsource.getDir());
                 }
             }
             System.out.println();
@@ -324,11 +356,11 @@ public class StartArgs
             String value = System.getProperty(jvmArgKey);
             if (value != null)
             {
-                System.out.printf(" %s = %s%n",jvmArgKey,value);
+                System.out.printf(" %s = %s%n", jvmArgKey, value);
             }
             else
             {
-                System.out.printf(" %s%n",jvmArgKey);
+                System.out.printf(" %s%n", jvmArgKey);
             }
         }
     }
@@ -361,7 +393,7 @@ public class StartArgs
         {
             dumpProperty(key);
         }
-        
+
         for (Path path : propertyFiles)
         {
             String p = baseHome.toShortForm(path);
@@ -373,18 +405,18 @@ public class StartArgs
                     props.load(new FileInputStream(path.toFile()));
                     for (Object key : props.keySet())
                     {
-                        System.out.printf(" %s:%s = %s%n",p,key,props.getProperty(String.valueOf(key)));
+                        System.out.printf(" %s:%s = %s%n", p, key, props.getProperty(String.valueOf(key)));
                     }
                 }
                 catch (Throwable th)
                 {
-                    System.out.printf(" %s NOT READABLE!%n",p);
+                    System.out.printf(" %s NOT READABLE!%n", p);
                 }
             }
             else
             {
 
-                System.out.printf(" %s NOT READABLE!%n",p);
+                System.out.printf(" %s NOT READABLE!%n", p);
             }
         }
     }
@@ -394,13 +426,13 @@ public class StartArgs
         Prop prop = properties.getProp(key);
         if (prop == null)
         {
-            System.out.printf(" %s (not defined)%n",key);
+            System.out.printf(" %s (not defined)%n", key);
         }
         else
         {
-            System.out.printf(" %s = %s%n",key,prop.value);
+            System.out.printf(" %s = %s%n", key, prop.value);
             if (StartLog.isDebugEnabled())
-                System.out.printf("   origin: %s%n",prop.source);
+                System.out.printf("   origin: %s%n", prop.source);
         }
     }
 
@@ -420,21 +452,22 @@ public class StartArgs
         Collections.sort(sortedKeys);
 
         for (String key : sortedKeys)
+        {
             dumpSystemProperty(key);
+        }
     }
 
     private void dumpSystemProperty(String key)
     {
         String value = System.getProperty(key);
         String source = systemPropertySource.get(key);
-        System.out.printf(" %s = %s (%s)%n",key,value,source);
+        System.out.printf(" %s = %s (%s)%n", key, value, source);
     }
 
     /**
      * Ensure that the System Properties are set (if defined as a System property, or start.config property, or start.ini property)
      *
-     * @param key
-     *            the key to be sure of
+     * @param key the key to be sure of
      */
     private void ensureSystemPropertySet(String key)
     {
@@ -446,13 +479,13 @@ public class StartArgs
         if (properties.containsKey(key))
         {
             Prop prop = properties.getProp(key);
-            if (prop==null)
+            if (prop == null)
                 return; // no value set;
-            
+
             String val = properties.expand(prop.value);
             // setup system property
-            systemPropertySource.put(key,"property:"+prop.source);
-            System.setProperty(key,val);
+            systemPropertySource.put(key, "property:" + prop.source);
+            System.setProperty(key, val);
         }
     }
 
@@ -462,24 +495,23 @@ public class StartArgs
     public void expandSystemProperties()
     {
         StartLog.debug("Expanding System Properties");
-        
+
         for (String key : systemPropertySource.keySet())
         {
             String value = properties.getString(key);
-            if (value!=null)
+            if (value != null)
             {
                 String expanded = properties.expand(value);
                 if (!value.equals(expanded))
-                    System.setProperty(key,expanded);
+                    System.setProperty(key, expanded);
             }
         }
     }
-    
+
     /**
      * Expand any command line added {@code --lib} lib references.
      *
-     * @throws IOException
-     *             if unable to expand the libraries
+     * @throws IOException if unable to expand the libraries
      */
     public void expandLibs() throws IOException
     {
@@ -491,7 +523,7 @@ public class StartArgs
             StartLog.debug("expanded = " + libref);
 
             // perform path escaping (needed by windows)
-            libref = libref.replaceAll("\\\\([^\\\\])","\\\\\\\\$1");
+            libref = libref.replaceAll("\\\\([^\\\\])", "\\\\\\\\$1");
 
             for (Path libpath : baseHome.getPaths(libref))
             {
@@ -503,10 +535,8 @@ public class StartArgs
     /**
      * Build up the Classpath and XML file references based on enabled Module list.
      *
-     * @param activeModules
-     *            the active (selected) modules
-     * @throws IOException
-     *             if unable to expand the modules
+     * @param activeModules the active (selected) modules
+     * @throws IOException if unable to expand the modules
      */
     public void expandModules(List<Module> activeModules) throws IOException
     {
@@ -538,14 +568,14 @@ public class StartArgs
                 // Straight Reference
                 xmlRef = properties.expand(xmlRef);
                 Path xmlfile = baseHome.getPath(xmlRef);
-                addUniqueXmlFile(xmlRef,xmlfile);
+                addUniqueXmlFile(xmlRef, xmlfile);
             }
 
             // Register Download operations
             for (String file : module.getFiles())
             {
-                StartLog.debug("Adding module specified file: %s",file);
-                addFile(module,file);
+                StartLog.debug("Adding module specified file: %s", file);
+                addFile(module, file);
             }
         }
     }
@@ -587,7 +617,7 @@ public class StartArgs
         }
         jmodAdds.add("ALL-MODULE-PATH");
         StartLog.debug("Expanded JPMS directives:%nadd-modules: %s%npatch-modules: %s%nadd-opens: %s%nadd-exports: %s%nadd-reads: %s",
-                jmodAdds, jmodPatch, jmodOpens, jmodExports, jmodReads);
+            jmodAdds, jmodPatch, jmodOpens, jmodExports, jmodReads);
     }
 
     private void parseJPMSKeyValue(Module module, String line, String directive, boolean valueIsFile, Map<String, Set<String>> output) throws IOException
@@ -665,13 +695,13 @@ public class StartArgs
             for (String x : getJvmArgs())
             {
                 if (x.startsWith("-D"))
-                {            
-                    String[] assign = x.substring(2).split("=",2);
+                {
+                    String[] assign = x.substring(2).split("=", 2);
                     String key = assign[0];
-                    String value = assign.length==1?"":assign[1];
+                    String value = assign.length == 1 ? "" : assign[1];
 
-                    Prop p = processSystemProperty(key,value,null);
-                    cmd.addRawArg("-D"+p.key+"="+getProperties().expand(p.value));
+                    Prop p = processSystemProperty(key, value, null);
+                    cmd.addRawArg("-D" + p.key + "=" + getProperties().expand(p.value));
                 }
                 else
                 {
@@ -683,20 +713,20 @@ public class StartArgs
             for (String propKey : systemPropertySource.keySet())
             {
                 String value = System.getProperty(propKey);
-                cmd.addEqualsArg("-D" + propKey,value);
+                cmd.addEqualsArg("-D" + propKey, value);
             }
 
             if (isJPMS())
             {
                 Map<Boolean, List<File>> dirsAndFiles = StreamSupport.stream(classpath.spliterator(), false)
-                        .collect(Collectors.groupingBy(File::isDirectory));
+                    .collect(Collectors.groupingBy(File::isDirectory));
                 List<File> files = dirsAndFiles.get(false);
                 if (files != null && !files.isEmpty())
                 {
                     cmd.addRawArg("--module-path");
                     String modules = files.stream()
-                            .map(File::getAbsolutePath)
-                            .collect(Collectors.joining(File.pathSeparator));
+                        .map(File::getAbsolutePath)
+                        .collect(Collectors.joining(File.pathSeparator));
                     cmd.addRawArg(modules);
                 }
                 List<File> dirs = dirsAndFiles.get(true);
@@ -704,8 +734,8 @@ public class StartArgs
                 {
                     cmd.addRawArg("--class-path");
                     String directories = dirs.stream()
-                            .map(File::getAbsolutePath)
-                            .collect(Collectors.joining(File.pathSeparator));
+                        .map(File::getAbsolutePath)
+                        .collect(Collectors.joining(File.pathSeparator));
                     cmd.addRawArg(directories);
                 }
 
@@ -746,29 +776,30 @@ public class StartArgs
             }
         }
 
-       
         // pass properties as args or as a file
-        if (dryRun && exec_properties == null)
+        if (dryRun && execProperties == null)
         {
             for (Prop p : properties)
+            {
                 cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(p.value));
+            }
         }
         else if (properties.size() > 0)
         {
-            Path prop_path;
-            if (exec_properties == null)
+            Path propPath;
+            if (execProperties == null)
             {
-                prop_path = Files.createTempFile("start_",".properties");
-                prop_path.toFile().deleteOnExit();
+                propPath = Files.createTempFile("start_", ".properties");
+                propPath.toFile().deleteOnExit();
             }
             else
-                prop_path = new File(exec_properties).toPath();
+                propPath = new File(execProperties).toPath();
 
-            try (OutputStream out = Files.newOutputStream(prop_path))
+            try (OutputStream out = Files.newOutputStream(propPath))
             {
-                properties.store(out,"start.jar properties");
+                properties.store(out, "start.jar properties");
             }
-            cmd.addRawArg(prop_path.toAbsolutePath().toString());
+            cmd.addRawArg(propPath.toAbsolutePath().toString());
         }
 
         for (Path xml : xmls)
@@ -812,9 +843,9 @@ public class StartArgs
         {
             // Try generic env variable
             String home = System.getenv("HOME");
-            Path home_m2_repository = new File(new File(home,".m2"),"repository").toPath();
-            if (Files.exists(home_m2_repository))
-                localRepo = home_m2_repository.toString();
+            Path localMavenRepository = new File(new File(home, ".m2"), "repository").toPath();
+            if (Files.exists(localMavenRepository))
+                localRepo = localMavenRepository.toString();
         }
 
         // TODO: possibly use Eclipse Aether to manage it ?
@@ -833,7 +864,7 @@ public class StartArgs
             return localRepoDir;
         }
 
-        StartLog.warn("Not a valid maven local repository directory: %s",localRepoDir);
+        StartLog.warn("Not a valid maven local repository directory: %s", localRepoDir);
 
         // Not a valid repository directory, skip it
         return null;
@@ -974,7 +1005,7 @@ public class StartArgs
         return mavenBaseUri;
     }
 
-    public void parse( ConfigSources sources)
+    public void parse(ConfigSources sources)
     {
         ListIterator<ConfigSource> iter = sources.reverseListIterator();
         while (iter.hasPrevious())
@@ -982,7 +1013,7 @@ public class StartArgs
             ConfigSource source = iter.previous();
             for (RawArgs.Entry arg : source.getArgs())
             {
-                parse(arg.getLine(),arg.getOrigin());
+                parse(arg.getLine(), arg.getOrigin());
             }
         }
     }
@@ -990,10 +1021,8 @@ public class StartArgs
     /**
      * Parse a single line of argument.
      *
-     * @param rawarg
-     *            the raw argument to parse
-     * @param source
-     *            the origin of this line of argument
+     * @param rawarg the raw argument to parse
+     * @param source the origin of this line of argument
      */
     public void parse(final String rawarg, String source)
     {
@@ -1002,7 +1031,7 @@ public class StartArgs
             return;
         }
 
-        StartLog.debug("parse(\"%s\", \"%s\")",rawarg,source);
+        StartLog.debug("parse(\"%s\", \"%s\")", rawarg, source);
 
         final String arg = rawarg.trim();
 
@@ -1031,7 +1060,7 @@ public class StartArgs
 
         if ("--testing-mode".equals(arg))
         {
-            System.setProperty("org.eclipse.jetty.start.testing","true");
+            System.setProperty("org.eclipse.jetty.start.testing", "true");
             testingMode = true;
             return;
         }
@@ -1041,15 +1070,15 @@ public class StartArgs
             Path commands = baseHome.getPath(Props.getValue(arg));
 
             if (!Files.exists(commands) || !Files.isReadable(commands))
-                throw new UsageException(UsageException.ERR_BAD_ARG,"--commands file must be readable: %s",commands);
+                throw new UsageException(UsageException.ERR_BAD_ARG, "--commands file must be readable: %s", commands);
             try
             {
                 TextFile file = new TextFile(commands);
-                StartLog.info("reading commands from %s",baseHome.toShortForm(commands));
+                StartLog.info("reading commands from %s", baseHome.toShortForm(commands));
                 String s = source + "|" + baseHome.toShortForm(commands);
                 for (String line : file)
                 {
-                    parse(line,s);
+                    parse(line, s);
                 }
             }
             catch (IOException e)
@@ -1073,7 +1102,7 @@ public class StartArgs
 
         if (arg.startsWith("--download="))
         {
-            addFile(null,Props.getValue(arg));
+            addFile(null, Props.getValue(arg));
             run = false;
             createFiles = true;
             return;
@@ -1134,9 +1163,9 @@ public class StartArgs
         // Assign a fixed name to the property file for exec
         if (arg.startsWith("--exec-properties="))
         {
-            exec_properties = Props.getValue(arg);
-            if (!exec_properties.endsWith(".properties"))
-                throw new UsageException(UsageException.ERR_BAD_ARG,"--exec-properties filename must have .properties suffix: %s",exec_properties);
+            execProperties = Props.getValue(arg);
+            if (!execProperties.endsWith(".properties"))
+                throw new UsageException(UsageException.ERR_BAD_ARG, "--exec-properties filename must have .properties suffix: %s", execProperties);
             return;
         }
 
@@ -1154,7 +1183,7 @@ public class StartArgs
 
             if (cp != null)
             {
-                StringTokenizer t = new StringTokenizer(cp,File.pathSeparator);
+                StringTokenizer t = new StringTokenizer(cp, File.pathSeparator);
                 while (t.hasMoreTokens())
                 {
                     rawLibs.add(t.nextToken());
@@ -1198,7 +1227,7 @@ public class StartArgs
         if (arg.startsWith("--add-to-startd="))
         {
             String value = Props.getValue(arg);
-            StartLog.warn("--add-to-startd is deprecated! Instead use: --create-startd --add-to-start=%s",value);
+            StartLog.warn("--add-to-startd is deprecated! Instead use: --create-startd --add-to-start=%s", value);
             createStartd = true;
             startModules.addAll(Props.getValues(arg));
             run = false;
@@ -1219,7 +1248,7 @@ public class StartArgs
         if (arg.startsWith("--module="))
         {
             List<String> moduleNames = Props.getValues(arg);
-            enableModules(source,moduleNames);
+            enableModules(source, moduleNames);
             return;
         }
 
@@ -1242,17 +1271,17 @@ public class StartArgs
         // Start property (syntax similar to System property)
         if (arg.startsWith("-D"))
         {
-            String[] assign = arg.substring(2).split("=",2);
+            String[] assign = arg.substring(2).split("=", 2);
             String key = assign[0];
-            String value = assign.length==1?"":assign[1];
-            
-            Prop p = processSystemProperty(key,value,source);
-            systemPropertySource.put(p.key,p.source);
-            setProperty(p.key,p.value,p.source);
-            System.setProperty(p.key,p.value);
+            String value = assign.length == 1 ? "" : assign[1];
+
+            Prop p = processSystemProperty(key, value, source);
+            systemPropertySource.put(p.key, p.source);
+            setProperty(p.key, p.value, p.source);
+            System.setProperty(p.key, p.value);
             return;
         }
-        
+
         // Anything else with a "-" is considered a JVM argument
         if (arg.startsWith("-"))
         {
@@ -1268,11 +1297,11 @@ public class StartArgs
         int equals = arg.indexOf('=');
         if (equals >= 0)
         {
-            String key = arg.substring(0,equals);
+            String key = arg.substring(0, equals);
             String value = arg.substring(equals + 1);
 
-            processAndSetProperty(key,value,source);
-            
+            processAndSetProperty(key, value, source);
+
             return;
         }
 
@@ -1298,48 +1327,48 @@ public class StartArgs
         }
 
         // Anything else is unrecognized
-        throw new UsageException(UsageException.ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
+        throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized argument: \"%s\" in %s", arg, source);
     }
-    
+
     protected Prop processSystemProperty(String key, String value, String source)
     {
         if (key.endsWith("+"))
         {
-            key = key.substring(0,key.length() - 1);
+            key = key.substring(0, key.length() - 1);
             String orig = System.getProperty(key);
             if (orig == null || orig.isEmpty())
             {
                 if (value.startsWith(","))
                     value = value.substring(1);
             }
-            else 
+            else
             {
                 value = orig + value;
-                if (source!=null && systemPropertySource.containsKey(key))
+                if (source != null && systemPropertySource.containsKey(key))
                     source = systemPropertySource.get(key) + "," + source;
             }
         }
         else if (key.endsWith("?"))
         {
-            key = key.substring(0,key.length() - 1);
+            key = key.substring(0, key.length() - 1);
             String preset = System.getProperty(key);
-            if (preset!=null)
+            if (preset != null)
             {
                 value = preset;
                 source = systemPropertySource.get(key);
             }
-            else if (source!=null)
-                source = source+"?=";
+            else if (source != null)
+                source = source + "?=";
         }
 
         return new Prop(key, value, source);
     }
-    
-    protected void processAndSetProperty(String key,String value,String source)
+
+    protected void processAndSetProperty(String key, String value, String source)
     {
         if (key.endsWith("+"))
         {
-            key = key.substring(0,key.length() - 1);
+            key = key.substring(0, key.length() - 1);
             Prop orig = getProperties().getProp(key);
             if (orig == null)
             {
@@ -1354,18 +1383,18 @@ public class StartArgs
         }
         else if (key.endsWith("?"))
         {
-            key = key.substring(0,key.length() - 1);
+            key = key.substring(0, key.length() - 1);
             Prop preset = getProperties().getProp(key);
-            if (preset!=null)
+            if (preset != null)
                 return;
-            
-            if (source!=null)
-                source = source+"?=";
+
+            if (source != null)
+                source = source + "?=";
         }
-        
-        setProperty(key,value,source);
+
+        setProperty(key, value, source);
     }
-    
+
     private void enableModules(String source, List<String> moduleNames)
     {
         for (String moduleName : moduleNames)
@@ -1387,7 +1416,7 @@ public class StartArgs
             {
                 xmlfile = baseHome.getPath("etc/" + xmlRef);
             }
-            addUniqueXmlFile(xmlRef,xmlfile);
+            addUniqueXmlFile(xmlRef, xmlfile);
         }
     }
 
@@ -1402,7 +1431,7 @@ public class StartArgs
             {
                 propertyFile = baseHome.getPath("etc/" + propertyFileRef);
             }
-            addUniquePropertyFile(propertyFileRef,propertyFile);
+            addUniquePropertyFile(propertyFileRef, propertyFile);
         }
     }
 
@@ -1416,24 +1445,24 @@ public class StartArgs
         // Special / Prevent override from start.ini's
         if (key.equals("jetty.home"))
         {
-            properties.setProperty("jetty.home",System.getProperty("jetty.home"),source);
+            properties.setProperty("jetty.home", System.getProperty("jetty.home"), source);
             return;
         }
 
         // Special / Prevent override from start.ini's
         if (key.equals("jetty.base"))
         {
-            properties.setProperty("jetty.base",System.getProperty("jetty.base"),source);
+            properties.setProperty("jetty.base", System.getProperty("jetty.base"), source);
             return;
         }
 
-        properties.setProperty(key,value,source);
+        properties.setProperty(key, value, source);
         if (key.equals("java.version"))
         {
             try
             {
                 JavaVersion ver = JavaVersion.parse(value);
-                properties.setProperty("java.version.platform",Integer.toString(ver.getPlatform()),source);
+                properties.setProperty("java.version.platform", Integer.toString(ver.getPlatform()), source);
                 // @deprecated - below will be removed in Jetty 10.x
                 properties.setProperty("java.version.major", Integer.toString(ver.getMajor()), "Deprecated");
                 properties.setProperty("java.version.minor", Integer.toString(ver.getMinor()), "Deprecated");
@@ -1441,7 +1470,7 @@ public class StartArgs
             }
             catch (Throwable x)
             {
-                UsageException ue = new UsageException(UsageException.ERR_BAD_ARG, x.getMessage()==null?x.toString():x.getMessage());
+                UsageException ue = new UsageException(UsageException.ERR_BAD_ARG, x.getMessage() == null ? x.toString() : x.getMessage());
                 ue.initCause(x);
                 throw ue;
             }
@@ -1463,6 +1492,6 @@ public class StartArgs
     public String toString()
     {
         return String.format("%s[enabledModules=%s, xmlRefs=%s, properties=%s, jvmArgs=%s]",
-                getClass().getSimpleName(), modules, xmlRefs, properties, jvmArgs);
+            getClass().getSimpleName(), modules, xmlRefs, properties, jvmArgs);
     }
 }

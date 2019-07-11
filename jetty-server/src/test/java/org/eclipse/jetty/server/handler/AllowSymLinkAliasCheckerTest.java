@@ -55,8 +55,10 @@ public class AllowSymLinkAliasCheckerTest
     {
         List<Arguments> data = new ArrayList<>();
 
-        String dirs[] = {"/workDir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/",
-                "/testdirwraplnk/"};
+        String[] dirs = {
+            "/workDir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/",
+            "/testdirwraplnk/"
+        };
 
         for (String dirname : dirs)
         {
@@ -83,7 +85,7 @@ public class AllowSymLinkAliasCheckerTest
     @AfterEach
     public void teardown() throws Exception
     {
-        if( server != null )
+        if (server != null)
         {
             server.stop();
         }
@@ -198,7 +200,8 @@ public class AllowSymLinkAliasCheckerTest
         request.setHeader("Host", "tester");
         request.setURI(requestURI);
 
-        assertTimeoutPreemptively(ofSeconds(5), ()-> {
+        assertTimeoutPreemptively(ofSeconds(5), () ->
+        {
             String responseString = localConnector.getResponse(BufferUtil.toString(request.generate()));
             assertThat("Response status code", responseString, startsWith("HTTP/1.1 " + expectedResponseStatus + " "));
             assertThat("Response Content-Type", responseString, containsString("\nContent-Type: " + expectedResponseContentType));

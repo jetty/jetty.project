@@ -25,15 +25,15 @@ import javax.naming.NamingException;
  */
 public class Resource extends NamingEntry
 {
-    public  Resource (Object scope, String jndiName, Object objToBind)
-    throws NamingException
+    public Resource(Object scope, String jndiName, Object objToBind)
+        throws NamingException
     {
         super(scope, jndiName);
         save(objToBind);
     }
-    
-    public Resource (String jndiName, Object objToBind)
-    throws NamingException
+
+    public Resource(String jndiName, Object objToBind)
+        throws NamingException
     {
         super(jndiName);
         save(objToBind);

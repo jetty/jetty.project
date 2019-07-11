@@ -24,7 +24,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -98,7 +97,6 @@ public class ChatServlet extends HttpServlet
     }
 
     Map<String, Map<String, Member>> _rooms = new HashMap<>();
-
 
     // Handle Ajax calls from browser
     @Override
@@ -229,5 +227,4 @@ public class ChatServlet extends HttpServlet
         else
             getServletContext().getNamedDispatcher("default").forward(request, response);
     }
-
 }

@@ -26,7 +26,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
-import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,7 +40,7 @@ public class GeneratorParserRoundtripTest
     public void testParserAndGenerator() throws Exception
     {
         Generator gen = new Generator(bufferPool);
-        ParserCapture capture = new ParserCapture(new Parser(bufferPool));
+        ParserCapture capture = new ParserCapture();
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
@@ -74,7 +73,7 @@ public class GeneratorParserRoundtripTest
     public void testParserAndGeneratorMasked() throws Exception
     {
         Generator gen = new Generator(bufferPool);
-        ParserCapture capture = new ParserCapture(new Parser(bufferPool), true, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
@@ -86,7 +85,7 @@ public class GeneratorParserRoundtripTest
             Frame frame = new Frame(OpCode.TEXT).setPayload(message);
 
             // Add masking
-            byte mask[] = new byte[4];
+            byte[] mask = new byte[4];
             Arrays.fill(mask, (byte)0xFF);
             frame.setMask(mask);
 

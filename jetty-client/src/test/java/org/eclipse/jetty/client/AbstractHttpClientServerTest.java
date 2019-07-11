@@ -120,9 +120,9 @@ public abstract class AbstractHttpClientServerTest
         public Stream<? extends Arguments> provideArguments(ExtensionContext context)
         {
             return Stream.of(
-                    new NormalScenario(),
-                    new SslScenario()
-                    // TODO: add more ssl / non-ssl scenarios here
+                new NormalScenario(),
+                new SslScenario()
+                // TODO: add more ssl / non-ssl scenarios here
             ).map(Arguments::of);
         }
     }
@@ -133,8 +133,8 @@ public abstract class AbstractHttpClientServerTest
         public Stream<? extends Arguments> provideArguments(ExtensionContext context)
         {
             return Stream.of(
-                    new NormalScenario()
-                    // TODO: add more non-ssl scenarios here
+                new NormalScenario()
+                // TODO: add more non-ssl scenarios here
             ).map(Arguments::of);
         }
     }

@@ -56,6 +56,7 @@ public interface Connection extends Closeable
     /**
      * <p>Callback method invoked when this connection is closed.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
+     *
      * @param cause The cause of the close or null for a normal close
      */
     public void onClose(Throwable cause);
@@ -64,7 +65,7 @@ public interface Connection extends Closeable
      * @return the {@link EndPoint} associated with this Connection.
      */
     public EndPoint getEndPoint();
-    
+
     /**
      * <p>Performs a logical close of this connection.</p>
      * <p>For simple connections, this may just mean to delegate the close to the associated
@@ -83,16 +84,20 @@ public interface Connection extends Closeable
      * immediately and the EndPoint left in the state it was before the idle timeout event.</p>
      *
      * @return true to let the EndPoint handle the idle timeout,
-     *         false to tell the EndPoint to halt the handling of the idle timeout.
+     * false to tell the EndPoint to halt the handling of the idle timeout.
      */
     public boolean onIdleExpired();
 
     public long getMessagesIn();
+
     public long getMessagesOut();
+
     public long getBytesIn();
+
     public long getBytesOut();
+
     public long getCreatedTimeStamp();
-    
+
     public interface UpgradeFrom
     {
         /**
@@ -105,12 +110,13 @@ public interface Connection extends Closeable
          */
         ByteBuffer onUpgradeFrom();
     }
-    
+
     public interface UpgradeTo
     {
         /**
          * <p>Callback method invoked when this connection is upgraded.</p>
          * <p>This must be called before {@link #onOpen()}.</p>
+         *
          * @param prefilled An optional buffer that can contain prefilled data. Typically this
          * results from an upgrade of one protocol to the other where the old connection has buffered
          * data destined for the new connection.  The new connection must take ownership of the buffer
@@ -118,8 +124,8 @@ public interface Connection extends Closeable
          */
         void onUpgradeTo(ByteBuffer prefilled);
     }
-    
-    /** 
+
+    /**
      * <p>A Listener for connection events.</p>
      * <p>Listeners can be added to a {@link Connection} to get open and close events.
      * The AbstractConnectionFactory implements a pattern where objects implement

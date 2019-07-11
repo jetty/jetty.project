@@ -70,7 +70,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     public static class Config implements Predicate<Path>
     {
         public static final int UNLIMITED_DEPTH = -9999;
-        
+
         private static final String PATTERN_SEP;
 
         static
@@ -85,32 +85,32 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         protected final Config parent;
         protected final Path path;
-        protected final IncludeExcludeSet<PathMatcher,Path> includeExclude;
+        protected final IncludeExcludeSet<PathMatcher, Path> includeExclude;
         protected int recurseDepth = 0; // 0 means no sub-directories are scanned
         protected boolean excludeHidden = false;
         protected long pauseUntil;
 
         public Config(Path path)
         {
-            this(path,null);
+            this(path, null);
         }
 
         public Config(Path path, Config parent)
         {
             this.parent = parent;
-            this.includeExclude = parent==null ? new IncludeExcludeSet<>(PathMatcherSet.class) : parent.includeExclude;
-            
+            this.includeExclude = parent == null ? new IncludeExcludeSet<>(PathMatcherSet.class) : parent.includeExclude;
+
             Path dir = path;
             if (!Files.exists(path))
-                throw new IllegalStateException("Path does not exist: "+path);
-            
+                throw new IllegalStateException("Path does not exist: " + path);
+
             if (!Files.isDirectory(path))
             {
                 dir = path.getParent();
                 includeExclude.include(new ExactPathMatcher(path));
                 setRecurseDepth(0);
             }
-            
+
             this.path = dir;
         }
 
@@ -118,34 +118,33 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             return parent;
         }
-        
+
         public void setPauseUntil(long time)
         {
-            if (time>pauseUntil)
-                pauseUntil=time;
+            if (time > pauseUntil)
+                pauseUntil = time;
         }
-        
+
         public boolean isPaused(long now)
         {
-            if (pauseUntil==0)
+            if (pauseUntil == 0)
                 return false;
-            if (pauseUntil>now)
+            if (pauseUntil > now)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("PAUSED {}",this);
+                    LOG.debug("PAUSED {}", this);
                 return true;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("unpaused {}",this);
+                LOG.debug("unpaused {}", this);
             pauseUntil = 0;
             return false;
         }
-        
+
         /**
          * Add an exclude PathMatcher
          *
-         * @param matcher
-         *            the path matcher for this exclude
+         * @param matcher the path matcher for this exclude
          */
         public void addExclude(PathMatcher matcher)
         {
@@ -157,14 +156,13 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          * <p>
          * Note: this pattern is FileSystem specific (so use "/" for Linux and OSX, and "\\" for Windows)
          *
-         * @param syntaxAndPattern
-         *            the PathMatcher syntax and pattern to use
+         * @param syntaxAndPattern the PathMatcher syntax and pattern to use
          * @see FileSystem#getPathMatcher(String) for detail on syntax and pattern
          */
         public void addExclude(final String syntaxAndPattern)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Adding exclude: [{}]",syntaxAndPattern);
+                LOG.debug("Adding exclude: [{}]", syntaxAndPattern);
             addExclude(path.getFileSystem().getPathMatcher(syntaxAndPattern));
         }
 
@@ -175,19 +173,18 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          *    On Linux:
          *    Config config = new Config(Path("/home/user/example"));
          *    config.addExcludeGlobRelative("*.war") =&gt; "glob:/home/user/example/*.war"
-         * 
+         *
          *    On Windows
          *    Config config = new Config(Path("D:/code/examples"));
          *    config.addExcludeGlobRelative("*.war") =&gt; "glob:D:\\code\\examples\\*.war"
          *
          * </pre>
          *
-         * @param pattern
-         *            the pattern, in unixy format, relative to config.dir
+         * @param pattern the pattern, in unixy format, relative to config.dir
          */
         public void addExcludeGlobRelative(String pattern)
         {
-            addExclude(toGlobPattern(path,pattern));
+            addExclude(toGlobPattern(path, pattern));
         }
 
         /**
@@ -208,8 +205,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         /**
          * Add multiple exclude PathMatchers
          *
-         * @param syntaxAndPatterns
-         *            the list of PathMatcher syntax and patterns to use
+         * @param syntaxAndPatterns the list of PathMatcher syntax and patterns to use
          * @see FileSystem#getPathMatcher(String) for detail on syntax and pattern
          */
         public void addExcludes(List<String> syntaxAndPatterns)
@@ -223,8 +219,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         /**
          * Add an include PathMatcher
          *
-         * @param matcher
-         *            the path matcher for this include
+         * @param matcher the path matcher for this include
          */
         public void addInclude(PathMatcher matcher)
         {
@@ -234,15 +229,14 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         /**
          * Add an include PathMatcher
          *
-         * @param syntaxAndPattern
-         *            the PathMatcher syntax and pattern to use
+         * @param syntaxAndPattern the PathMatcher syntax and pattern to use
          * @see FileSystem#getPathMatcher(String) for detail on syntax and pattern
          */
         public void addInclude(String syntaxAndPattern)
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Adding include: [{}]",syntaxAndPattern);
+                LOG.debug("Adding include: [{}]", syntaxAndPattern);
             }
             addInclude(path.getFileSystem().getPathMatcher(syntaxAndPattern));
         }
@@ -254,26 +248,24 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          *    On Linux:
          *    Config config = new Config(Path("/home/user/example"));
          *    config.addIncludeGlobRelative("*.war") =&gt; "glob:/home/user/example/*.war"
-         * 
+         *
          *    On Windows
          *    Config config = new Config(Path("D:/code/examples"));
          *    config.addIncludeGlobRelative("*.war") =&gt; "glob:D:\\code\\examples\\*.war"
          *
          * </pre>
          *
-         * @param pattern
-         *            the pattern, in unixy format, relative to config.dir
+         * @param pattern the pattern, in unixy format, relative to config.dir
          */
         public void addIncludeGlobRelative(String pattern)
         {
-            addInclude(toGlobPattern(path,pattern));
+            addInclude(toGlobPattern(path, pattern));
         }
 
         /**
          * Add multiple include PathMatchers
          *
-         * @param syntaxAndPatterns
-         *            the list of PathMatcher syntax and patterns to use
+         * @param syntaxAndPatterns the list of PathMatcher syntax and patterns to use
          * @see FileSystem#getPathMatcher(String) for detail on syntax and pattern
          */
         public void addIncludes(List<String> syntaxAndPatterns)
@@ -289,23 +281,22 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          * <p>
          * Useful for working with sub-directories that also need to be watched.
          *
-         * @param dir
-         *            the directory to build new Config from (using this config as source of includes/excludes)
+         * @param dir the directory to build new Config from (using this config as source of includes/excludes)
          * @return the new Config
          */
         public Config asSubConfig(Path dir)
         {
-            Config subconfig = new Config(dir,this);
+            Config subconfig = new Config(dir, this);
             if (dir == this.path)
-                throw new IllegalStateException("sub "+dir.toString()+" of "+this);
+                throw new IllegalStateException("sub " + dir.toString() + " of " + this);
 
             if (this.recurseDepth == UNLIMITED_DEPTH)
                 subconfig.recurseDepth = UNLIMITED_DEPTH;
             else
-                subconfig.recurseDepth = this.recurseDepth - (dir.getNameCount() - this.path.getNameCount());                            
-            
+                subconfig.recurseDepth = this.recurseDepth - (dir.getNameCount() - this.path.getNameCount());
+
             if (LOG.isDebugEnabled())
-                LOG.debug("subconfig {} of {}",subconfig,path);
+                LOG.debug("subconfig {} of {}", subconfig, path);
             return subconfig;
         }
 
@@ -313,13 +304,13 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             return recurseDepth;
         }
-        
-        public boolean isRecurseDepthUnlimited ()
+
+        public boolean isRecurseDepthUnlimited()
         {
             return this.recurseDepth == UNLIMITED_DEPTH;
         }
-        
-        public Path getPath ()
+
+        public Path getPath()
         {
             return this.path;
         }
@@ -332,7 +323,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 return this.path;
             return path;
         }
-        
+
         @Override
         public boolean test(Path path)
         {
@@ -350,14 +341,14 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 return false;
             }
 
-            if (recurseDepth!=UNLIMITED_DEPTH)
+            if (recurseDepth != UNLIMITED_DEPTH)
             {
                 int depth = path.getNameCount() - this.path.getNameCount() - 1;
 
-                if (depth>recurseDepth)
+                if (depth > recurseDepth)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("test({}) -> [depth {}>{}]",toShortPath(path),depth,recurseDepth);
+                        LOG.debug("test({}) -> [depth {}>{}]", toShortPath(path), depth, recurseDepth);
                     return false;
                 }
             }
@@ -375,14 +366,13 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          * <p>
          * -999 indicates arbitrarily deep recursion, 0 indicates no recursion, 1 is only one directory deep, and so on.
          *
-         * @param depth
-         *            the number of directories deep to recurse
+         * @param depth the number of directories deep to recurse
          */
         public void setRecurseDepth(int depth)
         {
             this.recurseDepth = depth;
         }
-        
+
         private String toGlobPattern(Path path, String subPattern)
         {
             StringBuilder s = new StringBuilder();
@@ -449,7 +439,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return s.toString();
         }
 
-
         DirAction handleDir(Path path)
         {
             try
@@ -458,11 +447,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                     return DirAction.IGNORE;
                 if (excludeHidden && isHidden(path))
                     return DirAction.IGNORE;
-                if (getRecurseDepth()==0)
+                if (getRecurseDepth() == 0)
                     return DirAction.WATCH;
                 return DirAction.ENTER;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 LOG.ignore(e);
                 return DirAction.IGNORE;
@@ -475,7 +464,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 if (!path.startsWith(this.path))
                     return true;
-                for (int i=this.path.getNameCount(); i<path.getNameCount();i++)
+                for (int i = this.path.getNameCount(); i < path.getNameCount(); i++)
                 {
                     if (path.getName(i).toString().startsWith("."))
                     {
@@ -503,22 +492,20 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             StringBuilder s = new StringBuilder();
             s.append(path).append(" [depth=");
-            if (recurseDepth==UNLIMITED_DEPTH)
+            if (recurseDepth == UNLIMITED_DEPTH)
                 s.append("UNLIMITED");
             else
                 s.append(recurseDepth);
             s.append(']');
             return s.toString();
         }
-
     }
-    
 
     public static enum DirAction
     {
         IGNORE, WATCH, ENTER;
     }
-    
+
     /**
      * Listener for path change events
      */
@@ -526,7 +513,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     {
         void onPathWatchEvent(PathWatchEvent event);
     }
-    
+
     /**
      * EventListListener
      *
@@ -536,7 +523,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     {
         void onPathWatchEvents(List<PathWatchEvent> events);
     }
-    
+
     /**
      * PathWatchEvent
      *
@@ -550,7 +537,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         long checked;
         long modified;
         long length;
-     
+
         public PathWatchEvent(Path path, PathWatchEventType type, Config config)
         {
             this.path = path;
@@ -588,7 +575,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             checked = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             check();
         }
-        
+
         private void check()
         {
             if (Files.exists(path))
@@ -598,7 +585,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                     modified = Files.getLastModifiedTime(path).toMillis();
                     length = Files.size(path);
                 }
-                catch(IOException e)
+                catch (IOException e)
                 {
                     modified = -1;
                     length = -1;
@@ -608,40 +595,40 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 modified = -1;
                 length = -1;
-            }            
+            }
         }
 
         public boolean isQuiet(long now, long quietTime)
         {
             long lastModified = modified;
             long lastLength = length;
-            
+
             check();
-            
+
             if (lastModified == modified && lastLength == length)
-                return (now-checked)>=quietTime;
-            
+                return (now - checked) >= quietTime;
+
             checked = now;
             return false;
         }
-        
+
         public long toQuietCheck(long now, long quietTime)
         {
-            long check = quietTime - (now-checked);
-            if (check<=0)
+            long check = quietTime - (now - checked);
+            if (check <= 0)
                 return quietTime;
             return check;
         }
-        
+
         public void modified()
         {
             long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             checked = now;
             check();
-            config.setPauseUntil(now+getUpdateQuietTimeMillis());
+            config.setPauseUntil(now + getUpdateQuietTimeMillis());
         }
-        
-        /** 
+
+        /**
          * @see java.lang.Object#equals(java.lang.Object)
          */
         @Override
@@ -687,7 +674,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             return type;
         }
-        
+
         /**
          * @see java.lang.Object#hashCode()
          */
@@ -696,21 +683,20 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             final int prime = 31;
             int result = 1;
-            result = (prime * result) + ((path == null)?0:path.hashCode());
-            result = (prime * result) + ((type == null)?0:type.hashCode());
+            result = (prime * result) + ((path == null) ? 0 : path.hashCode());
+            result = (prime * result) + ((type == null) ? 0 : type.hashCode());
             return result;
         }
 
-        /** 
+        /**
          * @see java.lang.Object#toString()
          */
         @Override
         public String toString()
         {
-            return String.format("PathWatchEvent[%8s|%s]",type,path);
+            return String.format("PathWatchEvent[%8s|%s]", type, path);
         }
     }
-
 
     /**
      * PathWatchEventType
@@ -723,7 +709,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     }
 
     private static final boolean IS_WINDOWS;
-    
+
     static
     {
         String os = System.getProperty("os.name");
@@ -746,18 +732,18 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         return (WatchEvent<T>)event;
     }
 
-    private static final WatchEvent.Kind<?> WATCH_EVENT_KINDS[] = { ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY };
-    private static final WatchEvent.Kind<?> WATCH_DIR_KINDS[] = { ENTRY_CREATE, ENTRY_DELETE };
-    
+    private static final WatchEvent.Kind<?>[] WATCH_EVENT_KINDS = {ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY};
+    private static final WatchEvent.Kind<?>[] WATCH_DIR_KINDS = {ENTRY_CREATE, ENTRY_DELETE};
+
     private WatchService watchService;
-    private WatchEvent.Modifier watchModifiers[];
+    private WatchEvent.Modifier[] watchModifiers;
     private boolean nativeWatchService;
 
     private final List<Config> configs = new ArrayList<>();
     private final Map<WatchKey, Config> keys = new HashMap<>();
     private final List<EventListener> listeners = new CopyOnWriteArrayList<>(); //a listener may modify the listener list directly or by stopping the PathWatcher
 
-    private final Map<Path, PathWatchEvent> pending = new LinkedHashMap<>(32,(float)0.75,false);
+    private final Map<Path, PathWatchEvent> pending = new LinkedHashMap<>(32, (float)0.75, false);
     private final List<PathWatchEvent> events = new ArrayList<>();
 
     /**
@@ -767,8 +753,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     private TimeUnit updateQuietTimeUnit = TimeUnit.MILLISECONDS;
     private Thread thread;
     private boolean _notifyExistingOnStart = true;
-    
-    
+
     /**
      * Construct new PathWatcher
      */
@@ -785,10 +770,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
      * Request watch on a the given path (either file or dir)
      * using all Config defaults. In the case of a dir,
      * the default is not to recurse into subdirs for watching.
-     * 
+     *
      * @param file the path to watch
      */
-    public void watch (final Path file)
+    public void watch(final Path file)
     {
         //Make a config for the dir above it and
         //include a match only for the given path
@@ -798,12 +783,12 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             abs = file.toAbsolutePath();
         }
-        
+
         //Check we don't already have a config for the parent directory. 
         //If we do, add in this filename.
         Config config = null;
         Path parent = abs.getParent();
-        for (Config c:configs)
+        for (Config c : configs)
         {
             if (c.getPath().equals(parent))
             {
@@ -811,7 +796,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 break;
             }
         }
-        
+
         //Make a new config
         if (config == null)
         {
@@ -826,22 +811,22 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             //add the include for the file
             config.addIncludeGlobRelative(file.getFileName().toString());
     }
-    
+
     /**
-     * Request watch on a path with custom Config 
+     * Request watch on a path with custom Config
      * provided.
-     * 
+     *
      * @param config the configuration to watch
      */
-    public void watch (final Config config)
+    public void watch(final Config config)
     {
         //Add a custom config
         configs.add(config);
     }
-    
+
     /**
      * Add a listener for changes the watcher notices.
-     * 
+     *
      * @param listener change listener
      */
     public void addListener(EventListener listener)
@@ -851,8 +836,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
     /**
      * Append some info on the paths that we are watching.
-     * 
-     * @param s
      */
     private void appendConfigId(StringBuilder s)
     {
@@ -881,7 +864,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         s.append("]");
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
     @Override
@@ -889,15 +872,17 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     {
         //create a new watchservice
         createWatchService();
-        
+
         //ensure setting of quiet time is appropriate now we have a watcher
         setUpdateQuietTime(getUpdateQuietTimeMillis(), TimeUnit.MILLISECONDS);
 
         // Register all watched paths, walking dir hierarchies as needed, possibly generating
         // fake add events if notifyExistingOnStart is true
-        for (Config c:configs)
-            registerTree(c.getPath(),c,isNotifyExistingOnStart());
-        
+        for (Config c : configs)
+        {
+            registerTree(c.getPath(), c, isNotifyExistingOnStart());
+        }
+
         // Start Thread for watcher take/pollKeys loop
         StringBuilder threadId = new StringBuilder();
         threadId.append("PathWatcher@");
@@ -905,13 +890,13 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("{} -> {}", this, threadId);
 
-        thread = new Thread(this,threadId.toString());
+        thread = new Thread(this, threadId.toString());
         thread.setDaemon(true);
         thread.start();
         super.doStart();
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
     @Override
@@ -926,50 +911,43 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         events.clear();
         super.doStop();
     }
-    
-    
+
     /**
      * Remove all current configs and listeners.
      */
-    public void reset ()
+    public void reset()
     {
         if (!isStopped())
             throw new IllegalStateException("PathWatcher must be stopped before reset.");
-        
+
         configs.clear();
         listeners.clear();
     }
-    
-    
+
     /**
-     * Create a fresh WatchService and determine if it is a 
+     * Create a fresh WatchService and determine if it is a
      * native implementation or not.
-     * 
-     * @throws IOException
      */
-    private void createWatchService () throws IOException
+    private void createWatchService() throws IOException
     {
         //create a watch service
         this.watchService = FileSystems.getDefault().newWatchService();
 
-        WatchEvent.Modifier modifiers[] = null;
+        WatchEvent.Modifier[] modifiers = null;
         boolean nativeService = true;
         // Try to determine native behavior
         // See http://stackoverflow.com/questions/9588737/is-java-7-watchservice-slow-for-anyone-else
         try
         {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            Class<?> pollingWatchServiceClass = Class.forName("sun.nio.fs.PollingWatchService",false,cl);
+            Class<?> pollingWatchServiceClass = Class.forName("sun.nio.fs.PollingWatchService", false, cl);
             if (pollingWatchServiceClass.isAssignableFrom(this.watchService.getClass()))
             {
                 nativeService = false;
-                LOG.info("Using Non-Native Java {}",pollingWatchServiceClass.getName());
+                LOG.info("Using Non-Native Java {}", pollingWatchServiceClass.getName());
                 Class<?> c = Class.forName("com.sun.nio.file.SensitivityWatchEventModifier");
                 Field f = c.getField("HIGH");
-                modifiers = new WatchEvent.Modifier[]
-                    {
-                        (WatchEvent.Modifier)f.get(c)
-                    };
+                modifiers = new WatchEvent.Modifier[]{(WatchEvent.Modifier)f.get(c)};
             }
         }
         catch (Throwable t)
@@ -981,22 +959,22 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         this.watchModifiers = modifiers;
         this.nativeWatchService = nativeService;
     }
-    
+
     /**
      * Check to see if the watcher is in a state where it should generate
      * watch events to the listeners. Used to determine if watcher should generate
      * events for existing files and dirs on startup.
-     * 
+     *
      * @return true if the watcher should generate events to the listeners.
      */
-    protected boolean isNotifiable ()
+    protected boolean isNotifiable()
     {
         return (isStarted() || (!isStarted() && isNotifyExistingOnStart()));
     }
 
     /**
      * Get an iterator over the listeners.
-     * 
+     *
      * @return iterator over the listeners.
      */
     public Iterator<EventListener> getListeners()
@@ -1006,64 +984,65 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
     /**
      * Change the quiet time.
-     * 
+     *
      * @return the quiet time in millis
      */
     public long getUpdateQuietTimeMillis()
     {
-        return TimeUnit.MILLISECONDS.convert(updateQuietTimeDuration,updateQuietTimeUnit);
+        return TimeUnit.MILLISECONDS.convert(updateQuietTimeDuration, updateQuietTimeUnit);
     }
 
     private void registerTree(Path dir, Config config, boolean notify) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("registerTree {} {} {}", dir, config, notify);
-        
+
         if (!Files.isDirectory(dir))
             throw new IllegalArgumentException(dir.toString());
-        
-        register(dir,config);
-        
+
+        register(dir, config);
+
         final MultiException me = new MultiException();
-        try (Stream<Path> stream = Files.list( dir))
+        try (Stream<Path> stream = Files.list(dir))
         {
-            stream.forEach( p -> {
-                if ( LOG.isDebugEnabled() )
-                    LOG.debug( "registerTree? {}", p );
+            stream.forEach(p ->
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("registerTree? {}", p);
 
                 try
                 {
-                    if ( notify && config.test( p ) )
-                        pending.put( p, new PathWatchEvent( p, PathWatchEventType.ADDED, config ) );
+                    if (notify && config.test(p))
+                        pending.put(p, new PathWatchEvent(p, PathWatchEventType.ADDED, config));
 
-                    switch ( config.handleDir( p ) )
+                    switch (config.handleDir(p))
                     {
                         case ENTER:
-                            registerTree( p, config.asSubConfig( p ), notify );
+                            registerTree(p, config.asSubConfig(p), notify);
                             break;
                         case WATCH:
-                            registerDir( p, config );
+                            registerDir(p, config);
                             break;
                         case IGNORE:
                         default:
                             break;
                     }
                 }
-                catch ( IOException e )
+                catch (IOException e)
                 {
-                    me.add( e );
+                    me.add(e);
                 }
-            } );
+            });
         }
         try
         {
             me.ifExceptionThrow();
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             throw e;
         }
-        catch(Throwable th)
+        catch (Throwable th)
         {
             throw new IOException(th);
         }
@@ -1073,38 +1052,40 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("registerDir {} {}", path, config);
-        
+
         if (!Files.isDirectory(path))
             throw new IllegalArgumentException(path.toString());
 
-        register(path,config.asSubConfig(path),WATCH_DIR_KINDS);
+        register(path, config.asSubConfig(path), WATCH_DIR_KINDS);
     }
-    
+
     protected void register(Path path, Config config) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Registering watch on {} {}",path,watchModifiers==null?null:Arrays.asList(watchModifiers));
-        
-        register(path,config,WATCH_EVENT_KINDS);
+            LOG.debug("Registering watch on {} {}", path, watchModifiers == null ? null : Arrays.asList(watchModifiers));
+
+        register(path, config, WATCH_EVENT_KINDS);
     }
 
     private void register(Path path, Config config, WatchEvent.Kind<?>[] kinds) throws IOException
     {
-        if(watchModifiers != null) 
+        if (watchModifiers != null)
         {
             // Java Watcher
-            WatchKey key = path.register(watchService,kinds,watchModifiers);
-            keys.put(key,config);
-        } else 
+            WatchKey key = path.register(watchService, kinds, watchModifiers);
+            keys.put(key, config);
+        }
+        else
         {
             // Native Watcher
-            WatchKey key = path.register(watchService,kinds);
-            keys.put(key,config);
+            WatchKey key = path.register(watchService, kinds);
+            keys.put(key, config);
         }
     }
-    
+
     /**
      * Delete a listener
+     *
      * @param listener the listener to remove
      * @return true if the listener existed and was removed
      */
@@ -1113,13 +1094,12 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         return listeners.remove(listener);
     }
 
-    
-    /** 
+    /**
      * Forever loop.
-     * 
+     *
      * Wait for the WatchService to report some filesystem events for the
      * watched paths.
-     * 
+     *
      * When an event for a path first occurs, it is subjected to a quiet time.
      * Subsequent events that arrive for the same path during this quiet time are
      * accumulated and the timer reset. Only when the quiet time has expired are
@@ -1128,7 +1108,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
      * single MODIFY event. Both the accumulation of events and coalescing of MODIFY
      * events reduce the number and frequency of event reporting for "noisy" files (ie
      * those that are undergoing rapid change).
-     * 
+     *
      * @see java.lang.Runnable#run()
      */
     @Override
@@ -1137,27 +1117,27 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         // Start the java.nio watching
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Starting java.nio file watching with {}",watchService);
+            LOG.debug("Starting java.nio file watching with {}", watchService);
         }
 
-        long wait_time = getUpdateQuietTimeMillis();
+        long waitTime = getUpdateQuietTimeMillis();
 
         WatchService watch = watchService;
-        
+
         while (isRunning() && thread == Thread.currentThread())
         {
-            
+
             WatchKey key;
-            
+
             try
-            {     
+            {
                 // Reset all keys before watching
                 long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 for (Map.Entry<WatchKey, Config> e : keys.entrySet())
                 {
                     WatchKey k = e.getKey();
                     Config c = e.getValue();
-                    
+
                     if (!c.isPaused(now) && !k.reset())
                     {
                         keys.remove(k);
@@ -1167,22 +1147,21 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                         }
                     }
                 }
-            
+
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Waiting for poll({})", wait_time);
-                key = wait_time<0?watch.take():wait_time>0?watch.poll(wait_time,updateQuietTimeUnit):watch.poll();
-                    
+                    LOG.debug("Waiting for poll({})", waitTime);
+                key = waitTime < 0 ? watch.take() : waitTime > 0 ? watch.poll(waitTime, updateQuietTimeUnit) : watch.poll();
+
                 // handle all active keys
-                while (key!=null)
+                while (key != null)
                 {
                     handleKey(key);
                     key = watch.poll();
                 }
-                      
-                wait_time = processPending();
-                
+
+                waitTime = processPending();
+
                 notifyEvents();
-                
             }
             catch (ClosedWatchServiceException e)
             {
@@ -1202,14 +1181,14 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             }
         }
     }
-    
+
     private void handleKey(WatchKey key)
     {
         Config config = keys.get(key);
         if (config == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("WatchKey not recognized: {}",key);
+                LOG.debug("WatchKey not recognized: {}", key);
             return;
         }
 
@@ -1223,17 +1202,17 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 LOG.debug("handleKey? {} {} {}", ev.kind(), config.toShortPath(path), config);
 
             // Ignore modified events on directories.  These are handled as create/delete events of their contents
-            if (ev.kind()==ENTRY_MODIFY && Files.exists(path) && Files.isDirectory(path))
+            if (ev.kind() == ENTRY_MODIFY && Files.exists(path) && Files.isDirectory(path))
                 continue;
 
             if (config.test(path))
-                handleWatchEvent(path, new PathWatchEvent(path,ev,config));
-            else if (config.getRecurseDepth()==-1)
+                handleWatchEvent(path, new PathWatchEvent(path, ev, config));
+            else if (config.getRecurseDepth() == -1)
             {
                 // Convert a watched directory into a modify event on its parent
                 Path parent = path.getParent();
                 Config parentConfig = config.getParent();
-                handleWatchEvent(parent, new PathWatchEvent(parent,PathWatchEventType.MODIFIED,parentConfig));
+                handleWatchEvent(parent, new PathWatchEvent(parent, PathWatchEventType.MODIFIED, parentConfig));
                 continue;
             }
 
@@ -1241,74 +1220,76 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 try
                 {
-                    switch(config.handleDir(path))
+                    switch (config.handleDir(path))
                     {
                         case ENTER:
-                            registerTree(path,config.asSubConfig(path),true);
+                            registerTree(path, config.asSubConfig(path), true);
                             break;
                         case WATCH:
-                            registerDir(path,config);
+                            registerDir(path, config);
                             break;
                         case IGNORE:
                         default:
                             break;
                     }
                 }
-                catch(IOException e)
+                catch (IOException e)
                 {
                     LOG.warn(e);
                 }
             }
         }
-    }    
+    }
 
     /**
      * Add an event reported by the WatchService to list of pending events
      * that will be sent after their quiet time has expired.
-     * 
+     *
      * @param path the path to add to the pending list
      * @param event the pending event
      */
-    public void handleWatchEvent (Path path, PathWatchEvent event)
+    public void handleWatchEvent(Path path, PathWatchEvent event)
     {
         PathWatchEvent existing = pending.get(path);
 
         if (LOG.isDebugEnabled())
             LOG.debug("handleWatchEvent {} {} <= {}", path, event, existing);
-        
-        switch(event.getType())
+
+        switch (event.getType())
         {
             case ADDED:
-                if (existing!=null && existing.getType()==PathWatchEventType.MODIFIED)
-                    events.add(new PathWatchEvent(path,PathWatchEventType.DELETED,existing.getConfig()));
-                pending.put(path,event);
+                if (existing != null && existing.getType() == PathWatchEventType.MODIFIED)
+                    events.add(new PathWatchEvent(path, PathWatchEventType.DELETED, existing.getConfig()));
+                pending.put(path, event);
                 break;
-                
+
             case MODIFIED:
-                if (existing==null)
-                    pending.put(path,event);
+                if (existing == null)
+                    pending.put(path, event);
                 else
                     existing.modified();
                 break;
-                
+
             case DELETED:
             case UNKNOWN:
-                if (existing!=null)
+                if (existing != null)
                     pending.remove(path);
                 events.add(event);
                 break;
-                
+
+            default:
+                throw new IllegalStateException(event.toString());
         }
     }
 
     private long processPending()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processPending> {}",pending.values());
-        
+            LOG.debug("processPending> {}", pending.values());
+
         long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         long wait = Long.MAX_VALUE;
-        
+
         // pending map is maintained in LRU order
         for (PathWatchEvent event : new ArrayList<>(pending.values()))
         {
@@ -1318,37 +1299,36 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 continue;
 
             // if the path is quiet move to events
-            if (event.isQuiet(now,getUpdateQuietTimeMillis()))
+            if (event.isQuiet(now, getUpdateQuietTimeMillis()))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("isQuiet {}",event);
+                    LOG.debug("isQuiet {}", event);
                 pending.remove(path);
                 events.add(event);
             }
             else
             {
-                long ms_to_check = event.toQuietCheck(now,getUpdateQuietTimeMillis());
+                long msToCheck = event.toQuietCheck(now, getUpdateQuietTimeMillis());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("pending {} {}",event, ms_to_check);
-                if (ms_to_check<wait)
-                    wait = ms_to_check;
+                    LOG.debug("pending {} {}", event, msToCheck);
+                if (msToCheck < wait)
+                    wait = msToCheck;
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("processPending< {}",pending.values());
-        return wait==Long.MAX_VALUE?-1:wait;
+            LOG.debug("processPending< {}", pending.values());
+        return wait == Long.MAX_VALUE ? -1 : wait;
     }
-
 
     private void notifyEvents()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("notifyEvents {}",events.size());
-        
+            LOG.debug("notifyEvents {}", events.size());
+
         if (events.isEmpty())
             return;
 
-        boolean event_listeners = false;
+        boolean eventListeners = false;
         for (EventListener listener : listeners)
         {
             if (listener instanceof EventListListener)
@@ -1365,12 +1345,12 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 }
             }
             else
-                event_listeners = true;
+                eventListeners = true;
         }
-        
-        if (event_listeners)
+
+        if (eventListeners)
         {
-            for (PathWatchEvent event:events)
+            for (PathWatchEvent event : events)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("notifyEvent {} {}", event, listeners);
@@ -1390,39 +1370,39 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 }
             }
         }
-        
+
         events.clear();
     }
-    
+
     /**
      * Whether or not to issue notifications for directories and files that
      * already exist when the watcher starts.
-     * 
+     *
      * @param notify true if existing paths should be notified or not
      */
-    public void setNotifyExistingOnStart (boolean notify)
+    public void setNotifyExistingOnStart(boolean notify)
     {
         _notifyExistingOnStart = notify;
     }
-    
-    public boolean isNotifyExistingOnStart ()
+
+    public boolean isNotifyExistingOnStart()
     {
         return _notifyExistingOnStart;
     }
 
     /**
      * Set the quiet time.
-     * 
+     *
      * @param duration the quiet time duration
      * @param unit the quite time unit
      */
     public void setUpdateQuietTime(long duration, TimeUnit unit)
     {
         long desiredMillis = unit.toMillis(duration);
-        
+
         if (watchService != null && !this.nativeWatchService && (desiredMillis < 5000))
         {
-            LOG.warn("Quiet Time is too low for non-native WatchService [{}]: {} < 5000 ms (defaulting to 5000 ms)",watchService.getClass().getName(),desiredMillis);
+            LOG.warn("Quiet Time is too low for non-native WatchService [{}]: {} < 5000 ms (defaulting to 5000 ms)", watchService.getClass().getName(), desiredMillis);
             this.updateQuietTimeDuration = 5000;
             this.updateQuietTimeUnit = TimeUnit.MILLISECONDS;
             return;
@@ -1430,12 +1410,12 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         if (IS_WINDOWS && (desiredMillis < 1000))
         {
-            LOG.warn("Quiet Time is too low for Microsoft Windows: {} < 1000 ms (defaulting to 1000 ms)",desiredMillis);
+            LOG.warn("Quiet Time is too low for Microsoft Windows: {} < 1000 ms (defaulting to 1000 ms)", desiredMillis);
             this.updateQuietTimeDuration = 1000;
             this.updateQuietTimeUnit = TimeUnit.MILLISECONDS;
             return;
         }
-        
+
         // All other OS and watch service combinations can use desired setting
         this.updateQuietTimeDuration = duration;
         this.updateQuietTimeUnit = unit;
@@ -1449,15 +1429,15 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         return s.toString();
     }
 
-
     private static class ExactPathMatcher implements PathMatcher
     {
         private final Path path;
+
         ExactPathMatcher(Path path)
         {
             this.path = path;
         }
-        
+
         @Override
         public boolean matches(Path path)
         {
@@ -1470,11 +1450,12 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         @Override
         public boolean test(Path path)
         {
-            for (PathMatcher pm: this)
+            for (PathMatcher pm : this)
+            {
                 if (pm.matches(path))
                     return true;
+            }
             return false;
         }
     }
-
 }

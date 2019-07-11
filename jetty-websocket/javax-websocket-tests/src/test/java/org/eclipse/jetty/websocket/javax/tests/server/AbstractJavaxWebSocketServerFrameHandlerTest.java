@@ -20,17 +20,15 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.javax.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -46,28 +44,20 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
         server = new Server();
         context = new ServletContextHandler();
         server.setHandler(context);
-
-        WebSocketMapping factory = new WebSocketMapping();
-        HttpClient httpClient = new HttpClient();
-
-        container = new JavaxWebSocketServerContainer(factory, httpClient, server.getThreadPool());
-        container.addBean(httpClient, true);
-        container.addBean(factory, true);
-
-        server.addBean(container, true);
+        JavaxWebSocketServletContainerInitializer.configure(context, null);
         server.start();
+        container = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
     }
 
     @AfterAll
     public static void stopContainer() throws Exception
     {
-        container.stop();
         server.stop();
     }
 
     protected AvailableEncoders encoders;
     protected AvailableDecoders decoders;
-    protected Map<String, String> uriParams = new HashMap<>();
+    protected Map<String, String> uriParams;
     protected EndpointConfig endpointConfig;
 
     public AbstractJavaxWebSocketServerFrameHandlerTest()

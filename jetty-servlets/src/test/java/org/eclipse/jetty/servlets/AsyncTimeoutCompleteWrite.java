@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -34,7 +33,7 @@ import static org.hamcrest.Matchers.nullValue;
 /**
  * Respond with requested content, but via AsyncContext manipulation.
  * <p>
- * 
+ *
  * <pre>
  *   1) startAsync
  *   2) AsyncContext.setTimeout()
@@ -53,7 +52,7 @@ public abstract class AsyncTimeoutCompleteWrite extends TestDirContentServlet im
             super(true);
         }
     }
-    
+
     public static class Passed extends AsyncTimeoutCompleteWrite
     {
         public Passed()
@@ -72,11 +71,11 @@ public abstract class AsyncTimeoutCompleteWrite extends TestDirContentServlet im
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        assertThat("'filename' request attribute shouldn't be declared",request.getAttribute("filename"),nullValue());
+        assertThat("'filename' request attribute shouldn't be declared", request.getAttribute("filename"), nullValue());
 
         AsyncContext ctx = (AsyncContext)request.getAttribute(this.getClass().getName());
         assertThat("AsyncContext (shouldn't be in request attribute)", ctx, nullValue());
-        
+
         if (originalReqResp)
         {
             // Use Original Request & Response
@@ -85,15 +84,15 @@ public abstract class AsyncTimeoutCompleteWrite extends TestDirContentServlet im
         else
         {
             // Pass Request & Response
-            ctx = request.startAsync(request,response);
+            ctx = request.startAsync(request, response);
         }
         String fileName = request.getServletPath();
-        request.setAttribute("filename",fileName);
+        request.setAttribute("filename", fileName);
         ctx.addListener(this);
         ctx.setTimeout(20);
-        
+
         // Setup indication of a redispatch (which this scenario shouldn't do)
-        request.setAttribute(this.getClass().getName(),ctx);
+        request.setAttribute(this.getClass().getName(), ctx);
     }
 
     @Override
@@ -118,7 +117,7 @@ public abstract class AsyncTimeoutCompleteWrite extends TestDirContentServlet im
             response.setContentType("text/plain");
         else if (fileName.endsWith("mp3"))
             response.setContentType("audio/mpeg");
-        response.setHeader("ETag","W/etag-" + fileName);
+        response.setHeader("ETag", "W/etag-" + fileName);
 
         out.write(dataBytes);
 

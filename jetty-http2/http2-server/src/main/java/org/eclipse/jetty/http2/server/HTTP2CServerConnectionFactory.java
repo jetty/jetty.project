@@ -31,9 +31,8 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
-/** HTTP2 Clear Text Connection factory.
+/**
+ * HTTP2 Clear Text Connection factory.
  * <p>This extension of HTTP2ServerConnection Factory sets the
  * protocol name to "h2c" as used by the clear text upgrade mechanism
  * for HTTP2 and marks all TLS ciphers as unacceptable.
@@ -51,15 +50,17 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
 
     public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        this(httpConfiguration,"h2c");
+        this(httpConfiguration, "h2c");
     }
-    
+
     public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
-        super(httpConfiguration,protocols);
-        for (String p:protocols)
+        super(httpConfiguration, protocols);
+        for (String p : protocols)
+        {
             if (!HTTP2ServerConnection.isSupportedProtocol(p))
-                throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: "+p);
+                throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: " + p);
+        }
     }
 
     @Override

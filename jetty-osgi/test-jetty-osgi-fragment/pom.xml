@@ -13,37 +13,37 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp.fragment</bundle-symbolic-name>
   </properties>
-      <build> 
-        <resources>
-          <resource>
-            <directory>src/main/resources</directory>
-          </resource>
-        </resources>
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
 
-        <plugins>
-           <plugin>
-             <groupId>org.apache.maven.plugins</groupId>
-             <artifactId>maven-deploy-plugin</artifactId>
-             <configuration>
-               <!-- DO NOT DEPLOY (or Release) -->
-               <skip>true</skip>
-             </configuration>
-            </plugin> 
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
-                        <Bundle-Name>Jetty OSGi Test WebApp Fragment</Bundle-Name>
-                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-                        <Fragment-Host>org.eclipse.jetty.tests.test-spec-webapp</Fragment-Host>
-                        <Jetty-WarFragmentResourcePath>/</Jetty-WarFragmentResourcePath>
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-  
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <!-- DO NOT DEPLOY (or Release) -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
+            <Bundle-Name>Jetty OSGi Test WebApp Fragment</Bundle-Name>
+            <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+            <Fragment-Host>org.eclipse.jetty.tests.test-spec-webapp</Fragment-Host>
+            <Jetty-WarFragmentResourcePath>/</Jetty-WarFragmentResourcePath>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>

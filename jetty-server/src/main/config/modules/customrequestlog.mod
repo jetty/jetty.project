@@ -1,43 +1,11 @@
 DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-An implementation of requestlog using CustomRequestLog and AsyncRequestLogWriter
-
-[provides]
-requestlog-impl
+Deprecated name for requestlog using custom request logger
 
 [tags]
 requestlog
-logging
 
-[depend]
-server
+[depends]
+requestlog
 
-[xml]
-etc/jetty-customrequestlog.xml
-
-[files]
-logs/
-basehome:modules/requestlog/jetty-customrequestlog.xml|etc/jetty-customrequestlog.xml
-
-[ini-template]
-## Format string
-# jetty.customrequestlog.formatString=%a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"
-
-## Logging directory (relative to $jetty.base)
-# jetty.requestlog.dir=logs
-
-## File path
-# jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
-
-## Date format for rollovered files (uses SimpleDateFormat syntax)
-# jetty.requestlog.filenameDateFormat=yyyy_MM_dd
-
-## How many days to retain old log files
-# jetty.requestlog.retainDays=90
-
-## Whether to append to existing file
-# jetty.requestlog.append=false
-
-## Timezone of the log file rollover
-# jetty.requestlog.timezone=GMT

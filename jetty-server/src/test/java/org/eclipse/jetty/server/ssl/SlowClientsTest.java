@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.servlet.ServletException;
@@ -56,7 +55,7 @@ import static java.time.Duration.ofSeconds;
 public class SlowClientsTest
 {
     private Logger logger = Log.getLogger(getClass());
-    
+
     @Test
     public void testSlowClientsWithSmallThreadPool() throws Exception
     {
@@ -93,7 +92,8 @@ public class SlowClientsTest
 
             SSLContext sslContext = sslContextFactory.getSslContext();
 
-            Assertions.assertTimeoutPreemptively(ofSeconds(10),()-> {
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
+            {
                 CompletableFuture[] futures = new CompletableFuture[2 * maxThreads];
                 ExecutorService executor = Executors.newFixedThreadPool(futures.length);
                 for (int i = 0; i < futures.length; i++)
@@ -101,20 +101,22 @@ public class SlowClientsTest
                     int k = i;
                     futures[i] = CompletableFuture.runAsync(() ->
                     {
-                        try (SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
+                        try (SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
                         {
                             socket.setSoTimeout(contentLength / 1024);
                             OutputStream output = socket.getOutputStream();
                             String target = "/" + k;
                             String request = "GET " + target + " HTTP/1.1\r\n" +
-                                    "Host: localhost\r\n" +
-                                    "Connection: close\r\n" +
-                                    "\r\n";
+                                "Host: localhost\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n";
                             output.write(request.getBytes(StandardCharsets.UTF_8));
                             output.flush();
 
                             while (serverThreads.getIdleThreads() > 0)
+                            {
                                 Thread.sleep(50);
+                            }
 
                             InputStream input = socket.getInputStream();
                             while (true)

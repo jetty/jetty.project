@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.AbstractMessageSink;
-import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
-
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -32,18 +25,26 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.common.AbstractMessageSink;
+import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
-    private static final byte EMPTY_BUFFER[] = new byte[0];
+    private static final byte[] EMPTY_BUFFER = new byte[0];
     private static final int BUFFER_SIZE = 65535;
-    private final long maxMessageSize;
+    private final Session session;
     private ByteArrayOutputStream out;
     private int size;
 
-    public ByteArrayMessageSink(Executor executor, MethodHandle methodHandle, long maxMessageSize)
+    public ByteArrayMessageSink(Executor executor, MethodHandle methodHandle, Session session)
     {
         super(executor, methodHandle);
-        this.maxMessageSize = maxMessageSize;
+        this.session = session;
 
         Objects.requireNonNull(methodHandle, "MethodHandle");
         // byte[] buf, int offset, int length
@@ -63,10 +64,10 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             if (frame.hasPayload())
             {
                 ByteBuffer payload = frame.getPayload();
-                int nextSize = size + payload.remaining();
+                size = size + payload.remaining();
+                long maxMessageSize = session.getMaxBinaryMessageSize();
                 if (maxMessageSize > 0 && size > maxMessageSize)
                     throw new MessageTooLargeException("Message size [" + size + "] exceeds maximum size [" + maxMessageSize + "]");
-                size = nextSize;
 
                 if (out == null)
                     out = new ByteArrayOutputStream(BUFFER_SIZE);
@@ -78,7 +79,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 if (out != null)
                 {
-                    byte buf[] = out.toByteArray();
+                    byte[] buf = out.toByteArray();
                     methodHandle.invoke(buf, 0, buf.length);
                 }
                 else

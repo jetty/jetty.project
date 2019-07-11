@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.websocket.core.internal.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.TimeUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -53,7 +53,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     private void init(PerMessageDeflateExtension ext)
     {
-        ext.init(new ExtensionConfig(ext.getName()), bufferPool);
+        ext.init(new ExtensionConfig(ext.getName()), components);
     }
 
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
@@ -234,12 +234,12 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         tester.parseIncomingHex(// 1 message, 3 frame
-                "410C", // HEADER TEXT / fin=false / rsv1=true
-                "F248CDC9C95700000000FFFF",
-                "000B", // HEADER CONTINUATION / fin=false / rsv1=false
-                "0ACF2FCA4901000000FFFF",
-                "8003", // HEADER CONTINUATION / fin=true / rsv1=false
-                "520400"
+            "410C", // HEADER TEXT / fin=false / rsv1=true
+            "F248CDC9C95700000000FFFF",
+            "000B", // HEADER CONTINUATION / fin=false / rsv1=false
+            "0ACF2FCA4901000000FFFF",
+            "8003", // HEADER CONTINUATION / fin=true / rsv1=false
+            "520400"
         );
 
         Frame txtFrame = new Frame(OpCode.TEXT, false, "Hello ");
@@ -252,7 +252,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     /**
      * Decode fragmented message (3 parts: TEXT, CONTINUATION, CONTINUATION)
      * <p>
-     *     Continuation frames have RSV1 set, which MUST result in Failure
+     * Continuation frames have RSV1 set, which MUST result in Failure
      * </p>
      */
     @Test
@@ -263,14 +263,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.assertNegotiated("permessage-deflate");
 
         Throwable t = assertThrows(Throwable.class, () ->
-                tester.parseIncomingHex(// 1 message, 3 frame
-                        "410C", // Header TEXT / fin=false / rsv1=true
-                        "F248CDC9C95700000000FFFF", // Payload
-                        "400B", // Header CONTINUATION / fin=false / rsv1=true
-                        "0ACF2FCA4901000000FFFF", // Payload
-                        "C003", // Header CONTINUATION / fin=true / rsv1=true
-                        "520400" // Payload
-                ));
+            tester.parseIncomingHex(// 1 message, 3 frame
+                "410C", // Header TEXT / fin=false / rsv1=true
+                "F248CDC9C95700000000FFFF", // Payload
+                "400B", // Header CONTINUATION / fin=false / rsv1=true
+                "0ACF2FCA4901000000FFFF", // Payload
+                "C003", // Header CONTINUATION / fin=true / rsv1=true
+                "520400" // Payload
+            ));
 
         assertThat(t.getCause(), instanceOf(ProtocolException.class));
         assertThat(t.getCause().getMessage(), is("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
@@ -284,7 +284,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -319,7 +319,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -346,7 +346,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 
-     /**
+    /**
      * Verify that incoming uncompressed frames are properly passed through
      */
     @Test
@@ -354,7 +354,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -409,7 +409,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, bufferPool);
+        ext.init(config, components);
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
@@ -440,13 +440,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Outgoing Fragmented Message
+     *
      * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFragmentedMessage() throws IOException, InterruptedException
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-        ext.init(ExtensionConfig.parse("permessage-deflate"), bufferPool);
+        ext.init(ExtensionConfig.parse("permessage-deflate"), components);
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();

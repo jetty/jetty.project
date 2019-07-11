@@ -27,7 +27,6 @@ import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
@@ -85,7 +84,7 @@ public class SecuredRedirectHandlerTest
         httpConf.setSecurePort(securePort);
         httpConf.setSecureScheme("https");
 
-        ServerConnector httpConnector = new ServerConnector(server,new HttpConnectionFactory(httpConf));
+        ServerConnector httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConf));
         httpConnector.setName("unsecured");
         httpConnector.setPort(port);
 
@@ -93,15 +92,15 @@ public class SecuredRedirectHandlerTest
         HttpConfiguration httpsConf = new HttpConfiguration(httpConf);
         httpsConf.addCustomizer(new SecureRequestCustomizer());
 
-        ServerConnector httpsConnector = new ServerConnector(server,new SslConnectionFactory(sslContextFactory,"http/1.1"),new HttpConnectionFactory(httpsConf));
+        ServerConnector httpsConnector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(httpsConf));
         httpsConnector.setName("secured");
         httpsConnector.setPort(securePort);
 
         // Add connectors
-        server.setConnectors(new Connector[] { httpConnector, httpsConnector });
+        server.setConnectors(new Connector[]{httpConnector, httpsConnector});
 
         // Wire up contexts
-        String secureHosts[] = new String[] { "@secured" };
+        String[] secureHosts = new String[]{"@secured"};
 
         ContextHandler test1Context = new ContextHandler();
         test1Context.setContextPath("/test1");
@@ -115,7 +114,7 @@ public class SecuredRedirectHandlerTest
 
         ContextHandler rootContext = new ContextHandler();
         rootContext.setContextPath("/");
-        rootContext.setHandler(new RootHandler("/test1","/test2"));
+        rootContext.setHandler(new RootHandler("/test1", "/test2"));
         rootContext.setVirtualHosts(secureHosts);
 
         // Wire up context for unsecure handling to only
@@ -123,11 +122,11 @@ public class SecuredRedirectHandlerTest
         ContextHandler redirectHandler = new ContextHandler();
         redirectHandler.setContextPath("/");
         redirectHandler.setHandler(new SecuredRedirectHandler());
-        redirectHandler.setVirtualHosts(new String[] { "@unsecured" });
+        redirectHandler.setVirtualHosts(new String[]{"@unsecured"});
 
         // Establish all handlers that have a context
         ContextHandlerCollection contextHandlers = new ContextHandlerCollection();
-        contextHandlers.setHandlers(new Handler[] { redirectHandler, rootContext, test1Context, test2Context });
+        contextHandlers.setHandlers(new Handler[]{redirectHandler, rootContext, test1Context, test2Context});
 
         // Create server level handler tree
         HandlerList handlers = new HandlerList();
@@ -144,8 +143,8 @@ public class SecuredRedirectHandlerTest
         {
             host = "localhost";
         }
-        serverHttpUri = new URI(String.format("http://%s:%d/",host,httpConnector.getLocalPort()));
-        serverHttpsUri = new URI(String.format("https://%s:%d/",host,httpsConnector.getLocalPort()));
+        serverHttpUri = new URI(String.format("http://%s:%d/", host, httpConnector.getLocalPort()));
+        serverHttpsUri = new URI(String.format("https://%s:%d/", host, httpsConnector.getLocalPort()));
 
         origVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
         origSsf = HttpsURLConnection.getDefaultSSLSocketFactory();
@@ -171,8 +170,8 @@ public class SecuredRedirectHandlerTest
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         connection.setInstanceFollowRedirects(false);
         connection.setAllowUserInteraction(false);
-        assertThat("response code",connection.getResponseCode(),is(302));
-        assertThat("location header",connection.getHeaderField("Location"),is(serverHttpsUri.resolve("/").toASCIIString()));
+        assertThat("response code", connection.getResponseCode(), is(302));
+        assertThat("location header", connection.getHeaderField("Location"), is(serverHttpsUri.resolve("/").toASCIIString()));
         connection.disconnect();
     }
 
@@ -183,9 +182,9 @@ public class SecuredRedirectHandlerTest
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         connection.setInstanceFollowRedirects(false);
         connection.setAllowUserInteraction(false);
-        assertThat("response code",connection.getResponseCode(),is(200));
+        assertThat("response code", connection.getResponseCode(), is(200));
         String content = getContent(connection);
-        assertThat("response content",content,containsString("<a href=\"/test1\">"));
+        assertThat("response content", content, containsString("<a href=\"/test1\">"));
         connection.disconnect();
     }
 
@@ -196,8 +195,8 @@ public class SecuredRedirectHandlerTest
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         connection.setInstanceFollowRedirects(false);
         connection.setAllowUserInteraction(false);
-        assertThat("response code",connection.getResponseCode(),is(302));
-        assertThat("location header",connection.getHeaderField("Location"),is(serverHttpsUri.resolve("/test1").toASCIIString()));
+        assertThat("response code", connection.getResponseCode(), is(302));
+        assertThat("location header", connection.getHeaderField("Location"), is(serverHttpsUri.resolve("/test1").toASCIIString()));
         connection.disconnect();
     }
 
@@ -208,8 +207,8 @@ public class SecuredRedirectHandlerTest
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         connection.setInstanceFollowRedirects(false);
         connection.setAllowUserInteraction(false);
-        assertThat("response code",connection.getResponseCode(),is(302));
-        assertThat("location header",connection.getHeaderField("Location"),is(serverHttpsUri.resolve("/nothing/here").toASCIIString()));
+        assertThat("response code", connection.getResponseCode(), is(302));
+        assertThat("location header", connection.getHeaderField("Location"), is(serverHttpsUri.resolve("/nothing/here").toASCIIString()));
         connection.disconnect();
     }
 
@@ -220,16 +219,17 @@ public class SecuredRedirectHandlerTest
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         connection.setInstanceFollowRedirects(false);
         connection.setAllowUserInteraction(false);
-        assertThat("response code",connection.getResponseCode(),is(404));
+        assertThat("response code", connection.getResponseCode(), is(404));
         connection.disconnect();
     }
 
     private String getContent(HttpURLConnection connection) throws IOException
     {
-        try (InputStream in = connection.getInputStream(); InputStreamReader reader = new InputStreamReader(in))
+        try (InputStream in = connection.getInputStream();
+             InputStreamReader reader = new InputStreamReader(in))
         {
             StringWriter writer = new StringWriter();
-            IO.copy(reader,writer);
+            IO.copy(reader, writer);
             return writer.toString();
         }
     }
@@ -247,7 +247,7 @@ public class SecuredRedirectHandlerTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             response.setContentType("text/plain");
-            response.getWriter().printf("%s%n",msg);
+            response.getWriter().printf("%s%n", msg);
             baseRequest.setHandled(true);
         }
     }
@@ -279,7 +279,7 @@ public class SecuredRedirectHandlerTest
             out.println("<ul>");
             for (String child : childContexts)
             {
-                out.printf("<li><a href=\"%s\">%s</a></li>%n",child,child);
+                out.printf("<li><a href=\"%s\">%s</a></li>%n", child, child);
             }
             out.println("</ul>");
             out.println("</body></html>");

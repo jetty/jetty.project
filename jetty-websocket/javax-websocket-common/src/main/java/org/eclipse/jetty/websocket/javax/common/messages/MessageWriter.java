@@ -85,7 +85,7 @@ public class MessageWriter extends Writer
     {
         try
         {
-            send(new char[] { (char)c }, 0, 1);
+            send(new char[]{(char)c}, 0, 1);
         }
         catch (Throwable x)
         {
@@ -101,25 +101,6 @@ public class MessageWriter extends Writer
         try
         {
             flush(false);
-        }
-        catch (Throwable x)
-        {
-            // Notify without holding locks.
-            notifyFailure(x);
-            throw x;
-        }
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        try
-        {
-            flush(true);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Stream closed, {} frames sent", frameCount);
-            // Notify without holding locks.
-            notifySuccess();
         }
         catch (Throwable x)
         {
@@ -187,6 +168,25 @@ public class MessageWriter extends Writer
                     flush(false);
                 }
             }
+        }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        try
+        {
+            flush(true);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stream closed, {} frames sent", frameCount);
+            // Notify without holding locks.
+            notifySuccess();
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
         }
     }
 

@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.common;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -28,7 +27,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
@@ -67,15 +65,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MethodHandle frameHandle;
     private MethodHandle pingHandle;
     private MethodHandle pongHandle;
-    /**
-     * Immutable HandshakeRequest available via Session
-     */
-    private final UpgradeRequest upgradeRequest;
-    /**
-     * Immutable HandshakeResponse available via Session
-     */
-    private final UpgradeResponse upgradeResponse;
-    private final CompletableFuture<Session> futureSession;
+    private UpgradeRequest upgradeRequest;
+    private UpgradeResponse upgradeResponse;
+
     private final Customizer customizer;
     private MessageSink textSink;
     private MessageSink binarySink;
@@ -85,24 +77,20 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private Runnable delayedOnFrame;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
-        Object endpointInstance,
-        UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
-        MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-        MethodHandle textHandle, MethodHandle binaryHandle,
-        Class<? extends MessageSink> textSinkClass,
-        Class<? extends MessageSink> binarySinkClass,
-        MethodHandle frameHandle,
-        MethodHandle pingHandle, MethodHandle pongHandle,
-        CompletableFuture<Session> futureSession,
-        BatchMode batchMode,
-        Customizer customizer)
+                                      Object endpointInstance,
+                                      MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
+                                      MethodHandle textHandle, MethodHandle binaryHandle,
+                                      Class<? extends MessageSink> textSinkClass,
+                                      Class<? extends MessageSink> binarySinkClass,
+                                      MethodHandle frameHandle,
+                                      MethodHandle pingHandle, MethodHandle pongHandle,
+                                      BatchMode batchMode,
+                                      Customizer customizer)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
         this.container = container;
         this.endpointInstance = endpointInstance;
-        this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
 
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
@@ -115,9 +103,33 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.pingHandle = pingHandle;
         this.pongHandle = pongHandle;
 
-        this.futureSession = futureSession;
         this.batchMode = batchMode;
         this.customizer = customizer;
+    }
+
+    public void setUpgradeRequest(UpgradeRequest upgradeRequest)
+    {
+        this.upgradeRequest = upgradeRequest;
+    }
+
+    public void setUpgradeResponse(UpgradeResponse upgradeResponse)
+    {
+        this.upgradeResponse = upgradeResponse;
+    }
+
+    public UpgradeRequest getUpgradeRequest()
+    {
+        return upgradeRequest;
+    }
+
+    public UpgradeResponse getUpgradeResponse()
+    {
+        return upgradeResponse;
+    }
+
+    public BatchMode getBatchMode()
+    {
+        return batchMode;
     }
 
     public WebSocketSession getSession()
@@ -131,7 +143,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             customizer.customize(coreSession);
-            session = new WebSocketSession(coreSession, this, batchMode, upgradeRequest, upgradeResponse);
+            session = new WebSocketSession(coreSession, this);
 
             frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
             openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
@@ -145,11 +157,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             Executor executor = container.getExecutor();
 
             if (textHandle != null)
-                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, coreSession.getMaxTextMessageSize());
+                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, session);
 
             if (binaryHandle != null)
-                binarySink = JettyWebSocketFrameHandlerFactory
-                        .createMessageSink(binaryHandle, binarySinkClass, executor, coreSession.getMaxBinaryMessageSize());
+                binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, session);
 
             if (openHandle != null)
                 openHandle.invoke();
@@ -157,13 +168,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
 
             callback.succeeded();
-            futureSession.complete(session);
             demand();
         }
         catch (Throwable cause)
         {
             callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause));
-            futureSession.completeExceptionally(cause);
         }
     }
 
@@ -172,13 +181,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         synchronized (this)
         {
-            switch(state)
+            switch (state)
             {
                 case DEMANDING:
                     break;
 
                 case SUSPENDING:
-                    delayedOnFrame = ()->onFrame(frame, callback);
+                    delayedOnFrame = () -> onFrame(frame, callback);
                     state = SuspendState.SUSPENDED;
                     return;
 
@@ -202,21 +211,21 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
 
         // Demand after succeeding any received frame
-        Callback demandingCallback = Callback.from(()->
+        Callback demandingCallback = Callback.from(() ->
+            {
+                try
                 {
-                    try
-                    {
-                        demand();
-                    }
-                    catch (Throwable t)
-                    {
-                        callback.failed(t);
-                        return;
-                    }
+                    demand();
+                }
+                catch (Throwable t)
+                {
+                    callback.failed(t);
+                    return;
+                }
 
-                    callback.succeeded();
-                },
-                callback::failed
+                callback.succeeded();
+            },
+            callback::failed
         );
 
         switch (frame.getOpCode())
@@ -239,6 +248,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             case OpCode.CONTINUATION:
                 onContinuationFrame(frame, demandingCallback);
                 break;
+            default:
+                callback.failed(new IllegalStateException());
         }
     }
 
@@ -248,8 +259,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             cause = convertCause(cause);
-            futureSession.completeExceptionally(cause);
-
             if (errorHandle != null)
                 errorHandle.invoke(cause);
             else
@@ -390,7 +399,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         synchronized (this)
         {
-            switch(state)
+            switch (state)
             {
                 case DEMANDING:
                     state = SuspendState.SUSPENDING;
@@ -411,7 +420,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         Runnable delayedFrame = null;
         synchronized (this)
         {
-            switch(state)
+            switch (state)
             {
                 case DEMANDING:
                     throw new IllegalStateException("Already Resumed");
@@ -444,7 +453,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         boolean demand = false;
         synchronized (this)
         {
-            switch(state)
+            switch (state)
             {
                 case DEMANDING:
                     demand = true;
@@ -466,7 +475,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             session.getCoreSession().demand(1);
     }
 
-    static Throwable convertCause(Throwable cause)
+    public static Throwable convertCause(Throwable cause)
     {
         if (cause instanceof MessageTooLargeException)
             return new org.eclipse.jetty.websocket.api.MessageTooLargeException(cause.getMessage(), cause);
@@ -487,7 +496,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             return new org.eclipse.jetty.websocket.api.InvalidWebSocketException(cause.getMessage(), cause);
 
         if (cause instanceof UpgradeException)
-            return new org.eclipse.jetty.websocket.api.UpgradeException(((UpgradeException)cause).getRequestURI(), cause);
+        {
+            UpgradeException ue = (UpgradeException)cause;
+            return new org.eclipse.jetty.websocket.api.UpgradeException(ue.getRequestURI(), ue.getResponseStatusCode(), cause);
+        }
 
         return cause;
     }

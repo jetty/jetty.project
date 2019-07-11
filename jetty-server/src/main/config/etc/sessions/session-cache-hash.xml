@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -10,10 +10,10 @@
   <Call name="addBean">
    <Arg>
     <New class="org.eclipse.jetty.server.session.DefaultSessionCacheFactory">
-     <Set name="evictionPolicy"><Property name="jetty.session.evictionPolicy" default="-1" /></Set>
-     <Set name="saveOnInactiveEvict"><Property name="jetty.session.saveOnInactiveEvict" default="false" /></Set>
-     <Set name="saveOnCreate"><Property name="jetty.session.saveOnCreate" default="false" /></Set>
-     <Set name="removeUnloadableSessions"><Property name="jetty.session.removeUnloadableSessions" default="false"/></Set>
+     <Set name="evictionPolicy" property="jetty.session.evictionPolicy"/>
+     <Set name="saveOnInactiveEvict" property="jetty.session.saveOnInactiveEvict"/>
+     <Set name="saveOnCreate" property="jetty.session.saveOnCreate"/>
+     <Set name="removeUnloadableSessions" property="jetty.session.removeUnloadableSessions"/>
     </New>
    </Arg>
   </Call>

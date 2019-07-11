@@ -40,10 +40,10 @@ public class X509Test
                 return keyUsage;
             }
         };
-        
+
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(true));
     }
-    
+
     @Test
     public void testIsCertSign_Normal_NoSupported()
     {
@@ -57,10 +57,10 @@ public class X509Test
                 return keyUsage;
             }
         };
-        
+
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(false));
     }
-    
+
     @Test
     public void testIsCertSign_NonStandard_Short()
     {
@@ -74,10 +74,10 @@ public class X509Test
                 return keyUsage;
             }
         };
-        
+
         assertThat("NonStandard X509", X509.isCertSign(bogusX509), is(true));
     }
-    
+
     @Test
     public void testIsCertSign_NonStandard_Shorter()
     {
@@ -90,10 +90,10 @@ public class X509Test
                 return keyUsage;
             }
         };
-        
+
         assertThat("NonStandard X509", X509.isCertSign(bogusX509), is(false));
     }
-    
+
     @Test
     public void testIsCertSign_Normal_Null()
     {
@@ -105,10 +105,10 @@ public class X509Test
                 return null;
             }
         };
-        
+
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(false));
     }
-    
+
     @Test
     public void testIsCertSign_Normal_Empty()
     {
@@ -120,7 +120,7 @@ public class X509Test
                 return new boolean[0];
             }
         };
-        
+
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(false));
     }
 }

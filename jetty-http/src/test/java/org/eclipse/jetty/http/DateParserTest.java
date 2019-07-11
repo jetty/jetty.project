@@ -41,5 +41,4 @@ public class DateParserTest
     {
         assertEquals((-1L), DateParser.parseDate("3%~ GMT"));
     }
-
 }

@@ -61,6 +61,6 @@ public class ResponsePatternRuleTest extends AbstractRuleTestCase
         _rule.apply(null, _request, _response);
 
         assertEquals(499, _response.getStatus());
-        assertEquals( "Message 499", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
+        assertEquals("Message 499", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
     }
 }

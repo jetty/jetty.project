@@ -61,29 +61,27 @@ import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
 
 /**
  * Abstract resource service, used by DefaultServlet and ResourceHandler
- *
  */
 public class ResourceService
-{       
+{
     private static final Logger LOG = Log.getLogger(ResourceService.class);
-    
+
     private static final PreEncodedHttpField ACCEPT_RANGES = new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
-    
+
     private HttpContent.ContentFactory _contentFactory;
     private WelcomeFactory _welcomeFactory;
-    private boolean _acceptRanges=true;
-    private boolean _dirAllowed=true;
-    private boolean _redirectWelcome=false;
-    private CompressedContentFormat[] _precompressedFormats=new CompressedContentFormat[0];
-    private String[] _preferredEncodingOrder =new String[0];
+    private boolean _acceptRanges = true;
+    private boolean _dirAllowed = true;
+    private boolean _redirectWelcome = false;
+    private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
+    private String[] _preferredEncodingOrder = new String[0];
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
-    private int _encodingCacheSize=100;
-    private boolean _pathInfoOnly=false;
-    private boolean _etags=false;
+    private int _encodingCacheSize = 100;
+    private boolean _pathInfoOnly = false;
+    private boolean _etags = false;
     private HttpField _cacheControl;
     private List<String> _gzipEquivalentFileExtensions;
-    
-    
+
     public HttpContent.ContentFactory getContentFactory()
     {
         return _contentFactory;
@@ -93,13 +91,15 @@ public class ResourceService
     {
         _contentFactory = contentFactory;
     }
-    
-    public WelcomeFactory getWelcomeFactory() {
-      return _welcomeFactory;
+
+    public WelcomeFactory getWelcomeFactory()
+    {
+        return _welcomeFactory;
     }
 
-    public void setWelcomeFactory(WelcomeFactory welcomeFactory) {
-      _welcomeFactory = welcomeFactory;
+    public void setWelcomeFactory(WelcomeFactory welcomeFactory)
+    {
+        _welcomeFactory = welcomeFactory;
     }
 
     public boolean isAcceptRanges()
@@ -140,7 +140,7 @@ public class ResourceService
     public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
         _precompressedFormats = precompressedFormats;
-        _preferredEncodingOrder = stream(_precompressedFormats).map(f->f._encoding).toArray(String[]::new);
+        _preferredEncodingOrder = stream(_precompressedFormats).map(f -> f._encoding).toArray(String[]::new);
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)
@@ -193,27 +193,26 @@ public class ResourceService
         _gzipEquivalentFileExtensions = gzipEquivalentFileExtensions;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean doGet(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException
+        throws ServletException, IOException
     {
-        String servletPath=null;
-        String pathInfo=null;
+        String servletPath = null;
+        String pathInfo = null;
         Enumeration<String> reqRanges = null;
-        boolean included =request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI)!=null;
+        boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         if (included)
         {
-            servletPath= _pathInfoOnly?"/":(String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
-            pathInfo=(String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
-            if (servletPath==null)
+            servletPath = _pathInfoOnly ? "/" : (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
+            if (servletPath == null)
             {
-                servletPath=request.getServletPath();
-                pathInfo=request.getPathInfo();
+                servletPath = request.getServletPath();
+                pathInfo = request.getPathInfo();
             }
         }
         else
         {
-            servletPath = _pathInfoOnly?"/":request.getServletPath();
+            servletPath = _pathInfoOnly ? "/" : request.getServletPath();
             pathInfo = request.getPathInfo();
 
             // Is this a Range request?
@@ -222,89 +221,88 @@ public class ResourceService
                 reqRanges = null;
         }
 
-        String pathInContext=URIUtil.addPaths(servletPath,pathInfo);        
-        
-        boolean endsWithSlash=(pathInfo==null?(_pathInfoOnly?"":servletPath):pathInfo).endsWith(URIUtil.SLASH);
-        boolean checkPrecompressedVariants=_precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges==null;
-        
-        HttpContent content=null;
-        boolean release_content=true;
+        String pathInContext = URIUtil.addPaths(servletPath, pathInfo);
+
+        boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith(URIUtil.SLASH);
+        boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges == null;
+
+        HttpContent content = null;
+        boolean releaseContent = true;
         try
         {
             // Find the content
-            content=_contentFactory.getContent(pathInContext,response.getBufferSize());
+            content = _contentFactory.getContent(pathInContext, response.getBufferSize());
             if (LOG.isDebugEnabled())
-                LOG.info("content={}",content);
-            
+                LOG.info("content={}", content);
+
             // Not found?
-            if (content==null || !content.getResource().exists())
+            if (content == null || !content.getResource().exists())
             {
                 if (included)
                     throw new FileNotFoundException("!" + pathInContext);
-                notFound(request,response);
+                notFound(request, response);
                 return response.isCommitted();
             }
 
             // Directory?
             if (content.getResource().isDirectory())
             {
-                sendWelcome(content,pathInContext,endsWithSlash,included,request,response);
+                sendWelcome(content, pathInContext, endsWithSlash, included, request, response);
                 return true;
             }
 
             // Strip slash?
-            if (!included && endsWithSlash && pathInContext.length()>1)
+            if (!included && endsWithSlash && pathInContext.length() > 1)
             {
-                String q=request.getQueryString();
-                pathInContext=pathInContext.substring(0,pathInContext.length()-1);
-                if (q!=null&&q.length()!=0)
-                    pathInContext+="?"+q;
-                response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),pathInContext)));
+                String q = request.getQueryString();
+                pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
+                if (q != null && q.length() != 0)
+                    pathInContext += "?" + q;
+                response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), pathInContext)));
                 return true;
             }
-            
+
             // Conditional response?
-            if (!included && !passConditionalHeaders(request,response,content))
+            if (!included && !passConditionalHeaders(request, response, content))
                 return true;
-                
+
             // Precompressed variant available?
-            Map<CompressedContentFormat,? extends HttpContent> precompressedContents = checkPrecompressedVariants?content.getPrecompressedContents():null;
-            if (precompressedContents!=null && precompressedContents.size()>0)
+            Map<CompressedContentFormat, ? extends HttpContent> precompressedContents = checkPrecompressedVariants ? content.getPrecompressedContents() : null;
+            if (precompressedContents != null && precompressedContents.size() > 0)
             {
                 // Tell caches that response may vary by accept-encoding
-                response.addHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
+                response.addHeader(HttpHeader.VARY.asString(), HttpHeader.ACCEPT_ENCODING.asString());
 
                 List<String> preferredEncodings = getPreferredEncodingOrder(request);
                 CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
-                if (precompressedContentEncoding!=null)
+                if (precompressedContentEncoding != null)
                 {
                     HttpContent precompressedContent = precompressedContents.get(precompressedContentEncoding);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("precompressed={}",precompressedContent);
-                    content=precompressedContent;
-                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(),precompressedContentEncoding._encoding);
+                        LOG.debug("precompressed={}", precompressedContent);
+                    content = precompressedContent;
+                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding._encoding);
                 }
             }
 
             // TODO this should be done by HttpContent#getContentEncoding
             if (isGzippedContent(pathInContext))
-                response.setHeader(HttpHeader.CONTENT_ENCODING.asString(),"gzip");
-                
+                response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+
             // Send the data
-            release_content=sendData(request,response,included,content,reqRanges);
-            
+            releaseContent = sendData(request, response, included, content, reqRanges);
         }
-        catch(IllegalArgumentException e)
+        catch (IllegalArgumentException e)
         {
-            LOG.warn(Log.EXCEPTION,e);
-            if(!response.isCommitted())
+            LOG.warn(Log.EXCEPTION, e);
+            if (!response.isCommitted())
                 response.sendError(500, e.getMessage());
         }
         finally
         {
-            if (release_content)
+            if (releaseContent)
             {
-                if (content!=null)
+                if (content != null)
                     content.release();
             }
         }
@@ -321,26 +319,27 @@ public class ResourceService
         String key = headers.nextElement();
         if (headers.hasMoreElements())
         {
-            StringBuilder sb = new StringBuilder(key.length()*2);
+            StringBuilder sb = new StringBuilder(key.length() * 2);
             do
             {
                 sb.append(',').append(headers.nextElement());
-            } while (headers.hasMoreElements());
+            }
+            while (headers.hasMoreElements());
             key = sb.toString();
         }
 
-        List<String> values=_preferredEncodingOrderCache.get(key);
-        if (values==null)
+        List<String> values = _preferredEncodingOrderCache.get(key);
+        if (values == null)
         {
             QuotedQualityCSV encodingQualityCSV = new QuotedQualityCSV(_preferredEncodingOrder);
             encodingQualityCSV.addValue(key);
-            values=encodingQualityCSV.getValues();
+            values = encodingQualityCSV.getValues();
 
             // keep cache size in check even if we get strange/malicious input
-            if (_preferredEncodingOrderCache.size()>_encodingCacheSize)
+            if (_preferredEncodingOrderCache.size() > _encodingCacheSize)
                 _preferredEncodingOrderCache.clear();
 
-            _preferredEncodingOrderCache.put(key,values);
+            _preferredEncodingOrderCache.put(key, values);
         }
 
         return values;
@@ -354,8 +353,10 @@ public class ResourceService
         for (String encoding : preferredEncodings)
         {
             for (CompressedContentFormat format : availableFormats)
+            {
                 if (format._encoding.equals(encoding))
                     return format;
+            }
 
             if ("*".equals(encoding))
                 return availableFormats.iterator().next();
@@ -366,23 +367,22 @@ public class ResourceService
         return null;
     }
 
-
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, boolean included, HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
-    {                
+    {
         // Redirect to directory
         if (!endsWithSlash)
         {
-            StringBuffer buf=request.getRequestURL();
-            synchronized(buf)
+            StringBuffer buf = request.getRequestURL();
+            synchronized (buf)
             {
-                int param=buf.lastIndexOf(";");
-                if (param<0)
+                int param = buf.lastIndexOf(";");
+                if (param < 0)
                     buf.append('/');
                 else
-                    buf.insert(param,'/');
-                String q=request.getQueryString();
-                if (q!=null&&q.length()!=0)
+                    buf.insert(param, '/');
+                String q = request.getQueryString();
+                if (q != null && q.length() != 0)
                 {
                     buf.append('?');
                     buf.append(q);
@@ -392,120 +392,118 @@ public class ResourceService
             }
             return;
         }
-        
+
         // look for a welcome file
-        String welcome=_welcomeFactory==null?null:_welcomeFactory.getWelcomeFile(pathInContext);
-                
-        if (welcome!=null)
+        String welcome = _welcomeFactory == null ? null : _welcomeFactory.getWelcomeFile(pathInContext);
+
+        if (welcome != null)
         {
             if (_pathInfoOnly)
-                welcome = URIUtil.addPaths(request.getServletPath(),welcome);
-            
+                welcome = URIUtil.addPaths(request.getServletPath(), welcome);
+
             if (LOG.isDebugEnabled())
-                LOG.debug("welcome={}",welcome);
+                LOG.debug("welcome={}", welcome);
 
             ServletContext context = request.getServletContext();
 
-            if (_redirectWelcome || context==null)
+            if (_redirectWelcome || context == null)
             {
                 // Redirect to the index
                 response.setContentLength(0);
-                
-                String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContextPath(),welcome));
-                String q=request.getQueryString();
-                if (q!=null&&!q.isEmpty())
-                    uri+="?"+q;
-                
+
+                String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContextPath(), welcome));
+                String q = request.getQueryString();
+                if (q != null && !q.isEmpty())
+                    uri += "?" + q;
+
                 response.sendRedirect(response.encodeRedirectURL(uri));
                 return;
             }
-            
-            RequestDispatcher dispatcher=context.getRequestDispatcher(welcome);
-            if (dispatcher!=null)
+
+            RequestDispatcher dispatcher = context.getRequestDispatcher(welcome);
+            if (dispatcher != null)
             {
                 // Forward to the index
                 if (included)
-                    dispatcher.include(request,response);
+                    dispatcher.include(request, response);
                 else
                 {
-                    request.setAttribute("org.eclipse.jetty.server.welcome",welcome);
-                    dispatcher.forward(request,response);
-                }   
+                    request.setAttribute("org.eclipse.jetty.server.welcome", welcome);
+                    dispatcher.forward(request, response);
+                }
             }
             return;
         }
-         
-        if (included || passConditionalHeaders(request,response, content))
-            sendDirectory(request,response,content.getResource(),pathInContext);
+
+        if (included || passConditionalHeaders(request, response, content))
+            sendDirectory(request, response, content.getResource(), pathInContext);
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean isGzippedContent(String path)
     {
-        if (path == null || _gzipEquivalentFileExtensions==null)
+        if (path == null || _gzipEquivalentFileExtensions == null)
             return false;
 
-        for (String suffix:_gzipEquivalentFileExtensions)
+        for (String suffix : _gzipEquivalentFileExtensions)
+        {
             if (path.endsWith(suffix))
                 return true;
+        }
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     private boolean hasDefinedRange(Enumeration<String> reqRanges)
     {
-        return (reqRanges!=null && reqRanges.hasMoreElements());
+        return (reqRanges != null && reqRanges.hasMoreElements());
     }
 
-    /* ------------------------------------------------------------ */
     protected void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         response.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
-    
+
     protected void sendStatus(HttpServletResponse response, int status, Supplier<String> etag) throws IOException
     {
         response.setStatus(status);
-        if (_etags && etag!=null)
-        response.setHeader(HttpHeader.ETAG.asString(),etag.get());
+        if (_etags && etag != null)
+            response.setHeader(HttpHeader.ETAG.asString(), etag.get());
         response.flushBuffer();
     }
-    
-    /* ------------------------------------------------------------ */
+
     /* Check modification date headers.
      */
-    protected boolean passConditionalHeaders(HttpServletRequest request,HttpServletResponse response, HttpContent content)
-    throws IOException
+    protected boolean passConditionalHeaders(HttpServletRequest request, HttpServletResponse response, HttpContent content)
+        throws IOException
     {
         try
         {
-            String ifm=null;
-            String ifnm=null;
-            String ifms=null;
-            long ifums=-1;
-            
+            String ifm = null;
+            String ifnm = null;
+            String ifms = null;
+            long ifums = -1;
+
             if (request instanceof Request)
             {
                 // Find multiple fields by iteration as an optimization 
                 HttpFields fields = ((Request)request).getHttpFields();
-                for (int i=fields.size();i-->0;)
+                for (int i = fields.size(); i-- > 0; )
                 {
-                    HttpField field=fields.getField(i);
+                    HttpField field = fields.getField(i);
                     if (field.getHeader() != null)
                     {
                         switch (field.getHeader())
                         {
                             case IF_MATCH:
-                                ifm=field.getValue();
+                                ifm = field.getValue();
                                 break;
                             case IF_NONE_MATCH:
-                                ifnm=field.getValue();
+                                ifnm = field.getValue();
                                 break;
                             case IF_MODIFIED_SINCE:
-                                ifms=field.getValue();
+                                ifms = field.getValue();
                                 break;
                             case IF_UNMODIFIED_SINCE:
-                                ifums=DateParser.parseDate(field.getValue());
+                                ifums = DateParser.parseDate(field.getValue());
                                 break;
                             default:
                         }
@@ -514,26 +512,26 @@ public class ResourceService
             }
             else
             {
-                ifm=request.getHeader(HttpHeader.IF_MATCH.asString());
-                ifnm=request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
-                ifms=request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
-                ifums=request.getDateHeader(HttpHeader.IF_UNMODIFIED_SINCE.asString());
+                ifm = request.getHeader(HttpHeader.IF_MATCH.asString());
+                ifnm = request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
+                ifms = request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
+                ifums = request.getDateHeader(HttpHeader.IF_UNMODIFIED_SINCE.asString());
             }
 
             if (_etags)
             {
-                String etag=content.getETagValue();
-                if (ifm!=null)
+                String etag = content.getETagValue();
+                if (ifm != null)
                 {
-                    boolean match=false;
-                    if (etag!=null)
+                    boolean match = false;
+                    if (etag != null)
                     {
-                        QuotedCSV quoted = new QuotedCSV(true,ifm);
+                        QuotedCSV quoted = new QuotedCSV(true, ifm);
                         for (String tag : quoted)
                         {
                             if (CompressedContentFormat.tagEquals(etag, tag))
                             {
-                                match=true;
+                                match = true;
                                 break;
                             }
                         }
@@ -541,27 +539,27 @@ public class ResourceService
 
                     if (!match)
                     {
-                        sendStatus(response,HttpServletResponse.SC_PRECONDITION_FAILED,null);
+                        sendStatus(response, HttpServletResponse.SC_PRECONDITION_FAILED, null);
                         return false;
                     }
                 }
 
-                if (ifnm!=null && etag!=null)
+                if (ifnm != null && etag != null)
                 {
                     // Handle special case of exact match OR gzip exact match
-                    if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',')<0)
+                    if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
                     {
-                        sendStatus(response,HttpServletResponse.SC_NOT_MODIFIED,ifnm::toString);
+                        sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, ifnm::toString);
                         return false;
                     }
 
                     // Handle list of tags
-                    QuotedCSV quoted = new QuotedCSV(true,ifnm);
+                    QuotedCSV quoted = new QuotedCSV(true, ifnm);
                     for (String tag : quoted)
                     {
                         if (CompressedContentFormat.tagEquals(etag, tag))
                         {
-                            sendStatus(response,HttpServletResponse.SC_NOT_MODIFIED,tag::toString);
+                            sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, tag::toString);
                             return false;
                         }
                     }
@@ -572,35 +570,34 @@ public class ResourceService
             }
 
             // Handle if modified since
-            if (ifms!=null)
+            if (ifms != null)
             {
                 //Get jetty's Response impl
-                String mdlm=content.getLastModifiedValue();
-                if (mdlm!=null && ifms.equals(mdlm))
+                String mdlm = content.getLastModifiedValue();
+                if (mdlm != null && ifms.equals(mdlm))
                 {
-                    sendStatus(response,HttpServletResponse.SC_NOT_MODIFIED,content::getETagValue);
+                    sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
                     return false;
                 }
 
-                long ifmsl=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
-                if (ifmsl!=-1 && content.getResource().lastModified()/1000 <= ifmsl/1000)
+                long ifmsl = request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
+                if (ifmsl != -1 && content.getResource().lastModified() / 1000 <= ifmsl / 1000)
                 {
-                    sendStatus(response,HttpServletResponse.SC_NOT_MODIFIED,content::getETagValue);
+                    sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
                     return false;
                 }
             }
 
             // Parse the if[un]modified dates and compare to resource
-            if (ifums!=-1 && content.getResource().lastModified()/1000 > ifums/1000)
+            if (ifums != -1 && content.getResource().lastModified() / 1000 > ifums / 1000)
             {
                 response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
                 return false;
             }
-
         }
-        catch(IllegalArgumentException iae)
+        catch (IllegalArgumentException iae)
         {
-            if(!response.isCommitted())
+            if (!response.isCommitted())
                 response.sendError(400, iae.getMessage());
             throw iae;
         }
@@ -608,12 +605,11 @@ public class ResourceService
         return true;
     }
 
-    /* ------------------------------------------------------------------- */
     protected void sendDirectory(HttpServletRequest request,
-            HttpServletResponse response,
-            Resource resource,
-            String pathInContext)
-    throws IOException
+                                 HttpServletResponse response,
+                                 Resource resource,
+                                 String pathInContext)
+        throws IOException
     {
         if (!_dirAllowed)
         {
@@ -621,32 +617,31 @@ public class ResourceService
             return;
         }
 
-        byte[] data=null;
-        String base = URIUtil.addEncodedPaths(request.getRequestURI(),URIUtil.SLASH);
-        String dir = resource.getListHTML(base,pathInContext.length()>1, request.getQueryString());
-        if (dir==null)
+        byte[] data = null;
+        String base = URIUtil.addEncodedPaths(request.getRequestURI(), URIUtil.SLASH);
+        String dir = resource.getListHTML(base, pathInContext.length() > 1, request.getQueryString());
+        if (dir == null)
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
-            "No directory");
+                "No directory");
             return;
         }
 
-        data=dir.getBytes("utf-8");
+        data = dir.getBytes("utf-8");
         response.setContentType("text/html;charset=utf-8");
         response.setContentLength(data.length);
         response.getOutputStream().write(data);
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean sendData(HttpServletRequest request,
-            HttpServletResponse response,
-            boolean include,
-            final HttpContent content,
-            Enumeration<String> reqRanges)
-    throws IOException
+                               HttpServletResponse response,
+                               boolean include,
+                               final HttpContent content,
+                               Enumeration<String> reqRanges)
+        throws IOException
     {
         final long content_length = content.getContentLengthValue();
-        
+
         // Get the output stream (or writer)
         OutputStream out;
         boolean written;
@@ -659,51 +654,51 @@ public class ResourceService
                 ? ((HttpOutput)out).isWritten()
                 : true;
         }
-        catch(IllegalStateException e)
+        catch (IllegalStateException e)
         {
             out = new WriterOutputStream(response.getWriter());
-            written=true; // there may be data in writer buffer, so assume written
+            written = true; // there may be data in writer buffer, so assume written
         }
-        
-        if (LOG.isDebugEnabled())
-            LOG.debug(String.format("sendData content=%s out=%s async=%b",content,out,request.isAsyncSupported()));
 
-        if ( reqRanges == null || !reqRanges.hasMoreElements() || content_length<0)
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("sendData content=%s out=%s async=%b", content, out, request.isAsyncSupported()));
+
+        if (reqRanges == null || !reqRanges.hasMoreElements() || content_length < 0)
         {
             //  if there were no ranges, send entire entity
             if (include)
             {
                 // write without headers
-                content.getResource().writeTo(out,0,content_length);
+                content.getResource().writeTo(out, 0, content_length);
             }
             // else if we can't do a bypass write because of wrapping
             else if (written || !(out instanceof HttpOutput))
             {
                 // write normally
-                putHeaders(response,content,written?-1:0);
+                putHeaders(response, content, written ? -1 : 0);
                 ByteBuffer buffer = content.getIndirectBuffer();
-                if (buffer!=null)
-                    BufferUtil.writeTo(buffer,out);
+                if (buffer != null)
+                    BufferUtil.writeTo(buffer, out);
                 else
-                    content.getResource().writeTo(out,0,content_length);
+                    content.getResource().writeTo(out, 0, content_length);
             }
             // else do a bypass write
             else
             {
                 // write the headers
-                putHeaders(response,content,0);
+                putHeaders(response, content, 0);
 
                 // write the content asynchronously if supported
-                if (request.isAsyncSupported() && content.getContentLengthValue()>response.getBufferSize())
+                if (request.isAsyncSupported() && content.getContentLengthValue() > response.getBufferSize())
                 {
                     final AsyncContext context = request.startAsync();
                     context.setTimeout(0);
 
-                    ((HttpOutput)out).sendContent(content,new Callback()
+                    ((HttpOutput)out).sendContent(content, new Callback()
                     {
                         @Override
                         public void succeeded()
-                        {   
+                        {
                             context.complete();
                             content.release();
                         }
@@ -718,9 +713,9 @@ public class ResourceService
                             context.complete();
                             content.release();
                         }
-                        
+
                         @Override
-                        public String toString() 
+                        public String toString()
                         {
                             return String.format("ResourceService@%x$CB", ResourceService.this.hashCode());
                         }
@@ -734,31 +729,31 @@ public class ResourceService
         else
         {
             // Parse the satisfiable ranges
-            List<InclusiveByteRange> ranges =InclusiveByteRange.satisfiableRanges( reqRanges, content_length);
+            List<InclusiveByteRange> ranges = InclusiveByteRange.satisfiableRanges(reqRanges, content_length);
 
             //  if there are no satisfiable ranges, send 416 response
-            if (ranges==null || ranges.size()==0)
+            if (ranges == null || ranges.size() == 0)
             {
-                putHeaders(response,content,0);
+                putHeaders(response, content, 0);
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
-                        InclusiveByteRange.to416HeaderRangeString(content_length));
-                sendStatus(response,HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE,null);
+                    InclusiveByteRange.to416HeaderRangeString(content_length));
+                sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
                 return true;
             }
 
             //  if there is only a single valid range (must be satisfiable
             //  since were here now), send that range with a 216 response
-            if ( ranges.size()== 1)
+            if (ranges.size() == 1)
             {
                 InclusiveByteRange singleSatisfiableRange = ranges.iterator().next();
                 long singleLength = singleSatisfiableRange.getSize();
-                putHeaders(response,content,singleLength);
+                putHeaders(response, content, singleLength);
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 if (!response.containsHeader(HttpHeader.DATE.asString()))
-                    response.addDateHeader(HttpHeader.DATE.asString(),System.currentTimeMillis());
+                    response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
-                        singleSatisfiableRange.toHeaderRangeString(content_length));
-                content.getResource().writeTo(out,singleSatisfiableRange.getFirst(),singleLength);
+                    singleSatisfiableRange.toHeaderRangeString(content_length));
+                content.getResource().writeTo(out, singleSatisfiableRange.getFirst(), singleLength);
                 return true;
             }
 
@@ -766,122 +761,118 @@ public class ResourceService
             //  216 response which does not require an overall
             //  content-length header
             //
-            putHeaders(response,content,-1);
-            String mimetype=(content==null?null:content.getContentTypeValue());
-            if (mimetype==null)
-                LOG.warn("Unknown mimetype for "+request.getRequestURI());
-            MultiPartOutputStream multi = new MultiPartOutputStream(out);
+            putHeaders(response, content, -1);
+            String mimetype = (content == null ? null : content.getContentTypeValue());
+            if (mimetype == null)
+                LOG.warn("Unknown mimetype for " + request.getRequestURI());
             response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
             if (!response.containsHeader(HttpHeader.DATE.asString()))
-                response.addDateHeader(HttpHeader.DATE.asString(),System.currentTimeMillis());
+                response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());
 
             // If the request has a "Request-Range" header then we need to
             // send an old style multipart/x-byteranges Content-Type. This
             // keeps Netscape and acrobat happy. This is what Apache does.
             String ctp;
-            if (request.getHeader(HttpHeader.REQUEST_RANGE.asString())!=null)
+            if (request.getHeader(HttpHeader.REQUEST_RANGE.asString()) != null)
                 ctp = "multipart/x-byteranges; boundary=";
             else
                 ctp = "multipart/byteranges; boundary=";
-            response.setContentType(ctp+multi.getBoundary());
+            MultiPartOutputStream multi = new MultiPartOutputStream(out);
+            response.setContentType(ctp + multi.getBoundary());
 
-            InputStream in=content.getResource().getInputStream();
-            long pos=0;
+            InputStream in = content.getResource().getInputStream();
+            long pos = 0;
 
             // calculate the content-length
-            int length=0;
+            int length = 0;
             String[] header = new String[ranges.size()];
             int i = 0;
-            for (InclusiveByteRange ibr:ranges)
+            for (InclusiveByteRange ibr : ranges)
             {
-                header[i]=ibr.toHeaderRangeString(content_length);
-                length+=
-                    ((i>0)?2:0)+
-                    2+multi.getBoundary().length()+2+
-                    (mimetype==null?0:HttpHeader.CONTENT_TYPE.asString().length()+2+mimetype.length())+2+
-                    HttpHeader.CONTENT_RANGE.asString().length()+2+header[i].length()+2+
-                    2+
-                    (ibr.getLast()-ibr.getFirst())+1;
+                header[i] = ibr.toHeaderRangeString(content_length);
+                length +=
+                    ((i > 0) ? 2 : 0) +
+                        2 + multi.getBoundary().length() + 2 +
+                        (mimetype == null ? 0 : HttpHeader.CONTENT_TYPE.asString().length() + 2 + mimetype.length()) + 2 +
+                        HttpHeader.CONTENT_RANGE.asString().length() + 2 + header[i].length() + 2 +
+                        2 +
+                        (ibr.getLast() - ibr.getFirst()) + 1;
                 i++;
             }
-            length+=2+2+multi.getBoundary().length()+2+2;
+            length += 2 + 2 + multi.getBoundary().length() + 2 + 2;
             response.setContentLength(length);
 
-            i=0;
-            for (InclusiveByteRange ibr:ranges)
+            i = 0;
+            for (InclusiveByteRange ibr : ranges)
             {
-                multi.startPart(mimetype,new String[]{HttpHeader.CONTENT_RANGE+": "+header[i]});
+                multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
 
-                long start=ibr.getFirst();
-                long size=ibr.getSize();
-                if (in!=null)
+                long start = ibr.getFirst();
+                long size = ibr.getSize();
+                if (in != null)
                 {
                     // Handle non cached resource
-                    if (start<pos)
+                    if (start < pos)
                     {
                         in.close();
-                        in=content.getResource().getInputStream();
-                        pos=0;
+                        in = content.getResource().getInputStream();
+                        pos = 0;
                     }
-                    if (pos<start)
+                    if (pos < start)
                     {
-                        in.skip(start-pos);
-                        pos=start;
+                        in.skip(start - pos);
+                        pos = start;
                     }
-                    
-                    IO.copy(in,multi,size);
-                    pos+=size;
+
+                    IO.copy(in, multi, size);
+                    pos += size;
                 }
                 else
                     // Handle cached resource
-                    content.getResource().writeTo(multi,start,size);
+                    content.getResource().writeTo(multi, start, size);
 
                 i++;
             }
-            if (in!=null)
+            if (in != null)
                 in.close();
             multi.close();
         }
         return true;
     }
 
-    /* ------------------------------------------------------------ */
-    protected void putHeaders(HttpServletResponse response,HttpContent content, long contentLength)
+    protected void putHeaders(HttpServletResponse response, HttpContent content, long contentLength)
     {
         if (response instanceof Response)
         {
             Response r = (Response)response;
-            r.putHeaders(content,contentLength,_etags);
+            r.putHeaders(content, contentLength, _etags);
             HttpFields f = r.getHttpFields();
             if (_acceptRanges)
                 f.put(ACCEPT_RANGES);
 
-            if (_cacheControl!=null)
+            if (_cacheControl != null)
                 f.put(_cacheControl);
         }
         else
         {
-            Response.putHeaders(response,content,contentLength,_etags);
+            Response.putHeaders(response, content, contentLength, _etags);
             if (_acceptRanges)
-                response.setHeader(ACCEPT_RANGES.getName(),ACCEPT_RANGES.getValue());
+                response.setHeader(ACCEPT_RANGES.getName(), ACCEPT_RANGES.getValue());
 
-            if (_cacheControl!=null)
-                response.setHeader(_cacheControl.getName(),_cacheControl.getValue());
+            if (_cacheControl != null)
+                response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     public interface WelcomeFactory
     {
-      /* ------------------------------------------------------------ */
-      /**
-       * Finds a matching welcome file for the supplied {@link Resource}.
-       * @param pathInContext the path of the request
-       * @return The path of the matching welcome file in context or null.
-       */
-      String getWelcomeFile(String pathInContext);
 
+        /**
+         * Finds a matching welcome file for the supplied {@link Resource}.
+         *
+         * @param pathInContext the path of the request
+         * @return The path of the matching welcome file in context or null.
+         */
+        String getWelcomeFile(String pathInContext);
     }
 }

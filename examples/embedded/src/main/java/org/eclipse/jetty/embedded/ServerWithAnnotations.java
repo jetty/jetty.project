@@ -22,6 +22,7 @@ import java.io.File;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
+import org.eclipse.jetty.plus.jndi.NamingDump;
 import org.eclipse.jetty.plus.jndi.Resource;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
@@ -35,25 +36,23 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithAnnotations
 {
-    public static final void main( String args[] ) throws Exception
+    public static final void main(String[] args) throws Exception
     {
         // Create the server
-        Server server = new Server(8080);
-
+        final Server server = new Server(8080);
 
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
-        
+
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
-        webapp.addConfiguration(new EnvConfiguration(),new PlusConfiguration(),new AnnotationConfiguration());
-        
+        webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
+
         webapp.setContextPath("/");
-        File warFile = new File(
-                "jetty-distribution/target/distribution/demo-base/webapps/test.war");
+        File warFile = JettyDistribution.resolve("demo-base/webapps/test-spec.war").toFile();
         webapp.setWar(warFile.getAbsolutePath());
         webapp.setAttribute(
-                "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                ".*/jetty-servlet-api-[^/]*\\.jar$");
+            "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+            ".*/jetty-servlet-api-[^/]*\\.jar$");
         server.setHandler(webapp);
 
         // Register new transaction manager in JNDI
@@ -61,10 +60,14 @@ public class ServerWithAnnotations
         new Transaction(new com.acme.MockUserTransaction());
 
         // Define an env entry with webapp scope.
-        new EnvEntry(webapp, "maxAmount", 100D, true);
+        // THIS ENTRY IS OVERRIDEN BY THE ENTRY IN jetty-env.xml
+        new EnvEntry(webapp, "maxAmount", 100d, true);
 
         // Register a mock DataSource scoped to the webapp
-        new Resource(webapp, "jdbc/mydatasource", new com.acme.MockDataSource());
+        new Resource(server, "jdbc/mydatasource", new com.acme.MockDataSource());
+
+        // Add JNDI context to server for dump
+        server.addBean(new NamingDump());
 
         // Configure a LoginService
         HashLoginService loginService = new HashLoginService();
@@ -76,5 +79,4 @@ public class ServerWithAnnotations
         server.dumpStdErr();
         server.join();
     }
-
 }

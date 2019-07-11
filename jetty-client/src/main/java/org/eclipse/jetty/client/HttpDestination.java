@@ -304,16 +304,16 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         }
     }
 
-    protected boolean enqueue(Queue<HttpExchange> queue, HttpExchange exchange)
-    {
-        return queue.offer(exchange);
-    }
-
     public void send()
     {
         if (getHttpExchanges().isEmpty())
             return;
         process();
+    }
+
+    protected boolean enqueue(Queue<HttpExchange> queue, HttpExchange exchange)
+    {
+        return queue.offer(exchange);
     }
 
     private void process()
@@ -396,6 +396,11 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return exchanges.remove(exchange);
     }
 
+    public boolean remove(Connection connection)
+    {
+        return connectionPool.remove(connection);
+    }
+
     @Override
     public void close()
     {
@@ -404,6 +409,24 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             LOG.debug("Closed {}", this);
         connectionPool.close();
         timeout.destroy();
+    }
+
+    public void close(Connection connection)
+    {
+        boolean removed = remove(connection);
+
+        if (getHttpExchanges().isEmpty())
+        {
+            tryRemoveIdleDestination();
+        }
+        else
+        {
+            // We need to execute queued requests even if this connection failed.
+            // We may create a connection that is not needed, but it will eventually
+            // idle timeout, so no worries.
+            if (removed)
+                process();
+        }
     }
 
     public void release(Connection connection)
@@ -434,29 +457,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         }
     }
 
-    public boolean remove(Connection connection)
-    {
-        return connectionPool.remove(connection);
-    }
-
-    public void close(Connection connection)
-    {
-        boolean removed = remove(connection);
-
-        if (getHttpExchanges().isEmpty())
-        {
-            tryRemoveIdleDestination();
-        }
-        else
-        {
-            // We need to execute queued requests even if this connection failed.
-            // We may create a connection that is not needed, but it will eventually
-            // idle timeout, so no worries.
-            if (removed)
-                process();
-        }
-    }
-
     /**
      * Aborts all the {@link HttpExchange}s queued in this destination.
      *
@@ -469,7 +469,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         // and we don't want to fail it immediately as if it was queued before the failure.
         // The call to Request.abort() will remove the exchange from the exchanges queue.
         for (HttpExchange exchange : new ArrayList<>(exchanges))
+        {
             exchange.getRequest().abort(cause);
+        }
         if (exchanges.isEmpty())
             tryRemoveIdleDestination();
     }
@@ -503,12 +505,12 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     public String toString()
     {
         return String.format("%s[%s]@%x%s,queue=%d,pool=%s",
-                HttpDestination.class.getSimpleName(),
-                asString(),
-                hashCode(),
-                proxy == null ? "" : "(via " + proxy + ")",
-                exchanges.size(),
-                connectionPool);
+            HttpDestination.class.getSimpleName(),
+            asString(),
+            hashCode(),
+            proxy == null ? "" : "(via " + proxy + ")",
+            exchanges.size(),
+            connectionPool);
     }
 
     @FunctionalInterface
@@ -541,7 +543,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         /**
          * Creates a Key with the given origin and protocol and a {@code null} kind.
          *
-         * @param origin   the origin
+         * @param origin the origin
          * @param protocol the protocol
          */
         public Key(Origin origin, Protocol protocol)
@@ -552,9 +554,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         /**
          * Creates a Key with the given origin and protocol and kind.
          *
-         * @param origin   the origin
+         * @param origin the origin
          * @param protocol the protocol
-         * @param kind     the opaque kind
+         * @param kind the opaque kind
          */
         public Key(Origin origin, Protocol protocol, String kind)
         {
@@ -587,8 +589,8 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
                 return false;
             Key that = (Key)obj;
             return origin.equals(that.origin) &&
-                    Objects.equals(protocol, that.protocol) &&
-                    Objects.equals(kind, that.kind);
+                Objects.equals(protocol, that.protocol) &&
+                Objects.equals(kind, that.kind);
         }
 
         @Override
@@ -600,9 +602,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         public String asString()
         {
             return String.format("%s|%s,kind=%s",
-                    origin.asString(),
-                    protocol == null ? "null" : protocol.asString(),
-                    kind);
+                origin.asString(),
+                protocol == null ? "null" : protocol.asString(),
+                kind);
         }
 
         @Override

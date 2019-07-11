@@ -88,7 +88,7 @@ public interface WebSocketServletFactory extends FrameHandler.Configuration
      * </p>
      *
      * @param pathSpec the pathspec to respond on
-     * @param creator  the WebSocketCreator to use
+     * @param creator the WebSocketCreator to use
      * @since 10.0
      */
     void addMapping(PathSpec pathSpec, WebSocketCreator creator);
@@ -122,7 +122,6 @@ public interface WebSocketServletFactory extends FrameHandler.Configuration
      * @return the MappedResource if matched, or null if not matched.
      */
     WebSocketCreator getMatch(String target);
-
 
     /**
      * Parse a PathSpec string into a PathSpec instance.

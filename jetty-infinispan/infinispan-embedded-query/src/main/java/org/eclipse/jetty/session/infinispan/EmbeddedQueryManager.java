@@ -13,30 +13,30 @@ import org.infinispan.query.dsl.QueryFactory;
 public class EmbeddedQueryManager implements QueryManager
 {
     private Cache<String, SessionData> _cache;
-    
+
     public EmbeddedQueryManager(Cache<String, SessionData> cache)
     {
         _cache = cache;
     }
-    
+
     @Override
     public Set<String> queryExpiredSessions(long time)
-    {                
+    {
         QueryFactory qf = Search.getQueryFactory(_cache);
         Query q = qf.from(SessionData.class).select("id").having("expiry").lte(time).build();
-        
-        List<Object[]> list = q.list(); 
+
+        List<Object[]> list = q.list();
         Set<String> ids = new HashSet<>();
-        for(Object[] sl : list)
+        for (Object[] sl : list)
+        {
             ids.add((String)sl[0]);
+        }
         return ids;
     }
-    
-    
+
     @Override
     public Set<String> queryExpiredSessions()
-    {                
+    {
         return queryExpiredSessions(System.currentTimeMillis());
     }
-
 }

@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Base64;
+
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public final class WebSocketCore
 {
@@ -40,13 +40,12 @@ public final class WebSocketCore
             MessageDigest md = MessageDigest.getInstance("SHA1");
             md.update(key.getBytes(StandardCharsets.UTF_8));
             md.update(WebSocketConstants.MAGIC);
-            return new String(B64Code.encode(md.digest()));
+            return Base64.getEncoder().encodeToString(md.digest());
         }
         catch (Exception e)
         {
             throw new RuntimeException(e);
         }
     }
-
 }
 

@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -95,12 +96,12 @@ public class ProxyProtocolTest
             {
                 try
                 {
-                    assertEquals("1.2.3.4",request.getRemoteAddr());
-                    assertEquals(1111,request.getRemotePort());
-                    assertEquals("5.6.7.8",request.getLocalAddr());
-                    assertEquals(2222,request.getLocalPort());
+                    assertEquals("1.2.3.4", request.getRemoteAddr());
+                    assertEquals(1111, request.getRemotePort());
+                    assertEquals("5.6.7.8", request.getLocalAddr());
+                    assertEquals(2222, request.getLocalPort());
                 }
-                catch(Throwable th)
+                catch (Throwable th)
                 {
                     th.printStackTrace();
                     response.setStatus(500);
@@ -136,7 +137,7 @@ public class ProxyProtocolTest
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void test_PROXY_GET_v2() throws Exception
     {
@@ -147,16 +148,16 @@ public class ProxyProtocolTest
             {
                 try
                 {
-                    assertEquals("10.0.0.4",request.getRemoteAddr());
-                    assertEquals(33824,request.getRemotePort());
-                    assertEquals("10.0.0.5",request.getLocalAddr());
-                    assertEquals(8888,request.getLocalPort());
+                    assertEquals("10.0.0.4", request.getRemoteAddr());
+                    assertEquals(33824, request.getRemotePort());
+                    assertEquals("10.0.0.5", request.getLocalAddr());
+                    assertEquals(8888, request.getLocalPort());
                     EndPoint endPoint = baseRequest.getHttpChannel().getEndPoint();
                     assertThat(endPoint, instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                     ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                     assertNotNull(proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 }
-                catch(Throwable th)
+                catch (Throwable th)
                 {
                     th.printStackTrace();
                     response.setStatus(500);
@@ -167,7 +168,7 @@ public class ProxyProtocolTest
 
         // String is: "MAGIC VER|CMD FAM|PROT LEN SRC_ADDR DST_ADDR SRC_PORT DST_PORT PP2_TYPE_SSL LEN CLIENT VERIFY PP2_SUBTYPE_SSL_VERSION LEN 1.2"
         String request1 = "0D0A0D0A000D0A515549540A 21 11 001A 0A000004 0A000005 8420 22B8 20 000B 01 00000000 21 0003 312E32";
-        request1 = request1.replace(" ", "");
+        request1 = StringUtil.strip(request1, " ");
         SocketChannel channel = SocketChannel.open();
         channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
         channel.write(ByteBuffer.wrap(TypeUtil.fromHexString(request1)));

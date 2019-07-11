@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.javax.common.util;
 
-import org.eclipse.jetty.util.annotation.Name;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+
+import org.eclipse.jetty.util.annotation.Name;
 
 /**
  * Simple {@link InvokerUtils.ParamIdentifier}
@@ -32,7 +32,7 @@ public class NameParamIdentifier implements InvokerUtils.ParamIdentifier
     @Override
     public InvokerUtils.Arg getParamArg(Method method, Class<?> paramType, int idx)
     {
-        Annotation annos[] = method.getParameterAnnotations()[idx];
+        Annotation[] annos = method.getParameterAnnotations()[idx];
         if (annos != null || (annos.length > 0))
         {
             for (Annotation anno : annos)

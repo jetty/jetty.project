@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.common.util;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.Test;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -45,8 +45,8 @@ public class Utf8CharBufferTest
         ByteBuffer buf = ByteBuffer.allocate(128);
         Utf8CharBuffer utf = Utf8CharBuffer.wrap(buf);
 
-        byte hellobytes[] = asUTF("Hello ");
-        byte worldbytes[] = asUTF("World!");
+        byte[] hellobytes = asUTF("Hello ");
+        byte[] worldbytes = asUTF("World!");
 
         utf.append(hellobytes, 0, hellobytes.length);
         ByteBuffer hellobuf = utf.getByteBuffer();
@@ -67,7 +67,7 @@ public class Utf8CharBufferTest
         int expectedSize = bufsize / 2;
         assertThat("Remaining (initial)", utf.remaining(), is(expectedSize));
 
-        byte hellobytes[] = asUTF("Hello World");
+        byte[] hellobytes = asUTF("Hello World");
 
         utf.append(hellobytes, 0, hellobytes.length);
         ByteBuffer hellobuf = utf.getByteBuffer();
@@ -79,7 +79,7 @@ public class Utf8CharBufferTest
 
         assertThat("Remaining (after clear)", utf.remaining(), is(expectedSize));
 
-        byte whatnowbytes[] = asUTF("What Now?");
+        byte[] whatnowbytes = asUTF("What Now?");
         utf.append(whatnowbytes, 0, whatnowbytes.length);
         ByteBuffer whatnowbuf = utf.getByteBuffer();
 
@@ -93,7 +93,7 @@ public class Utf8CharBufferTest
         ByteBuffer buf = ByteBuffer.allocate(64);
         Utf8CharBuffer utf = Utf8CharBuffer.wrap(buf);
 
-        byte bb[] = asUTF("Hello A\u00ea\u00f1\u00fcC");
+        byte[] bb = asUTF("Hello A\u00ea\u00f1\u00fcC");
         utf.append(bb, 0, bb.length);
 
         ByteBuffer actual = utf.getByteBuffer();
@@ -111,7 +111,7 @@ public class Utf8CharBufferTest
         int expectedSize = bufsize / 2;
         assertThat("Remaining (initial)", utf.remaining(), is(expectedSize));
 
-        byte bb[] = asUTF("Hello World");
+        byte[] bb = asUTF("Hello World");
         utf.append(bb, 0, bb.length);
 
         expectedSize -= bb.length;

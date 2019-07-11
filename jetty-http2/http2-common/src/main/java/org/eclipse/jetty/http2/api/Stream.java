@@ -53,7 +53,7 @@ public interface Stream
     /**
      * <p>Sends the given HEADERS {@code frame} representing a HTTP response.</p>
      *
-     * @param frame    the HEADERS frame to send
+     * @param frame the HEADERS frame to send
      * @param callback the callback that gets notified when the frame has been sent
      */
     public void headers(HeadersFrame frame, Callback callback);
@@ -61,7 +61,7 @@ public interface Stream
     /**
      * <p>Sends the given PUSH_PROMISE {@code frame}.</p>
      *
-     * @param frame   the PUSH_PROMISE frame to send
+     * @param frame the PUSH_PROMISE frame to send
      * @param promise the promise that gets notified of the pushed stream creation
      * @param listener the listener that gets notified of stream events
      */
@@ -70,7 +70,7 @@ public interface Stream
     /**
      * <p>Sends the given DATA {@code frame}.</p>
      *
-     * @param frame    the DATA frame to send
+     * @param frame the DATA frame to send
      * @param callback the callback that gets notified when the frame has been sent
      */
     public void data(DataFrame frame, Callback callback);
@@ -78,7 +78,7 @@ public interface Stream
     /**
      * <p>Sends the given RST_STREAM {@code frame}.</p>
      *
-     * @param frame    the RST_FRAME to send
+     * @param frame the RST_FRAME to send
      * @param callback the callback that gets notified when the frame has been sent
      */
     public void reset(ResetFrame frame, Callback callback);
@@ -92,7 +92,7 @@ public interface Stream
     public Object getAttribute(String key);
 
     /**
-     * @param key   the attribute key
+     * @param key the attribute key
      * @param value an arbitrary object to associate with the given key to this stream
      * @see #getAttribute(String)
      * @see #removeAttribute(String)
@@ -141,7 +141,7 @@ public interface Stream
          * <p>Callback method invoked when a HEADERS frame representing the HTTP response has been received.</p>
          *
          * @param stream the stream
-         * @param frame  the HEADERS frame received
+         * @param frame the HEADERS frame received
          */
         public void onHeaders(Stream stream, HeadersFrame frame);
 
@@ -149,7 +149,7 @@ public interface Stream
          * <p>Callback method invoked when a PUSH_PROMISE frame has been received.</p>
          *
          * @param stream the stream
-         * @param frame  the PUSH_PROMISE frame received
+         * @param frame the PUSH_PROMISE frame received
          * @return a Stream.Listener that will be notified of pushed stream events
          */
         public Listener onPush(Stream stream, PushPromiseFrame frame);
@@ -157,8 +157,8 @@ public interface Stream
         /**
          * <p>Callback method invoked when a DATA frame has been received.</p>
          *
-         * @param stream   the stream
-         * @param frame    the DATA frame received
+         * @param stream the stream
+         * @param frame the DATA frame received
          * @param callback the callback to complete when the bytes of the DATA frame have been consumed
          */
         public void onData(Stream stream, DataFrame frame, Callback callback);
@@ -167,7 +167,7 @@ public interface Stream
          * <p>Callback method invoked when a RST_STREAM frame has been received for this stream.</p>
          *
          * @param stream the stream
-         * @param frame  the RST_FRAME received
+         * @param frame the RST_FRAME received
          * @param callback the callback to complete when the reset has been handled
          */
         public default void onReset(Stream stream, ResetFrame frame, Callback callback)
@@ -187,7 +187,7 @@ public interface Stream
          * <p>Callback method invoked when a RST_STREAM frame has been received for this stream.</p>
          *
          * @param stream the stream
-         * @param frame  the RST_FRAME received
+         * @param frame the RST_FRAME received
          * @see Session.Listener#onReset(Session, ResetFrame)
          */
         public default void onReset(Stream stream, ResetFrame frame)
@@ -198,9 +198,9 @@ public interface Stream
          * <p>Callback method invoked when the stream exceeds its idle timeout.</p>
          *
          * @param stream the stream
-         * @param x      the timeout failure
-         * @see #getIdleTimeout()
+         * @param x the timeout failure
          * @return true to reset the stream, false to ignore the idle timeout
+         * @see #getIdleTimeout()
          */
         public boolean onIdleTimeout(Stream stream, Throwable x);
 
@@ -208,7 +208,7 @@ public interface Stream
          * <p>Callback method invoked when the stream failed.</p>
          *
          * @param stream the stream
-         * @param error  the error code
+         * @param error the error code
          * @param reason the error reason, or null
          * @param callback the callback to complete when the failure has been handled
          */

@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -25,11 +30,6 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -44,7 +44,7 @@ public class ParserReservedBitTest
 
     private void expectProtocolException(List<Frame> frames)
     {
-        ParserCapture parserCapture = new ParserCapture(new Parser(bufferPool));
+        ParserCapture parserCapture = new ParserCapture();
 
         // generate raw bytebuffer of provided frames
         int size = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
@@ -147,7 +147,7 @@ public class ParserReservedBitTest
     @Test
     public void testCase3_5()
     {
-        byte payload[] = new byte[8];
+        byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
 
         List<Frame> send = new ArrayList<>();
@@ -167,7 +167,7 @@ public class ParserReservedBitTest
     @Test
     public void testCase3_6()
     {
-        byte payload[] = new byte[8];
+        byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
 
         List<Frame> send = new ArrayList<>();

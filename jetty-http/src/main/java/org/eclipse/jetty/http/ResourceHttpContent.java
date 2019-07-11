@@ -29,11 +29,10 @@ import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
-
-/* ------------------------------------------------------------ */
-/** HttpContent created from a {@link Resource}.
+/**
+ * HttpContent created from a {@link Resource}.
  * <p>The HttpContent is used to server static content that is not
- * cached. So fields and values are only generated as need be an not 
+ * cached. So fields and values are only generated as need be an not
  * kept for reuse</p>
  */
 public class ResourceHttpContent implements HttpContent
@@ -44,23 +43,20 @@ public class ResourceHttpContent implements HttpContent
     Map<CompressedContentFormat, HttpContent> _precompressedContents;
     String _etag;
 
-    /* ------------------------------------------------------------ */
     public ResourceHttpContent(final Resource resource, final String contentType)
     {
-        this(resource,contentType,-1,null);
+        this(resource, contentType, -1, null);
     }
 
-    /* ------------------------------------------------------------ */
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer)
     {
-        this(resource,contentType,maxBuffer,null);
+        this(resource, contentType, maxBuffer, null);
     }
-    
-    /* ------------------------------------------------------------ */
+
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, Map<CompressedContentFormat, HttpContent> precompressedContents)
     {
-        _resource=resource;
-        _contentType=contentType;
+        _resource = resource;
+        _contentType = contentType;
         _maxBuffer = maxBuffer;
         if (precompressedContents == null)
         {
@@ -71,170 +67,149 @@ public class ResourceHttpContent implements HttpContent
             _precompressedContents = new HashMap<>(precompressedContents.size());
             for (Map.Entry<CompressedContentFormat, HttpContent> entry : precompressedContents.entrySet())
             {
-                _precompressedContents.put(entry.getKey(),new PrecompressedHttpContent(this,entry.getValue(),entry.getKey()));
+                _precompressedContents.put(entry.getKey(), new PrecompressedHttpContent(this, entry.getValue(), entry.getKey()));
             }
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String getContentTypeValue()
     {
         return _contentType;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public HttpField getContentType()
     {
-        return _contentType==null?null:new HttpField(HttpHeader.CONTENT_TYPE,_contentType);
+        return _contentType == null ? null : new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public HttpField getContentEncoding()
     {
         return null;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String getContentEncodingValue()
     {
         return null;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String getCharacterEncoding()
     {
-        return _contentType==null?null:MimeTypes.getCharsetFromContentType(_contentType);
+        return _contentType == null ? null : MimeTypes.getCharsetFromContentType(_contentType);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public Type getMimeType()
     {
-        return _contentType==null?null:MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(_contentType));
+        return _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(_contentType));
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public HttpField getLastModified()
     {
         long lm = _resource.lastModified();
-        return lm>=0?new HttpField(HttpHeader.LAST_MODIFIED,DateGenerator.formatDate(lm)):null;
+        return lm >= 0 ? new HttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(lm)) : null;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String getLastModifiedValue()
     {
         long lm = _resource.lastModified();
-        return lm>=0?DateGenerator.formatDate(lm):null;
+        return lm >= 0 ? DateGenerator.formatDate(lm) : null;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public ByteBuffer getDirectBuffer()
     {
-        if (_resource.length()<=0 || _maxBuffer>0 && _maxBuffer<_resource.length())
+        if (_resource.length() <= 0 || _maxBuffer > 0 && _maxBuffer < _resource.length())
             return null;
         try
         {
-            return BufferUtil.toBuffer(_resource,true);
+            return BufferUtil.toBuffer(_resource, true);
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             throw new RuntimeException(e);
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public HttpField getETag()
     {
-        return new HttpField(HttpHeader.ETAG,getETagValue());
+        return new HttpField(HttpHeader.ETAG, getETagValue());
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public String getETagValue()
     {
         return _resource.getWeakETag();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public ByteBuffer getIndirectBuffer()
     {
-        if (_resource.length()<=0 || _maxBuffer>0 && _maxBuffer<_resource.length())
+        if (_resource.length() <= 0 || _maxBuffer > 0 && _maxBuffer < _resource.length())
             return null;
         try
         {
-            return BufferUtil.toBuffer(_resource,false);
+            return BufferUtil.toBuffer(_resource, false);
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             throw new RuntimeException(e);
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public HttpField getContentLength()
     {
-        long l=_resource.length();
-        return l==-1?null:new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH,l);
+        long l = _resource.length();
+        return l == -1 ? null : new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, l);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public long getContentLengthValue()
     {
         return _resource.length();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public InputStream getInputStream() throws IOException
     {
         return _resource.getInputStream();
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
         return _resource.getReadableByteChannel();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public Resource getResource()
     {
         return _resource;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void release()
     {
         _resource.close();
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,ct=%s,c=%b}",this.getClass().getSimpleName(),hashCode(),_resource,_contentType,_precompressedContents!=null);
+        return String.format("%s@%x{r=%s,ct=%s,c=%b}", this.getClass().getSimpleName(), hashCode(), _resource, _contentType, _precompressedContents != null);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
     {
         return _precompressedContents;
     }
-
 }

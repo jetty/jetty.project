@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
 
@@ -82,16 +81,16 @@ public class LargeAnnotatedTest
                 client.start();
 
                 FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-                clientSocket.setMaxTextMessageSize(128 * 1024);
 
                 Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
                 // wait for connect
                 FrameHandler.CoreSession coreSession = clientConnectFuture.get(1, TimeUnit.SECONDS);
+                coreSession.setMaxTextMessageSize(128 * 1024);
                 try
                 {
 
                     // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies
-                    byte txt[] = new byte[100 * 1024];
+                    byte[] txt = new byte[100 * 1024];
                     Arrays.fill(txt, (byte)'o');
                     String msg = new String(txt, StandardCharsets.UTF_8);
                     coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(msg), Callback.NOOP, false);

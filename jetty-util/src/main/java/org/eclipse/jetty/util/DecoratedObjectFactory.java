@@ -108,7 +108,7 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
             this.decorators.addAll(decorators);
         }
     }
-    
+
     @Override
     public String toString()
     {

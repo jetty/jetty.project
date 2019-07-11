@@ -172,7 +172,9 @@ public class ForwardProxyServerTest
                             ByteBuffer buffer = BufferUtil.allocate(1024);
                             int filled = 0;
                             while (filled == 0)
+                            {
                                 filled = getEndPoint().fill(buffer);
+                            }
                             Utf8StringBuilder builder = new Utf8StringBuilder();
                             builder.append(buffer);
                             String request = builder.toString();
@@ -187,8 +189,8 @@ public class ForwardProxyServerTest
                             else
                                 assertFalse(request.contains("https://"));
 
-                            String response = "" +
-                                    "HTTP/1.1 200 OK\r\n" +
+                            String response =
+                                "HTTP/1.1 200 OK\r\n" +
                                     "Content-Length: 0\r\n" +
                                     "\r\n";
                             getEndPoint().write(Callback.NOOP, ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
@@ -220,10 +222,10 @@ public class ForwardProxyServerTest
         try
         {
             ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
-                    .scheme(serverSslContextFactory == null ? "http" : "https")
-                    .method(HttpMethod.GET)
-                    .path("/test")
-                    .send();
+                .scheme(serverSslContextFactory == null ? "http" : "https")
+                .method(HttpMethod.GET)
+                .path("/test")
+                .send();
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }

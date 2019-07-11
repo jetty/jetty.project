@@ -6,7 +6,9 @@
       <Arg>
         <New class="org.eclipse.jetty.client.util.BasicAuthentication">
           <Arg>
-            <New class="java.net.URI" arg="ws://localhost:8080/secured/socket"/>
+            <New class="java.net.URI">
+              <Arg>ws://localhost:<SystemProperty name="org.eclipse.jetty.websocket.port"/>/secured/socket</Arg>
+            </New>
           </Arg>
           <Arg>testRealm</Arg>
           <Arg>user</Arg>

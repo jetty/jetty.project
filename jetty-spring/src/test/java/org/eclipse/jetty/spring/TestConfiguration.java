@@ -38,7 +38,6 @@ public class TestConfiguration
     public Object[] objArray;
     public int[] intArray;
 
-
     public static int getVALUE()
     {
         return VALUE;

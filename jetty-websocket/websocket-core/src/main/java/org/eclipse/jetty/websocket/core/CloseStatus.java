@@ -52,13 +52,14 @@ public class CloseStatus
 
     private final int code;
     private final String reason;
+    private final Throwable cause;
 
     /**
      * Creates a reason for closing a web socket connection with the no given status code.
      */
     public CloseStatus()
     {
-        this(NO_CODE);
+        this(NO_CODE, null, null);
     }
 
     /**
@@ -68,18 +69,42 @@ public class CloseStatus
      */
     public CloseStatus(int statusCode)
     {
-        this(statusCode, null);
+        this(statusCode, null, null);
     }
 
     /**
      * Creates a reason for closing a web socket connection with the given status code and reason phrase.
      *
-     * @param statusCode   the close code
+     * @param statusCode the close code
      * @param reasonPhrase the reason phrase
      */
     public CloseStatus(int statusCode, String reasonPhrase)
     {
+        this(statusCode, reasonPhrase, null);
+    }
+
+    /**
+     * Creates a reason for closing a web socket connection with the given status code and reason phrase.
+     *
+     * @param statusCode the close code
+     * @param cause the error which caused the close
+     */
+    public CloseStatus(int statusCode, Throwable cause)
+    {
+        this(statusCode, cause.getMessage(), cause);
+    }
+
+    /**
+     * Creates a reason for closing a web socket connection with the given status code and reason phrase.
+     *
+     * @param statusCode the close code
+     * @param reasonPhrase the reason phrase
+     * @param cause the error which caused the close
+     */
+    public CloseStatus(int statusCode, String reasonPhrase, Throwable cause)
+    {
         this.code = statusCode;
+        this.cause = cause;
 
         if (reasonPhrase != null)
         {
@@ -100,6 +125,7 @@ public class CloseStatus
     public CloseStatus(ByteBuffer payload)
     {
         // RFC-6455 Spec Required Close Frame validation.
+        this.cause = null;
         int statusCode = NO_CODE;
 
         if ((payload == null) || (payload.remaining() == 0))
@@ -136,7 +162,7 @@ public class CloseStatus
             {
                 // Reason (trimmed to max reason size)
                 int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
-                byte reasonBytes[] = new byte[len];
+                byte[] reasonBytes = new byte[len];
                 data.get(reasonBytes, 0, len);
 
                 // Spec Requirement : throw BadPayloadException on invalid UTF8
@@ -167,24 +193,24 @@ public class CloseStatus
     {
         if (frame instanceof CloseStatus.Supplier)
             return ((CloseStatus.Supplier)frame).getCloseStatus();
-        if (frame.getOpCode()==OpCode.CLOSE)
+        if (frame.getOpCode() == OpCode.CLOSE)
             return new CloseStatus(frame);
-        return null;
+        throw new IllegalArgumentException("not a close frame");
     }
 
-    // TODO consider defining a precedence for every CloseStatus, and change SessionState only if higher precedence
-    public static boolean isOrdinary(CloseStatus closeStatus)
+    public static boolean isOrdinary(int closeCode)
     {
-        switch (closeStatus.getCode())
-        {
-            case NORMAL:
-            case SHUTDOWN:
-            case NO_CODE:
-                return true;
+        return (closeCode == NORMAL || closeCode == NO_CODE || closeCode >= 3000);
+    }
 
-            default:
-                return false;
-        }
+    public boolean isAbnormal()
+    {
+        return !isOrdinary(code);
+    }
+
+    public Throwable getCause()
+    {
+        return cause;
     }
 
     public int getCode()
@@ -291,8 +317,8 @@ public class CloseStatus
     public Frame toFrame()
     {
         if (isTransmittableStatusCode(code))
-            return new CloseFrame(this, OpCode.CLOSE, true, asPayloadBuffer(code, reason));
-        return new CloseFrame(this, OpCode.CLOSE);
+            return new CloseFrame(OpCode.CLOSE, true, asPayloadBuffer(code, reason));
+        return new CloseFrame(OpCode.CLOSE);
     }
 
     public static Frame toFrame(int closeStatus)
@@ -356,12 +382,12 @@ public class CloseStatus
 
     class CloseFrame extends Frame implements CloseStatus.Supplier
     {
-        public CloseFrame(CloseStatus closeStatus, byte opcode)
+        public CloseFrame(byte opcode)
         {
             super(opcode);
         }
 
-        public CloseFrame(CloseStatus closeStatus, byte opCode, boolean fin, ByteBuffer payload)
+        public CloseFrame(byte opCode, boolean fin, ByteBuffer payload)
         {
             super(opCode, fin, payload);
         }

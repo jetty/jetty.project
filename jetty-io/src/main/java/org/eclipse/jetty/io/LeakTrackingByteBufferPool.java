@@ -47,7 +47,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         }
     };
 
-    private final static boolean NOISY = Boolean.getBoolean(LeakTrackingByteBufferPool.class.getName() + ".NOISY");
+    private static final boolean NOISY = Boolean.getBoolean(LeakTrackingByteBufferPool.class.getName() + ".NOISY");
     private final ByteBufferPool delegate;
     private final AtomicLong leakedReleases = new AtomicLong(0);
     private final AtomicLong leakedAcquires = new AtomicLong(0);
@@ -69,7 +69,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         {
             leakedAcquires.incrementAndGet();
             LOG.info(String.format("ByteBuffer acquire %s leaked.acquired=%s", leakDetector.id(buffer), leaked ? "normal" : "LEAK"),
-                    new Throwable("LeakStack.Acquire"));
+                new Throwable("LeakStack.Acquire"));
         }
         return buffer;
     }
@@ -84,7 +84,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         {
             leakedReleases.incrementAndGet();
             LOG.info(String.format("ByteBuffer release %s leaked.released=%s", leakDetector.id(buffer), leaked ? "normal" : "LEAK"), new Throwable(
-                    "LeakStack.Release"));
+                "LeakStack.Release"));
         }
         delegate.release(buffer);
     }

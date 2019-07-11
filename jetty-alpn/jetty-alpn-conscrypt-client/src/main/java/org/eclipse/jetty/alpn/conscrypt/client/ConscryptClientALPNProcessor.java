@@ -61,7 +61,7 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
             String[] protocols = alpn.getProtocols().toArray(new String[0]);
             Conscrypt.setApplicationProtocols(sslEngine, protocols);
             ((SslConnection.DecryptedEndPoint)connection.getEndPoint()).getSslConnection()
-                    .addHandshakeListener(new ALPNListener(alpn));
+                .addHandshakeListener(new ALPNListener(alpn));
         }
         catch (RuntimeException x)
         {

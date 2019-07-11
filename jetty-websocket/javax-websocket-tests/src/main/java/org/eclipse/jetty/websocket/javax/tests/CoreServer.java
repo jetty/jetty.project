@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -75,7 +75,6 @@ public class CoreServer extends ContainerLifeCycle
 
         // Basic HTTP connector
         connector = new ServerConnector(server);
-        connector.setPort(0);
 
         // Add network connector
         server.addConnector(connector);
@@ -107,41 +106,42 @@ public class CoreServer extends ContainerLifeCycle
         return wsUri;
     }
 
-    public static abstract class BaseNegotiator implements WebSocketNegotiator
+    public abstract static class BaseNegotiator implements WebSocketNegotiator
     {
-        protected final WebSocketExtensionRegistry extensionRegistry;
-        protected final DecoratedObjectFactory objectFactory;
-        protected final ByteBufferPool bufferPool;
+        protected final WebSocketComponents components;
 
         public BaseNegotiator()
         {
-            this.extensionRegistry = new WebSocketExtensionRegistry();
-            this.objectFactory = new DecoratedObjectFactory();
-            this.bufferPool = new MappedByteBufferPool();
+            this.components = new WebSocketComponents();
         }
 
         @Override
-        public void customize(FrameHandler.CoreSession coreSession)
+        public void customize(FrameHandler.Configuration configurable)
         {
-
         }
 
         @Override
         public WebSocketExtensionRegistry getExtensionRegistry()
         {
-            return extensionRegistry;
+            return components.getExtensionRegistry();
         }
 
         @Override
         public DecoratedObjectFactory getObjectFactory()
         {
-            return objectFactory;
+            return components.getObjectFactory();
         }
 
         @Override
         public ByteBufferPool getByteBufferPool()
         {
-            return bufferPool;
+            return components.getBufferPool();
+        }
+
+        @Override
+        public WebSocketComponents getWebSocketComponents()
+        {
+            return components;
         }
     }
 
@@ -178,7 +178,7 @@ public class CoreServer extends ContainerLifeCycle
         }
 
         @Override
-        public void customize(FrameHandler.CoreSession coreSession)
+        public void customize(FrameHandler.Configuration configurable)
         {
         }
     }

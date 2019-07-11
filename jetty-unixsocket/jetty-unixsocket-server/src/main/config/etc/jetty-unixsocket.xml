@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <New id="unixSocketHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
@@ -13,7 +13,7 @@
         <Arg name="selectors" type="int"><Property name="jetty.unixsocket.selectors" default="-1"/></Arg>
         <Set name="unixSocket"><Property name="jetty.unixsocket.path" default="/tmp/jetty.sock" /></Set>
         <Set name="idleTimeout"><Property name="jetty.unixsocket.idleTimeout" default="30000"/></Set>
-        <Set name="acceptQueueSize"><Property name="jetty.unixsocket.acceptQueueSize" default="0"/></Set>
+        <Set name="acceptQueueSize" property="jetty.unixsocket.acceptQueueSize"/>
       </New>
     </Arg>
   </Call>

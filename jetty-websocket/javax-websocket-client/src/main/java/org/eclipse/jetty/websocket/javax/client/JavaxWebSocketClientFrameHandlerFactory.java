@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
+import javax.websocket.ClientEndpoint;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata;
 import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
-
-import javax.websocket.ClientEndpoint;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
 
 public class JavaxWebSocketClientFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
 {
