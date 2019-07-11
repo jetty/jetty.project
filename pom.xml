@@ -1321,6 +1321,9 @@
     </profile>
     <profile>
       <id>ci</id>
+      <modules>
+        <module>aggregates/jetty-all</module>
+      </modules>
       <build>
         <pluginManagement>
           <plugins>
