@@ -572,7 +572,7 @@ public class HttpChannelState
             scheduleDispatch();
     }
 
-    public boolean errorDispatch(String path)
+    public boolean asyncErrorDispatch(String path)
     {
         boolean dispatch = false;
         AsyncContextEvent event;
