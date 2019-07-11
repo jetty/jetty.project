@@ -117,12 +117,12 @@ public class JettyForker extends AbstractForker
 
 
     @Override
-    public void start ()
+    public void doStart ()
     throws Exception
     {
         //Run the webapp to create the quickstart file and properties file
         generateQuickStart();
-        super.start();
+        super.doStart();
     }
     
     

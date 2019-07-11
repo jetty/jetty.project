@@ -133,7 +133,7 @@ public class NewJettyRunMojo extends AbstractWebAppMojo
 
 
     @Override
-    public void startJettyInProcess() throws MojoExecutionException
+    public void startJettyEmbedded() throws MojoExecutionException
     {
         try
         {
@@ -224,11 +224,6 @@ public class NewJettyRunMojo extends AbstractWebAppMojo
 
 
 
-
-
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureScanner()
-     */
     public void configureScanner ()
     throws MojoExecutionException
     {
@@ -393,26 +388,79 @@ public class NewJettyRunMojo extends AbstractWebAppMojo
         getLog().debug("Stopping webapp ...");
         if (scanner != null)
             scanner.stop();
-        webApp.stop();
-
-        getLog().debug("Reconfiguring webapp ...");
- 
-        verifyPomConfiguration();
-        configureWebApp();
-
-        // check if we need to reconfigure the scanner,
-        // which is if the pom changes
-        if (reconfigureScanner)
+        
+        switch (runType)
         {
-            getLog().info("Reconfiguring scanner after change to pom.xml ...");
-            scanner.reset();
-            warArtifacts = null;
-            configureScanner();
-        }
+            case EMBED:
+            {
+                webApp.stop();
+                
+                getLog().debug("Reconfiguring webapp ...");
+                
+                verifyPomConfiguration();
+                configureWebApp();
+                // check if we need to reconfigure the scanner,
+                // which is if the pom changes
+                if (reconfigureScanner)
+                {
+                    getLog().info("Reconfiguring scanner after change to pom.xml ...");
+                    scanner.reset();
+                    warArtifacts = null;
+                    configureScanner();
+                }
+                
+                webApp.start();
+                scanner.start();
+                getLog().info("Restart completed at "+new Date().toString());
+                break;
+            }
+            case FORK:
+            {
+                verifyPomConfiguration();
+                
+                //TODO regenerate the webapp configuration!!!!!!
+                
+                
+                if (reconfigureScanner)
+                {
+                    getLog().info("Reconfiguring scanner after change to pom.xml ...");
+                    scanner.reset();
+                    warArtifacts = null;
+                    configureScanner();
+                }
+                
+                //TODO signal to forked child to restart webapp (done by regenerating webapp
+                
+                //restart scanner
+                scanner.start();
+                
+                break;
+            }
+            case DISTRO:
+            {
+                verifyPomConfiguration();
 
-        getLog().debug("Restarting webapp ...");
-        webApp.start();
-        scanner.start();
-        getLog().info("Restart completed at "+new Date().toString());
+                //TODO regenerate the webapp configuration!!!!!!
+                
+                if (reconfigureScanner)
+                {
+                    getLog().info("Reconfiguring scanner after change to pom.xml ...");
+                    scanner.reset();
+                    warArtifacts = null; //???
+                    configureScanner();
+                }
+
+                //TODO signal to distro to restart webapp (done by regenerating webapp???!)
+                
+                //restart scanner
+                scanner.start();
+
+                break;
+            }
+            default:
+            {
+                throw new IllegalStateException("Unrecognized run type "+runType);
+            }
+        }
     }
 }

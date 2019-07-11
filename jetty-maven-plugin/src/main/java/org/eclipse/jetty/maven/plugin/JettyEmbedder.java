@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -39,11 +40,9 @@ import org.eclipse.jetty.util.resource.Resource;
  * JettyEmbedded
  * 
  * Starts jetty within the current process. 
- * Called by jetty:run runType=inprocess,forked
- *           jetty:start runType=inprocess,forked
  *
  */
-public class JettyEmbedder
+public class JettyEmbedder extends AbstractLifeCycle
 {
     private static final Logger LOG = Log.getLogger(JettyEmbedder.class);
     
@@ -253,9 +252,11 @@ public class JettyEmbedder
 
   
     
-    public void start()
+    public void doStart()
     throws Exception
     {
+        super.doStart();
+        
         Resource.setDefaultUseCaches(false);
         
         configure();

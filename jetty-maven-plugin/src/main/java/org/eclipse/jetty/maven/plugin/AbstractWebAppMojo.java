@@ -78,10 +78,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
     public enum RunTypes
     {
-        INPROCESS,
-        FORKED,
+        EMBED,
+        FORK,
         DISTRO
-    }
+    };
     
     
     /**
@@ -438,8 +438,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if ( !"war".equals( project.getPackaging() ) || skip )
             return;
 
-
-
         getLog().info("Configuring Jetty for project: " + this.project.getName());
         if (skip)
         {
@@ -450,7 +448,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (isExcludedGoal(execution.getMojoDescriptor().getGoal()))
         {
             getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
-                    "\" has been made unavailable for this web application by an <excludedGoal> configuration.");
+                    "\" is unavailable for this web app because of an <excludedGoal> configuration.");
             return;
         }
 
@@ -465,16 +463,25 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
 
     public void startJetty()
-            throws MojoExecutionException
+    throws MojoExecutionException, MojoFailureException
     {
+        try
+        {
+            configureWebApp();
+        }
+        catch (Exception e)
+        {
+            throw new MojoExecutionException("Webapp config failure", e);
+        }
+        
         switch (runType)
         {
-            case INPROCESS: 
+            case EMBED: 
             {
-                startJettyInProcess();
+                startJettyEmbedded();
                 break;
             }
-            case FORKED:
+            case FORK:
             {
                 startJettyForked();
                 break;
@@ -487,10 +494,11 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             default:
                 throw new MojoExecutionException("Unrecognized runType="+runType);
         }
+
     }
     
 
-    public abstract void startJettyInProcess() throws MojoExecutionException;
+    public abstract void startJettyEmbedded() throws MojoExecutionException;
     
     public abstract void startJettyForked() throws MojoExecutionException;
     
@@ -510,8 +518,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setJettyProperties(jettyProperties);
         jetty.setRequestLog(requestLog);
         jetty.setLoginServices(loginServices);
-
-        configureWebApp();
 
         Properties webAppProperties = null;
         if (contextXml != null)
@@ -546,8 +552,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         Random random = new Random();
         String token = Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
         jetty.setTokenFile(target.toPath().resolve(token+".txt").toFile());
-
-        configureWebApp();
         
         Properties webAppProperties = null;
         if (contextXml != null)
@@ -600,8 +604,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             }
             jetty.setLibExtJarFiles(libExtJars);
         }
-
-        configureWebApp();
 
         jetty.setWebApp(webApp);     
         jetty.setContextXmlFile(new File(contextXml));
@@ -1188,8 +1190,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
 
         //process any overlays and the war type artifacts
-        List<Overlay> overlays = getOverlays();
-        unpackOverlays(overlays); //this sets up the base resource collection
+        unpackOverlays(getOverlays()); //this sets up the base resource collection
 
         getLog().info("web.xml file = "+webApp.getDescriptor());       
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());

@@ -276,7 +276,7 @@ public class JettyDistroForker extends AbstractForker
     }
 
     @Override
-    public void start() throws Exception
+    public void doStart() throws Exception
     {
         //set up a jetty-home
         configureJettyHome();
@@ -290,7 +290,7 @@ public class JettyDistroForker extends AbstractForker
         //convert the webapp to properties
         WebAppPropertyConverter.toProperties(webApp, etcPath.resolve("maven.props").toFile(), contextXmlFile.getAbsolutePath());
         
-        super.start();
+        super.doStart();
     }
 
 

@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -31,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * Base class for forking jetty.
  */
-public abstract class AbstractForker
+public abstract class AbstractForker extends AbstractLifeCycle
 {
     private static final Logger LOG = Log.getLogger(AbstractForker.class);
     
@@ -207,9 +208,11 @@ public abstract class AbstractForker
     public abstract ProcessBuilder  createCommand();
     
 
-    public void start ()
+    public void doStart ()
     throws Exception
     {
+        super.doStart();
+        
         //Create the command to fork
         ProcessBuilder command = createCommand();
         Process process = command.start();

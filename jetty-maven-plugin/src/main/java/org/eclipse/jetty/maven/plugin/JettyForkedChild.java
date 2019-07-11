@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -36,7 +37,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * This is the class that is executed when the jetty maven plugin 
  * forks a process when runType=forked.
  */
-public class JettyForkedChild
+public class JettyForkedChild extends AbstractLifeCycle
 {
     protected JettyEmbedder jetty;
     protected File tokenFile;
@@ -118,14 +119,25 @@ public class JettyForkedChild
         jetty.setExitVm(true);
     }
     
-    public void start()
+    public void doStart()
     throws Exception
     {
+        super.doStart();
+        
+        //Start the embedded jetty instance
         jetty.start();
         
-        //touch file to signify start
+        //touch file to signify start of jetty
         Resource r = Resource.newResource(tokenFile);
         r.getFile().createNewFile();
+        
+        //TODO start a PathWatcher for the webapp props file and/or the quickstart.xml file
+        // when differences are seen, get the webapp from the jettyembedder:
+        // stop webapp
+        // reconfigure the properties on it
+        // (name of quickstart file can't change, but contents can, but we don't need to do anything here)
+        // start webapp
+
         
         //wait for jetty to finish
         jetty.join();
