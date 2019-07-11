@@ -16,7 +16,7 @@
   </properties>
 
   <build>
-    <finalName>cdi2-demo</finalName>
+    <finalName>cdi-demo</finalName>
   </build>
 
   <dependencies>
