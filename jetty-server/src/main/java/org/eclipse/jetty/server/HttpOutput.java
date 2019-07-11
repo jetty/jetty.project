@@ -1083,6 +1083,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (BufferUtil.hasContent(_aggregate))
             BufferUtil.clear(_aggregate);
         _written = 0;
+
+        // TODO LO discard WRiteListener if sendError?
+        // TODO LO not reopen if sendError
+
         reopen();
     }
 

@@ -292,9 +292,15 @@ public class ErrorPageTest
                         else
                         {
                             // Complete before original servlet
-                            async.complete();
-                            __asyncSendErrorCompleted.countDown();
-                            hold.countDown();
+                            try
+                            {
+                                async.complete();
+                                __asyncSendErrorCompleted.countDown();
+                            }
+                            finally
+                            {
+                                hold.countDown();
+                            }
                         }
                     }
                     catch (IOException e)

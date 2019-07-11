@@ -1292,6 +1292,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     if (Boolean.TRUE.equals(baseRequest.getAttribute(Dispatcher.__ERROR_DISPATCH)))
                         break;
 
+                    // TODO GW How do we get here???
                     // We can just call doError here. If there is no error page, then one will
                     // be generated. If there is an error page, then a RequestDispatcher will be
                     // used to route the request through appropriate filters etc.

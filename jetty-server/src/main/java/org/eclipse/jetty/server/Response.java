@@ -392,23 +392,22 @@ public class Response implements HttpServletResponse
     public void sendError(int code, String message) throws IOException
     {
         if (isIncluding())
-            return;
+            return;  // TODO GW why not ISE?
 
         if (isCommitted())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Aborting on sendError on committed response {} {}", code, message);
-            // TODO this is not in agreement with the sendError javadoc, which says:
+            // TODO GW this is not in agreement with the sendError javadoc, which says:
             // TODO * If the response has already been committed, this method throws an IllegalStateException.
             code = -1;
         }
-        // TODO should we also check isReady if we are async writing?  If so, should we remove the WriteListener?
         else
-            resetBuffer();
+            resetBuffer(); // TODO LO should we remove the WriteListener?
 
         switch (code)
         {
-            case -1:
+            case -1: // TODO GW who uses -1?
                 _channel.abort(new IOException());
                 return;
             case 102:
@@ -437,7 +436,7 @@ public class Response implements HttpServletResponse
             message = cause == null ? _reason : cause.toString();
         }
         else
-            _reason = message;
+            _reason = message;  // TODO GW why?
 
         boolean wasAsync = request.isAsyncStarted();
         // If we are allowed to have a body, then produce the error page.
@@ -451,14 +450,16 @@ public class Response implements HttpServletResponse
             request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
             request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, request.getServletName());
             ErrorHandler errorHandler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
+
+            // TODO somehow flag in HttpChannelState that an ERROR dispatch or page is needed
             if (errorHandler != null)
                 errorHandler.handle(null, request, request, this);
         }
 
         // Do not close the output if the request was async (but may not now be due to async error dispatch)
         // or it is now async because the request handling is async!
-        if (!(wasAsync || request.isAsyncStarted()))
-            closeOutput();
+        if (!(wasAsync || request.isAsyncStarted())) // TODO LO async will not longer be able to be started withing errorHandler.handle
+            closeOutput(); // TODO fake close so that it can be reopened later!
     }
 
     /**

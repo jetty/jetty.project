@@ -81,7 +81,7 @@ public class ErrorHandler extends AbstractHandler
         String method = request.getMethod();
         if (!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
         {
-            baseRequest.setHandled(true);
+            baseRequest.setHandled(true); // TODO setHandled called within sendError.... may be called async!!!
             return;
         }
 
@@ -103,22 +103,23 @@ public class ErrorHandler extends AbstractHandler
                 {
                     LOG.warn("No ServletContext for error page {}", errorPage);
                 }
-                else if (oldErrorPage != null && oldErrorPage.equals(errorPage))
+                else if (oldErrorPage != null && oldErrorPage.equals(errorPage))  // TODO maybe better loop detection.
                 {
                     LOG.warn("Error page loop {}", errorPage);
                 }
 
 
-                // TODO handle async and sync case the same.   Call the channelState to
+                // TODO LO handle async and sync case the same.   Call the channelState to
                 // record there is an error dispatch needed, that will not be done until
                 // the current request cycle completes (or within that call if it already
-                // has.
+                // has).
                 else if (baseRequest.getHttpChannelState().asyncErrorDispatch(errorPage))
                 {
                     return;
                 }
                 else
                 {
+                    // TODO LO defer ERROR dispatch until after return from REQUEST dispatch.
                     Dispatcher dispatcher = (Dispatcher)servletContext.getRequestDispatcher(errorPage);
                     try
                     {
@@ -179,7 +180,7 @@ public class ErrorHandler extends AbstractHandler
             for (String mimeType : acceptable)
             {
                 generateAcceptableResponse(baseRequest, request, response, code, message, mimeType);
-                if (response.isCommitted() || baseRequest.getResponse().isWritingOrStreaming())
+                if (response.isCommitted() || baseRequest.getResponse().isWritingOrStreaming()) // TODO revisit this fix AFTER implemented delayed dispatch
                     break;
             }
         }

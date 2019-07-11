@@ -572,7 +572,7 @@ public class HttpChannelState
             scheduleDispatch();
     }
 
-    public boolean asyncErrorDispatch(String path)
+    public boolean errorDispatch(String path)
     {
         boolean dispatch = false;
         AsyncContextEvent event;
@@ -608,7 +608,7 @@ public class HttpChannelState
 
         cancelTimeout(event);
         if (dispatch)
-            scheduleDispatch();
+            scheduleDispatch();  // TODO can we call ourselves?
         return true;
     }
 
