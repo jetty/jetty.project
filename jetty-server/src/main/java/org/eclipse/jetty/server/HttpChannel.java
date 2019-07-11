@@ -33,6 +33,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -57,6 +58,8 @@ import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+
+import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
 
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
@@ -602,7 +605,25 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         try
         {
-            _state.onError(failure);
+            _request.setAttribute(ERROR_EXCEPTION, failure);
+            int code = HttpStatus.INTERNAL_SERVER_ERROR_500;
+            String reason = null;
+            Throwable cause = unwrap(failure, BadMessageException.class, UnavailableException.class);
+            if (cause instanceof BadMessageException)
+            {
+                BadMessageException bme = (BadMessageException)cause;
+                code = bme.getCode();
+                reason = bme.getReason();
+            }
+            else if (cause instanceof UnavailableException)
+            {
+                if (((UnavailableException)cause).isPermanent())
+                    code = HttpStatus.NOT_FOUND_404;
+                else
+                    code = HttpStatus.SERVICE_UNAVAILABLE_503;
+            }
+
+            _response.sendError(code, reason);
         }
         catch (Throwable e)
         {

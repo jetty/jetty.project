@@ -1287,24 +1287,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     }
                     break;
 
-                case ERROR:
-                    // If this is already a dispatch to an error page, proceed normally
-                    if (Boolean.TRUE.equals(baseRequest.getAttribute(Dispatcher.__ERROR_DISPATCH)))
-                        break;
-
-                    // This is an error dispatch that didn't come via Dispatcher.error.
-                    // This must be from an uncaught exception that is dispatching back into the
-                    // context so that sendError can be called in scope of the context.
-                    //
-                    // We can just call doError here, which if not extended will end up being
-                    // a call to sendError.
-
-                    // TODO GW why is this needed now? If sendError can be called asynchronously from outside of the scope
-                    // TODO of a context, then why do uncaught exceptions have to be handled with a sendError call
-                    // TODO within a context?
-
-                    doError(target, baseRequest, request, response);
-                    return;
                 default:
                     break;
             }

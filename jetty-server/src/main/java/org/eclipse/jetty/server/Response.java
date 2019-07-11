@@ -444,27 +444,30 @@ public class Response implements HttpServletResponse
         else
             _reason = message;  // TODO GW why?
 
-        boolean wasAsync = request.isAsyncStarted();
+        boolean isAsync = request.isAsyncStarted();
         // If we are allowed to have a body, then produce the error page.
         if (code != SC_NO_CONTENT && code != SC_NOT_MODIFIED &&
             code != SC_PARTIAL_CONTENT && code >= SC_OK)
         {
-            ContextHandler.Context context = request.getContext();
-            ContextHandler contextHandler = context == null ? _channel.getState().getContextHandler() : context.getContextHandler();
-            request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
-            request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
-            request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
-            request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, request.getServletName());
-            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
+            ContextHandler.Context context = request.getErrorContext();
+            if (context != null)
+            {
+                ContextHandler contextHandler = context.getContextHandler();
+                request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
+                request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
+                request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
+                request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, request.getServletName());
+                ErrorHandler errorHandler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
 
-            // TODO somehow flag in HttpChannelState that an ERROR dispatch or page is needed
-            if (errorHandler != null)
-                errorHandler.handle(null, request, request, this);
+                // TODO somehow flag in HttpChannelState that an ERROR dispatch or page is needed
+                if (errorHandler != null)
+                    errorHandler.handle(null, request, request, this);
+            }
         }
 
         // Do not close the output if the request was async (but may not now be due to async error dispatch)
         // or it is now async because the request handling is async!
-        if (!(wasAsync || request.isAsyncStarted())) // TODO LO async will not longer be able to be started withing errorHandler.handle
+        if (!(isAsync || request.isAsyncStarted())) // TODO LO async will not longer be able to be started withing errorHandler.handle
             closeOutput(); // TODO fake close so that it can be reopened later!
     }
 
