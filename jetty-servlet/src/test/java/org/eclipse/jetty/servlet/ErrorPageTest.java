@@ -20,6 +20,7 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
@@ -69,9 +71,10 @@ public class ErrorPageTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
+        _server.addConnector(_connector);
+
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
 
-        _server.addConnector(_connector);
         _server.setHandler(context);
 
         context.setContextPath("/");
@@ -85,6 +88,19 @@ public class ErrorPageTest
         context.addServlet(AppServlet.class, "/app/*");
         context.addServlet(LongerAppServlet.class, "/longer.app/*");
         context.addServlet(AsyncSendErrorServlet.class, "/async/*");
+        context.addServlet(NotEnoughServlet.class, "/notenough/*");
+
+        HandlerWrapper noopHandler = new HandlerWrapper() {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                if (target.startsWith("/noop"))
+                    return;
+                else
+                    super.handle(target, baseRequest, request, response);
+            }
+        };
+        context.insertHandler(noopHandler);
 
         ErrorPageErrorHandler error = new ErrorPageErrorHandler();
         context.setErrorHandler(error);
@@ -235,6 +251,44 @@ public class ErrorPageTest
         }
     }
 
+    @Test
+    public void testNoop() throws Exception
+    {
+        String response = _connector.getResponse("GET /noop/info HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("DISPATCH: ERROR"));
+        assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
+        assertThat(response, Matchers.containsString("ERROR_CODE: 404"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: null"));
+        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /noop/info"));
+    }
+
+    @Test
+    public void testNotEnough() throws Exception
+    {
+        String response = _connector.getResponse("GET /notenough/info HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 500 insufficient content written"));
+        assertThat(response, Matchers.containsString("DISPATCH: ERROR"));
+        assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
+        assertThat(response, Matchers.containsString("ERROR_CODE: 404"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: null"));
+        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /notenough/info"));
+    }
+
+    @Test
+    public void testNotEnoughCommitted() throws Exception
+    {
+        String response = _connector.getResponse("GET /notenough/info?commit=true HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
+        assertThat(response, Matchers.containsString("Content-Length: 1000"));
+        assertThat(response, Matchers.endsWith("SomeBytes"));
+    }
+
+
     public static class AppServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -345,6 +399,18 @@ public class ErrorPageTest
             catch (Throwable ignore)
             {
             }
+        }
+    }
+
+    public static class NotEnoughServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentLength(1000);
+            response.getOutputStream().write("SomeBytes".getBytes(StandardCharsets.UTF_8));
+            if (Boolean.parseBoolean(request.getParameter("commit")))
+                response.flushBuffer();
         }
     }
 
