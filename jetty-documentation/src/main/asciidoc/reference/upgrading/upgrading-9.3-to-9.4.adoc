@@ -253,3 +253,7 @@ Enable the `session-store-gcloud` and `session-store-cache` modules.
 *Compatibility*
 
 Sessions stored into Memcached by earlier versions of jetty are incompatible with Jetty 9.4. Previous versions of jetty stored `org.eclipse.jetty.gcloud.memcached.session.SerializableSessionData` whereas Jetty 9.4 stores `org.eclipse.jetty.server.session.SessionData`.
+
+==== Servlet Container Initialization
+
+Applications using both `web.xml` and a `ServletContainerInitializer` (eg by implementing Spring's `WebApplicationInitializer`) must now declare a webapp version of at least 2.5. Previously, Jetty would load initializers even if the webapp version was older.
