@@ -64,7 +64,9 @@ public abstract class AbstractForker extends AbstractLifeCycle
     
     protected File workDir;
     
-
+    protected abstract ProcessBuilder  createCommand();
+    protected abstract void redeployWebApp() throws Exception;
+    
     public File getWorkDir()
     {
         return workDir;
@@ -204,8 +206,6 @@ public abstract class AbstractForker extends AbstractLifeCycle
     {
         this.tokenFile = tokenFile;
     }
-
-    public abstract ProcessBuilder  createCommand();
     
 
     public void doStart ()

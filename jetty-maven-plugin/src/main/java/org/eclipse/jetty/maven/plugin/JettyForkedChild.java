@@ -21,14 +21,21 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
+import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -39,8 +46,12 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class JettyForkedChild extends AbstractLifeCycle
 {
+    private static final Logger LOG = Log.getLogger(JettyForkedChild.class);
+    
     protected JettyEmbedder jetty;
     protected File tokenFile;
+    protected PathWatcher scanner;
+    protected File webAppPropsFile;
 
     public JettyForkedChild (String[] args)
     throws Exception
@@ -89,10 +100,8 @@ public class JettyForkedChild extends AbstractLifeCycle
             //--webprops
             if ("--webprops".equals(args[i]))
             {
-                File webAppPropsFile = new File(args[++i].trim());
-                Properties props = new Properties();
-                props.load(new FileInputStream(webAppPropsFile));
-                jetty.setWebApp(null, props);
+                webAppPropsFile = new File(args[++i].trim());          
+                jetty.setWebApp(null, loadWebAppProps());
                 System.err.println("WEBPROPS="+webAppPropsFile);
                 continue;
             }
@@ -114,9 +123,17 @@ public class JettyForkedChild extends AbstractLifeCycle
                 jettyProperties.put(tmp[0], tmp[1]);
             }
         }
-        
+
         jetty.setJettyProperties(jettyProperties);
         jetty.setExitVm(true);
+    }
+
+    private Properties loadWebAppProps () throws FileNotFoundException, IOException
+    {
+        Properties props = new Properties();
+        if (Objects.nonNull(webAppPropsFile))
+            props.load(new FileInputStream(webAppPropsFile));
+        return props;
     }
     
     public void doStart()
@@ -131,13 +148,49 @@ public class JettyForkedChild extends AbstractLifeCycle
         Resource r = Resource.newResource(tokenFile);
         r.getFile().createNewFile();
         
-        //TODO start a PathWatcher for the webapp props file and/or the quickstart.xml file
-        // when differences are seen, get the webapp from the jettyembedder:
-        // stop webapp
-        // reconfigure the properties on it
-        // (name of quickstart file can't change, but contents can, but we don't need to do anything here)
-        // start webapp
+        //Start a watcher on a file that will change if the
+        //webapp is regenerated; stop the webapp, apply the
+        //properties and restart it.
+        scanner = new PathWatcher();
+        scanner.setNotifyExistingOnStart(false);
+        scanner.addListener(new PathWatcher.EventListListener()
+        {
+            @Override
+            public void onPathWatchEvents(List<PathWatchEvent> events)
+            {
+                if (!Objects.isNull(scanner))
+                {
+                    try
+                    {
+                    scanner.stop();
+                    if (!Objects.isNull(jetty.getWebApp()))
+                    {
+                        //stop the webapp
+                        jetty.getWebApp().stop();
 
+                        //reload the props
+                        jetty.setWebApp(jetty.getWebApp(), loadWebAppProps());
+                        
+                        //restart the webapp
+                        jetty.getWebApp().start();
+
+                        //restart the scanner
+                        scanner.start();
+                    }
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn("Error restarting webapp", e);
+                    }
+                }
+            }
+        });
+        
+        if (!Objects.isNull(webAppPropsFile))
+            scanner.watch(webAppPropsFile.toPath());
+        
+        
+        scanner.start();
         
         //wait for jetty to finish
         jetty.join();

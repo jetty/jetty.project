@@ -274,7 +274,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * 
      */
-    @Parameter (property="jetty.runType", defaultValue="INPROCESS") 
+    @Parameter (property="jetty.runType", defaultValue="EMBED") 
     protected RunTypes runType;
     
     
@@ -462,7 +462,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
 
 
-    public void startJetty()
+    protected void startJetty()
     throws MojoExecutionException, MojoFailureException
     {
         try
@@ -498,15 +498,15 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
     
 
-    public abstract void startJettyEmbedded() throws MojoExecutionException;
+    protected abstract void startJettyEmbedded() throws MojoExecutionException;
     
-    public abstract void startJettyForked() throws MojoExecutionException;
+    protected abstract void startJettyForked() throws MojoExecutionException;
     
-    public abstract void startJettyDistro() throws MojoExecutionException;
+    protected abstract void startJettyDistro() throws MojoExecutionException;
 
 
 
-    public JettyEmbedder newJettyEmbedder()
+    protected JettyEmbedder newJettyEmbedder()
     throws Exception
     {
         JettyEmbedder jetty = new JettyEmbedder();
@@ -531,8 +531,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
 
 
-    public JettyForker newJettyForker()
-    throws Exception
+    protected JettyForker newJettyForker()
+        throws Exception
     {
 
         JettyForker jetty = new JettyForker();
@@ -564,7 +564,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
 
     
-    public JettyDistroForker newJettyDistroForker()
+    protected JettyDistroForker newJettyDistroForker()
     throws Exception
     {
         JettyDistroForker jetty = new JettyDistroForker();
@@ -605,10 +605,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             jetty.setLibExtJarFiles(libExtJars);
         }
 
-        jetty.setWebApp(webApp);     
+        jetty.setWebApp(webApp);
         jetty.setContextXmlFile(new File(contextXml));
 
-        if (jettyHome == null)        
+        if (jettyHome == null)
             jetty.setJettyDistro(resolve(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
 
         jetty.setJettyHome(jettyHome);
@@ -658,7 +658,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * @return
      */
-    public List<File> getProjectDependencyFiles()
+    private List<File> getProjectDependencyFiles()
     {
         List<File> dependencyFiles = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
@@ -693,7 +693,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
 
 
-    public MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+    private MavenProject getProjectReferences( Artifact artifact, MavenProject project )
     {
         if ( project.getProjectReferences() == null || project.getProjectReferences().isEmpty() )
         {
@@ -710,7 +710,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return null;
     }
 
-    public List<Overlay> getOverlays()
+    protected List<Overlay> getOverlays()
             throws Exception
     {
         //get copy of a list of war artifacts
@@ -756,7 +756,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
 
 
-    public void unpackOverlays (List<Overlay> overlays)
+    private void unpackOverlays (List<Overlay> overlays)
     throws Exception
     {
         if (overlays == null || overlays.isEmpty())
@@ -795,7 +795,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
 
 
-    public  Resource unpackOverlay (Overlay overlay)
+    private  Resource unpackOverlay (Overlay overlay)
     throws IOException
     {        
         if (overlay.getResource() == null)
@@ -834,7 +834,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * @return
      */
-    public List<Artifact> getWarArtifacts ()
+    protected List<Artifact> getWarArtifacts ()
     {
         if (warArtifacts != null)
             return warArtifacts;       
@@ -859,7 +859,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return warArtifacts;
     }
 
-    protected Artifact getArtifactForOverlay (OverlayConfig o, List<Artifact> warArtifacts)
+    private Artifact getArtifactForOverlay (OverlayConfig o, List<Artifact> warArtifacts)
     {
         if (o == null || warArtifacts == null || warArtifacts.isEmpty())
             return null;
@@ -881,7 +881,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * 
      */
-    public void verifyPomConfiguration () throws MojoExecutionException
+    protected void verifyPomConfiguration () throws MojoExecutionException
     {
         // check the location of the static content/jsps etc
         try
@@ -930,7 +930,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
 
 
-    public void configureSystemProperties ()
+    protected void configureSystemProperties ()
     throws MojoExecutionException
     {
         //Apply the file first
@@ -954,6 +954,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         {
             for (Map.Entry<String, String> e:systemProperties.entrySet())
             {
+                System.err.println(e.getKey() + " " + e.getValue());
                 System.setProperty(e.getKey(), e.getValue());
             }
         }
@@ -965,7 +966,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * @throws MojoExecutionException
      */
-    public void augmentPluginClasspath() throws MojoExecutionException
+    protected void augmentPluginClasspath() throws MojoExecutionException
     {  
         //Filter out ones that will clash with jars that are plugin dependencies, then
         //create a new classloader that we setup in the parent chain.
@@ -990,7 +991,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
     }
 
-    public List<File> getProvidedJars() throws MojoExecutionException
+    protected List<File> getProvidedJars() throws MojoExecutionException
     {  
         //if we are configured to include the provided dependencies on the plugin's classpath
         //(which mimics being on jetty's classpath vs being on the webapp's classpath), we first
@@ -1011,7 +1012,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             return null;
     }
 
-    public String getContainerClassPath() throws Exception
+    protected String getContainerClassPath() throws Exception
     {
         //Add in all the plugin artifacts
         StringBuilder classPath = new StringBuilder();
@@ -1053,7 +1054,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * @param artifact to check
      * @return true if it is a plugin dependency, false otherwise
      */
-    public boolean isPluginArtifact(Artifact artifact)
+    protected boolean isPluginArtifact(Artifact artifact)
     {
         if (pluginArtifacts == null || pluginArtifacts.isEmpty())
             return false;
@@ -1076,7 +1077,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * @param goal the goal to check
      * @return true if the goal is excluded, false otherwise
      */
-    public boolean isExcludedGoal (String goal)
+    protected boolean isExcludedGoal (String goal)
     {
         if (excludedGoals == null || goal == null)
             return false;
@@ -1096,7 +1097,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
     
     
-    public void configureWebApp ()
+    protected void configureWebApp ()
     throws Exception
     {
         if (webApp == null)
@@ -1207,7 +1208,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * @param webInfDir the web inf directory
      * @return the jetty web xml file
      */
-    public File findJettyWebXmlFile (File webInfDir)
+    protected File findJettyWebXmlFile (File webInfDir)
     {
         if (webInfDir == null)
             return null;

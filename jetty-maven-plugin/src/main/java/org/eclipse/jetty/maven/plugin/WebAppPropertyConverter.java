@@ -164,6 +164,9 @@ public class WebAppPropertyConverter
     {
         if (webApp == null)
             throw new IllegalArgumentException("No webapp");
+        
+        if (webAppProperties == null)
+            return;
 
         String str = webAppProperties.getProperty("context.path");
         if (!StringUtil.isBlank(str))

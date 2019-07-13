@@ -82,175 +82,137 @@ public class JettyEmbedder extends AbstractLifeCycle
         return contextHandlers;
     }
 
-
     public void setContextHandlers(ContextHandler[] contextHandlers)
     {
         this.contextHandlers = contextHandlers;
     }
-
 
     public LoginService[] getLoginServices()
     {
         return loginServices;
     }
 
-
     public void setLoginServices(LoginService[] loginServices)
     {
         this.loginServices = loginServices;
     }
-
 
     public RequestLog getRequestLog()
     {
         return requestLog;
     }
 
-
     public void setRequestLog(RequestLog requestLog)
     {
         this.requestLog = requestLog;
     }
-
 
     public MavenServerConnector getHttpConnector()
     {
         return httpConnector;
     }
 
-
     public void setHttpConnector(MavenServerConnector httpConnector)
     {
         this.httpConnector = httpConnector;
     }
-
 
     public Server getServer()
     {
         return server;
     }
 
-
     public void setServer(Server server)
     {
         this.server = server;
     }
-
 
     public JettyWebAppContext getWebApp()
     {
         return webApp;
     }
 
-
     public boolean isExitVm()
     {
         return exitVm;
     }
-
 
     public void setExitVm(boolean exitVm)
     {
         this.exitVm = exitVm;
     }
 
-
     public boolean isStopAtShutdown()
     {
         return stopAtShutdown;
     }
-
 
     public void setStopAtShutdown(boolean stopAtShutdown)
     {
         this.stopAtShutdown = stopAtShutdown;
     }
 
-
     public List<File> getJettyXmlFiles()
     {
         return jettyXmlFiles;
     }
-
 
     public void setJettyXmlFiles(List<File> jettyXmlFiles)
     {
         this.jettyXmlFiles = jettyXmlFiles;
     }
 
-
-
-
     public Map<String, String> getJettyProperties()
     {
         return jettyProperties;
     }
-
-
-
 
     public void setJettyProperties(Map<String, String> jettyProperties)
     {
         this.jettyProperties = jettyProperties;
     }
 
-
-
-
     public ShutdownMonitor getShutdownMonitor()
     {
         return shutdownMonitor;
     }
-
-
-
 
     public void setShutdownMonitor(ShutdownMonitor shutdownMonitor)
     {
         this.shutdownMonitor = shutdownMonitor;
     }
 
-
-
-
     public int getStopPort()
     {
         return stopPort;
     }
-
-
-
 
     public void setStopPort(int stopPort)
     {
         this.stopPort = stopPort;
     }
 
-
-
-
     public String getStopKey()
     {
         return stopKey;
     }
-
-
-
 
     public void setStopKey(String stopKey)
     {
         this.stopKey = stopKey;
     }
 
-
-
-
     public Properties getWebAppProperties()
     {
         return webAppProperties;
     }
-
-  
+    
+    public void setWebApp (JettyWebAppContext app, Properties properties)
+    throws Exception
+    {
+        webApp = app;
+        webAppProperties = properties;
+    }
     
     public void doStart()
     throws Exception
@@ -266,12 +228,20 @@ public class JettyEmbedder extends AbstractLifeCycle
         server.start();
     }
     
-    public void join()
+    protected void redeployWebApp()
+    throws Exception
+    {
+        webApp.stop();
+        //regenerate config properties
+        applyWebAppProperties();
+        webApp.start();
+    }
+    
+    protected void join()
     throws InterruptedException
     {
         server.join();
     }
-    
     
     
     /**
@@ -304,14 +274,13 @@ public class JettyEmbedder extends AbstractLifeCycle
 
         // set up security realms
         ServerSupport.configureLoginServices(server, loginServices);
-        
+
         /* Configure the webapp */
         if (webApp == null)
             webApp = new JettyWebAppContext();
-        
-        //apply properties to the webapp if there are any
-        WebAppPropertyConverter.fromProperties(webApp, webAppProperties, server, jettyProperties);    
-        
+
+        applyWebAppProperties();
+
         //TODO- this might be duplicating WebAppPropertyConverter. make it a quickstart if the quickstart-web.xml file exists
         if (webApp.getTempDirectory() != null)
         {
@@ -319,22 +288,19 @@ public class JettyEmbedder extends AbstractLifeCycle
             if (qs.exists() && qs.isFile())
                 webApp.setQuickStartWebDescriptor(Resource.newResource(qs));
         }
-        
+
         //add the webapp to the server
         ServerSupport.addWebApplication(server, webApp);
         
         System.err.println("ADDED WEBAPP TO SERVER");
     }
     
-    
-    public void setWebApp (JettyWebAppContext app, Properties properties)
-    throws Exception
+    private void applyWebAppProperties () throws Exception
     {
-        webApp = app;
-        webAppProperties = properties;
+        //apply properties to the webapp if there are any
+        WebAppPropertyConverter.fromProperties(webApp, webAppProperties, server, jettyProperties);    
     }
-
-
+    
     private void configureShutdownMonitor ()
     {
         if(stopPort>0 && stopKey!=null)

@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 /**
  * JettyForker
  *
+ * Uses quickstart to generate a webapp and forks a process to run it.
  */
 public class JettyForker extends AbstractForker
 {
@@ -121,20 +122,14 @@ public class JettyForker extends AbstractForker
     throws Exception
     {
         //Run the webapp to create the quickstart file and properties file
-        generateQuickStart();
+        prepareWebApp();
         super.doStart();
     }
     
     
-    protected void generateQuickStart()
+    private void prepareWebApp()
     throws Exception
     {
-        if (forkWebXml == null)
-            throw new IllegalStateException ("No forkWebXml");
-        
-        if (webAppPropsFile == null)
-            throw new IllegalStateException ("no webAppsPropsFile");
-        
         if (server == null)
             server = new Server();
 
@@ -163,26 +158,52 @@ public class JettyForker extends AbstractForker
         
         //add webapp to our fake server instance
         ServerSupport.addWebApplication(server, webApp);
+        
+        //leave everything unpacked for the forked process to use
+        webApp.setPersistTempDirectory(true);
+        
+        generateQuickStart();
+    }
+    
+    protected void redeployWebApp ()
+    throws Exception 
+    {
+        //regenerating the quickstart will be noticed by the JettyForkedChild process
+        //which will redeploy the webapp
+        generateQuickStart();
+    }
+    
+    private void generateQuickStart()
+    throws Exception
+    {
+        if (forkWebXml == null)
+            throw new IllegalStateException ("No forkWebXml");
+        
+        if (webAppPropsFile == null)
+            throw new IllegalStateException ("no webAppsPropsFile");
                    
         //if our server has a thread pool associated we can do annotation scanning multithreaded,
         //otherwise scanning will be single threaded
         QueuedThreadPool tpool = server.getBean(QueuedThreadPool.class);
-        if (tpool != null)
-            tpool.start();
-        else
-            webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
 
-        //leave everything unpacked for the forked process to use
-        webApp.setPersistTempDirectory(true);
+        try
+        {
+            if (tpool != null)
+                tpool.start();
+            else
+                webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
 
-        webApp.start(); //just enough to generate the quickstart
+            webApp.start(); //just enough to generate the quickstart
 
-        //save config of the webapp BEFORE we stop
-        WebAppPropertyConverter.toProperties(webApp, webAppPropsFile, webAppProperties.getProperty("context.xml"));
-        
-        webApp.stop();        
-        if (tpool != null)
-            tpool.stop();
+            //save config of the webapp BEFORE we stop
+            WebAppPropertyConverter.toProperties(webApp, webAppPropsFile, webAppProperties.getProperty("context.xml"));
+        }
+        finally
+        {
+            webApp.stop();        
+            if (tpool != null)
+                tpool.stop();
+        }
     }
     
     
