@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.javax.server.tests;
 
-// TODO remove this hack class and package for the tests
+// TODO remove this hack class and package
 public class Empty
 {
 }
