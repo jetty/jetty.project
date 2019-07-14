@@ -44,8 +44,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerContainer;
 import org.eclipse.jetty.websocket.javax.tests.WSURI;
 import org.junit.jupiter.api.Test;
 

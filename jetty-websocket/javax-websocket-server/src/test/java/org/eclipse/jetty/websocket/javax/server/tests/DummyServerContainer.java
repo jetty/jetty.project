@@ -16,8 +16,9 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server;
+package org.eclipse.jetty.websocket.javax.server.tests;
 
+import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerContainer;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 
 public class DummyServerContainer extends JavaxWebSocketServerContainer

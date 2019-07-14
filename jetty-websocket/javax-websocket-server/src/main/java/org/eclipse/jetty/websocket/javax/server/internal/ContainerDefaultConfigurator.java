@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server;
+package org.eclipse.jetty.websocket.javax.server.internal;
 
 import java.util.List;
 import java.util.ServiceLoader;

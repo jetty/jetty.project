@@ -20,14 +20,14 @@ import javax.servlet.ServletContainerInitializer;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.websocket.javax.server.ContainerDefaultConfigurator;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketConfiguration;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.internal.ContainerDefaultConfigurator;
 
 module org.eclipse.jetty.websocket.javax.server
 {
-    exports org.eclipse.jetty.websocket.javax.server;
     exports org.eclipse.jetty.websocket.javax.server.config;
+    exports org.eclipse.jetty.websocket.javax.server.tests; // TODO removed this hack for the tests
 
     requires jetty.servlet.api;
     requires jetty.websocket.api;

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server;
+package org.eclipse.jetty.websocket.javax.server.tests;
 
 import java.net.URI;
 import java.util.concurrent.ArrayBlockingQueue;

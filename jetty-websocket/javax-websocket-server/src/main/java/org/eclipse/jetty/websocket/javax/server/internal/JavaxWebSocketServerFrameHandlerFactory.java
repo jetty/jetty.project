@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server;
+package org.eclipse.jetty.websocket.javax.server.internal;
 
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -27,8 +27,6 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata;
-import org.eclipse.jetty.websocket.javax.server.internal.DelegatedJavaxServletUpgradeRequest;
-import org.eclipse.jetty.websocket.javax.server.internal.PathParamIdentifier;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;

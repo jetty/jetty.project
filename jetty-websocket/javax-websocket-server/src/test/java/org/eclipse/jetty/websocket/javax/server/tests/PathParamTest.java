@@ -16,13 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server;
+package org.eclipse.jetty.websocket.javax.server.tests;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.OnMessage;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,14 @@ public class PathParamTest
     @Test
     public void testBasicPathParamSocket() throws DeploymentException
     {
-        container.addEndpoint(BasicPathParamSocket.class);
+        try
+        {
+            container.addEndpoint(BasicPathParamSocket.class);
+        }
+        catch (Throwable th)
+        {
+            th.printStackTrace();
+            throw th;
+        }
     }
 }
