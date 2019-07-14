@@ -21,12 +21,13 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.websocket.javax.server.ContainerDefaultConfigurator;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketConfiguration;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketConfiguration;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 
 module org.eclipse.jetty.websocket.javax.server
 {
     exports org.eclipse.jetty.websocket.javax.server;
+    exports org.eclipse.jetty.websocket.javax.server.config;
 
     requires jetty.servlet.api;
     requires jetty.websocket.api;

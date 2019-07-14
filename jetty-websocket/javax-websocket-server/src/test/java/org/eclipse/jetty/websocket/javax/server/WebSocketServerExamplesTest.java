@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.server.examples.GetHttpSessionSocket;
 import org.eclipse.jetty.websocket.javax.server.examples.MyAuthedSocket;
 import org.eclipse.jetty.websocket.javax.server.examples.StreamingEchoSocket;

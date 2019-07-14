@@ -94,6 +94,10 @@ public class LargeContainerTest
             URI uri = wsb.getWsUri();
 
             WebAppContext webapp = wsb.createWebAppContext();
+            // TODO It's not great that we have to expose these APIs for testing as it can hide other classpath issues!
+            webapp.getSystemClassMatcher().include("org.eclipse.jetty.websocket.javax.");
+            webapp.getServerClassMatcher().exclude("org.eclipse.jetty.websocket.javax.");
+
             wsb.deployWebapp(webapp);
             // wsb.dump();
 

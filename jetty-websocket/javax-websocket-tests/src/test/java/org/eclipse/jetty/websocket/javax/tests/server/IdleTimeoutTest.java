@@ -58,6 +58,10 @@ public class IdleTimeoutTest
         server.start();
 
         WebAppContext webapp = server.createWebAppContext();
+        // TODO It's not great that we have to expose these APIs for testing as it can hide other classpath issues!
+        webapp.getSystemClassMatcher().include("org.eclipse.jetty.websocket.javax.");
+        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.websocket.javax.");
+
         server.deployWebapp(webapp);
         // wsb.dump();
     }

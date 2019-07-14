@@ -45,11 +45,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.tests.WSURI;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
+import static org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;

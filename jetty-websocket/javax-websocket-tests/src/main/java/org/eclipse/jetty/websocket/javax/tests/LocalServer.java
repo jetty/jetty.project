@@ -52,7 +52,7 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSessionListener;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerFrameHandlerFactory;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
