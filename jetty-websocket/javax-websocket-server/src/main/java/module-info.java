@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.javax.server.internal.ContainerDefaultConfigu
 module org.eclipse.jetty.websocket.javax.server
 {
     exports org.eclipse.jetty.websocket.javax.server.config;
-    exports org.eclipse.jetty.websocket.javax.server.tests; // TODO remove this hack
 
     requires jetty.servlet.api;
     requires jetty.websocket.api;
