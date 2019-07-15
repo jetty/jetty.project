@@ -33,6 +33,7 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
+import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
 
 public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 {
