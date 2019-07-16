@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
@@ -46,8 +47,8 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 {
     private static final Logger LOG = Log.getLogger(JettyListenerEventDriver.class);
     private final WebSocketConnectionListener listener;
-    private Utf8PartialBuilder utf8Partial;
     private boolean hasCloseBeenCalled = false;
+    private ContinuationFrameType continuationFrameType = ContinuationFrameType.NONE;
 
     public JettyListenerEventDriver(WebSocketPolicy policy, WebSocketConnectionListener listener)
     {
@@ -71,6 +72,11 @@ public class JettyListenerEventDriver extends AbstractEventDriver
         if (listener instanceof WebSocketPartialListener)
         {
             ((WebSocketPartialListener)listener).onWebSocketPartialBinary(buffer.slice().asReadOnlyBuffer(), fin);
+            if (fin) {
+                continuationFrameType = ContinuationFrameType.NONE;
+            } else {
+                continuationFrameType = ContinuationFrameType.BINARY;
+            }
         }
     }
 
@@ -81,6 +87,9 @@ public class JettyListenerEventDriver extends AbstractEventDriver
         {
             ((WebSocketListener)listener).onWebSocketBinary(data, 0, data.length);
         }
+
+        continuationFrameType = ContinuationFrameType.NONE;
+
     }
 
     @Override
@@ -160,18 +169,54 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 
         if (listener instanceof WebSocketPartialListener)
         {
-            if (utf8Partial == null)
-            {
-                utf8Partial = new Utf8PartialBuilder();
-            }
 
-            String partial = utf8Partial.toPartialString(buffer);
+            Utf8StringBuilder utf8 = new Utf8StringBuilder();
+            utf8.append(buffer);
+
+            String partial = utf8.getPartialString();
 
             ((WebSocketPartialListener)listener).onWebSocketPartialText(partial, fin);
 
-            if (fin)
+            if (fin) {
+                continuationFrameType = ContinuationFrameType.NONE;
+            } else {
+                continuationFrameType = ContinuationFrameType.TEXT;
+            }
+        }
+    }
+
+    @Override
+    public void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException {
+        if (listener instanceof WebSocketListener)
+        {
+            if (activeMessage == null)
             {
-                partial = null;
+                throw new IOException("Out of order Continuation frame encountered");
+            }
+
+            appendMessage(buffer, fin);
+        }
+
+        if (listener instanceof WebSocketPartialListener)
+        {
+            if (continuationFrameType == ContinuationFrameType.TEXT)
+            {
+                Utf8StringBuilder utf8 = new Utf8StringBuilder();
+                utf8.append(buffer);
+
+                String partial = utf8.getPartialString();
+
+                ((WebSocketPartialListener) listener).onWebSocketPartialText(partial, fin);
+            }
+            else if (continuationFrameType == ContinuationFrameType.BINARY)
+            {
+                ((WebSocketPartialListener)listener).onWebSocketPartialBinary(buffer.slice().asReadOnlyBuffer(), fin);
+            }
+
+            if (fin) {
+                continuationFrameType = ContinuationFrameType.NONE;
+            } else {
+                continuationFrameType = ContinuationFrameType.TEXT;
             }
         }
     }
@@ -188,11 +233,20 @@ public class JettyListenerEventDriver extends AbstractEventDriver
         {
             ((WebSocketListener)listener).onWebSocketText(message);
         }
+
+        continuationFrameType = ContinuationFrameType.NONE;
     }
 
     @Override
     public String toString()
     {
         return String.format("%s[%s]", JettyListenerEventDriver.class.getSimpleName(), listener.getClass().getName());
+    }
+
+    private enum ContinuationFrameType
+    {
+        TEXT,
+        BINARY,
+        NONE
     }
 }
