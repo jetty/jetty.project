@@ -187,6 +187,68 @@ public class PartialListenerTest
         }
     }
 
+    /**
+     * Test to ensure that the internal state tracking the partial messages is reset after each complete message.
+     */
+    @Test
+    public void testPartial_TextBinaryText() throws Exception
+    {
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
+
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        Future<Session> futSession = client.connect(clientEndpoint, wsUri, request);
+
+        Session session = null;
+        try (StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
+        {
+            session = futSession.get(5, SECONDS);
+
+            RemoteEndpoint clientRemote = session.getRemote();
+            clientRemote.sendPartialString("hello", false);
+            clientRemote.sendPartialString(" ", false);
+            clientRemote.sendPartialString("world", true);
+
+            clientRemote.sendPartialBytes(BufferUtil.toBuffer("greetings"), false);
+            clientRemote.sendPartialBytes(BufferUtil.toBuffer(" "), false);
+            clientRemote.sendPartialBytes(BufferUtil.toBuffer("mars"), true);
+
+            clientRemote.sendPartialString("salutations", false);
+            clientRemote.sendPartialString(" ", false);
+            clientRemote.sendPartialString("phobos", true);
+
+            PartialEndpoint serverEndpoint = partialCreator.partialEndpoint;
+
+            String event;
+
+            event = serverEndpoint.partialEvents.poll(5, SECONDS);
+            assertThat("Event", event, is("TEXT[payload=hello, fin=false]"));
+            event = serverEndpoint.partialEvents.poll(5, SECONDS);
+            assertThat("Event", event, is("TEXT[payload= , fin=false]"));
+            event = serverEndpoint.partialEvents.poll(5, SECONDS);
+            assertThat("Event", event, is("TEXT[payload=world, fin=true]"));
+
+            event = serverEndpoint.partialEvents.poll(5, SECONDS);
+            assertThat("Event", event, is("BINARY[payload=<<<greetings>>>, fin=false]"));
+            event = serverEndpoint.partialEvents.poll(5, SECONDS);
+            assertThat("Event", event, is("BINARY[payload=<<< >>>, fin=false]"));
+            event = serverEndpoint.partialEvents.poll(5, SECONDS);
+            assertThat("Event", event, is("BINARY[payload=<<<mars>>>, fin=true]"));
+
+            event = serverEndpoint.partialEvents.poll(5, SECONDS);
+            assertThat("Event", event, is("TEXT[payload=salutations, fin=false]"));
+            event = serverEndpoint.partialEvents.poll(5, SECONDS);
+            assertThat("Event", event, is("TEXT[payload= , fin=false]"));
+            event = serverEndpoint.partialEvents.poll(5, SECONDS);
+            assertThat("Event", event, is("TEXT[payload=phobos, fin=true]"));
+        }
+        finally
+        {
+            close(session);
+        }
+    }
+
+
     public static class PartialCreator implements WebSocketCreator
     {
         public PartialEndpoint partialEndpoint;
