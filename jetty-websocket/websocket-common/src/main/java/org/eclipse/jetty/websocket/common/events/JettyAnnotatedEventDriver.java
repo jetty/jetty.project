@@ -153,6 +153,15 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     }
 
     @Override
+    public void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException
+    {
+        if (events.onText != null || events.onBinary != null)
+        {
+            super.onContinuationFrame(buffer, fin);
+        }
+    }
+
+    @Override
     public void onError(Throwable cause)
     {
         if (events.onError != null)
