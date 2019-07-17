@@ -724,7 +724,7 @@ public class Response implements HttpServletResponse
 
     public boolean isStreaming()
     {
-        return _outputType == OutputType.WRITER;
+        return _outputType == OutputType.STREAM;
     }
 
     @Override
