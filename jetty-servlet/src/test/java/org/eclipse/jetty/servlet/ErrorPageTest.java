@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -52,7 +53,6 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -137,7 +137,6 @@ public class ErrorPageTest
     void testErrorOverridesStatus() throws Exception
     {
         String response = _connector.getResponse("GET /error-and-status/anything HTTP/1.0\r\n\r\n");
-        System.err.println(response);
         assertThat(response, Matchers.containsString("HTTP/1.1 594 594"));
         assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
         assertThat(response, Matchers.containsString("ERROR_MESSAGE: custom get error"));
@@ -323,7 +322,6 @@ public class ErrorPageTest
     }
 
     @Test
-    @Disabled
     public void testAsyncErrorPage0() throws Exception
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
@@ -340,9 +338,7 @@ public class ErrorPageTest
         }
     }
 
-    // TODO re-enable once async is implemented
     @Test
-    @Disabled
     public void testAsyncErrorPage1() throws Exception
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
@@ -450,12 +446,13 @@ public class ErrorPageTest
                         {
                             // Complete after original servlet
                             hold.countDown();
-                            // Wait until request is recycled
-                            while (Request.getBaseRequest(request).getMetaData() != null)
+
+                            // Wait until request async waiting
+                            while (Request.getBaseRequest(request).getHttpChannelState().getState() != HttpChannelState.State.ASYNC_WAIT)
                             {
                                 try
                                 {
-                                    Thread.sleep(100);
+                                    Thread.sleep(10);
                                 }
                                 catch (InterruptedException e)
                                 {

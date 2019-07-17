@@ -283,7 +283,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         case COMPLETING:
                         case COMPLETED:
                         case IDLE:
-                        case ERRORED:
                         case ASYNC_ERROR:
                             getEndPoint().shutdownOutput();
                             break;
