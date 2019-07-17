@@ -203,6 +203,7 @@ public class Request implements HttpServletRequest
     private String _contentType;
     private String _characterEncoding;
     private ContextHandler.Context _context;
+    private ContextHandler.Context _errorContext;
     private CookieCutter _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = INPUT_NONE;
@@ -725,6 +726,14 @@ public class Request implements HttpServletRequest
     public Context getContext()
     {
         return _context;
+    }
+
+    /**
+     * @return The current {@link Context context} used for this request, or <code>null</code> if {@link #setContext} has not yet been called.
+     */
+    public Context getErrorContext()
+    {
+        return _errorContext;
     }
 
     /*
@@ -1917,7 +1926,13 @@ public class Request implements HttpServletRequest
     public void setContext(Context context)
     {
         _newContext = _context != context;
-        _context = context;
+        if (context == null)
+            _context = null;
+        else
+        {
+            _context = context;
+            _errorContext = context;
+        }
     }
 
     /**
