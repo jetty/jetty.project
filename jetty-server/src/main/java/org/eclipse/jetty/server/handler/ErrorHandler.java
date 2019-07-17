@@ -27,18 +27,14 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
@@ -57,6 +53,7 @@ public class ErrorHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(ErrorHandler.class);
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
+    public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
 
     boolean _showStacks = true;
     boolean _showMessageInTitle = true;
@@ -64,6 +61,19 @@ public class ErrorHandler extends AbstractHandler
 
     public ErrorHandler()
     {
+    }
+
+    public boolean errorPageForMethod(String method)
+    {
+        switch (method)
+        {
+            case "GET":
+            case "POST":
+            case "HEAD":
+                return true;
+            default:
+                return false;
+        }
     }
 
     /*
@@ -78,75 +88,9 @@ public class ErrorHandler extends AbstractHandler
     @Override
     public void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        String method = request.getMethod();
-        if (!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
-        {
-            baseRequest.setHandled(true); // TODO setHandled called within sendError.... may be called async!!!
-            return;
-        }
-
-        if (_cacheControl != null)
-            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
-
-        if (this instanceof ErrorPageMapper)
-        {
-            String errorPage = ((ErrorPageMapper)this).getErrorPage(request);
-            if (errorPage != null)
-            {
-                String oldErrorPage = (String)request.getAttribute(ERROR_PAGE);
-                request.setAttribute(ERROR_PAGE, errorPage);
-
-                ContextHandler.Context servletContext = baseRequest.getErrorContext();
-                if (servletContext == null)
-                    servletContext = ContextHandler.getCurrentContext();
-                if (servletContext == null)
-                {
-                    LOG.warn("No ServletContext for error page {}", errorPage);
-                }
-                else if (oldErrorPage != null && oldErrorPage.equals(errorPage))  // TODO maybe better loop detection.
-                {
-                    LOG.warn("Error page loop {}", errorPage);
-                }
-
-
-                // TODO LO handle async and sync case the same.   Call the channelState to
-                // record there is an error dispatch needed, that will not be done until
-                // the current request cycle completes (or within that call if it already
-                // has).
-                else if (baseRequest.getHttpChannelState().asyncErrorDispatch(errorPage))
-                {
-                    return;
-                }
-                else
-                {
-                    // TODO LO defer ERROR dispatch until after return from REQUEST dispatch.
-                    Dispatcher dispatcher = (Dispatcher)servletContext.getRequestDispatcher(errorPage);
-                    try
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("error page dispatch {}->{}", errorPage, dispatcher);
-                        if (dispatcher != null)
-                        {
-                            dispatcher.error(request, response);
-                            return;
-                        }
-                        LOG.warn("No error page found " + errorPage);
-                    }
-                    catch (ServletException e)
-                    {
-                        LOG.warn(Log.EXCEPTION, e);
-                        return;
-                    }
-                }
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("No Error Page mapping for request({} {}) (using default)", request.getMethod(), request.getRequestURI());
-                }
-            }
-        }
+        String cacheControl = getCacheControl();
+        if (cacheControl != null)
+            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
 
         generateAcceptableResponse(baseRequest, request, response, response.getStatus(), baseRequest.getResponse().getReason());
     }

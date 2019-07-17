@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.AsyncListener;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
@@ -40,6 +40,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
 import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
 import static javax.servlet.RequestDispatcher.ERROR_MESSAGE;
+import static javax.servlet.RequestDispatcher.ERROR_REQUEST_URI;
+import static javax.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
 import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 /**
@@ -58,7 +60,7 @@ public class HttpChannelState
     {
         IDLE,             // Idle request
         DISPATCHED,       // Request dispatched to filter/servlet
-        THROWN,           // Exception thrown while DISPATCHED
+        ERRORED,          // Error reported while DISPATCHED
         ASYNC_WAIT,       // Suspended and waiting
         ASYNC_WOKEN,      // Dispatch to handle from ASYNC_WAIT
         ASYNC_IO,         // Dispatched for async IO
@@ -421,7 +423,7 @@ public class HttpChannelState
                 case COMPLETED:
                     return Action.TERMINATED;
 
-                case THROWN:
+                case ERRORED:
                     _state = State.DISPATCHED;
                     return Action.ERROR_DISPATCH;
 
@@ -570,46 +572,6 @@ public class HttpChannelState
         cancelTimeout(event);
         if (dispatch)
             scheduleDispatch();
-    }
-
-    public boolean asyncErrorDispatch(String path)
-    {
-        boolean dispatch = false;
-        AsyncContextEvent event;
-        try (Locker.Lock lock = _locker.lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("errorDispatch {} -> {}", toStringLocked(), path);
-
-            if (_async != Async.STARTED)
-                return false;
-
-            event = _event;
-            _async = Async.DISPATCH; // TODO ERRORED?????
-
-            if (path != null)
-                _event.setDispatchPath(path);
-
-            switch (_state)
-            {
-                case DISPATCHED:
-                case ASYNC_IO:
-                case ASYNC_WOKEN:
-                    break;
-                case ASYNC_WAIT:
-                    _state = State.ASYNC_WOKEN;
-                    dispatch = true;
-                    break;
-                default:
-                    LOG.warn("asyncErrorDispatch when complete {}", this);
-                    break;
-            }
-        }
-
-        cancelTimeout(event);
-        if (dispatch)
-            scheduleDispatch();  // TODO can we call ourselves?
-        return true;
     }
 
     protected void onTimeout()
@@ -767,18 +729,15 @@ public class HttpChannelState
 
     protected void onError(Throwable th)
     {
-        final List<AsyncListener> listeners;
-        final AsyncContextEvent event;
-        final Request baseRequest = _channel.getRequest();
-
         int code = HttpStatus.INTERNAL_SERVER_ERROR_500;
-        String reason = null;
+        String message = null;
         Throwable cause = _channel.unwrap(th, BadMessageException.class, UnavailableException.class);
+
         if (cause instanceof BadMessageException)
         {
             BadMessageException bme = (BadMessageException)cause;
             code = bme.getCode();
-            reason = bme.getReason();
+            message = bme.getReason();
         }
         else if (cause instanceof UnavailableException)
         {
@@ -788,41 +747,43 @@ public class HttpChannelState
                 code = HttpStatus.SERVICE_UNAVAILABLE_503;
         }
 
+        onError(th, code, message);
+    }
+
+    public void onError(Throwable cause, int code, String message)
+    {
+        final List<AsyncListener> listeners;
+        final AsyncContextEvent event;
+        final Request baseRequest = _channel.getRequest();
+
+        if (message == null)
+            message = cause == null ? HttpStatus.getMessage(code) : cause.toString();
+
+        // we are allowed to have a body, then produce the error page.
+        ContextHandler.Context context = baseRequest.getErrorContext();
+        if (context != null)
+            baseRequest.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
+        baseRequest.setAttribute(ERROR_REQUEST_URI, baseRequest.getRequestURI());
+        baseRequest.setAttribute(ERROR_SERVLET_NAME, baseRequest.getServletName());
+        baseRequest.setAttribute(ERROR_STATUS_CODE, code);
+        baseRequest.setAttribute(ERROR_EXCEPTION, cause);
+        baseRequest.setAttribute(ERROR_EXCEPTION_TYPE, cause == null ? null : cause.getClass());
+        baseRequest.setAttribute(ERROR_MESSAGE, message);
+
         try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onError {} {}", toStringLocked(), th);
+                LOG.debug("onError {} {}", toStringLocked(), cause);
 
             // Set error on request.
             if (_event != null)
-            {
-                _event.addThrowable(th);
-                _event.getSuppliedRequest().setAttribute(ERROR_STATUS_CODE, code);
-                _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION, th);
-                _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION_TYPE, th == null ? null : th.getClass());
-                _event.getSuppliedRequest().setAttribute(ERROR_MESSAGE, reason);
-            }
-            else
-            {
-                Throwable error = (Throwable)baseRequest.getAttribute(ERROR_EXCEPTION);
-                if (error != null)
-                    throw new IllegalStateException("Error already set", error);
-                baseRequest.setAttribute(ERROR_STATUS_CODE, code);
-                baseRequest.setAttribute(ERROR_EXCEPTION, th);
-                baseRequest.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE, th == null ? null : th.getClass());
-                baseRequest.setAttribute(ERROR_MESSAGE, reason);
-            }
+                _event.addThrowable(cause);
 
             // Are we blocking?
             if (_async == Async.NOT_ASYNC)
             {
-                // Only called from within HttpChannel Handling, so much be dispatched, let's stay dispatched!
-                if (_state == State.DISPATCHED)
-                {
-                    _state = State.THROWN;
-                    return;
-                }
-                throw new IllegalStateException(this.getStatusStringLocked());
+                _state = State.ERRORED;
+                return;
             }
 
             // We are Async
@@ -900,7 +861,7 @@ public class HttpChannelState
         }
     }
 
-    protected void onComplete()
+    protected void completed()
     {
         final List<AsyncListener> aListeners;
         final AsyncContextEvent event;
@@ -920,6 +881,9 @@ public class HttpChannelState
                     break;
 
                 default:
+                    System.err.println(this.getStatusStringLocked());
+                    new Throwable().printStackTrace();
+                    System.exit(1);
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
         }

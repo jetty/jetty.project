@@ -120,7 +120,7 @@ public class ConnectionPoolTest
             @Override
             protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                switch (HttpMethod.fromString(request.getMethod()))
+                switch (HttpMethod.valueOf(request.getMethod()))
                 {
                     case GET:
                     {

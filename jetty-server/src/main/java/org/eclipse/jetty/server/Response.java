@@ -29,7 +29,6 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -53,8 +52,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -406,69 +403,22 @@ public class Response implements HttpServletResponse
         if (isIncluding())
             return;
 
-        if (isCommitted())
-            throw new IllegalStateException("Committed");
+        reset(true);
 
-        resetBuffer(); // TODO LO should we remove the WriteListener?
-        _outputType = OutputType.NONE;
+        _out.sendErrorClose();
 
         switch (code)
         {
-            case -1: // TODO GW who uses -1?
-                _channel.abort(new IOException());
-                return;
+            case -1:
+                _channel.abort(new IOException(message));
+                break;
             case 102:
                 sendProcessing();
-                return;
+                break;
             default:
+                _channel.getState().onError(null, code, message);
                 break;
         }
-
-        setContentType(null);
-        setCharacterEncoding(null);
-        setHeader(HttpHeader.EXPIRES, null);
-        setHeader(HttpHeader.LAST_MODIFIED, null);
-        setHeader(HttpHeader.CACHE_CONTROL, null);
-        setHeader(HttpHeader.CONTENT_TYPE, null);
-        setHeader(HttpHeader.CONTENT_LENGTH, null);
-
-        setStatus(code);
-
-        Request request = _channel.getRequest();
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
-        if (message == null)
-        {
-            _reason = HttpStatus.getMessage(code);
-            message = cause == null ? _reason : cause.toString();
-        }
-        else
-            _reason = message;  // TODO GW why?
-
-        boolean isAsync = request.isAsyncStarted();
-        // If we are allowed to have a body, then produce the error page.
-        if (code != SC_NO_CONTENT && code != SC_NOT_MODIFIED &&
-            code != SC_PARTIAL_CONTENT && code >= SC_OK)
-        {
-            ContextHandler.Context context = request.getErrorContext();
-            if (context != null)
-            {
-                ContextHandler contextHandler = context.getContextHandler();
-                request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
-                request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
-                request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
-                request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, request.getServletName());
-                ErrorHandler errorHandler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
-
-                // TODO somehow flag in HttpChannelState that an ERROR dispatch or page is needed
-                if (errorHandler != null)
-                    errorHandler.handle(null, request, request, this);
-            }
-        }
-
-        // Do not close the output if the request was async (but may not now be due to async error dispatch)
-        // or it is now async because the request handling is async!
-        if (!(isAsync || request.isAsyncStarted())) // TODO LO async will not longer be able to be started withing errorHandler.handle
-            closeOutput(); // TODO fake close so that it can be reopened later!
     }
 
     /**
@@ -1062,14 +1012,20 @@ public class Response implements HttpServletResponse
     public void reset()
     {
         reset(false);
+        _out.reopen();
     }
 
     public void reset(boolean preserveCookies)
     {
-        resetForForward();
+        _out.resetBuffer();
+        _outputType = OutputType.NONE;
         _status = 200;
         _reason = null;
         _contentLength = -1;
+        _contentType = null;
+        _mimeType = null;
+        _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
 
         List<HttpField> cookies = preserveCookies ? _fields.getFields(HttpHeader.SET_COOKIE) : null;
         _fields.clear();
@@ -1125,6 +1081,7 @@ public class Response implements HttpServletResponse
     public void resetBuffer()
     {
         _out.resetBuffer();
+        _out.reopen();
     }
 
     public void setTrailers(Supplier<HttpFields> trailers)
