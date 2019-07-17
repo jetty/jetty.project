@@ -419,7 +419,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
-                            // todo  -> write test
                             Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);

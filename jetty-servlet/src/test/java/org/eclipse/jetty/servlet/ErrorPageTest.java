@@ -92,6 +92,8 @@ public class ErrorPageTest
         context.addServlet(SyncSendErrorServlet.class, "/sync/*");
         context.addServlet(AsyncSendErrorServlet.class, "/async/*");
         context.addServlet(NotEnoughServlet.class, "/notenough/*");
+        context.addServlet(DeleteServlet.class, "/delete/*");
+        context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
 
         HandlerWrapper noopHandler = new HandlerWrapper()
         {
@@ -108,6 +110,7 @@ public class ErrorPageTest
 
         _errorPageErrorHandler = new ErrorPageErrorHandler();
         context.setErrorHandler(_errorPageErrorHandler);
+        _errorPageErrorHandler.addErrorPage(595, "/error/595");
         _errorPageErrorHandler.addErrorPage(597, "/sync");
         _errorPageErrorHandler.addErrorPage(599, "/error/599");
         _errorPageErrorHandler.addErrorPage(400, "/error/400");
@@ -128,6 +131,52 @@ public class ErrorPageTest
         _stackless.close();
         _server.stop();
         _server.join();
+    }
+
+    @Test
+    void testErrorOverridesStatus() throws Exception
+    {
+        String response = _connector.getResponse("GET /error-and-status/anything HTTP/1.0\r\n\r\n");
+        System.err.println(response);
+        assertThat(response, Matchers.containsString("HTTP/1.1 594 594"));
+        assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
+        assertThat(response, Matchers.containsString("ERROR_MESSAGE: custom get error"));
+        assertThat(response, Matchers.containsString("ERROR_CODE: 594"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$ErrorAndStatusServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /error-and-status/anything"));
+    }
+
+    @Test
+    void testHttp204CannotHaveBody() throws Exception
+    {
+        String response = _connector.getResponse("GET /fail/code?code=204 HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 204 No Content"));
+        assertThat(response, not(Matchers.containsString("DISPATCH: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_PAGE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_CODE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION_TYPE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_SERVLET: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_REQUEST_URI: ")));
+    }
+
+    @Test
+    void testDeleteCannotHaveBody() throws Exception
+    {
+        String response = _connector.getResponse("DELETE /delete/anything HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 595 595"));
+        assertThat(response, not(Matchers.containsString("DISPATCH: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_PAGE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_MESSAGE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_CODE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION_TYPE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_SERVLET: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_REQUEST_URI: ")));
+
+        assertThat(response, not(containsString("This shouldn't be seen")));
     }
 
     @Test
@@ -476,6 +525,26 @@ public class ErrorPageTest
         }
     }
 
+    public static class ErrorAndStatusServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.sendError(594, "custom get error");
+            response.setStatus(200);
+        }
+    }
+
+    public static class DeleteServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.getWriter().append("This shouldn't be seen");
+            response.sendError(595, "custom delete");
+        }
+    }
+
     public static class NotEnoughServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -491,7 +560,7 @@ public class ErrorPageTest
     public static class ErrorServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
                 throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
