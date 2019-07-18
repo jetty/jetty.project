@@ -412,7 +412,7 @@ public class Response implements HttpServletResponse
                 sendProcessing();
                 break;
             default:
-                _channel.getState().sendError(null, code, message);
+                _channel.getState().sendError(code, message);
                 break;
         }
     }

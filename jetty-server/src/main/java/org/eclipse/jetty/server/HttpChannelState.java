@@ -635,7 +635,7 @@ public class HttpChannelState
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Error after async timeout {}", this, th);
-            thrownError(th);
+            thrownException(th);
         }
 
         if (dispatch)
@@ -702,6 +702,12 @@ public class HttpChannelState
 
     public void asyncError(Throwable failure)
     {
+        // This method is called when an failure occurs asynchronously to
+        // normal handling.  If the request is async, we arrange for the
+        // exception to be thrown from the normal handling loop and then
+        // actually handled by #thrownException
+        // TODO can we just directly call thrownException?
+
         AsyncContextEvent event = null;
         try (Locker.Lock lock = _locker.lock())
         {
@@ -738,13 +744,19 @@ public class HttpChannelState
         }
     }
 
-    protected void thrownError(Throwable th)
+    protected void thrownException(Throwable th)
     {
+        // This method is called by HttpChannel.handleException to handle an exception thrown from a dispatch:
+        //  + If the request is async, then any async listeners are give a chance to handle the exception in their onError handler.
+        //  + If the request is not async, or not handled by any async onError listener, then a normal sendError is done.
+
+        // Determine the actual details of the exception
         int code = HttpStatus.INTERNAL_SERVER_ERROR_500;
         String message = null;
         Throwable cause = _channel.unwrap(th, BadMessageException.class, UnavailableException.class);
-
-        if (cause instanceof BadMessageException)
+        if (cause == null)
+            cause = th;
+        else if (cause instanceof BadMessageException)
         {
             BadMessageException bme = (BadMessageException)cause;
             code = bme.getCode();
@@ -758,85 +770,61 @@ public class HttpChannelState
                 code = HttpStatus.SERVICE_UNAVAILABLE_503;
         }
 
-        sendError(th, code, message);
-    }
-
-    public void sendError(Throwable cause, int code, String message)
-    {
-        final Request request = _channel.getRequest();
-        final Response response = _channel.getResponse();
-
-        response.reset(true);
-        response.getHttpOutput().sendErrorClose();
-
-        if (message == null)
-            message = cause == null ? HttpStatus.getMessage(code) : cause.toString();
-
+        // Check state to see if we are async or not
+        final AsyncContextEvent asyncEvent;
+        final List<AsyncListener> asyncListeners;
+        boolean dispatch = false;
         try (Locker.Lock lock = _locker.lock())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onError {} {}", toStringLocked(), cause);
-
-            switch (_state)
+            switch (_async)
             {
-                case DISPATCHED:
-                case COMPLETING:
-                case ASYNC_WOKEN:
-                case ASYNC_ERROR:
-                case ASYNC_WAIT:
-                    _sendError = true;
-                    if (_event != null)
-                        // Add cause to async event to be handled by loser of race
-                        // between unhandle and complete
-                        _event.addThrowable(cause == null ? SEND_ERROR_CAUSE : cause);
+                case NOT_ASYNC:
+                    // error not in async, will be handled by error handler in normal handler loop.
+                    asyncEvent = null;
+                    asyncListeners = null;
                     break;
 
-                case IDLE:
-                case COMPLETED:
-                case UPGRADED:
+                case STARTED:
+                    asyncEvent = _event;
+                    if (_asyncListeners == null || _asyncListeners.isEmpty())
+                    {
+                        // error in async, but no listeners so handle it with error dispatch
+                        asyncListeners = null;
+                        _async = Async.ERRORED;
+                        if (_state == State.ASYNC_WAIT)
+                        {
+                            _state = State.ASYNC_WOKEN;
+                            dispatch = true;
+                        }
+                    }
+                    else
+                    {
+                        // error in async with listeners, so give them a chance to handle
+                        asyncListeners = _asyncListeners;
+                        _async = Async.ERRORING;
+                    }
+                    break;
+
                 default:
-                {
-                    throw new IllegalStateException(getStatusStringLocked());
-                }
+                    LOG.warn("unhandled in state " + _async, cause);
+                    return;
             }
         }
 
-        request.getResponse().setStatus(code);
-        // we are allowed to have a body, then produce the error page.
-        ContextHandler.Context context = request.getErrorContext();
-        if (context != null)
-            request.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
-        request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
-        request.setAttribute(ERROR_SERVLET_NAME, request.getServletName());
-        request.setAttribute(ERROR_STATUS_CODE, code);
-        request.setAttribute(ERROR_EXCEPTION, cause);
-        request.setAttribute(ERROR_EXCEPTION_TYPE, cause == null ? null : cause.getClass());
-        request.setAttribute(ERROR_MESSAGE, message);
-    }
-
-    private void callAsyncOnError()
-    {
-        final List<AsyncListener> listeners;
-        final AsyncContextEvent event;
-
-        try (Locker.Lock lock = _locker.lock())
+        // If we are async and have async listeners
+        if (asyncEvent != null && asyncListeners != null)
         {
-            listeners = _asyncListeners;
-            event = _event;
-        }
-
-        if (listeners != null)
-        {
+            // call onError
             Runnable task = new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    for (AsyncListener listener : listeners)
+                    for (AsyncListener listener : asyncListeners)
                     {
                         try
                         {
-                            listener.onError(event);
+                            listener.onError(asyncEvent);
                         }
                         catch (Throwable x)
                         {
@@ -852,39 +840,42 @@ public class HttpChannelState
                     return "onError";
                 }
             };
-            runInContext(event, task);
-        }
+            runInContext(asyncEvent, task);
 
-        boolean dispatch = false;
-        try (Locker.Lock lock = _locker.lock())
-        {
-            switch (_async)
+            // check the actions of the listeners
+            try (Locker.Lock lock = _locker.lock())
             {
-                case ERRORING:
+                switch (_async)
                 {
-                    // Still in this state ? The listeners did not invoke API methods
-                    // and the container must provide a default error dispatch.
-                    _async = Async.ERRORED;
-                    break;
-                }
-                case DISPATCH:
-                case COMPLETE:
-                {
-                    // The listeners called dispatch() or complete().
-                    break;
-                }
-                default:
-                {
-                    throw new IllegalStateException(toString());
+                    case ERRORING:
+                        // Still in ERROR state? The listeners did not invoke API methods
+                        // and the container must provide a default error dispatch.
+                        _async = Async.ERRORED;
+                        if (_state == State.ASYNC_WAIT)
+                        {
+                            _state = State.ASYNC_WOKEN;
+                            dispatch = true;
+                        }
+                        break;
+
+                    case DISPATCH:
+                    case COMPLETE:
+                    case NOT_ASYNC:
+                        // The listeners handled the exception by calling dispatch() or complete().
+                        return;
+
+                    default:
+                        LOG.warn("unhandled in state " + _async, cause);
+                        return;
                 }
             }
-
-            if (_state == State.ASYNC_WAIT)
-            {
-                _state = State.ASYNC_WOKEN;
-                dispatch = true;
-            }
         }
+
+        // handle the exception with a sendError dispatch
+        final Request request = _channel.getRequest();
+        request.setAttribute(ERROR_EXCEPTION, cause);
+        request.setAttribute(ERROR_EXCEPTION_TYPE, cause.getClass());
+        sendError(code, message);
 
         if (dispatch)
         {
@@ -892,6 +883,63 @@ public class HttpChannelState
                 LOG.debug("Dispatch after error {}", this);
             scheduleDispatch();
         }
+    }
+
+    public void sendError(int code, String message)
+    {
+        // This method is called by Response.sendError to organise for an error page to be generated when it is possible:
+        //  + The response is reset and temporarily closed.
+        //  + The details of the error are saved as request attributes
+        //  + The _sendError boolean is set to true so that an ERROR_DISPATCH action will be generated:
+        //       - after unhandle for sync
+        //       - after both unhandle and complete for async
+
+        final Request request = _channel.getRequest();
+        final Response response = _channel.getResponse();
+
+        response.reset(true);
+        response.getHttpOutput().sendErrorClose();
+
+        if (message == null)
+            message = HttpStatus.getMessage(code);
+
+        request.getResponse().setStatus(code);
+        // we are allowed to have a body, then produce the error page.
+        ContextHandler.Context context = request.getErrorContext();
+        if (context != null)
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
+        request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
+        request.setAttribute(ERROR_SERVLET_NAME, request.getServletName());
+        request.setAttribute(ERROR_STATUS_CODE, code);
+        request.setAttribute(ERROR_MESSAGE, message);
+
+        try (Locker.Lock lock = _locker.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("sendError {}", toStringLocked());
+
+            switch (_state)
+            {
+                case DISPATCHED:
+                case COMPLETING:
+                case ASYNC_WOKEN:
+                case ASYNC_ERROR:
+                case ASYNC_WAIT:
+                    _sendError = true;
+                    if (_event != null)
+                        _event.addThrowable(SEND_ERROR_CAUSE);
+                    break;
+
+                case IDLE:
+                case COMPLETED:
+                case UPGRADED:
+                default:
+                {
+                    throw new IllegalStateException(getStatusStringLocked());
+                }
+            }
+        }
+
     }
 
     protected void completed()

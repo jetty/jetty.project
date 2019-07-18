@@ -623,7 +623,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_response.isCommitted())
             abort(failure);
         else
-            _state.thrownError(failure);
+            _state.thrownException(failure);
     }
 
     /**

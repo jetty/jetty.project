@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 //TODO: reset buffer tests
 //TODO: add protocol specific tests for connection: close and/or chunking
+//TODO: make it really async by using start instead of run
 public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
 {
     private final String _contextAttribute = getClass().getName() + ".asyncContext";
