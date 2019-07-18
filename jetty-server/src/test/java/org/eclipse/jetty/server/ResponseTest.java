@@ -35,6 +35,8 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Stream;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -70,6 +72,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -664,65 +668,41 @@ public class ResponseTest
         assertEquals("foo/bar; other=pq charset=utf-8 other=xyz;charset=utf-16", response.getContentType());
     }
 
-    @Test
-    public void testStatusCodes() throws Exception
+    public static Stream<Object[]> sendErrorTestCodes()
     {
-        Response response = getResponse();
-
-        response.sendError(404);
-        assertEquals(404, response.getStatus());
-        assertEquals("Not Found", response.getReason());
-
-        response = getResponse();
-
-        response.sendError(500, "Database Error");
-        assertEquals(500, response.getStatus());
-        assertEquals("Database Error", response.getReason());
-        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
-
-        response = getResponse();
-
-        response.setStatus(200);
-        assertEquals(200, response.getStatus());
-        assertEquals(null, response.getReason());
-
-        response = getResponse();
-
-        response.sendError(406, "Super Nanny");
-        assertEquals(406, response.getStatus());
-        assertEquals("Super Nanny", response.getReason());
-        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
+        List<Object[]> data = new ArrayList<>();
+        data.add(new Object[]{404, null, "Not Found"});
+        data.add(new Object[]{500, "Database Error", "Database Error"});
+        data.add(new Object[]{406, "Super Nanny", "Super Nanny"});
+        return data.stream();
     }
 
-    @Test
-    public void testStatusCodesNoErrorHandler() throws Exception
+    @ParameterizedTest
+    @MethodSource(value = "sendErrorTestCodes")
+    public void testStatusCodes(int code, String message, String expectedMessage) throws Exception
+    {
+        Response response = getResponse();
+        assertThat(response.getHttpChannel().getState().handling(), is(HttpChannelState.Action.DISPATCH));
+
+        if (message == null)
+            response.sendError(code);
+        else
+            response.sendError(code, message);
+
+        assertTrue(response.getHttpOutput().isClosed());
+        assertEquals(code, response.getStatus());
+        assertEquals(null, response.getReason());
+        assertEquals(expectedMessage, response.getHttpChannel().getRequest().getAttribute(RequestDispatcher.ERROR_MESSAGE));
+        assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.ERROR_DISPATCH));
+        assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.COMPLETE));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "sendErrorTestCodes")
+    public void testStatusCodesNoErrorHandler(int code, String message, String expectedMessage) throws Exception
     {
         _server.removeBean(_server.getBean(ErrorHandler.class));
-        Response response = getResponse();
-
-        response.sendError(404);
-        assertEquals(404, response.getStatus());
-        assertEquals("Not Found", response.getReason());
-
-        response = getResponse();
-
-        response.sendError(500, "Database Error");
-        assertEquals(500, response.getStatus());
-        assertEquals("Database Error", response.getReason());
-        assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()), Matchers.nullValue());
-
-        response = getResponse();
-
-        response.setStatus(200);
-        assertEquals(200, response.getStatus());
-        assertEquals(null, response.getReason());
-
-        response = getResponse();
-
-        response.sendError(406, "Super Nanny");
-        assertEquals(406, response.getStatus());
-        assertEquals("Super Nanny", response.getReason());
-        assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()), Matchers.nullValue());
+        testStatusCodes(code, message, expectedMessage);
     }
 
     @Test

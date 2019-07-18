@@ -403,10 +403,6 @@ public class Response implements HttpServletResponse
         if (isIncluding())
             return;
 
-        reset(true);
-
-        _out.sendErrorClose();
-
         switch (code)
         {
             case -1:

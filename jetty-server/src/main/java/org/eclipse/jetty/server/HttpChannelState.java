@@ -759,14 +759,15 @@ public class HttpChannelState
         }
 
         sendError(th, code, message);
-
-
-
     }
 
     public void sendError(Throwable cause, int code, String message)
     {
-        final Request baseRequest = _channel.getRequest();
+        final Request request = _channel.getRequest();
+        final Response response = _channel.getResponse();
+
+        response.reset(true);
+        response.getHttpOutput().sendErrorClose();
 
         if (message == null)
             message = cause == null ? HttpStatus.getMessage(code) : cause.toString();
@@ -800,16 +801,17 @@ public class HttpChannelState
             }
         }
 
+        request.getResponse().setStatus(code);
         // we are allowed to have a body, then produce the error page.
-        ContextHandler.Context context = baseRequest.getErrorContext();
+        ContextHandler.Context context = request.getErrorContext();
         if (context != null)
-            baseRequest.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
-        baseRequest.setAttribute(ERROR_REQUEST_URI, baseRequest.getRequestURI());
-        baseRequest.setAttribute(ERROR_SERVLET_NAME, baseRequest.getServletName());
-        baseRequest.setAttribute(ERROR_STATUS_CODE, code);
-        baseRequest.setAttribute(ERROR_EXCEPTION, cause);
-        baseRequest.setAttribute(ERROR_EXCEPTION_TYPE, cause == null ? null : cause.getClass());
-        baseRequest.setAttribute(ERROR_MESSAGE, message);
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
+        request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
+        request.setAttribute(ERROR_SERVLET_NAME, request.getServletName());
+        request.setAttribute(ERROR_STATUS_CODE, code);
+        request.setAttribute(ERROR_EXCEPTION, cause);
+        request.setAttribute(ERROR_EXCEPTION_TYPE, cause == null ? null : cause.getClass());
+        request.setAttribute(ERROR_MESSAGE, message);
     }
 
     private void callAsyncOnError()

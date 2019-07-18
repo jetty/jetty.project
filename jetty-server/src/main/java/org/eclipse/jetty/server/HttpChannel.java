@@ -620,7 +620,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.warn(_request.getRequestURI(), failure);
         }
 
-        _state.thrownError(failure);
+        if (_response.isCommitted())
+            abort(failure);
+        else
+            _state.thrownError(failure);
     }
 
     /**
