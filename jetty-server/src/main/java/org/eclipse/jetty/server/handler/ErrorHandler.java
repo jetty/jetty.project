@@ -128,7 +128,6 @@ public class ErrorHandler extends AbstractHandler
                     break;
             }
         }
-        baseRequest.setHandled(true);
         baseRequest.getResponse().closeOutput();
     }
 

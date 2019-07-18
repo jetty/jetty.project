@@ -1935,7 +1935,7 @@ public class Request implements HttpServletRequest
     {
         _newContext = _context != context;
         if (context == null)
-            _context = context;
+            _context = null;
         else
         {
             _context = context;
