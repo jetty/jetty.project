@@ -160,6 +160,8 @@ public class HugeResourceTest
         HttpURLConnection http = (HttpURLConnection)destUri.toURL().openConnection();
         assertThat("HTTP Response Code", http.getResponseCode(), is(200));
 
+        dumpResponseHeaders(http);
+
         // if a Content-Length is provided, test it
         String contentLength = http.getHeaderField("Content-Length");
         if (contentLength != null)
@@ -185,5 +187,17 @@ public class HugeResourceTest
 
         // Verify the file download size
         assertThat("Downloaded Files Size: " + filename, Files.size(outputFile), is(expectedSize));
+    }
+
+    private void dumpResponseHeaders(HttpURLConnection http)
+    {
+        int i = 0;
+        String value;
+        while ((value = http.getHeaderField(i)) != null)
+        {
+            String key = http.getHeaderFieldKey(i);
+            System.err.printf("  %s: %s%n", key, value);
+            i++;
+        }
     }
 }

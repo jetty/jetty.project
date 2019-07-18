@@ -386,7 +386,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     {
         private final String _key;
         private final Resource _resource;
-        private final int _contentLengthValue;
+        private final long _contentLengthValue;
         private final HttpField _contentType;
         private final String _characterEncoding;
         private final MimeTypes.Type _mimeType;
@@ -415,7 +415,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _lastModified = _lastModifiedValue == -1 ? null
                 : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
 
-            _contentLengthValue = exists ? (int)resource.length() : 0;
+            _contentLengthValue = exists ? resource.length() : 0;
             _contentLength = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, Long.toString(_contentLengthValue));
 
             if (_cachedFiles.incrementAndGet() > _maxCachedFiles)
@@ -558,7 +558,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 ByteBuffer buffer2 = CachedContentFactory.this.getIndirectBuffer(_resource);
 
                 if (buffer2 == null)
-                    LOG.warn("Could not load " + this);
+                    LOG.warn("Could not load indirect buffer from " + this);
                 else if (_indirectBuffer.compareAndSet(null, buffer2))
                 {
                     buffer = buffer2;
