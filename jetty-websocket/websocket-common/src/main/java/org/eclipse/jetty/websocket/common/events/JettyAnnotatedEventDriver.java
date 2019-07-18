@@ -33,6 +33,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
+import org.eclipse.jetty.websocket.common.message.NullMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
 
@@ -84,6 +85,11 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         if (events.onBinary == null)
         {
             // not interested in binary events
+            if (activeMessage == null)
+            {
+                activeMessage = NullMessage.INSTANCE;
+            }
+
             return;
         }
 
@@ -153,15 +159,6 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     }
 
     @Override
-    public void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException
-    {
-        if (events.onText != null || events.onBinary != null)
-        {
-            super.onContinuationFrame(buffer, fin);
-        }
-    }
-
-    @Override
     public void onError(Throwable cause)
     {
         if (events.onError != null)
@@ -207,6 +204,10 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         if (events.onText == null)
         {
             // not interested in text events
+            if (activeMessage == null)
+            {
+                activeMessage = NullMessage.INSTANCE;
+            }
             return;
         }
 

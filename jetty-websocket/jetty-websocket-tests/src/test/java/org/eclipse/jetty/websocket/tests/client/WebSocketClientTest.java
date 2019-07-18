@@ -33,6 +33,7 @@ import javax.servlet.DispatcherType;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -197,6 +198,43 @@ public class WebSocketClientTest
             remote.sendPartialString("Hello", false);
             remote.sendPartialString(" ", false);
             remote.sendPartialString("World", true);
+
+            // wait for response from server
+            String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
+            assertThat("Message", received, containsString("Hello World"));
+        }
+    }
+
+    @Test
+    public void testBasicEcho_PartialText_WithPartialBinary_FromClient() throws Exception
+    {
+        CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
+
+        client.getPolicy().setIdleTimeout(10000);
+
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("echo");
+        Future<Session> future = client.connect(cliSock, wsUri, request);
+
+        try (Session sess = future.get(30, TimeUnit.SECONDS))
+        {
+            assertThat("Session", sess, notNullValue());
+            assertThat("Session.open", sess.isOpen(), is(true));
+            assertThat("Session.upgradeRequest", sess.getUpgradeRequest(), notNullValue());
+            assertThat("Session.upgradeResponse", sess.getUpgradeResponse(), notNullValue());
+
+            Collection<WebSocketSession> sessions = client.getOpenSessions();
+            assertThat("client.sessions.size", sessions.size(), is(1));
+
+            RemoteEndpoint remote = cliSock.getSession().getRemote();
+            remote.sendPartialString("Hello", false);
+            remote.sendPartialString(" ", false);
+            remote.sendPartialString("World", true);
+
+            remote.sendPartialBytes(BufferUtil.toBuffer("It's a big enough umbrella, "), false);
+            remote.sendPartialBytes(BufferUtil.toBuffer("but it's always me that "), false);
+            remote.sendPartialBytes(BufferUtil.toBuffer("ends up getting wet."), true);
 
             // wait for response from server
             String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
