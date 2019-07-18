@@ -515,6 +515,7 @@
           <artifactId>maven-invoker-plugin</artifactId>
           <version>3.2.1-SNAPSHOT</version>
           <configuration>
+            <writeJunitReport>true</writeJunitReport>
             <debug>${it.debug}</debug>
             <javaHome>${java.home}</javaHome>
             <environmentVariables>
