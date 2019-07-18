@@ -806,7 +806,7 @@ public class HttpChannelState
                     break;
 
                 default:
-                    LOG.warn("unhandled in state " + _async, cause);
+                    LOG.warn("unhandled in state " + _async, new IllegalStateException(cause));
                     return;
             }
         }
@@ -865,7 +865,7 @@ public class HttpChannelState
                         return;
 
                     default:
-                        LOG.warn("unhandled in state " + _async, cause);
+                        LOG.warn("unhandled in state " + _async, new IllegalStateException(cause));
                         return;
                 }
             }
