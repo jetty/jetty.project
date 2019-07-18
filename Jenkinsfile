@@ -36,7 +36,6 @@ pipeline {
                 classPattern: '**/target/classes',
                 sourcePattern: '**/src/main/java'
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-            //maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
             junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
           }
         }
@@ -47,7 +46,6 @@ pipeline {
           steps {
             mavenBuild("jdk11", "-Pmongodb install", "maven3", true)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-            //maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
             junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
           }
         }
@@ -58,7 +56,6 @@ pipeline {
           steps {
             mavenBuild("jdk12", "-Pmongodb install", "maven3", true)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-            //maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
             junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
           }
         }
