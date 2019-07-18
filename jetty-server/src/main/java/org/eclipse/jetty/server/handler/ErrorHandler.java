@@ -27,7 +27,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -91,10 +90,10 @@ public class ErrorHandler extends AbstractHandler
             if (errorPage != null)
             {
                 String oldErrorPage = (String)request.getAttribute(ERROR_PAGE);
-                ServletContext servletContext = request.getServletContext();
-                if (servletContext == null)
-                    servletContext = ContextHandler.getCurrentContext();
-                if (servletContext == null)
+                ContextHandler.Context context = baseRequest.getContext();
+                if (context == null)
+                    context = ContextHandler.getCurrentContext();
+                if (context == null)
                 {
                     LOG.warn("No ServletContext for error page {}", errorPage);
                 }
@@ -106,7 +105,7 @@ public class ErrorHandler extends AbstractHandler
                 {
                     request.setAttribute(ERROR_PAGE, errorPage);
 
-                    Dispatcher dispatcher = (Dispatcher)servletContext.getRequestDispatcher(errorPage);
+                    Dispatcher dispatcher = (Dispatcher)context.getRequestDispatcher(errorPage);
                     try
                     {
                         if (LOG.isDebugEnabled())
@@ -175,11 +174,10 @@ public class ErrorHandler extends AbstractHandler
             for (String mimeType : acceptable)
             {
                 generateAcceptableResponse(baseRequest, request, response, code, message, mimeType);
-                if (baseRequest.isHandled())
+                if (response.isCommitted() || baseRequest.getResponse().isWriting() || baseRequest.getResponse().isStreaming())
                     break;
             }
         }
-        baseRequest.setHandled(true);
         baseRequest.getResponse().closeOutput();
     }
 

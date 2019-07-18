@@ -719,6 +719,11 @@ public class Response implements HttpServletResponse
         return _outputType == OutputType.WRITER;
     }
 
+    public boolean isStreaming()
+    {
+        return _outputType == OutputType.STREAM;
+    }
+
     @Override
     public PrintWriter getWriter() throws IOException
     {
