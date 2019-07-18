@@ -6,8 +6,9 @@ Jetty setup to support CDI inside the webapp.
 This module does not provide CDI, but simply configures jetty so that a CDI implementation
 can enable itself as a decorator for Filters, Servlets and Listeners.
 
-This modules uses the deprecated technique of exposing private Jetty APIs to the CDI implementation in the webapp and
-should be used when the cdi module is not yet supported by the CDI provider.
+This modules uses the deprecated technique of exposing private Jetty decorate APIs to the CDI implementation in the webapp.
+Some CDI integrations use the decorate module to avoid API dependencies. Also the cdi module provides an integration with
+the standard CDI SPI.
 
 [depend]
 deploy

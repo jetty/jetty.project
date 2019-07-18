@@ -1,15 +1,18 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Jetty setup to support CDI using WELD inside the webapp.
+Jetty setup to support CDI SPI inside the webapp.
 
-This module does not provide CDI, but simply configures jetty so that a CDI implementation
-will be called to decorate Filters, Servlets and Listeners, using the CdiDecorator.
+This module does not provide CDI, but simply configures jetty so that if a CDI implementation
+is detected within the webapp, then the CdiDecorator will be registered to
+decorate Listeners, Filters and Servlets using the standard CDI SPI.
 
 The module indicates to the webapp that this mechanism is available by setting the
 "org.eclipse.jetty.cdi" context attribute to "CdiDecorator".
 
-This mechanism can be used by and CDI implementation that provides javax.enterprise.inject.spi.CDI
+This mechanism can be used for any CDI implementation without a specific Jetty integration.
+Alternate CDI integrations by some CDI implementations use the cdi2 module that exposes jetty's
+decorate APIs, or the decorate module that uses the DecoratingListener with out API exposure.
 
 [depend]
 deploy

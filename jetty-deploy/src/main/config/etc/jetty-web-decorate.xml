@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext" id="context">
+
+  <!-- Add the DecoratingListener to the webapp to look for dynamic decorators -->
+  <Call name="addEventListener">
+    <Arg>
+      <New class="org.eclipse.jetty.webapp.DecoratingListener">
+        <Arg><Ref refid="context" /></Arg>
+        <Arg type="String">org.eclipse.jetty.decorator</Arg>
+      </New>
+    </Arg>
+  </Call>
+
+  <!-- Add an attribute to inform the webapp of the DecoratingListener attribute name -->
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.webapp.DecoratingListener</Arg>
+    <Arg>org.eclipse.jetty.decorator</Arg>
+  </Call>
+
+</Configure>

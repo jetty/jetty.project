@@ -142,13 +142,13 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.tests</groupId>
-                  <artifactId>test-cdi-webapp</artifactId>
+                  <artifactId>test-weld-cdi-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
                   <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
-                  <destFileName>test-cdi.war</destFileName>
+                  <destFileName>test-weld-cdi.war</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -358,7 +358,7 @@
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}/demo-base</argument>
-                <argument>--add-to-startd=server,continuation,deploy,websocket,ext,resources,client,annotations,cdi,jndi,servlets,jsp,jstl,http,https,threadpool</argument>
+                <argument>--add-to-startd=server,continuation,deploy,websocket,ext,resources,client,annotations,decorate,jndi,servlets,jsp,jstl,http,https,threadpool</argument>
               </arguments>
             </configuration>
             <goals>
@@ -461,7 +461,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-cdi-webapp</artifactId>
+      <artifactId>test-weld-cdi-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <optional>true</optional>
