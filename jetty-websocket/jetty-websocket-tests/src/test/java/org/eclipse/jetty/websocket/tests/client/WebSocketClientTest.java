@@ -172,6 +172,39 @@ public class WebSocketClientTest
     }
 
     @Test
+    public void testBasicEcho_PartialUsage_FromClient() throws Exception
+    {
+        CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
+
+        client.getPolicy().setIdleTimeout(10000);
+
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("echo");
+        Future<Session> future = client.connect(cliSock, wsUri, request);
+
+        try (Session sess = future.get(30, TimeUnit.SECONDS))
+        {
+            assertThat("Session", sess, notNullValue());
+            assertThat("Session.open", sess.isOpen(), is(true));
+            assertThat("Session.upgradeRequest", sess.getUpgradeRequest(), notNullValue());
+            assertThat("Session.upgradeResponse", sess.getUpgradeResponse(), notNullValue());
+
+            Collection<WebSocketSession> sessions = client.getOpenSessions();
+            assertThat("client.sessions.size", sessions.size(), is(1));
+
+            RemoteEndpoint remote = cliSock.getSession().getRemote();
+            remote.sendPartialString("Hello", false);
+            remote.sendPartialString(" ", false);
+            remote.sendPartialString("World", true);
+
+            // wait for response from server
+            String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
+            assertThat("Message", received, containsString("Hello World"));
+        }
+    }
+
+    @Test
     public void testBasicEcho_UsingCallback() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
