@@ -516,6 +516,7 @@
           <version>3.2.1-SNAPSHOT</version>
           <configuration>
             <writeJunitReport>true</writeJunitReport>
+            <junitPackageName>org.eclipse.jetty.maven.its</junitPackageName>
             <debug>${it.debug}</debug>
             <javaHome>${java.home}</javaHome>
             <environmentVariables>
