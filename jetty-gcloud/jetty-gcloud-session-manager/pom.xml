@@ -35,7 +35,6 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-core</artifactId>
-      <version>1.0.1</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
