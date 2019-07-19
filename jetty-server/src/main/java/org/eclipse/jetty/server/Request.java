@@ -682,7 +682,15 @@ public class Request implements HttpServletRequest
         if (metadata == null)
             return -1;
         if (metadata.getContentLength() != Long.MIN_VALUE)
-            return (int)metadata.getContentLength();
+        {
+            if (metadata.getContentLength() > (long)Integer.MAX_VALUE)
+            {
+                // Per ServletRequest#getContentLength() javadoc this must return -1 for values exceeding Integer.MAX_VALUE
+                return -1;
+            }
+            else
+                return (int)metadata.getContentLength();
+        }
         return (int)metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 

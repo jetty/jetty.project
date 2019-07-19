@@ -663,27 +663,30 @@ public class RequestTest
         assertThat(responses,startsWith("HTTP/1.1 200"));
     }
 
+    /**
+     * The Servlet spec and API cannot parse Content-Length that exceeds Long.MAX_VALUE
+     */
     @Test
     public void testContentLength_ExceedsMaxLong() throws Exception
     {
         String HUGE_LENGTH = Long.MAX_VALUE + "0";
 
         _handler._checker = (request, response) ->
-                request.getHeader("Content-Length").equals(HUGE_LENGTH)
-             && request.getContentLength() == (-1) // per HttpServletRequest javadoc this must return (-1);
-             && request.getContentLengthLong() == (-1); // exact behavior here not specified in Servlet javadoc
+            request.getHeader("Content-Length").equals(HUGE_LENGTH)
+                && request.getContentLength() == (-1) // per HttpServletRequest javadoc this must return (-1);
+                && request.getContentLengthLong() == (-1); // exact behavior here not specified in Servlet javadoc
 
         //Send a request with encoded form content
         String request="POST / HTTP/1.1\r\n"+
-                "Host: whatever\r\n"+
-                "Content-Type: application/octet-stream\n"+
-                "Content-Length: " + HUGE_LENGTH + "\n"+
-                "Connection: close\n"+
-                "\n"+
-                "<insert huge amount of content here>\n";
+            "Host: whatever\r\n"+
+            "Content-Type: application/octet-stream\n"+
+            "Content-Length: " + HUGE_LENGTH + "\n"+
+            "Connection: close\n"+
+            "\n"+
+            "<insert huge amount of content here>\n";
 
         String responses=_connector.getResponse(request);
-        assertThat(responses,startsWith("HTTP/1.1 200"));
+        assertThat(responses, startsWith("HTTP/1.1 400"));
     }
 
     @Test
