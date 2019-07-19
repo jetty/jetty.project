@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -569,7 +570,7 @@ public class NcsaRequestLogTest
                 {
                     request.setAttribute("ASYNC", Boolean.TRUE);
                     AsyncContext ac = request.startAsync();
-                    ac.setTimeout(1000);
+                    ac.setTimeout(100000);
                     baseRequest.setHandled(true);
                     _server.getThreadPool().execute(() ->
                     {
@@ -584,18 +585,21 @@ public class NcsaRequestLogTest
                             }
                             catch (BadMessageException bad)
                             {
-                                response.sendError(bad.getCode());
+                                response.sendError(bad.getCode(), bad.getReason());
                             }
                             catch (Exception e)
                             {
-                                response.sendError(500);
+                                response.sendError(500, e.toString());
                             }
                         }
-                        catch (Throwable th)
+                        catch (IOException | IllegalStateException th)
                         {
-                            throw new RuntimeException(th);
+                            Log.getLog().ignore(th);
                         }
-                        ac.complete();
+                        finally
+                        {
+                            ac.complete();
+                        }
                     });
                 }
             }
@@ -625,7 +629,7 @@ public class NcsaRequestLogTest
         }
     }
 
-    private static abstract class AbstractTestHandler extends AbstractHandler
+    private abstract static class AbstractTestHandler extends AbstractHandler
     {
         @Override
         public String toString()

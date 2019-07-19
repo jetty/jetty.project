@@ -250,6 +250,14 @@ public class HttpChannelState
                     return Action.TERMINATED;
 
                 case ASYNC_WOKEN:
+                    if (_sendError)
+                    {
+                        _sendError = false;
+                        _async = Async.NOT_ASYNC;
+                        _state = State.DISPATCHED;
+                        return Action.ERROR_DISPATCH;
+                    }
+
                     switch (_asyncRead)
                     {
                         case POSSIBLE:
@@ -659,7 +667,7 @@ public class HttpChannelState
             switch (_async)
             {
                 case STARTED:
-                    _async = Async.COMPLETE;
+                    _async = _sendError ? Async.NOT_ASYNC : Async.COMPLETE;
                     if (_state == State.ASYNC_WAIT)
                     {
                         handle = true;
@@ -669,7 +677,6 @@ public class HttpChannelState
 
                 case EXPIRING:
                 case ERRORING:
-                case ERRORED: // TODO ISE????
                     _async = Async.COMPLETE;
                     break;
 

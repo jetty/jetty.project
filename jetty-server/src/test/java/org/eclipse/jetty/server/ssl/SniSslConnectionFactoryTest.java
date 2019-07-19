@@ -20,7 +20,6 @@ package org.eclipse.jetty.server.ssl;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -42,6 +41,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -55,8 +55,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SocketCustomizationListener;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -65,15 +65,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SniSslConnectionFactoryTest
 {
     private Server _server;
     private ServerConnector _connector;
-    private HttpConfiguration _https_config;
+    private HttpConfiguration _httpsConfig;
     private int _port;
 
     @BeforeEach
@@ -85,11 +84,11 @@ public class SniSslConnectionFactoryTest
         http_config.setSecureScheme("https");
         http_config.setSecurePort(8443);
         http_config.setOutputBufferSize(32768);
-        _https_config = new HttpConfiguration(http_config);
+        _httpsConfig = new HttpConfiguration(http_config);
         SecureRequestCustomizer src = new SecureRequestCustomizer();
         src.setSniHostCheck(true);
-        _https_config.addCustomizer(src);
-        _https_config.addCustomizer((connector, httpConfig, request) ->
+        _httpsConfig.addCustomizer(src);
+        _httpsConfig.addCustomizer((connector, httpConfig, request) ->
         {
             EndPoint endp = request.getHttpChannel().getEndPoint();
             if (endp instanceof SslConnection.DecryptedEndPoint)
@@ -126,7 +125,7 @@ public class SniSslConnectionFactoryTest
 
         ServerConnector https = _connector = new ServerConnector(_server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-            new HttpConnectionFactory(_https_config));
+            new HttpConnectionFactory(_httpsConfig));
         _server.addConnector(https);
 
         _server.setHandler(new AbstractHandler.ErrorDispatchHandler()
@@ -224,6 +223,7 @@ public class SniSslConnectionFactoryTest
     public void testSameConnectionRequestsForManyDomains() throws Exception
     {
         start("src/test/resources/keystore_sni.p12");
+        _server.setErrorHandler(new ErrorHandler());
 
         SslContextFactory clientContextFactory = new SslContextFactory.Client(true);
         clientContextFactory.start();
@@ -246,8 +246,8 @@ public class SniSslConnectionFactoryTest
             output.flush();
 
             InputStream input = sslSocket.getInputStream();
-            String response = response(input);
-            assertTrue(response.startsWith("HTTP/1.1 200 "));
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertThat(response.getStatus(), is(200));
 
             // Same socket, send a request for a different domain but same alias.
             request =
@@ -256,9 +256,8 @@ public class SniSslConnectionFactoryTest
                     "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
-
-            response = response(input);
-            assertTrue(response.startsWith("HTTP/1.1 200 "));
+            response = HttpTester.parseResponse(input);
+            assertThat(response.getStatus(), is(200));
 
             // Same socket, send a request for a different domain but different alias.
             request =
@@ -268,9 +267,9 @@ public class SniSslConnectionFactoryTest
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            response = response(input);
-            assertThat(response, startsWith("HTTP/1.1 400 "));
-            assertThat(response, containsString("Host does not match SNI"));
+            response = HttpTester.parseResponse(input);
+            assertThat(response.getStatus(), is(400));
+            assertThat(response.getContent(), containsString("Host does not match SNI"));
         }
         finally
         {
@@ -303,8 +302,8 @@ public class SniSslConnectionFactoryTest
             output.flush();
 
             InputStream input = sslSocket.getInputStream();
-            String response = response(input);
-            assertTrue(response.startsWith("HTTP/1.1 200 "));
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertThat(response.getStatus(), is(200));
 
             // Now, on the same socket, send a request for a different valid domain.
             request =
@@ -314,8 +313,8 @@ public class SniSslConnectionFactoryTest
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            response = response(input);
-            assertTrue(response.startsWith("HTTP/1.1 200 "));
+            response = HttpTester.parseResponse(input);
+            assertThat(response.getStatus(), is(200));
 
             // Now make a request for an invalid domain for this connection.
             request =
@@ -325,30 +324,14 @@ public class SniSslConnectionFactoryTest
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            response = response(input);
-            assertTrue(response.startsWith("HTTP/1.1 400 "));
-            assertThat(response, Matchers.containsString("Host does not match SNI"));
+            response = HttpTester.parseResponse(input);
+            assertThat(response.getStatus(), is(400));
+            assertThat(response.getContent(), containsString("Host does not match SNI"));
         }
         finally
         {
             clientContextFactory.stop();
         }
-    }
-
-    private String response(InputStream input) throws IOException
-    {
-        Utf8StringBuilder buffer = new Utf8StringBuilder();
-        int crlfs = 0;
-        while (true)
-        {
-            int read = input.read();
-            assertTrue(read >= 0);
-            buffer.append((byte)read);
-            crlfs = (read == '\r' || read == '\n') ? crlfs + 1 : 0;
-            if (crlfs == 4)
-                break;
-        }
-        return buffer.toString();
     }
 
     private String getResponse(String host, String cn) throws Exception

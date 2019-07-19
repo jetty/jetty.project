@@ -266,6 +266,7 @@ public class SecuredRedirectHandlerTest
         {
             if (!"/".equals(target))
             {
+                baseRequest.setHandled(true);
                 response.sendError(404);
                 return;
             }

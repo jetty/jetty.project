@@ -524,7 +524,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case COMPLETE:
                     {
-                        if (!_response.isCommitted() && !_request.isHandled())
+                        if (!_response.isCommitted() && !_request.isHandled() && !_response.getHttpOutput().isClosed())
                         {
                             _response.sendError(HttpStatus.NOT_FOUND_404);
                             break;

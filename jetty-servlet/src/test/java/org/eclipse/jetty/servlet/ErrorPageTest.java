@@ -224,7 +224,6 @@ public class ErrorPageTest
     void testNestedSendErrorDoesNotLoop() throws Exception
     {
         String response = _connector.getResponse("GET /fail/code?code=597 HTTP/1.0\r\n\r\n");
-        System.out.println(response);
         assertThat(response, Matchers.containsString("HTTP/1.1 597 597"));
         assertThat(response, not(Matchers.containsString("time this error page is being accessed")));
     }
