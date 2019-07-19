@@ -52,7 +52,7 @@ public class HugeResourceTest
     private static final long KB = 1024;
     private static final long MB = 1024 * KB;
     private static final long GB = 1024 * MB;
-    public static Path hugeStaticBase;
+    public static Path staticBase;
     public static Path outputDir;
 
     public Server server;
@@ -60,21 +60,21 @@ public class HugeResourceTest
     @BeforeAll
     public static void prepareStaticFiles() throws IOException
     {
-        hugeStaticBase = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-huge-static-base");
-        FS.ensureDirExists(hugeStaticBase);
+        staticBase = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-static-base");
+        FS.ensureDirExists(staticBase);
 
-        makeStaticFile(hugeStaticBase.resolve("test-1g.dat"), 1 * GB);
-        makeStaticFile(hugeStaticBase.resolve("test-4g.dat"), 4 * GB);
-        makeStaticFile(hugeStaticBase.resolve("test-10g.dat"), 10 * GB);
+        makeStaticFile(staticBase.resolve("test-1g.dat"), 1 * GB);
+        makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
+        makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
-        outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-huge-static-outputdir");
+        outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
         FS.ensureEmpty(outputDir);
     }
 
     @AfterAll
-    public static void cleanupHugeStaticFiles()
+    public static void cleanupStaticFiles()
     {
-        FS.ensureDeleted(hugeStaticBase);
+        FS.ensureDeleted(staticBase);
         FS.ensureDeleted(outputDir);
     }
 
@@ -121,7 +121,7 @@ public class HugeResourceTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        context.setBaseResource(new PathResource(hugeStaticBase));
+        context.setBaseResource(new PathResource(staticBase));
 
         HandlerList handlers = new HandlerList();
         handlers.addHandler(context);
