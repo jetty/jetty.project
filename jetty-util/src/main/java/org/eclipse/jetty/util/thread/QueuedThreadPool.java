@@ -184,11 +184,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         BlockingQueue<Runnable> jobs = getQueue();
         if (timeout > 0)
         {
+            // Consume any reserved threads
+            while (tryExecute(NOOP))
+            {
+                ;
+            }
+
             // Fill the job queue with noop jobs to wakeup idle threads.
             for (int i = 0; i < threads; ++i)
-            {
                 jobs.offer(NOOP);
-            }
 
             // try to let jobs complete naturally for half our stop time
             joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);

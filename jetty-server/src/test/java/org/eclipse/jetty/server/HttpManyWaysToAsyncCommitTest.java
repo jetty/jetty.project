@@ -1009,33 +1009,42 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
 
     private void runAsyncInAsyncWait(Request request, Runnable task)
     {
-        new Thread(() ->
+        server.getThreadPool().execute(() ->
         {
             long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-
             try
             {
-                while (System.nanoTime() < end && request.getHttpChannelState().getState() != HttpChannelState.State.ASYNC_WAIT)
+                while (System.nanoTime() < end)
                 {
-                    Thread.sleep(100);
+                    switch (request.getHttpChannelState().getState())
+                    {
+                        case ASYNC_WAIT:
+                            task.run();
+                            return;
+
+                        case DISPATCHED:
+                            Thread.sleep(100);
+                            continue;
+
+                        default:
+                            request.getHttpChannel().abort(new IllegalStateException());
+                            return;
+                    }
                 }
-                if (request.getHttpChannelState().getState() == HttpChannelState.State.ASYNC_WAIT)
-                    task.run();
-                else
-                    request.getHttpChannel().abort(new TimeoutException());
+                request.getHttpChannel().abort(new TimeoutException());
             }
             catch (InterruptedException e)
             {
                 e.printStackTrace();
             }
-        }).start();
+        });
     }
 
     private void runAsyncWhileDispatched(Runnable task)
     {
         CountDownLatch ran = new CountDownLatch(1);
 
-        new Thread(() ->
+        server.getThreadPool().execute(() ->
         {
             try
             {
@@ -1045,7 +1054,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             {
                 ran.countDown();
             }
-        }).start();
+        });
 
         try
         {
