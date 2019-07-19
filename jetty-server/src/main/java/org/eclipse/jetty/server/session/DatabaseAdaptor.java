@@ -158,14 +158,16 @@ public class DatabaseAdaptor
         if (_dbName == null)
             throw new IllegalStateException("DbAdaptor missing metadata");
 
-        if (_dbName.startsWith("postgres"))
+        try
+        {
+            Blob blob = result.getBlob(columnName);
+            return blob.getBinaryStream();
+        }
+        catch(SQLException ex)
         {
             byte[] bytes = result.getBytes(columnName);
             return new ByteArrayInputStream(bytes);
         }
-
-        Blob blob = result.getBlob(columnName);
-        return blob.getBinaryStream();
     }
 
     public boolean isEmptyStringNull()
