@@ -552,6 +552,11 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public ByteBuffer getIndirectBuffer()
         {
+            if (_resource.length() > (long)_maxCachedFileSize)
+            {
+                return null;
+            }
+
             ByteBuffer buffer = _indirectBuffer.get();
             if (buffer == null)
             {
@@ -589,7 +594,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     else
                         buffer = _mappedBuffer.get();
                 }
-                else
+                else if (_resource.length() <= (long)_maxCachedFileSize)
                 {
                     ByteBuffer direct = CachedContentFactory.this.getDirectBuffer(_resource);
                     if (direct != null)
