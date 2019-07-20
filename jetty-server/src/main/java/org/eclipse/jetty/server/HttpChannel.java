@@ -121,6 +121,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 _state);
     }
 
+    public boolean isSendError()
+    {
+        return _state.isSendError();
+    }
+
     protected HttpInput newHttpInput(HttpChannelState state)
     {
         return new HttpInput(state);

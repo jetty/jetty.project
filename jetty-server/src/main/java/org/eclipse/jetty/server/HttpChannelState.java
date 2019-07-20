@@ -170,6 +170,14 @@ public class HttpChannelState
         }
     }
 
+    public boolean isSendError()
+    {
+        try (Locker.Lock lock = _locker.lock())
+        {
+            return _sendError;
+        }
+    }
+
     public void setTimeout(long ms)
     {
         try (Locker.Lock lock = _locker.lock())

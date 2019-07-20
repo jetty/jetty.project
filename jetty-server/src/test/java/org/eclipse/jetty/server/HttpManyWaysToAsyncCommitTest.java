@@ -790,8 +790,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         {
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), is("foo"));
+            assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "3"));
         }
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "3"));
         assertThat(handler.failure(), is(nullValue()));
     }
 
