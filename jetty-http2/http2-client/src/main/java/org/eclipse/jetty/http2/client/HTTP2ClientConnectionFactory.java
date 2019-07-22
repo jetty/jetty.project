@@ -63,6 +63,9 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         final FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         final HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
+        long streamIdleTimeout = client.getStreamIdleTimeout();
+        if (streamIdleTimeout > 0)
+            session.setStreamIdleTimeout(streamIdleTimeout);
 
         final Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
         parser.setMaxFrameLength(client.getMaxFrameLength());

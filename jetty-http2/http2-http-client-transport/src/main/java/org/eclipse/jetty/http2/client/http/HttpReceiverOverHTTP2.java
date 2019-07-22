@@ -96,15 +96,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                         return;
                 }
 
-                if (HttpMethod.CONNECT.is(exchange.getRequest().getMethod()) &&
-                        exchange.getResponse().getStatus() == HttpStatus.OK_200)
+                HttpRequest httpRequest = exchange.getRequest();
+                if (HttpMethod.CONNECT.is(httpRequest.getMethod()) && httpResponse.getStatus() == HttpStatus.OK_200)
                 {
-                    HttpRequest httpRequest = exchange.getRequest();
                     ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((IStream)stream);
                     long idleTimeout = httpRequest.getIdleTimeout();
-                    if (idleTimeout < 0)
-                        idleTimeout = getHttpDestination().getHttpClient().getIdleTimeout();
-                    endPoint.setIdleTimeout(idleTimeout);
+                    if (idleTimeout > 0)
+                        endPoint.setIdleTimeout(idleTimeout);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Successful HTTP2 tunnel on {} via {}", stream, endPoint);
                     ((IStream)stream).setAttachment(endPoint);

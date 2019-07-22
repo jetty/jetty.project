@@ -87,6 +87,7 @@ public class ProxyWithDynamicTransportTest
     private Server proxy;
     private ServerConnector proxyConnector;
     private ServerConnector proxyTLSConnector;
+    private HTTP2Client http2Client;
     private HttpClient client;
 
     private void start(Handler handler) throws Exception
@@ -183,7 +184,7 @@ public class ProxyWithDynamicTransportTest
         clientConnector.setSelectors(1);
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
-        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
         ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
@@ -291,7 +292,7 @@ public class ProxyWithDynamicTransportTest
         client.getProxyConfiguration().getProxies().add(proxy);
 
         long idleTimeout = 1000;
-        client.setIdleTimeout(idleTimeout);
+        http2Client.setStreamIdleTimeout(idleTimeout);
 
         String serverScheme = "http";
         int serverPort = serverConnector.getLocalPort();

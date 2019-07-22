@@ -115,6 +115,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private int maxConcurrentPushedStreams = 32;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
+    private long streamIdleTimeout;
 
     public HTTP2Client()
     {
@@ -192,6 +193,17 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setIdleTimeout(long idleTimeout)
     {
         connector.setIdleTimeout(Duration.ofMillis(idleTimeout));
+    }
+
+    @ManagedAttribute("The stream idle timeout in milliseconds")
+    public long getStreamIdleTimeout()
+    {
+        return streamIdleTimeout;
+    }
+
+    public void setStreamIdleTimeout(long streamIdleTimeout)
+    {
+        this.streamIdleTimeout = streamIdleTimeout;
     }
 
     @ManagedAttribute("The connect timeout in milliseconds")
