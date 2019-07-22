@@ -147,7 +147,7 @@
             <configuration>
               <backend>html5</backend>
               <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
-              <sourceDirectory>${basedir}/src/main/asciidoc/quick-start</sourceDirectory>
+              <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/quickstart-guide</outputDirectory>
             </configuration>
@@ -189,9 +189,9 @@
             <configuration>
               <backend>html5</backend>
               <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
-              <sourceDirectory>${basedir}/src/main/asciidoc/developer-guide</sourceDirectory>
+              <sourceDirectory>${basedir}/src/main/asciidoc/embedded-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/html/developer-guide</outputDirectory>
+              <outputDirectory>${project.build.directory}/html/embedded-guide</outputDirectory>
             </configuration>
           </execution>
         </executions>
