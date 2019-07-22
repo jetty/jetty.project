@@ -86,10 +86,8 @@ The following table lists some helpful directories and their purpose.
 .Documentation Layout
 [cols="2"]
 |===
-| src/main/asciidoc | asciidoc source root (*.adoc files)
+| src/main/asciidoc | root of asciidoc layout
 | src/main/asciidoc/*-guide | root structure for each individual guide
-| src/main/asciidoc/topics | primary repository for documentation organized by topic
-| src/main/resources | common html resources
 | target/html | post build, where the rendered html files will appear
 | target/pdf | post build (-Palt-formats) pdf files
 | target/epub | post build (-Palt-formats) epub files
@@ -100,10 +98,6 @@ The following table lists some helpful directories and their purpose.
 
 Each guide starts with an *index.adoc* file which acts as the point of origin for the document structure.
 It will declare useful metadata for the proper rendering of the overall guide and use the asciidoc *include* directive to pull in content for each chapter which are conveniently named by chapter number and name.
-
-The individual chapter *adoc* files contain the narrative structure of each guide and in turn use the *include* directive to pull in specific topic content.
-he topic content is all located within the *src/main/asciidoc/topics* structure and is intended to be context free and unrelated to any specific guide.
-In this way, any narrative requirements that setup or weave together topics are located in their associated guide chapters and any topics can stand on their own.
 
 [[cg-documentation-conventions]]
 === Conventions
@@ -130,6 +124,24 @@ id's::
 link vs xref::
   The `link:` item should be generally used for linking around the document when you want to choose the text that will be rendered in the link itself.
   However if you are linking to a section and want to use the title itself as the link text, use the `xref:` tag without the hashmark in front of the link id.
+
+cross guide linkage::
+  To link to another guide it is best to use a property to address it. The following guide shortcuts are provided.
+  * DISTGUIDE
+  * EMBEDGUIDE
+  * QUICKGUIDE
+  * CONTRIBUIDE
+
+....
+This is a test to link to link:{DISTGUIDE}[Distribution Guide]
+
+This is a test to deep link to link:{DISTGUIDE}#startup[Distribution Guide Deep Link]
+....
+
+This is a test to link to link:{DISTGUIDE}[Distribution Guide]
+
+This is a test to deep link to link:{DISTGUIDE}#startup[Distribution Guide Deep Link]
+
 
 version differences::
   In general differences in functionality within a release should go into nested sections and use titles like 'Prior to: ##' or 'In version: ##'.
