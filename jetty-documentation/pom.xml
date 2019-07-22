@@ -153,7 +153,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>admin-guide</id>
+            <id>distribution-guide</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>process-asciidoc</goal>
@@ -181,7 +181,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>developer-guide</id>
+            <id>embedded-guide</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>process-asciidoc</goal>
