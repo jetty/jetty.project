@@ -183,7 +183,7 @@ public class ErrorHandler extends AbstractHandler
      * <code>Accept</code> header, until {@link Request#isHandled()} is true and a
      * response of the appropriate type is generated.
      * </p>
-     * <p>The default implementation handles "text/html", "text/*" and "*&#47*".
+     * <p>The default implementation handles "text/html", "text/*" and "*&#47;*".
      * The method can be overridden to handle other types.  Implementations must
      * immediate produce a response and may not be async.
      * </p>
