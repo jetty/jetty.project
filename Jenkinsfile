@@ -39,17 +39,7 @@ pipeline {
             junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
           }
         }
-
-        stage("Build / Test - JDK11") {
-          agent { node { label 'linux' } }
-          options { timeout(time: 120, unit: 'MINUTES') }
-          steps {
-            mavenBuild("jdk11", "-Pmongodb install", "maven3", true)
-            warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-            junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
-          }
-        }
-
+        
         stage("Build / Test - JDK12") {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
