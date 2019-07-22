@@ -153,9 +153,13 @@
                   <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 11 or newer</message>
                 </requireJavaVersion>
                 <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
+                <!--
+                jetty 10 alpha version want to use '-' such 10.0.0-alpha0 so disable all those rules....
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
+
                 <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
                 <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
+                -->
                 <requireUpperBoundDeps>
                   <excludes>
                     <exclude>javax.enterprise:cdi-api</exclude>
@@ -496,6 +500,8 @@
           <artifactId>maven-invoker-plugin</artifactId>
           <version>3.2.1-SNAPSHOT</version>
           <configuration>
+            <writeJunitReport>true</writeJunitReport>
+            <junitPackageName>org.eclipse.jetty.maven.its</junitPackageName>
             <debug>${it.debug}</debug>
             <javaHome>${java.home}</javaHome>
             <environmentVariables>
@@ -1060,6 +1066,12 @@
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.22</version>
       </dependency>
+      <!-- avoid depending on a range dependency from a transitive dependency -->
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-core</artifactId>
+        <version>1.0.1</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -1247,6 +1259,9 @@
     </profile>
     <profile>
       <id>ci</id>
+      <modules>
+        <module>aggregates/jetty-all</module>
+      </modules>
       <build>
         <pluginManagement>
           <plugins>

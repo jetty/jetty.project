@@ -119,6 +119,13 @@ By default Jetty will call them in the following order:
 
 As is the case with annotation scanning, the link:#using-extra-classpath-method[extraClasspath] is fully considered for `ServletContainerInitializer` callbacks. `ServletContainerInitializer` derived from a classes directory on the `extraClasspath` and jars from an `extraClasspath` for the webapp are called in step 2 and 3, respectively.
 
+____
+[NOTE]
+As of Jetty-9.4.4, unless the `web.xml` is version 3.0 or greater, only `ServletContainerInitializers` that are on the container classpath will be discovered.
+Users wishing to use `ServletContainerInitializers` from within the webapp with older versions of `web.xml` must either upgrade their `web.xml` version, or call `WebAppContext.setConfigurationDiscovered(true)` either programmatically or in xml.
+Upgrading the `web.xml` version is preferable.
+____
+
 ===== Controlling the order of ServletContainerInitializer invocation
 
 If you need `ServletContainerInitializer` classes called in a specific order that is different from that outlined above, you can use the link:#context_attributes[context attribute] `org.eclipse.jetty.containerInitializerOrder`.

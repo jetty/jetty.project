@@ -124,9 +124,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                             {
                                 if (lastContent)
                                 {
-                                    Supplier<HttpFields> trailers = response.getTrailerSupplier();
-                                    if (transportCallback.start(new SendTrailers(getCallback(), trailers), false))
-                                        sendDataFrame(content, true, trailers == null, transportCallback);
+                                    HttpFields trailers = retrieveTrailers();
+                                    if (trailers != null)
+                                    {
+                                        if (transportCallback.start(new SendTrailers(getCallback(), trailers), false))
+                                            sendDataFrame(content, true, false, transportCallback);
+                                    }
+                                    else
+                                    {
+                                        if (transportCallback.start(getCallback(), false))
+                                            sendDataFrame(content, true, true, transportCallback);
+                                    }
                                 }
                                 else
                                 {
@@ -149,9 +157,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                             }
                             else
                             {
-                                Supplier<HttpFields> trailers = response.getTrailerSupplier();
+                            HttpFields trailers = retrieveTrailers();
+                            if (trailers != null)
+                            {
                                 if (transportCallback.start(new SendTrailers(callback, trailers), true))
-                                    sendHeadersFrame(response, trailers == null, transportCallback);
+                                    sendHeadersFrame(response, false, transportCallback);
+                            }
+                            else
+                            {
+                                if (transportCallback.start(callback, true))
+                                    sendHeadersFrame(response, true, transportCallback);
+                            }
                             }
                         }
                         else
@@ -173,16 +189,24 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 if (lastContent)
                 {
-                    Supplier<HttpFields> trailers = metaData.getTrailerSupplier();
-                    SendTrailers sendTrailers = new SendTrailers(callback, trailers);
-                    if (hasContent || trailers == null)
+                    HttpFields trailers = retrieveTrailers();
+                    if (trailers != null)
                     {
-                        if (transportCallback.start(sendTrailers, false))
-                            sendDataFrame(content, true, trailers == null, transportCallback);
+                        SendTrailers sendTrailers = new SendTrailers(callback, trailers);
+                        if (hasContent)
+                        {
+                            if (transportCallback.start(sendTrailers, false))
+                                sendDataFrame(content, true, false, transportCallback);
+                        }
+                        else
+                        {
+                            sendTrailers.succeeded();
+                        }
                     }
                     else
                     {
-                        sendTrailers.succeeded();
+                        if (transportCallback.start(callback, false))
+                            sendDataFrame(content, true, true, transportCallback);
                     }
                 }
                 else
@@ -196,6 +220,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 callback.succeeded();
             }
         }
+    }
+
+    private HttpFields retrieveTrailers()
+    {
+        Supplier<HttpFields> supplier = metaData.getTrailerSupplier();
+        if (supplier == null)
+            return null;
+        HttpFields trailers = supplier.get();
+        if (trailers == null)
+            return null;
+        return trailers.size() == 0 ? null : trailers;
     }
 
     private boolean isTunnel(MetaData.Request request, MetaData.Response response)
@@ -222,7 +257,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP/2 Push {}", request);
 
-        stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<Stream>()
+        stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<>()
         {
             @Override
             public void succeeded(Stream pushStream)
@@ -465,9 +500,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     private class SendTrailers extends Callback.Nested
     {
-        private final Supplier<HttpFields> trailers;
+        private final HttpFields trailers;
 
-        private SendTrailers(Callback callback, Supplier<HttpFields> trailers)
+        private SendTrailers(Callback callback, HttpFields trailers)
         {
             super(callback);
             this.trailers = trailers;
@@ -476,15 +511,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         @Override
         public void succeeded()
         {
-            if (trailers != null)
-            {
-                if (transportCallback.start(getCallback(), false))
-                    sendTrailersFrame(new MetaData(HttpVersion.HTTP_2, trailers.get()), transportCallback);
-            }
-            else
-            {
-                super.succeeded();
-            }
+            if (transportCallback.start(getCallback(), false))
+                sendTrailersFrame(new MetaData(HttpVersion.HTTP_2, trailers), transportCallback);
         }
     }
 }
