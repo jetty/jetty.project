@@ -19,7 +19,7 @@
     <asciidoctorj.epub.version>1.5.0-alpha.8.1</asciidoctorj.epub.version>
     <asciidoctorj.version>1.5.8.1</asciidoctorj.version>
     <jruby.version>1.7.27</jruby.version>
-    <web.resources.version>1.0-SNAPSHOT</web.resources.version>
+    <web.resources.version>1.0</web.resources.version>
     <web.resources.directory>${project.build.directory}/web-resources</web.resources.directory>
     <!-- old properties -->
     <html.directory>${project.build.directory}/current</html.directory>
@@ -146,7 +146,7 @@
             </goals>
             <configuration>
               <backend>html5</backend>
-              <!--<templateDir>${web.resources.directory}/asciidoc/template</templateDir>-->
+              <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
               <sourceDirectory>${basedir}/src/main/asciidoc/quick-start</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/quickstart-guide</outputDirectory>
@@ -160,7 +160,7 @@
             </goals>
             <configuration>
               <backend>html5</backend>
-              <!--<<templateDir>${web.resources.directory}/asciidoc/template</templateDir>-->
+              <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
               <sourceDirectory>${basedir}/src/main/asciidoc/distribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/distribution-guide</outputDirectory>
@@ -174,7 +174,7 @@
             </goals>
             <configuration>
               <backend>html5</backend>
-              <!--<<templateDir>${web.resources.directory}/asciidoc/template</templateDir>-->
+              <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
@@ -188,6 +188,7 @@
             </goals>
             <configuration>
               <backend>html5</backend>
+              <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
               <sourceDirectory>${basedir}/src/main/asciidoc/developer-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/developer-guide</outputDirectory>
