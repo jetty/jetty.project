@@ -11,7 +11,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk11", "-Pmongodb install", "maven3", true) // -Pautobahn 
+            mavenBuild("jdk11", "-Pmongodb install", "maven3", true) // -Pautobahn
             // Collect up the jacoco execution results (only on main build)
             jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                 exclusionPattern: '' +
@@ -35,19 +35,18 @@ pipeline {
                 execPattern: '**/target/jacoco.exec',
                 classPattern: '**/target/classes',
                 sourcePattern: '**/src/main/java'
-            junit testResults: '**/target/surefire-reports/*.xml,**/target/autobahntestsuite-reports/*.xml'
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-            maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
+            junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
           }
         }
-
+        
         stage("Build / Test - JDK12") {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
             mavenBuild("jdk12", "-Pmongodb install", "maven3", true)
             warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-            maven_invoker reportsFilenamePattern: "**/target/invoker-reports/BUILD*.xml", invokerBuildDir: "**/target/it"
+            junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
           }
         }
 
@@ -64,6 +63,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
+            mavenBuild("jdk11", "install -DskipTests", "maven3", true)
             mavenBuild("jdk11", "install checkstyle:check -DskipTests", "maven3", true)
             recordIssues(
                     enabledForFailure: true, aggregatingResults: true,
@@ -120,7 +120,7 @@ def slackNotif() {
  * @return the Jenkinsfile step representing a maven build
  */
 def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
-  def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" //
+  def localRepo = ".repository" // "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" //
   def settingsName = 'oss-settings.xml'
   def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
