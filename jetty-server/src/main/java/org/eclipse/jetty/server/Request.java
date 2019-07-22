@@ -1907,7 +1907,12 @@ public class Request implements HttpServletRequest
     public void setContext(Context context)
     {
         _newContext = _context != context;
-        _context = context;
+        if (context == null)
+            _context = null;
+        else
+        {
+            _context = context;
+        }
     }
 
     /**
