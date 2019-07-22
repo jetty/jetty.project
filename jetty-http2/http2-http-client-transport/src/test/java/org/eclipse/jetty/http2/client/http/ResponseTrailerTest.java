@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.client.http;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -39,7 +40,6 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -71,8 +71,7 @@ public class ResponseTrailerTest extends AbstractTest
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Send empty response trailers.
-                Response jettyResponse = jettyRequest.getResponse();
-                jettyResponse.setTrailers(HttpFields::new);
+                response.setTrailerFields(HashMap::new);
                 if (data != null)
                     response.getOutputStream().write(data.getBytes(StandardCharsets.US_ASCII));
             }
