@@ -23,10 +23,9 @@
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Administration Guide
-:toc-image: jetty-logo.svg
+:toc-image: ../common/images/jetty-logo.svg
 :toc-image-url: /jetty/index.html
 
-:imagesdir: ../common/images
 
 // docinfo lets you pull in shared content and/or influence via render type
 //:docinfodir: {DOCINFODIR}/documentation
@@ -61,20 +60,20 @@ endif::[]
 
 
 
-include::startup/chapter.adoc[]
-include::sessions/chapter.adoc[]
-include::logging/chapter.adoc[]
-include::jndi/chapter.adoc[]
-include::annotations/chapter.adoc[]
-include::jmx/chapter.adoc[]
-include::alpn/chapter.adoc[]
-include::http2/chapter.adoc[]
-include::fastcgi/chapter.adoc[]
-include::extras/chapter.adoc[]
-include::runner/chapter.adoc[]
-include::tuning/chapter.adoc[]
-include::deploying/chapter.adoc[]
-include::contexts/chapter.adoc[]
-include::connectors/chapter.adoc[]
-include::security/chapter.adoc[]
-include::jsp/chapter.adoc[]
+include::administration/startup/chapter.adoc[]
+include::administration/sessions/chapter.adoc[]
+include::administration/logging/chapter.adoc[]
+include::administration/jndi/chapter.adoc[]
+include::administration/annotations/chapter.adoc[]
+include::administration/jmx/chapter.adoc[]
+include::administration/alpn/chapter.adoc[]
+include::administration/http2/chapter.adoc[]
+include::administration/fastcgi/chapter.adoc[]
+include::administration/extras/chapter.adoc[]
+include::administration/runner/chapter.adoc[]
+include::administration/tuning/chapter.adoc[]
+include::configuring/deploying/chapter.adoc[]
+include::configuring/contexts/chapter.adoc[]
+include::configuring/connectors/chapter.adoc[]
+include::configuring/security/chapter.adoc[]
+include::configuring/jsp/chapter.adoc[]
