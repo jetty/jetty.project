@@ -161,9 +161,9 @@
             <configuration>
               <backend>html5</backend>
               <!--<<templateDir>${web.resources.directory}/asciidoc/template</templateDir>-->
-              <sourceDirectory>${basedir}/src/main/asciidoc/administration-guide</sourceDirectory>
+              <sourceDirectory>${basedir}/src/main/asciidoc/distribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/html/administration-guide</outputDirectory>
+              <outputDirectory>${project.build.directory}/html/distribution-guide</outputDirectory>
             </configuration>
           </execution>
           <execution>
