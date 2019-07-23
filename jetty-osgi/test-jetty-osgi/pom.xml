@@ -14,8 +14,8 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <exam.version>4.12.0</exam.version>
-    <url.version>2.5.2</url.version>
+    <exam.version>4.13.1</exam.version>
+    <url.version>2.6.1</url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
     <skipTests>true</skipTests>
   </properties>

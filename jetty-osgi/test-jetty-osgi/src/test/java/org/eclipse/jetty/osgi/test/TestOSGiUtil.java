@@ -110,7 +110,12 @@ public class TestOSGiUtil
         res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
         String mavenRepoPath = System.getProperty("mavenRepoPath");
         if (!StringUtil.isBlank(mavenRepoPath))
-            res.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(mavenRepoPath));
+        {
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.defaultRepositories" ).value( "file://" + mavenRepoPath + "@id=local.repo") );
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.useFallbackRepositories").value( Boolean.FALSE.toString() ) );
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.repositories").value( "+http://repo1.maven.org/maven2@id=maven.central.repo" ) );
+        }
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-tree").versionAsInProject().start());
