@@ -335,13 +335,14 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     {
         try
         {
-            return BufferUtil.toBuffer(resource, true);
+            return BufferUtil.toBuffer(resource, false);
         }
         catch (IOException | IllegalArgumentException e)
         {
-            LOG.warn(e);
-            return null;
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
         }
+        return null;
     }
 
     protected ByteBuffer getMappedBuffer(Resource resource)
@@ -355,7 +356,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
         catch (IOException | IllegalArgumentException e)
         {
-            LOG.warn(e);
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
         }
         return null;
     }
@@ -368,7 +370,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
         catch (IOException | IllegalArgumentException e)
         {
-            LOG.warn(e);
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
         }
         return null;
     }
@@ -552,7 +555,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public ByteBuffer getIndirectBuffer()
         {
-            if (_resource.length() > (long)_maxCachedFileSize)
+            if (_resource.length() > _maxCachedFileSize)
             {
                 return null;
             }
@@ -561,21 +564,25 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             if (buffer == null)
             {
                 ByteBuffer buffer2 = CachedContentFactory.this.getIndirectBuffer(_resource);
-
                 if (buffer2 == null)
-                    LOG.warn("Could not load indirect buffer from " + this);
-                else if (_indirectBuffer.compareAndSet(null, buffer2))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Could not load indirect buffer from " + this);
+                    return null;
+                }
+
+                if (_indirectBuffer.compareAndSet(null, buffer2))
                 {
                     buffer = buffer2;
                     if (_cachedSize.addAndGet(BufferUtil.length(buffer)) > _maxCacheSize)
                         shrinkCache();
                 }
                 else
+                {
                     buffer = _indirectBuffer.get();
+                }
             }
-            if (buffer == null)
-                return null;
-            return buffer.slice();
+            return buffer == null ? null : buffer.asReadOnlyBuffer();
         }
 
         @Override
@@ -594,7 +601,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     else
                         buffer = _mappedBuffer.get();
                 }
-                else if (_resource.length() <= (long)_maxCachedFileSize)
+                else if (_resource.length() > _maxCachedFileSize)
                 {
                     ByteBuffer direct = CachedContentFactory.this.getDirectBuffer(_resource);
                     if (direct != null)
@@ -612,7 +619,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     }
                     else
                     {
-                        LOG.warn("Could not load " + this);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Could not load " + this);
                     }
                 }
             }

@@ -21,19 +21,37 @@ package org.eclipse.jetty.webapp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.util.MultiPartContentProvider;
+import org.eclipse.jetty.client.util.PathContentProvider;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
@@ -42,9 +60,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 public class HugeResourceTest
@@ -54,8 +75,10 @@ public class HugeResourceTest
     private static final long GB = 1024 * MB;
     public static Path staticBase;
     public static Path outputDir;
+    public static Path multipartTempDir;
 
     public Server server;
+    public HttpClient client;
 
     @BeforeAll
     public static void prepareStaticFiles() throws IOException
@@ -69,6 +92,20 @@ public class HugeResourceTest
 
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
         FS.ensureEmpty(outputDir);
+
+        multipartTempDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-multipart-tmp");
+        FS.ensureEmpty(multipartTempDir);
+    }
+
+    public static Stream<Arguments> staticFiles()
+    {
+        ArrayList<Arguments> ret = new ArrayList<>();
+
+        ret.add(Arguments.of("test-1g.dat", 1 * GB));
+        ret.add(Arguments.of("test-4g.dat", 4 * GB));
+        ret.add(Arguments.of("test-10g.dat", 10 * GB));
+
+        return ret.stream();
     }
 
     @AfterAll
@@ -123,6 +160,17 @@ public class HugeResourceTest
         context.setContextPath("/");
         context.setBaseResource(new PathResource(staticBase));
 
+        context.addServlet(PostServlet.class, "/post");
+
+        String location = multipartTempDir.toString();
+        long maxFileSize = Long.MAX_VALUE;
+        long maxRequestSize = Long.MAX_VALUE;
+        int fileSizeThreshold = (int)(2 * MB);
+
+        MultipartConfigElement multipartConfig = new MultipartConfigElement(location, maxFileSize, maxRequestSize, fileSizeThreshold);
+        ServletHolder holder = context.addServlet(MultipartServlet.class, "/multipart");
+        holder.getRegistration().setMultipartConfig(multipartConfig);
+
         HandlerList handlers = new HandlerList();
         handlers.addHandler(context);
         handlers.addHandler(new DefaultHandler());
@@ -137,67 +185,155 @@ public class HugeResourceTest
         server.stop();
     }
 
-    @Test
-    public void testDownload_1G() throws IOException
+    @BeforeEach
+    public void startClient() throws Exception
     {
-        download(server.getURI().resolve("/test-1g.dat"), 1 * GB);
+        client = new HttpClient();
+        client.start();
     }
 
-    @Test
-    public void testDownload_4G() throws IOException
+    @AfterEach
+    public void stopClient() throws Exception
     {
-        download(server.getURI().resolve("/test-4g.dat"), 4 * GB);
+        client.stop();
     }
 
-    @Test
-    public void testDownload_10G() throws IOException
+    @ParameterizedTest
+    @MethodSource("staticFiles")
+    public void testDownload(String filename, long expectedSize) throws Exception
     {
-        download(server.getURI().resolve("/test-10g.dat"), 10 * GB);
-    }
+        URI destUri = server.getURI().resolve("/" + filename);
+        InputStreamResponseListener responseListener = new InputStreamResponseListener();
 
-    private void download(URI destUri, long expectedSize) throws IOException
-    {
-        HttpURLConnection http = (HttpURLConnection)destUri.toURL().openConnection();
-        assertThat("HTTP Response Code", http.getResponseCode(), is(200));
+        Request request = client.newRequest(destUri)
+            .method(HttpMethod.GET);
+        request.send(responseListener);
+        Response response = responseListener.get(5, TimeUnit.SECONDS);
 
-        dumpResponseHeaders(http);
+        assertThat("HTTP Response Code", response.getStatus(), is(200));
+        dumpResponse(response);
 
-        // if a Content-Length is provided, test it
-        String contentLength = http.getHeaderField("Content-Length");
-        if (contentLength != null)
-        {
-            long contentLengthLong = Long.parseLong(contentLength);
-            assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
-        }
-
-        // Download the file
-        String filename = destUri.getPath();
-        int idx = filename.lastIndexOf('/');
-        if (idx >= 0)
-        {
-            filename = filename.substring(idx + 1);
-        }
+        String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
+        long contentLengthLong = Long.parseLong(contentLength);
+        assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
 
         Path outputFile = outputDir.resolve(filename);
         try (OutputStream out = Files.newOutputStream(outputFile);
-             InputStream in = http.getInputStream())
+             InputStream in = responseListener.getInputStream())
         {
             IO.copy(in, out);
         }
-
-        // Verify the file download size
         assertThat("Downloaded Files Size: " + filename, Files.size(outputFile), is(expectedSize));
     }
 
-    private void dumpResponseHeaders(HttpURLConnection http)
+    @ParameterizedTest
+    @MethodSource("staticFiles")
+    public void testUpload(String filename, long expectedSize) throws Exception
     {
-        int i = 0;
-        String value;
-        while ((value = http.getHeaderField(i)) != null)
+        Path inputFile = staticBase.resolve(filename);
+
+        PathContentProvider pathContentProvider = new PathContentProvider(inputFile);
+        URI destUri = server.getURI().resolve("/post");
+        Request request = client.newRequest(destUri).method(HttpMethod.POST).content(pathContentProvider);
+        ContentResponse response = request.send();
+        assertThat("HTTP Response Code", response.getStatus(), is(200));
+        dumpResponse(response);
+
+        String responseBody = response.getContentAsString();
+        assertThat("Response", responseBody, containsString("bytes-received=" + expectedSize));
+    }
+
+    @ParameterizedTest
+    @MethodSource("staticFiles")
+    public void testUpload_Multipart(String filename, long expectedSize) throws Exception
+    {
+        MultiPartContentProvider multipart = new MultiPartContentProvider();
+        Path inputFile = staticBase.resolve(filename);
+        String name = String.format("file-%d", expectedSize);
+        multipart.addFilePart(name, filename, new PathContentProvider(inputFile), null);
+
+        URI destUri = server.getURI().resolve("/multipart");
+        Request request = client.newRequest(destUri).method(HttpMethod.POST).content(multipart);
+        ContentResponse response = request.send();
+        assertThat("HTTP Response Code", response.getStatus(), is(200));
+        dumpResponse(response);
+
+        String responseBody = response.getContentAsString();
+        String expectedResponse = String.format("part[%s].size=%d", name, expectedSize);
+        assertThat("Response", responseBody, containsString(expectedResponse));
+    }
+
+    private void dumpResponse(Response response)
+    {
+        System.out.printf("  %s %d %s%n", response.getVersion(), response.getStatus(), response.getReason());
+        response.getHeaders().forEach((field) -> System.out.printf("  %s%n", field));
+    }
+
+    public static class ByteCountingOutputStream extends OutputStream
+    {
+        private long count = 0;
+
+        public long getCount()
         {
-            String key = http.getHeaderFieldKey(i);
-            System.err.printf("  %s: %s%n", key, value);
-            i++;
+            return count;
+        }
+
+        @Override
+        public void write(int b)
+        {
+            count++;
+        }
+
+        @Override
+        public void write(byte[] b)
+        {
+            count += b.length;
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len)
+        {
+            count += len;
+        }
+    }
+
+    public static class PostServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        {
+            ByteCountingOutputStream byteCounting = new ByteCountingOutputStream();
+            IO.copy(req.getInputStream(), byteCounting);
+            resp.setContentType("text/plain");
+            resp.setCharacterEncoding("utf-8");
+            resp.getWriter().printf("bytes-received=%d%n", byteCounting.getCount());
+        }
+    }
+
+    public static class MultipartServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setContentType("text/plain");
+            resp.setCharacterEncoding("utf-8");
+            PrintWriter out = resp.getWriter();
+
+            req.getParts().forEach((part) ->
+            {
+                out.printf("part[%s].filename=%s%n", part.getName(), part.getSubmittedFileName());
+                out.printf("part[%s].size=%d%n", part.getName(), part.getSize());
+                try (InputStream inputStream = part.getInputStream();
+                     ByteCountingOutputStream byteCounting = new ByteCountingOutputStream())
+                {
+                    IO.copy(inputStream, byteCounting);
+                    out.printf("part[%s].inputStream.length=%d%n", part.getName(), byteCounting.getCount());
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace(out);
+                }
+            });
         }
     }
 }
