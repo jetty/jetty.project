@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.io.IOException;
 import java.util.function.Function;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -90,7 +88,6 @@ public class FormTest
     public void testMaxFormContentSizeZeroWithContentLength() throws Exception
     {
         testMaxFormContentSizeZero(true);
-
     }
 
     private void testMaxFormContentSizeZero(boolean addContentLength) throws Exception
@@ -101,7 +98,7 @@ public class FormTest
             return new HttpServlet()
             {
                 @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                protected void service(HttpServletRequest request, HttpServletResponse response)
                 {
                     request.getParameterMap();
                 }
@@ -132,9 +129,10 @@ public class FormTest
         start(handler ->
         {
             handler.setMaxFormKeys(0);
-            return new HttpServlet() {
+            return new HttpServlet()
+            {
                 @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                protected void service(HttpServletRequest request, HttpServletResponse response)
                 {
                     request.getParameterMap();
                 }
@@ -142,8 +140,7 @@ public class FormTest
         });
 
         Fields formParams = new Fields();
-        formParams.add("foo1", "bar1");
-        formParams.add("foo2", "bar2");
+        formParams.add("foo", "bar");
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
             .path(contextPath + servletPath)

@@ -192,8 +192,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private Logger _logger;
     private boolean _allowNullPathInfo;
-    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys", -1).intValue();
-    private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize", -1).intValue();
+    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys", -1);
+    private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize", -1);
     private boolean _compactPath = false;
     private boolean _usingSecurityManager = System.getSecurityManager() != null;
 

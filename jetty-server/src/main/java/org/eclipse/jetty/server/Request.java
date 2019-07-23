@@ -503,51 +503,42 @@ public class Request implements HttpServletRequest
 
             if (_context != null)
             {
-                maxFormContentSize = _context.getContextHandler().getMaxFormContentSize();
-                maxFormKeys = _context.getContextHandler().getMaxFormKeys();
+                ContextHandler contextHandler = _context.getContextHandler();
+                maxFormContentSize = contextHandler.getMaxFormContentSize();
+                maxFormKeys = contextHandler.getMaxFormKeys();
             }
 
             if (maxFormContentSize < 0)
             {
                 Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
-                if (obj == null)
-                    maxFormContentSize = 200000;
-                else if (obj instanceof Number)
-                {
-                    Number size = (Number)obj;
-                    maxFormContentSize = size.intValue();
-                }
+                if (obj instanceof Number)
+                    maxFormContentSize = ((Number)obj).intValue();
                 else if (obj instanceof String)
-                {
                     maxFormContentSize = Integer.parseInt((String)obj);
-                }
+                if (maxFormContentSize < 0)
+                    maxFormContentSize = 200000;
             }
 
             if (maxFormKeys < 0)
             {
                 Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
-                if (obj == null)
-                    maxFormKeys = 1000;
-                else if (obj instanceof Number)
-                {
-                    Number keys = (Number)obj;
-                    maxFormKeys = keys.intValue();
-                }
+                if (obj instanceof Number)
+                    maxFormKeys = ((Number)obj).intValue();
                 else if (obj instanceof String)
-                {
                     maxFormKeys = Integer.parseInt((String)obj);
-                }
+                if (maxFormKeys < 0)
+                    maxFormKeys = 1000;
             }
 
             int contentLength = getContentLength();
-            if (maxFormContentSize >= 0 && contentLength > maxFormContentSize)
-                throw new IllegalStateException("Form too large: " + contentLength + " > " + maxFormContentSize);
+            if (contentLength > maxFormContentSize)
+                throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
 
             InputStream in = getInputStream();
             if (_input.isAsync())
                 throw new IllegalStateException("Cannot extract parameters with async IO");
 
-            UrlEncoded.decodeTo(in, params, getCharacterEncoding(), contentLength < 0 ? maxFormContentSize : -1, maxFormKeys);
+            UrlEncoded.decodeTo(in, params, getCharacterEncoding(), maxFormContentSize, maxFormKeys);
         }
         catch (IOException e)
         {
