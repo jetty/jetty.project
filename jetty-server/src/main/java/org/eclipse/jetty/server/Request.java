@@ -540,10 +540,9 @@ public class Request implements HttpServletRequest
             }
 
             int contentLength = getContentLength();
-            if (contentLength > maxFormContentSize && maxFormContentSize > 0)
-            {
+            if (maxFormContentSize >= 0 && contentLength > maxFormContentSize)
                 throw new IllegalStateException("Form too large: " + contentLength + " > " + maxFormContentSize);
-            }
+
             InputStream in = getInputStream();
             if (_input.isAsync())
                 throw new IllegalStateException("Cannot extract parameters with async IO");

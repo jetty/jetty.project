@@ -417,7 +417,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         }
                         key = null;
                         value = null;
-                        if (maxKeys > 0 && map.size() > maxKeys)
+                        if (maxKeys >= 0 && map.size() > maxKeys)
                             throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", map.size(), maxKeys));
                         break;
 
@@ -446,7 +446,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         break;
                 }
                 if (maxLength >= 0 && (++totalLength > maxLength))
-                    throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", map.size(), maxKeys));
+                    throw new IllegalStateException("Form is larger than max length " + maxLength);
             }
 
             if (key != null)
@@ -500,7 +500,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         }
                         key = null;
                         value = null;
-                        if (maxKeys > 0 && map.size() > maxKeys)
+                        if (maxKeys >= 0 && map.size() > maxKeys)
                             throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", map.size(), maxKeys));
                         break;
 
@@ -529,7 +529,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         break;
                 }
                 if (maxLength >= 0 && (++totalLength > maxLength))
-                    throw new IllegalStateException("Form is too large");
+                    throw new IllegalStateException("Form is larger than max length " + maxLength);
             }
 
             if (key != null)
@@ -651,7 +651,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                             }
                             key = null;
                             value = null;
-                            if (maxKeys > 0 && map.size() > maxKeys)
+                            if (maxKeys >= 0 && map.size() > maxKeys)
                                 throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", map.size(), maxKeys));
                             break;
                         case '=':
@@ -679,7 +679,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
 
                     totalLength++;
                     if (maxLength >= 0 && totalLength > maxLength)
-                        throw new IllegalStateException("Form is too large");
+                        throw new IllegalStateException("Form is larger than max length " + maxLength);
                 }
 
                 size = output.size();
