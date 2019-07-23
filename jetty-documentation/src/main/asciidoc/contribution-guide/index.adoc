@@ -23,9 +23,10 @@
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Contribution Guide
-:toc-image: ../common/images/jetty-logo.svg
+:toc-image: jetty-logo.svg
 :toc-image-url: /jetty/index.html
 
+:imagesdir: ../common/images
 
 // docinfo lets you pull in shared content and/or influence via render type
 //:docinfodir: {DOCINFODIR}/documentation
