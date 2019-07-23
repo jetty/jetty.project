@@ -24,11 +24,9 @@
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Distribution Guide
-:toc-image: jetty-logo.svg
+:toc-image: ../common/images/jetty-logo.svg
 :toc-image-url: /jetty/index.html
 :breadcrumb: Home:../index.html | Distribution Guide:./index.html
-
-:imagesdir: ../common/images
 
 // docinfo lets you pull in shared content and/or influence via render type
 //:docinfodir: {DOCINFODIR}/documentation
