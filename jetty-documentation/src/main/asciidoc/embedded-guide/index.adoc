@@ -26,6 +26,7 @@
 :toc-title: Development Guide
 :toc-image: jetty-logo.svg
 :toc-image-url: /jetty/index.html
+:breadcrumb: Home:../index.html | Emebdded Guide:./index.html
 
 :imagesdir: ../common/images
 

@@ -26,6 +26,8 @@
 :toc-title: Quickstart Guide
 :toc-image: jetty-logo.svg
 :toc-image-url: /jetty/index.html
+:breadcrumb: Home:../index.html | Quickstart Guide:./index.html
+
 
 // docinfo lets you pull in shared content and/or influence via render type
 //:docinfodir: {DOCINFODIR}/documentation
