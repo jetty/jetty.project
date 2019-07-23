@@ -17,13 +17,13 @@
 //
 
 
-:doctitle: Eclipse Jetty: Administration Guide
+:doctitle: Eclipse Jetty: Distribution Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
 :revnumber: 1.0
 :revdate: {TIMESTAMP}
 :toc: left
-:toc-title: Administration Guide
+:toc-title: Distribution Guide
 :toc-image: jetty-logo.svg
 :toc-image-url: /jetty/index.html
 :breadcrumb: Home:../index.html | Distribution Guide:./index.html

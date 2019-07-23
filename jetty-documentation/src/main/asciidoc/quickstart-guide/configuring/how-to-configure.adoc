@@ -55,7 +55,7 @@ The Jetty distribution uses the following configuration files to instantiate, in
 ____
 [NOTE]
 --
-It is the `ini` files located in the Jetty base directory (if different from Jetty home) that are typically edited to change the configuration (e.g. change ports). 
+It is the `ini` files located in the Jetty base directory (if different from Jetty home) that are typically edited to change the configuration (e.g. change ports).
 --
 ____
 
@@ -82,7 +82,7 @@ XML files::
 
 Below is an illustration of how the various Jetty configuration files (`ini`, `mod` and XML) are related:
 
-image:images/Jetty_Configuration_File_Relationships.png[image,width=693]
+image:../images/Jetty_Configuration_File_Relationships.png[image,width=693]
 
 ==== A Closer Look
 
@@ -97,7 +97,7 @@ When a module is activated these properties are added to a related `ini` file wh
 We will discuss modules in further detail in an upcoming chapter.
 
 Ini files are where most users will spend the bulk of their time editing the configuration for their server.
-As mentioned, they contain properties which were defined in their associated XML files which in turn reference Jetty Java objcts. 
+As mentioned, they contain properties which were defined in their associated XML files which in turn reference Jetty Java objcts.
 
 This can be a bit overwhelming at first, so let's look at an example - in this case the `http` module.
 We will work backwards from an ini file to the associated module and then the XML file in question.
@@ -216,8 +216,8 @@ At first blush, it looks remarkable similar to the `ini` file we just looked at.
 We still have a description and the properties we could edit, but now we also have several other sections.
 These other sections will be looked at further in our chapter on modules, but for now it is worth noting the `[xml]` and `[ini-template]` sections.
 As you could probably have puzzled out, the `[ini-template]` contains a template (go figure) for properties to be placed in the associated `ini` file when a module is activated.
-The `[xml]` section refers to the file and location of the XML file these properties are based on. 
-It is important to note that not every module file will have the same sections, but most should look structurally the same. 
+The `[xml]` section refers to the file and location of the XML file these properties are based on.
+It is important to note that not every module file will have the same sections, but most should look structurally the same.
 
 Now that we know what XML file these properties relate to, we can navigate to it and have a look.
 
