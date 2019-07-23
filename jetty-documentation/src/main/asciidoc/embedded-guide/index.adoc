@@ -17,13 +17,13 @@
 //
 
 
-:doctitle: Eclipse Jetty: Development Guide
+:doctitle: Eclipse Jetty: Embedded Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
 :revnumber: 1.0
 :revdate: {TIMESTAMP}
 :toc: left
-:toc-title: Development Guide
+:toc-title: Embedded Guide
 :toc-image: jetty-logo.svg
 :toc-image-url: /jetty/index.html
 
