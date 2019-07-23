@@ -24,9 +24,9 @@
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Embedded Guide
-:toc-image: ../common/images/jetty-logo.svg
+:toc-image: ../../common/images/jetty-logo.svg
 :toc-image-url: /jetty/index.html
-:breadcrumb: Home:../index.html | Emebdded Guide:./index.html
+:breadcrumb: Home:../index.html | Embedded Guide:./index.html
 
 // docinfo lets you pull in shared content and/or influence via render type
 //:docinfodir: {DOCINFODIR}/documentation

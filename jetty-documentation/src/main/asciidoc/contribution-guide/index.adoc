@@ -23,7 +23,7 @@
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Contribution Guide
-:toc-image: ../common/images/jetty-logo.svg
+:toc-image: ../../common/images/jetty-logo.svg
 :toc-image-url: /jetty/index.html
 :breadcrumb: Home:../index.html | Contribution Guide:./index.html
 

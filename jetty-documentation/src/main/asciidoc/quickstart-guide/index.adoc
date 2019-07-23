@@ -24,7 +24,7 @@
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Quickstart Guide
-:toc-image: ../common/images/jetty-logo.svg
+:toc-image: ../../common/images/jetty-logo.svg
 :toc-image-url: /jetty/index.html
 :breadcrumb: Home:../index.html | Quickstart Guide:./index.html
 

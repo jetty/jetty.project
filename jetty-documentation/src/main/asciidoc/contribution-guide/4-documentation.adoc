@@ -147,10 +147,10 @@ images::
   Images are placed in the `/images*` directory of the guide they should appear in and then referenced with a `image:` tag.
 
 ....
-image:small_powered_by.gif
+image:small_powered_by.gif[image,width=340]
 ....
 
-image:small_powered_by.gif
+image:small_powered_by.gif[image,width=340]
 
 version differences::
   In general differences in functionality within a release should go into nested sections and use titles like 'Prior to: ##' or 'In version: ##'.
