@@ -19,7 +19,7 @@
     <asciidoctorj.epub.version>1.5.0-alpha.8.1</asciidoctorj.epub.version>
     <asciidoctorj.version>1.5.8.1</asciidoctorj.version>
     <jruby.version>1.7.27</jruby.version>
-    <web.resources.version>1.0</web.resources.version>
+    <web.resources.version>1.1</web.resources.version>
     <web.resources.directory>${project.build.directory}/web-resources</web.resources.directory>
     <!-- old properties -->
     <html.directory>${project.build.directory}/current</html.directory>
