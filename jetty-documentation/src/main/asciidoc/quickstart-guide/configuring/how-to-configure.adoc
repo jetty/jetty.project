@@ -82,7 +82,7 @@ XML files::
 
 Below is an illustration of how the various Jetty configuration files (`ini`, `mod` and XML) are related:
 
-image:../images/Jetty_Configuration_File_Relationships.png[image,width=693]
+image:Jetty_Configuration_File_Relationships.png[image,width=693]
 
 ==== A Closer Look
 

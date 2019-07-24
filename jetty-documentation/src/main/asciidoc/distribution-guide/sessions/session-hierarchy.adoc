@@ -47,7 +47,7 @@ There is only one (1) `SessionDataStore` per `SessionCache`.
 
 Visually the session architecture can be represented like this:
 
-image::images/SessionsHierarchy.png[]
+image::SessionsHierarchy.png[]
 
 ==== Configuring Sessions in the Jetty Distribution
 

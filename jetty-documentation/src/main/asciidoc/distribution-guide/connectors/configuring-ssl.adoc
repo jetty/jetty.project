@@ -361,7 +361,7 @@ If you imported the key and certificate originally using the PKCS12 method, use 
 The `keystore` only contains the server's private key and certificate.
 
 [[img-certificate-chain]]
-image::images/certificate-chain.png[title="Certificate chain", alt="Certificate chain"]
+image::certificate-chain.png[title="Certificate chain", alt="Certificate chain"]
 
 [literal]
 .The structure of KeyStore file:
