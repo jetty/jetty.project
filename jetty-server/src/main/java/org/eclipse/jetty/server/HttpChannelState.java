@@ -700,21 +700,6 @@ public class HttpChannelState
             runInContext(event, _channel);
     }
 
-    public void errorComplete()
-    {
-        try (Locker.Lock lock = _locker.lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("error complete {}", toStringLocked());
-
-            _async = Async.COMPLETE;
-            _event.setDispatchContext(null);
-            _event.setDispatchPath(null);
-        }
-
-        cancelTimeout();
-    }
-
     public void asyncError(Throwable failure)
     {
         // This method is called when an failure occurs asynchronously to
@@ -817,6 +802,7 @@ public class HttpChannelState
                         // error in async with listeners, so give them a chance to handle
                         asyncListeners = _asyncListeners;
                         _async = Async.ERRORING;
+                        _sendError = false;
                     }
                     break;
 
@@ -827,6 +813,7 @@ public class HttpChannelState
         }
 
         // If we are async and have async listeners
+        boolean sendErrorCalled = false;
         if (asyncEvent != null && asyncListeners != null)
         {
             // call onError
@@ -863,6 +850,8 @@ public class HttpChannelState
                 switch (_async)
                 {
                     case ERRORING:
+                        sendErrorCalled = _sendError;
+
                         // Still in ERROR state? The listeners did not invoke API methods
                         // and the container must provide a default error dispatch.
                         _async = Async.ERRORED;
@@ -890,7 +879,8 @@ public class HttpChannelState
         final Request request = _channel.getRequest();
         request.setAttribute(ERROR_EXCEPTION, cause);
         request.setAttribute(ERROR_EXCEPTION_TYPE, cause.getClass());
-        sendError(code, message);
+        if (!sendErrorCalled)
+            sendError(code, message);
 
         if (dispatch)
         {
@@ -945,9 +935,6 @@ public class HttpChannelState
                         _event.addThrowable(SEND_ERROR_CAUSE);
                     break;
 
-                case IDLE:
-                case COMPLETED:
-                case UPGRADED:
                 default:
                 {
                     throw new IllegalStateException(getStatusStringLocked());

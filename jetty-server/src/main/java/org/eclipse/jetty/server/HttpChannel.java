@@ -440,8 +440,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 errorHandler == null ||
                                 !errorHandler.errorPageForMethod(_request.getMethod()))
                             {
-                                minimalErrorResponse(code);
                                 _request.setHandled(true);
+                                minimalErrorResponse(code);
                                 break;
                             }
 
@@ -486,7 +486,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 failure = x;
                             else
                                 failure.addSuppressed(x);
-                            minimalErrorResponse(failure);
+
+                            Throwable cause = unwrap(failure, BadMessageException.class);
+                            int code = cause instanceof BadMessageException ? ((BadMessageException)cause).getCode() : 500;
+
+                            minimalErrorResponse(code);
                         }
                         finally
                         {
@@ -546,7 +550,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
                         }
-                        _response.closeOutput();
+                        _response.closeOutput(); // TODO make this non blocking!
                         _state.completed();
                         break;
                     }
@@ -573,23 +577,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         boolean suspended = action == Action.WAIT;
         return !suspended;
-    }
-
-    protected void sendError(int code, String reason)
-    {
-        try
-        {
-            _response.sendError(code, reason);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Could not send error " + code + " " + reason, x);
-        }
-        finally
-        {
-            _state.errorComplete();
-        }
     }
 
     /**
@@ -658,39 +645,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _response.resetContent();
             _response.setStatus(code);
-            _response.flushBuffer();
             _request.setHandled(true);
+
+            // TODO use the non blocking version
+            sendResponse(null, null, true);
+            _response.getHttpOutput().closed();
         }
         catch (Throwable x)
         {
             abort(x);
-        }
-    }
-
-    private void minimalErrorResponse(Throwable failure)
-    {
-        try
-        {
-            int code = 500;
-            Integer status = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-            if (status != null)
-                code = status.intValue();
-            else
-            {
-                Throwable cause = unwrap(failure, BadMessageException.class);
-                if (cause instanceof BadMessageException)
-                    code = ((BadMessageException)cause).getCode();
-            }
-
-            _response.resetContent();
-            _response.setStatus(code);
-            _response.flushBuffer();
-        }
-        catch (Throwable x)
-        {
-            if (x != failure)
-                failure.addSuppressed(x);
-            abort(failure);
         }
     }
 

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -153,6 +155,7 @@ public class ErrorHandler extends AbstractHandler
      * @return A {@link Writer} if there is a known acceptable charset or null
      * @throws IOException if a Writer cannot be returned
      */
+    @Deprecated
     protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException
     {
@@ -197,35 +200,65 @@ public class ErrorHandler extends AbstractHandler
      * @param response The response (may be wrapped)
      * @param code the http error code
      * @param message the http error message
-     * @param mimeType The mimetype to generate (may be *&#47;*or other wildcard)
+     * @param contentType The mimetype to generate (may be *&#47;*or other wildcard)
      * @throws IOException if a response cannot be generated
      */
-    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String mimeType)
+    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String contentType)
         throws IOException
     {
-        switch (mimeType)
+        switch (contentType)
         {
             case "text/html":
             case "text/*":
             case "*/*":
             {
-                baseRequest.setHandled(true);
-                /* TODO generate asynchronously ???
-                baseRequest.getHttpChannel().sendResponse(
-                    baseRequest.getResponse().getCommittedMetaData(),
-                    generateErrorPageContent(request, code, message),
-                    true,
-                    Callback.from(()->{}));
-                */
-
-                Writer writer = getAcceptableWriter(baseRequest, request, response);
-                if (writer != null)
+                Charset charset = null;
+                List<String> acceptable = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
+                if (acceptable.isEmpty())
+                    charset = StandardCharsets.ISO_8859_1;
+                else
                 {
-                    response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
-                    handleErrorPage(request, writer, code, message);
+                    for (String name : acceptable)
+                    {
+                        if ("*".equals(name))
+                        {
+                            charset = StandardCharsets.UTF_8;
+                            break;
+                        }
+
+                        try
+                        {
+                            charset = Charset.forName(name);
+                        }
+                        catch (Exception e)
+                        {
+                            LOG.ignore(e);
+                        }
+                    }
                 }
+
+                if (charset == null)
+                    return;
+                ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(1024);
+                PrintWriter writer = new PrintWriter(new OutputStreamWriter(bout, charset));
+
+                baseRequest.setHandled(true);
+                response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
+                response.setCharacterEncoding(charset.name());
+                handleErrorPage(request, writer, code, message);
+                writer.flush();
+                ByteBuffer content = bout.size() == 0 ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(bout.getBuf(), 0, bout.size());
+
+                // TODO use the non blocking version
+                baseRequest.getHttpChannel().sendResponse(null, content, true);
+                baseRequest.getResponse().getHttpOutput().closed();
             }
+
+            default:
+                return;
         }
+
+
     }
 
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)

@@ -290,13 +290,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
                 case ASYNC:
                 {
-                    // TODO review this logic?
                     // A close call implies a write operation, thus in asynchronous mode
                     // a call to isReady() that returned true should have been made.
                     // However it is desirable to allow a close at any time, specially if 
                     // complete is called.   Thus we simulate a call to isReady here, assuming
                     // that we can transition to READY.
-                    if (!_state.compareAndSet(state, OutputState.READY))
+                    if (!_state.compareAndSet(state, OutputState.READY))// TODO review this! Why READY? // Should it continue?
                         continue;
                     break;
                 }
@@ -347,7 +346,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * Called to indicate that the last write has been performed.
      * It updates the state and performs cleanup operations.
      */
-    void closed()
+    public void closed()
     {
         while (true)
         {
