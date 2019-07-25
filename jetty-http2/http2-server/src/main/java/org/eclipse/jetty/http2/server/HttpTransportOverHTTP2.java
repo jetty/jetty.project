@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
@@ -396,9 +397,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             synchronized (this)
             {
                 commit = this.commit;
-                // Only fail pending writes, as we
-                // may need to write an error page.
-                if (state == State.WRITING)
+                // Don't always fail, as we may need to write an error response.
+                EndPoint endPoint = connection.getEndPoint();
+                boolean cannotWrite = stream.isReset() || endPoint.isOutputShutdown() || !endPoint.isOpen();
+                if ((cannotWrite && state == State.IDLE) || state == State.WRITING)
                 {
                     this.state = State.FAILED;
                     callback = this.callback;
