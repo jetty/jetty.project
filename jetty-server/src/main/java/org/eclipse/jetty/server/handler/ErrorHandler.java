@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.QuotedQualityCSV;
+import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
@@ -92,7 +93,10 @@ public class ErrorHandler extends AbstractHandler
         if (cacheControl != null)
             response.setHeader(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
 
-        generateAcceptableResponse(baseRequest, request, response, response.getStatus(), baseRequest.getResponse().getReason());
+        String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
+        if (message == null)
+            message = baseRequest.getResponse().getReason();
+        generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
     }
 
     /**
@@ -206,6 +210,14 @@ public class ErrorHandler extends AbstractHandler
             case "*/*":
             {
                 baseRequest.setHandled(true);
+                /* TODO generate asynchronously ???
+                baseRequest.getHttpChannel().sendResponse(
+                    baseRequest.getResponse().getCommittedMetaData(),
+                    generateErrorPageContent(request, code, message),
+                    true,
+                    Callback.from(()->{}));
+                */
+
                 Writer writer = getAcceptableWriter(baseRequest, request, response);
                 if (writer != null)
                 {

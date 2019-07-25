@@ -239,7 +239,7 @@ public class HttpChannelState
     /**
      * @return Next handling of the request should proceed
      */
-    protected Action handling()
+    public Action handling()
     {
         try (Locker.Lock lock = _locker.lock())
         {
@@ -912,7 +912,7 @@ public class HttpChannelState
         final Request request = _channel.getRequest();
         final Response response = _channel.getResponse();
 
-        response.reset(true);
+        response.resetContent();
         response.getHttpOutput().sendErrorClose();
 
         if (message == null)

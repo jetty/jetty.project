@@ -1012,7 +1012,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testCookiesWithReset() throws Exception
+    public void testResetContent() throws Exception
     {
         Response response = getResponse();
 
@@ -1028,9 +1028,27 @@ public class ResponseTest
         cookie2.setPath("/path");
         response.addCookie(cookie2);
 
-        //keep the cookies
-        response.reset(true);
+        response.setContentType("some/type");
+        response.setContentLength(3);
+        response.setHeader(HttpHeader.EXPIRES,"never");
 
+        response.setHeader("SomeHeader", "SomeValue");
+
+        response.getOutputStream();
+
+        // reset the content
+        response.resetContent();
+
+        // check content is nulled
+        assertThat(response.getContentType(), nullValue());
+        assertThat(response.getContentLength(), is(-1L));
+        assertThat(response.getHeader(HttpHeader.EXPIRES.asString()), nullValue());
+        response.getWriter();
+
+        // check arbitrary header still set
+        assertThat(response.getHeader("SomeHeader"), is("SomeValue"));
+
+        // check cookies are still there
         Enumeration<String> set = response.getHttpFields().getValues("Set-Cookie");
 
         assertNotNull(set);

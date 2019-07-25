@@ -656,7 +656,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         try
         {
-            _response.reset(true);
+            _response.resetContent();
             _response.setStatus(code);
             _response.flushBuffer();
             _request.setHandled(true);
@@ -682,7 +682,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     code = ((BadMessageException)cause).getCode();
             }
 
-            _response.reset(true);
+            _response.resetContent();
             _response.setStatus(code);
             _response.flushBuffer();
         }

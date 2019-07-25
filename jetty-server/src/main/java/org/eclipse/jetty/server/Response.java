@@ -24,7 +24,7 @@ import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1003,14 +1003,7 @@ public class Response implements HttpServletResponse
             _out.flush();
     }
 
-    @Override
-    public void reset()
-    {
-        reset(false);
-        _out.reopen();
-    }
-
-    public void reset(boolean preserveCookies)
+    private void resetStatusAndFields()
     {
         _out.resetBuffer();
         _outputType = OutputType.NONE;
@@ -1021,10 +1014,17 @@ public class Response implements HttpServletResponse
         _mimeType = null;
         _characterEncoding = null;
         _encodingFrom = EncodingFrom.NOT_SET;
+    }
 
-        List<HttpField> cookies = preserveCookies ? _fields.getFields(HttpHeader.SET_COOKIE) : null;
+    @Override
+    public void reset()
+    {
+        resetStatusAndFields();
+
+        // Clear all response headers
         _fields.clear();
 
+        // recreate necessary connection related fields
         for (String value : _channel.getRequest().getHttpFields().getCSV(HttpHeader.CONNECTION, false))
         {
             HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
@@ -1047,21 +1047,52 @@ public class Response implements HttpServletResponse
             }
         }
 
-        if (preserveCookies)
-            cookies.forEach(_fields::add);
-        else
+        // recreate session cookies
+        Request request = getHttpChannel().getRequest();
+        HttpSession session = request.getSession(false);
+        if (session != null && session.isNew())
         {
-            Request request = getHttpChannel().getRequest();
-            HttpSession session = request.getSession(false);
-            if (session != null && session.isNew())
+            SessionHandler sh = request.getSessionHandler();
+            if (sh != null)
             {
-                SessionHandler sh = request.getSessionHandler();
-                if (sh != null)
-                {
-                    HttpCookie c = sh.getSessionCookie(session, request.getContextPath(), request.isSecure());
-                    if (c != null)
-                        addCookie(c);
-                }
+                HttpCookie c = sh.getSessionCookie(session, request.getContextPath(), request.isSecure());
+                if (c != null)
+                    addCookie(c);
+            }
+        }
+    }
+
+    public void resetContent()
+    {
+        resetStatusAndFields();
+
+        // remove the content related response headers and keep all others
+        for (Iterator<HttpField> i = getHttpFields().iterator(); i.hasNext(); )
+        {
+            HttpField field = i.next();
+            if (field.getHeader() == null)
+                continue;
+
+            switch (field.getHeader())
+            {
+                case CONTENT_TYPE:
+                case CONTENT_LENGTH:
+                case CONTENT_ENCODING:
+                case CONTENT_LANGUAGE:
+                case CONTENT_RANGE:
+                case CONTENT_MD5:
+                case CONTENT_LOCATION:
+                case TRANSFER_ENCODING:
+                case CACHE_CONTROL:
+                case LAST_MODIFIED:
+                case EXPIRES:
+                case ETAG:
+                case DATE:
+                case VARY:
+                    i.remove();
+                    continue;
+                default:
+                    continue;
             }
         }
     }
