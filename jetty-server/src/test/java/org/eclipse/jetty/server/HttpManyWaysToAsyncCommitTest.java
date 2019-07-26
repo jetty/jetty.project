@@ -109,24 +109,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             }
         }
 
-        int expected;
-        if (inWait)
-        {
-            // throw happens before async processing, so is handled
-            expected = 500;
-        }
-        else if (dispatch)
-        {
-            // throw happen again in async dispatch
-            expected = 500;
-        }
-        else
-        {
-            // complete happens before throw, so the throw is ignored and 404 is generated.
-            expected = 404;
-        }
-
-        assertThat(response.getStatus(), is(expected));
+        assertThat(response.getStatus(), is(500));
         assertThat(handler.failure(), is(nullValue()));
     }
 
@@ -200,10 +183,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             }
         }
 
-        // If async happens during dispatch it can generate 200 before exception
-        int expected = inWait ? 500 : (dispatch ? 500 : 200);
-
-        assertThat(response.getStatus(), is(expected));
+        assertThat(response.getStatus(), is(500));
         assertThat(handler.failure(), is(nullValue()));
     }
 
@@ -276,23 +256,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             }
         }
 
-        if (inWait)
-        {
-            // Throw is done before async action and can be handled
-            assertThat(response.getStatus(), is(500));
-        }
-        else if (dispatch)
-        {
-            // async dispatch is thrown again
-            assertThat(response.getStatus(), is(500));
-        }
-        else
-        {
-            // async is done before exception, so exception is not handled
-            assertThat(response.getStatus(), is(200));
-            assertThat(response.getContent(), is("foobar"));
-        }
-
+        assertThat(response.getStatus(), is(500));
         assertThat(handler.failure(), is(nullValue()));
     }
 
@@ -945,24 +909,12 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             response = executeRequest(httpVersion);
         }
 
-        // Setting a content-length too small throws an IllegalStateException
-        if (inWait)
-        {
-            // too late
-            assertThat(response.getStatus(), is(500));
-            assertThat(handler.failure(), is(nullValue()));
-        }
-        else if (dispatch)
-        {
-            // throw on async dispatch
-            assertThat(response.getStatus(), is(500));
+        assertThat(response.getStatus(), is(500));
+
+        if (!inWait)
             assertThat(handler.failure(), not(is(nullValue())));
-        }
         else
-        {
-            assertThat(response.getStatus(), is(200));
-            assertThat(handler.failure(), not(is(nullValue())));
-        }
+            assertThat(handler.failure(), is(nullValue()));
     }
 
     private class WriteAndSetContentLengthTooSmallHandler extends ThrowExceptionOnDemandHandler

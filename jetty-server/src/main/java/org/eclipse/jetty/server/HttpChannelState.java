@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletResponse;
@@ -75,9 +74,10 @@ public class HttpChannelState
     {
         NOOP,             // No action 
         DISPATCH,         // handle a normal request dispatch
-        ASYNC_DISPATCH,   // handle an async request dispatch
         ERROR_DISPATCH,   // handle a normal error
+        ASYNC_DISPATCH,   // handle an async request dispatch
         ASYNC_ERROR,      // handle an async error
+        ASYNC_TIMEOUT,    // call asyncContexnt onTimeout
         WRITE_CALLBACK,   // handle an IO write callback
         READ_PRODUCE,     // Check is a read is possible by parsing/filling
         READ_CALLBACK,    // handle an IO read callback
@@ -260,9 +260,9 @@ public class HttpChannelState
                 case ASYNC_WOKEN:
                     if (_sendError)
                     {
-                        _sendError = false;
                         _async = Async.NOT_ASYNC;
                         _state = State.DISPATCHED;
+                        _sendError = false;
                         return Action.ERROR_DISPATCH;
                     }
 
@@ -297,21 +297,27 @@ public class HttpChannelState
                         case COMPLETE:
                             _state = State.COMPLETING;
                             return Action.COMPLETE;
+
                         case DISPATCH:
                             _state = State.DISPATCHED;
                             _async = Async.NOT_ASYNC;
                             return Action.ASYNC_DISPATCH;
+
+                        case EXPIRING:
+                            _state = State.ASYNC_ERROR;
+                            return Action.ASYNC_TIMEOUT;
+
                         case EXPIRED:
                         case ERRORED:
                             _state = State.DISPATCHED;
                             _async = Async.NOT_ASYNC;
+                            _sendError = false;
                             return Action.ERROR_DISPATCH;
+
                         case STARTED:
-                        case EXPIRING:
-                        case ERRORING:
                             _state = State.ASYNC_WAIT;
                             return Action.NOOP;
-                        case NOT_ASYNC:
+
                         default:
                             throw new IllegalStateException(getStatusStringLocked());
                     }
@@ -400,8 +406,8 @@ public class HttpChannelState
                 case COMPLETED:
                     if (_sendError)
                     {
-                        _sendError = false;
                         _state = State.DISPATCHED;
+                        _sendError = false;
                         return Action.ERROR_DISPATCH;
                     }
                     return Action.TERMINATED;
@@ -422,8 +428,8 @@ public class HttpChannelState
                 case NOT_ASYNC:
                     if (_sendError)
                     {
-                        _sendError = false;
                         _state = State.DISPATCHED;
+                        _sendError = false;
                         return Action.ERROR_DISPATCH;
                     }
                     _state = State.COMPLETING;
@@ -433,8 +439,8 @@ public class HttpChannelState
                     _async = Async.NOT_ASYNC;
                     if (_sendError)
                     {
-                        _sendError = false;
                         _state = State.DISPATCHED;
+                        _sendError = false;
                         return Action.ERROR_DISPATCH;
                     }
                     _state = State.COMPLETING;
@@ -487,9 +493,25 @@ public class HttpChannelState
                     }
 
                 case EXPIRING:
-                    // onTimeout callbacks still being called, so just WAIT
-                    _state = State.ASYNC_WAIT;
-                    return Action.WAIT;
+                    if (_state == State.ASYNC_ERROR)
+                    {
+                        // We must have already called onTimeout and nothing changed,
+                        // so we will do a normal error dispatch
+                        _state = State.DISPATCHED;
+                        _async = Async.NOT_ASYNC;
+
+                        final Request request = _channel.getRequest();
+                        ContextHandler.Context context = _event.getContext();
+                        if (context != null)
+                            request.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
+                        request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
+                        request.setAttribute(ERROR_STATUS_CODE, 500);
+                        request.setAttribute(ERROR_MESSAGE, "AsyncContext timeout");
+                        return Action.ERROR_DISPATCH;
+                    }
+                    // onTimeout callbacks need to be called
+                    _state = State.ASYNC_ERROR;
+                    return Action.ASYNC_TIMEOUT;
 
                 case EXPIRED:
                 case ERRORED:
@@ -497,6 +519,7 @@ public class HttpChannelState
                     // we were handling.  So do the error dispatch here
                     _state = State.DISPATCHED;
                     _async = Async.NOT_ASYNC;
+                    _sendError = false;
                     return Action.ERROR_DISPATCH;
 
                 default:
@@ -564,10 +587,9 @@ public class HttpChannelState
             scheduleDispatch();
     }
 
-    protected void onTimeout()
+    protected void timeout()
     {
-        final List<AsyncListener> listeners;
-        AsyncContextEvent event;
+        boolean dispatch = false;
         try (Locker.Lock lock = _locker.lock())
         {
             if (LOG.isDebugEnabled())
@@ -576,11 +598,36 @@ public class HttpChannelState
             if (_async != Async.STARTED)
                 return;
             _async = Async.EXPIRING;
+
+            if (_state == State.ASYNC_WAIT)
+            {
+                _state = State.ASYNC_WOKEN;
+                dispatch = true;
+            }
+        }
+
+        if (dispatch)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Dispatch after async timeout {}", this);
+            scheduleDispatch();
+        }
+    }
+
+    protected void onTimeout()
+    {
+        final List<AsyncListener> listeners;
+        AsyncContextEvent event;
+        try (Locker.Lock lock = _locker.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onTimeout {}", toStringLocked());
+            if (_async != Async.EXPIRING || _state != State.ASYNC_ERROR)
+                throw new IllegalStateException(toStringLocked());
             event = _event;
             listeners = _asyncListeners;
         }
 
-        final AtomicReference<Throwable> error = new AtomicReference<>();
         if (listeners != null)
         {
             Runnable task = new Runnable()
@@ -598,11 +645,6 @@ public class HttpChannelState
                         {
                             LOG.warn(x + " while invoking onTimeout listener " + listener);
                             LOG.debug(x);
-                            Throwable failure = error.get();
-                            if (failure == null)
-                                error.set(x);
-                            else if (x != failure)
-                                failure.addSuppressed(x);
                         }
                     }
                 }
@@ -615,50 +657,6 @@ public class HttpChannelState
             };
 
             runInContext(event, task);
-        }
-
-        Throwable th = error.get();
-        boolean dispatch = false;
-        try (Locker.Lock lock = _locker.lock())
-        {
-            switch (_async)
-            {
-                case EXPIRING:
-                    _async = th == null ? Async.EXPIRED : Async.ERRORING;
-                    break;
-
-                case COMPLETE:
-                case DISPATCH:
-                    if (th != null)
-                    {
-                        LOG.ignore(th);
-                        th = null;
-                    }
-                    break;
-
-                default:
-                    throw new IllegalStateException();
-            }
-
-            if (_state == State.ASYNC_WAIT)
-            {
-                _state = State.ASYNC_WOKEN;
-                dispatch = true;
-            }
-        }
-
-        if (th != null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Error after async timeout {}", this, th);
-            thrownException(th);
-        }
-
-        if (dispatch)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Dispatch after async timeout {}", this);
-            scheduleDispatch();
         }
     }
 
@@ -674,24 +672,21 @@ public class HttpChannelState
             event = _event;
             switch (_async)
             {
-                case STARTED:
-                    _async = _sendError ? Async.NOT_ASYNC : Async.COMPLETE;
-                    if (_state == State.ASYNC_WAIT)
-                    {
-                        handle = true;
-                        _state = State.ASYNC_WOKEN;
-                    }
-                    break;
-
                 case EXPIRING:
                 case ERRORING:
-                    _async = Async.COMPLETE;
+                case STARTED:
+                    _async = _sendError ? Async.NOT_ASYNC : Async.COMPLETE;
                     break;
 
                 case COMPLETE:
                     return;
                 default:
                     throw new IllegalStateException(this.getStatusStringLocked());
+            }
+            if (_state == State.ASYNC_WAIT)
+            {
+                handle = true;
+                _state = State.ASYNC_WOKEN;
             }
         }
 
@@ -706,7 +701,6 @@ public class HttpChannelState
         // normal handling.  If the request is async, we arrange for the
         // exception to be thrown from the normal handling loop and then
         // actually handled by #thrownException
-        // TODO can we just directly call thrownException?
 
         AsyncContextEvent event = null;
         try (Locker.Lock lock = _locker.lock())
@@ -755,7 +749,10 @@ public class HttpChannelState
         String message = null;
         Throwable cause = _channel.unwrap(th, BadMessageException.class, UnavailableException.class);
         if (cause == null)
+        {
             cause = th;
+            message = th.toString();
+        }
         else if (cause instanceof BadMessageException)
         {
             BadMessageException bme = (BadMessageException)cause;
@@ -764,38 +761,66 @@ public class HttpChannelState
         }
         else if (cause instanceof UnavailableException)
         {
+            message = cause.toString();
             if (((UnavailableException)cause).isPermanent())
                 code = HttpStatus.NOT_FOUND_404;
             else
                 code = HttpStatus.SERVICE_UNAVAILABLE_503;
         }
 
-        // Check state to see if we are async or not
         final AsyncContextEvent asyncEvent;
         final List<AsyncListener> asyncListeners;
-        boolean dispatch = false;
         try (Locker.Lock lock = _locker.lock())
         {
+            // This can only be called from within the handle loop
+            switch (_state)
+            {
+                case ASYNC_WAIT:
+                case ASYNC_WOKEN:
+                case IDLE:
+                    throw new IllegalStateException(_state.toString());
+                default:
+                    break;
+            }
+
+            // Check async state to determine type of handling
             switch (_async)
             {
                 case NOT_ASYNC:
                     // error not in async, will be handled by error handler in normal handler loop.
                     asyncEvent = null;
                     asyncListeners = null;
+                    if (_sendError)
+                    {
+                        LOG.warn("unhandled due to prior sendError in state " + _async, cause);
+                        return;
+                    }
                     break;
+
+                case DISPATCH:
+                case COMPLETE:
+                case EXPIRED:
+                    if (_state != State.DISPATCHED)
+                    {
+                        LOG.warn("unhandled in state " + _state + "/" + _async, cause);
+                        return;
+                    }
+                    // Async life cycle method has been correctly called, but not yet acted on
+                    // so we can fall through to same action as STARTED
 
                 case STARTED:
                     asyncEvent = _event;
+                    asyncEvent.addThrowable(th);
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
                     {
                         // error in async, but no listeners so handle it with error dispatch
+                        if (_sendError)
+                        {
+                            LOG.warn("unhandled due to prior sendError in state " + _async, cause);
+                            return;
+                        }
                         asyncListeners = null;
                         _async = Async.ERRORED;
-                        if (_state == State.ASYNC_WAIT)
-                        {
-                            _state = State.ASYNC_WOKEN;
-                            dispatch = true;
-                        }
                     }
                     else
                     {
@@ -813,7 +838,6 @@ public class HttpChannelState
         }
 
         // If we are async and have async listeners
-        boolean sendErrorCalled = false;
         if (asyncEvent != null && asyncListeners != null)
         {
             // call onError
@@ -847,19 +871,16 @@ public class HttpChannelState
             // check the actions of the listeners
             try (Locker.Lock lock = _locker.lock())
             {
+                // if anybody has called sendError then we've handled as much as we can by calling listeners
+                if (_sendError)
+                    return;
+
                 switch (_async)
                 {
                     case ERRORING:
-                        sendErrorCalled = _sendError;
-
-                        // Still in ERROR state? The listeners did not invoke API methods
+                        // The listeners did not invoke API methods
                         // and the container must provide a default error dispatch.
                         _async = Async.ERRORED;
-                        if (_state == State.ASYNC_WAIT)
-                        {
-                            _state = State.ASYNC_WOKEN;
-                            dispatch = true;
-                        }
                         break;
 
                     case DISPATCH:
@@ -879,15 +900,7 @@ public class HttpChannelState
         final Request request = _channel.getRequest();
         request.setAttribute(ERROR_EXCEPTION, cause);
         request.setAttribute(ERROR_EXCEPTION_TYPE, cause.getClass());
-        if (!sendErrorCalled)
-            sendError(code, message);
-
-        if (dispatch)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Dispatch after error {}", this);
-            scheduleDispatch();
-        }
+        sendError(code, message);
     }
 
     public void sendError(int code, String message)
@@ -932,7 +945,10 @@ public class HttpChannelState
                 case ASYNC_WAIT:
                     _sendError = true;
                     if (_event != null)
-                        _event.addThrowable(SEND_ERROR_CAUSE);
+                    {
+                        Throwable cause = (Throwable) request.getAttribute(ERROR_EXCEPTION);
+                        _event.addThrowable(cause == null ? SEND_ERROR_CAUSE : cause);
+                    }
                     break;
 
                 default:
@@ -941,7 +957,6 @@ public class HttpChannelState
                 }
             }
         }
-
     }
 
     protected void completed()

@@ -418,6 +418,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         break;
                     }
 
+                    case ASYNC_TIMEOUT:
+                        _state.onTimeout();
+                        break;
+
                     case ERROR_DISPATCH:
                     {
                         try
@@ -612,7 +616,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.warn(_request.getRequestURI(), failure);
         }
 
-        if (_response.isCommitted())
+        if (isCommitted())
             abort(failure);
         else
             _state.thrownException(failure);

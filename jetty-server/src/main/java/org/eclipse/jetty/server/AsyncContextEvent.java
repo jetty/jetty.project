@@ -160,7 +160,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         Scheduler.Task task = _timeoutTask;
         _timeoutTask = null;
         if (task != null)
-            _state.getHttpChannel().execute(() -> _state.onTimeout());
+            _state.getHttpChannel().execute(() -> _state.timeout());
     }
 
     public void addThrowable(Throwable e)

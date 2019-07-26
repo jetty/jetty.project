@@ -1137,7 +1137,10 @@ public class Response implements HttpServletResponse
     @Override
     public boolean isCommitted()
     {
-        return _channel.isCommitted() || _channel.isSendError();
+        // If we are in sendError state, we pretend to be committed
+        if (_channel.isSendError())
+            return true;
+        return _channel.isCommitted();
     }
 
     @Override
