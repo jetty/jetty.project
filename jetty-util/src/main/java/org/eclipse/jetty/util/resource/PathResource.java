@@ -19,14 +19,12 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
@@ -379,9 +377,7 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        // Use a FileInputStream rather than Files.newInputStream(path)
-        // since it produces a stream with a fast skip implementation
-        return new FileInputStream(getFile());
+        return Files.newInputStream(path, StandardOpenOption.READ, StandardOpenOption.SPARSE);
     }
 
     @Override
@@ -393,7 +389,7 @@ public class PathResource extends Resource
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        return FileChannel.open(path, StandardOpenOption.READ);
+        return Files.newByteChannel(path, StandardOpenOption.READ, StandardOpenOption.SPARSE);
     }
 
     @Override

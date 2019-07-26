@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -47,9 +46,10 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.resource.HttpContentRangeWriter;
+import org.eclipse.jetty.server.resource.RangeWriter;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -779,9 +779,6 @@ public class ResourceService
                 ctp = "multipart/byteranges; boundary=";
             response.setContentType(ctp + multi.getBoundary());
 
-            InputStream in = content.getResource().getInputStream();
-            long pos = 0;
-
             // calculate the content-length
             int length = 0;
             String[] header = new String[ranges.size()];
@@ -801,39 +798,21 @@ public class ResourceService
             length += 2 + 2 + multi.getBoundary().length() + 2 + 2;
             response.setContentLength(length);
 
-            i = 0;
-            for (InclusiveByteRange ibr : ranges)
+            try (RangeWriter rangeWriter = HttpContentRangeWriter.newRangeWriter(content))
             {
-                multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
-
-                long start = ibr.getFirst();
-                long size = ibr.getSize();
-                if (in != null)
+                i = 0;
+                for (InclusiveByteRange ibr : ranges)
                 {
-                    // Handle non cached resource
-                    if (start < pos)
-                    {
-                        in.close();
-                        in = content.getResource().getInputStream();
-                        pos = 0;
-                    }
-                    if (pos < start)
-                    {
-                        in.skip(start - pos);
-                        pos = start;
-                    }
+                    multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
 
-                    IO.copy(in, multi, size);
-                    pos += size;
+                    long start = ibr.getFirst();
+                    long size = ibr.getSize();
+
+                    rangeWriter.writeTo(multi, start, size);
+                    i++;
                 }
-                else
-                    // Handle cached resource
-                    content.getResource().writeTo(multi, start, size);
-
-                i++;
             }
-            if (in != null)
-                in.close();
+
             multi.close();
         }
         return true;
