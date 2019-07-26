@@ -57,14 +57,34 @@ public class PathResourceTest
 
             PathResource resource = new PathResource(manifestPath);
 
-            try (ReadableByteChannel channel = resource.getReadableByteChannel())
-            {
-                assertThat("ReadableByteChannel", channel, is(not(nullValue())));
-            }
-
             try (InputStream inputStream = resource.getInputStream())
             {
                 assertThat("InputStream", inputStream, is(not(nullValue())));
+            }
+        }
+    }
+
+    @Test
+    public void testNonDefaultFileSystem_GetReadableByteChannel() throws URISyntaxException, IOException
+    {
+        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
+
+        URI uri = new URI("jar", exampleJar.toUri().toASCIIString(), null);
+        System.err.println("URI = " + uri);
+
+        Map<String, Object> env = new HashMap<>();
+        env.put("multi-release", "runtime");
+
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
+            assertThat(manifestPath, is(not(nullValue())));
+
+            PathResource resource = new PathResource(manifestPath);
+
+            try (ReadableByteChannel channel = resource.getReadableByteChannel())
+            {
+                assertThat("ReadableByteChannel", channel, is(not(nullValue())));
             }
         }
     }

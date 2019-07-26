@@ -377,7 +377,8 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        return Files.newInputStream(path, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+        // TODO: investigate if SPARSE use for default FileSystem usages is worth it
+        return Files.newInputStream(path, StandardOpenOption.READ);
     }
 
     @Override
@@ -389,7 +390,8 @@ public class PathResource extends Resource
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        return Files.newByteChannel(path, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+        // TODO: investigate if SPARSE use for default FileSystem usages is worth it
+        return Files.newByteChannel(path, StandardOpenOption.READ);
     }
 
     @Override
