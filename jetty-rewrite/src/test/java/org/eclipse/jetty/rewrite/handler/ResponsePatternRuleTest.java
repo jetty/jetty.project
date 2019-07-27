@@ -61,7 +61,7 @@ public class ResponsePatternRuleTest extends AbstractRuleTestCase
             _rule.apply(null, _request, _response);
 
             assertEquals(i, _response.getStatus());
-            assertEquals(null, _response.getReason());
+            assertEquals("reason" + i, _response.getReason());
         }
     }
 

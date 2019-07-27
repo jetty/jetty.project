@@ -625,8 +625,11 @@ public class Response implements HttpServletResponse
             throw new IllegalArgumentException();
         if (!isIncluding())
         {
+            // Null the reason only if the status is different. This allows
+            // a specific reason to be sent with setStatusWithReason followed by sendError.
+            if (_status != sc)
+                _reason = null;
             _status = sc;
-            _reason = null;
         }
     }
 
