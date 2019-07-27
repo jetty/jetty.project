@@ -180,4 +180,14 @@ public enum HttpMethod
         return toString();
     }
 
+    /**
+     * Converts the given String parameter to an HttpMethod
+     *
+     * @param method the String to get the equivalent HttpMethod from
+     * @return the HttpMethod or null if the parameter method is unknown
+     */
+    public static HttpMethod fromString(String method)
+    {
+        return CACHE.get(method);
+    }
 }
