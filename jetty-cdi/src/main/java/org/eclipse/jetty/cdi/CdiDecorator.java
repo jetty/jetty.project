@@ -34,9 +34,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * The CDI provide is invoked using {@link MethodHandle}s to avoid any CDI instance or dependencies within the server scope.
  * The code invoked is equivalent to:
  * <pre>
- * public <T> T decorate(T o) {
+ * public &lt;T&gt; T decorate(T o)
+ * {
  *   BeanManager manager = CDI.current().getBeanManager();
- *   manager.createInjectionTarget(manager.createAnnotatedType((Class<T>)o.getClass()))
+ *   manager.createInjectionTarget(manager.createAnnotatedType((Class&lt;T&gt;)o.getClass()))
  *     .inject(o,manager.createCreationalContext(null));
  *   return o;
  * }
