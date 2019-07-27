@@ -544,7 +544,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         }
 
                         // RFC 7230, section 3.3.
-                        if (!_response.isContentComplete(_response.getHttpOutput().getWritten()))
+                        if (!_request.isHead() && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
                         {
                             if (isCommitted())
                                 abort(new IOException("insufficient content written"));
