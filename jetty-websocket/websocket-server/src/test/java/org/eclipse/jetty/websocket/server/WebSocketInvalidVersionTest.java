@@ -89,6 +89,6 @@ public class WebSocketInvalidVersionTest
             connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
         });
         assertThat(x.getCause(), instanceOf(UpgradeException.class));
-        assertThat(x.getMessage(), containsString("400 Unsupported websocket version specification"));
+        assertThat(x.getMessage(), containsString("400 "));
     }
 }

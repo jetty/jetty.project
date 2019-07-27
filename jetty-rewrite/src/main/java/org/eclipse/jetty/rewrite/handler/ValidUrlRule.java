@@ -22,6 +22,8 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -88,11 +90,14 @@ public class ValidUrlRule extends Rule
                 // status code 400 and up are error codes so include a reason
                 if (code >= 400)
                 {
-                    response.sendError(code, _reason);
+                    response.sendError(code);
+                    if (!StringUtil.isBlank(_reason))
+                        Request.getBaseRequest(request).getResponse().setStatusWithReason(code, _reason);
                 }
                 else
                 {
                     response.setStatus(code);
+                    response.flushBuffer();
                 }
 
                 // we have matched, return target and consider it is handled
