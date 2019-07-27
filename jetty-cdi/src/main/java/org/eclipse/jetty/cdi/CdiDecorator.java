@@ -21,6 +21,8 @@ package org.eclipse.jetty.cdi;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.log.Log;
@@ -54,12 +56,15 @@ public class CdiDecorator implements Decorator
     private final Class<?> _injectionTargetClass;
     private final Class<?> _creationalContextClass;
     private final Class<?> _contextualClass;
+    private final Map<Object, Object> _creationalContexts = new HashMap<>();
 
     private MethodHandle _createAnnotatedType;
     private MethodHandle _createInjectionTarget;
     private MethodHandle _createCreationalContext;
     private MethodHandle _inject;
     private MethodHandle _destroy;
+    private MethodHandle _release;
+
 
     public CdiDecorator(WebAppContext context) throws ClassNotFoundException, UnsupportedOperationException
     {
@@ -116,6 +121,7 @@ public class CdiDecorator implements Decorator
             Object annotatedType = _createAnnotatedType.invoke(o.getClass());
             Object injectionTarget = _createInjectionTarget.invoke(annotatedType);
             Object creationalContext = _createCreationalContext.invoke();
+            _creationalContexts.put(o, creationalContext);
             _inject.invoke(injectionTarget, o, creationalContext);
         }
         catch (Throwable th)
@@ -143,8 +149,13 @@ public class CdiDecorator implements Decorator
                 Object cdi = current.invoke();
                 _destroy = lookup.findVirtual(_cdiClass, "destroy", MethodType.methodType(Void.TYPE, Object.class))
                     .bindTo(cdi);
+
+                _release = lookup.findVirtual(_creationalContextClass, "release", MethodType.methodType(Void.TYPE));
             }
             _destroy.invoke(o);
+            Object creationalContext = _creationalContexts.remove(o);
+            if (creationalContext!=null)
+                _release.invoke(creationalContext);
         }
         catch (Throwable th)
         {
