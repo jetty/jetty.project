@@ -97,7 +97,6 @@ public class ValidUrlRule extends Rule
                 else
                 {
                     response.setStatus(code);
-                    response.flushBuffer();
                 }
 
                 // we have matched, return target and consider it is handled

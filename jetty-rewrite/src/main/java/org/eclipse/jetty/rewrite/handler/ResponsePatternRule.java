@@ -22,7 +22,6 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -80,10 +79,7 @@ public class ResponsePatternRule extends PatternRule
         // status code 400 and up are error codes
         if (code >= 400)
         {
-            if (StringUtil.isBlank(_reason))
-                response.sendError(code);
-            else
-                response.sendError(code, _reason);
+            response.sendError(code, _reason);
         }
         else
         {

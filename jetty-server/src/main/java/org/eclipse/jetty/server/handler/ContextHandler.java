@@ -1276,19 +1276,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (new_context)
                 requestInitialized(baseRequest, request);
 
-            switch (dispatch)
+            if (dispatch == DispatcherType.REQUEST && isProtectedTarget(target))
             {
-                case REQUEST:
-                    if (isProtectedTarget(target))
-                    {
-                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
-                        baseRequest.setHandled(true);
-                        return;
-                    }
-                    break;
-
-                default:
-                    break;
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                baseRequest.setHandled(true);
+                return;
             }
 
             nextHandle(target, baseRequest, request, response);

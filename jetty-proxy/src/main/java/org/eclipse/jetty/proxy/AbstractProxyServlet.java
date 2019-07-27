@@ -682,12 +682,12 @@ public abstract class AbstractProxyServlet extends HttpServlet
             catch (IllegalStateException e)
             {
                 _log.ignore(e);
+                // Abort connection instead
                 proxyResponse.sendError(-1);
             }
         }
         catch (Exception e)
         {
-            // Abort connection instead
             _log.ignore(e);
         }
         finally

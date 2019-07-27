@@ -74,8 +74,8 @@ public class HttpChannelState
     {
         NOOP,             // No action 
         DISPATCH,         // handle a normal request dispatch
-        ERROR_DISPATCH,   // handle a normal error
         ASYNC_DISPATCH,   // handle an async request dispatch
+        ERROR_DISPATCH,   // handle a normal error
         ASYNC_ERROR,      // handle an async error
         ASYNC_TIMEOUT,    // call asyncContexnt onTimeout
         WRITE_CALLBACK,   // handle an IO write callback

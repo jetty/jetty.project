@@ -257,8 +257,6 @@ public class ErrorHandler extends AbstractHandler
             default:
                 return;
         }
-
-
     }
 
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)
