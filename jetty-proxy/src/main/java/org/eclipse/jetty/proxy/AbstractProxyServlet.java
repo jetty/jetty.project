@@ -675,10 +675,19 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 proxyResponse.resetBuffer();
                 proxyResponse.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
             }
-            proxyResponse.sendError(status);
+            try
+            {
+                proxyResponse.sendError(status);
+            }
+            catch (IllegalStateException e)
+            {
+                _log.ignore(e);
+                proxyResponse.sendError(-1);
+            }
         }
         catch (Exception e)
         {
+            // Abort connection instead
             _log.ignore(e);
         }
         finally
