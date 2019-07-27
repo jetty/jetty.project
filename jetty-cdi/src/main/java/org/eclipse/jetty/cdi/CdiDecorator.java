@@ -56,13 +56,13 @@ public class CdiDecorator implements Decorator
     private final Class<?> _injectionTargetClass;
     private final Class<?> _creationalContextClass;
     private final Class<?> _contextualClass;
-    private final Map<Object, Object> _creationalContexts = new HashMap<>();
+    private final Map<Object, Decorated> _decorated = new HashMap<>();
 
     private MethodHandle _createAnnotatedType;
     private MethodHandle _createInjectionTarget;
     private MethodHandle _createCreationalContext;
     private MethodHandle _inject;
-    private MethodHandle _destroy;
+    private MethodHandle _dispose;
     private MethodHandle _release;
 
 
@@ -101,10 +101,10 @@ public class CdiDecorator implements Decorator
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decorate {} in {}", o, _context);
-            if (_inject == null)
+
+            if (_release == null)
             {
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
-
                 MethodHandle current = lookup.findStatic(_cdiClass, "current", MethodType.methodType(_cdiClass));
                 MethodHandle getBeanManager = lookup.findVirtual(_cdiClass, "getBeanManager", MethodType.methodType(_beanManagerClass));
                 Object manager = getBeanManager.invoke(current.invoke());
@@ -116,13 +116,11 @@ public class CdiDecorator implements Decorator
                 _createCreationalContext = lookup.findVirtual(_beanManagerClass, "createCreationalContext", MethodType.methodType(_creationalContextClass, _contextualClass))
                     .bindTo(manager).bindTo(null);
                 _inject = lookup.findVirtual(_injectionTargetClass, "inject", MethodType.methodType(Void.TYPE, Object.class, _creationalContextClass));
+                _dispose = lookup.findVirtual(_injectionTargetClass, "dispose", MethodType.methodType(Void.TYPE, Object.class));
+                _release = lookup.findVirtual(_creationalContextClass, "release", MethodType.methodType(Void.TYPE));
             }
 
-            Object annotatedType = _createAnnotatedType.invoke(o.getClass());
-            Object injectionTarget = _createInjectionTarget.invoke(annotatedType);
-            Object creationalContext = _createCreationalContext.invoke();
-            _creationalContexts.put(o, creationalContext);
-            _inject.invoke(injectionTarget, o, creationalContext);
+            _decorated.put(o, new Decorated(o));
         }
         catch (Throwable th)
         {
@@ -142,24 +140,33 @@ public class CdiDecorator implements Decorator
     {
         try
         {
-            if (_destroy == null)
-            {
-                MethodHandles.Lookup lookup = MethodHandles.lookup();
-                MethodHandle current = lookup.findStatic(_cdiClass, "current", MethodType.methodType(_cdiClass));
-                Object cdi = current.invoke();
-                _destroy = lookup.findVirtual(_cdiClass, "destroy", MethodType.methodType(Void.TYPE, Object.class))
-                    .bindTo(cdi);
-
-                _release = lookup.findVirtual(_creationalContextClass, "release", MethodType.methodType(Void.TYPE));
-            }
-            _destroy.invoke(o);
-            Object creationalContext = _creationalContexts.remove(o);
-            if (creationalContext!=null)
-                _release.invoke(creationalContext);
+            Decorated decorated = _decorated.remove(o);
+            if (decorated!=null)
+                decorated.destroy(o);
         }
         catch (Throwable th)
         {
             LOG.warn("Unable to destroy " + o, th);
+        }
+    }
+
+    private class Decorated
+    {
+        private final Object _injectionTarget;
+        private final Object _creationalContext;
+
+        Decorated(Object o) throws Throwable
+        {
+            Object annotatedType = _createAnnotatedType.invoke(o.getClass());
+            _injectionTarget = _createInjectionTarget.invoke(annotatedType);
+            _creationalContext = _createCreationalContext.invoke();
+            _inject.invoke(_injectionTarget, o, _creationalContext);
+        }
+
+        public void destroy(Object o) throws Throwable
+        {
+            _dispose.invoke(_injectionTarget, o);
+            _release.invoke(_creationalContext);
         }
     }
 }
