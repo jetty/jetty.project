@@ -518,7 +518,6 @@
           <artifactId>maven-invoker-plugin</artifactId>
           <version>3.2.1-SNAPSHOT</version>
           <configuration>
-            <useLocalRepository>true</useLocalRepository>
             <writeJunitReport>true</writeJunitReport>
             <junitPackageName>org.eclipse.jetty.maven.its</junitPackageName>
             <debug>${it.debug}</debug>
@@ -530,7 +529,7 @@
             <timeoutInSeconds>300</timeoutInSeconds>
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
-            <settingsFile>src/it/settings.xml</settingsFile>
+            <!--settingsFile>src/it/settings.xml</settingsFile-->
             <skipInvocation>${skipTests}</skipInvocation>
             <pomIncludes>
               <pomInclude>*/pom.xml</pomInclude>
