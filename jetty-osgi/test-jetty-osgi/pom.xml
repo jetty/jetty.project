@@ -43,7 +43,7 @@
     <dependency>
       <groupId>org.ops4j.pax.swissbox</groupId>
       <artifactId>pax-swissbox-framework</artifactId>
-      <version>1.8.3</version>
+      <version>1.8.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
