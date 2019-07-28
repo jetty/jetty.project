@@ -121,7 +121,6 @@ public class TestOSGiUtil
         String settingsFilePath = System.getProperty("settingsFilePath");
         if (!StringUtil.isBlank(settingsFilePath))
         {
-            System.out.println( "SETTINGS PAX: " + settingsFilePath );
             res.add( systemProperty( "org.ops4j.pax.url.mvn.settings" ).value( System.getProperty( "settingsFilePath" ) ) );
         }
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
