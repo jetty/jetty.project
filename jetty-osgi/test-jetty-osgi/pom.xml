@@ -449,6 +449,7 @@
             <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+              <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
           </configuration>
           <!-- paxexam still using junit 4 so we have to force the provider here -->
