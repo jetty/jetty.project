@@ -73,6 +73,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
+            mavenBuild("jdk11", "install -f build-resources", "maven3", true)
             mavenBuild("jdk11", "install checkstyle:check -DskipTests", "maven3", true)
             recordIssues(
                     enabledForFailure: true, aggregatingResults: true,
