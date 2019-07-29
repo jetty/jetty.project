@@ -32,6 +32,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LocalAsyncContextTest
 {
+    public static final Logger LOG = Log.getLogger(LocalAsyncContextTest.class);
     protected Server _server;
     protected SuspendHandler _handler;
     protected Connector _connector;
@@ -232,6 +235,7 @@ public class LocalAsyncContextTest
 
     private synchronized String process(String content) throws Exception
     {
+        LOG.debug("TEST process: {}", content);
         reset();
         String request = "GET / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
@@ -305,6 +309,7 @@ public class LocalAsyncContextTest
         @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
+            LOG.debug("handle {} {}", baseRequest.getDispatcherType(), baseRequest);
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             {
                 if (_read > 0)

@@ -278,17 +278,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 }
                 else if (filled < 0)
                 {
-                    switch (_channel.getState().getState())
-                    {
-                        case COMPLETING:
-                        case COMPLETED:
-                        case IDLE:
-                        case ASYNC_ERROR:
-                            getEndPoint().shutdownOutput();
-                            break;
-                        default:
-                            break;
-                    }
+                    if (_channel.getState().isIdle())
+                        getEndPoint().shutdownOutput();
                     break;
                 }
             }

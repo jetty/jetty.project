@@ -142,18 +142,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private volatile Throwable _onError;
 
     /*
-    ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSED
-    -------------------------------------------------------------------------------------------
-    setWriteListener() READY->owp ise        ise        ise           ise           ise
-    write()            OPEN       ise        PENDING    wpe           wpe           eof
-    flush()            OPEN       ise        PENDING    wpe           wpe           eof
-    close()            CLOSED     CLOSED     CLOSED     CLOSED        CLOSED        CLOSED
-    isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false CLOSED:true
-    write completed    -          -          -          ASYNC         READY->owp    -
+    ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSING     CLOSED
+    --------------------------------------------------------------------------------------------------
+    setWriteListener() READY->owp ise        ise        ise           ise           ise         ise
+    write()            OPEN       ise        PENDING    wpe           wpe           eof         eof
+    flush()            OPEN       ise        PENDING    wpe           wpe           eof         eof
+    close()            CLOSING    CLOSING    CLOSING    CLOSED        CLOSED        CLOSING     CLOSED
+    isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false CLOSED:true CLOSED:true
+    write completed    -          -          -          ASYNC         READY->owp    CLOSED      -
     */
     private enum OutputState
     {
-        OPEN, ASYNC, READY, PENDING, UNREADY, ERROR, CLOSED
+        OPEN, ASYNC, READY, PENDING, UNREADY, ERROR, CLOSING, CLOSED
     }
 
     private final AtomicReference<OutputState> _state = new AtomicReference<>(OutputState.OPEN);
@@ -284,6 +284,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             OutputState state = _state.get();
             switch (state)
             {
+                case CLOSING:
                 case CLOSED:
                 {
                     return;
@@ -292,12 +293,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     // A close call implies a write operation, thus in asynchronous mode
                     // a call to isReady() that returned true should have been made.
-                    // However it is desirable to allow a close at any time, specially if 
+                    // However it is desirable to allow a close at any time, specially if
                     // complete is called.   Thus we simulate a call to isReady here, assuming
                     // that we can transition to READY.
-                    if (!_state.compareAndSet(state, OutputState.READY))// TODO review this! Why READY? // Should it continue?
-                        continue;
-                    break;
+                    _state.compareAndSet(state, OutputState.READY);
+                    continue;
                 }
                 case UNREADY:
                 case PENDING:
@@ -318,7 +318,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
                 default:
                 {
-                    if (!_state.compareAndSet(state, OutputState.CLOSED))
+                    if (!_state.compareAndSet(state, OutputState.CLOSING))
                         continue;
 
                     // Do a normal close by writing the aggregate buffer or an empty buffer. If we are
@@ -330,10 +330,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     catch (IOException x)
                     {
                         LOG.ignore(x); // Ignore it, it's been already logged in write().
-                    }
-                    finally
-                    {
-                        releaseBuffer();
                     }
                     // Return even if an exception is thrown by write().
                     return;
@@ -368,6 +364,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     if (!_state.compareAndSet(state, OutputState.CLOSED))
                         break;
 
+                    // Just make sure write and output stream really are closed
                     try
                     {
                         _channel.getResponse().closeOutput();
@@ -402,6 +399,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         switch (_state.get())
         {
+            case CLOSING:
             case CLOSED:
                 return true;
             default:
@@ -444,15 +442,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     new AsyncFlush().iterate();
                     return;
 
-                case PENDING:
-                    return;
-
                 case UNREADY:
                     throw new WritePendingException();
 
                 case ERROR:
                     throw new EofException(_onError);
 
+                case PENDING:
+                case CLOSING:
                 case CLOSED:
                     return;
 
@@ -516,6 +513,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case ERROR:
                     throw new EofException(_onError);
 
+                case CLOSING:
                 case CLOSED:
                     throw new EofException("Closed");
 
@@ -582,9 +580,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             write(BufferUtil.EMPTY_BUFFER, true);
         }
-
-        if (last)
-            closed();
     }
 
     public void write(ByteBuffer buffer) throws IOException
@@ -620,6 +615,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case ERROR:
                     throw new EofException(_onError);
 
+                case CLOSING:
                 case CLOSED:
                     throw new EofException("Closed");
 
@@ -642,9 +638,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             write(buffer, last);
         else if (last)
             write(BufferUtil.EMPTY_BUFFER, true);
-
-        if (last)
-            closed();
     }
 
     @Override
@@ -665,11 +658,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
                     // Check if all written or full
                     if (complete || BufferUtil.isFull(_aggregate))
-                    {
                         write(_aggregate, complete);
-                        if (complete)
-                            closed();
-                    }
                     break;
 
                 case ASYNC:
@@ -702,6 +691,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case ERROR:
                     throw new EofException(_onError);
 
+                case CLOSING:
                 case CLOSED:
                     throw new EofException("Closed");
 
@@ -839,7 +829,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         _written += content.remaining();
         write(content, true);
-        closed();
     }
 
     /**
@@ -1003,6 +992,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     callback.failed(new EofException(_onError));
                     return;
 
+                case CLOSING:
                 case CLOSED:
                     callback.failed(new EofException("Closed"));
                     return;
@@ -1139,6 +1129,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case OPEN:
                 case READY:
                 case ERROR:
+                case CLOSING:
                 case CLOSED:
                     return true;
 
@@ -1172,6 +1163,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 switch (state)
                 {
+                    case CLOSING:
                     case CLOSED:
                     case ERROR:
                     {

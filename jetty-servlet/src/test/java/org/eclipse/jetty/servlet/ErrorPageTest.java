@@ -447,7 +447,7 @@ public class ErrorPageTest
                             hold.countDown();
 
                             // Wait until request async waiting
-                            while (Request.getBaseRequest(request).getHttpChannelState().getState() != HttpChannelState.State.ASYNC_WAIT)
+                            while (Request.getBaseRequest(request).getHttpChannelState().getState() != HttpChannelState.State.WAITING)
                             {
                                 try
                                 {

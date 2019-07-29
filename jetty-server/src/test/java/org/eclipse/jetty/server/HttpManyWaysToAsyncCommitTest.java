@@ -970,11 +970,11 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                 {
                     switch (request.getHttpChannelState().getState())
                     {
-                        case ASYNC_WAIT:
+                        case WAITING:
                             task.run();
                             return;
 
-                        case DISPATCHED:
+                        case HANDLING:
                             Thread.sleep(100);
                             continue;
 
