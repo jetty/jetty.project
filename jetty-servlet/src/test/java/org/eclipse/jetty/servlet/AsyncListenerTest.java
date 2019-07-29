@@ -194,7 +194,7 @@ public class AsyncListenerTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(0);
+                asyncContext.setTimeout(10000);
                 asyncContext.addListener(new AsyncListenerAdapter()
                 {
                     @Override
@@ -389,7 +389,7 @@ public class AsyncListenerTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(0);
+                asyncContext.setTimeout(10000);
                 asyncContext.addListener(new AsyncListenerAdapter()
                 {
                     @Override

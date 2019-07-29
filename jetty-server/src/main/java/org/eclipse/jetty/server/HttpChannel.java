@@ -505,6 +505,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         throw _state.getAsyncContextEvent().getThrowable();
                     }
 
+                    case READ_REGISTER:
+                    {
+                        onAsyncWaitForContent();
+                    }
+
                     case READ_PRODUCE:
                     {
                         _request.getHttpInput().asyncReadProduce();
@@ -670,11 +675,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public String toString()
     {
         long timeStamp = _request.getTimeStamp();
-        return String.format("%s@%x{r=%s,c=%b,c=%b/%b,a=%s,uri=%s,age=%d}",
+        return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
             getClass().getSimpleName(),
             hashCode(),
+            _state,
             _requests,
-            _state.isResponseCommitted(),
             isRequestCompleted(),
             isResponseCompleted(),
             _state.getState(),

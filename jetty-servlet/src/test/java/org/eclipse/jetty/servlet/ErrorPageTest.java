@@ -321,11 +321,11 @@ public class ErrorPageTest
     }
 
     @Test
-    public void testAsyncErrorPage0() throws Exception
+    public void testAsyncErrorPageDSC() throws Exception
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
-            String response = _connector.getResponse("GET /async/info HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponse("GET /async/info?mode=DSC HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
@@ -338,11 +338,28 @@ public class ErrorPageTest
     }
 
     @Test
-    public void testAsyncErrorPage1() throws Exception
+    public void testAsyncErrorPageSDC() throws Exception
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
-            String response = _connector.getResponse("GET /async/info?latecomplete=true HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponse("GET /async/info?mode=SDC HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
+            assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testAsyncErrorPageSCD() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
+        {
+            String response = _connector.getResponse("GET /async/info?mode=SCD HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
@@ -433,46 +450,73 @@ public class ErrorPageTest
             try
             {
                 final CountDownLatch hold = new CountDownLatch(1);
+                final String mode = request.getParameter("mode");
+                switch(mode)
+                {
+                    case "DSC":
+                    case "SDC":
+                    case "SCD":
+                        break;
+                    default:
+                        throw new IllegalStateException(mode);
+                }
+
                 final boolean lateComplete = "true".equals(request.getParameter("latecomplete"));
                 AsyncContext async = request.startAsync();
                 async.start(() ->
                 {
                     try
                     {
-                        response.sendError(599);
-
-                        if (lateComplete)
+                        switch(mode)
                         {
-                            // Complete after original servlet
-                            hold.countDown();
-
-                            // Wait until request async waiting
-                            while (Request.getBaseRequest(request).getHttpChannelState().getState() != HttpChannelState.State.WAITING)
-                            {
-                                try
-                                {
-                                    Thread.sleep(10);
-                                }
-                                catch (InterruptedException e)
-                                {
-                                    e.printStackTrace();
-                                }
-                            }
-                            async.complete();
-                            __asyncSendErrorCompleted.countDown();
+                            case "SDC":
+                                response.sendError(599);
+                                break;
+                            case "SCD":
+                                response.sendError(599);
+                                async.complete();
+                                break;
+                            default:
+                                break;
                         }
-                        else
+
+                        // Complete after original servlet
+                        hold.countDown();
+
+                        // Wait until request async waiting
+                        while (Request.getBaseRequest(request).getHttpChannelState().getState() == HttpChannelState.State.HANDLING)
                         {
-                            // Complete before original servlet
                             try
                             {
-                                async.complete();
-                                __asyncSendErrorCompleted.countDown();
+                                Thread.sleep(10);
                             }
-                            finally
+                            catch (InterruptedException e)
                             {
-                                hold.countDown();
+                                e.printStackTrace();
                             }
+                        }
+                        try
+                        {
+                            switch (mode)
+                            {
+                                case "DSC":
+                                    response.sendError(599);
+                                    async.complete();
+                                    break;
+                                case "SDC":
+                                    async.complete();
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        catch(IllegalStateException e)
+                        {
+                            Log.getLog().ignore(e);
+                        }
+                        finally
+                        {
+                            __asyncSendErrorCompleted.countDown();
                         }
                     }
                     catch (IOException e)
