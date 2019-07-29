@@ -441,7 +441,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 }
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HTTP2 Response #%d/%h idle timeout", stream.getId(), stream.getSession()), failure);
+                LOG.debug(String.format("HTTP2 Response #%d/%h idle timeout %s", stream.getId(), stream.getSession(), result ? "expired" : "ignored"), failure);
             if (result)
                 callback.failed(failure);
             return result;
