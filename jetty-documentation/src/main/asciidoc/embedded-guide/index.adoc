@@ -1,0 +1,77 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+
+:doctitle: Eclipse Jetty: Embedded Guide
+:author: Jetty Developers
+:email: jetty-dev@eclipse.org
+:revnumber: 1.0
+:revdate: {TIMESTAMP}
+:toc: left
+:toc-title: Embedded Guide
+:toc-image: ../../common/images/jetty-logo.svg
+:toc-image-url: /jetty/index.html
+:breadcrumb: Home:../index.html | Embedded Guide:./index.html
+
+// docinfo lets you pull in shared content and/or influence via render type
+//:docinfodir: {DOCINFODIR}/documentation
+//:docinfo1:
+
+// html specific directives
+ifdef::backend-html5[]
+:safe-mode-unsafe:
+:stylesdir: ../common/css
+:stylesheet: jetty.css
+:linkcss:
+:scriptsdir: ../common/js
+endif::[]
+
+// options for special blocks, code snippets, screen, etc
+:sub-order: attributes+
+
+// suppress document footer generation
+//:nofooter:
+
+// suppress Eclipse footer
+:no-eclipse-footer:
+
+// uncomment to allow include::https:// style content inclusion
+//:allow-uri-read: true
+
+// use fonts for admonitions
+:icons: font
+
+// suppress automatic id generation
+:sectids!:
+
+include::embedding/chapter.adoc[]
+include::maven/chapter.adoc[]
+include::clients/http/chapter.adoc[]
+include::handlers/chapter.adoc[]
+include::websockets/intro/chapter.adoc[]
+include::websockets/jetty/chapter.adoc[]
+include::ant/chapter.adoc[]
+include::continuations/chapter.adoc[]
+include::frameworks/chapter.adoc[]
+include::architecture/chapter.adoc[]
+include::platforms/chapter.adoc[]
+include::jetty-xml/chapter.adoc[]
+include::troubleshooting/chapter.adoc[]
+include::debugging/chapter.adoc[]
+//include::contributing/chapter.adoc[]
+include::upgrading/chapter.adoc[]
