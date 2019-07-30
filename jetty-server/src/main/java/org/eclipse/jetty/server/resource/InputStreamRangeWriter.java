@@ -29,6 +29,9 @@ import org.eclipse.jetty.util.IO;
  */
 public class InputStreamRangeWriter implements RangeWriter
 {
+
+    public static final int NO_PROGRESS_LIMIT = 3;
+
     public interface InputStreamSupplier
     {
         InputStream newInputStream() throws IOException;
@@ -85,7 +88,7 @@ public class InputStreamRangeWriter implements RangeWriter
         {
             long skipSoFar = pos;
             long actualSkipped;
-            int noProgressLoopLimit = 3;
+            int noProgressLoopLimit = NO_PROGRESS_LIMIT;
             // loop till we reach desired point, break out on lack of progress.
             while (noProgressLoopLimit > 0 && skipSoFar < skipTo)
             {
@@ -94,9 +97,17 @@ public class InputStreamRangeWriter implements RangeWriter
                 {
                     noProgressLoopLimit--;
                 }
-                else
+                else if (actualSkipped > 0)
                 {
                     skipSoFar += actualSkipped;
+                    noProgressLoopLimit = NO_PROGRESS_LIMIT;
+                }
+                else
+                {
+                    // negative values means the stream was closed or reached EOF
+                    // either way, we've hit a state where we can no longer
+                    // fulfill the requested range write.
+                    throw new IOException("EOF reached before InputStream skip destination");
                 }
             }
 
