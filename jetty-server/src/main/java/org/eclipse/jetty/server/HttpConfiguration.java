@@ -318,11 +318,21 @@ public class HttpConfiguration implements Dumpable
         return _sendXPoweredBy;
     }
 
+    /**
+     * Indicates if the {@code Date} header should be sent in responses.
+     *
+     * @param sendDateHeader true if the {@code Date} header should be sent in responses
+     */
     public void setSendDateHeader(boolean sendDateHeader)
     {
         _sendDateHeader = sendDateHeader;
     }
 
+    /**
+     * Indicates if the {@code Date} header will be sent in responses.
+     *
+     * @return true if the {@code Date} header will be sent in responses
+     */
     @ManagedAttribute("Whether to send the Date header in responses")
     public boolean getSendDateHeader()
     {
