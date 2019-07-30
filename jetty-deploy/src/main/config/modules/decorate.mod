@@ -3,11 +3,13 @@
 [description]
 Jetty setup to support Decoration of Listeners, Filters and Servlets within a deployed
 webapp (as used by some CDI integrations).
+This module uses the DecoratingListener to register an object set as a context attribute
+as a dynamic decorator. This module sets the "org.eclipse.jetty.webapp.DecoratingListener"
+context attribute with the name of the context attribute that will be listened to.
+By default the attribute is "org.eclipse.jetty.decorator".
 
-This module uses the DecoratingListener mechanism to listen for a dynamic decorator to be set on
-the "org.eclipse.jetty.cdi.decorator" context attribute. The module indicates to the webapp that
-this mechanism is available by setting the "org.eclipse.jetty.cdi" context attribute to
-"DecoratingListener".
+[tag]
+cdi
 
 [depend]
 deploy
