@@ -18,27 +18,27 @@
 
 package org.eclipse.jetty.test;
 
+import java.io.IOException;
 import javax.inject.Inject;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.annotation.WebListener;
+import javax.inject.Named;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-@WebListener
-public class MyContextListener implements ServletContextListener
+@WebServlet("/greetings")
+public class GreetingsServlet extends HttpServlet
 {
     @Inject
-    public ServerID serverId;
+    @Named("friendly")
+    public Greetings greetings;
 
     @Override
-    public void contextInitialized(ServletContextEvent sce)
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
     {
-        if (serverId == null)
-            throw new IllegalStateException("CDI did not inject!");
-        sce.getServletContext().setAttribute("ServerID", serverId.get());
-    }
-
-    @Override
-    public void contextDestroyed(ServletContextEvent sce)
-    {
+        resp.setContentType("text/plain");
+        resp.getWriter().print(greetings.getGreeting());
+        resp.getWriter().print(" from ");
+        resp.getWriter().println(getServletContext().getAttribute("ServerID"));
     }
 }

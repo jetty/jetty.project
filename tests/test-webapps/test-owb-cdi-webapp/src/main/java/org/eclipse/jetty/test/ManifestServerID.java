@@ -18,27 +18,21 @@
 
 package org.eclipse.jetty.test;
 
-import javax.inject.Inject;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.annotation.WebListener;
+import javax.enterprise.inject.Produces;
 
-@WebListener
-public class MyContextListener implements ServletContextListener
+public class ManifestServerID
 {
-    @Inject
-    public ServerID serverId;
-
-    @Override
-    public void contextInitialized(ServletContextEvent sce)
+    @Produces
+    public ServerID getServerID()
     {
-        if (serverId == null)
-            throw new IllegalStateException("CDI did not inject!");
-        sce.getServletContext().setAttribute("ServerID", serverId.get());
-    }
-
-    @Override
-    public void contextDestroyed(ServletContextEvent sce)
-    {
+        return () ->
+        {
+            String implVersion = this.getClass().getPackage().getImplementationVersion();
+            if (implVersion == null)
+                implVersion = this.getClass().getPackage().getName();
+            if (implVersion == null)
+                implVersion = "unknown";
+            return "CDI-Demo-" + implVersion;
+        };
     }
 }

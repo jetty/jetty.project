@@ -18,27 +18,16 @@
 
 package org.eclipse.jetty.test;
 
-import javax.inject.Inject;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.annotation.WebListener;
+import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.InjectionPoint;
+import javax.inject.Named;
 
-@WebListener
-public class MyContextListener implements ServletContextListener
+public class FriendlyGreetings
 {
-    @Inject
-    public ServerID serverId;
-
-    @Override
-    public void contextInitialized(ServletContextEvent sce)
+    @Produces
+    @Named("friendly")
+    public Greetings getGreetings(InjectionPoint ip)
     {
-        if (serverId == null)
-            throw new IllegalStateException("CDI did not inject!");
-        sce.getServletContext().setAttribute("ServerID", serverId.get());
-    }
-
-    @Override
-    public void contextDestroyed(ServletContextEvent sce)
-    {
+        return () -> "Hello " + ip.getMember().getDeclaringClass().getSimpleName();
     }
 }
