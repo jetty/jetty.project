@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -87,5 +88,37 @@ public class PathResourceTest
                 assertThat("ReadableByteChannel", channel, is(not(nullValue())));
             }
         }
+    }
+
+    @Test
+    public void testNonDefaultFileSystem_GetFile() throws URISyntaxException, IOException
+    {
+        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
+
+        URI uri = new URI("jar", exampleJar.toUri().toASCIIString(), null);
+        System.err.println("URI = " + uri);
+
+        Map<String, Object> env = new HashMap<>();
+        env.put("multi-release", "runtime");
+
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
+            assertThat(manifestPath, is(not(nullValue())));
+
+            PathResource resource = new PathResource(manifestPath);
+            File file = resource.getFile();
+            assertThat("File should be null for non-default FileSystem", file, is(nullValue()));
+        }
+    }
+
+    @Test
+    public void testDefaultFileSystem_GetFile() throws Exception
+    {
+        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
+        PathResource resource = new PathResource(exampleJar);
+
+        File file = resource.getFile();
+        assertThat("File for default FileSystem", file, is(exampleJar.toFile()));
     }
 }

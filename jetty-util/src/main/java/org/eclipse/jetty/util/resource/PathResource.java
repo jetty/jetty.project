@@ -28,6 +28,7 @@ import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
@@ -56,6 +57,7 @@ public class PathResource extends Resource
     private final Path path;
     private final Path alias;
     private final URI uri;
+    private final boolean belongsToDefaultFileSystem;
 
     private final Path checkAliasPath()
     {
@@ -194,6 +196,7 @@ public class PathResource extends Resource
         assertValidPath(path);
         this.uri = this.path.toUri();
         this.alias = checkAliasPath();
+        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
     }
 
     /**
@@ -214,6 +217,7 @@ public class PathResource extends Resource
             childPath += "/";
         this.uri = URIUtil.addPath(parent.uri, childPath);
         this.alias = checkAliasPath();
+        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
     }
 
     /**
@@ -254,6 +258,7 @@ public class PathResource extends Resource
         this.path = path.toAbsolutePath();
         this.uri = path.toUri();
         this.alias = checkAliasPath();
+        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
     }
 
     /**
@@ -363,6 +368,8 @@ public class PathResource extends Resource
     @Override
     public File getFile() throws IOException
     {
+        if (!belongsToDefaultFileSystem)
+            return null;
         return path.toFile();
     }
 
