@@ -322,6 +322,8 @@ public class HttpConfiguration implements Dumpable
      * Indicates if the {@code Date} header should be sent in responses.
      *
      * @param sendDateHeader true if the {@code Date} header should be sent in responses
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-7.1.1.2">HTTP/1.1 Standard Header: Date</a>
+     * @see #getSendDateHeader()
      */
     public void setSendDateHeader(boolean sendDateHeader)
     {
@@ -331,7 +333,7 @@ public class HttpConfiguration implements Dumpable
     /**
      * Indicates if the {@code Date} header will be sent in responses.
      *
-     * @return true if the {@code Date} header will be sent in responses
+     * @return true by default
      */
     @ManagedAttribute("Whether to send the Date header in responses")
     public boolean getSendDateHeader()
