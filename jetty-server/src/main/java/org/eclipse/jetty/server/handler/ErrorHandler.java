@@ -27,8 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -43,8 +41,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -246,9 +242,6 @@ public class ErrorHandler extends AbstractHandler
                 if (charset == null)
                     return;
 
-                // We can write an error page!
-                baseRequest.setHandled(true);
-
                 // We will write it into a byte array buffer so
                 // we can flush it asynchronously.
                 ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(1024);
@@ -259,53 +252,7 @@ public class ErrorHandler extends AbstractHandler
                 writer.flush();
                 ByteBuffer content = bout.size() == 0 ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(bout.getBuf(), 0, bout.size());
 
-                // Can we write asynchronously
-                if (!request.isAsyncSupported())
-                {
-                    // TODO write a test for this path
-                    // No - have to do a blocking write
-                    baseRequest.getHttpChannel().sendResponse(null, content, true);
-                    return;
-                }
-
-                // As most errors are small, asynchronous writes will frequently succeed withing the sendResponse
-                // call, so we write the error response asynchronously before calling startAsync
-                final FuturePromise<AsyncContext> async = new FuturePromise<>();
-                final AtomicBoolean written = new AtomicBoolean();
-                baseRequest.getHttpChannel().sendResponse(null, content, true, Callback.from(() ->
-                {
-                    // if we wrote within the sendResponse call, we will win this race and have nothing more to do
-                    if (!written.compareAndSet(false, true))
-                    {
-                        // TODO write a test for this path
-                        // we lost the written race, so we have to wait for the ErrorHandler to startAsync (or fail)
-                        // and then call complete
-                        try
-                        {
-                            async.get().complete();
-                        }
-                        catch (Throwable e)
-                        {
-                            LOG.ignore(e);
-                        }
-                    }
-                }));
-
-                // We will only win this race if the sendResponse above has not completed/
-                if (written.compareAndSet(false, true))
-                {
-                    try
-                    {
-                        // so we must startAsync and pass that to the callback above.
-                        async.succeeded(request.startAsync());
-                        // request handling will now proceed as if we did an error page dispatch and it called startAsync
-                    }
-                    catch (Throwable t)
-                    {
-                        // or fail in the attempt
-                        async.failed(t);
-                    }
-                }
+                baseRequest.getHttpChannel().sendCompleteResponse(content);
             }
 
             default:

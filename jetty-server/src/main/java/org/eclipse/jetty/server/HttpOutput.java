@@ -64,6 +64,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static final String LSTRING_FILE = "javax.servlet.LocalStrings";
     private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
 
+
     /**
      * The HttpOutput.Interceptor is a single intercept point for all
      * output written to the HttpOutput: via writer; via output stream;
@@ -140,6 +141,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private int _commitSize;
     private WriteListener _writeListener;
     private volatile Throwable _onError;
+    private Callback _closeCallback;
 
     /*
     ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSING     CLOSED
@@ -276,9 +278,23 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+
+    public void setClosedCallback(Callback closeCallback)
+    {
+        _closeCallback = closeCallback;
+    }
+
+    public Callback getClosedCallback()
+    {
+        return _closeCallback;
+    }
+
     @Override
     public void close()
     {
+        Callback closeCallback = _closeCallback == null ? Callback.NOOP : _closeCallback;
+        _closeCallback = null;
+
         while (true)
         {
             OutputState state = _state.get();
@@ -287,6 +303,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case CLOSING:
                 case CLOSED:
                 {
+                    closeCallback.succeeded();
                     return;
                 }
                 case ASYNC:
@@ -314,6 +331,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     LOG.warn(ex.toString());
                     LOG.debug(ex);
                     abort(ex);
+                    closeCallback.failed(ex);
                     return;
                 }
                 default:
@@ -325,13 +343,23 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     // not including, then indicate this is the last write.
                     try
                     {
-                        write(BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER, !_channel.getResponse().isIncluding());
+                        ByteBuffer content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
+                        if (closeCallback == Callback.NOOP)
+                        {
+                            // Do a blocking close
+                            write(content, !_channel.getResponse().isIncluding());
+                            closeCallback.succeeded();
+                        }
+                        else
+                        {
+                            write(content, !_channel.getResponse().isIncluding(), closeCallback);
+                        }
                     }
                     catch (IOException x)
                     {
                         LOG.ignore(x); // Ignore it, it's been already logged in write().
+                        closeCallback.failed(x);
                     }
-                    // Return even if an exception is thrown by write().
                     return;
                 }
             }
@@ -1092,6 +1120,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _onError = null;
         _firstByteTimeStamp = -1;
         _flushed = 0;
+        _closeCallback = null;
         reopen();
     }
 

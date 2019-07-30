@@ -25,11 +25,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
@@ -52,6 +54,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler.ErrorPageMapper;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -421,15 +424,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         try
                         {
+                            // Get ready to send an error response
+                            _request.setHandled(false);
+                            _response.resetContent();
+                            _response.getHttpOutput().reopen();
+
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
                             Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
                             _response.setStatus(code);
-
-                            _request.setHandled(false);
-                            _response.getHttpOutput().reopen();
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
@@ -439,8 +444,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 errorHandler == null ||
                                 !errorHandler.errorPageForMethod(_request.getMethod()))
                             {
-                                _request.setHandled(true);
-                                minimalErrorResponse(code);
+                                sendCompleteResponse(null);
                                 break;
                             }
 
@@ -488,9 +492,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                             Throwable cause = unwrap(failure, BadMessageException.class);
                             int code = cause instanceof BadMessageException ? ((BadMessageException)cause).getCode() : 500;
+                            _response.setStatus(code);
 
-                            if (!_state.isResponseCommitted())
-                                minimalErrorResponse(code);
+                            if (_state.isResponseCommitted())
+                                abort(x);
+                            else
+                                sendCompleteResponse(null);
                         }
                         finally
                         {
@@ -555,8 +562,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
                         }
-                        _response.closeOutput(); // TODO make this non blocking!
-                        _state.completed();
+
+                        // Set a close callback on the HttpOutput to make it an async callback
+                        _response.getHttpOutput().setClosedCallback(Callback.from(_state::completed)); // TODO test this actually works asynchronously
+                        _response.closeOutput();
+                        // ensure the callback actually got called
+                        if (_response.getHttpOutput().getClosedCallback() != null)
+                            _state.completed();
                         break;
                     }
 
@@ -644,16 +656,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return null;
     }
 
-    private void minimalErrorResponse(int code)
+    public void sendCompleteResponse(ByteBuffer content)
     {
         try
         {
-            _response.resetContent();
-            _response.setStatus(code);
             _request.setHandled(true);
+            _state.completing();
 
-            // TODO use the non blocking version
-            sendResponse(null, null, true);
+            final FuturePromise<AsyncContext> async = new FuturePromise<>();
+            final AtomicBoolean written = new AtomicBoolean();
+            sendResponse(null, content, true, Callback.from(() ->
+            {
+                _state.completed();
+            }));
         }
         catch (Throwable x)
         {

@@ -413,6 +413,7 @@ public class HttpChannelState
 
     private Action nextAction(boolean handling)
     {
+        // Assume we can keep going, but exceptions are below
         _state = State.HANDLING;
 
         if (_sendError)
@@ -510,15 +511,11 @@ public class HttpChannelState
                 return Action.COMPLETE;
 
             case COMPLETING:
-                if (handling)
-                    return Action.COMPLETE;
-
                 _state = State.WAITING;
                 return Action.WAIT;
 
             case COMPLETED:
                 _state = State.IDLE;
-                _lifeCycleState = LifeCycleState.COMPLETED;
                 return Action.TERMINATED;
 
             default:
@@ -961,22 +958,50 @@ public class HttpChannelState
         }
     }
 
+    protected void completing()
+    {
+        synchronized (this)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("completing {}", toStringLocked());
+
+            switch (_lifeCycleState)
+            {
+                case COMPLETED:
+                    throw new IllegalStateException(getStatusStringLocked());
+                default:
+                    _lifeCycleState = LifeCycleState.COMPLETING;
+            }
+        }
+    }
+
     protected void completed()
     {
         final List<AsyncListener> aListeners;
         final AsyncContextEvent event;
+        boolean handle = false;
 
         synchronized (this)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onComplete {}", toStringLocked());
+                LOG.debug("completed {}", toStringLocked());
 
             switch (_lifeCycleState)
             {
                 case COMPLETING:
-                    aListeners = _asyncListeners;
-                    event = _event;
-                    _lifeCycleState = LifeCycleState.COMPLETED;
+                    if (_event == null)
+                    {
+                        _lifeCycleState = LifeCycleState.COMPLETED;
+                        aListeners = null;
+                        event = null;
+                        if (_state == State.WAITING)
+                            handle = true;
+                    }
+                    else
+                    {
+                        aListeners = _asyncListeners;
+                        event = _event;
+                    }
                     break;
 
                 default:
@@ -986,38 +1011,37 @@ public class HttpChannelState
 
         if (event != null)
         {
+            cancelTimeout(event);
             if (aListeners != null)
             {
-                Runnable callback = new Runnable()
+                runInContext(event, () ->
                 {
-                    @Override
-                    public void run()
+                    for (AsyncListener listener : aListeners)
                     {
-                        for (AsyncListener listener : aListeners)
+                        try
                         {
-                            try
-                            {
-                                listener.onComplete(event);
-                            }
-                            catch (Throwable e)
-                            {
-                                LOG.warn(e + " while invoking onComplete listener " + listener);
-                                LOG.debug(e);
-                            }
+                            listener.onComplete(event);
+                        }
+                        catch (Throwable e)
+                        {
+                            LOG.warn(e + " while invoking onComplete listener " + listener);
+                            LOG.debug(e);
                         }
                     }
-
-                    @Override
-                    public String toString()
-                    {
-                        return "onComplete";
-                    }
-                };
-
-                runInContext(event, callback);
+                });
             }
             event.completed();
+
+            synchronized (this)
+            {
+                _lifeCycleState = LifeCycleState.COMPLETED;
+                if (_state == State.WAITING)
+                    handle = true;
+            }
         }
+
+        if (handle)
+            _channel.handle();
     }
 
     protected void recycle()
