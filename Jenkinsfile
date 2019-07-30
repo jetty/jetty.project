@@ -73,6 +73,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 30, unit: 'MINUTES') }
           steps {
+            mavenBuild("jdk11", "install -f build-resources", "maven3", true)
             mavenBuild("jdk11", "install checkstyle:check -DskipTests", "maven3", true)
             recordIssues(
                     enabledForFailure: true, aggregatingResults: true,
@@ -137,15 +138,13 @@ def slackNotif() {
  * @return the Jenkinsfile step representing a maven build
  */
 def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
-  def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" //
-  def settingsName = 'oss-settings.xml'
+  def localRepo = ".repository"
   def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
   withMaven(
       maven: mvnName,
       jdk: "$jdk",
       publisherStrategy: 'EXPLICIT',
-      globalMavenSettingsConfig: settingsName,
       options: [junitPublisher(disabled: junitPublishDisabled),mavenLinkerPublisher(disabled: false),pipelineGraphPublisher(disabled: false)],
       mavenOpts: mavenOpts,
       mavenLocalRepo: localRepo) {
