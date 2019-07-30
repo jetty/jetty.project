@@ -83,7 +83,28 @@ public class InputStreamRangeWriter implements RangeWriter
         }
         if (pos < skipTo)
         {
-            inputStream.skip(skipTo - pos);
+            long skipSoFar = pos;
+            long actualSkipped;
+            int noProgressLoopLimit = 3;
+            // loop till we reach desired point, break out on lack of progress.
+            while (noProgressLoopLimit > 0 && skipSoFar < skipTo)
+            {
+                actualSkipped = inputStream.skip(skipTo - skipSoFar);
+                if (actualSkipped == 0)
+                {
+                    noProgressLoopLimit--;
+                }
+                else
+                {
+                    skipSoFar += actualSkipped;
+                }
+            }
+
+            if (noProgressLoopLimit <= 0)
+            {
+                throw new IOException("No progress made to reach InputStream skip position " + (skipTo - pos));
+            }
+
             pos = skipTo;
         }
 
