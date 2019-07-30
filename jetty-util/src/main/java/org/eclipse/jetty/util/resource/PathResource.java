@@ -21,11 +21,14 @@ package org.eclipse.jetty.util.resource;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
@@ -39,6 +42,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -561,6 +565,43 @@ public class PathResource extends Resource
         else
         {
             Files.copy(this.path, destination.toPath());
+        }
+    }
+
+    /**
+     * @param outputStream the output stream to write to
+     * @param start First byte to write
+     * @param count Bytes to write or -1 for all of them.
+     * @throws IOException if unable to copy the Resource to the output
+     */
+    @Override
+    public void writeTo(OutputStream outputStream, long start, long count)
+        throws IOException
+    {
+        long length = count;
+
+        if (count < 0)
+        {
+            length = Files.size(path) - start;
+        }
+
+        try (SeekableByteChannel channel = Files.newByteChannel(path, StandardOpenOption.READ))
+        {
+            ByteBuffer buffer = BufferUtil.allocate(IO.bufferSize);
+            channel.position(start);
+
+            // copy from channel to output stream
+            long readTotal = 0;
+            while (readTotal < length)
+            {
+                BufferUtil.flipToFill(buffer);
+                int size = (int)Math.min(IO.bufferSize, length - readTotal);
+                buffer.limit(size);
+                int readLen = channel.read(buffer);
+                BufferUtil.flipToFlush(buffer, 0);
+                BufferUtil.writeTo(buffer, outputStream);
+                readTotal += readLen;
+            }
         }
     }
 
