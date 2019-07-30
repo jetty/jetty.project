@@ -804,11 +804,7 @@ public class ResourceService
                 for (InclusiveByteRange ibr : ranges)
                 {
                     multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
-
-                    long start = ibr.getFirst();
-                    long size = ibr.getSize();
-
-                    rangeWriter.writeTo(multi, start, size);
+                    rangeWriter.writeTo(multi, ibr.getFirst(), ibr.getSize());
                     i++;
                 }
             }
