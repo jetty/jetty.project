@@ -601,6 +601,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     else
                         buffer = _mappedBuffer.get();
                 }
+                // Since MappedBuffers don't use heap, we don't care about the resource.length
                 else if (_resource.length() < _maxCachedFileSize)
                 {
                     ByteBuffer direct = CachedContentFactory.this.getDirectBuffer(_resource);
