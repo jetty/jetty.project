@@ -59,6 +59,7 @@ endif::[]
 // suppress automatic id generation
 :sectids!:
 
+include::client/client.adoc[]
 include::embedding/chapter.adoc[]
 include::maven/chapter.adoc[]
 include::clients/http/chapter.adoc[]

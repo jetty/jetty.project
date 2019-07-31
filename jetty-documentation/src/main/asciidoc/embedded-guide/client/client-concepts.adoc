@@ -1,0 +1,182 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+[[client-concepts]]
+=== Client Libraries Concepts
+
+The Jetty client libraries implement a network client speaking different protocols
+such as HTTP/1.1, HTTP/2, WebSocket and FastCGI.
+
+It is possible to implement your own custom protocol on top of the Jetty client
+libraries (TODO: perhaps add a section about this).
+
+There are conceptually three layers that compose the Jetty client libraries, from
+more abstract to more concrete:
+
+. The API layer, that exposes semantic APIs to application so that they can write
+code such as "GET me the resource at this URI"
+. The protocol layer, where the API request is converted into the appropriate
+protocol bytes, for example encrypted HTTP/2
+. The infrastructure layer, that handles the low level I/O and deals with network,
+buffer, threads, etc.
+
+[[client-concepts-infrastructure]]
+==== Client Libraries Infrastructure Layer
+
+The Jetty client libraries reuse the same components also used on the server-side
+to handle the low-level network, the thread pooling, the scheduler, etc.
+The main client-side component is the
+link:{JDURL}/org/eclipse/jetty/io/ClientConnector.html[`ClientConnector`].
+
+The `ClientConnector` primarily wraps the
+link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`]
+and aggregates other four components: the thread pool (in form of an `Executor`),
+the `Scheduler`, the `ByteBufferPool` and the `SslContextFactory.Client`.
+
+The `ClientConnector` is where you want to set those five components after you
+have configured them.
+If you don't explicitly set those five components on the `ClientConnector`, then
+appropriate defaults will be chosen.
+
+The simplest example that creates and start a `ClientConnector`:
+
+[source,java,indent=0]
+----
+include::{docbits}/embedded/client/EmbeddedClientConnector.java[tags=simplest]
+----
+
+A more typical example:
+
+[source,java,indent=0]
+----
+include::{docbits}/embedded/client/EmbeddedClientConnector.java[tags=typical]
+----
+
+A more advanced example that customizes the `ClientConnector` by overriding
+factory methods:
+
+[source,java,indent=0]
+----
+include::{docbits}/embedded/client/EmbeddedClientConnector.java[tags=advanced]
+----
+
+Since `ClientConnector` is the component that handles the low-level network, it
+is also the component where you want to configure the parameters that control
+how it should handle the low-level network.
+
+The most common parameters are:
+
+* `ClientConnector.selectors`: the number of ``java.nio.Selector``s components
+(defaults to `1`) that are present to handle the ``SocketChannel``s opened by
+the `ClientConnector`. You typically want to increase the number of selectors
+only for those use cases where each selector should handle more than few hundreds
+_concurrent_ socket events.
+For example, one selector typically runs well for `250` _concurrent_ socket
+events; as a rule of thumb, you can multiply that number by `10` to obtain the
+number of opened sockets a selector can handle (`2500`), based on the assumption
+that not all the `2500` sockets will be active _at the same time_.
+* `ClientConnector.idleTimeout`: the duration of time after which
+`ClientConnector` closes a socket due to inactivity (defaults to `30` seconds).
+This is an important parameter to configure, and you typically want the client
+idle timeout to be shorter than the server idle timeout, to avoid race
+conditions where the client attempts to use a socket just before the idle
+timeout expires, but the server is already closing it.
+* `ClientConnector.connectBlocking`: whether the operation of connecting a
+socket to the server (i.e. `SocketChannel.connect(SocketAddress)`) must be a
+blocking or a non-blocking operation (defaults to `false`).
+For `localhost` or same datacenter hosts you want to set this parameter to
+`true` because DNS resolution will be immediate (and likely never fail).
+For generic Internet hosts (e.g. when you are implementing a web spider) you
+want to set this parameter to `false`.
+* `ClientConnector.connectTimeout`: the duration of time after which
+`ClientConnector` aborts a connection attempt to the server (defaults to `5`
+seconds).
+This time includes the DNS lookup time _and_ the TCP connect time.
+
+Please refer to the `ClientConnector`
+link:{JDURL}/org/eclipse/jetty/io/ClientConnector.html[javadocs]
+for the complete list of configurable parameters.
+
+Once the `ClientConnector` is configured and started, it can be used to connect
+to the server via `ClientConnector.connect(SocketAddress, Map<String, Object>)`
+which in turn will call `SocketChannel.connect(SocketAddress)`.
+`ClientConnector` wraps the `SocketChannel` connected to the server with two
+related components:
+an link:{JDURL}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a
+link:{JDURL}/org/eclipse/jetty/io/Connection.html[`Connection`].
+
+`EndPoint` is the Jetty abstraction for a `SocketChannel`: you can read bytes
+from an `EndPoint` via `EndPoint.fill(ByteBuffer)`, you can write bytes to an
+`EndPoint` via `EndPoint.flush(ByteBuffer...)` and
+`EndPoint.write(Callback, ByteBuffer...)`, you can close an `EndPoint` via
+`EndPoint.close()`, etc.
+
+There is primarily one implementation of `EndPoint`:
+link:{JDURL}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`].
+
+`Connection` is the Jetty abstraction that is responsible to serialize objects
+to bytes and then writing the serialized bytes to the `EndPoint`, as well as
+deserializing bytes read from the `EndPoint` into objects.
+For example, a HTTP/1.1 `Connection` implementation is responsible to serialize
+a HTTP request object into its correspondent HTTP/1.1 request bytes, and to
+deserialize HTTP/1.1 response bytes into a response object that can be used by
+applications.
+
+`Connection` is the abstraction that "speaks" a specific protocol such as
+HTTP/1.1, or HTTP/2, or WebSocket: it is able to read incoming communication
+as well as write outgoing communication in that protocol.
+
+There are many implementation of `Connection`, typically one for each protocol
+that the Jetty client libraries can speak.
+
+``Connection``s can be nested, for example in case of encrypted communication
+using the TLS protocol: the outermost TLS `Connection` performs the decryption
+and encryption, and the innermost protocol `Connection` serializes the
+decrypted bytes into objects and deserializes objects into bytes to be encrypted.
+
+Certain protocols, such as WebSocket, start with the communication with the
+server using one protocol (e.g. HTTP/1.1), but then change the communication
+to use another protocol (e.g. WebSocket).
+
+`EndPoint` supports changing the `Connection` object on-the-fly so that the
+HTTP/1.1 `Connection` can be used during the initial communication and later
+be replaced by a WebSocket `Connection`.
+TODO: add a section on `UpgradeFrom` and `UpgradeTo`?
+
+When establishing a TCP connection to a server, applications need to tell
+`ClientConnector` how to create the `Connection` for that particular
+TCP connection.
+This is done via a
+link:{JDURL}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`].
+that must be passed in the context `Map` as follows:
+
+[source,java,indent=0]
+----
+include::{docbits}/embedded/client/EmbeddedClientConnector.java[tags=connect]
+----
+
+
+TODO: expand on what is the API to use, what parameters the context Map must
+have, and basically how we can write a generic network client with it.
+
+[[client-concepts-protocol]]
+==== Client Libraries Protocol Layer
+
+The protocol layer builds on top of the infrastructure layer to generate the
+bytes to be written to the network and to parse the bytes received from the
+network.
