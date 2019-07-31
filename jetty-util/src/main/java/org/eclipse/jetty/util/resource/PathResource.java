@@ -19,17 +19,19 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.channels.FileChannel;
+import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
@@ -40,6 +42,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -58,6 +61,7 @@ public class PathResource extends Resource
     private final Path path;
     private final Path alias;
     private final URI uri;
+    private final boolean belongsToDefaultFileSystem;
 
     private final Path checkAliasPath()
     {
@@ -196,6 +200,7 @@ public class PathResource extends Resource
         assertValidPath(path);
         this.uri = this.path.toUri();
         this.alias = checkAliasPath();
+        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
     }
 
     /**
@@ -216,6 +221,7 @@ public class PathResource extends Resource
             childPath += "/";
         this.uri = URIUtil.addPath(parent.uri, childPath);
         this.alias = checkAliasPath();
+        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
     }
 
     /**
@@ -256,6 +262,7 @@ public class PathResource extends Resource
         this.path = path.toAbsolutePath();
         this.uri = path.toUri();
         this.alias = checkAliasPath();
+        this.belongsToDefaultFileSystem = this.path.getFileSystem() == FileSystems.getDefault();
     }
 
     /**
@@ -371,6 +378,8 @@ public class PathResource extends Resource
     @Override
     public File getFile() throws IOException
     {
+        if (!belongsToDefaultFileSystem)
+            return null;
         return path.toFile();
     }
 
@@ -385,9 +394,8 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        // Use a FileInputStream rather than Files.newInputStream(path)
-        // since it produces a stream with a fast skip implementation
-        return new FileInputStream(getFile());
+        // TODO: investigate if SPARSE use for default FileSystem usages is worth it
+        return Files.newInputStream(path, StandardOpenOption.READ);
     }
 
     @Override
@@ -399,7 +407,8 @@ public class PathResource extends Resource
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        return FileChannel.open(path, StandardOpenOption.READ);
+        // TODO: investigate if SPARSE use for default FileSystem usages is worth it
+        return Files.newByteChannel(path, StandardOpenOption.READ);
     }
 
     @Override
@@ -549,6 +558,43 @@ public class PathResource extends Resource
         else
         {
             Files.copy(this.path, destination.toPath());
+        }
+    }
+
+    /**
+     * @param outputStream the output stream to write to
+     * @param start First byte to write
+     * @param count Bytes to write or -1 for all of them.
+     * @throws IOException if unable to copy the Resource to the output
+     */
+    @Override
+    public void writeTo(OutputStream outputStream, long start, long count)
+        throws IOException
+    {
+        long length = count;
+
+        if (count < 0)
+        {
+            length = Files.size(path) - start;
+        }
+
+        try (SeekableByteChannel channel = Files.newByteChannel(path, StandardOpenOption.READ))
+        {
+            ByteBuffer buffer = BufferUtil.allocate(IO.bufferSize);
+            channel.position(start);
+
+            // copy from channel to output stream
+            long readTotal = 0;
+            while (readTotal < length)
+            {
+                BufferUtil.clearToFill(buffer);
+                int size = (int)Math.min(IO.bufferSize, length - readTotal);
+                buffer.limit(size);
+                int readLen = channel.read(buffer);
+                BufferUtil.flipToFlush(buffer, 0);
+                BufferUtil.writeTo(buffer, outputStream);
+                readTotal += readLen;
+            }
         }
     }
 

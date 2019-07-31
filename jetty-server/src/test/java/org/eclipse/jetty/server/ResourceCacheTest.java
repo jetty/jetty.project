@@ -18,32 +18,106 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class ResourceCacheTest
 {
+    public WorkDir workDir;
+
+    public Path createUtilTestResources(Path basePath) throws IOException
+    {
+        // root
+        makeFile(basePath.resolve("resource.txt"), "this is test data");
+
+        // - one/
+        Path one = basePath.resolve("one");
+        FS.ensureDirExists(one);
+        makeFile(one.resolve("1.txt"), "1 - one");
+
+        // - one/dir/
+        Path oneDir = one.resolve("dir");
+        FS.ensureDirExists(oneDir);
+        makeFile(oneDir.resolve("1.txt"), "1 - one");
+
+        // - two/
+        Path two = basePath.resolve("two");
+        FS.ensureDirExists(two);
+        makeFile(two.resolve("1.txt"), "1 - two");
+        makeFile(two.resolve("2.txt"), "2 - two");
+
+        // - two/dir/
+        Path twoDir = two.resolve("dir");
+        FS.ensureDirExists(twoDir);
+        makeFile(twoDir.resolve("2.txt"), "2 - two");
+
+        // - three/
+        Path three = basePath.resolve("three");
+        FS.ensureDirExists(three);
+        makeFile(three.resolve("2.txt"), "2 - three");
+        makeFile(three.resolve("3.txt"), "3 - three");
+
+        // - three/dir/
+        Path threeDir = three.resolve("dir");
+        FS.ensureDirExists(threeDir);
+        makeFile(threeDir.resolve("3.txt"), "3 - three");
+
+        // - four/
+        Path four = basePath.resolve("four");
+        FS.ensureDirExists(four);
+        makeFile(four.resolve("four"), "4 - four (no extension)");
+        makeFile(four.resolve("four.txt"), "4 - four");
+
+        return basePath;
+    }
+
+    private void makeFile(Path file, String contents) throws IOException
+    {
+        try (BufferedWriter writer = Files.newBufferedWriter(file, UTF_8, StandardOpenOption.CREATE_NEW))
+        {
+            writer.write(contents);
+            writer.flush();
+        }
+    }
+
     @Test
     public void testMutlipleSources1() throws Exception
     {
-        ResourceCollection rc = new ResourceCollection(new String[]{
-            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/one/",
-            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/two/",
-            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/three/"
-        });
+        Path basePath = createUtilTestResources(workDir.getEmptyPathDir());
+
+        ResourceCollection rc = new ResourceCollection(
+            new PathResource(basePath.resolve("one")),
+            new PathResource(basePath.resolve("two")),
+            new PathResource(basePath.resolve("three")));
 
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
@@ -68,11 +142,12 @@ public class ResourceCacheTest
     @Test
     public void testUncacheable() throws Exception
     {
-        ResourceCollection rc = new ResourceCollection(new String[]{
-            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/one/",
-            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/two/",
-            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/three/"
-        });
+        Path basePath = createUtilTestResources(workDir.getEmptyPathDir());
+
+        ResourceCollection rc = new ResourceCollection(
+            new PathResource(basePath.resolve("one")),
+            new PathResource(basePath.resolve("two")),
+            new PathResource(basePath.resolve("three")));
 
         Resource[] r = rc.getResources();
         MimeTypes mime = new MimeTypes();
@@ -110,19 +185,21 @@ public class ResourceCacheTest
         String[] names = new String[files.length];
         CachedContentFactory cache;
 
+        Path basePath = workDir.getEmptyPathDir();
+
         for (int i = 0; i < files.length; i++)
         {
-            files[i] = File.createTempFile("R-" + i + "-", ".txt");
-            files[i].deleteOnExit();
-            names[i] = files[i].getName();
-            try (OutputStream out = new FileOutputStream(files[i]))
+            Path tmpFile = basePath.resolve("R-" + i + ".txt");
+            try (BufferedWriter writer = Files.newBufferedWriter(tmpFile, UTF_8, StandardOpenOption.CREATE_NEW))
             {
                 for (int j = 0; j < (i * 10 - 1); j++)
                 {
-                    out.write(' ');
+                    writer.write(' ');
                 }
-                out.write('\n');
+                writer.write('\n');
             }
+            files[i] = tmpFile.toFile();
+            names[i] = tmpFile.getFileName().toString();
         }
 
         directory = Resource.newResource(files[0].getParentFile().getAbsolutePath());
@@ -139,7 +216,7 @@ public class ResourceCacheTest
 
         HttpContent content;
         content = cache.getContent(names[8], 4096);
-        assertTrue(content != null);
+        assertThat(content, is(not(nullValue())));
         assertEquals(80, content.getContentLengthValue());
         assertEquals(0, cache.getCachedSize());
 
@@ -272,14 +349,12 @@ public class ResourceCacheTest
     @Test
     public void testNoextension() throws Exception
     {
-        ResourceCollection rc = new ResourceCollection(new String[]{
-            "../jetty-util/src/test/resources/org/eclipse/jetty/util/resource/four/"
-        });
+        Path basePath = createUtilTestResources(workDir.getEmptyPathDir());
 
-        Resource[] resources = rc.getResources();
+        Resource resource = new PathResource(basePath.resolve("four"));
         MimeTypes mime = new MimeTypes();
 
-        CachedContentFactory cache = new CachedContentFactory(null, resources[0], mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory cache = new CachedContentFactory(null, resource, mime, false, false, CompressedContentFormat.NONE);
 
         assertEquals(getContent(cache, "four.txt"), "4 - four");
         assertEquals(getContent(cache, "four"), "4 - four (no extension)");
