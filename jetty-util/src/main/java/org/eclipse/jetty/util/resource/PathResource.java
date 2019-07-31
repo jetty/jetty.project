@@ -594,7 +594,7 @@ public class PathResource extends Resource
             long readTotal = 0;
             while (readTotal < length)
             {
-                BufferUtil.flipToFill(buffer);
+                BufferUtil.clearToFill(buffer);
                 int size = (int)Math.min(IO.bufferSize, length - readTotal);
                 buffer.limit(size);
                 int readLen = channel.read(buffer);

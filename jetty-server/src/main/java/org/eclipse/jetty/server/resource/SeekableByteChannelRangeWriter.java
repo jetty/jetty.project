@@ -54,7 +54,7 @@ public class SeekableByteChannelRangeWriter implements RangeWriter
         long readTotal = 0;
         while (readTotal < length)
         {
-            BufferUtil.flipToFill(buffer);
+            BufferUtil.clearToFill(buffer);
             int size = (int)Math.min(bufSize, length - readTotal);
             buffer.limit(size);
             int readLen = channel.read(buffer);
