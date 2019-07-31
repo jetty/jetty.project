@@ -2,12 +2,14 @@
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext" id="context">
 
+  <Get class="" name="DECORATOR_ATTRIBUTE" id="decoratorAttribute"/>
+
   <!-- Add the DecoratingListener to the webapp to look for dynamic decorators -->
   <Call name="addEventListener">
     <Arg>
       <New class="org.eclipse.jetty.webapp.DecoratingListener">
         <Arg><Ref refid="context" /></Arg>
-        <Arg type="String">org.eclipse.jetty.decorator</Arg>
+        <Arg type="String"><Ref refid="decoratorAttribute"/></Arg>
       </New>
     </Arg>
   </Call>
@@ -15,7 +17,7 @@
   <!-- Add an attribute to inform the webapp of the DecoratingListener attribute name -->
   <Call name="setAttribute">
     <Arg>org.eclipse.jetty.webapp.DecoratingListener</Arg>
-    <Arg>org.eclipse.jetty.decorator</Arg>
+    <Arg><Ref refid="decoratorAttribute"/></Arg>
   </Call>
 
 </Configure>

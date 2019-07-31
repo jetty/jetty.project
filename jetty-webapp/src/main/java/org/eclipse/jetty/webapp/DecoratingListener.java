@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class DecoratingListener implements ServletContextAttributeListener
 {
+    public static final String DECORATOR_ATTRIBUTE = "org.eclipse.jetty.webapp.decorator";
     private static final Logger LOG = Log.getLogger(DecoratingListener.class);
     private static final MethodType decorateType;
     private static final MethodType destroyType;
@@ -81,7 +82,7 @@ public class DecoratingListener implements ServletContextAttributeListener
     public DecoratingListener(WebAppContext context, String attributeName)
     {
         _context = context == null ? WebAppContext.getCurrentWebAppContext() : context;
-        _attributeName = attributeName == null ? "org.eclipse.jetty.webapp.Decorator" : attributeName;
+        _attributeName = attributeName == null ? DECORATOR_ATTRIBUTE : attributeName;
         Object decorator = _context.getAttribute(_attributeName);
         if (decorator != null)
         {
@@ -168,11 +169,7 @@ public class DecoratingListener implements ServletContextAttributeListener
     @Override
     public void attributeReplaced(ServletContextAttributeEvent event)
     {
-        if (_attributeName.equals(event.getName()))
-        {
-            if (_decorator != null)
-                _context.getObjectFactory().removeDecorator(_decorator);
-            attributeAdded(event);
-        }
+        attributeRemoved(event);
+        attributeAdded(event);
     }
 }

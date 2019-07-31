@@ -47,7 +47,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class CdiDecorator implements Decorator
 {
-    private final static Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
+    private static final Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
 
     private final WebAppContext _context;
     private final Class<?> _cdiClass;
@@ -64,7 +64,6 @@ public class CdiDecorator implements Decorator
     private MethodHandle _inject;
     private MethodHandle _dispose;
     private MethodHandle _release;
-
 
     public CdiDecorator(WebAppContext context) throws ClassNotFoundException, UnsupportedOperationException
     {
@@ -102,22 +101,25 @@ public class CdiDecorator implements Decorator
             if (LOG.isDebugEnabled())
                 LOG.debug("decorate {} in {}", o, _context);
 
-            if (_release == null)
+            synchronized (this)
             {
-                MethodHandles.Lookup lookup = MethodHandles.lookup();
-                MethodHandle current = lookup.findStatic(_cdiClass, "current", MethodType.methodType(_cdiClass));
-                MethodHandle getBeanManager = lookup.findVirtual(_cdiClass, "getBeanManager", MethodType.methodType(_beanManagerClass));
-                Object manager = getBeanManager.invoke(current.invoke());
+                if (_release == null)
+                {
+                    MethodHandles.Lookup lookup = MethodHandles.lookup();
+                    MethodHandle current = lookup.findStatic(_cdiClass, "current", MethodType.methodType(_cdiClass));
+                    MethodHandle getBeanManager = lookup.findVirtual(_cdiClass, "getBeanManager", MethodType.methodType(_beanManagerClass));
+                    Object manager = getBeanManager.invoke(current.invoke());
 
-                _createAnnotatedType = lookup.findVirtual(_beanManagerClass, "createAnnotatedType", MethodType.methodType(_annotatedTypeClass, Class.class))
-                    .bindTo(manager);
-                _createInjectionTarget = lookup.findVirtual(_beanManagerClass, "createInjectionTarget", MethodType.methodType(_injectionTargetClass, _annotatedTypeClass))
-                    .bindTo(manager);
-                _createCreationalContext = lookup.findVirtual(_beanManagerClass, "createCreationalContext", MethodType.methodType(_creationalContextClass, _contextualClass))
-                    .bindTo(manager).bindTo(null);
-                _inject = lookup.findVirtual(_injectionTargetClass, "inject", MethodType.methodType(Void.TYPE, Object.class, _creationalContextClass));
-                _dispose = lookup.findVirtual(_injectionTargetClass, "dispose", MethodType.methodType(Void.TYPE, Object.class));
-                _release = lookup.findVirtual(_creationalContextClass, "release", MethodType.methodType(Void.TYPE));
+                    _createAnnotatedType = lookup.findVirtual(_beanManagerClass, "createAnnotatedType", MethodType.methodType(_annotatedTypeClass, Class.class))
+                        .bindTo(manager);
+                    _createInjectionTarget = lookup.findVirtual(_beanManagerClass, "createInjectionTarget", MethodType.methodType(_injectionTargetClass, _annotatedTypeClass))
+                        .bindTo(manager);
+                    _createCreationalContext = lookup.findVirtual(_beanManagerClass, "createCreationalContext", MethodType.methodType(_creationalContextClass, _contextualClass))
+                        .bindTo(manager).bindTo(null);
+                    _inject = lookup.findVirtual(_injectionTargetClass, "inject", MethodType.methodType(Void.TYPE, Object.class, _creationalContextClass));
+                    _dispose = lookup.findVirtual(_injectionTargetClass, "dispose", MethodType.methodType(Void.TYPE, Object.class));
+                    _release = lookup.findVirtual(_creationalContextClass, "release", MethodType.methodType(Void.TYPE));
+                }
             }
 
             _decorated.put(o, new Decorated(o));
@@ -141,7 +143,7 @@ public class CdiDecorator implements Decorator
         try
         {
             Decorated decorated = _decorated.remove(o);
-            if (decorated!=null)
+            if (decorated != null)
                 decorated.destroy(o);
         }
         catch (Throwable th)

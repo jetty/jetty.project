@@ -20,15 +20,12 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -45,11 +42,11 @@ public class CDITests extends AbstractDistributionTest
     {
         List<Object[]> tests = new ArrayList<>();
 
-        // TODO tests.add(new Object[]{"weld", "cdi"}); // Requires Weld >= 3.1.2 ???
+        // TODO tests.add(new Object[]{"weld", "cdi"}); // Requires Weld >= 3.1.2 ??? Not sure why
         tests.add(new Object[]{"weld", "cdi2"});
         // TODO tests.add(new Object[]{"weld", "decorate"}); // Requires Weld >= 3.1.2
-        tests.add(new Object[]{"owb", "cdi"});
-        tests.add(new Object[]{"owb", "cdi2"});
+        // TODO tests.add(new Object[]{"owb", "cdi"});
+        // TODO tests.add(new Object[]{"owb", "cdi2"});
         // tests.add(new Object[]{"owb", "decorate"});  // Probably will not be supported
         return tests.stream().map(Arguments::of);
     }

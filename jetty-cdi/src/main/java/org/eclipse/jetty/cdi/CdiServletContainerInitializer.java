@@ -37,7 +37,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class CdiServletContainerInitializer implements ServletContainerInitializer
 {
-    private final static Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
+    public static final String CDI_INTEGRATION_ATTRIBUTE = "org.eclipse.jetty.cdi";
+    private static final Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
 
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
@@ -46,18 +47,17 @@ public class CdiServletContainerInitializer implements ServletContainerInitializ
         {
             WebAppContext context = WebAppContext.getCurrentWebAppContext();
             context.getObjectFactory().addDecorator(new CdiDecorator(context));
-            context.setAttribute("org.eclipse.jetty.cdi", "CdiDecorator");
-            if (LOG.isDebugEnabled())
-                LOG.debug("CdiDecorator enabled in " + ctx);
+            context.setAttribute(CDI_INTEGRATION_ATTRIBUTE, "CdiDecorator");
+            LOG.info("CdiDecorator enabled in " + ctx);
         }
         catch (UnsupportedOperationException e)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("CDI not found in " + ctx, e);
         }
-        catch (Exception e)
+        catch (Throwable e)
         {
-            LOG.warn("Incomplete CDI found in " + ctx, e);
+            LOG.warn("Unable to CdiDecorate in " + ctx, e);
         }
     }
 }
