@@ -693,7 +693,7 @@ public class ResponseTest
         assertEquals(code, response.getStatus());
         assertEquals(null, response.getReason());
         assertEquals(expectedMessage, response.getHttpChannel().getRequest().getAttribute(RequestDispatcher.ERROR_MESSAGE));
-        assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.ERROR_DISPATCH));
+        assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.SEND_ERROR));
         assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.COMPLETE));
     }
 

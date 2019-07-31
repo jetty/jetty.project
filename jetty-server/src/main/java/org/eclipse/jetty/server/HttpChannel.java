@@ -420,7 +420,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _state.onTimeout();
                         break;
 
-                    case ERROR_DISPATCH:
+                    case SEND_ERROR:
                     {
                         try
                         {
@@ -515,6 +515,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     case READ_REGISTER:
                     {
                         onAsyncWaitForContent();
+                        break;
                     }
 
                     case READ_PRODUCE:
@@ -564,11 +565,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         }
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.getHttpOutput().setClosedCallback(Callback.from(_state::completed)); // TODO test this actually works asynchronously
+                        _response.getHttpOutput().setClosedCallback(Callback.from(_state::completed));
                         _response.closeOutput();
                         // ensure the callback actually got called
                         if (_response.getHttpOutput().getClosedCallback() != null)
-                            _state.completed();
+                            _response.getHttpOutput().getClosedCallback().succeeded();
+
+                        // TODO we could do an asynchronous consumeAll in the callback
                         break;
                     }
 

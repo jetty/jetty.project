@@ -134,7 +134,6 @@ public class ErrorHandler extends AbstractHandler
                     break;
             }
         }
-        baseRequest.getResponse().closeOutput();
     }
 
     /**
@@ -253,6 +252,7 @@ public class ErrorHandler extends AbstractHandler
                 ByteBuffer content = bout.size() == 0 ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(bout.getBuf(), 0, bout.size());
 
                 baseRequest.getHttpChannel().sendCompleteResponse(content);
+                return;
             }
 
             default:

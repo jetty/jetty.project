@@ -64,6 +64,27 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static final String LSTRING_FILE = "javax.servlet.LocalStrings";
     private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
 
+    /*
+    ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSING     CLOSED
+    --------------------------------------------------------------------------------------------------
+    setWriteListener() READY->owp ise        ise        ise           ise           ise         ise
+    write()            OPEN       ise        PENDING    wpe           wpe           eof         eof
+    flush()            OPEN       ise        PENDING    wpe           wpe           eof         eof
+    close()            CLOSING    CLOSING    CLOSING    CLOSED        CLOSED        CLOSING     CLOSED
+    isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false CLOSED:true CLOSED:true
+    write completed    -          -          -          ASYNC         READY->owp    CLOSED      -
+    */
+    enum State
+    {
+        OPEN,     // Open in blocking mode
+        ASYNC,    // Open in async mode
+        READY,    // isReady() has returned true
+        PENDING,  // write operating in progress
+        UNREADY,  // write operating in progress, isReady has returned false
+        ERROR,    // An error has occured
+        CLOSING,  // Asynchronous close in progress
+        CLOSED    // Closed
+    }
 
     /**
      * The HttpOutput.Interceptor is a single intercept point for all
@@ -143,22 +164,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private volatile Throwable _onError;
     private Callback _closeCallback;
 
-    /*
-    ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSING     CLOSED
-    --------------------------------------------------------------------------------------------------
-    setWriteListener() READY->owp ise        ise        ise           ise           ise         ise
-    write()            OPEN       ise        PENDING    wpe           wpe           eof         eof
-    flush()            OPEN       ise        PENDING    wpe           wpe           eof         eof
-    close()            CLOSING    CLOSING    CLOSING    CLOSED        CLOSED        CLOSING     CLOSED
-    isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false CLOSED:true CLOSED:true
-    write completed    -          -          -          ASYNC         READY->owp    CLOSED      -
-    */
-    private enum OutputState
-    {
-        OPEN, ASYNC, READY, PENDING, UNREADY, ERROR, CLOSING, CLOSED
-    }
-
-    private final AtomicReference<OutputState> _state = new AtomicReference<>(OutputState.OPEN);
+    private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
 
     public HttpOutput(HttpChannel channel)
     {
@@ -202,7 +208,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void reopen()
     {
-        _state.set(OutputState.OPEN);
+        _state.set(State.OPEN);
     }
 
     private boolean isLastContentToWrite(int len)
@@ -262,13 +268,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         while (true)
         {
-            OutputState state = _state.get();
+            State state = _state.get();
             switch (state)
             {
                 case OPEN:
                 case READY:
                 case ASYNC:
-                    if (!_state.compareAndSet(state, OutputState.CLOSED))
+                    if (!_state.compareAndSet(state, State.CLOSED))
                         continue;
                     return;
 
@@ -278,7 +284,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-
+    /**
+     * Make {@link #close()} am asynchronous method
+     * @param closeCallback The callback to use when close() is called.
+     */
     public void setClosedCallback(Callback closeCallback)
     {
         _closeCallback = closeCallback;
@@ -297,7 +306,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         while (true)
         {
-            OutputState state = _state.get();
+            State state = _state.get();
             switch (state)
             {
                 case CLOSING:
@@ -313,7 +322,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     // However it is desirable to allow a close at any time, specially if
                     // complete is called.   Thus we simulate a call to isReady here, assuming
                     // that we can transition to READY.
-                    _state.compareAndSet(state, OutputState.READY);
+                    _state.compareAndSet(state, State.READY);
                     continue;
                 }
                 case UNREADY:
@@ -325,7 +334,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     // complete is called.   Because the prior write has not yet completed
                     // and/or isReady has not been called, this close is allowed, but will
                     // abort the response.
-                    if (!_state.compareAndSet(state, OutputState.CLOSED))
+                    if (!_state.compareAndSet(state, State.CLOSED))
                         continue;
                     IOException ex = new IOException("Closed while Pending/Unready");
                     LOG.warn(ex.toString());
@@ -336,7 +345,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
                 default:
                 {
-                    if (!_state.compareAndSet(state, OutputState.CLOSING))
+                    if (!_state.compareAndSet(state, State.CLOSING))
                         continue;
 
                     // Do a normal close by writing the aggregate buffer or an empty buffer. If we are
@@ -374,7 +383,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         while (true)
         {
-            OutputState state = _state.get();
+            State state = _state.get();
             switch (state)
             {
                 case CLOSED:
@@ -383,13 +392,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
                 case UNREADY:
                 {
-                    if (_state.compareAndSet(state, OutputState.ERROR))
+                    if (_state.compareAndSet(state, State.ERROR))
                         _writeListener.onError(_onError == null ? new EofException("Async closed") : _onError);
                     break;
                 }
                 default:
                 {
-                    if (!_state.compareAndSet(state, OutputState.CLOSED))
+                    if (!_state.compareAndSet(state, State.CLOSED))
                         break;
 
                     // Just make sure write and output stream really are closed
@@ -454,7 +463,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         while (true)
         {
-            OutputState state = _state.get();
+            State state = _state.get();
             switch (state)
             {
                 case OPEN:
@@ -465,7 +474,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     throw new IllegalStateException("isReady() not called");
 
                 case READY:
-                    if (!_state.compareAndSet(state, OutputState.PENDING))
+                    if (!_state.compareAndSet(state, State.PENDING))
                         continue;
                     new AsyncFlush().iterate();
                     return;
@@ -493,7 +502,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         // Async or Blocking ?
         while (true)
         {
-            OutputState state = _state.get();
+            State state = _state.get();
             switch (state)
             {
                 case OPEN:
@@ -504,7 +513,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     throw new IllegalStateException("isReady() not called");
 
                 case READY:
-                    if (!_state.compareAndSet(state, OutputState.PENDING))
+                    if (!_state.compareAndSet(state, State.PENDING))
                         continue;
 
                     // Should we aggregate?
@@ -520,7 +529,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         // return if we are not complete, not full and filled all the content
                         if (filled == len && !BufferUtil.isFull(_aggregate))
                         {
-                            if (!_state.compareAndSet(OutputState.PENDING, OutputState.ASYNC))
+                            if (!_state.compareAndSet(State.PENDING, State.ASYNC))
                                 throw new IllegalStateException(_state.get().toString());
                             return;
                         }
@@ -617,7 +626,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         // Async or Blocking ?
         while (true)
         {
-            OutputState state = _state.get();
+            State state = _state.get();
             switch (state)
             {
                 case OPEN:
@@ -628,7 +637,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     throw new IllegalStateException("isReady() not called");
 
                 case READY:
-                    if (!_state.compareAndSet(state, OutputState.PENDING))
+                    if (!_state.compareAndSet(state, State.PENDING))
                         continue;
 
                     // Do the asynchronous writing from the callback
@@ -693,7 +702,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     throw new IllegalStateException("isReady() not called");
 
                 case READY:
-                    if (!_state.compareAndSet(OutputState.READY, OutputState.PENDING))
+                    if (!_state.compareAndSet(State.READY, State.PENDING))
                         continue;
 
                     if (_aggregate == null)
@@ -703,7 +712,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     // Check if all written or full
                     if (!complete && !BufferUtil.isFull(_aggregate))
                     {
-                        if (!_state.compareAndSet(OutputState.PENDING, OutputState.ASYNC))
+                        if (!_state.compareAndSet(State.PENDING, State.ASYNC))
                             throw new IllegalStateException();
                         return;
                     }
@@ -1012,7 +1021,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             switch (_state.get())
             {
                 case OPEN:
-                    if (!_state.compareAndSet(OutputState.OPEN, OutputState.PENDING))
+                    if (!_state.compareAndSet(State.OPEN, State.PENDING))
                         continue;
                     break;
 
@@ -1138,7 +1147,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (!_channel.getState().isAsync())
             throw new IllegalStateException("!ASYNC");
 
-        if (_state.compareAndSet(OutputState.OPEN, OutputState.READY))
+        if (_state.compareAndSet(State.OPEN, State.READY))
         {
             _writeListener = writeListener;
             if (_channel.getState().onWritePossible())
@@ -1163,12 +1172,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     return true;
 
                 case ASYNC:
-                    if (!_state.compareAndSet(OutputState.ASYNC, OutputState.READY))
+                    if (!_state.compareAndSet(State.ASYNC, State.READY))
                         continue;
                     return true;
 
                 case PENDING:
-                    if (!_state.compareAndSet(OutputState.PENDING, OutputState.UNREADY))
+                    if (!_state.compareAndSet(State.PENDING, State.UNREADY))
                         continue;
                     return false;
 
@@ -1186,7 +1195,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         while (true)
         {
-            OutputState state = _state.get();
+            State state = _state.get();
 
             if (_onError != null)
             {
@@ -1201,7 +1210,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     }
                     default:
                     {
-                        if (_state.compareAndSet(state, OutputState.ERROR))
+                        if (_state.compareAndSet(state, State.ERROR))
                         {
                             Throwable th = _onError;
                             _onError = null;
@@ -1277,16 +1286,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             while (true)
             {
-                OutputState last = _state.get();
+                State last = _state.get();
                 switch (last)
                 {
                     case PENDING:
-                        if (!_state.compareAndSet(OutputState.PENDING, OutputState.ASYNC))
+                        if (!_state.compareAndSet(State.PENDING, State.ASYNC))
                             continue;
                         break;
 
                     case UNREADY:
-                        if (!_state.compareAndSet(OutputState.UNREADY, OutputState.READY))
+                        if (!_state.compareAndSet(State.UNREADY, State.READY))
                             continue;
                         if (_last)
                             closed();
