@@ -115,48 +115,9 @@ for the complete list of configurable parameters.
 Once the `ClientConnector` is configured and started, it can be used to connect
 to the server via `ClientConnector.connect(SocketAddress, Map<String, Object>)`
 which in turn will call `SocketChannel.connect(SocketAddress)`.
-`ClientConnector` wraps the `SocketChannel` connected to the server with two
-related components:
-an link:{JDURL}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a
-link:{JDURL}/org/eclipse/jetty/io/Connection.html[`Connection`].
 
-`EndPoint` is the Jetty abstraction for a `SocketChannel`: you can read bytes
-from an `EndPoint` via `EndPoint.fill(ByteBuffer)`, you can write bytes to an
-`EndPoint` via `EndPoint.flush(ByteBuffer...)` and
-`EndPoint.write(Callback, ByteBuffer...)`, you can close an `EndPoint` via
-`EndPoint.close()`, etc.
 
-There is primarily one implementation of `EndPoint`:
-link:{JDURL}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`].
-
-`Connection` is the Jetty abstraction that is responsible to serialize objects
-to bytes and then writing the serialized bytes to the `EndPoint`, as well as
-deserializing bytes read from the `EndPoint` into objects.
-For example, a HTTP/1.1 `Connection` implementation is responsible to serialize
-a HTTP request object into its correspondent HTTP/1.1 request bytes, and to
-deserialize HTTP/1.1 response bytes into a response object that can be used by
-applications.
-
-`Connection` is the abstraction that "speaks" a specific protocol such as
-HTTP/1.1, or HTTP/2, or WebSocket: it is able to read incoming communication
-as well as write outgoing communication in that protocol.
-
-There are many implementation of `Connection`, typically one for each protocol
-that the Jetty client libraries can speak.
-
-``Connection``s can be nested, for example in case of encrypted communication
-using the TLS protocol: the outermost TLS `Connection` performs the decryption
-and encryption, and the innermost protocol `Connection` serializes the
-decrypted bytes into objects and deserializes objects into bytes to be encrypted.
-
-Certain protocols, such as WebSocket, start with the communication with the
-server using one protocol (e.g. HTTP/1.1), but then change the communication
-to use another protocol (e.g. WebSocket).
-
-`EndPoint` supports changing the `Connection` object on-the-fly so that the
-HTTP/1.1 `Connection` can be used during the initial communication and later
-be replaced by a WebSocket `Connection`.
-TODO: add a section on `UpgradeFrom` and `UpgradeTo`?
+// TODO: from down here, moved to io-arch.adoc
 
 When establishing a TCP connection to a server, applications need to tell
 `ClientConnector` how to create the `Connection` for that particular

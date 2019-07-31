@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 import static java.lang.System.Logger.Level.INFO;
 
-public class EmbeddedClientConnector
+public class ClientConnectorDocSnippets
 {
     public void simplest() throws Exception
     {
@@ -145,6 +145,6 @@ public class EmbeddedClientConnector
 
     public static void main(String[] args) throws Exception
     {
-        new EmbeddedClientConnector().connect();
+        new ClientConnectorDocSnippets().connect();
     }
 }

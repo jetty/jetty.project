@@ -20,3 +20,108 @@
 [[io-arch]]
 == Jetty I/O Architecture
 
+Jetty libraries (both client and server) use Java NIO to handle I/O, so that
+at its core Jetty I/O is completely non-blocking.
+
+The core class of Jetty I/O is
+link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
+
+`SelectorManager` manages internally a configurable number of
+link:{JDURL}/org/eclipse/jetty/io/ManagedSelector.html[`ManagedSelector`]s.
+Each `ManagedSelector` wraps an instance of `java.nio.channels.Selector` that
+in turn manages a number of `java.nio.channels.SocketChannel` instances.
+
+NOTE: TODO: add image
+
+`SocketChannel` instances can be created by clients when connecting to a server
+and by a server when accepting connections from client.
+In both cases the `SocketChannel` instance is passed to `SelectorManager` to be
+registered for use within Jetty.
+
+It is therefore possible to create the `SocketChannel` instances outside Jetty,
+even perform some initial network traffic also outside Jetty (for example for
+authentication purposes), and then pass the `SocketChannel` instance to
+`SelectorManager` for use within Jetty.
+
+This example shows how to connect to a server:
+
+[source,java,indent=0]
+----
+include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=connect]
+----
+
+This example shows how to accept a client connection:
+
+[source,java,indent=0]
+----
+include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=accept]
+----
+
+``SocketChannel``s that are passed to `SelectorManager` are wrapped into two
+related components:
+an link:{JDURL}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a
+link:{JDURL}/org/eclipse/jetty/io/Connection.html[`Connection`].
+
+`EndPoint` is the Jetty abstraction for a `SocketChannel`: you can read bytes
+from an `EndPoint` via `EndPoint.fill(ByteBuffer)`, you can write bytes to an
+`EndPoint` via `EndPoint.flush(ByteBuffer...)` and
+`EndPoint.write(Callback, ByteBuffer...)`, you can close an `EndPoint` via
+`EndPoint.close()`, etc.
+
+`Connection` is the Jetty abstraction that is responsible to serialize objects
+to bytes and then writing the serialized bytes to the `EndPoint`, as well as
+deserializing bytes read from the `EndPoint` into objects.
+For example, a HTTP/1.1 client-side `Connection` implementation is responsible
+to serialize a HTTP request object into its correspondent HTTP/1.1 request bytes,
+and to deserialize HTTP/1.1 response bytes into a HTTP response object.
+Conversely, a HTTP/1.1 server-side `Connection` implementation is responsible
+to deserialize HTTP/1.1 request bytes into a HTTP request object and to serialize
+a HTTP response object into its correspondent HTTP/1.1 response bytes.
+
+`Connection` is the abstraction that "speaks" a specific protocol such as
+HTTP/1.1, or HTTP/2, or WebSocket: it is able to read incoming communication
+as well as write outgoing communication in that protocol.
+
+While there is primarily just one implementation of `EndPoint`:
+link:{JDURL}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`]
+(used both on the client-side and on the server-side), there are many
+implementations of `Connection`, typically two for each protocol(one for the
+client-side and one for the server-side).
+
+``Connection``s can be nested, for example in case of encrypted communication
+using the TLS protocol: the outermost TLS `Connection` performs the decryption
+and encryption, and the innermost protocol `Connection` serializes the
+decrypted bytes into objects and deserializes objects into bytes to be encrypted.
+
+Certain protocols, such as WebSocket, start the communication with the server
+using one protocol (e.g. HTTP/1.1), but then change the communication to use
+another protocol (e.g. WebSocket).
+
+`EndPoint` supports changing the `Connection` object on-the-fly via
+`EndPoint.upgrade(Connection)`.
+This allows to use the HTTP/1.1 `Connection` during the initial communication
+and later replace it with a WebSocket `Connection`.
+
+NOTE: TODO: add a section on `UpgradeFrom` and `UpgradeTo`?
+
+`SelectorManager` is an abstract class because while it knows how to create
+concrete `EndPoint` instances, it does not know how to create protocol
+specific `Connection` instances.
+
+Creating `Connection` instances is performed on the server-side by
+link:{JDURL}/org/eclipse/jetty/server/ConnectionFactory.html[`ConnectionFactory`]s.
+and on the client-side by
+link:{JDURL}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`]s
+
+On the server-side, the component that aggregates a `SelectorManager` with a
+set of ``ConnectionFactory``s is
+link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`]s.
+
+NOTE: TODO: add a link to a server-side specific architecture section
+
+On the client-side, the components that aggregates a `SelectorManager` with a
+set of ``ClientConnectionFactory``s are
+link:{JDURL}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`]
+subclasses.
+
+NOTE: TODO: add a link to a client-side specific architecture section
