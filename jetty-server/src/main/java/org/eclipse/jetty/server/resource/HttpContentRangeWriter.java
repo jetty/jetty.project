@@ -64,7 +64,7 @@ public class HttpContentRangeWriter
                 if (channel instanceof SeekableByteChannel)
                 {
                     SeekableByteChannel seekableByteChannel = (SeekableByteChannel)channel;
-                    return new SeekableByteChannelRangeWriter(seekableByteChannel);
+                    return new SeekableByteChannelRangeWriter(seekableByteChannel, () -> (SeekableByteChannel)content.getReadableByteChannel());
                 }
 
                 if (LOG.isDebugEnabled())
