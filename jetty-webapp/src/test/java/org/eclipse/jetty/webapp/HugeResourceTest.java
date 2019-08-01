@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -58,6 +59,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -86,6 +88,17 @@ public class HugeResourceTest
         staticBase = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-static-base");
         FS.ensureDirExists(staticBase);
 
+        FileStore baseFileStore = Files.getFileStore(staticBase);
+
+        // Calculation is (1GB + 4GB + 10GB) == 15GB
+        // once for static source files
+        // once again for multipart/form temp files
+        // for a total of (at least) 30GB needed.
+
+        Assumptions.assumeTrue(baseFileStore.getUnallocatedSpace() > 30 * GB,
+            String.format("FileStore %s of %s needs at least 30GB of free space for this test (only had %,.2fGB)",
+                baseFileStore, staticBase, (double)(baseFileStore.getUnallocatedSpace() / GB)));
+
         makeStaticFile(staticBase.resolve("test-1g.dat"), 1 * GB);
         makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
         makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
@@ -109,10 +122,11 @@ public class HugeResourceTest
     }
 
     @AfterAll
-    public static void cleanupStaticFiles()
+    public static void cleanupTestFiles()
     {
         FS.ensureDeleted(staticBase);
         FS.ensureDeleted(outputDir);
+        FS.ensureEmpty(multipartTempDir);
     }
 
     private static void makeStaticFile(Path staticFile, long size) throws IOException
@@ -211,19 +225,18 @@ public class HugeResourceTest
         Response response = responseListener.get(5, TimeUnit.SECONDS);
 
         assertThat("HTTP Response Code", response.getStatus(), is(200));
-        dumpResponse(response);
+        // dumpResponse(response);
 
         String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
         long contentLengthLong = Long.parseLong(contentLength);
         assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
 
-        Path outputFile = outputDir.resolve(filename);
-        try (OutputStream out = Files.newOutputStream(outputFile);
+        try (ByteCountingOutputStream out = new ByteCountingOutputStream();
              InputStream in = responseListener.getInputStream())
         {
             IO.copy(in, out);
+            assertThat("Downloaded Files Size: " + filename, out.getCount(), is(expectedSize));
         }
-        assertThat("Downloaded Files Size: " + filename, Files.size(outputFile), is(expectedSize));
     }
 
     @ParameterizedTest
@@ -237,7 +250,7 @@ public class HugeResourceTest
         Request request = client.newRequest(destUri).method(HttpMethod.POST).content(pathContentProvider);
         ContentResponse response = request.send();
         assertThat("HTTP Response Code", response.getStatus(), is(200));
-        dumpResponse(response);
+        // dumpResponse(response);
 
         String responseBody = response.getContentAsString();
         assertThat("Response", responseBody, containsString("bytes-received=" + expectedSize));
@@ -256,7 +269,7 @@ public class HugeResourceTest
         Request request = client.newRequest(destUri).method(HttpMethod.POST).content(multipart);
         ContentResponse response = request.send();
         assertThat("HTTP Response Code", response.getStatus(), is(200));
-        dumpResponse(response);
+        // dumpResponse(response);
 
         String responseBody = response.getContentAsString();
         String expectedResponse = String.format("part[%s].size=%d", name, expectedSize);
