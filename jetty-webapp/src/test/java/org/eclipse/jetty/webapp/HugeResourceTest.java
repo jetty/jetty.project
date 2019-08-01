@@ -126,7 +126,7 @@ public class HugeResourceTest
     {
         FS.ensureDeleted(staticBase);
         FS.ensureDeleted(outputDir);
-        FS.ensureEmpty(multipartTempDir);
+        FS.ensureDeleted(multipartTempDir);
     }
 
     private static void makeStaticFile(Path staticFile, long size) throws IOException
