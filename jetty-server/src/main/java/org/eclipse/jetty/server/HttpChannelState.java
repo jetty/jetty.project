@@ -53,6 +53,13 @@ public class HttpChannelState
 
     /**
      * The state of the HttpChannel,used to control the overall lifecycle.
+     * <pre>
+     *     IDLE <-----> HANDLING ----> WAITING
+     *       |                 ^       /
+     *       |                  \     /
+     *       v                   \   v
+     *    UPGRADED               WOKEN
+     * </pre>
      */
     public enum State
     {
