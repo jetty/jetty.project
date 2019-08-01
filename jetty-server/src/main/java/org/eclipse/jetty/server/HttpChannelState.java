@@ -33,7 +33,6 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
@@ -65,7 +64,22 @@ public class HttpChannelState
     }
 
     /**
-     * The state of the servlet async API.
+     * The state of the request processing lifecycle.
+     * <pre>
+     *       BLOCKING <----> COMPLETING ---> COMPLETED
+     *       ^  |  ^            ^
+     *      /   |   \           |
+     *     |    |    DISPATCH   |
+     *     |    |    ^  ^       |
+     *     |    v   /   |       |
+     *     |  ASYNC -------> COMPLETE
+     *     |    |       |       ^
+     *     |    v       |       |
+     *     |  EXPIRE    |       |
+     *      \   |      /        |
+     *       \  v     /         |
+     *       EXPIRING ----------+
+     * </pre>
      */
     private enum RequestState
     {
@@ -80,7 +94,7 @@ public class HttpChannelState
     }
 
     /**
-     * @see HttpInput.State
+     * The input readiness state, which works together with {@link HttpInput.State}
      */
     private enum InputState
     {
@@ -93,7 +107,7 @@ public class HttpChannelState
     }
 
     /**
-     * @see HttpOutput.State
+     * The output committed state, which works together with {@link HttpOutput.State}
      */
     private enum OutputState
     {
@@ -123,10 +137,9 @@ public class HttpChannelState
         WAIT,             // Wait for further events
     }
 
-    private final Locker _locker = new Locker();
     private final HttpChannel _channel;
     private List<AsyncListener> _asyncListeners;
-    private State _state = HttpChannelState.State.IDLE;
+    private State _state = State.IDLE;
     private RequestState _requestState = RequestState.BLOCKING;
     private OutputState _outputState = OutputState.OPEN;
     private InputState _inputState = InputState.IDLE;
@@ -229,7 +242,7 @@ public class HttpChannelState
 
     private String getStatusStringLocked()
     {
-        return String.format("s=%s lc=%s rs=%s ars=%s awp=%b se=%b i=%b al=%d",
+        return String.format("s=%s rs=%s os=%s is=%s awp=%b se=%b i=%b al=%d",
             _state,
             _requestState,
             _outputState,
@@ -356,12 +369,15 @@ public class HttpChannelState
                     if (_requestState != RequestState.BLOCKING)
                         throw new IllegalStateException(getStatusStringLocked());
                     _initial = true;
-                    _state = HttpChannelState.State.HANDLING;
+                    _state = State.HANDLING;
                     return Action.DISPATCH;
 
                 case WOKEN:
                     if (_event != null && _event.getThrowable() != null && !_sendError)
+                    {
+                        _state = State.HANDLING;
                         return Action.ASYNC_ERROR;
+                    }
 
                     Action action = nextAction(true);
                     if (LOG.isDebugEnabled())
@@ -415,7 +431,7 @@ public class HttpChannelState
     private Action nextAction(boolean handling)
     {
         // Assume we can keep going, but exceptions are below
-        _state = HttpChannelState.State.HANDLING;
+        _state = State.HANDLING;
 
         if (_sendError)
         {
@@ -479,7 +495,7 @@ public class HttpChannelState
                 Scheduler scheduler = _channel.getScheduler();
                 if (scheduler != null && _timeoutMs > 0 && !_event.hasTimeoutTask())
                     _event.setTimeoutTask(scheduler.schedule(_event, _timeoutMs, TimeUnit.MILLISECONDS));
-                _state = HttpChannelState.State.WAITING;
+                _state = State.WAITING;
                 return Action.WAIT;
 
             case DISPATCH:
@@ -512,11 +528,11 @@ public class HttpChannelState
                 return Action.COMPLETE;
 
             case COMPLETING:
-                _state = HttpChannelState.State.WAITING;
+                _state = State.WAITING;
                 return Action.WAIT;
 
             case COMPLETED:
-                _state = HttpChannelState.State.IDLE;
+                _state = State.IDLE;
                 return Action.TERMINATED;
 
             default:
@@ -532,7 +548,7 @@ public class HttpChannelState
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("startAsync {}", toStringLocked());
-            if (_state != HttpChannelState.State.HANDLING || _requestState != RequestState.BLOCKING)
+            if (_state != State.HANDLING || _requestState != RequestState.BLOCKING)
                 throw new IllegalStateException(this.getStatusStringLocked());
 
             _requestState = RequestState.ASYNC;
@@ -611,7 +627,7 @@ public class HttpChannelState
                     case WOKEN:
                         break;
                     case WAITING:
-                        _state = HttpChannelState.State.WOKEN;
+                        _state = State.WOKEN;
                         dispatch = true;
                         break;
                     default:
@@ -638,9 +654,9 @@ public class HttpChannelState
                 return;
             _requestState = RequestState.EXPIRE;
 
-            if (_state == HttpChannelState.State.WAITING)
+            if (_state == State.WAITING)
             {
-                _state = HttpChannelState.State.WOKEN;
+                _state = State.WOKEN;
                 dispatch = true;
             }
         }
@@ -661,7 +677,7 @@ public class HttpChannelState
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onTimeout {}", toStringLocked());
-            if (_requestState != RequestState.EXPIRING || _state != HttpChannelState.State.HANDLING)
+            if (_requestState != RequestState.EXPIRING || _state != State.HANDLING)
                 throw new IllegalStateException(toStringLocked());
             event = _event;
             listeners = _asyncListeners;
@@ -721,10 +737,10 @@ public class HttpChannelState
                 default:
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
-            if (_state == HttpChannelState.State.WAITING)
+            if (_state == State.WAITING)
             {
                 handle = true;
-                _state = HttpChannelState.State.WOKEN;
+                _state = State.WOKEN;
             }
         }
 
@@ -743,8 +759,12 @@ public class HttpChannelState
         AsyncContextEvent event = null;
         synchronized (this)
         {
-            if (_state == HttpChannelState.State.WAITING && _requestState == RequestState.ASYNC)
+            if (LOG.isDebugEnabled())
+                LOG.debug("asyncError " + toStringLocked(), failure);
+
+            if (_state == State.WAITING && _requestState == RequestState.ASYNC)
             {
+                _state = State.WOKEN;
                 _event.addThrowable(failure);
                 event = _event;
             }
@@ -814,7 +834,7 @@ public class HttpChannelState
                 LOG.debug("thrownException " + getStatusStringLocked(), th);
 
             // This can only be called from within the handle loop
-            if (_state != HttpChannelState.State.HANDLING)
+            if (_state != State.HANDLING)
                 throw new IllegalStateException(getStatusStringLocked());
 
             if (_sendError)
@@ -920,18 +940,8 @@ public class HttpChannelState
         {
             if (_outputState != OutputState.OPEN)
                 throw new IllegalStateException("Response is " + _outputState);
-            response.resetContent(); // will throw ISE if committed
             response.getHttpOutput().sendErrorClose();
-
-            request.getResponse().setStatus(code);
-            // we are allowed to have a body, then produce the error page.
-            ContextHandler.Context context = request.getErrorContext();
-            if (context != null)
-                request.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
-            request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
-            request.setAttribute(ERROR_SERVLET_NAME, request.getServletName());
-            request.setAttribute(ERROR_STATUS_CODE, code);
-            request.setAttribute(ERROR_MESSAGE, message);
+            response.resetContent(); // will throw ISE if committed
 
             if (LOG.isDebugEnabled())
                 LOG.debug("sendError {}", toStringLocked());
@@ -940,7 +950,17 @@ public class HttpChannelState
             {
                 case HANDLING:
                 case WOKEN:
-                case WAITING:
+                case WAITING: 
+                    request.getResponse().setStatus(code);
+                    // we are allowed to have a body, then produce the error page.
+                    ContextHandler.Context context = request.getErrorContext();
+                    if (context != null)
+                        request.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
+                    request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
+                    request.setAttribute(ERROR_SERVLET_NAME, request.getServletName());
+                    request.setAttribute(ERROR_STATUS_CODE, code);
+                    request.setAttribute(ERROR_MESSAGE, message);
+                    
                     _sendError = true;
                     if (_event != null)
                     {
@@ -994,7 +1014,7 @@ public class HttpChannelState
                         _requestState = RequestState.COMPLETED;
                         aListeners = null;
                         event = null;
-                        if (_state == HttpChannelState.State.WAITING)
+                        if (_state == State.WAITING)
                         {
                             _state = State.WOKEN;
                             handle = true;
@@ -1038,8 +1058,11 @@ public class HttpChannelState
             synchronized (this)
             {
                 _requestState = RequestState.COMPLETED;
-                if (_state == HttpChannelState.State.WAITING)
+                if (_state == State.WAITING)
+                {
+                    _state = State.WOKEN;
                     handle = true;
+                }
             }
         }
 
@@ -1065,7 +1088,7 @@ public class HttpChannelState
                     break;
             }
             _asyncListeners = null;
-            _state = HttpChannelState.State.IDLE;
+            _state = State.IDLE;
             _requestState = RequestState.BLOCKING;
             _outputState = OutputState.OPEN;
             _initial = true;
@@ -1092,7 +1115,7 @@ public class HttpChannelState
                     throw new IllegalStateException(getStatusStringLocked());
             }
             _asyncListeners = null;
-            _state = HttpChannelState.State.UPGRADED;
+            _state = State.UPGRADED;
             _requestState = RequestState.BLOCKING;
             _initial = true;
             _inputState = InputState.IDLE;
@@ -1127,7 +1150,7 @@ public class HttpChannelState
     {
         synchronized (this)
         {
-            return _state == HttpChannelState.State.IDLE;
+            return _state == State.IDLE;
         }
     }
 
@@ -1152,7 +1175,7 @@ public class HttpChannelState
     {
         synchronized (this)
         {
-            return _state == HttpChannelState.State.WAITING || _state == HttpChannelState.State.HANDLING && _requestState == RequestState.ASYNC;
+            return _state == State.WAITING || _state == State.HANDLING && _requestState == RequestState.ASYNC;
         }
     }
 
@@ -1168,7 +1191,7 @@ public class HttpChannelState
     {
         synchronized (this)
         {
-            if (_state == HttpChannelState.State.HANDLING)
+            if (_state == State.HANDLING)
                 return _requestState != RequestState.BLOCKING;
             return _requestState == RequestState.ASYNC || _requestState == RequestState.EXPIRING;
         }
@@ -1273,7 +1296,7 @@ public class HttpChannelState
             {
                 case IDLE:
                 case READY:
-                    if (_state == HttpChannelState.State.WAITING)
+                    if (_state == State.WAITING)
                     {
                         interested = true;
                         _inputState = InputState.REGISTERED;
@@ -1325,10 +1348,10 @@ public class HttpChannelState
                 case REGISTER:
                 case REGISTERED:
                     _inputState = InputState.READY;
-                    if (_state == HttpChannelState.State.WAITING)
+                    if (_state == State.WAITING)
                     {
                         woken = true;
-                        _state = HttpChannelState.State.WOKEN;
+                        _state = State.WOKEN;
                     }
                     break;
 
@@ -1359,10 +1382,10 @@ public class HttpChannelState
             {
                 case IDLE:
                     _inputState = InputState.READY;
-                    if (_state == HttpChannelState.State.WAITING)
+                    if (_state == State.WAITING)
                     {
                         woken = true;
-                        _state = HttpChannelState.State.WOKEN;
+                        _state = State.WOKEN;
                     }
                     break;
 
@@ -1392,10 +1415,10 @@ public class HttpChannelState
             {
                 case REGISTERED:
                     _inputState = InputState.POSSIBLE;
-                    if (_state == HttpChannelState.State.WAITING)
+                    if (_state == State.WAITING)
                     {
                         woken = true;
-                        _state = HttpChannelState.State.WOKEN;
+                        _state = State.WOKEN;
                     }
                     break;
 
@@ -1422,10 +1445,10 @@ public class HttpChannelState
 
             // Force read ready so onAllDataRead can be called
             _inputState = InputState.READY;
-            if (_state == HttpChannelState.State.WAITING)
+            if (_state == State.WAITING)
             {
                 woken = true;
-                _state = HttpChannelState.State.WOKEN;
+                _state = State.WOKEN;
             }
         }
         return woken;
@@ -1441,9 +1464,9 @@ public class HttpChannelState
                 LOG.debug("onWritePossible {}", toStringLocked());
 
             _asyncWritePossible = true;
-            if (_state == HttpChannelState.State.WAITING)
+            if (_state == State.WAITING)
             {
-                _state = HttpChannelState.State.WOKEN;
+                _state = State.WOKEN;
                 wake = true;
             }
         }

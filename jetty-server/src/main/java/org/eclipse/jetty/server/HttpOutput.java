@@ -151,6 +151,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static Logger LOG = Log.getLogger(HttpOutput.class);
     private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
+    private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
     private final HttpChannel _channel;
     private final SharedBlockingCallback _writeBlocker;
     private Interceptor _interceptor;
@@ -163,8 +164,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private WriteListener _writeListener;
     private volatile Throwable _onError;
     private Callback _closeCallback;
-
-    private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
 
     public HttpOutput(HttpChannel channel)
     {

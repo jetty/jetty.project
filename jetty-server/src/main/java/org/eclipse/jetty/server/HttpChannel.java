@@ -25,13 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
@@ -54,7 +52,6 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler.ErrorPageMapper;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -623,9 +620,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             // No stack trace unless there is debug turned on
             if (LOG.isDebugEnabled())
-                LOG.warn(_request.getRequestURI(), failure);
+                LOG.warn("handleException " + _request.getRequestURI(), failure);
             else
-                LOG.warn("{} {}", _request.getRequestURI(), noStack.toString());
+                LOG.warn("handleException {} {}", _request.getRequestURI(), noStack.toString());
         }
         else
         {
@@ -665,13 +662,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _request.setHandled(true);
             _state.completing();
-
-            final FuturePromise<AsyncContext> async = new FuturePromise<>();
-            final AtomicBoolean written = new AtomicBoolean();
-            sendResponse(null, content, true, Callback.from(() ->
-            {
-                _state.completed();
-            }));
+            sendResponse(null, content, true, Callback.from(_state::completed));
         }
         catch (Throwable x)
         {
