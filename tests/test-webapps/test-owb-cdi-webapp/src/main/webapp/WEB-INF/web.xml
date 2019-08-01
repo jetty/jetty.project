@@ -4,10 +4,8 @@
    xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" 
    version="3.1">
   <display-name>OWB CDI Integration Test WebApp</display-name>
-  
-  <listener>
-    <listener-class>org.apache.webbeans.servlet.WebBeansConfigurationListener</listener-class>
-  </listener>
+
+  <!-- OWB Listener is added by OwbServletContainerInitializer -->
 
   <resource-env-ref>
     <description>Object factory for the CDI Bean Manager</description>

@@ -45,7 +45,7 @@ public class CDITests extends AbstractDistributionTest
         // TODO tests.add(new Object[]{"weld", "cdi"}); // Requires Weld >= 3.1.2 ??? Not sure why
         tests.add(new Object[]{"weld", "cdi2"});
         // TODO tests.add(new Object[]{"weld", "decorate"}); // Requires Weld >= 3.1.2
-        // TODO tests.add(new Object[]{"owb", "cdi"});
+        tests.add(new Object[]{"owb", "cdi"});
         // TODO tests.add(new Object[]{"owb", "cdi2"});
         // tests.add(new Object[]{"owb", "decorate"});  // Probably will not be supported
         return tests.stream().map(Arguments::of);
