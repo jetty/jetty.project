@@ -33,7 +33,6 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
@@ -332,7 +331,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             LOG.debug("HTTP2 Response #{}/{} aborted", stream == null ? -1 : stream.getId(),
                 stream == null ? -1 : Integer.toHexString(stream.getSession().hashCode()));
         if (stream != null)
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP);
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
     }
 
     private class TransportCallback implements Callback
@@ -393,36 +392,20 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         public void failed(Throwable failure)
         {
             boolean commit;
-            Callback callback = null;
-            synchronized (this)
-            {
-                commit = this.commit;
-                // Don't always fail, as we may need to write an error response.
-                EndPoint endPoint = connection.getEndPoint();
-                boolean cannotWrite = stream.isReset() || endPoint.isOutputShutdown() || !endPoint.isOpen();
-                if ((cannotWrite && state == State.IDLE) || state == State.WRITING)
-                {
-                    this.state = State.FAILED;
-                    callback = this.callback;
-                    this.callback = null;
-                    this.failure = failure;
-                }
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HTTP2 Response #%d/%h %s %s", stream.getId(), stream.getSession(), commit ? "commit" : "flush", callback == null ? "ignored" : "failed"), failure);
-            if (callback != null)
-                callback.failed(failure);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
             Callback callback;
             synchronized (this)
             {
+                commit = this.commit;
+                this.state = State.FAILED;
                 callback = this.callback;
+                this.callback = null;
+                this.failure = failure;
             }
-            return callback != null ? callback.getInvocationType() : Callback.super.getInvocationType();
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("HTTP2 Response #%d/%h %s %s", stream.getId(), stream.getSession(),
+                    commit ? "commit" : "flush", callback == null ? "ignored" : "failed"), failure);
+            if (callback != null)
+                callback.failed(failure);
         }
 
         private boolean onIdleTimeout(Throwable failure)
@@ -447,6 +430,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             if (result)
                 callback.failed(failure);
             return result;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            Callback callback;
+            synchronized (this)
+            {
+                callback = this.callback;
+            }
+            return callback != null ? callback.getInvocationType() : Callback.super.getInvocationType();
         }
     }
 
