@@ -682,9 +682,21 @@ public class Request implements HttpServletRequest
         MetaData.Request metadata = _metaData;
         if (metadata == null)
             return -1;
-        if (metadata.getContentLength() != Long.MIN_VALUE)
-            return (int)metadata.getContentLength();
-        return (int)metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
+
+        long contentLength = metadata.getContentLength();
+        if (contentLength != Long.MIN_VALUE)
+        {
+            if (contentLength > Integer.MAX_VALUE)
+            {
+                // Per ServletRequest#getContentLength() javadoc this must return -1 for values exceeding Integer.MAX_VALUE
+                return -1;
+            }
+            else
+            {
+                return (int)contentLength;
+            }
+        }
+        return (int)metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
     }
 
     /*
@@ -698,7 +710,7 @@ public class Request implements HttpServletRequest
             return -1L;
         if (metadata.getContentLength() != Long.MIN_VALUE)
             return metadata.getContentLength();
-        return metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
+        return metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
     }
 
     public long getContentRead()
