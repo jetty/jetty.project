@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.url.mvn.internal.AetherBasedResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -106,11 +107,22 @@ public class TestOSGiUtil
 
     public static List<Option> coreJettyDependencies()
     {
+        AetherBasedResolver l;
         List<Option> res = new ArrayList<>();
         res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
         String mavenRepoPath = System.getProperty("mavenRepoPath");
         if (!StringUtil.isBlank(mavenRepoPath))
-            res.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(mavenRepoPath));
+        {
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.defaultRepositories" ).value( "file://" + mavenRepoPath + "@id=local.repo") );
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.useFallbackRepositories").value( Boolean.FALSE.toString() ) );
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.repositories").value( "+https://repo1.maven.org/maven2@id=maven.central.repo" ) );
+        }
+        String settingsFilePath = System.getProperty("settingsFilePath");
+        if (!StringUtil.isBlank(settingsFilePath))
+        {
+            res.add( systemProperty( "org.ops4j.pax.url.mvn.settings" ).value( System.getProperty( "settingsFilePath" ) ) );
+        }
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-tree").versionAsInProject().start());
