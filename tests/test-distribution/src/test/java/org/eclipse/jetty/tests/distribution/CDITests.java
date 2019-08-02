@@ -19,9 +19,13 @@
 package org.eclipse.jetty.tests.distribution;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -40,14 +44,27 @@ public class CDITests extends AbstractDistributionTest
     // Tests from here use these parameters
     public static Stream<Arguments> tests()
     {
+        Consumer<DistributionTester> removeJettyWebXml = d ->
+        {
+            try
+            {
+                Path jettyWebXml = d.getJettyBase().resolve("webapps/demo/WEB-INF/jetty-web.xml");
+                Files.deleteIfExists(jettyWebXml);
+            }
+            catch(IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        };
+
         List<Object[]> tests = new ArrayList<>();
 
-        // TODO tests.add(new Object[]{"weld", "cdi"}); // Requires Weld >= 3.1.2 ??? Not sure why
-        tests.add(new Object[]{"weld", "cdi2"});
-        // TODO tests.add(new Object[]{"weld", "decorate"}); // Requires Weld >= 3.1.2
-        tests.add(new Object[]{"owb", "cdi"});
-        // TODO tests.add(new Object[]{"owb", "cdi2"});
-        // tests.add(new Object[]{"owb", "decorate"});  // Probably will not be supported
+        // TODO tests.add(new Object[]{"weld", "cdi-spi", null}); // Requires Weld >= 3.1.2 ??? Not sure why
+        tests.add(new Object[]{"weld", "cdi2", null});
+        // TODO tests.add(new Object[]{"weld", "decorate", null}); // Requires Weld >= 3.1.2
+        tests.add(new Object[]{"owb", "cdi-spi", removeJettyWebXml});
+        tests.add(new Object[]{"owb", "cdi2", null});
+        // tests.add(new Object[]{"owb", "decorate", null});  // Will not be supported
         return tests.stream().map(Arguments::of);
     }
 
@@ -57,7 +74,7 @@ public class CDITests extends AbstractDistributionTest
      */
     @ParameterizedTest
     @MethodSource("tests")
-    public void testCDIIncludedInWebapp(String implementation, String integration) throws Exception
+    public void testCDIIncludedInWebapp(String implementation, String integration, Consumer<DistributionTester> configure) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
@@ -77,6 +94,8 @@ public class CDITests extends AbstractDistributionTest
 
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-" + implementation + "-cdi-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "demo");
+            if (configure != null)
+                configure.accept(distribution);
 
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))

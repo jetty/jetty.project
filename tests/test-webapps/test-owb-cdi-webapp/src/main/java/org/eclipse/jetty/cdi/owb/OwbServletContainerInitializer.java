@@ -26,6 +26,10 @@ import javax.servlet.ServletException;
 
 import org.apache.webbeans.servlet.WebBeansConfigurationListener;
 
+/**
+ * @deprecated This class will not be required once https://issues.apache.org/jira/browse/OWB-1296 is available
+ */
+@Deprecated
 public class OwbServletContainerInitializer implements ServletContainerInitializer
 {
     @Override
