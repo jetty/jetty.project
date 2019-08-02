@@ -140,6 +140,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * for the attribute value.
      */
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
+    private static final int NOT_INITIALIZED = -2;
+    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+    public static final int DEFAULT_MAX_FORM_KEYS = 1000;
 
     /**
      * Get the current ServletContext implementation.
@@ -192,8 +195,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private Logger _logger;
     private boolean _allowNullPathInfo;
-    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys", -1);
-    private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize", -1);
+    private int _maxFormKeys = NOT_INITIALIZED;
+    private int _maxFormContentSize = NOT_INITIALIZED;
     private boolean _compactPath = false;
     private boolean _usingSecurityManager = System.getSecurityManager() != null;
 
@@ -782,15 +785,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStart() throws Exception
     {
+        if (_maxFormKeys == NOT_INITIALIZED)
+            _maxFormKeys = lookup("org.eclipse.jetty.server.Request.maxFormKeys", DEFAULT_MAX_FORM_KEYS);
+
+        if (_maxFormContentSize == NOT_INITIALIZED)
+            _maxFormContentSize = lookup("org.eclipse.jetty.server.Request.maxFormContentSize", DEFAULT_MAX_FORM_CONTENT_SIZE);
+
         _availability = Availability.STARTING;
 
         if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
 
         if (_logger == null)
-        {
             _logger = Log.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
-        }
 
         ClassLoader oldClassloader = null;
         Thread currentThread = null;
@@ -858,6 +865,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         // Replace bad characters.
         return '.' + logName.replaceAll("\\W", "_");
+    }
+
+    private int lookup(String key, int dftValue)
+    {
+        Integer value = Integer.getInteger(key);
+        if (value == null)
+        {
+            Object attribute = getServer().getAttribute(key);
+            if (attribute instanceof Number)
+                value = ((Number)attribute).intValue();
+            else if (attribute instanceof String)
+                value = Integer.parseInt((String)attribute);
+            else
+                value = dftValue;
+        }
+        return value;
     }
 
     /**

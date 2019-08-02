@@ -232,7 +232,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         synchronized (map)
         {
             String key = null;
-            String value = null;
+            String value;
             int mark = -1;
             boolean encoded = false;
             for (int i = 0; i < content.length(); i++)
@@ -384,9 +384,9 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
      *
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of form to read
-     * @param maxKeys maximum number of keys to read
-     * @throws IOException if unable to decode InputStream as ISO8859-1
+     * @param maxLength maximum length of form to read or -1 for no limit
+     * @param maxKeys maximum number of keys to read or -1 for no limit
+     * @throws IOException if unable to decode the InputStream as ISO8859-1
      */
     public static void decode88591To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
         throws IOException
@@ -457,7 +457,6 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             {
                 map.add(buffer.toString(), "");
             }
-
             checkMaxKeys(map, maxKeys);
         }
     }
@@ -467,9 +466,9 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
      *
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum form length to decode
-     * @param maxKeys the maximum number of keys to read
-     * @throws IOException if unable to decode input stream
+     * @param maxLength maximum form length to decode or -1 for no limit
+     * @param maxKeys the maximum number of keys to read or -1 for no limit
+     * @throws IOException if unable to decode the input stream
      */
     public static void decodeUtf8To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
         throws IOException
@@ -540,7 +539,6 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             {
                 map.add(buffer.toReplacedString(), "");
             }
-
             checkMaxKeys(map, maxKeys);
         }
     }
@@ -561,9 +559,9 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
      * @param in the stream containing the encoded parameters
      * @param map the MultiMap to decode into
      * @param charset the charset to use for decoding
-     * @param maxLength the maximum length of the form to decode
-     * @param maxKeys the maximum number of keys to decode
-     * @throws IOException if unable to decode input stream
+     * @param maxLength the maximum length of the form to decode or -1 for no limit
+     * @param maxKeys the maximum number of keys to decode or -1 for no limit
+     * @throws IOException if unable to decode the input stream
      */
     public static void decodeTo(InputStream in, MultiMap<String> map, String charset, int maxLength, int maxKeys)
         throws IOException
@@ -689,7 +687,6 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                 {
                     map.add(output.toString(charset), "");
                 }
-
                 checkMaxKeys(map, maxKeys);
             }
         }

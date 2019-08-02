@@ -498,8 +498,8 @@ public class Request implements HttpServletRequest
     {
         try
         {
-            int maxFormContentSize = -1;
-            int maxFormKeys = -1;
+            int maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+            int maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
 
             if (_context != null)
             {
@@ -508,30 +508,8 @@ public class Request implements HttpServletRequest
                 maxFormKeys = contextHandler.getMaxFormKeys();
             }
 
-            if (maxFormContentSize < 0)
-            {
-                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
-                if (obj instanceof Number)
-                    maxFormContentSize = ((Number)obj).intValue();
-                else if (obj instanceof String)
-                    maxFormContentSize = Integer.parseInt((String)obj);
-                if (maxFormContentSize < 0)
-                    maxFormContentSize = 200000;
-            }
-
-            if (maxFormKeys < 0)
-            {
-                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
-                if (obj instanceof Number)
-                    maxFormKeys = ((Number)obj).intValue();
-                else if (obj instanceof String)
-                    maxFormKeys = Integer.parseInt((String)obj);
-                if (maxFormKeys < 0)
-                    maxFormKeys = 1000;
-            }
-
             int contentLength = getContentLength();
-            if (contentLength > maxFormContentSize)
+            if (maxFormContentSize >= 0 && contentLength > maxFormContentSize)
                 throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
 
             InputStream in = getInputStream();
@@ -672,9 +650,21 @@ public class Request implements HttpServletRequest
         MetaData.Request metadata = _metaData;
         if (metadata == null)
             return -1;
-        if (metadata.getContentLength() != Long.MIN_VALUE)
-            return (int)metadata.getContentLength();
-        return (int)metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
+
+        long contentLength = metadata.getContentLength();
+        if (contentLength != Long.MIN_VALUE)
+        {
+            if (contentLength > Integer.MAX_VALUE)
+            {
+                // Per ServletRequest#getContentLength() javadoc this must return -1 for values exceeding Integer.MAX_VALUE
+                return -1;
+            }
+            else
+            {
+                return (int)contentLength;
+            }
+        }
+        return (int)metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
     }
 
     /*
@@ -688,7 +678,7 @@ public class Request implements HttpServletRequest
             return -1L;
         if (metadata.getContentLength() != Long.MIN_VALUE)
             return metadata.getContentLength();
-        return metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
+        return metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
     }
 
     public long getContentRead()
