@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.tests.server;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.time.temporal.TemporalAmount;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,24 +41,21 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
-import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@Disabled("merge from 9.4.x but fail")
 public class PartialListenerTest
 {
     private Server server;
@@ -77,28 +73,18 @@ public class PartialListenerTest
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
 
-        ServletHolder closeEndpoint = new ServletHolder(new WebSocketServlet()
+        ServletHolder closeEndpoint = new ServletHolder(new JettyWebSocketServlet()
         {
             @Override
-            public void configure(WebSocketServletFactory factory)
+            public void configure(JettyWebSocketServletFactory factory)
             {
-                factory.setIdleTimeout( Duration.ofMillis( 2 ));
+                factory.setIdleTimeout(Duration.ofSeconds(2));
                 partialCreator = new PartialCreator();
                 factory.setCreator(partialCreator);
             }
-
-            protected FrameHandlerFactory getFactory()
-            {
-                JettyServerFrameHandlerFactory
-                    frameHandlerFactory = JettyServerFrameHandlerFactory.getFactory( getServletContext());
-
-                if (frameHandlerFactory == null)
-                    throw new IllegalStateException("JettyServerFrameHandlerFactory not found");
-
-                return frameHandlerFactory;
-            }
         });
         context.addServlet(closeEndpoint, "/ws");
+        JettyWebSocketServletContainerInitializer.configure(context, null);
 
         HandlerList handlers = new HandlerList();
         handlers.addHandler(context);
@@ -265,13 +251,12 @@ public class PartialListenerTest
         }
     }
 
-
-    public static class PartialCreator implements WebSocketCreator
+    public static class PartialCreator implements JettyWebSocketCreator
     {
         public PartialEndpoint partialEndpoint;
 
         @Override
-        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+        public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp)
         {
             partialEndpoint = new PartialEndpoint();
             return partialEndpoint;

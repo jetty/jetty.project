@@ -203,7 +203,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         switch (messageType)
         {
             case -1: // new message
-                frame = new Frame(OpCode.BINARY);
+                frame = new Frame(OpCode.TEXT);
                 messageType = OpCode.TEXT;
                 break;
             case OpCode.TEXT:
