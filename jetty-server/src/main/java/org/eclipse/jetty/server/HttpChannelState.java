@@ -239,7 +239,7 @@ public class HttpChannelState
         }
     }
 
-    public String toStringLocked()
+    private String toStringLocked()
     {
         return String.format("%s@%x{%s}",
             getClass().getSimpleName(),

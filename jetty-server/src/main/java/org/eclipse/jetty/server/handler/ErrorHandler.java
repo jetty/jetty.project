@@ -243,6 +243,7 @@ public class ErrorHandler extends AbstractHandler
 
                 // We will write it into a byte array buffer so
                 // we can flush it asynchronously.
+                // TODO get a buffer from the buffer pool and return.
                 ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(1024);
                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(bout, charset));
                 response.setContentType(MimeTypes.Type.TEXT_HTML.asString());

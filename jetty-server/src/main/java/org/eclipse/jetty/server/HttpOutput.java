@@ -62,6 +62,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpOutput extends ServletOutputStream implements Runnable
 {
     private static final String LSTRING_FILE = "javax.servlet.LocalStrings";
+    private static final Callback BLOCKING_CLOSE_CALLBACK = new Callback() {};
     private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
 
     /*
@@ -300,8 +301,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void close()
     {
-        Callback closeCallback = _closeCallback == null ? Callback.NOOP : _closeCallback;
+        Callback closeCallback = _closeCallback;
         _closeCallback = null;
+        if (closeCallback == null)
+            closeCallback = BLOCKING_CLOSE_CALLBACK;
 
         while (true)
         {
@@ -352,7 +355,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     try
                     {
                         ByteBuffer content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
-                        if (closeCallback == Callback.NOOP)
+                        if (closeCallback == BLOCKING_CLOSE_CALLBACK)
                         {
                             // Do a blocking close
                             write(content, !_channel.getResponse().isIncluding());

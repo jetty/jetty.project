@@ -573,7 +573,7 @@ public class NcsaRequestLogTest
                 {
                     request.setAttribute("ASYNC", Boolean.TRUE);
                     AsyncContext ac = request.startAsync();
-                    ac.setTimeout(100000);
+                    ac.setTimeout(1000);
                     baseRequest.setHandled(true);
                     _server.getThreadPool().execute(() ->
                     {
@@ -583,7 +583,7 @@ public class NcsaRequestLogTest
                             {
                                 while (baseRequest.getHttpChannel().getState().getState() != HttpChannelState.State.WAITING)
                                 {
-                                    Thread.yield();
+                                    Thread.sleep(10);
                                 }
                                 baseRequest.setHandled(false);
                                 testHandler.handle(target, baseRequest, request, response);
