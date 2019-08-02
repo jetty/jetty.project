@@ -971,11 +971,19 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(Resource resource, boolean direct) throws IOException
     {
-        int len = (int)resource.length();
+        long len = resource.length();
         if (len < 0)
             throw new IllegalArgumentException("invalid resource: " + resource + " len=" + len);
 
-        ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
+        if (len > Integer.MAX_VALUE)
+        {
+            // This method cannot handle resources of this size.
+            return null;
+        }
+
+        int ilen = (int)len;
+
+        ByteBuffer buffer = direct ? BufferUtil.allocateDirect(ilen) : BufferUtil.allocate(ilen);
 
         int pos = BufferUtil.flipToFill(buffer);
         if (resource.getFile() != null)
@@ -984,7 +992,7 @@ public class BufferUtil
         {
             try (InputStream is = resource.getInputStream())
             {
-                BufferUtil.readFrom(is, len, buffer);
+                BufferUtil.readFrom(is, ilen, buffer);
             }
         }
         BufferUtil.flipToFlush(buffer, pos);

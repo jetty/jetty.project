@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <settings>
+  <mirrors>
+    <mirror>
+      <id>local.mirror</id>
+      <url>file://@localRepo@</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
   <profiles>
     <profile>
       <id>it-repo</id>

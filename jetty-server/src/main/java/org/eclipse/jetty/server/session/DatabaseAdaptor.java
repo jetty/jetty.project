@@ -27,6 +27,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Locale;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -164,8 +165,16 @@ public class DatabaseAdaptor
             return new ByteArrayInputStream(bytes);
         }
 
-        Blob blob = result.getBlob(columnName);
-        return blob.getBinaryStream();
+        try
+        {
+            Blob blob = result.getBlob(columnName);
+            return blob.getBinaryStream();
+        }
+        catch (SQLFeatureNotSupportedException ex)
+        {
+            byte[] bytes = result.getBytes(columnName);
+            return new ByteArrayInputStream(bytes);
+        }
     }
 
     public boolean isEmptyStringNull()
