@@ -140,9 +140,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * for the attribute value.
      */
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
-    private static final int NOT_INITIALIZED = -2;
-    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+
+    public static final String MAX_FORM_KEYS_KEY = "org.eclipse.jetty.server.Request.maxFormKeys";
+    public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
     public static final int DEFAULT_MAX_FORM_KEYS = 1000;
+    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
 
     /**
      * Get the current ServletContext implementation.
@@ -195,8 +197,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private Logger _logger;
     private boolean _allowNullPathInfo;
-    private int _maxFormKeys = NOT_INITIALIZED;
-    private int _maxFormContentSize = NOT_INITIALIZED;
+    private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
+    private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
     private boolean _compactPath = false;
     private boolean _usingSecurityManager = System.getSecurityManager() != null;
 
@@ -785,12 +787,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStart() throws Exception
     {
-        if (_maxFormKeys == NOT_INITIALIZED)
-            _maxFormKeys = lookup("org.eclipse.jetty.server.Request.maxFormKeys", DEFAULT_MAX_FORM_KEYS);
-
-        if (_maxFormContentSize == NOT_INITIALIZED)
-            _maxFormContentSize = lookup("org.eclipse.jetty.server.Request.maxFormContentSize", DEFAULT_MAX_FORM_CONTENT_SIZE);
-
         _availability = Availability.STARTING;
 
         if (_contextPath == null)

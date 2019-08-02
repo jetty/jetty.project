@@ -507,6 +507,11 @@ public class Request implements HttpServletRequest
                 maxFormContentSize = contextHandler.getMaxFormContentSize();
                 maxFormKeys = contextHandler.getMaxFormKeys();
             }
+            else
+            {
+                maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
+            }
 
             int contentLength = getContentLength();
             if (maxFormContentSize >= 0 && contentLength > maxFormContentSize)
@@ -523,6 +528,16 @@ public class Request implements HttpServletRequest
             LOG.debug(e);
             throw new RuntimeIOException(e);
         }
+    }
+
+    private int lookupServerAttribute(String key, int dftValue)
+    {
+        Object attribute = _channel.getServer().getAttribute(key);
+        if (attribute instanceof Number)
+            return ((Number)attribute).intValue();
+        else if (attribute instanceof String)
+            return Integer.parseInt((String)attribute);
+        return dftValue;
     }
 
     @Override
