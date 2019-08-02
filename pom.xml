@@ -638,7 +638,10 @@
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
             <reuseForks>true</reuseForks> <!-- to work around crash at https://github.com/junit-team/junit5/issues/801 -->
+            <!--
+            order can be different depending on os jvm so let's force it
             <runOrder>alphabetical</runOrder>
+            -->
             <systemPropertyVariables>
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
               <unix.socket.tmp>${unix.socket.tmp}</unix.socket.tmp>
