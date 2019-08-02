@@ -80,23 +80,23 @@ public class SniSslConnectionFactoryTest
     {
         _server = new Server();
 
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(8443);
-        http_config.setOutputBufferSize(32768);
-        _httpsConfig = new HttpConfiguration(http_config);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecureScheme("https");
+        httpConfig.setSecurePort(8443);
+        httpConfig.setOutputBufferSize(32768);
+        _httpsConfig = new HttpConfiguration(httpConfig);
         SecureRequestCustomizer src = new SecureRequestCustomizer();
         src.setSniHostCheck(true);
         _httpsConfig.addCustomizer(src);
-        _httpsConfig.addCustomizer((connector, httpConfig, request) ->
+        _httpsConfig.addCustomizer((connector, hc, request) ->
         {
             EndPoint endp = request.getHttpChannel().getEndPoint();
             if (endp instanceof SslConnection.DecryptedEndPoint)
             {
                 try
                 {
-                    SslConnection.DecryptedEndPoint ssl_endp = (SslConnection.DecryptedEndPoint)endp;
-                    SslConnection sslConnection = ssl_endp.getSslConnection();
+                    SslConnection.DecryptedEndPoint sslEndp = (SslConnection.DecryptedEndPoint)endp;
+                    SslConnection sslConnection = sslEndp.getSslConnection();
                     SSLEngine sslEngine = sslConnection.getSSLEngine();
                     SSLSession session = sslEngine.getSession();
                     for (Certificate c : session.getLocalCertificates())
