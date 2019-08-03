@@ -21,8 +21,8 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -36,11 +36,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.QuotedQualityCSV;
+import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -54,6 +55,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ErrorHandler extends AbstractHandler
 {
+    // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
     private static final Logger LOG = Log.getLogger(ErrorHandler.class);
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
@@ -130,7 +132,7 @@ public class ErrorHandler extends AbstractHandler
             for (String mimeType : acceptable)
             {
                 generateAcceptableResponse(baseRequest, request, response, code, message, mimeType);
-                if (response.isCommitted() || baseRequest.getResponse().isWritingOrStreaming()) // TODO revisit this fix AFTER implemented delayed dispatch
+                if (response.isCommitted() || baseRequest.getResponse().isWritingOrStreaming())
                     break;
             }
         }
@@ -205,60 +207,111 @@ public class ErrorHandler extends AbstractHandler
     protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String contentType)
         throws IOException
     {
+        // We can generate an acceptable contentType, but can we generate an acceptable charset?
+        // TODO refactor this in jetty-10 to be done in the other calling loop
+        Charset charset = null;
+        List<String> acceptable = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
+        if (!acceptable.isEmpty())
+        {
+            for (String name : acceptable)
+            {
+                if ("*".equals(name))
+                {
+                    charset = StandardCharsets.UTF_8;
+                    break;
+                }
+
+                try
+                {
+                    charset = Charset.forName(name);
+                }
+                catch (Exception e)
+                {
+                    LOG.ignore(e);
+                }
+            }
+            if (charset == null)
+                return;
+        }
+
+        MimeTypes.Type type;
         switch (contentType)
         {
             case "text/html":
             case "text/*":
             case "*/*":
-            {
-                // We can generate an acceptable contentType, but can we generate an acceptable charset?
-                Charset charset = null;
-                List<String> acceptable = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
-                if (acceptable.isEmpty())
-                    charset = StandardCharsets.ISO_8859_1;
-                else
-                {
-                    for (String name : acceptable)
-                    {
-                        if ("*".equals(name))
-                        {
-                            charset = StandardCharsets.UTF_8;
-                            break;
-                        }
-
-                        try
-                        {
-                            charset = Charset.forName(name);
-                        }
-                        catch (Exception e)
-                        {
-                            LOG.ignore(e);
-                        }
-                    }
-                }
-
-                // If we have no acceptable charset, don't write an error page.
+                type = MimeTypes.Type.TEXT_HTML;
                 if (charset == null)
-                    return;
+                    charset = StandardCharsets.ISO_8859_1;
+                break;
 
-                // We will write it into a byte array buffer so
-                // we can flush it asynchronously.
-                // TODO get a buffer from the buffer pool and return.
-                ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(1024);
-                PrintWriter writer = new PrintWriter(new OutputStreamWriter(bout, charset));
-                response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
-                response.setCharacterEncoding(charset.name());
-                handleErrorPage(request, writer, code, message);
-                writer.flush();
-                ByteBuffer content = bout.size() == 0 ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(bout.getBuf(), 0, bout.size());
+            case "text/json":
+            case "application/json":
+                type = MimeTypes.Type.TEXT_JSON;
+                if (charset == null)
+                    charset = StandardCharsets.UTF_8;
+                break;
 
-                baseRequest.getHttpChannel().sendCompleteResponse(content);
-                return;
-            }
+            case "text/plain":
+                type = MimeTypes.Type.TEXT_PLAIN;
+                if (charset == null)
+                    charset = StandardCharsets.ISO_8859_1;
+                break;
 
             default:
                 return;
         }
+
+        // We will write it into a byte array buffer so
+        // we can flush it asynchronously.
+        while(true)
+        {
+            try
+            {
+                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().acquireBuffer();
+                ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
+                PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
+
+                switch (type)
+                {
+                    case TEXT_HTML:
+                        response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
+                        response.setCharacterEncoding(charset.name());
+                        handleErrorPage(request, writer, code, message);
+                        break;
+                    case TEXT_JSON:
+                        response.setContentType(contentType);
+                        writeErrorJson(request, writer, code, message);
+                        break;
+                    case TEXT_PLAIN:
+                        response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
+                        response.setCharacterEncoding(charset.name());
+                        writeErrorPlain(request, writer, code, message);
+                        break;
+                    default:
+                        throw new IllegalStateException();
+                }
+
+                writer.flush();
+                break;
+            }
+            catch (BufferOverflowException e)
+            {
+                LOG.warn("Error page too large: {} {} {}", code, message, request);
+                if (LOG.isDebugEnabled())
+                    LOG.warn(e);
+                baseRequest.getResponse().resetContent();
+                if (_showStacks)
+                {
+                    LOG.info("Disabling showsStacks for " + this);
+                    _showStacks = false;
+                    continue;
+                }
+                break;
+            }
+        }
+
+        baseRequest.getHttpChannel().sendCompleteResponse();
     }
 
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)
@@ -285,12 +338,13 @@ public class ErrorHandler extends AbstractHandler
     {
         writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/>\n");
         writer.write("<title>Error ");
-        writer.write(Integer.toString(code));
-
-        if (_showMessageInTitle)
+        // TODO this code is duplicated in writeErrorPageMessage
+        String status = Integer.toString(code);
+        writer.write(status);
+        if (message != null && !message.equals(status))
         {
             writer.write(' ');
-            write(writer, message);
+            writer.write(StringUtil.sanitizeXmlString(message));
         }
         writer.write("</title>\n");
     }
@@ -312,29 +366,96 @@ public class ErrorHandler extends AbstractHandler
         throws IOException
     {
         writer.write("<h2>HTTP ERROR ");
-        writer.write(Integer.toString(code));
-        writer.write("</h2>\n<p>Problem accessing ");
-        write(writer, uri);
-        writer.write(". Reason:\n<pre>    ");
-        write(writer, message);
-        writer.write("</pre></p>");
+        String status = Integer.toString(code);
+        writer.write(status);
+        if (message != null && !message.equals(status))
+        {
+            writer.write(' ');
+            writer.write(StringUtil.sanitizeXmlString(message));
+        }
+        writer.write("</h2>\n");
+        writer.write("<table>\n");
+        htmlRow(writer, "URI", uri);
+        htmlRow(writer, "STATUS", status);
+        htmlRow(writer, "MESSAGE", message);
+        htmlRow(writer, "SERVLET", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+        Throwable cause = (Throwable) request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        while (cause != null)
+        {
+            htmlRow(writer, "CAUSED BY", cause);
+            cause = cause.getCause();
+        }
+        writer.write("</table>\n");
     }
+
+    private void htmlRow(Writer writer, String tag, Object value)
+        throws IOException
+    {
+        writer.write("<tr><th>");
+        writer.write(tag);
+        writer.write(":</th><td>");
+        if (value == null)
+            writer.write("-");
+        else
+            writer.write(StringUtil.sanitizeXmlString(value.toString()));
+        writer.write("</td></tr>\n");
+    }
+
+    private void writeErrorPlain(HttpServletRequest request, PrintWriter writer, int code, String message)
+    {
+        writer.write("HTTP ERROR ");
+        writer.write(Integer.toString(code));
+        writer.write(' ');
+        writer.write(StringUtil.sanitizeXmlString(message));
+        writer.write("\n");
+        writer.printf("URI: %s%n", request.getRequestURI());
+        writer.printf("STATUS: %s%n", code);
+        writer.printf("MESSAGE: %s%n", message);
+        writer.printf("SERVLET: %s%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+        Throwable cause = (Throwable) request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        while (cause != null)
+        {
+            writer.printf("CAUSED BY %s%n", cause);
+            cause = cause.getCause();
+        }
+    }
+
+    private void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
+    {
+        writer
+            .append("{\n")
+            .append("  url: \"").append(request.getRequestURI()).append("\",\n")
+            .append("  status: \"").append(Integer.toString(code)).append("\",\n")
+            .append("  message: ").append(QuotedStringTokenizer.quote(message)).append(",\n");
+        Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
+        if (servlet !=null)
+            writer.append("servlet: \"").append(servlet.toString()).append("\",\n");
+        Throwable cause = (Throwable) request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        int c = 0;
+        while (cause != null)
+        {
+            writer.append("  cause").append(Integer.toString(c++)).append(": ")
+                .append(QuotedStringTokenizer.quote(cause.toString())).append(",\n");
+            cause = cause.getCause();
+        }
+        writer.append("}");
+    }
+
 
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
         throws IOException
     {
         Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-        while (th != null)
+        if (_showStacks && th != null)
         {
-            writer.write("<h3>Caused by:</h3><pre>");
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            th.printStackTrace(pw);
-            pw.flush();
-            write(writer, sw.getBuffer().toString());
+            PrintWriter pw = writer instanceof PrintWriter ? (PrintWriter)writer : new PrintWriter(writer);
+            pw.write("<pre>");
+            while (th != null)
+            {
+                th.printStackTrace(pw);
+                th = th.getCause();
+            }
             writer.write("</pre>\n");
-
-            th = th.getCause();
         }
     }
 

@@ -995,23 +995,18 @@ public class Response implements HttpServletResponse
             _out.flush();
     }
 
-    private void resetStatusAndFields()
+    @Override
+    public void reset()
     {
-        _out.resetBuffer();
-        _outputType = OutputType.NONE;
         _status = 200;
         _reason = null;
+        _out.resetBuffer();
+        _outputType = OutputType.NONE;
         _contentLength = -1;
         _contentType = null;
         _mimeType = null;
         _characterEncoding = null;
         _encodingFrom = EncodingFrom.NOT_SET;
-    }
-
-    @Override
-    public void reset()
-    {
-        resetStatusAndFields();
 
         // Clear all response headers
         _fields.clear();
@@ -1056,7 +1051,13 @@ public class Response implements HttpServletResponse
 
     public void resetContent()
     {
-        resetStatusAndFields();
+        _out.resetBuffer();
+        _outputType = OutputType.NONE;
+        _contentLength = -1;
+        _contentType = null;
+        _mimeType = null;
+        _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
 
         // remove the content related response headers and keep all others
         for (Iterator<HttpField> i = getHttpFields().iterator(); i.hasNext(); )

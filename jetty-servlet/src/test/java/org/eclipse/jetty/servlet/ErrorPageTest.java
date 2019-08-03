@@ -186,9 +186,9 @@ public class ErrorPageTest
 
         String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
-        assertThat(response, Matchers.containsString("<title>Error 598 598</title>"));
-        assertThat(response, Matchers.containsString("<h2>HTTP ERROR 598</h2>"));
-        assertThat(response, Matchers.containsString("Problem accessing /fail/code. Reason:"));
+        assertThat(response, Matchers.containsString("<title>Error 598"));
+        assertThat(response, Matchers.containsString("<h2>HTTP ERROR 598"));
+        assertThat(response, Matchers.containsString("/fail/code"));
     }
 
     @Test
@@ -201,9 +201,9 @@ public class ErrorPageTest
         String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n" +
             "Accept: application/bytes,text/html\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
-        assertThat(response, Matchers.containsString("<title>Error 598 598</title>"));
-        assertThat(response, Matchers.containsString("<h2>HTTP ERROR 598</h2>"));
-        assertThat(response, Matchers.containsString("Problem accessing /fail/code. Reason:"));
+        assertThat(response, Matchers.containsString("<title>Error 598"));
+        assertThat(response, Matchers.containsString("<h2>HTTP ERROR 598"));
+        assertThat(response, Matchers.containsString("/fail/code"));
     }
 
     @Test
@@ -215,9 +215,9 @@ public class ErrorPageTest
         String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n" +
             "Accept: application/bytes\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
-        assertThat(response, not(Matchers.containsString("<title>Error 598 598</title>")));
-        assertThat(response, not(Matchers.containsString("<h2>HTTP ERROR 598</h2>")));
-        assertThat(response, not(Matchers.containsString("Problem accessing /fail/code. Reason:")));
+        assertThat(response, not(Matchers.containsString("<title>Error 598")));
+        assertThat(response, not(Matchers.containsString("<h2>HTTP ERROR 598")));
+        assertThat(response, not(Matchers.containsString("/fail/code")));
     }
 
     @Test

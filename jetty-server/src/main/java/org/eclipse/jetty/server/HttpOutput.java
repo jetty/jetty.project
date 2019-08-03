@@ -322,8 +322,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     // A close call implies a write operation, thus in asynchronous mode
                     // a call to isReady() that returned true should have been made.
                     // However it is desirable to allow a close at any time, specially if
-                    // complete is called.   Thus we simulate a call to isReady here, assuming
-                    // that we can transition to READY.
+                    // complete is called.   Thus we simulate a call to isReady here, by
+                    // trying to move to READY state.  Either way we continue.
                     _state.compareAndSet(state, State.READY);
                     continue;
                 }
@@ -425,6 +425,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+    public ByteBuffer getBuffer()
+    {
+        return _aggregate;
+    }
+
+    public ByteBuffer acquireBuffer()
+    {
+        if (_aggregate == null)
+            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _interceptor.isOptimizedForDirectBuffers());
+        return _aggregate;
+    }
+
     private void releaseBuffer()
     {
         if (_aggregate != null)
@@ -522,8 +534,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     boolean last = isLastContentToWrite(len);
                     if (!last && len <= _commitSize)
                     {
-                        if (_aggregate == null)
-                            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _interceptor.isOptimizedForDirectBuffers());
+                        acquireBuffer();
 
                         // YES - fill the aggregate with content from the buffer
                         int filled = BufferUtil.fill(_aggregate, b, off, len);
@@ -569,8 +580,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         boolean last = isLastContentToWrite(len);
         if (!last && len <= _commitSize)
         {
-            if (_aggregate == null)
-                _aggregate = _channel.getByteBufferPool().acquire(capacity, _interceptor.isOptimizedForDirectBuffers());
+            acquireBuffer();
 
             // YES - fill the aggregate with content from the buffer
             int filled = BufferUtil.fill(_aggregate, b, off, len);
@@ -691,8 +701,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             switch (_state.get())
             {
                 case OPEN:
-                    if (_aggregate == null)
-                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _interceptor.isOptimizedForDirectBuffers());
+                    acquireBuffer();
                     BufferUtil.append(_aggregate, (byte)b);
 
                     // Check if all written or full
@@ -707,8 +716,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     if (!_state.compareAndSet(State.READY, State.PENDING))
                         continue;
 
-                    if (_aggregate == null)
-                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _interceptor.isOptimizedForDirectBuffers());
+                    acquireBuffer();
                     BufferUtil.append(_aggregate, (byte)b);
 
                     // Check if all written or full

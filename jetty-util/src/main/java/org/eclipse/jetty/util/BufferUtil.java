@@ -440,6 +440,7 @@ public class BufferUtil
      *
      * @param to Buffer is flush mode
      * @param b byte to append
+     * @throws BufferOverflowException if unable to append buffer due to space limits
      */
     public static void append(ByteBuffer to, byte b)
     {

@@ -441,7 +441,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 errorHandler == null ||
                                 !errorHandler.errorPageForMethod(_request.getMethod()))
                             {
-                                sendCompleteResponse(null);
+                                sendCompleteResponse();
                                 break;
                             }
 
@@ -494,7 +494,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             if (_state.isResponseCommitted())
                                 abort(x);
                             else
-                                sendCompleteResponse(null);
+                            {
+                                _response.resetContent();
+                                sendCompleteResponse();
+                            }
                         }
                         finally
                         {
@@ -656,13 +659,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return null;
     }
 
-    public void sendCompleteResponse(ByteBuffer content)
+    public void sendCompleteResponse()
     {
         try
         {
             _request.setHandled(true);
             _state.completing();
-            sendResponse(null, content, true, Callback.from(_state::completed));
+            sendResponse(null, _response.getHttpOutput().getBuffer(), true, Callback.from(_state::completed));
         }
         catch (Throwable x)
         {
