@@ -58,14 +58,16 @@ public class CdiDecorator implements Decorator
     private final Class<?> _contextualClass;
     private final Map<Object, Decorated> _decorated = new HashMap<>();
 
-    private MethodHandle _createAnnotatedType;
-    private MethodHandle _createInjectionTarget;
-    private MethodHandle _createCreationalContext;
-    private MethodHandle _inject;
-    private MethodHandle _dispose;
-    private MethodHandle _release;
+    private final MethodHandle _current;
+    private final MethodHandle _getBeanManager;
+    private final MethodHandle _createAnnotatedType;
+    private final MethodHandle _createInjectionTarget;
+    private final MethodHandle _createCreationalContext;
+    private final MethodHandle _inject;
+    private final MethodHandle _dispose;
+    private final MethodHandle _release;
 
-    public CdiDecorator(WebAppContext context) throws ClassNotFoundException, UnsupportedOperationException
+    public CdiDecorator(WebAppContext context) throws ClassNotFoundException, UnsupportedOperationException, NoSuchMethodException, IllegalAccessException
     {
         _context = context;
         ClassLoader classLoader = _context.getClassLoader();
@@ -83,6 +85,16 @@ public class CdiDecorator implements Decorator
         _injectionTargetClass = classLoader.loadClass("javax.enterprise.inject.spi.InjectionTarget");
         _creationalContextClass = classLoader.loadClass("javax.enterprise.context.spi.CreationalContext");
         _contextualClass = classLoader.loadClass("javax.enterprise.context.spi.Contextual");
+
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        _current = lookup.findStatic(_cdiClass, "current", MethodType.methodType(_cdiClass));
+        _getBeanManager = lookup.findVirtual(_cdiClass, "getBeanManager", MethodType.methodType(_beanManagerClass));
+        _createAnnotatedType = lookup.findVirtual(_beanManagerClass, "createAnnotatedType", MethodType.methodType(_annotatedTypeClass, Class.class));
+        _createInjectionTarget = lookup.findVirtual(_beanManagerClass, "createInjectionTarget", MethodType.methodType(_injectionTargetClass, _annotatedTypeClass));
+        _createCreationalContext = lookup.findVirtual(_beanManagerClass, "createCreationalContext", MethodType.methodType(_creationalContextClass, _contextualClass));
+        _inject = lookup.findVirtual(_injectionTargetClass, "inject", MethodType.methodType(Void.TYPE, Object.class, _creationalContextClass));
+        _dispose = lookup.findVirtual(_injectionTargetClass, "dispose", MethodType.methodType(Void.TYPE, Object.class));
+        _release = lookup.findVirtual(_creationalContextClass, "release", MethodType.methodType(Void.TYPE));
     }
 
     /**
@@ -100,27 +112,6 @@ public class CdiDecorator implements Decorator
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decorate {} in {}", o, _context);
-
-            synchronized (this)
-            {
-                if (_release == null)
-                {
-                    MethodHandles.Lookup lookup = MethodHandles.lookup();
-                    MethodHandle current = lookup.findStatic(_cdiClass, "current", MethodType.methodType(_cdiClass));
-                    MethodHandle getBeanManager = lookup.findVirtual(_cdiClass, "getBeanManager", MethodType.methodType(_beanManagerClass));
-                    Object manager = getBeanManager.invoke(current.invoke());
-
-                    _createAnnotatedType = lookup.findVirtual(_beanManagerClass, "createAnnotatedType", MethodType.methodType(_annotatedTypeClass, Class.class))
-                        .bindTo(manager);
-                    _createInjectionTarget = lookup.findVirtual(_beanManagerClass, "createInjectionTarget", MethodType.methodType(_injectionTargetClass, _annotatedTypeClass))
-                        .bindTo(manager);
-                    _createCreationalContext = lookup.findVirtual(_beanManagerClass, "createCreationalContext", MethodType.methodType(_creationalContextClass, _contextualClass))
-                        .bindTo(manager).bindTo(null);
-                    _inject = lookup.findVirtual(_injectionTargetClass, "inject", MethodType.methodType(Void.TYPE, Object.class, _creationalContextClass));
-                    _dispose = lookup.findVirtual(_injectionTargetClass, "dispose", MethodType.methodType(Void.TYPE, Object.class));
-                    _release = lookup.findVirtual(_creationalContextClass, "release", MethodType.methodType(Void.TYPE));
-                }
-            }
 
             _decorated.put(o, new Decorated(o));
         }
@@ -159,9 +150,15 @@ public class CdiDecorator implements Decorator
 
         Decorated(Object o) throws Throwable
         {
-            Object annotatedType = _createAnnotatedType.invoke(o.getClass());
-            _injectionTarget = _createInjectionTarget.invoke(annotatedType);
-            _creationalContext = _createCreationalContext.invoke();
+            // BeanManager manager = CDI.current().getBeanManager();
+            Object manager = _getBeanManager.invoke(_current.invoke());
+            // AnnotatedType annotatedType = manager.createAnnotatedType((Class<T>)o.getClass());
+            Object annotatedType = _createAnnotatedType.invoke(manager, o.getClass());
+            // CreationalContext creationalContext = manager.createCreationalContext(null);
+            _creationalContext = _createCreationalContext.invoke(manager, null);
+            // InjectionTarget injectionTarget = manager.createInjectionTarget();
+            _injectionTarget = _createInjectionTarget.invoke(manager, annotatedType);
+            // injectionTarget.inject(o,creationalContext);
             _inject.invoke(_injectionTarget, o, _creationalContext);
         }
 
