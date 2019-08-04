@@ -55,9 +55,5 @@ public class CdiServletContainerInitializer implements ServletContainerInitializ
             if (LOG.isDebugEnabled())
                 LOG.debug("CDI not found in " + ctx, e);
         }
-        catch (Throwable e)
-        {
-            LOG.warn("Unable to CdiDecorate in " + ctx, e);
-        }
     }
 }
