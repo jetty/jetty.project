@@ -83,6 +83,11 @@ public class DecoratingListener implements ServletContextAttributeListener
     {
         _context = context == null ? WebAppContext.getCurrentWebAppContext() : context;
         _attributeName = attributeName == null ? DECORATOR_ATTRIBUTE : attributeName;
+        if (_context.getAttribute(getClass().getName()) == null)
+            _context.setAttribute(getClass().getName(), attributeName);
+        else if (LOG.isDebugEnabled())
+            LOG.debug("DecoratingListener already set for {} in {}",
+                _context.getAttribute(getClass().getName()), _context);
         Object decorator = _context.getAttribute(_attributeName);
         if (decorator != null)
         {

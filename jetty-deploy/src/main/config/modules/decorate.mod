@@ -7,6 +7,7 @@ This module uses the DecoratingListener to register an object set as a context a
 as a dynamic decorator. This module sets the "org.eclipse.jetty.webapp.DecoratingListener"
 context attribute with the name of the context attribute that will be listened to.
 By default the attribute is "org.eclipse.jetty.webapp.decorator".
+This is the preferred integration for Weld >= 3.1.2
 
 [tag]
 cdi

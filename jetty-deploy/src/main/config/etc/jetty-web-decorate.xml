@@ -13,11 +13,4 @@
       </New>
     </Arg>
   </Call>
-
-  <!-- Add an attribute to inform the webapp of the DecoratingListener attribute name -->
-  <Call name="setAttribute">
-    <Arg>org.eclipse.jetty.webapp.DecoratingListener</Arg>
-    <Arg><Ref refid="decoratorAttribute"/></Arg>
-  </Call>
-
 </Configure>
