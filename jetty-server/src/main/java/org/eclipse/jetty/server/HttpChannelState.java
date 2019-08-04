@@ -605,43 +605,27 @@ public class HttpChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("dispatch {} -> {}", toStringLocked(), path);
 
-            // TODO this method can be simplified
-
-            boolean started = false;
-            event = _event;
             switch (_requestState)
             {
                 case ASYNC:
-                    started = true;
-                    break;
                 case EXPIRING:
                     break;
                 default:
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
-            _requestState = RequestState.DISPATCH;
 
             if (context != null)
                 _event.setDispatchContext(context);
             if (path != null)
                 _event.setDispatchPath(path);
 
-            if (started)
+            if (_requestState == RequestState.ASYNC && _state == State.WAITING)
             {
-                switch (_state)
-                {
-                    case HANDLING:
-                    case WOKEN:
-                        break;
-                    case WAITING:
-                        _state = State.WOKEN;
-                        dispatch = true;
-                        break;
-                    default:
-                        LOG.warn("async dispatched when complete {}", this);
-                        break;
-                }
+                _state = State.WOKEN;
+                dispatch = true;
             }
+            _requestState = RequestState.DISPATCH;
+            event = _event;
         }
 
         cancelTimeout(event);

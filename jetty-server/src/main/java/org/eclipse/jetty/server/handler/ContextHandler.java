@@ -1138,7 +1138,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (oldContext != _scontext)
         {
             // check the target.
-            // TODO this is a fragile accord with the Dispatcher
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
             {
                 if (_compactPath)
@@ -1278,8 +1277,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             if (dispatch == DispatcherType.REQUEST && isProtectedTarget(target))
             {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 baseRequest.setHandled(true);
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
             }
 

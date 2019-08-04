@@ -90,9 +90,13 @@ public class ValidUrlRule extends Rule
                 // status code 400 and up are error codes so include a reason
                 if (code >= 400)
                 {
-                    response.sendError(code);
-                    if (!StringUtil.isBlank(_reason))
+                    if (StringUtil.isBlank(_reason))
+                        response.sendError(code);
+                    else
+                    {
                         Request.getBaseRequest(request).getResponse().setStatusWithReason(code, _reason);
+                        response.sendError(code, _reason);
+                    }
                 }
                 else
                 {
