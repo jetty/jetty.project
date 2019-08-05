@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
     <version>10.0.0-SNAPSHOT</version>
   </parent>
+
+  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-documentation</artifactId>
   <name>Jetty :: Documentation</name>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
+
   <properties>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
     <html.common.directory>${project.build.directory}/html/common</html.common.directory>
@@ -25,6 +27,15 @@
     <html.directory>${project.build.directory}/current</html.directory>
     <javadoc.version>${project.version}</javadoc.version>
   </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
   <build>
     <plugins>
       <plugin>
@@ -81,7 +92,6 @@
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <version>${asciidoctor.maven.plugin.version}</version>
         <configuration>
-          <basedir>${basedir}/src/main/asciidoc</basedir>
           <attributes>
             <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
             <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
@@ -95,10 +105,11 @@
             <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
             <VERSION>${project.version}</VERSION>
             <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
+            <docbits>${basedir}/src/main/java</docbits>
           </attributes>
         </configuration>
         <executions>
-         <execution>
+          <execution>
             <id>quickstart-guide</id>
             <phase>generate-resources</phase>
             <goals>
@@ -142,7 +153,7 @@
           </execution>
           <execution>
             <id>embedded-guide</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>process-asciidoc</goal>
             </goals>
@@ -176,6 +187,7 @@
       </plugin>
     </plugins>
   </build>
+
   <profiles>
     <profile>
       <id>alt-formats</id>
@@ -208,9 +220,8 @@
               </dependency>
             </dependencies>
             <configuration>
-              <imagesdir/>
+              <imagesdir />
               <backend>docbook</backend>
-              <basedir>${basedir}/src/main/asciidoc</basedir>
               <attributes>
                 <revnumber>${project.version}</revnumber>
                 <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
@@ -233,9 +244,9 @@
                   <sourceHighlighter>coderay</sourceHighlighter>
                   <attributes>
                     <icons>font</icons>
-                    <pagenums/>
-                    <toc/>
-                    <idprefix/>
+                    <pagenums />
+                    <toc />
+                    <idprefix />
                     <idseparator>-</idseparator>
                   </attributes>
                   <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
@@ -254,9 +265,9 @@
                   <sourceHighlighter>coderay</sourceHighlighter>
                   <attributes>
                     <icons>font</icons>
-                    <pagenums/>
-                    <toc/>
-                    <idprefix/>
+                    <pagenums />
+                    <toc />
+                    <idprefix />
                     <idseparator>-</idseparator>
                   </attributes>
                   <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-distribution-guide</sourceDirectory>
@@ -284,4 +295,5 @@
       </build>
     </profile>
   </profiles>
+
 </project>
