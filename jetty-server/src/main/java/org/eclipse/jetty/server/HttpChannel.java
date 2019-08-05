@@ -419,13 +419,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             // Get ready to send an error response
                             _request.setHandled(false);
-                            _response.resetContent();
+                            _response.resetContent(); // TODO should we only do this here ???
                             _response.getHttpOutput().reopen();
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
                             Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-                            int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
+                            int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500; // TODO is this necessary still?
                             _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
                             _response.setStatus(code);
 
@@ -437,7 +437,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 errorHandler == null ||
                                 !errorHandler.errorPageForMethod(_request.getMethod()))
                             {
-                                sendCompleteResponse();
+                                sendResponseAndComplete();
                                 break;
                             }
 
@@ -481,19 +481,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             Throwable failure = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
                             if (failure == null)
                                 failure = x;
-                            else
+                            else if (x != failure)
                                 failure.addSuppressed(x);
 
+                            // TODO do we really need to reset the code?
                             Throwable cause = unwrap(failure, BadMessageException.class);
                             int code = cause instanceof BadMessageException ? ((BadMessageException)cause).getCode() : 500;
                             _response.setStatus(code);
 
                             if (_state.isResponseCommitted())
+                            {
                                 abort(x);
+                            }
                             else
                             {
                                 _response.resetContent();
-                                sendCompleteResponse();
+                                sendResponseAndComplete();
                             }
                         }
                         finally
@@ -656,7 +659,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return null;
     }
 
-    public void sendCompleteResponse()
+    public void sendResponseAndComplete()
     {
         try
         {

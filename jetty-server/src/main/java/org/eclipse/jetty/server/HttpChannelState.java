@@ -504,6 +504,7 @@ public class HttpChannelState
                 // so we will do a normal error dispatch
                 _requestState = RequestState.BLOCKING;
 
+                /// TODO explain why we don't just call sendError here????
                 final Request request = _channel.getRequest();
                 ContextHandler.Context context = _event.getContext();
                 if (context != null)
@@ -762,6 +763,8 @@ public class HttpChannelState
         //  + If the request is async, then any async listeners are give a chance to handle the exception in their onError handler.
         //  + If the request is not async, or not handled by any async onError listener, then a normal sendError is done.
 
+
+        // TODO make this a method?
         Runnable sendError = () ->
         {
             final Request request = _channel.getRequest();
@@ -798,6 +801,9 @@ public class HttpChannelState
             request.setAttribute(ERROR_EXCEPTION, th);
             request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
             sendError(code, message);
+
+            // Ensure any async lifecycle is ended!
+            _requestState = RequestState.BLOCKING;
         };
 
         final AsyncContextEvent asyncEvent;
@@ -836,7 +842,6 @@ public class HttpChannelState
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
                     {
                         sendError.run();
-                        _requestState = RequestState.BLOCKING;
                         return;
                     }
                     asyncEvent = _event;
@@ -881,7 +886,6 @@ public class HttpChannelState
                     // The listeners did not invoke API methods
                     // and the container must provide a default error dispatch.
                     sendError.run();
-                    _requestState = RequestState.BLOCKING;
                     return;
 
                 case DISPATCH:
@@ -927,9 +931,9 @@ public class HttpChannelState
             if (_outputState != OutputState.OPEN)
                 throw new IllegalStateException("Response is " + _outputState);
 
-            response.getHttpOutput().sendErrorClose();
-            response.resetContent();
-            request.getResponse().setStatus(code);
+            response.getHttpOutput().closedBySendError();
+            response.resetContent();  // TODO do we need to do this here?
+            response.setStatus(code);
 
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, request.getErrorContext());
             request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());

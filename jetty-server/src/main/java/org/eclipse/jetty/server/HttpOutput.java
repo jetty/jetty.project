@@ -264,7 +264,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _channel.abort(failure);
     }
 
-    public void sendErrorClose()
+    public void closedBySendError()
     {
         while (true)
         {

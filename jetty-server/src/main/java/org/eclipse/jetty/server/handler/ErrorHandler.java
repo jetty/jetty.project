@@ -265,7 +265,7 @@ public class ErrorHandler extends AbstractHandler
 
         // We will write it into a byte array buffer so
         // we can flush it asynchronously.
-        while(true)
+        while (true)
         {
             try
             {
@@ -312,7 +312,7 @@ public class ErrorHandler extends AbstractHandler
             }
         }
 
-        baseRequest.getHttpChannel().sendCompleteResponse();
+        baseRequest.getHttpChannel().sendResponseAndComplete();
     }
 
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)

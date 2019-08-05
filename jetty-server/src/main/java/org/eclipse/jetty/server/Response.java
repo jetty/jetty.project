@@ -407,7 +407,7 @@ public class Response implements HttpServletResponse
             case -1:
                 _channel.abort(new IOException(message));
                 break;
-            case 102:
+            case HttpStatus.PROCESSING_102:
                 sendProcessing();
                 break;
             default:
@@ -1085,7 +1085,6 @@ public class Response implements HttpServletResponse
                     i.remove();
                     continue;
                 default:
-                    continue;
             }
         }
     }
