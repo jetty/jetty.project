@@ -440,7 +440,7 @@ public class Response implements HttpServletResponse
         if (code != SC_NO_CONTENT && code != SC_NOT_MODIFIED &&
             code != SC_PARTIAL_CONTENT && code >= SC_OK)
         {
-            ContextHandler.Context context = request.getContext();
+            ContextHandler.Context context = request.getErrorContext();
             ContextHandler contextHandler = context == null ? _channel.getState().getContextHandler() : context.getContextHandler();
             request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
             request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
@@ -720,6 +720,11 @@ public class Response implements HttpServletResponse
     public boolean isWriting()
     {
         return _outputType == OutputType.WRITER;
+    }
+
+    public boolean isStreaming()
+    {
+        return _outputType == OutputType.STREAM;
     }
 
     @Override

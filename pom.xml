@@ -33,7 +33,7 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.2.0</tycho-version>
     <cbi-plugins.version>1.1.5</cbi-plugins.version>
-    <junit.version>5.4.0</junit.version>
+    <junit.version>5.5.1</junit.version>
     <maven.version>3.6.0</maven.version>
     <maven.resolver.version>1.3.1</maven.resolver.version>
     <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
@@ -52,6 +52,8 @@
     <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.2.2</maven.war.plugin.version>
     <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
+    <maven.install.plugin.version>2.5.2</maven.install.plugin.version>
+    <maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
 
     <!-- testing -->
     <it.debug>false</it.debug>
@@ -59,6 +61,8 @@
     <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
     <jsr250-api.version>1.0</jsr250-api.version>
     <javax.annotation-api>1.3</javax.annotation-api>
+    <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
+    <settingsPath>src/it/settings.xml</settingsPath>
   </properties>
 
   <licenses>
@@ -490,7 +494,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.8.2</version>
+          <version>${maven.deploy.plugin.version}</version>
           <configuration>
             <retryFailedDeploymentCount>10</retryFailedDeploymentCount>
           </configuration>
@@ -515,6 +519,8 @@
           <artifactId>maven-invoker-plugin</artifactId>
           <version>3.2.1-SNAPSHOT</version>
           <configuration>
+            <writeJunitReport>true</writeJunitReport>
+            <junitPackageName>org.eclipse.jetty.maven.its</junitPackageName>
             <debug>${it.debug}</debug>
             <javaHome>${java.home}</javaHome>
             <environmentVariables>
@@ -523,18 +529,21 @@
             <projectsDirectory>src/it</projectsDirectory>
             <timeoutInSeconds>300</timeoutInSeconds>
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
-            <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
-            <settingsFile>src/it/settings.xml</settingsFile>
+            <localRepositoryPath>${localRepoPath}</localRepositoryPath>
+            <settingsFile>${settingsPath}</settingsFile>
             <skipInvocation>${skipTests}</skipInvocation>
             <pomIncludes>
               <pomInclude>*/pom.xml</pomInclude>
             </pomIncludes>
+            <filterProperties>
+              <localRepo>${localRepoPath}</localRepo>
+            </filterProperties>
           </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-install-plugin</artifactId>
-          <version>2.5.2</version>
+          <version>${maven.install.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -922,6 +931,11 @@
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <dependencyManagement>
@@ -1037,6 +1051,11 @@
         <artifactId>maven-plugin-annotations</artifactId>
         <version>${maven.plugin-tools.version}</version>
         <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${junit.version}</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
@@ -1321,6 +1340,9 @@
     </profile>
     <profile>
       <id>ci</id>
+      <properties>
+        <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
+      </properties>
       <modules>
         <module>aggregates/jetty-all</module>
       </modules>
@@ -1911,6 +1933,30 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_212</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u221</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_221</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u222</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_222</value>
         </property>
       </activation>
       <properties>

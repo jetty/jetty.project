@@ -203,6 +203,7 @@ public class Request implements HttpServletRequest
     private String _contentType;
     private String _characterEncoding;
     private ContextHandler.Context _context;
+    private ContextHandler.Context _errorContext;
     private CookieCutter _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = INPUT_NONE;
@@ -681,9 +682,21 @@ public class Request implements HttpServletRequest
         MetaData.Request metadata = _metaData;
         if (metadata == null)
             return -1;
-        if (metadata.getContentLength() != Long.MIN_VALUE)
-            return (int)metadata.getContentLength();
-        return (int)metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
+
+        long contentLength = metadata.getContentLength();
+        if (contentLength != Long.MIN_VALUE)
+        {
+            if (contentLength > Integer.MAX_VALUE)
+            {
+                // Per ServletRequest#getContentLength() javadoc this must return -1 for values exceeding Integer.MAX_VALUE
+                return -1;
+            }
+            else
+            {
+                return (int)contentLength;
+            }
+        }
+        return (int)metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
     }
 
     /*
@@ -697,7 +710,7 @@ public class Request implements HttpServletRequest
             return -1L;
         if (metadata.getContentLength() != Long.MIN_VALUE)
             return metadata.getContentLength();
-        return metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
+        return metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
     }
 
     public long getContentRead()
@@ -725,6 +738,14 @@ public class Request implements HttpServletRequest
     public Context getContext()
     {
         return _context;
+    }
+
+    /**
+     * @return The current {@link Context context} used for this request, or <code>null</code> if {@link #setContext} has not yet been called.
+     */
+    public Context getErrorContext()
+    {
+        return _errorContext;
     }
 
     /*
@@ -1917,7 +1938,13 @@ public class Request implements HttpServletRequest
     public void setContext(Context context)
     {
         _newContext = _context != context;
-        _context = context;
+        if (context == null)
+            _context = null;
+        else
+        {
+            _context = context;
+            _errorContext = context;
+        }
     }
 
     /**
