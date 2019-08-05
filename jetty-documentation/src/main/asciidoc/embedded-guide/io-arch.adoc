@@ -23,6 +23,9 @@
 Jetty libraries (both client and server) use Java NIO to handle I/O, so that
 at its core Jetty I/O is completely non-blocking.
 
+[[io-arch-selector-manager]]
+=== Jetty I/O: `SelectorManager`
+
 The core class of Jetty I/O is
 link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
 
@@ -33,15 +36,17 @@ in turn manages a number of `java.nio.channels.SocketChannel` instances.
 
 NOTE: TODO: add image
 
-`SocketChannel` instances can be created by clients when connecting to a server
-and by a server when accepting connections from client.
-In both cases the `SocketChannel` instance is passed to `SelectorManager` to be
-registered for use within Jetty.
+`SocketChannel` instances can be created by network clients when connecting
+to a server and by a network server when accepting connections from network
+clients.
+In both cases the `SocketChannel` instance is passed to `SelectorManager`
+(and to `ManagedSelector` and eventually to `java.nio.channels.Selector`)
+to be registered for use within Jetty.
 
-It is therefore possible to create the `SocketChannel` instances outside Jetty,
-even perform some initial network traffic also outside Jetty (for example for
-authentication purposes), and then pass the `SocketChannel` instance to
-`SelectorManager` for use within Jetty.
+It is therefore possible for an application to create the `SocketChannel`
+instances outside Jetty, even perform some initial network traffic also
+outside Jetty (for example for authentication purposes), and then pass the
+`SocketChannel` instance to `SelectorManager` for use within Jetty.
 
 This example shows how to connect to a server:
 
@@ -57,6 +62,9 @@ This example shows how to accept a client connection:
 include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=accept]
 ----
 
+[[io-arch-endpoint-connection]]
+=== Jetty I/O: `EndPoint` and `Connection`
+
 ``SocketChannel``s that are passed to `SelectorManager` are wrapped into two
 related components:
 an link:{JDURL}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a
@@ -68,39 +76,42 @@ from an `EndPoint` via `EndPoint.fill(ByteBuffer)`, you can write bytes to an
 `EndPoint.write(Callback, ByteBuffer...)`, you can close an `EndPoint` via
 `EndPoint.close()`, etc.
 
-`Connection` is the Jetty abstraction that is responsible to serialize objects
-to bytes and then writing the serialized bytes to the `EndPoint`, as well as
-deserializing bytes read from the `EndPoint` into objects.
-For example, a HTTP/1.1 client-side `Connection` implementation is responsible
-to serialize a HTTP request object into its correspondent HTTP/1.1 request bytes,
-and to deserialize HTTP/1.1 response bytes into a HTTP response object.
-Conversely, a HTTP/1.1 server-side `Connection` implementation is responsible
-to deserialize HTTP/1.1 request bytes into a HTTP request object and to serialize
-a HTTP response object into its correspondent HTTP/1.1 response bytes.
+`Connection` is the Jetty abstraction that is responsible to read bytes from
+the `EndPoint` and to deserialize the read bytes into objects.
+For example, a HTTP/1.1 server-side `Connection` implementation is responsible
+to deserialize HTTP/1.1 request bytes into a HTTP request object.
+Conversely, a HTTP/1.1 client-side `Connection` implementation is responsible
+to deserialize HTTP/1.1 response bytes into a HTTP response object.
 
-`Connection` is the abstraction that "speaks" a specific protocol such as
-HTTP/1.1, or HTTP/2, or WebSocket: it is able to read incoming communication
-as well as write outgoing communication in that protocol.
+`Connection` is the abstraction that implements the reading side of a specific
+protocol such as HTTP/1.1, or HTTP/2, or WebSocket: it is able to read incoming
+communication in that protocol.
 
-While there is primarily just one implementation of `EndPoint`:
+The writing side for a specific protocol _may_ be implemented in the `Connection`
+but may also be implemented in other components, although eventually the bytes
+to be written will be written through the `EndPoint`.
+
+While there is primarily just one implementation of `EndPoint`,
 link:{JDURL}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`]
 (used both on the client-side and on the server-side), there are many
-implementations of `Connection`, typically two for each protocol(one for the
+implementations of `Connection`, typically two for each protocol (one for the
 client-side and one for the server-side).
 
-``Connection``s can be nested, for example in case of encrypted communication
-using the TLS protocol: the outermost TLS `Connection` performs the decryption
-and encryption, and the innermost protocol `Connection` serializes the
-decrypted bytes into objects and deserializes objects into bytes to be encrypted.
+The `EndPoint` and `Connection` pairs can be chained, for example in case of
+encrypted communication using the TLS protocol.
+There is an `EndPoint` and `Connection` TLS pair where the `EndPoint` reads the
+encrypted bytes from the network and the `Connection` decrypts them; next in the
+chain there is an `EndPoint` and `Connection` pair where the `EndPoint` provides
+decrypted bytes and the `Connection` deserializes them into specific protocol
+objects (for example a HTTP/1.1 request object).
 
 Certain protocols, such as WebSocket, start the communication with the server
 using one protocol (e.g. HTTP/1.1), but then change the communication to use
 another protocol (e.g. WebSocket).
-
 `EndPoint` supports changing the `Connection` object on-the-fly via
 `EndPoint.upgrade(Connection)`.
 This allows to use the HTTP/1.1 `Connection` during the initial communication
-and later replace it with a WebSocket `Connection`.
+and later to replace it with a WebSocket `Connection`.
 
 NOTE: TODO: add a section on `UpgradeFrom` and `UpgradeTo`?
 
@@ -125,3 +136,31 @@ link:{JDURL}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransp
 subclasses.
 
 NOTE: TODO: add a link to a client-side specific architecture section
+
+[[io-arch-endpoint]]
+=== Jetty I/O: `EndPoint`
+
+The Jetty I/O library use Java NIO to handle I/O, so that I/O is non-blocking.
+
+At the Java NIO level, in order to be notified when a `SocketChannel` has data
+to be read, the `SelectionKey.OP_READ` flag must be set.
+
+In the Jetty I/O library, you can call `AbstractEndPoint.fillInterested(Callback)`
+to declare interest in the "read" (or "fill") event, and the `Callback` parameter
+is the object that is notified when such event occurs.
+
+At the Java NIO level, a `SocketChannel` is always writable, unless it becomes
+TCP congested. In order to be notified when a `SocketChannel` uncongests and it
+is therefore writable again, the `SelectionKey.OP_WRITE` flag must be set.
+
+In the Jetty I/O library, you can call `EndPoint.write(Callback, ByteBuffer...)`
+to write the ``ByteBuffer``s and the `Callback` parameter is the object that is
+notified when the whole write is finished(i.e. _all_ ``ByteBuffer``s have been
+fully written).
+
+[[io-arch-connection]]
+=== Jetty I/O: Implementing `Connection`
+
+Implementing a `Connection` is how you deserialize incoming bytes into objects
+that can be used by more abstract layers, for example a HTTP request object or
+a WebSocket frame object.
