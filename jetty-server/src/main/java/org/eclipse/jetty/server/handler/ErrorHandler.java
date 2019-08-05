@@ -380,7 +380,7 @@ public class ErrorHandler extends AbstractHandler
         htmlRow(writer, "STATUS", status);
         htmlRow(writer, "MESSAGE", message);
         htmlRow(writer, "SERVLET", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
-        Throwable cause = (Throwable) request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         while (cause != null)
         {
             htmlRow(writer, "CAUSED BY", cause);
@@ -413,7 +413,7 @@ public class ErrorHandler extends AbstractHandler
         writer.printf("STATUS: %s%n", code);
         writer.printf("MESSAGE: %s%n", message);
         writer.printf("SERVLET: %s%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
-        Throwable cause = (Throwable) request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         while (cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
@@ -431,9 +431,9 @@ public class ErrorHandler extends AbstractHandler
             .append("  status: \"").append(Integer.toString(code)).append("\",\n")
             .append("  message: ").append(QuotedStringTokenizer.quote(message)).append(",\n");
         Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
-        if (servlet !=null)
+        if (servlet != null)
             writer.append("servlet: \"").append(servlet.toString()).append("\",\n");
-        Throwable cause = (Throwable) request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         int c = 0;
         while (cause != null)
         {
@@ -443,7 +443,6 @@ public class ErrorHandler extends AbstractHandler
         }
         writer.append("}");
     }
-
 
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
         throws IOException
