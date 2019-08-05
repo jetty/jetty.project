@@ -51,7 +51,7 @@ public class HttpChannelState
 
     private static final long DEFAULT_TIMEOUT = Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
 
-    /**
+    /*
      * The state of the HttpChannel,used to control the overall lifecycle.
      * <pre>
      *     IDLE <-----> HANDLING ----> WAITING
@@ -70,7 +70,7 @@ public class HttpChannelState
         UPGRADED     // Request upgraded the connection
     }
 
-    /**
+    /*
      * The state of the request processing lifecycle.
      * <pre>
      *       BLOCKING <----> COMPLETING ---> COMPLETED
@@ -100,7 +100,7 @@ public class HttpChannelState
         COMPLETED    // Response is completed
     }
 
-    /**
+    /*
      * The input readiness state, which works together with {@link HttpInput.State}
      */
     private enum InputState
@@ -113,7 +113,7 @@ public class HttpChannelState
         READY        // isReady() was false, onContentAdded has been called
     }
 
-    /**
+    /*
      * The output committed state, which works together with {@link HttpOutput.State}
      */
     private enum OutputState
