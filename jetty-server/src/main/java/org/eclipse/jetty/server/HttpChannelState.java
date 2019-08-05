@@ -129,7 +129,6 @@ public class HttpChannelState
      */
     public enum Action
     {
-        NOOP,             // No action 
         DISPATCH,         // handle a normal request dispatch
         ASYNC_DISPATCH,   // handle an async request dispatch
         SEND_ERROR,       // Generate an error page or error dispatch
@@ -391,9 +390,6 @@ public class HttpChannelState
                         LOG.debug("nextAction(true) {} {}", action, toStringLocked());
                     return action;
 
-                case WAITING:
-                case HANDLING:
-                case UPGRADED:
                 default:
                     throw new IllegalStateException(getStatusStringLocked());
             }
@@ -417,14 +413,8 @@ public class HttpChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("unhandle {}", toStringLocked());
 
-            switch (_state)
-            {
-                case HANDLING:
-                    break;
-
-                default:
-                    throw new IllegalStateException(this.getStatusStringLocked());
-            }
+            if (_state != State.HANDLING)
+                throw new IllegalStateException(this.getStatusStringLocked());
 
             _initial = false;
 
@@ -477,12 +467,8 @@ public class HttpChannelState
                         return Action.READ_CALLBACK;
                     case REGISTER:
                     case PRODUCING:
-                        if (!handling)
-                        {
-                            _inputState = InputState.REGISTERED;
-                            return Action.READ_REGISTER;
-                        }
-                        break;
+                        _inputState = InputState.REGISTERED;
+                        return Action.READ_REGISTER;
                     case IDLE:
                     case REGISTERED:
                         break;
@@ -495,9 +481,6 @@ public class HttpChannelState
                     _asyncWritePossible = false;
                     return Action.WRITE_CALLBACK;
                 }
-
-                if (handling)
-                    return Action.NOOP;
 
                 Scheduler scheduler = _channel.getScheduler();
                 if (scheduler != null && _timeoutMs > 0 && !_event.hasTimeoutTask())
@@ -929,11 +912,6 @@ public class HttpChannelState
 
         synchronized (this)
         {
-            if (_outputState != OutputState.OPEN)
-                throw new IllegalStateException("Response is " + _outputState);
-            response.getHttpOutput().sendErrorClose();
-            response.resetContent(); // will throw ISE if committed
-
             if (LOG.isDebugEnabled())
                 LOG.debug("sendError {}", toStringLocked());
 
@@ -941,30 +919,30 @@ public class HttpChannelState
             {
                 case HANDLING:
                 case WOKEN:
-                case WAITING: 
-                    request.getResponse().setStatus(code);
-                    // we are allowed to have a body, then produce the error page.
-                    ContextHandler.Context context = request.getErrorContext();
-                    if (context != null)
-                        request.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
-                    request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
-                    request.setAttribute(ERROR_SERVLET_NAME, request.getServletName());
-                    request.setAttribute(ERROR_STATUS_CODE, code);
-                    request.setAttribute(ERROR_MESSAGE, message);
-                    
-                    _sendError = true;
-                    if (_event != null)
-                    {
-                        Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
-                        if (cause != null)
-                            _event.addThrowable(cause);
-                    }
+                case WAITING:
                     break;
-
                 default:
-                {
                     throw new IllegalStateException(getStatusStringLocked());
-                }
+            }
+            if (_outputState != OutputState.OPEN)
+                throw new IllegalStateException("Response is " + _outputState);
+
+            response.getHttpOutput().sendErrorClose();
+            response.resetContent();
+            request.getResponse().setStatus(code);
+
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, request.getErrorContext());
+            request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
+            request.setAttribute(ERROR_SERVLET_NAME, request.getServletName());
+            request.setAttribute(ERROR_STATUS_CODE, code);
+            request.setAttribute(ERROR_MESSAGE, message);
+
+            _sendError = true;
+            if (_event != null)
+            {
+                Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
+                if (cause != null)
+                    _event.addThrowable(cause);
             }
         }
     }
@@ -997,29 +975,24 @@ public class HttpChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("completed {}", toStringLocked());
 
-            switch (_requestState)
-            {
-                case COMPLETING:
-                    if (_event == null)
-                    {
-                        _requestState = RequestState.COMPLETED;
-                        aListeners = null;
-                        event = null;
-                        if (_state == State.WAITING)
-                        {
-                            _state = State.WOKEN;
-                            handle = true;
-                        }
-                    }
-                    else
-                    {
-                        aListeners = _asyncListeners;
-                        event = _event;
-                    }
-                    break;
+            if (_requestState != RequestState.COMPLETING)
+                throw new IllegalStateException(this.getStatusStringLocked());
 
-                default:
-                    throw new IllegalStateException(this.getStatusStringLocked());
+            if (_event == null)
+            {
+                _requestState = RequestState.COMPLETED;
+                aListeners = null;
+                event = null;
+                if (_state == State.WAITING)
+                {
+                    _state = State.WOKEN;
+                    handle = true;
+                }
+            }
+            else
+            {
+                aListeners = _asyncListeners;
+                event = _event;
             }
         }
 

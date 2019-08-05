@@ -61,6 +61,7 @@ public class ErrorHandler extends AbstractHandler
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
 
     boolean _showStacks = true;
+    boolean _disableStacks = false;
     boolean _showMessageInTitle = true;
     String _cacheControl = "must-revalidate,no-cache,no-store";
 
@@ -301,10 +302,10 @@ public class ErrorHandler extends AbstractHandler
                 if (LOG.isDebugEnabled())
                     LOG.warn(e);
                 baseRequest.getResponse().resetContent();
-                if (_showStacks)
+                if (!_disableStacks)
                 {
                     LOG.info("Disabling showsStacks for " + this);
-                    _showStacks = false;
+                    _disableStacks = true;
                     continue;
                 }
                 break;
@@ -355,7 +356,7 @@ public class ErrorHandler extends AbstractHandler
         String uri = request.getRequestURI();
 
         writeErrorPageMessage(request, writer, code, message, uri);
-        if (showStacks)
+        if (showStacks && !_disableStacks)
             writeErrorPageStacks(request, writer);
 
         Request.getBaseRequest(request).getHttpChannel().getHttpConfiguration()
@@ -416,6 +417,8 @@ public class ErrorHandler extends AbstractHandler
         while (cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
+            if (_showStacks && !_disableStacks)
+                cause.printStackTrace(writer);
             cause = cause.getCause();
         }
     }

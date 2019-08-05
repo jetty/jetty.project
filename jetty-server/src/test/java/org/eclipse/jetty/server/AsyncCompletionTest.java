@@ -184,6 +184,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
             // The write should happen but the callback is delayed
             HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+            assertThat(response, Matchers.notNullValue());
             assertThat(response.getStatus(), is(status));
             String content = response.getContent();
             assertThat(content, containsString(message));

@@ -346,10 +346,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         // break loop without calling unhandle
                         break loop;
 
-                    case NOOP:
-                        // do nothing other than call unhandle
-                        break;
-
                     case DISPATCH:
                     {
                         if (!_request.hasMetaData())
@@ -449,8 +445,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             String errorPage = (errorHandler instanceof ErrorPageMapper) ? ((ErrorPageMapper)errorHandler).getErrorPage(_request) : null;
                             Dispatcher errorDispatcher = errorPage != null ? (Dispatcher)context.getRequestDispatcher(errorPage) : null;
 
-                            if (errorDispatcher != null)
+                            if (errorDispatcher == null)
                             {
+                                // Allow ErrorHandler to generate response
+                                errorHandler.handle(null, _request, _request, _response);
+                                _request.setHandled(true);
+                            }
+                            else
+                            {
+                                // Do the error page dispatch
                                 try
                                 {
                                     _request.setAttribute(ErrorHandler.ERROR_PAGE, errorPage);
@@ -469,12 +472,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                     notifyAfterDispatch(_request);
                                     _request.setDispatcherType(null);
                                 }
-                            }
-                            else
-                            {
-                                // Allow ErrorHandler to generate response
-                                errorHandler.handle(null, _request, _request, _response);
-                                _request.setHandled(true);
                             }
                         }
                         catch (Throwable x)
