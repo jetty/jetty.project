@@ -16,28 +16,23 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.websocket.common.message;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-@SuppressWarnings("unused")
-@WebSocket
-public class EchoSocket
+public class NullMessage implements MessageAppender
 {
-    @OnWebSocketMessage
-    public void onMessage(Session session, String msg) throws IOException
+    public static final MessageAppender INSTANCE = new NullMessage();
+
+    @Override
+    public void appendFrame(ByteBuffer framePayload, boolean isLast)
     {
-        session.getRemote().sendString(msg);
+        // consume payload
+        framePayload.position(framePayload.limit());
     }
 
-    @OnWebSocketMessage
-    public void onBinaryMessage(Session session, byte[] data, int offset, int len) throws IOException
+    @Override
+    public void messageComplete()
     {
-        session.getRemote().sendBytes(ByteBuffer.wrap(data, offset, len));
     }
 }
