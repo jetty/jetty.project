@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +52,7 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     public CountDownLatch errorLatch = new CountDownLatch(1);
 
     public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<ByteBuffer> binaryMessageQueue = new LinkedBlockingQueue<>();
     public AtomicReference<Throwable> error = new AtomicReference<>();
 
     public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher)
@@ -108,6 +110,13 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     {
         LOG.debug("onWebSocketText({})", message);
         messageQueue.offer(message);
+    }
+
+    @Override
+    public void onWebSocketBinary(byte[] payload, int offset, int len)
+    {
+        LOG.debug("onWebSocketBinary({},offset,len)", payload, offset, len);
+        binaryMessageQueue.offer(ByteBuffer.wrap(payload, offset, len));
     }
 
     public EndPoint getEndPoint() throws Exception

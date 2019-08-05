@@ -40,9 +40,6 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
@@ -57,7 +54,7 @@ import static org.hamcrest.Matchers.is;
 public class FrameListenerTest
 {
     private Server server;
-    private FrameCreator frameCreator;
+    private FrameEndpoint serverEndpoint;
     private WebSocketClient client;
 
     @BeforeEach
@@ -77,8 +74,8 @@ public class FrameListenerTest
             public void configure(WebSocketServletFactory factory)
             {
                 factory.getPolicy().setIdleTimeout(SECONDS.toMillis(2));
-                frameCreator = new FrameCreator();
-                factory.setCreator(frameCreator);
+                serverEndpoint = new FrameEndpoint();
+                factory.setCreator((req, resp) -> serverEndpoint);
             }
         });
         context.addServlet(closeEndpoint, "/ws");
@@ -138,8 +135,6 @@ public class FrameListenerTest
             clientRemote.sendPartialString(" ", false);
             clientRemote.sendPartialString("world", true);
 
-            FrameEndpoint serverEndpoint = frameCreator.frameEndpoint;
-
             String event = serverEndpoint.frameEvents.poll(5, SECONDS);
             assertThat("Event", event, is("FRAME[TEXT,fin=false,payload=hello,len=5]"));
             event = serverEndpoint.frameEvents.poll(5, SECONDS);
@@ -150,18 +145,6 @@ public class FrameListenerTest
         finally
         {
             close(session);
-        }
-    }
-
-    public static class FrameCreator implements WebSocketCreator
-    {
-        public FrameEndpoint frameEndpoint;
-
-        @Override
-        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
-        {
-            frameEndpoint = new FrameEndpoint();
-            return frameEndpoint;
         }
     }
 

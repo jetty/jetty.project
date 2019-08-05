@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.tests.client;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -232,13 +233,23 @@ public class WebSocketClientTest
             remote.sendPartialString(" ", false);
             remote.sendPartialString("World", true);
 
-            remote.sendPartialBytes(BufferUtil.toBuffer("It's a big enough umbrella, "), false);
-            remote.sendPartialBytes(BufferUtil.toBuffer("but it's always me that "), false);
-            remote.sendPartialBytes(BufferUtil.toBuffer("ends up getting wet."), true);
+            String[] parts = {
+                "The difference between the right word ",
+                "and the almost right word is the difference ",
+                "between lightning and a lightning bug."
+            };
+
+            remote.sendPartialBytes(BufferUtil.toBuffer(parts[0]), false);
+            remote.sendPartialBytes(BufferUtil.toBuffer(parts[1]), false);
+            remote.sendPartialBytes(BufferUtil.toBuffer(parts[2]), true);
 
             // wait for response from server
             String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Message", received, containsString("Hello World"));
+
+            ByteBuffer bufReceived = cliSock.binaryMessageQueue.poll(5, TimeUnit.SECONDS);
+            received = BufferUtil.toUTF8String(bufReceived.slice());
+            assertThat("Message", received, containsString(parts[0] + parts[1] + parts[2]));
         }
     }
 

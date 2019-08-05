@@ -250,12 +250,6 @@ public class JettyListenerEventDriver extends AbstractEventDriver
             return;
         }
 
-        super.onContinuationFrame(buffer, fin);
-    }
-
-    @Override
-    public void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException
-    {
         if (listener instanceof WebSocketListener)
         {
             super.onContinuationFrame(buffer, fin);
