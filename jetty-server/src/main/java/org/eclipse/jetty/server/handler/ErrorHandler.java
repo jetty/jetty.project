@@ -263,12 +263,15 @@ public class ErrorHandler extends AbstractHandler
                 return;
         }
 
-        // We will write it into a byte array buffer so
-        // we can flush it asynchronously.
+        // write into the response aggregate buffer and flush it asynchronously.
         while (true)
         {
             try
             {
+                // TODO currently the writer used here is of fixed size, so a large
+                // TODO error page may cause a BufferOverflow.  In which case we try
+                // TODO again with stacks disabled. If it still overflows, it is
+                // TODO written without a body.
                 ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().acquireBuffer();
                 ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
@@ -312,6 +315,7 @@ public class ErrorHandler extends AbstractHandler
             }
         }
 
+        // Do an asynchronous completion.
         baseRequest.getHttpChannel().sendResponseAndComplete();
     }
 

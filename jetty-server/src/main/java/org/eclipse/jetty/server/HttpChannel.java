@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -353,35 +354,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
 
-                        try
+                        dispatch(DispatcherType.REQUEST, () ->
                         {
-                            _request.setDispatcherType(DispatcherType.REQUEST);
-                            notifyBeforeDispatch(_request);
-
-                            List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
-                            if (!customizers.isEmpty())
+                            for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
                             {
-                                for (HttpConfiguration.Customizer customizer : customizers)
-                                {
-                                    customizer.customize(getConnector(), _configuration, _request);
-                                    if (_request.isHandled())
-                                        break;
-                                }
+                                customizer.customize(getConnector(), _configuration, _request);
+                                if (_request.isHandled())
+                                    return;
                             }
+                            getServer().handle(HttpChannel.this);
+                        });
 
-                            if (!_request.isHandled())
-                                getServer().handle(this);
-                        }
-                        catch (Throwable x)
-                        {
-                            notifyDispatchFailure(_request, x);
-                            throw x;
-                        }
-                        finally
-                        {
-                            notifyAfterDispatch(_request);
-                            _request.setDispatcherType(null);
-                        }
                         break;
                     }
 
@@ -390,22 +373,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
 
-                        try
-                        {
-                            _request.setDispatcherType(DispatcherType.ASYNC);
-                            notifyBeforeDispatch(_request);
-                            getServer().handleAsync(this);
-                        }
-                        catch (Throwable x)
-                        {
-                            notifyDispatchFailure(_request, x);
-                            throw x;
-                        }
-                        finally
-                        {
-                            notifyAfterDispatch(_request);
-                            _request.setDispatcherType(null);
-                        }
+                        dispatch(DispatcherType.ASYNC,() -> getServer().handleAsync(this));
                         break;
                     }
 
@@ -419,32 +387,27 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             // Get ready to send an error response
                             _request.setHandled(false);
-                            _response.resetContent(); // TODO should we only do this here ???
+                            _response.resetContent();
                             _response.getHttpOutput().reopen();
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
-                            Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-                            int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500; // TODO is this necessary still?
-                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
-                            _response.setStatus(code);
+                            Integer code = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                            _response.setStatus(code != null ? code : HttpStatus.INTERNAL_SERVER_ERROR_500);
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body, then create a minimal error response.
-                            if (HttpStatus.hasNoBody(code) ||
-                                errorHandler == null ||
-                                !errorHandler.errorPageForMethod(_request.getMethod()))
+                            if (HttpStatus.hasNoBody(_response.getStatus()) || errorHandler == null || !errorHandler.errorPageForMethod(_request.getMethod()))
                             {
                                 sendResponseAndComplete();
                                 break;
                             }
 
-                            // Look for an error page
+                            // Look for an error page dispatcher
                             String errorPage = (errorHandler instanceof ErrorPageMapper) ? ((ErrorPageMapper)errorHandler).getErrorPage(_request) : null;
                             Dispatcher errorDispatcher = errorPage != null ? (Dispatcher)context.getRequestDispatcher(errorPage) : null;
-
                             if (errorDispatcher == null)
                             {
                                 // Allow ErrorHandler to generate response
@@ -454,45 +417,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             else
                             {
                                 // Do the error page dispatch
-                                try
-                                {
-                                    _request.setAttribute(ErrorHandler.ERROR_PAGE, errorPage);
-                                    _request.setDispatcherType(DispatcherType.ERROR);
-                                    notifyBeforeDispatch(_request);
-                                    errorDispatcher.error(_request, _response);
-                                    break;
-                                }
-                                catch (Throwable x)
-                                {
-                                    notifyDispatchFailure(_request, x);
-                                    throw x;
-                                }
-                                finally
-                                {
-                                    notifyAfterDispatch(_request);
-                                    _request.setDispatcherType(null);
-                                }
+                                dispatch(DispatcherType.ERROR,() -> errorDispatcher.error(_request, _response));
                             }
                         }
                         catch (Throwable x)
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", x);
-                            Throwable failure = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-                            if (failure == null)
-                                failure = x;
-                            else if (x != failure)
-                                failure.addSuppressed(x);
-
-                            // TODO do we really need to reset the code?
-                            Throwable cause = unwrap(failure, BadMessageException.class);
-                            int code = cause instanceof BadMessageException ? ((BadMessageException)cause).getCode() : 500;
-                            _response.setStatus(code);
-
                             if (_state.isResponseCommitted())
-                            {
                                 abort(x);
-                            }
                             else
                             {
                                 _response.resetContent();
@@ -564,6 +497,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             }
                         }
 
+                        // TODO Currently a blocking/aborting consumeAll is done in the handling of the TERMINATED
+                        // TODO Action triggered by the completed callback below.  It would be possible to modify the
+                        // TODO callback to do a non-blocking consumeAll at this point and only call completed when
+                        // TODO that is done.
+
                         // Set a close callback on the HttpOutput to make it an async callback
                         _response.getHttpOutput().setClosedCallback(Callback.from(_state::completed));
                         _response.closeOutput();
@@ -571,14 +509,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         if (_response.getHttpOutput().getClosedCallback() != null)
                             _response.getHttpOutput().getClosedCallback().succeeded();
 
-                        // TODO we could do an asynchronous consumeAll in the callback
                         break;
                     }
 
                     default:
-                    {
                         throw new IllegalStateException(this.toString());
-                    }
                 }
             }
             catch (Throwable failure)
@@ -597,6 +532,26 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         boolean suspended = action == Action.WAIT;
         return !suspended;
+    }
+
+    private void dispatch(DispatcherType type, Dispatchable dispatchable) throws IOException, ServletException
+    {
+        try
+        {
+            _request.setDispatcherType(type);
+            notifyBeforeDispatch(_request);
+            dispatchable.dispatch();
+        }
+        catch (Throwable x)
+        {
+            notifyDispatchFailure(_request, x);
+            throw x;
+        }
+        finally
+        {
+            notifyAfterDispatch(_request);
+            _request.setDispatcherType(null);
+        }
     }
 
     /**
@@ -635,7 +590,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (isCommitted())
             abort(failure);
         else
-            _state.thrownException(failure);
+            _state.onError(failure);
     }
 
     /**
@@ -784,7 +739,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         int status = failure.getCode();
         String reason = failure.getReason();
-        if (status < 400 || status > 599)
+        if (status < HttpStatus.BAD_REQUEST_400 || status > 599)
             failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, reason, failure);
 
         notifyRequestFailure(_request, failure);
@@ -855,7 +810,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             // wrap callback to process 100 responses
             final int status = info.getStatus();
-            final Callback committed = (status < 200 && status >= 100) ? new Send100Callback(callback) : new SendCallback(callback, content, true, complete);
+            final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)
+                ? new Send100Callback(callback)
+                : new SendCallback(callback, content, true, complete);
 
             notifyResponseBegin(_request);
 
@@ -1107,6 +1064,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 LOG.debug("Failure invoking listener " + listener, x);
             }
         }
+    }
+
+    interface Dispatchable
+    {
+        void dispatch() throws IOException, ServletException;
     }
 
     /**

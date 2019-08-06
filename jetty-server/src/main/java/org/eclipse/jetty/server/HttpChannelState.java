@@ -499,19 +499,10 @@ public class HttpChannelState
             case EXPIRING:
                 if (handling)
                     throw new IllegalStateException(getStatusStringLocked());
-
-                // We must have already called onTimeout and nothing changed,
-                // so we will do a normal error dispatch
+                sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, "AsyncContext timeout");
+                // handle sendError immediately
                 _requestState = RequestState.BLOCKING;
-
-                /// TODO explain why we don't just call sendError here????
-                final Request request = _channel.getRequest();
-                ContextHandler.Context context = _event.getContext();
-                if (context != null)
-                    request.setAttribute(ErrorHandler.ERROR_CONTEXT, context);
-                request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
-                request.setAttribute(ERROR_STATUS_CODE, 500);
-                request.setAttribute(ERROR_MESSAGE, "AsyncContext timeout");
+                _sendError = false;
                 return Action.SEND_ERROR;
 
             case COMPLETE:
@@ -757,55 +748,8 @@ public class HttpChannelState
         }
     }
 
-    protected void thrownException(Throwable th)
+    protected void onError(Throwable th)
     {
-        // This method is called by HttpChannel.handleException to handle an exception thrown from a dispatch:
-        //  + If the request is async, then any async listeners are give a chance to handle the exception in their onError handler.
-        //  + If the request is not async, or not handled by any async onError listener, then a normal sendError is done.
-
-
-        // TODO make this a method?
-        Runnable sendError = () ->
-        {
-            final Request request = _channel.getRequest();
-
-            // Determine the actual details of the exception
-            final int code;
-            final String message;
-            Throwable cause = _channel.unwrap(th, BadMessageException.class, UnavailableException.class);
-            if (cause == null)
-            {
-                code = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                message = th.toString();
-            }
-            else if (cause instanceof BadMessageException)
-            {
-                BadMessageException bme = (BadMessageException)cause;
-                code = bme.getCode();
-                message = bme.getReason();
-            }
-            else if (cause instanceof UnavailableException)
-            {
-                message = cause.toString();
-                if (((UnavailableException)cause).isPermanent())
-                    code = HttpStatus.NOT_FOUND_404;
-                else
-                    code = HttpStatus.SERVICE_UNAVAILABLE_503;
-            }
-            else
-            {
-                code = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                message = null;
-            }
-
-            request.setAttribute(ERROR_EXCEPTION, th);
-            request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
-            sendError(code, message);
-
-            // Ensure any async lifecycle is ended!
-            _requestState = RequestState.BLOCKING;
-        };
-
         final AsyncContextEvent asyncEvent;
         final List<AsyncListener> asyncListeners;
         synchronized (this)
@@ -817,6 +761,7 @@ public class HttpChannelState
             if (_state != State.HANDLING)
                 throw new IllegalStateException(getStatusStringLocked());
 
+            // If sendError has already been called, we can only handle one failure at a time!
             if (_sendError)
             {
                 LOG.warn("unhandled due to prior sendError", th);
@@ -828,20 +773,15 @@ public class HttpChannelState
             {
                 case BLOCKING:
                     // handle the exception with a sendError
-                    sendError.run();
+                    sendError(th);
                     return;
 
-                case DISPATCH:
-                case COMPLETE:
-                    // Complete or Dispatch have been called, but the original subsequently threw an exception.
-                    // TODO // GW I think we really should ignore, but will fall through for now.
-                    // TODO LOG.warn("unhandled due to prior dispatch/complete", th);
-                    // TODO return;
-
+                case DISPATCH: // Dispatch has already been called but we ignore and handle exception below
+                case COMPLETE: // Complete has already been called but we ignore and handle exception below
                 case ASYNC:
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
                     {
-                        sendError.run();
+                        sendError(th);
                         return;
                     }
                     asyncEvent = _event;
@@ -876,28 +816,57 @@ public class HttpChannelState
         // check the actions of the listeners
         synchronized (this)
         {
-            // if anybody has called sendError then we've handled as much as we can by calling listeners
-            if (_sendError)
-                return;
-
-            switch (_requestState)
-            {
-                case ASYNC:
-                    // The listeners did not invoke API methods
-                    // and the container must provide a default error dispatch.
-                    sendError.run();
-                    return;
-
-                case DISPATCH:
-                case COMPLETE:
-                    // The listeners handled the exception by calling dispatch() or complete().
-                    return;
-
-                default:
-                    LOG.warn("unhandled in state " + _requestState, new IllegalStateException(th));
-                    return;
-            }
+            // If we are still async and nobody has called sendError
+            if (_requestState == RequestState.ASYNC && !_sendError)
+                // Then the listeners did not invoke API methods
+                // and the container must provide a default error dispatch.
+                sendError(th);
+            else
+                LOG.warn("unhandled in state " + _requestState, new IllegalStateException(th));
         }
+    }
+
+    private void sendError(Throwable th)
+    {
+        // No sync as this is always called with lock held
+
+        // Determine the actual details of the exception
+        final Request request = _channel.getRequest();
+        final int code;
+        final String message;
+        Throwable cause = _channel.unwrap(th, BadMessageException.class, UnavailableException.class);
+        if (cause == null)
+        {
+            code = HttpStatus.INTERNAL_SERVER_ERROR_500;
+            message = th.toString();
+        }
+        else if (cause instanceof BadMessageException)
+        {
+            BadMessageException bme = (BadMessageException)cause;
+            code = bme.getCode();
+            message = bme.getReason();
+        }
+        else if (cause instanceof UnavailableException)
+        {
+            message = cause.toString();
+            if (((UnavailableException)cause).isPermanent())
+                code = HttpStatus.NOT_FOUND_404;
+            else
+                code = HttpStatus.SERVICE_UNAVAILABLE_503;
+        }
+        else
+        {
+            code = HttpStatus.INTERNAL_SERVER_ERROR_500;
+            message = null;
+        }
+
+        sendError(code, message);
+
+        // No ISE, so good to modify request/state
+        request.setAttribute(ERROR_EXCEPTION, th);
+        request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
+        // Ensure any async lifecycle is ended!
+        _requestState = RequestState.BLOCKING;
     }
 
     public void sendError(int code, String message)
@@ -932,7 +901,6 @@ public class HttpChannelState
                 throw new IllegalStateException("Response is " + _outputState);
 
             response.getHttpOutput().closedBySendError();
-            response.resetContent();  // TODO do we need to do this here?
             response.setStatus(code);
 
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, request.getErrorContext());
