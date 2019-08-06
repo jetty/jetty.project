@@ -652,4 +652,27 @@ public class ContainerLifeCycleTest
         assertThat(root.getContainedBeans(Integer.class), containsInAnyOrder(Integer.valueOf(0), Integer.valueOf(1), Integer.valueOf(2), Integer.valueOf(3), Integer.valueOf(4)));
         assertThat(root.getContainedBeans(String.class), containsInAnyOrder("leaf"));
     }
+
+    @Test
+    public void testBeanStoppingAddedToStartingBean() throws Exception
+    {
+        ContainerLifeCycle longLived = new ContainerLifeCycle()
+        {
+            @Override
+            protected void doStop() throws Exception
+            {
+                super.doStop();
+
+                ContainerLifeCycle shortLived = new ContainerLifeCycle();
+                shortLived.addBean(this);
+                shortLived.start();
+
+                assertTrue(shortLived.isStarted());
+                assertTrue(isStopping());
+                assertFalse(shortLived.isManaged(this));
+            }
+        };
+        longLived.start();
+        longLived.stop();
+    }
 }
