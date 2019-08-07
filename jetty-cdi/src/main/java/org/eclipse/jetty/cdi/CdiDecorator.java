@@ -24,10 +24,10 @@ import java.lang.invoke.MethodType;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * A Decorator invokes a CDI provider within
@@ -49,7 +49,7 @@ public class CdiDecorator implements Decorator
 {
     private static final Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
 
-    private final WebAppContext _context;
+    private final ServletContextHandler _context;
     private final Map<Object, Decorated> _decorated = new HashMap<>();
 
     private final MethodHandle _current;
@@ -61,7 +61,7 @@ public class CdiDecorator implements Decorator
     private final MethodHandle _dispose;
     private final MethodHandle _release;
 
-    public CdiDecorator(WebAppContext context) throws UnsupportedOperationException
+    public CdiDecorator(ServletContextHandler context) throws UnsupportedOperationException
     {
         _context = context;
         ClassLoader classLoader = _context.getClassLoader();
@@ -152,7 +152,7 @@ public class CdiDecorator implements Decorator
             _creationalContext = _createCreationalContext.invoke(manager, null);
             // InjectionTarget injectionTarget = manager.createInjectionTarget();
             _injectionTarget = _createInjectionTarget.invoke(manager, annotatedType);
-            // injectionTarget.inject(o,creationalContext);
+            // injectionTarget.inject(o, creationalContext);
             _inject.invoke(_injectionTarget, o, _creationalContext);
         }
 

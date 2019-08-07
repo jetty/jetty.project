@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.cdi;
 
+import java.util.Objects;
 import java.util.Set;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * A {@link ServletContainerInitializer} that introspects for a CDI API
@@ -41,11 +41,12 @@ public class CdiServletContainerInitializer implements ServletContainerInitializ
     private static final Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
 
     @Override
-    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+    public void onStartup(Set<Class<?>> c, ServletContext ctx)
     {
         try
         {
-            WebAppContext context = WebAppContext.getCurrentWebAppContext();
+            ServletContextHandler context = ServletContextHandler.getServletContextHandler(ctx);
+            Objects.requireNonNull(context);
             context.getObjectFactory().addDecorator(new CdiDecorator(context));
             context.setAttribute(CDI_INTEGRATION_ATTRIBUTE, "CdiDecorator");
             LOG.info("CdiDecorator enabled in " + ctx);

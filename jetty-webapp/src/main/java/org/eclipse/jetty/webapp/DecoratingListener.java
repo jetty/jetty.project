@@ -21,9 +21,11 @@ package org.eclipse.jetty.webapp;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Objects;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -49,10 +51,11 @@ public class DecoratingListener implements ServletContextAttributeListener
     {
         try
         {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
             DECORATE_TYPE = MethodType.methodType(Object.class, Object.class);
             DESTROY_TYPE = MethodType.methodType(Void.TYPE, Object.class);
-            // Ensure we have a match
+
+            // Check we have the right MethodTypes for the current Decorator signatures
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
             lookup.findVirtual(Decorator.class, "decorate", DECORATE_TYPE);
             lookup.findVirtual(Decorator.class, "destroy", DESTROY_TYPE);
         }
@@ -62,46 +65,44 @@ public class DecoratingListener implements ServletContextAttributeListener
         }
     }
 
-    private final WebAppContext _context;
+    private final ServletContextHandler _context;
     private final String _attributeName;
     private Decorator _decorator;
 
     public DecoratingListener()
     {
-        this(null, null);
+        this((String)null);
     }
 
     public DecoratingListener(String attributeName)
     {
-        this(null, attributeName);
+        this(WebAppContext.getCurrentWebAppContext(), attributeName);
     }
 
-    public DecoratingListener(WebAppContext context)
+    public DecoratingListener(ServletContextHandler context)
     {
         this(context, null);
     }
 
-    public DecoratingListener(WebAppContext context, String attributeName)
+    public DecoratingListener(ServletContextHandler context, String attributeName)
     {
-        _context = context == null ? WebAppContext.getCurrentWebAppContext() : context;
+        _context = context;
+        Objects.requireNonNull(_context);
         _attributeName = attributeName == null ? DECORATOR_ATTRIBUTE : attributeName;
+        checkAndSetAttribute();
+        Object decorator = _context.getAttribute(_attributeName);
+        if (decorator != null)
+            _context.getObjectFactory().addDecorator(asDecorator(decorator));
+    }
+
+    protected void checkAndSetAttribute()
+    {
         // If not set (by another DecoratingListener), flag the attribute that are
         // listening for.  If more than one DecoratingListener is used then this
         // attribute reflects only the first.
-        if (_context.getAttribute(getClass().getName()) == null)
-            _context.setAttribute(getClass().getName(), attributeName);
-        else if (LOG.isDebugEnabled())
-            LOG.debug("DecoratingListener already set for {} in {}",
-                _context.getAttribute(getClass().getName()), _context);
-        Object decorator = _context.getAttribute(_attributeName);
-        if (decorator != null)
-        {
-            _decorator = asDecorator(decorator);
-            if (_decorator == null)
-                LOG.warn("Could not create decorator from {}={}", _attributeName, _decorator);
-            else
-                _context.getObjectFactory().addDecorator(_decorator);
-        }
+        if (_context.getAttribute(getClass().getName()) != null)
+            throw new IllegalStateException("Multiple DecoratingListeners detected");
+        _context.setAttribute(getClass().getName(), _attributeName);
     }
 
     private Decorator asDecorator(Object object)
@@ -116,42 +117,14 @@ public class DecoratingListener implements ServletContextAttributeListener
             Class<?> clazz = object.getClass();
 
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            final MethodHandle decorate = lookup.findVirtual(clazz, "decorate", DECORATE_TYPE);
-            final MethodHandle destroy = lookup.findVirtual(clazz, "destroy", DESTROY_TYPE);
-            return new Decorator()
-            {
-                @Override
-                public <T> T decorate(T o)
-                {
-                    try
-                    {
-                        return (T)decorate.invoke(object, o);
-                    }
-                    catch (Throwable t)
-                    {
-                        throw new RuntimeException(t);
-                    }
-                }
-
-                @Override
-                public void destroy(Object o)
-                {
-                    try
-                    {
-                        destroy.invoke(object, o);
-                    }
-                    catch (Throwable t)
-                    {
-                        throw new RuntimeException(t);
-                    }
-                }
-            };
+            MethodHandle decorate = lookup.findVirtual(clazz, "decorate", DECORATE_TYPE);
+            MethodHandle destroy = lookup.findVirtual(clazz, "destroy", DESTROY_TYPE);
+            return new DynamicDecorator(decorate, destroy, object);
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
     @Override
@@ -160,10 +133,7 @@ public class DecoratingListener implements ServletContextAttributeListener
         if (_attributeName.equals(event.getName()))
         {
             _decorator = asDecorator(event.getValue());
-            if (_decorator == null)
-                LOG.warn("Could not create decorator from {}={}", event.getName(), event.getValue());
-            else
-                _context.getObjectFactory().addDecorator(_decorator);
+            _context.getObjectFactory().addDecorator(_decorator);
         }
     }
 
@@ -173,6 +143,7 @@ public class DecoratingListener implements ServletContextAttributeListener
         if (_attributeName.equals(event.getName()) && _decorator != null)
         {
             _context.getObjectFactory().removeDecorator(_decorator);
+            _decorator = null;
         }
     }
 
@@ -181,5 +152,45 @@ public class DecoratingListener implements ServletContextAttributeListener
     {
         attributeRemoved(event);
         attributeAdded(event);
+    }
+
+    private static class DynamicDecorator implements Decorator
+    {
+        private final MethodHandle _decorate;
+        private final MethodHandle _destroy;
+        private final Object _object;
+
+        private DynamicDecorator(MethodHandle decorate, MethodHandle destroy, Object object)
+        {
+            _decorate = decorate;
+            _destroy = destroy;
+            _object = object;
+        }
+
+        @Override
+        public <T> T decorate(T o)
+        {
+            try
+            {
+                return (T)_decorate.invoke(_object, o);
+            }
+            catch (Throwable t)
+            {
+                throw new RuntimeException(t);
+            }
+        }
+
+        @Override
+        public void destroy(Object o)
+        {
+            try
+            {
+                _destroy.invoke(_object, o);
+            }
+            catch (Throwable t)
+            {
+                throw new RuntimeException(t);
+            }
+        }
     }
 }
