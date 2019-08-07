@@ -130,10 +130,7 @@ public class ContainerLifeCycleTest
         container.stop();
         container.destroy();
 
-        assertThrows(IllegalStateException.class, () ->
-        {
-            container.start();
-        });
+        assertThrows(IllegalStateException.class, container::start);
     }
 
     @Test
@@ -211,13 +208,13 @@ public class ContainerLifeCycleTest
     {
         ContainerLifeCycle a0 = new ContainerLifeCycle();
         String dump = trim(a0.dump());
-        dump = check(dump, "ContainerLifeCycl");
+        check(dump, "ContainerLifeCycl");
 
         ContainerLifeCycle aa0 = new ContainerLifeCycle();
         a0.addBean(aa0);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, "+? ContainerLife");
+        check(dump, "+? ContainerLife");
 
         ContainerLifeCycle aa1 = new ContainerLifeCycle();
         a0.addBean(aa1);
@@ -225,7 +222,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "ContainerLifeCycl");
         dump = check(dump, "+? ContainerLife");
         dump = check(dump, "+? ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         ContainerLifeCycle aa2 = new ContainerLifeCycle();
         a0.addBean(aa2, false);
@@ -234,7 +231,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+? ContainerLife");
         dump = check(dump, "+? ContainerLife");
         dump = check(dump, "+~ ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         aa1.start();
         a0.start();
@@ -243,7 +240,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "+~ ContainerLife");
         dump = check(dump, "+~ ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         a0.manage(aa1);
         a0.removeBean(aa2);
@@ -251,7 +248,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "ContainerLifeCycl");
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "+= ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         ContainerLifeCycle aaa0 = new ContainerLifeCycle();
         aa0.addBean(aaa0);
@@ -260,7 +257,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "|  +~ Container");
         dump = check(dump, "+= ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         ContainerLifeCycle aa10 = new ContainerLifeCycle();
         aa1.addBean(aa10, true);
@@ -270,7 +267,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "|  +~ Container");
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "   += Container");
-        dump = check(dump, "");
+        check(dump, "");
 
         final ContainerLifeCycle a1 = new ContainerLifeCycle();
         final ContainerLifeCycle a2 = new ContainerLifeCycle();
@@ -302,7 +299,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   +> java.util.Arrays$ArrayList");
         dump = check(dump, "      +: ContainerLifeCycle");
         dump = check(dump, "      +: ContainerLifeCycle");
-        dump = check(dump, "");
+        check(dump, "");
 
         a2.addBean(aa0, true);
         dump = trim(a0.dump());
@@ -320,7 +317,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   +> java.util.Arrays$ArrayList");
         dump = check(dump, "      +: ContainerLifeCycle");
         dump = check(dump, "      +: ContainerLifeCycle");
-        dump = check(dump, "");
+        check(dump, "");
 
         a2.unmanage(aa0);
         dump = trim(a0.dump());
@@ -337,7 +334,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   +> java.util.Arrays$ArrayList");
         dump = check(dump, "      +: ContainerLifeCycle");
         dump = check(dump, "      +: ContainerLifeCycle");
-        dump = check(dump, "");
+        check(dump, "");
 
         a0.unmanage(aa);
         dump = trim(a0.dump());
@@ -347,7 +344,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "|  += Container");
         dump = check(dump, "+~ ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
     }
 
     @Test
@@ -505,7 +502,7 @@ public class ContainerLifeCycleTest
         assertEquals(c00, child.poll());
     }
 
-    private final class InheritedListenerLifeCycle extends AbstractLifeCycle implements Container.InheritedListener
+    private static final class InheritedListenerLifeCycle extends AbstractLifeCycle implements Container.InheritedListener
     {
         @Override
         public void beanRemoved(Container p, Object c)
@@ -628,7 +625,7 @@ public class ContainerLifeCycleTest
     }
 
     @Test
-    public void testGetBeans() throws Exception
+    public void testGetBeans()
     {
         TestContainerLifeCycle root = new TestContainerLifeCycle();
         TestContainerLifeCycle left = new TestContainerLifeCycle();
@@ -638,19 +635,24 @@ public class ContainerLifeCycleTest
         TestContainerLifeCycle leaf = new TestContainerLifeCycle();
         right.addBean(leaf);
 
-        root.addBean(Integer.valueOf(0));
-        root.addBean(Integer.valueOf(1));
-        left.addBean(Integer.valueOf(2));
-        right.addBean(Integer.valueOf(3));
-        leaf.addBean(Integer.valueOf(4));
+        Integer zero = 0;
+        Integer one = 1;
+        Integer two = 2;
+        Integer three = 3;
+        Integer four = 4;
+        root.addBean(zero);
+        root.addBean(one);
+        left.addBean(two);
+        right.addBean(three);
+        leaf.addBean(four);
         leaf.addBean("leaf");
 
         assertThat(root.getBeans(Container.class), containsInAnyOrder(left, right));
-        assertThat(root.getBeans(Integer.class), containsInAnyOrder(Integer.valueOf(0), Integer.valueOf(1)));
+        assertThat(root.getBeans(Integer.class), containsInAnyOrder(zero, one));
         assertThat(root.getBeans(String.class), containsInAnyOrder());
 
         assertThat(root.getContainedBeans(Container.class), containsInAnyOrder(left, right, leaf));
-        assertThat(root.getContainedBeans(Integer.class), containsInAnyOrder(Integer.valueOf(0), Integer.valueOf(1), Integer.valueOf(2), Integer.valueOf(3), Integer.valueOf(4)));
+        assertThat(root.getContainedBeans(Integer.class), containsInAnyOrder(zero, one, two, three, four));
         assertThat(root.getContainedBeans(String.class), containsInAnyOrder("leaf"));
     }
 
