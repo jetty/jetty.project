@@ -39,7 +39,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
@@ -941,7 +940,7 @@ public class StreamResetTest extends AbstractTest
         start(new EmptyHttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 if (request.getPathInfo().equals("/1"))
                     service1(request, response);
@@ -1039,18 +1038,15 @@ public class StreamResetTest extends AbstractTest
             Thread.sleep(1000);
             // Let the request write, it should not block.
             requestLatch2.countDown();
-            assertTrue(writeLatch1.await(555, TimeUnit.SECONDS));
+            assertTrue(writeLatch1.await(5, TimeUnit.SECONDS));
         }
     }
 
     private void waitUntilTCPCongested(WriteFlusher flusher) throws TimeoutException, InterruptedException
     {
         long start = System.nanoTime();
-        while (true)
+        while (!flusher.isPending())
         {
-            // Yuck! But no other easy way to detect this.
-            if ("P".equals(flusher.toStateString()))
-                break;
             long elapsed = System.nanoTime() - start;
             if (TimeUnit.NANOSECONDS.toSeconds(elapsed) > 15)
                 throw new TimeoutException();
