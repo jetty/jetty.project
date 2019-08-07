@@ -716,7 +716,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onCompleted()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("COMPLETE for {} written={}", getRequest().getRequestURI(), getBytesWritten());
+            LOG.debug("onCompleted for {} written={}", getRequest().getRequestURI(), getBytesWritten());
 
         if (_requestLog != null)
             _requestLog.log(_request, _response);
