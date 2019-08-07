@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
@@ -75,6 +74,8 @@ public class Log
      * Hold loggers only.
      */
     private static final ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
+    private static Logger LOG;
+    private static boolean __initialized = false;
 
     static
     {
@@ -99,10 +100,10 @@ public class Log
                  * This really for setting up test specific logging behavior based on OS.
                  */
                 String osName = System.getProperty("os.name");
-                // NOTE: cannot use jetty-util's StringUtil as that initializes logging itself.
                 if (osName != null && osName.length() > 0)
                 {
-                    osName = StringUtil.replace(osName.toLowerCase(Locale.ENGLISH), ' ', '-');
+                    // NOTE: cannot use jetty-util's StringUtil as that initializes logging itself.
+                    osName = osName.toLowerCase(Locale.ENGLISH).replace(' ', '-');
                     loadProperties("jetty-logging-" + osName + ".properties", __props);
                 }
 
@@ -156,9 +157,6 @@ public class Log
             }
         }
     }
-
-    private static Logger LOG;
-    private static boolean __initialized = false;
 
     public static void initialized()
     {
