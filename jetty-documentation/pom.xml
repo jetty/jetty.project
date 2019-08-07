@@ -149,6 +149,7 @@
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
+              <sourceHighlighter>coderay</sourceHighlighter>
             </configuration>
           </execution>
           <execution>

@@ -145,7 +145,7 @@ The Jetty I/O library use Java NIO to handle I/O, so that I/O is non-blocking.
 At the Java NIO level, in order to be notified when a `SocketChannel` has data
 to be read, the `SelectionKey.OP_READ` flag must be set.
 
-In the Jetty I/O library, you can call `AbstractEndPoint.fillInterested(Callback)`
+In the Jetty I/O library, you can call `EndPoint.fillInterested(Callback)`
 to declare interest in the "read" (or "fill") event, and the `Callback` parameter
 is the object that is notified when such event occurs.
 
@@ -158,9 +158,82 @@ to write the ``ByteBuffer``s and the `Callback` parameter is the object that is
 notified when the whole write is finished(i.e. _all_ ``ByteBuffer``s have been
 fully written).
 
-[[io-arch-connection]]
-=== Jetty I/O: Implementing `Connection`
+The `EndPoint` APIs abstract out the Java NIO details by providing non-blocking
+APIs based on `Callback` objects for I/O operations.
+The `EndPoint` APIs are typically called by `Connection` implementations, see
+link:#io-arch-connection[this section].
 
-Implementing a `Connection` is how you deserialize incoming bytes into objects
-that can be used by more abstract layers, for example a HTTP request object or
-a WebSocket frame object.
+[[io-arch-connection]]
+=== Jetty I/O: `Connection`
+
+`Connection` is the abstraction that deserializes incoming bytes into objects,
+for example a HTTP request object or a WebSocket frame object, that can be used
+by more abstract layers.
+
+`Connection` instances have two lifecycle methods:
+
+* `Connection.onOpen()`, invoked when the `Connection` is associated with the
+`EndPoint`
+* `Connection.onClose(Throwable)`, invoked when the `Connection` is disassociated
+from the `EndPoint`, where the `Throwable` parameter indicates whether the
+disassociation was due to an error
+
+When a `Connection` is first created, it is not registered for any Java NIO
+event.
+It is therefore typical to implement `onOpen()` to call
+`EndPoint.fillInterested(Callback)` so that the `Connection` declares interest
+for read events and it is invoked (via the `Callback`) when the read event
+happens.
+
+Abstract class `AbstractConnection` partially implements `Connection` and
+provides simpler APIs. The example below shows a typical implementation that
+extends `AbstractConnection`:
+
+[source,java,indent=0]
+----
+include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=connection]
+----
+
+[[io-arch-echo]]
+=== Jetty I/O: Network Echo
+
+With the concepts above it is now possible to write a simple, fully non-blocking,
+`Connection` implementation that simply echoes the bytes that it reads back
+to the other peer.
+
+A naive, but wrong, implementation may be the following:
+
+[source,java,indent=0]
+----
+include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=echo-wrong]
+----
+
+NOTE: The implementation above is wrong and leads to `StackOverflowError`.
+
+The problem with this implementation is that if the writes always complete
+synchronously (i.e. without being delayed by TCP congestion), you end up with
+this sequence of calls:
+
+----
+Connection.onFillable()
+  EndPoint.write()
+    Callback.succeeded()
+      Connection.onFillable()
+        EndPoint.write()
+          Callback.succeeded()
+          ...
+----
+
+which leads to `StackOverflowException`.
+
+This is a typical side effect of asynchronous programming using non-blocking
+APIs, and happens in the Jetty I/O library as well.
+
+A correct implementation is the following:
+
+[source,java,indent=0]
+----
+include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=echo-correct]
+----
+
+The correct implementation performs the reads
