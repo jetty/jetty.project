@@ -29,30 +29,32 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A ServletContextAttributeListener that listens for a specific attribute
- * name (default "org.eclipse.jetty.webapp.Decorator") to obtain a
+ * A ServletContextAttributeListener that listens for a specific context
+ * attribute (default "org.eclipse.jetty.webapp.decorator") to obtain a
  * decorator instance from the webapp.  The instance is then either coerced
  * to a Decorator or reflected for decorator compatible methods so it can
  * be added to the {@link WebAppContext#getObjectFactory()} as a
  * {@link Decorator}.
+ * The context attribute "org.eclipse.jetty.webapp.DecoratingListener" if
+ * not set, is set to the name of the attribute this listener listens for.
  */
 public class DecoratingListener implements ServletContextAttributeListener
 {
     public static final String DECORATOR_ATTRIBUTE = "org.eclipse.jetty.webapp.decorator";
     private static final Logger LOG = Log.getLogger(DecoratingListener.class);
-    private static final MethodType decorateType;
-    private static final MethodType destroyType;
+    private static final MethodType DECORATE_TYPE;
+    private static final MethodType DESTROY_TYPE;
 
     static
     {
         try
         {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            decorateType = MethodType.methodType(Object.class, Object.class);
-            destroyType = MethodType.methodType(Void.TYPE, Object.class);
+            DECORATE_TYPE = MethodType.methodType(Object.class, Object.class);
+            DESTROY_TYPE = MethodType.methodType(Void.TYPE, Object.class);
             // Ensure we have a match
-            lookup.findVirtual(Decorator.class, "decorate", decorateType);
-            lookup.findVirtual(Decorator.class, "destroy", destroyType);
+            lookup.findVirtual(Decorator.class, "decorate", DECORATE_TYPE);
+            lookup.findVirtual(Decorator.class, "destroy", DESTROY_TYPE);
         }
         catch (Exception e)
         {
@@ -83,6 +85,9 @@ public class DecoratingListener implements ServletContextAttributeListener
     {
         _context = context == null ? WebAppContext.getCurrentWebAppContext() : context;
         _attributeName = attributeName == null ? DECORATOR_ATTRIBUTE : attributeName;
+        // If not set (by another DecoratingListener), flag the attribute that are
+        // listening for.  If more than one DecoratingListener is used then this
+        // attribute reflects only the first.
         if (_context.getAttribute(getClass().getName()) == null)
             _context.setAttribute(getClass().getName(), attributeName);
         else if (LOG.isDebugEnabled())
@@ -93,7 +98,7 @@ public class DecoratingListener implements ServletContextAttributeListener
         {
             _decorator = asDecorator(decorator);
             if (_decorator == null)
-                LOG.warn("Could not create decorator from {}={}", attributeName, decorator);
+                LOG.warn("Could not create decorator from {}={}", _attributeName, _decorator);
             else
                 _context.getObjectFactory().addDecorator(_decorator);
         }
@@ -111,8 +116,8 @@ public class DecoratingListener implements ServletContextAttributeListener
             Class<?> clazz = object.getClass();
 
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            final MethodHandle decorate = lookup.findVirtual(clazz, "decorate", decorateType);
-            final MethodHandle destroy = lookup.findVirtual(clazz, "destroy", destroyType);
+            final MethodHandle decorate = lookup.findVirtual(clazz, "decorate", DECORATE_TYPE);
+            final MethodHandle destroy = lookup.findVirtual(clazz, "destroy", DESTROY_TYPE);
             return new Decorator()
             {
                 @Override

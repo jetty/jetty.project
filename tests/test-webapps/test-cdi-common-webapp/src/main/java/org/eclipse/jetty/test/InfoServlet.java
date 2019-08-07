@@ -46,7 +46,7 @@ public class InfoServlet extends HttpServlet
 
         PrintWriter out = resp.getWriter();
         out.println("Bean Manager: " + beanManager);
-        Set<Bean<?>> beans = beanManager.getBeans(Object.class,new AnnotationLiteral<Any>() {});
+        Set<Bean<?>> beans = beanManager.getBeans(Object.class, new AnnotationLiteral<Any>() {});
         for (Bean<?> bean : beans)
         {
             out.printf("%16s => %s%n", bean.getName(), bean);

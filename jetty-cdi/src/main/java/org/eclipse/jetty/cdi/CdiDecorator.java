@@ -50,12 +50,6 @@ public class CdiDecorator implements Decorator
     private static final Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
 
     private final WebAppContext _context;
-    private final Class<?> _cdiClass;
-    private final Class<?> _beanManagerClass;
-    private final Class<?> _annotatedTypeClass;
-    private final Class<?> _injectionTargetClass;
-    private final Class<?> _creationalContextClass;
-    private final Class<?> _contextualClass;
     private final Map<Object, Decorated> _decorated = new HashMap<>();
 
     private final MethodHandle _current;
@@ -74,23 +68,22 @@ public class CdiDecorator implements Decorator
 
         try
         {
-            _cdiClass = classLoader.loadClass("javax.enterprise.inject.spi.CDI");
-
-            _beanManagerClass = classLoader.loadClass("javax.enterprise.inject.spi.BeanManager");
-            _annotatedTypeClass = classLoader.loadClass("javax.enterprise.inject.spi.AnnotatedType");
-            _injectionTargetClass = classLoader.loadClass("javax.enterprise.inject.spi.InjectionTarget");
-            _creationalContextClass = classLoader.loadClass("javax.enterprise.context.spi.CreationalContext");
-            _contextualClass = classLoader.loadClass("javax.enterprise.context.spi.Contextual");
+            Class<?> cdiClass = classLoader.loadClass("javax.enterprise.inject.spi.CDI");
+            Class<?> beanManagerClass = classLoader.loadClass("javax.enterprise.inject.spi.BeanManager");
+            Class<?> annotatedTypeClass = classLoader.loadClass("javax.enterprise.inject.spi.AnnotatedType");
+            Class<?> injectionTargetClass = classLoader.loadClass("javax.enterprise.inject.spi.InjectionTarget");
+            Class<?> creationalContextClass = classLoader.loadClass("javax.enterprise.context.spi.CreationalContext");
+            Class<?> contextualClass = classLoader.loadClass("javax.enterprise.context.spi.Contextual");
 
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            _current = lookup.findStatic(_cdiClass, "current", MethodType.methodType(_cdiClass));
-            _getBeanManager = lookup.findVirtual(_cdiClass, "getBeanManager", MethodType.methodType(_beanManagerClass));
-            _createAnnotatedType = lookup.findVirtual(_beanManagerClass, "createAnnotatedType", MethodType.methodType(_annotatedTypeClass, Class.class));
-            _createInjectionTarget = lookup.findVirtual(_beanManagerClass, "createInjectionTarget", MethodType.methodType(_injectionTargetClass, _annotatedTypeClass));
-            _createCreationalContext = lookup.findVirtual(_beanManagerClass, "createCreationalContext", MethodType.methodType(_creationalContextClass, _contextualClass));
-            _inject = lookup.findVirtual(_injectionTargetClass, "inject", MethodType.methodType(Void.TYPE, Object.class, _creationalContextClass));
-            _dispose = lookup.findVirtual(_injectionTargetClass, "dispose", MethodType.methodType(Void.TYPE, Object.class));
-            _release = lookup.findVirtual(_creationalContextClass, "release", MethodType.methodType(Void.TYPE));
+            _current = lookup.findStatic(cdiClass, "current", MethodType.methodType(cdiClass));
+            _getBeanManager = lookup.findVirtual(cdiClass, "getBeanManager", MethodType.methodType(beanManagerClass));
+            _createAnnotatedType = lookup.findVirtual(beanManagerClass, "createAnnotatedType", MethodType.methodType(annotatedTypeClass, Class.class));
+            _createInjectionTarget = lookup.findVirtual(beanManagerClass, "createInjectionTarget", MethodType.methodType(injectionTargetClass, annotatedTypeClass));
+            _createCreationalContext = lookup.findVirtual(beanManagerClass, "createCreationalContext", MethodType.methodType(creationalContextClass, contextualClass));
+            _inject = lookup.findVirtual(injectionTargetClass, "inject", MethodType.methodType(Void.TYPE, Object.class, creationalContextClass));
+            _dispose = lookup.findVirtual(injectionTargetClass, "dispose", MethodType.methodType(Void.TYPE, Object.class));
+            _release = lookup.findVirtual(creationalContextClass, "release", MethodType.methodType(Void.TYPE));
         }
         catch (Exception e)
         {
