@@ -2137,7 +2137,7 @@ public class Request implements HttpServletRequest
         AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse);
         event.setDispatchContext(getServletContext());
 
-        String uri = ((HttpServletRequest)servletRequest).getRequestURI();
+        String uri = getRequestURI(servletRequest);
         if (_contextPath != null && uri.startsWith(_contextPath))
             uri = uri.substring(_contextPath.length());
         else
@@ -2147,6 +2147,15 @@ public class Request implements HttpServletRequest
         event.setDispatchPath(uri);
         state.startAsync(event);
         return _async;
+    }
+
+    protected String getRequestURI(ServletRequest servletRequest)
+    {
+        if(servletRequest instanceof ServletRequestWrapper)
+        {
+            return getRequestURI(((ServletRequestWrapper)servletRequest).getRequest());
+        }
+        return ((HttpServletRequest)servletRequest).getRequestURI();
     }
 
     @Override
