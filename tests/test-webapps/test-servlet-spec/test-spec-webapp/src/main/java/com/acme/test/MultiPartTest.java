@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * MultiPartTest
@@ -67,12 +68,13 @@ public class MultiPartTest extends HttpServlet
             out.println("<b>Parts:</b>&nbsp;" + parts.size());
             for (Part p : parts)
             {
-                out.println("<h3>" + p.getName() + "</h3>");
+                out.println("<h3>" + StringUtil.sanitizeXmlString(p.getName()) + "</h3>");
                 out.println("<b>Size:</b>&nbsp;" + p.getSize());
                 if (p.getContentType() == null || p.getContentType().startsWith("text/plain"))
                 {
                     out.println("<p>");
-                    IO.copy(p.getInputStream(), out);
+                    String content = IO.toString(p.getInputStream());
+                    out.print(StringUtil.sanitizeXmlString(content));
                     out.println("</p>");
                 }
             }
