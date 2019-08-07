@@ -106,17 +106,19 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     switch (b._managed)
                     {
                         case MANAGED:
-                            if (!l.isRunning())
+                            if (l.isStopped() || l.isFailed())
                                 start(l);
                             break;
 
                         case AUTO:
-                            if (l.isRunning())
-                                unmanage(b);
-                            else
+                            if (l.isStopped())
                             {
                                 manage(b);
                                 start(l);
+                            }
+                            else
+                            {
+                                unmanage(b);
                             }
                             break;
 
@@ -142,7 +144,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     {
                         try
                         {
-                            l.stop();
+                            stop(l);
                         }
                         catch (Throwable cause2)
                         {
