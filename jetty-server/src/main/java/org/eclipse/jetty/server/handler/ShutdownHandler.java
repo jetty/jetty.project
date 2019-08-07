@@ -197,8 +197,9 @@ public class ShutdownHandler extends HandlerWrapper
             connector.shutdown();
         }
 
-        response.sendError(200, "Connectors closed, commencing full shutdown");
         baseRequest.setHandled(true);
+        response.setStatus(200);
+        response.flushBuffer();
 
         final Server server = getServer();
         new Thread()
