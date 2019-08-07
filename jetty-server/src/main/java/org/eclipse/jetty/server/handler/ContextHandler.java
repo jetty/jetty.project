@@ -863,22 +863,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return '.' + logName.replaceAll("\\W", "_");
     }
 
-    private int lookup(String key, int dftValue)
-    {
-        Integer value = Integer.getInteger(key);
-        if (value == null)
-        {
-            Object attribute = getServer().getAttribute(key);
-            if (attribute instanceof Number)
-                value = ((Number)attribute).intValue();
-            else if (attribute instanceof String)
-                value = Integer.parseInt((String)attribute);
-            else
-                value = dftValue;
-        }
-        return value;
-    }
-
     /**
      * Extensible startContext. this method is called from {@link ContextHandler#doStart()} instead of a call to super.doStart(). This allows derived classes to
      * insert additional handling (Eg configuration) before the call to super.doStart by this method will start contained handlers.
