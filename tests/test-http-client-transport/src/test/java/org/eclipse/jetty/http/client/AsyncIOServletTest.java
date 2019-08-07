@@ -70,7 +70,6 @@ import org.eclipse.jetty.server.HttpInput.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -82,6 +81,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.eclipse.jetty.http.client.Transport.H2C;
+import static org.eclipse.jetty.http.client.Transport.HTTP;
 import static org.eclipse.jetty.util.BufferUtil.toArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -1074,6 +1075,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         // only generates the close alert back, without encrypting the
         // response, so we need to skip the transports over TLS.
         Assumptions.assumeFalse(scenario.transport.isTlsBased());
+        Assumptions.assumeFalse(scenario.transport == FCGI);
 
         String content = "jetty";
         int responseCode = HttpStatus.NO_CONTENT_204;
@@ -1100,7 +1102,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                     }
 
                     @Override
-                    public void onAllDataRead() throws IOException
+                    public void onAllDataRead()
                     {
                     }
 
@@ -1122,13 +1124,16 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
             .method(HttpMethod.POST)
             .path(scenario.servletPath)
             .content(contentProvider)
-            .onResponseSuccess(response -> responseLatch.countDown());
-
-        if (scenario.connector instanceof UnixSocketConnector)
-        {
-            // skip rest of this test for unix socket
-            return;
-        }
+            .onResponseSuccess(response ->
+            {
+                if (transport == HTTP)
+                    responseLatch.countDown();
+            })
+            .onResponseFailure((response, failure) ->
+            {
+                if (transport == H2C)
+                    responseLatch.countDown();
+            });
 
         Destination destination = scenario.client.getDestination(scenario.getScheme(),
             "localhost",
@@ -1139,7 +1144,18 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         CountDownLatch clientLatch = new CountDownLatch(1);
         connection.send(request, result ->
         {
-            assertThat(result.getResponse().getStatus(), Matchers.equalTo(responseCode));
+            switch (transport)
+            {
+                case HTTP:
+                    assertThat(result.getResponse().getStatus(), Matchers.equalTo(responseCode));
+                    break;
+                case H2C:
+                    // HTTP/2 does not attempt to write a response back, just a RST_STREAM.
+                    assertTrue(result.isFailed());
+                    break;
+                default:
+                    fail("Unhandled transport: " + transport);
+            }
             clientLatch.countDown();
         });
 
@@ -1148,11 +1164,9 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         switch (transport)
         {
             case HTTP:
-            case HTTPS:
                 ((HttpConnectionOverHTTP)connection).getEndPoint().shutdownOutput();
                 break;
             case H2C:
-            case H2:
                 // In case of HTTP/2, we not only send the request, but also the preface and
                 // SETTINGS frames. SETTINGS frame need to be replied, so we want to wait to
                 // write the reply before shutting output down, so that the test does not fail.
