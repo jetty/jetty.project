@@ -56,11 +56,6 @@ public class Log
 {
     public static final String EXCEPTION = "EXCEPTION ";
     public static final String IGNORED = "IGNORED EXCEPTION ";
-
-    /**
-     * Logging Configuration Properties
-     */
-    protected static final Properties __props;
     /**
      * The {@link Logger} implementation class name
      */
@@ -69,62 +64,51 @@ public class Log
      * Legacy flag indicating if {@link Logger#ignore(Throwable)} methods produce any output in the {@link Logger}s
      */
     public static boolean __ignored;
-
     /**
-     * Hold loggers only.
+     * Logging Configuration Properties
      */
+    protected static final Properties __props = new Properties();
     private static final ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
+    private static boolean __initialized;
     private static Logger LOG;
-    private static boolean __initialized = false;
 
     static
     {
-        /* Instantiate a default configuration properties (empty)
-         */
-        __props = new Properties();
-
         AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             @Override
             public Object run()
             {
-                /* First see if the jetty-logging.properties object exists in the classpath.
-                 * This is an optional feature used by embedded mode use, and test cases to allow for early
-                 * configuration of the Log class in situations where access to the System.properties are
-                 * either too late or just impossible.
-                 */
+                // First see if the jetty-logging.properties object exists in the classpath.
+                // * This is an optional feature used by embedded mode use, and test cases to allow for early
+                // * configuration of the Log class in situations where access to the System.properties are
+                // * either too late or just impossible.
                 loadProperties("jetty-logging.properties", __props);
 
-                /*
-                 * Next see if an OS specific jetty-logging.properties object exists in the classpath.
-                 * This really for setting up test specific logging behavior based on OS.
-                 */
+                 // Next see if an OS specific jetty-logging.properties object exists in the classpath.
+                 // This really for setting up test specific logging behavior based on OS.
                 String osName = System.getProperty("os.name");
                 if (osName != null && osName.length() > 0)
                 {
-                    // NOTE: cannot use jetty-util's StringUtil as that initializes logging itself.
+                    // NOTE: cannot use jetty-util's StringUtil.replace() as it may initialize logging itself.
                     osName = osName.toLowerCase(Locale.ENGLISH).replace(' ', '-');
                     loadProperties("jetty-logging-" + osName + ".properties", __props);
                 }
 
-                /* Now load the System.properties as-is into the __props, these values will override
-                 * any key conflicts in __props.
-                 */
+                // Now load the System.properties as-is into the __props,
+                // these values will override any key conflicts in __props.
                 @SuppressWarnings("unchecked")
                 Enumeration<String> systemKeyEnum = (Enumeration<String>)System.getProperties().propertyNames();
                 while (systemKeyEnum.hasMoreElements())
                 {
                     String key = systemKeyEnum.nextElement();
                     String val = System.getProperty(key);
-                    // protect against application code insertion of non-String values (returned as null)
+                    // Protect against application code insertion of non-String values (returned as null).
                     if (val != null)
-                    {
                         __props.setProperty(key, val);
-                    }
                 }
 
-                /* Now use the configuration properties to configure the Log statics
-                 */
+                // Now use the configuration properties to configure the Log statics.
                 __logClass = __props.getProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.Slf4jLog");
                 __ignored = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.IGNORED", "false"));
                 return null;
@@ -132,7 +116,7 @@ public class Log
         });
     }
 
-    static void loadProperties(String resourceName, Properties props)
+    private static void loadProperties(String resourceName, Properties props)
     {
         URL testProps = Loader.getResource(resourceName);
         if (testProps != null)
@@ -145,15 +129,13 @@ public class Log
                 {
                     Object value = p.get(key);
                     if (value != null)
-                    {
                         props.put(key, value);
-                    }
                 }
             }
             catch (IOException e)
             {
                 System.err.println("[WARN] Error loading logging config: " + testProps);
-                e.printStackTrace(System.err);
+                e.printStackTrace();
             }
         }
     }
@@ -166,18 +148,15 @@ public class Log
                 return;
             __initialized = true;
 
-            Boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
-
+            boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
             try
             {
-                Class<?> logClass = __logClass == null ? null : Loader.loadClass(Log.class, __logClass);
-                if (LOG == null || (logClass != null && !LOG.getClass().equals(logClass)))
+                Class<?> logClass = Loader.loadClass(Log.class, __logClass);
+                if (LOG == null || !LOG.getClass().equals(logClass))
                 {
                     LOG = (Logger)logClass.getDeclaredConstructor().newInstance();
                     if (announce)
-                    {
                         LOG.debug("Logging to {} via {}", LOG, logClass.getName());
-                    }
                 }
             }
             catch (Throwable e)
@@ -187,31 +166,17 @@ public class Log
             }
 
             if (announce && LOG != null)
-            {
                 LOG.info(String.format("Logging initialized @%dms to %s", Uptime.getUptime(), LOG.getClass().getName()));
-            }
         }
     }
 
     private static void initStandardLogging(Throwable e)
     {
-        Class<?> logClass;
-        if (e != null && __ignored)
-        {
-            e.printStackTrace(System.err);
-        }
+        if (__ignored)
+            e.printStackTrace();
 
         if (LOG == null)
-        {
-            logClass = StdErrLog.class;
             LOG = new StdErrLog();
-
-            boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
-            if (announce)
-            {
-                LOG.debug("Logging to {} via {}", LOG, logClass.getName());
-            }
-        }
     }
 
     public static Logger getLog()
