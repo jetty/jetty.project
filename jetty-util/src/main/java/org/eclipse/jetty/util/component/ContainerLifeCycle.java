@@ -106,7 +106,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     switch (b._managed)
                     {
                         case MANAGED:
-                            if (l.isStopped())
+                            if (l.isStopped() || l.isFailed())
                                 start(l);
                             break;
 

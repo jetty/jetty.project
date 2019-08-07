@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.TypeUtil;
@@ -674,5 +675,72 @@ public class ContainerLifeCycleTest
         };
         longLived.start();
         longLived.stop();
+    }
+
+    @Test
+    public void testFailedManagedBeanCanBeRestarted() throws Exception
+    {
+        AtomicBoolean fail = new AtomicBoolean();
+        ContainerLifeCycle container = new ContainerLifeCycle();
+        ContainerLifeCycle bean1 = new ContainerLifeCycle();
+        ContainerLifeCycle bean2 = new ContainerLifeCycle()
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                super.doStart();
+                // Fail only the first time.
+                if (fail.compareAndSet(false, true))
+                    throw new RuntimeException();
+            }
+        };
+        ContainerLifeCycle bean3 = new ContainerLifeCycle();
+        container.addBean(bean1);
+        container.addBean(bean2);
+        container.addBean(bean3);
+
+        // Start the first time, it should fail.
+        assertThrows(RuntimeException.class, container::start);
+        assertTrue(container.isFailed());
+        assertTrue(bean1.isStopped());
+        assertTrue(bean2.isFailed());
+        assertTrue(bean3.isStopped());
+
+        // Re-start, it should succeed.
+        container.start();
+        assertTrue(container.isStarted());
+        assertTrue(bean1.isStarted());
+        assertTrue(bean2.isStarted());
+        assertTrue(bean3.isStarted());
+    }
+
+    @Test
+    public void testFailedAutoBeanIsNotRestarted() throws Exception
+    {
+        AtomicBoolean fail = new AtomicBoolean();
+        ContainerLifeCycle bean = new ContainerLifeCycle()
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                super.doStart();
+                // Fail only the first time.
+                if (fail.compareAndSet(false, true))
+                    throw new RuntimeException();
+            }
+        };
+        // The bean is started externally and fails.
+        assertThrows(RuntimeException.class, bean::start);
+
+        // The same bean now becomes part of a container.
+        ContainerLifeCycle container = new ContainerLifeCycle();
+        container.addBean(bean);
+        assertTrue(container.isAuto(bean));
+
+        // Start the container, the bean must not be managed.
+        container.start();
+        assertTrue(container.isStarted());
+        assertTrue(bean.isFailed());
+        assertTrue(container.isUnmanaged(bean));
     }
 }
