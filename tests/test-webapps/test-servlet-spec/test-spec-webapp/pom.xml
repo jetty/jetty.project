@@ -227,7 +227,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
+      <artifactId>jetty-http</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>

@@ -19,6 +19,8 @@
 package com.acme.test;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -29,8 +31,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * MultiPartTest
@@ -65,17 +67,25 @@ public class MultiPartTest extends HttpServlet
             out.println("<p>");
 
             Collection<Part> parts = request.getParts();
-            out.println("<b>Parts:</b>&nbsp;" + parts.size());
+            out.println("<b>Parts:</b>&nbsp;" + parts.size() + "<br>");
             for (Part p : parts)
             {
-                out.println("<h3>" + StringUtil.sanitizeXmlString(p.getName()) + "</h3>");
-                out.println("<b>Size:</b>&nbsp;" + p.getSize());
-                if (p.getContentType() == null || p.getContentType().startsWith("text/plain"))
+                out.println("<br><b>PartName:</b>&nbsp;" + sanitizeXmlString(p.getName()));
+                out.println("<br><b>Size:</b>&nbsp;" + p.getSize());
+                String contentType = p.getContentType();
+                out.println("<br><b>ContentType:</b>&nbsp;" + contentType);
+                if ((contentType == null || contentType.startsWith("text/")) && p.getSize() < 2048)
                 {
-                    out.println("<p>");
-                    String content = IO.toString(p.getInputStream());
-                    out.print(StringUtil.sanitizeXmlString(content));
-                    out.println("</p>");
+                    String charset = null;
+                    if (p.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(p.getContentType());
+
+                    // assuming UTF_8 charset if no charset is specified
+                    String content = IO.toString(p.getInputStream(), charset==null ? StandardCharsets.UTF_8 : Charset.forName(charset));
+
+                    out.println("<pre>");
+                    out.print(sanitizeXmlString(content));
+                    out.println("</pre>");
                 }
             }
             out.println("</body>");
@@ -110,5 +120,69 @@ public class MultiPartTest extends HttpServlet
         {
             throw new ServletException(e);
         }
+    }
+
+    public static String sanitizeXmlString(String html)
+    {
+        if (html == null)
+            return null;
+
+        int i = 0;
+
+        // Are there any characters that need sanitizing?
+        loop:
+        for (; i < html.length(); i++)
+        {
+            char c = html.charAt(i);
+            switch (c)
+            {
+                case '&':
+                case '<':
+                case '>':
+                case '\'':
+                case '"':
+                    break loop;
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        break loop;
+            }
+        }
+        // No characters need sanitizing, so return original string
+        if (i == html.length())
+            return html;
+
+        // Create builder with OK content so far
+        StringBuilder out = new StringBuilder(html.length() * 4 / 3);
+        out.append(html, 0, i);
+
+        // sanitize remaining content
+        for (; i < html.length(); i++)
+        {
+            char c = html.charAt(i);
+            switch (c)
+            {
+                case '&':
+                    out.append("&amp;");
+                    break;
+                case '<':
+                    out.append("&lt;");
+                    break;
+                case '>':
+                    out.append("&gt;");
+                    break;
+                case '\'':
+                    out.append("&apos;");
+                    break;
+                case '"':
+                    out.append("&quot;");
+                    break;
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        out.append('?');
+                    else
+                        out.append(c);
+            }
+        }
+        return out.toString();
     }
 }
