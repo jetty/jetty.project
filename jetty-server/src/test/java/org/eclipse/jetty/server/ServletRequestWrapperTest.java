@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,20 +52,14 @@ public class ServletRequestWrapperTest
     }
 
     @Test
-    public void testServletRequestWrapper()
+    public void testServletRequestWrapper() throws Exception
     {
         String request = "GET / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "\n";
-        try
-        {
-            String response = connector.getResponse(request );
-            assertThat("Response", response, containsString("200"));
-        }
-        catch (Exception e)
-        {
-            Assertions.fail("no exception possible");
-        }
+
+        String response = connector.getResponse(request);
+        assertThat("Response", response, containsString("200"));
     }
 
     private class RequestWrapper extends ServletRequestWrapper
