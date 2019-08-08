@@ -535,8 +535,8 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         final String target = baseRequest.getPathInfo();
-        final HttpServletRequest request = getHttpServletRequest(event.getSuppliedRequest());
-        final HttpServletResponse response = getHttpServletResponse(event.getSuppliedResponse());
+        final HttpServletRequest request = Request.unwrap(event.getSuppliedRequest());
+        final HttpServletResponse response = Response.unwrap(event.getSuppliedResponse());
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} on {}", request.getDispatcherType(), request.getMethod(), target, channel);
@@ -545,31 +545,6 @@ public class Server extends HandlerWrapper implements Attributes
             LOG.debug("handledAsync={} async={} committed={} on {}", channel.getRequest().isHandled(), request.isAsyncStarted(), response.isCommitted(), channel);
     }
 
-    private HttpServletRequest getHttpServletRequest(ServletRequest servletRequest)
-    {
-        if (servletRequest instanceof HttpServletRequestWrapper)
-        {
-            return (HttpServletRequest)servletRequest;
-        }
-        if (servletRequest instanceof ServletRequestWrapper)
-        {
-            return getHttpServletRequest(((ServletRequestWrapper)servletRequest).getRequest());
-        }
-        return (HttpServletRequest)servletRequest;
-    }
-
-    private HttpServletResponse getHttpServletResponse(ServletResponse servletResponse)
-    {
-        if (servletResponse instanceof HttpServletResponseWrapper)
-        {
-            return (HttpServletResponseWrapper)servletResponse;
-        }
-        if (servletResponse instanceof ServletResponseWrapper)
-        {
-            return getHttpServletResponse(((ServletResponseWrapper)servletResponse).getResponse());
-        }
-        return (HttpServletResponse)servletResponse;
-    }
 
     public void join() throws InterruptedException
     {

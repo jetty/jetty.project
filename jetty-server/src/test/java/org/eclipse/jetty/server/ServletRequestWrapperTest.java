@@ -54,7 +54,7 @@ public class ServletRequestWrapperTest
     }
 
     @Test
-    public void servlet_request_wrapper()
+    public void testServletRequestWrapper()
     {
         String request = "GET / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
@@ -68,12 +68,12 @@ public class ServletRequestWrapperTest
         {
             Assertions.fail( "no exception possible" );
         }
-
     }
 
     private class RequestWrapper extends ServletRequestWrapper
     {
-        public RequestWrapper( ServletRequest request) {
+        public RequestWrapper( ServletRequest request)
+        {
             super(request);
         }
     }
@@ -81,14 +81,14 @@ public class ServletRequestWrapperTest
     private class RequestHandler extends AbstractHandler
     {
         @Override
-        public void handle( String target, Request baseRequest, HttpServletRequest request,
-                            HttpServletResponse response )
+        public void handle(String target, Request baseRequest, HttpServletRequest request,
+                            HttpServletResponse response)
             throws IOException, ServletException
         {
-            RequestWrapper requestWrapper = new RequestWrapper( request );
-            AsyncContext context = request.startAsync( requestWrapper, response);
+            RequestWrapper requestWrapper = new RequestWrapper(request);
+            AsyncContext context = request.startAsync(requestWrapper, response);
             context.complete();
-            baseRequest.setHandled( true );
+            baseRequest.setHandled(true);
         }
     }
 }
