@@ -7,10 +7,10 @@ integration modes with a CDI implementation on the webapp classpath.
 CDI integration modes can be selected per webapp with the "jetty.cdi.mode"
 init parameter or default to the mode set by the "jetty.cdi.mode" server attribute.
 Supported modes are:
-CdiDecorator     - Jetty will call the CDI SPI within the webapp to decorate
-                   objects (default).
-DecoratingLister - The webapp may register a decorator on the context attribute
-                   "org.eclipse.jetty.cdi.decorator".
+CdiSpiDecorator     - Jetty will call the CDI SPI within the webapp to decorate
+                      objects (default).
+CdiDecoratingLister - The webapp may register a decorator on the context attribute
+                      "org.eclipse.jetty.cdi.decorator".
 
 [tag]
 cdi

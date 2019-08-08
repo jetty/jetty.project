@@ -36,9 +36,9 @@ import org.eclipse.jetty.util.log.Logger;
  * the "jetty.cdi.mode" init parameter or default to the mode set by the
  * "jetty.cdi.mode" server attribute.  Supported modes are:</p>
  * <dl>
- * <dt>CdiDecorator</dt>
+ * <dt>CdiSpiDecorator</dt>
  *     <dd>Jetty will call the CDI SPI within the webapp to decorate objects (default).</dd>
- * <dt>DecoratingLister</dt>
+ * <dt>CdiDecoratingLister</dt>
  *     <dd>The webapp may register a decorator on the context attribute
  *     "org.eclipse.jetty.cdi.decorator".</dd>
  * </dl>
@@ -80,7 +80,7 @@ public class CdiServletContainerInitializer implements ServletContainerInitializ
                     break;
 
                 case CdiDecoratingListener.MODE:
-                    context.addEventListener(new CdiDecoratingListener());
+                    context.addEventListener(new CdiDecoratingListener(context));
                     break;
 
                 default:

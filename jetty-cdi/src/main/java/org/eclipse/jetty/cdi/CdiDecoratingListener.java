@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.cdi;
 
-import org.eclipse.jetty.webapp.DecoratingListener;
+import org.eclipse.jetty.servlet.DecoratingListener;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 
 /**
  * A DecoratingListener that listens for "org.eclipse.jetty.cdi.decorator"
@@ -28,12 +29,8 @@ class CdiDecoratingListener extends DecoratingListener
     public static final String MODE = "CdiDecoratingListener";
     public static final String ATTRIBUTE = "org.eclipse.jetty.cdi.decorator";
 
-    public CdiDecoratingListener()
+    public CdiDecoratingListener(ServletContextHandler contextHandler)
     {
-        super(ATTRIBUTE);
+        super(contextHandler, ATTRIBUTE);
     }
-
-    @Override
-    protected void checkAndSetAttributeName()
-    {}
 }
