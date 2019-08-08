@@ -545,26 +545,26 @@ public class Server extends HandlerWrapper implements Attributes
             LOG.debug("handledAsync={} async={} committed={} on {}", channel.getRequest().isHandled(), request.isAsyncStarted(), response.isCommitted(), channel);
     }
 
-    private HttpServletRequest getHttpServletRequest( ServletRequest servletRequest)
+    private HttpServletRequest getHttpServletRequest(ServletRequest servletRequest)
     {
-        if(servletRequest instanceof HttpServletRequestWrapper )
+        if (servletRequest instanceof HttpServletRequestWrapper)
         {
             return (HttpServletRequest)servletRequest;
         }
-        if(servletRequest instanceof ServletRequestWrapper )
+        if (servletRequest instanceof ServletRequestWrapper)
         {
             return getHttpServletRequest(((ServletRequestWrapper)servletRequest).getRequest());
         }
         return (HttpServletRequest)servletRequest;
     }
 
-    private HttpServletResponse getHttpServletResponse( ServletResponse servletResponse)
+    private HttpServletResponse getHttpServletResponse(ServletResponse servletResponse)
     {
-        if(servletResponse instanceof HttpServletResponseWrapper )
+        if (servletResponse instanceof HttpServletResponseWrapper)
         {
             return (HttpServletResponseWrapper)servletResponse;
         }
-        if(servletResponse instanceof ServletResponseWrapper )
+        if (servletResponse instanceof ServletResponseWrapper)
         {
             return getHttpServletResponse(((ServletResponseWrapper)servletResponse).getResponse());
         }

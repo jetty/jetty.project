@@ -2152,11 +2152,11 @@ public class Request implements HttpServletRequest
 
     protected String getRequestURI(ServletRequest servletRequest)
     {
-        if(servletRequest instanceof HttpServletRequestWrapper )
+        if (servletRequest instanceof HttpServletRequestWrapper)
         {
             return ((HttpServletRequestWrapper)servletRequest).getRequestURI();
         }
-        if(servletRequest instanceof ServletRequestWrapper)
+        if (servletRequest instanceof ServletRequestWrapper)
         {
             return getRequestURI(((ServletRequestWrapper)servletRequest).getRequest());
         }
