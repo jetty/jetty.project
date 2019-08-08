@@ -19,8 +19,6 @@
 package com.acme.test;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -30,9 +28,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
-
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.util.IO;
 
 /**
  * MultiPartTest
@@ -74,19 +69,6 @@ public class MultiPartTest extends HttpServlet
                 out.println("<br><b>Size:</b>&nbsp;" + p.getSize());
                 String contentType = p.getContentType();
                 out.println("<br><b>ContentType:</b>&nbsp;" + contentType);
-                if ((contentType == null || contentType.startsWith("text/")) && p.getSize() < 2048)
-                {
-                    String charset = null;
-                    if (p.getContentType() != null)
-                        charset = MimeTypes.getCharsetFromContentType(p.getContentType());
-
-                    // assuming UTF_8 charset if no charset is specified
-                    String content = IO.toString(p.getInputStream(), charset==null ? StandardCharsets.UTF_8 : Charset.forName(charset));
-
-                    out.println("<pre>");
-                    out.print(sanitizeXmlString(content));
-                    out.println("</pre>");
-                }
             }
             out.println("</body>");
             out.println("</html>");
