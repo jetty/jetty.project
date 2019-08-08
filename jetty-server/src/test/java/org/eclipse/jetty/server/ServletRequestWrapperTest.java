@@ -61,18 +61,18 @@ public class ServletRequestWrapperTest
             "\n";
         try
         {
-            String response = connector.getResponse( request );
+            String response = connector.getResponse(request );
             assertThat("Response", response, containsString("200"));
         }
-        catch ( Exception e )
+        catch (Exception e)
         {
-            Assertions.fail( "no exception possible" );
+            Assertions.fail("no exception possible");
         }
     }
 
     private class RequestWrapper extends ServletRequestWrapper
     {
-        public RequestWrapper( ServletRequest request)
+        public RequestWrapper(ServletRequest request)
         {
             super(request);
         }

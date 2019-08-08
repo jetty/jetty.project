@@ -1285,7 +1285,7 @@ public class Response implements HttpServletResponse
         }
     }
 
-    public static HttpServletResponse unwrap( ServletResponse servletResponse)
+    public static HttpServletResponse unwrap(ServletResponse servletResponse)
     {
         if (servletResponse instanceof HttpServletResponseWrapper)
         {

@@ -545,7 +545,6 @@ public class Server extends HandlerWrapper implements Attributes
             LOG.debug("handledAsync={} async={} committed={} on {}", channel.getRequest().isHandled(), request.isAsyncStarted(), response.isCommitted(), channel);
     }
 
-
     public void join() throws InterruptedException
     {
         getThreadPool().join();
