@@ -56,6 +56,7 @@ import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
@@ -2137,7 +2138,7 @@ public class Request implements HttpServletRequest
         AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse);
         event.setDispatchContext(getServletContext());
 
-        String uri = ((HttpServletRequest)servletRequest).getRequestURI();
+        String uri = unwrap(servletRequest).getRequestURI();
         if (_contextPath != null && uri.startsWith(_contextPath))
             uri = uri.substring(_contextPath.length());
         else
@@ -2147,6 +2148,19 @@ public class Request implements HttpServletRequest
         event.setDispatchPath(uri);
         state.startAsync(event);
         return _async;
+    }
+
+    public static HttpServletRequest unwrap(ServletRequest servletRequest)
+    {
+        if (servletRequest instanceof HttpServletRequestWrapper)
+        {
+            return (HttpServletRequestWrapper)servletRequest;
+        }
+        if (servletRequest instanceof ServletRequestWrapper)
+        {
+            return unwrap(((ServletRequestWrapper)servletRequest).getRequest());
+        }
+        return ((HttpServletRequest)servletRequest);
     }
 
     @Override
