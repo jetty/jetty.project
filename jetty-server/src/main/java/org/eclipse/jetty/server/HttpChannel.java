@@ -1046,6 +1046,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyComplete(Request request)
     {
+        request.onCompleted();
         notifyEvent1(listener -> listener::onComplete, request);
     }
 

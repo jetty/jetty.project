@@ -84,6 +84,7 @@ public class Session implements SessionHandler.SessionIf
     protected final SessionHandler _handler; // the manager of the session
 
     protected String _extendedId; // the _id plus the worker name
+    
     protected long _requests;
 
     protected boolean _idChanged;
@@ -195,8 +196,6 @@ public class Session implements SessionHandler.SessionIf
         _sessionData = data;
         _newSession = true;
         _sessionData.setDirty(true);
-        _requests = 1; // access will not be called on this new session, but we
-        // are obviously in a request
         _sessionInactivityTimer = new SessionInactivityTimer();
     }
 
@@ -212,6 +211,8 @@ public class Session implements SessionHandler.SessionIf
         _sessionData = data;
         _sessionInactivityTimer = new SessionInactivityTimer();
     }
+    
+    
 
     /**
      * Returns the current number of requests that are active in the Session.
@@ -220,10 +221,12 @@ public class Session implements SessionHandler.SessionIf
      */
     public long getRequests()
     {
+        long r;
         try (Lock lock = _lock.lock())
         {
-            return _requests;
+            r = _requests;
         }
+        return r;
     }
 
     public void setExtendedId(String extendedId)
@@ -239,11 +242,24 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
+    protected void use ()
+    {
+        try (Lock lock = _lock.lock())
+        {
+            _requests++;
+
+            // temporarily stop the idle timer
+            if (LOG.isDebugEnabled())
+                LOG.debug("Session {} in use, stopping timer, active requests={}", getId(), _requests);
+            _sessionInactivityTimer.cancel();
+        }
+    }
+    
     protected boolean access(long time)
     {
         try (Lock lock = _lock.lock())
         {
-            if (!isValid())
+            if (!isValid() || !isResident())
                 return false;
             _newSession = false;
             long lastAccessed = _sessionData.getAccessed();
@@ -255,13 +271,6 @@ public class Session implements SessionHandler.SessionIf
                 invalidate();
                 return false;
             }
-            _requests++;
-
-            // temporarily stop the idle timer
-            if (LOG.isDebugEnabled())
-                LOG.debug("Session {} accessed, stopping timer, active requests={}", getId(), _requests);
-            _sessionInactivityTimer.cancel();
-
             return true;
         }
     }
@@ -407,6 +416,14 @@ public class Session implements SessionHandler.SessionIf
         try (Lock lock = _lock.lock())
         {
             return _state == State.VALID;
+        }
+    }
+    
+    public boolean isInvalid()
+    {
+        try (Lock lock = _lock.lock())
+        {
+            return _state == State.INVALID || _state == State.INVALIDATING;
         }
     }
 
@@ -965,6 +982,8 @@ public class Session implements SessionHandler.SessionIf
                     {
                         try
                         {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Session {} waiting for id change to complete", _sessionData.getId());
                             _stateChangeCompleted.await();
                         }
                         catch (InterruptedException e)

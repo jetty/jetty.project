@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
+import static java.lang.Math.round;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,8 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.SessionCookieConfig;
@@ -63,8 +64,6 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-
-import static java.lang.Math.round;
 
 /**
  * SessionHandler.
@@ -140,53 +139,6 @@ public class SessionHandler extends ScopedHandler
      */
     public static final java.math.BigDecimal MAX_INACTIVE_MINUTES = new java.math.BigDecimal(Integer.MAX_VALUE / 60);
 
-    /**
-     * SessionAsyncListener
-     *
-     * Used to ensure that a request for which async has been started
-     * has its session completed as the request exits the context.
-     */
-    public class SessionAsyncListener implements AsyncListener
-    {
-        @Override
-        public void onComplete(AsyncEvent event) throws IOException
-        {
-            // An async request has completed, so we can complete the session,
-            // but we must locate the session instance for this context
-            Request request = Request.getBaseRequest(event.getAsyncContext().getRequest());
-            HttpSession session = request.getSession(false);
-            String id;
-            if (session != null)
-                id = session.getId();
-            else
-            {
-                id = (String)request.getAttribute(DefaultSessionIdManager.__NEW_SESSION_ID);
-                if (id == null)
-                    id = request.getRequestedSessionId();
-            }
-
-            if (id != null)
-                complete(getSession(id));
-        }
-
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-
-        }
-
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-            complete(Request.getBaseRequest(event.getAsyncContext().getRequest()).getSession(false));
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
-            event.getAsyncContext().addListener(this);
-        }
-    }
 
     static final HttpSessionContext __nullSessionContext = new HttpSessionContext()
     {
@@ -243,7 +195,7 @@ public class SessionHandler extends ScopedHandler
 
     protected Scheduler _scheduler;
     protected boolean _ownScheduler = false;
-    protected final SessionAsyncListener _sessionAsyncListener = new SessionAsyncListener();
+
 
     /**
      * Constructor.
@@ -413,11 +365,9 @@ public class SessionHandler extends ScopedHandler
             return;
 
         Session s = ((SessionIf)session).getSession();
-
         try
         {
-            s.complete();
-            _sessionCache.put(s.getId(), s);
+            _sessionCache.release(s.getId(), s);
         }
         catch (Exception e)
         {
@@ -428,24 +378,10 @@ public class SessionHandler extends ScopedHandler
     @Deprecated
     public void complete(Session session, Request baseRequest)
     {
-        ensureCompletion(baseRequest);
+        //not used
     }
 
-    private void ensureCompletion(Request baseRequest)
-    {
-        if (baseRequest.isAsyncStarted())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Adding AsyncListener for {}", baseRequest);
-            if (!baseRequest.getHttpChannelState().hasListener(_sessionAsyncListener))
-                baseRequest.getAsyncContext().addListener(_sessionAsyncListener);
-        }
-        else
-        {
-            complete(baseRequest.getSession(false));
-        }
-    }
-
+   
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
@@ -581,11 +517,11 @@ public class SessionHandler extends ScopedHandler
      * @param extendedId the session id
      * @return the <code>HttpSession</code> with the corresponding id or null if no session with the given id exists
      */
-    public HttpSession getHttpSession(String extendedId)
+    protected HttpSession getHttpSession(String extendedId)
     {
         String id = getSessionIdManager().getId(extendedId);
-
         Session session = getSession(id);
+        
         if (session != null && !session.getExtendedId().equals(extendedId))
             session.setIdChanged(true);
         return session;
@@ -813,7 +749,8 @@ public class SessionHandler extends ScopedHandler
 
         try
         {
-            _sessionCache.put(id, session);
+            _sessionCache.add(id, session);
+            Request.getBaseRequest(request).enterSession(session);
             _sessionsCreatedStats.increment();
 
             if (request != null && request.isSecure())
@@ -929,7 +866,7 @@ public class SessionHandler extends ScopedHandler
      * @param id The session ID stripped of any worker name.
      * @return A Session or null if none exists.
      */
-    public Session getSession(String id)
+    protected Session getSession(String id)
     {
         try
         {
@@ -1159,9 +1096,11 @@ public class SessionHandler extends ScopedHandler
      */
     public void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId)
     {
+        Session session = null;
         try
         {
-            Session session = _sessionCache.renewSessionId(oldId, newId, oldExtendedId, newExtendedId); //swap the id over
+            //the use count for the session will be incremented in renewSessionId
+            session = _sessionCache.renewSessionId(oldId, newId, oldExtendedId, newExtendedId); //swap the id over
             if (session == null)
             {
                 //session doesn't exist on this context
@@ -1174,6 +1113,20 @@ public class SessionHandler extends ScopedHandler
         catch (Exception e)
         {
             LOG.warn(e);
+        }
+        finally
+        {
+            if (session != null)
+            {
+                try
+                {
+                    _sessionCache.release(newId, session);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
         }
     }
 
@@ -1518,21 +1471,48 @@ public class SessionHandler extends ScopedHandler
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("SessionHandler.doScope");
+                LOG.debug("Entering scope {}, dispatch={} asyncstarted={}", this, baseRequest.getDispatcherType(), baseRequest.isAsyncStarted());
 
-            oldSessionHandler = baseRequest.getSessionHandler();
-            oldSession = baseRequest.getSession(false);
-
-            if (oldSessionHandler != this)
+            switch (baseRequest.getDispatcherType())
             {
-                // new session context
-                baseRequest.setSessionHandler(this);
-                baseRequest.setSession(null);
-                checkRequestedSessionId(baseRequest, request);
-            }
+                case REQUEST:
+                {
+                    //there are no previous sessionhandlers or sessions for dispatch=REQUEST
+                    //look for a session for this context
+                    baseRequest.setSession(null);
+                    checkRequestedSessionId(baseRequest, request);
+                    existingSession = baseRequest.getSession(false);
+                    baseRequest.setSessionHandler(this);
+                    baseRequest.setSession(existingSession); //can be null
+                    break;
+                }
+                case ASYNC:
+                case ERROR:
+                case FORWARD:
+                case INCLUDE:
+                {
+                    //remember previous sessionhandler and session
+                    oldSessionHandler = baseRequest.getSessionHandler();
+                    oldSession = baseRequest.getSession(false);
+                    
+                    //find any existing session for this request that has already been accessed
+                    existingSession = baseRequest.getSession(this);
+                    if (existingSession == null)
+                    {
+                        //session for this context has not been visited previously,
+                        //try getting it
+                        baseRequest.setSession(null);
+                        checkRequestedSessionId(baseRequest, request);
+                        existingSession = baseRequest.getSession(false);
+                    }
 
-            // access any existing session for this context
-            existingSession = baseRequest.getSession(false);
+                    baseRequest.setSession(existingSession);
+                    baseRequest.setSessionHandler(this);
+                    break;
+                }
+                default:
+                    break;
+            }
 
             if ((existingSession != null) && (oldSessionHandler != this))
             {
@@ -1554,13 +1534,9 @@ public class SessionHandler extends ScopedHandler
         }
         finally
         {
-            //if there is a session that was created during handling this context, then complete it
             if (LOG.isDebugEnabled())
-                LOG.debug("FinalSession={}, old_session_handler={}, this={}, calling complete={}", baseRequest.getSession(false), oldSessionHandler, this, (oldSessionHandler != this));
-
-            // If we are leaving the scope of this session handler, ensure the session is completed
-            if (oldSessionHandler != this)
-                ensureCompletion(baseRequest);
+                LOG.debug("Leaving scope {} dispatch={}, async={}, session={}, oldsession={}, oldsessionhandler={}", 
+                    this, baseRequest.getDispatcherType(), baseRequest.isAsyncStarted(), baseRequest.getSession(false), oldSession, oldSessionHandler);
 
             // revert the session handler to the previous, unless it was null, in which case remember it as
             // the first session handler encountered.
@@ -1596,7 +1572,10 @@ public class SessionHandler extends ScopedHandler
             HttpSession session = getHttpSession(requestedSessionId);
 
             if (session != null && isValid(session))
+            {
+                baseRequest.enterSession(session); //enter session for first time
                 baseRequest.setSession(session);
+            }
             return;
         }
         else if (!DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
@@ -1604,8 +1583,8 @@ public class SessionHandler extends ScopedHandler
 
         boolean requestedSessionIdFromCookie = false;
         HttpSession session = null;
-
-        // Look for session id cookie
+        
+        //first try getting id from a cookie
         if (isUsingCookies())
         {
             Cookie[] cookies = request.getCookies();
@@ -1618,31 +1597,21 @@ public class SessionHandler extends ScopedHandler
                     {
                         requestedSessionId = cookies[i].getValue();
                         requestedSessionIdFromCookie = true;
-
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Got Session ID {} from cookie", requestedSessionId);
-
+                            LOG.debug("Got Session ID {} from cookie {}", requestedSessionId, sessionCookie);
                         if (requestedSessionId != null)
                         {
-                            session = getHttpSession(requestedSessionId);
-                            if (session != null && isValid(session))
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            LOG.warn("null session id from cookie");
+                            break;
                         }
                     }
                 }
-            }
+            }  
         }
-
-        if (isUsingURLs() && (requestedSessionId == null || session == null))
+        
+        //try getting id from a url
+        if (isUsingURLs() && (requestedSessionId == null))
         {
             String uri = request.getRequestURI();
-
             String prefix = getSessionIdPathParameterNamePrefix();
             if (prefix != null)
             {
@@ -1661,7 +1630,6 @@ public class SessionHandler extends ScopedHandler
 
                     requestedSessionId = uri.substring(s, i);
                     requestedSessionIdFromCookie = false;
-                    session = getHttpSession(requestedSessionId);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Got Session ID {} from URL", requestedSessionId);
                 }
@@ -1670,8 +1638,16 @@ public class SessionHandler extends ScopedHandler
 
         baseRequest.setRequestedSessionId(requestedSessionId);
         baseRequest.setRequestedSessionIdFromCookie(requestedSessionId != null && requestedSessionIdFromCookie);
-        if (session != null && isValid(session))
-            baseRequest.setSession(session);
+
+        if (requestedSessionId != null)
+        {
+            session = getHttpSession(requestedSessionId);
+            if (session != null && isValid(session))
+            {
+                baseRequest.enterSession(session); //request enters this session for first time
+                baseRequest.setSession(session);
+            }
+        }
     }
 
     /**

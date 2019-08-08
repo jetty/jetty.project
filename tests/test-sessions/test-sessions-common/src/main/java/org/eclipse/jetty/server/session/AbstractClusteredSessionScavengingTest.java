@@ -116,7 +116,9 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                     String id = TestServer.extractSessionId(sessionCookie);
-                    Session s1 = m1.getSessionCache().get(id);
+                    
+                    //Peek at the contents of the cache without doing all the reference counting etc
+                    Session s1 = ((AbstractSessionCache)m1.getSessionCache()).doGet(id);
                     assertNotNull(s1);
                     long expiry = s1.getSessionData().getExpiry();
 
