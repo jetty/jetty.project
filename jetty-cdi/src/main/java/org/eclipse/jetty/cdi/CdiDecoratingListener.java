@@ -20,6 +20,9 @@ package org.eclipse.jetty.cdi;
 
 import org.eclipse.jetty.webapp.DecoratingListener;
 
+/**
+ * A DecoratingListener that listens for "org.eclipse.jetty.cdi.decorator"
+ */
 class CdiDecoratingListener extends DecoratingListener
 {
     public static final String MODE = "CdiDecoratingListener";

@@ -25,14 +25,24 @@ import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A {@link ServletContainerInitializer} that introspects for a CDI API
- * implementation within a web application. If the CDI API is found, then
- * a {@link CdiSpiDecorator} is registered as a {@link org.eclipse.jetty.util.Decorator}
- * for the context.
+ * <p>A {@link ServletContainerInitializer} that introspects for a CDI API
+ * implementation within a web application and applies an integration
+ * mode if CDI is found.  CDI integration modes can be selected per webapp with
+ * the "jetty.cdi.mode" init parameter or default to the mode set by the
+ * "jetty.cdi.mode" server attribute.  Supported modes are:</p>
+ * <dl>
+ * <dt>CdiDecorator</dt>
+ *     <dd>Jetty will call the CDI SPI within the webapp to decorate objects (default).</dd>
+ * <dt>DecoratingLister</dt>
+ *     <dd>The webapp may register a decorator on the context attribute
+ *     "org.eclipse.jetty.cdi.decorator".</dd>
+ * </dl>
+ *
  * @see AnnotationConfiguration.ServletContainerInitializerOrdering
  */
 public class CdiServletContainerInitializer implements ServletContainerInitializer
@@ -47,6 +57,13 @@ public class CdiServletContainerInitializer implements ServletContainerInitializ
         {
             ServletContextHandler context = ServletContextHandler.getServletContextHandler(ctx);
             Objects.requireNonNull(context);
+
+            // Test if CDI is in the webapp by trying to load the CDI class.
+            ClassLoader loader  = context.getClassLoader();
+            if (loader == null)
+                Loader.loadClass("javax.enterprise.inject.spi.CDI");
+            else
+                loader.loadClass("javax.enterprise.inject.spi.CDI");
 
             String mode = ctx.getInitParameter(CDI_INTEGRATION_ATTRIBUTE);
             if (mode == null)
@@ -73,7 +90,7 @@ public class CdiServletContainerInitializer implements ServletContainerInitializ
             context.setAttribute(CDI_INTEGRATION_ATTRIBUTE, mode);
             LOG.info(mode + " enabled in " + ctx);
         }
-        catch (UnsupportedOperationException e)
+        catch (UnsupportedOperationException | ClassNotFoundException e)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("CDI not found in " + ctx, e);

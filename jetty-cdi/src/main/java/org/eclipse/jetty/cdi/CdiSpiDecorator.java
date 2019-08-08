@@ -30,11 +30,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A Decorator invokes a CDI provider within
- * a webapplication to decorate objects created by the contexts {@link org.eclipse.jetty.util.DecoratedObjectFactory}
+ * A Decorator that invokes the CDI provider within a webapp to decorate objects created by
+ * the contexts {@link org.eclipse.jetty.util.DecoratedObjectFactory}
  * (typically Listeners, Filters and Servlets).
- * The CDI provide is invoked using {@link MethodHandle}s to avoid any CDI instance or dependencies within the server scope.
- * The code invoked is equivalent to:
+ * The CDI provider is invoked using {@link MethodHandle}s to avoid any CDI instance
+ * or dependencies within the server scope. The code invoked is equivalent to:
  * <pre>
  * public &lt;T&gt; T decorate(T o)
  * {
