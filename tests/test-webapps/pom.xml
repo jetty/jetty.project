@@ -41,6 +41,8 @@
     <module>test-http2-webapp</module>
     <module>test-simple-webapp</module>
     <module>test-felix-webapp</module>
-    <module>test-cdi2-webapp</module>
+    <module>test-cdi-common-webapp</module>
+    <module>test-weld-cdi-webapp</module>
+    <module>test-owb-cdi-webapp</module>
   </modules>
 </project>

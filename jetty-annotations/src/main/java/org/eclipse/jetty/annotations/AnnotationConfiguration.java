@@ -175,11 +175,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     /**
      * ServletContainerInitializerOrdering
-     *
-     * A list of classnames of ServletContainerInitializers in the order in which
-     * they are to be called back. One name only in the list can be "*", which is a
+     * <p>Applies an ordering to the {@link ServletContainerInitializer}s for the context, using
+     * the value of the "org.eclipse.jetty.containerInitializerOrder" context attribute.
+     * The attribute value is a list of classnames of ServletContainerInitializers in the order in which
+     * they are to be called. One name only in the list can be "*", which is a
      * wildcard which matches any other ServletContainerInitializer name not already
-     * matched.
+     * matched.</p>
      */
     public class ServletContainerInitializerOrdering
     {

@@ -1,7 +1,10 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Jetty setup to support Weld/CDI2 with WELD inside the webapp
+Deprecated CDI module.  Current depends on cdi-spi.
+
+[tag]
+cdi
 
 [depend]
-cdi2
+cdi-spi
