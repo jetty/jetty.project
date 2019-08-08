@@ -35,7 +35,9 @@ import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
@@ -545,6 +547,10 @@ public class Server extends HandlerWrapper implements Attributes
 
     private HttpServletRequest getHttpServletRequest( ServletRequest servletRequest)
     {
+        if(servletRequest instanceof HttpServletRequestWrapper )
+        {
+            return (HttpServletRequest)servletRequest;
+        }
         if(servletRequest instanceof ServletRequestWrapper )
         {
             return getHttpServletRequest(((ServletRequestWrapper)servletRequest).getRequest());
@@ -554,6 +560,10 @@ public class Server extends HandlerWrapper implements Attributes
 
     private HttpServletResponse getHttpServletResponse( ServletResponse servletResponse)
     {
+        if(servletResponse instanceof HttpServletResponseWrapper )
+        {
+            return (HttpServletResponseWrapper)servletResponse;
+        }
         if(servletResponse instanceof ServletResponseWrapper )
         {
             return getHttpServletResponse(((ServletResponseWrapper)servletResponse).getResponse());

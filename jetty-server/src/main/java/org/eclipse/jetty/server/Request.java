@@ -56,6 +56,7 @@ import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
@@ -2151,6 +2152,10 @@ public class Request implements HttpServletRequest
 
     protected String getRequestURI(ServletRequest servletRequest)
     {
+        if(servletRequest instanceof HttpServletRequestWrapper )
+        {
+            return ((HttpServletRequestWrapper)servletRequest).getRequestURI();
+        }
         if(servletRequest instanceof ServletRequestWrapper)
         {
             return getRequestURI(((ServletRequestWrapper)servletRequest).getRequest());
