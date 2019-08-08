@@ -22,8 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -57,17 +55,19 @@ public class CDITests extends AbstractDistributionTest
             }
         };
 
-        List<Object[]> tests = new ArrayList<>();
+        return Stream.of(
+            // -- Weld --
+            Arguments.of("weld", "cdi2", null),
+            Arguments.of("weld", "cdi-spi", null), // Weld >= 3.1.2
+            Arguments.of("weld", "decorate", null), // Weld >= 3.1.2
+            // Arguments.of("weld", "cdi-decorate", null), // Not supported
 
-        tests.add(new Object[]{"weld", "cdi-spi", null});      // Weld >= 3.1.2
-        tests.add(new Object[]{"weld", "cdi2", null});
-        tests.add(new Object[]{"weld", "decorate", null});     // Weld >= 3.1.2
-        // TODO tests.add(new Object[]{"weld", "cdi-decorate", null}); // Weld > 3.1.2
-        tests.add(new Object[]{"owb", "cdi-spi", removeJettyWebXml});
-        tests.add(new Object[]{"owb", "cdi2", null});
-        // tests.add(new Object[]{"owb", "decorate", null});    // Not supported
-        // tests.add(new Object[]{"owb", "cdi-decorate", null});// Not supported
-        return tests.stream().map(Arguments::of);
+            // -- Apache OpenWebBeans --
+            Arguments.of("owb", "cdi-spi", removeJettyWebXml),
+            Arguments.of("owb", "cdi2", null)
+            // Arguments.of("owb", "decorate", null), // Not supported
+            // Arguments.of("owb", "cdi-decorate", null) // Not supported
+        );
     }
 
     /**
