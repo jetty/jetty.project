@@ -458,6 +458,7 @@
             <configLocation>jetty-checkstyle.xml</configLocation>
             <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
             <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
           </configuration>
           <dependencies>
             <dependency>
