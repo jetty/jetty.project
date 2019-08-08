@@ -59,12 +59,14 @@ public class CDITests extends AbstractDistributionTest
 
         List<Object[]> tests = new ArrayList<>();
 
-        tests.add(new Object[]{"weld", "cdi-spi", null}); // Requires Weld >= 3.1.2
+        tests.add(new Object[]{"weld", "cdi-spi", null});      // Weld >= 3.1.2
         tests.add(new Object[]{"weld", "cdi2", null});
-        tests.add(new Object[]{"weld", "decorate", null}); // Requires Weld >= 3.1.2
+        tests.add(new Object[]{"weld", "decorate", null});     // Weld == 3.1.2
+        // TODO tests.add(new Object[]{"weld", "cdi-decorate", null}); // Weld > 3.1.2
         tests.add(new Object[]{"owb", "cdi-spi", removeJettyWebXml});
         tests.add(new Object[]{"owb", "cdi2", null});
         // tests.add(new Object[]{"owb", "decorate", null});  // Will not be supported
+        // tests.add(new Object[]{"owb", "cdi-decorate", null});  // Will not be supported
         return tests.stream().map(Arguments::of);
     }
 

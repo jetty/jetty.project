@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A {@link ServletContainerInitializer} that introspects for a CDI API
  * implementation within a web application. If the CDI API is found, then
- * a {@link CdiDecorator} is registered as a {@link org.eclipse.jetty.util.Decorator}
+ * a {@link CdiSpiDecorator} is registered as a {@link org.eclipse.jetty.util.Decorator}
  * for the context.
  * @see AnnotationConfiguration.ServletContainerInitializerOrdering
  */
@@ -47,9 +47,31 @@ public class CdiServletContainerInitializer implements ServletContainerInitializ
         {
             ServletContextHandler context = ServletContextHandler.getServletContextHandler(ctx);
             Objects.requireNonNull(context);
-            context.getObjectFactory().addDecorator(new CdiDecorator(context));
-            context.setAttribute(CDI_INTEGRATION_ATTRIBUTE, "CdiDecorator");
-            LOG.info("CdiDecorator enabled in " + ctx);
+
+            String mode = ctx.getInitParameter(CDI_INTEGRATION_ATTRIBUTE);
+            if (mode == null)
+            {
+                mode = (String)context.getServer().getAttribute(CDI_INTEGRATION_ATTRIBUTE);
+                if (mode == null)
+                    mode = CdiSpiDecorator.MODE;
+            }
+
+            switch (mode)
+            {
+                case CdiSpiDecorator.MODE:
+                    context.getObjectFactory().addDecorator(new CdiSpiDecorator(context));
+                    break;
+
+                case CdiDecoratingListener.MODE:
+                    context.addEventListener(new CdiDecoratingListener());
+                    break;
+
+                default:
+                    throw new IllegalStateException(mode);
+            }
+
+            context.setAttribute(CDI_INTEGRATION_ATTRIBUTE, mode);
+            LOG.info(mode + " enabled in " + ctx);
         }
         catch (UnsupportedOperationException e)
         {

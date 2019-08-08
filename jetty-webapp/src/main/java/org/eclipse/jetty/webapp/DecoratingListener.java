@@ -89,13 +89,13 @@ public class DecoratingListener implements ServletContextAttributeListener
         _context = context;
         Objects.requireNonNull(_context);
         _attributeName = attributeName == null ? DECORATOR_ATTRIBUTE : attributeName;
-        checkAndSetAttribute();
+        checkAndSetAttributeName();
         Object decorator = _context.getAttribute(_attributeName);
         if (decorator != null)
             _context.getObjectFactory().addDecorator(asDecorator(decorator));
     }
 
-    protected void checkAndSetAttribute()
+    protected void checkAndSetAttributeName()
     {
         // If not set (by another DecoratingListener), flag the attribute that are
         // listening for.  If more than one DecoratingListener is used then this
