@@ -19,28 +19,19 @@
 package org.eclipse.jetty.webapp;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A ServletContextAttributeListener that listens for a specific context
- * attribute (default "org.eclipse.jetty.webapp.decorator") to obtain a
- * decorator instance from the webapp.  The instance is then either coerced
- * to a Decorator or reflected for decorator compatible methods so it can
- * be added to the {@link WebAppContext#getObjectFactory()} as a
- * {@link Decorator}.
+ * An extended org.eclipse.jetty.servlet.DecoratingListener.
  * The context attribute "org.eclipse.jetty.webapp.DecoratingListener" if
  * not set, is set to the name of the attribute this listener listens for.
  */
 public class DecoratingListener extends org.eclipse.jetty.servlet.DecoratingListener
 {
     public static final String DECORATOR_ATTRIBUTE = "org.eclipse.jetty.webapp.decorator";
-    private static final Logger LOG = Log.getLogger(DecoratingListener.class);
 
     public DecoratingListener()
     {
-        this((String)null);
+        this(DECORATOR_ATTRIBUTE);
     }
 
     public DecoratingListener(String attributeName)
@@ -50,7 +41,7 @@ public class DecoratingListener extends org.eclipse.jetty.servlet.DecoratingList
 
     public DecoratingListener(ServletContextHandler context)
     {
-        this(context, null);
+        this(context, DECORATOR_ATTRIBUTE);
     }
 
     public DecoratingListener(ServletContextHandler context, String attributeName)

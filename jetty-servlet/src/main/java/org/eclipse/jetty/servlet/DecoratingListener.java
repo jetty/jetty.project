@@ -27,19 +27,16 @@ import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 
 import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A ServletContextAttributeListener that listens for a context
  * attribute to obtain a decorator instance.  The instance is then either
- * coerced to a Decorator or reflected for decorator compatible methods so it can
- * be added to the {@link ServletContextHandler#getObjectFactory()} as a
+ * coerced to a {@link Decorator} or reflected for decorator compatible methods
+ * so it can be added to the {@link ServletContextHandler#getObjectFactory()} as a
  * {@link Decorator}.
  */
 public class DecoratingListener implements ServletContextAttributeListener
 {
-    private static final Logger LOG = Log.getLogger(DecoratingListener.class);
     private static final MethodType DECORATE_TYPE;
     private static final MethodType DESTROY_TYPE;
 
@@ -48,7 +45,7 @@ public class DecoratingListener implements ServletContextAttributeListener
         try
         {
             DECORATE_TYPE = MethodType.methodType(Object.class, Object.class);
-            DESTROY_TYPE = MethodType.methodType(Void.TYPE, Object.class);
+            DESTROY_TYPE = MethodType.methodType(void.class, Object.class);
 
             // Check we have the right MethodTypes for the current Decorator signatures
             MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -100,7 +97,7 @@ public class DecoratingListener implements ServletContextAttributeListener
             MethodHandles.Lookup lookup = MethodHandles.lookup();
             MethodHandle decorate = lookup.findVirtual(clazz, "decorate", DECORATE_TYPE);
             MethodHandle destroy = lookup.findVirtual(clazz, "destroy", DESTROY_TYPE);
-            return new DynamicDecorator(decorate, destroy, object);
+            return new DynamicDecorator(object, decorate, destroy);
         }
         catch (Exception e)
         {
@@ -137,15 +134,15 @@ public class DecoratingListener implements ServletContextAttributeListener
 
     private static class DynamicDecorator implements Decorator
     {
+        private final Object _object;
         private final MethodHandle _decorate;
         private final MethodHandle _destroy;
-        private final Object _object;
 
-        private DynamicDecorator(MethodHandle decorate, MethodHandle destroy, Object object)
+        private DynamicDecorator(Object object, MethodHandle decorate, MethodHandle destroy)
         {
+            _object = object;
             _decorate = decorate;
             _destroy = destroy;
-            _object = object;
         }
 
         @Override
