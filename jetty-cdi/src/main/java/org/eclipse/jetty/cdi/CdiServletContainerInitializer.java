@@ -33,8 +33,8 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>A {@link ServletContainerInitializer} that introspects for a CDI API
  * implementation within a web application and applies an integration
  * mode if CDI is found.  CDI integration modes can be selected per webapp with
- * the "jetty.cdi.mode" init parameter or default to the mode set by the
- * "jetty.cdi.mode" server attribute.  Supported modes are:</p>
+ * the "org.eclipse.jetty.cdi" init parameter or default to the mode set by the
+ * "org.eclipse.jetty.cdi" server attribute.  Supported modes are:</p>
  * <dl>
  * <dt>CdiSpiDecorator</dt>
  *     <dd>Jetty will call the CDI SPI within the webapp to decorate objects (default).</dd>
