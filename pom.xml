@@ -37,7 +37,7 @@
     <junit.version>5.5.1</junit.version>
     <maven.version>3.6.0</maven.version>
     <maven.resolver.version>1.3.1</maven.resolver.version>
-    <weld.version>2.4.5.Final</weld.version>
+    <weld.version>3.1.2.Final</weld.version>
     <jetty.perf-helper.version>1.0.5</jetty.perf-helper.version>
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
@@ -63,7 +63,7 @@
     otherwise depending on Spring Boot might be chicken and egg issue :) -->
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <annotation-api.version>1.3.4</annotation-api.version>
-    <jackson-databind.version>2.9.7</jackson-databind.version>
+    <jackson-databind.version>2.9.9</jackson-databind.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
 
@@ -304,7 +304,7 @@
             <id>attach-sources</id>
             <phase>process-classes</phase>
             <goals>
-              <goal>jar</goal>
+              <goal>jar-no-fork</goal>
             </goals>
             <configuration>
               <archive>
@@ -449,7 +449,7 @@
             <dependency>
               <groupId>org.eclipse.jetty</groupId>
               <artifactId>build-resources</artifactId>
-              <version>10.0.0-alpha0</version>
+              <version>${project.version}</version>
             </dependency>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
@@ -546,6 +546,11 @@
               </manifestEntries>
             </archive>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>1.6</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1261,6 +1266,7 @@
               </execution>
             </executions>
           </plugin>
+          <!-- already part of the release-jetty.sh script
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
@@ -1275,6 +1281,7 @@
               </execution>
             </executions>
           </plugin>
+          -->
         </plugins>
       </build>
     </profile>

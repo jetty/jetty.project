@@ -127,6 +127,16 @@ public class DistributionTester
         return start(Arrays.asList(args));
     }
 
+    public Path getJettyBase()
+    {
+        return config.jettyBase;
+    }
+
+    public Path getJettyHome()
+    {
+        return config.jettyHome;
+    }
+
     /**
      * Start the distribution with the arguments
      *

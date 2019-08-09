@@ -1,20 +1,23 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Jetty setup to support Weld/CDI2 with WELD inside the webapp
+Deprecated support for CDI integrations inside the webapp.
+This module does not provide CDI, but configures jetty so that a CDI implementation
+can enable itself as a decorator for Filters, Servlets and Listeners.
+This modules uses the deprecated technique of exposing private Jetty decorate APIs to the CDI
+implementation in the webapp.
+
+[tag]
+cdi
+
+[provides]
+cdi-mode
 
 [depend]
-annotations
+deploy
 
 [lib]
 lib/apache-jsp/org.mortbay.jasper.apache-el-*.jar
 
-[ini]
-jetty.webapp.addServerClasses+=,-org.eclipse.jetty.util.Decorator,-org.eclipse.jetty.util.DecoratedObjectFactory
-jetty.webapp.addServerClasses+=,-org.eclipse.jetty.server.handler.ContextHandler.,-org.eclipse.jetty.server.handler.ContextHandler,-org.eclipse.jetty.servlet.ServletContextHandler
-
-
-[license]
-Weld is an open source project hosted on Github and released under the Apache 2.0 license.
-http://weld.cdi-spec.org/
-http://www.apache.org/licenses/LICENSE-2.0.html
+[xml]
+etc/cdi/jetty-cdi2.xml
