@@ -30,11 +30,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A Decorator invokes a CDI provider within
- * a webapplication to decorate objects created by the contexts {@link org.eclipse.jetty.util.DecoratedObjectFactory}
+ * A Decorator that invokes the CDI provider within a webapp to decorate objects created by
+ * the contexts {@link org.eclipse.jetty.util.DecoratedObjectFactory}
  * (typically Listeners, Filters and Servlets).
- * The CDI provide is invoked using {@link MethodHandle}s to avoid any CDI instance or dependencies within the server scope.
- * The code invoked is equivalent to:
+ * The CDI provider is invoked using {@link MethodHandle}s to avoid any CDI instance
+ * or dependencies within the server scope. The code invoked is equivalent to:
  * <pre>
  * public &lt;T&gt; T decorate(T o)
  * {
@@ -45,9 +45,10 @@ import org.eclipse.jetty.util.log.Logger;
  * }
  * </pre>
  */
-public class CdiDecorator implements Decorator
+public class CdiSpiDecorator implements Decorator
 {
     private static final Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
+    public static final String MODE = "CdiSpiDecorator";
 
     private final ServletContextHandler _context;
     private final Map<Object, Decorated> _decorated = new HashMap<>();
@@ -61,7 +62,7 @@ public class CdiDecorator implements Decorator
     private final MethodHandle _dispose;
     private final MethodHandle _release;
 
-    public CdiDecorator(ServletContextHandler context) throws UnsupportedOperationException
+    public CdiSpiDecorator(ServletContextHandler context) throws UnsupportedOperationException
     {
         _context = context;
         ClassLoader classLoader = _context.getClassLoader();

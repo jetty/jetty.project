@@ -10,6 +10,9 @@ implementation in the webapp.
 [tag]
 cdi
 
+[provides]
+cdi-mode
+
 [depend]
 deploy
 
