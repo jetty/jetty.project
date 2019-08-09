@@ -29,6 +29,21 @@ public class HttpCookie
     private static final String __COOKIE_DELIM = "\",;\\ \t";
     private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
 
+    public enum SameSite
+    {
+        EXCLUDED("Excluded"), NONE("None"), STRICT("Strict"), LAX("Lax");
+
+        private String attributeValue;
+        SameSite(String attributeValue) {
+            this.attributeValue = attributeValue;
+        }
+
+        @Override
+        public String toString(){
+            return this.attributeValue;
+        }
+    }
+
     private final String _name;
     private final String _value;
     private final String _comment;
@@ -39,6 +54,7 @@ public class HttpCookie
     private final int _version;
     private final boolean _httpOnly;
     private final long _expiration;
+    private final SameSite _sameSite;
 
     public HttpCookie(String name, String value)
     {
@@ -62,6 +78,11 @@ public class HttpCookie
 
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version)
     {
+        this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, SameSite.EXCLUDED);
+    }
+
+    public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, SameSite sameSite)
+    {
         _name = name;
         _value = value;
         _domain = domain;
@@ -72,6 +93,7 @@ public class HttpCookie
         _comment = comment;
         _version = version;
         _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
+        _sameSite = sameSite;
     }
 
     public HttpCookie(String setCookie)
@@ -92,6 +114,8 @@ public class HttpCookie
         _comment = cookie.getComment();
         _version = cookie.getVersion();
         _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
+        // TODO support for SameSite values has not yet been added to java.net.HttpCookie
+        _sameSite = SameSite.EXCLUDED;
     }
 
     /**
@@ -156,6 +180,14 @@ public class HttpCookie
     public int getVersion()
     {
         return _version;
+    }
+
+    /**
+     * @return the cookie SameSite enum attribute
+     */
+    public SameSite getSameSite()
+    {
+        return _sameSite;
     }
 
     /**
@@ -366,6 +398,12 @@ public class HttpCookie
             buf.append("; Secure");
         if (_httpOnly)
             buf.append("; HttpOnly");
+        if (_sameSite != SameSite.EXCLUDED)
+        {
+            buf.append("; SameSite=");
+            buf.append(_sameSite.toString());
+        }
+
         return buf.toString();
     }
 

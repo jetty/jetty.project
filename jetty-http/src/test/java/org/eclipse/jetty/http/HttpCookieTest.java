@@ -90,6 +90,10 @@ public class HttpCookieTest
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1);
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", httpCookie.getRFC6265SetCookie());
 
+
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.NONE);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", httpCookie.getRFC6265SetCookie());
+
         String[] badNameExamples = {
             "\"name\"",
             "name\t",
