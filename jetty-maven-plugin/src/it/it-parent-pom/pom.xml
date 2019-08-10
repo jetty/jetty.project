@@ -31,8 +31,6 @@
         <version>3.8.1</version>
       </dependency>
       <dependency>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-perf-helper</artifactId>
         <version>@jetty.perf-helper.version@</version>
