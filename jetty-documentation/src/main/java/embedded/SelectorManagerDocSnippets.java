@@ -99,9 +99,9 @@ public class SelectorManagerDocSnippets
     public void echoWrong()
     {
         // tag::echo-wrong[]
-        class EchoConnection extends AbstractConnection implements Callback
+        class WrongEchoConnection extends AbstractConnection implements Callback
         {
-            public EchoConnection(EndPoint endp, Executor executor)
+            public WrongEchoConnection(EndPoint endp, Executor executor)
             {
                 super(endp, executor);
             }
@@ -204,19 +204,25 @@ public class SelectorManagerDocSnippets
                                 // If the write completed, continue to fill.
                                 continue;
                             }
+                            else
+                            {
+                                // The write is pending, return to wait for completion.
+                                return;
+                            }
                         }
                         else if (filled == 0)
                         {
                             // No more bytes to read, declare
                             // again interest for fill events.
                             fillInterested();
+                            return;
                         }
                         else
                         {
                             // The other peer closed the connection.
                             close();
+                            return;
                         }
-                        break;
                     }
                 }
                 catch (Throwable x)
