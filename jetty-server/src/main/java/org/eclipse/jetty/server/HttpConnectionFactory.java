@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -32,7 +34,9 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
-    private boolean _recordHttpComplianceViolations = false;
+    private boolean _recordHttpComplianceViolations;
+    private boolean _useInputDirectBuffers;
+    private boolean _useOutputDirectBuffers;
 
     public HttpConnectionFactory()
     {
@@ -42,10 +46,10 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     public HttpConnectionFactory(@Name("config") HttpConfiguration config)
     {
         super(HttpVersion.HTTP_1_1.asString());
-        _config = config;
-        if (config == null)
-            throw new IllegalArgumentException("Null HttpConfiguration");
+        _config = Objects.requireNonNull(config);
         addBean(_config);
+        setUseInputDirectByteBuffers(_config.isUseInputDirectByteBuffers());
+        setUseOutputDirectByteBuffers(_config.isUseOutputDirectByteBuffers());
     }
 
     @Override
@@ -59,15 +63,37 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _recordHttpComplianceViolations;
     }
 
-    @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint)
-    {
-        HttpConnection conn = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
-        return configure(conn, connector, endPoint);
-    }
-
     public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
     {
         this._recordHttpComplianceViolations = recordHttpComplianceViolations;
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return _useInputDirectBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectBuffers)
+    {
+        _useInputDirectBuffers = useInputDirectBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectBuffers)
+    {
+        _useOutputDirectBuffers = useOutputDirectBuffers;
+    }
+
+    @Override
+    public Connection newConnection(Connector connector, EndPoint endPoint)
+    {
+        HttpConnection connection = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
+        connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+        connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
+        return configure(connection, connector, endPoint);
     }
 }

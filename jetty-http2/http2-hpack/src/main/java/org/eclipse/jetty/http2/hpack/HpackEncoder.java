@@ -34,9 +34,9 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
 import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -354,9 +354,8 @@ public class HpackEncoder
 
         if (_debug)
         {
-            int e = buffer.position();
             if (LOG.isDebugEnabled())
-                LOG.debug("encode {}:'{}' to '{}'", encoding, field, TypeUtil.toHexString(buffer.array(), buffer.arrayOffset() + p, e - p));
+                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString(buffer));
         }
     }
 

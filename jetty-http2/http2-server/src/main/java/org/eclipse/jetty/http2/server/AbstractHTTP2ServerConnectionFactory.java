@@ -60,6 +60,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
+    private boolean _useInputDirectBuffers;
+    private boolean _useOutputDirectBuffers;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -78,6 +80,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         addBean(httpConfiguration);
         setInputBufferSize(Frame.DEFAULT_MAX_LENGTH + Frame.HEADER_LENGTH);
+        setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
+        setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());
     }
 
     @ManagedAttribute("The HPACK dynamic table maximum size")
@@ -178,6 +182,26 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return _useInputDirectBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectBuffers)
+    {
+        _useInputDirectBuffers = useInputDirectBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectBuffers)
+    {
+        _useOutputDirectBuffers = useOutputDirectBuffers;
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
@@ -200,7 +224,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
-        Generator generator = new Generator(connector.getByteBufferPool(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
+        Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
@@ -222,6 +246,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
             endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
+        connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+        connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addListener(sessionContainer);
         return configure(connection, connector, endPoint);
     }

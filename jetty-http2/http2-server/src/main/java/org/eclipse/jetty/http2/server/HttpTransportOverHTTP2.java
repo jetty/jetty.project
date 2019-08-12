@@ -58,14 +58,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         this.connection = connection;
     }
 
-    @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        // Because sent buffers are passed directly to the endpoint without
-        // copying we can defer to the endpoint
-        return connection.getEndPoint().isOptimizedForDirectBuffers();
-    }
-
     public IStream getStream()
     {
         return stream;

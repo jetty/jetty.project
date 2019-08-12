@@ -73,6 +73,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final boolean _recordHttpComplianceViolations;
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
+    private boolean _useInputDirectBuffers;
+    private boolean _useOutputDirectBuffers;
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -165,12 +167,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return getEndPoint().isOptimizedForDirectBuffers();
-    }
-
-    @Override
     public long getMessagesIn()
     {
         return getHttpChannel().getRequests();
@@ -180,6 +176,26 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public long getMessagesOut()
     {
         return getHttpChannel().getRequests();
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return _useInputDirectBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectBuffers)
+    {
+        _useInputDirectBuffers = useInputDirectBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectBuffers)
+    {
+        _useOutputDirectBuffers = useOutputDirectBuffers;
     }
 
     @Override
@@ -224,7 +240,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public ByteBuffer getRequestBuffer()
     {
         if (_requestBuffer == null)
-            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), _config.isUseDirectByteBuffers());
+        {
+            boolean useDirectBuffers = isUseInputDirectByteBuffers();
+            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), useDirectBuffers);
+        }
         return _requestBuffer;
     }
 
@@ -737,6 +756,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (_callback == null)
                 throw new IllegalStateException();
 
+            boolean useDirectBuffers = isUseOutputDirectByteBuffers();
             ByteBuffer chunk = _chunk;
             while (true)
             {
@@ -757,19 +777,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), _config.isUseDirectByteBuffers());
+                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), useDirectBuffers);
                         continue;
                     }
                     case NEED_CHUNK:
                     {
-                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, _config.isUseDirectByteBuffers());
+                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectBuffers);
                         continue;
                     }
                     case NEED_CHUNK_TRAILER:
                     {
                         if (_chunk != null)
                             _bufferPool.release(_chunk);
-                        chunk = _chunk = _bufferPool.acquire(_config.getResponseHeaderSize(), _config.isUseDirectByteBuffers());
+                        chunk = _chunk = _bufferPool.acquire(_config.getResponseHeaderSize(), useDirectBuffers);
                         continue;
                     }
                     case FLUSH:

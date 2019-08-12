@@ -287,6 +287,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, this);
             transport.setStream(stream);
             channel = newServerHttpChannelOverHTTP2(connector, httpConfig, transport);
+            channel.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
             if (LOG.isDebugEnabled())
                 LOG.debug("Creating channel {} for {}", channel, this);
         }

@@ -34,8 +34,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * HTTP Configuration.
@@ -51,8 +49,6 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("HTTP Configuration")
 public class HttpConfiguration implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(HttpConfiguration.class);
-
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
     private final List<Customizer> _customizers = new CopyOnWriteArrayList<>();
     private final Trie<Boolean> _formEncodedMethods = new TreeTrie<>();
@@ -71,7 +67,8 @@ public class HttpConfiguration implements Dumpable
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
-    private boolean _useDirectByteBuffers = false;
+    private boolean _useInputDirectByteBuffers = true;
+    private boolean _useOutputDirectByteBuffers = true;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
@@ -128,6 +125,7 @@ public class HttpConfiguration implements Dumpable
         _requestHeaderSize = config._requestHeaderSize;
         _responseHeaderSize = config._responseHeaderSize;
         _headerCacheSize = config._headerCacheSize;
+        _headerCacheCaseSensitive = config._headerCacheCaseSensitive;
         _secureScheme = config._secureScheme;
         _securePort = config._securePort;
         _idleTimeout = config._idleTimeout;
@@ -137,9 +135,11 @@ public class HttpConfiguration implements Dumpable
         _delayDispatchUntilContent = config._delayDispatchUntilContent;
         _persistentConnectionsEnabled = config._persistentConnectionsEnabled;
         _maxErrorDispatches = config._maxErrorDispatches;
-        _useDirectByteBuffers = config._useDirectByteBuffers;
+        _useInputDirectByteBuffers = config._useInputDirectByteBuffers;
+        _useOutputDirectByteBuffers = config._useOutputDirectByteBuffers;
         _minRequestDataRate = config._minRequestDataRate;
         _minResponseDataRate = config._minResponseDataRate;
+        _httpCompliance = config._httpCompliance;
         _requestCookieCompliance = config._requestCookieCompliance;
         _responseCookieCompliance = config._responseCookieCompliance;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
@@ -329,17 +329,31 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param useDirectByteBuffers if true, use direct byte buffers for requests
+     * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
      */
-    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        _useDirectByteBuffers = useDirectByteBuffers;
+        _useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
-    @ManagedAttribute("Whether to use direct byte buffers for requests")
-    public boolean isUseDirectByteBuffers()
+    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
+    public boolean isUseInputDirectByteBuffers()
     {
-        return _useDirectByteBuffers;
+        return _useInputDirectByteBuffers;
+    }
+
+    /**
+     * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
+     */
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectByteBuffers;
     }
 
     /**
@@ -557,7 +571,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return The CookieCompliance used for parsing request <code>Cookie</code> headers.
+     * @return The CookieCompliance used for parsing request {@code Cookie} headers.
      * @see #getResponseCookieCompliance()
      */
     public CookieCompliance getRequestCookieCompliance()
@@ -566,7 +580,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return The CookieCompliance used for generating response <code>Set-Cookie</code> headers
+     * @return The CookieCompliance used for generating response {@code Set-Cookie} headers
      * @see #getRequestCookieCompliance()
      */
     public CookieCompliance getResponseCookieCompliance()
@@ -575,8 +589,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param cookieCompliance The CookieCompliance to use for parsing request <code>Cookie</code> headers.
-     * @see #setRequestCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for parsing request {@code Cookie} headers.
      */
     public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
     {
@@ -584,8 +597,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param cookieCompliance The CookieCompliance to use for generating response <code>Set-Cookie</code> headers
-     * @see #setResponseCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for generating response {@code Set-Cookie} headers
      */
     public void setResponseCookieCompliance(CookieCompliance cookieCompliance)
     {

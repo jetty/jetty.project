@@ -55,6 +55,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
 
     private boolean _expect100Continue;
     private boolean _delayedUntilContent;
+    private boolean _useOutputDirectBuffers;
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
     {
@@ -64,6 +65,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     protected IStream getStream()
     {
         return getHttpTransport().getStream();
+    }
+
+    @Override
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectBuffers)
+    {
+        _useOutputDirectBuffers = useOutputDirectBuffers;
     }
 
     @Override

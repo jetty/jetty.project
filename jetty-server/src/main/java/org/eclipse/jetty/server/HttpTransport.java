@@ -71,11 +71,4 @@ public interface HttpTransport
      * @param failure the failure that caused the abort.
      */
     void abort(Throwable failure);
-
-    /**
-     * Is the underlying transport optimized for DirectBuffer usage
-     *
-     * @return True if direct buffers can be used optimally.
-     */
-    boolean isOptimizedForDirectBuffers();
 }
