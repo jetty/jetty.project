@@ -68,6 +68,7 @@ public class ClusteredSessionMigrationTest extends AbstractTestBase
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        cacheFactory.setSaveOnCreate(true); //immediately save the session when it is created so node2 can see it
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
 

@@ -114,7 +114,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                     scopeListener.setExitSynchronizer(synchronizer);
                     ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
-                    assertEquals("init", response1.getContentAsString());
+                    assertTrue(response1.getContentAsString().startsWith("init"));
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
 
@@ -147,7 +147,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                         request.header("Cookie", sessionCookie); //use existing session
                         ContentResponse response2 = request.send();
                         assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-                        assertEquals("test", response2.getContentAsString());
+                        assertTrue(response2.getContentAsString().startsWith("test"));
                         //ensure request has finished being handled
                         synchronizer.await(5, TimeUnit.SECONDS);
                         Thread.sleep(requestInterval);
@@ -248,11 +248,11 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
         {
             if (session != null)
             {
-                writer.print(session.getAttribute("test"));
+                writer.println(session.getAttribute("test"));
             }
             else
             {
-                writer.print("null");
+                writer.println("null");
             }
         }
     }
