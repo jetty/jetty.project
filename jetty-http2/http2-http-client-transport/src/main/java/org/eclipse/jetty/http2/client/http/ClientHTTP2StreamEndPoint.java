@@ -56,7 +56,6 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     @Override
     public void onFailure(Throwable failure, Callback callback)
     {
-        // TODO
-        callback.succeeded();
+        callback.failed(failure);
     }
 }

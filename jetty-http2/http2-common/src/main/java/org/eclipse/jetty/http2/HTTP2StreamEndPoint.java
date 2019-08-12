@@ -59,15 +59,13 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        // TODO
-        return null;
+        return stream.getSession().getLocalAddress();
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        // TODO
-        return null;
+        return stream.getSession().getRemoteAddress();
     }
 
     @Override

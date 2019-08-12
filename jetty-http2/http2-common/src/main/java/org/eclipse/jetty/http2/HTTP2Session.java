@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -888,6 +889,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         return streams.get(streamId);
     }
 
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return endPoint.getLocalAddress();
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return endPoint.getRemoteAddress();
+    }
+
     @ManagedAttribute(value = "The flow control send window", readonly = true)
     public int getSendWindow()
     {
@@ -1560,6 +1573,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             complete();
         }
 
@@ -1580,6 +1595,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             complete();
         }
 
@@ -1616,6 +1633,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             complete();
         }
 
@@ -1636,6 +1655,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             complete();
         }
 

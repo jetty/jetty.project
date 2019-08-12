@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.net.URI;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpContent;
@@ -74,61 +75,43 @@ public class HttpSenderOverHTTP2 extends HttpSender
         if (isTunnel)
         {
             headersFrame = new HeadersFrame(metaData, null, false);
-            promise = new HeadersPromise(request, callback)
-            {
-                @Override
-                public void succeeded(Stream stream)
-                {
-                    super.succeeded(stream);
-                    callback.succeeded();
-                }
-            };
+            promise = new HeadersPromise(request, callback, stream -> callback.succeeded());
         }
         else
         {
             if (content.hasContent())
             {
                 headersFrame = new HeadersFrame(metaData, null, false);
-                promise = new HeadersPromise(request, callback)
+                promise = new HeadersPromise(request, callback, stream ->
                 {
-                    @Override
-                    public void succeeded(Stream stream)
+                    if (expects100Continue(request))
                     {
-                        super.succeeded(stream);
-                        if (expects100Continue(request))
-                        {
-                            // Don't send the content yet.
-                            callback.succeeded();
-                        }
-                        else
-                        {
-                            boolean advanced = content.advance();
-                            boolean lastContent = content.isLast();
-                            if (advanced || lastContent)
-                                sendContent(stream, content, trailerSupplier, callback);
-                            else
-                                callback.succeeded();
-                        }
+                        // Don't send the content yet.
+                        callback.succeeded();
                     }
-                };
+                    else
+                    {
+                        boolean advanced = content.advance();
+                        boolean lastContent = content.isLast();
+                        if (advanced || lastContent)
+                            sendContent(stream, content, trailerSupplier, callback);
+                        else
+                            callback.succeeded();
+                    }
+                });
             }
             else
             {
                 HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
                 boolean endStream = trailers == null || trailers.size() <= 0;
                 headersFrame = new HeadersFrame(metaData, null, endStream);
-                promise = new HeadersPromise(request, callback)
+                promise = new HeadersPromise(request, callback, stream ->
                 {
-                    @Override
-                    public void succeeded(Stream stream)
-                    {
-                        super.succeeded(stream);
-                        if (endStream)
-                            callback.succeeded();
-                        else
-                            sendTrailers(stream, trailers, callback);
-                    }
-                };
+                    if (endStream)
+                        callback.succeeded();
+                    else
+                        sendTrailers(stream, trailers, callback);
+                });
             }
         }
         // TODO optimize the send of HEADERS and DATA frames.
@@ -194,15 +177,17 @@ public class HttpSenderOverHTTP2 extends HttpSender
         stream.headers(trailersFrame, callback);
     }
 
-    private abstract class HeadersPromise implements Promise<Stream>
+    private static class HeadersPromise implements Promise<Stream>
     {
         private final HttpRequest request;
         private final Callback callback;
+        private final Consumer<Stream> succeed;
 
-        private HeadersPromise(HttpRequest request, Callback callback)
+        private HeadersPromise(HttpRequest request, Callback callback, Consumer<Stream> succeed)
         {
             this.request = request;
             this.callback = callback;
+            this.succeed = succeed;
         }
 
         @Override
@@ -211,6 +196,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
             long idleTimeout = request.getIdleTimeout();
             if (idleTimeout >= 0)
                 stream.setIdleTimeout(idleTimeout);
+            succeed.accept(stream);
         }
 
         @Override
