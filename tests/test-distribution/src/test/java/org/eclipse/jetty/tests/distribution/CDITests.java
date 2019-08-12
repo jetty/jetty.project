@@ -57,14 +57,12 @@ public class CDITests extends AbstractDistributionTest
 
         return Stream.of(
             // -- Weld --
-            Arguments.of("weld", "cdi2", null),
             Arguments.of("weld", "cdi-spi", null), // Weld >= 3.1.2
             Arguments.of("weld", "decorate", null), // Weld >= 3.1.2
             // TODO Arguments.of("weld", "cdi-decorate", null), // Weld >= 3.1.3
 
             // -- Apache OpenWebBeans --
-            Arguments.of("owb", "cdi-spi", removeJettyWebXml),
-            Arguments.of("owb", "cdi2", null)
+            Arguments.of("owb", "cdi-spi", removeJettyWebXml)
             // Arguments.of("owb", "decorate", null), // Not supported
             // Arguments.of("owb", "cdi-decorate", null) // Not supported
         );
