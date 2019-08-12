@@ -925,7 +925,7 @@
         <plugin>
           <groupId>com.github.madgnome</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>0.4</version>
+          <version>0.6</version>
         </plugin>
       </plugins>
     </pluginManagement>
