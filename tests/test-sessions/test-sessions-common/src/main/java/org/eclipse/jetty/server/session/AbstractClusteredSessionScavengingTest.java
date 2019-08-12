@@ -225,7 +225,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             if ("init".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                session.setAttribute("init", "init");
+                session.setAttribute("test", "init");
                 sendResult(session, httpServletResponse.getWriter());
             }
             else
