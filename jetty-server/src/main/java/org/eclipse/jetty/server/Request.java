@@ -192,7 +192,6 @@ public class Request implements HttpServletRequest
     }
 
     private final HttpChannel _channel;
-    private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
     private MetaData.Request _metaData;
     private String _originalUri;
@@ -229,6 +228,7 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiParts _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
+    private List<ServletRequestAttributeListener> _requestAttributeListeners;
 
     public Request(HttpChannel channel, HttpInput input)
     {
@@ -349,9 +349,19 @@ public class Request implements HttpServletRequest
     public void addEventListener(final EventListener listener)
     {
         if (listener instanceof ServletRequestAttributeListener)
+        {
+            if (_requestAttributeListeners == null)
+                _requestAttributeListeners = new ArrayList<>();
             _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
+        }
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
+    }
+
+    public void removeEventListener(final EventListener listener)
+    {
+        if (_requestAttributeListeners != null)
+            _requestAttributeListeners.remove(listener);
     }
 
     private MultiMap<String> getParameters()
@@ -1771,6 +1781,8 @@ public class Request implements HttpServletRequest
         _multiParts = null;
         _remote = null;
         _input.recycle();
+        if (_requestAttributeListeners != null)
+            _requestAttributeListeners.clear();
     }
 
     /*
@@ -1784,7 +1796,7 @@ public class Request implements HttpServletRequest
         if (_attributes != null)
             _attributes.removeAttribute(name);
 
-        if (oldValue != null && !_requestAttributeListeners.isEmpty())
+        if (oldValue != null && _requestAttributeListeners != null)
         {
             final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context, this, name, oldValue);
             for (ServletRequestAttributeListener listener : _requestAttributeListeners)
@@ -1792,11 +1804,6 @@ public class Request implements HttpServletRequest
                 listener.attributeRemoved(event);
             }
         }
-    }
-
-    public void removeEventListener(final EventListener listener)
-    {
-        _requestAttributeListeners.remove(listener);
     }
 
     public void setAsyncSupported(boolean supported, String source)
@@ -1824,7 +1831,7 @@ public class Request implements HttpServletRequest
             _attributes = new AttributesMap();
         _attributes.setAttribute(name, value);
 
-        if (!_requestAttributeListeners.isEmpty())
+        if (_requestAttributeListeners != null)
         {
             final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context, this, name, oldValue == null ? value : oldValue);
             for (ServletRequestAttributeListener l : _requestAttributeListeners)
