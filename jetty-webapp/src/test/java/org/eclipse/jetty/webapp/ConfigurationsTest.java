@@ -19,6 +19,7 @@
 package org.eclipse.jetty.webapp;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toList;
@@ -32,6 +33,12 @@ public class ConfigurationsTest
 {
     @AfterEach
     public void tearDown()
+    {
+        Configurations.cleanKnown();
+    }
+
+    @BeforeEach
+    public void setup()
     {
         Configurations.cleanKnown();
     }

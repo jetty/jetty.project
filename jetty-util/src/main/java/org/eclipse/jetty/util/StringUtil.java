@@ -23,9 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 /**
  * Fast String Utilities.
  *
@@ -36,8 +33,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class StringUtil
 {
-    private static final Logger LOG = Log.getLogger(StringUtil.class);
-
     private static final Trie<String> CHARSETS = new ArrayTrie<>(256);
 
     public static final String ALL_INTERFACES = "0.0.0.0";
@@ -481,7 +476,6 @@ public class StringUtil
         }
         catch (UnsupportedEncodingException e)
         {
-            LOG.warn(e);
             throw new IllegalArgumentException(e);
         }
     }
@@ -679,7 +673,6 @@ public class StringUtil
         }
         catch (Exception e)
         {
-            LOG.warn(e);
             return s.getBytes();
         }
     }

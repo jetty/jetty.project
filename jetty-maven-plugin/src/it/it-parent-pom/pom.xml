@@ -31,11 +31,6 @@
         <version>3.8.1</version>
       </dependency>
       <dependency>
-        <groupId>org.jboss.weld.servlet</groupId>
-        <artifactId>weld-servlet</artifactId>
-        <version>@weld.version@</version>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-perf-helper</artifactId>
         <version>@jetty.perf-helper.version@</version>
@@ -144,6 +139,16 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
           <version>@maven.war.plugin.version@</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>@maven.install.plugin.version@</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>@maven.deploy.plugin.version@</version>
         </plugin>
       </plugins>
     </pluginManagement>

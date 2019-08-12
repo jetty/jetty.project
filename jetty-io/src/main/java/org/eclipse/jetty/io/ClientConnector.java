@@ -274,7 +274,8 @@ public class ClientConnector extends ContainerLifeCycle
                 LOG.debug("Could not accept {}", channel);
             safeClose(channel);
             Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
-            promise.failed(failure);
+            if (promise != null)
+                promise.failed(failure);
         }
     }
 
@@ -301,7 +302,8 @@ public class ClientConnector extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("Could not connect to {}", context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY));
         Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
-        promise.failed(failure);
+        if (promise != null)
+            promise.failed(failure);
     }
 
     protected class ClientSelectorManager extends SelectorManager
