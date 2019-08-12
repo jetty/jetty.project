@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -76,6 +77,8 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
         TestServlet servlet1 = new TestServlet();
         ServletHolder holder1 = new ServletHolder(servlet1);
         ServletContextHandler context = server1.addContext(contextPath);
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        context.addEventListener(scopeListener);
         TestSessionListener listener1 = new TestSessionListener();
         context.getSessionHandler().addEventListener(listener1);
         context.addServlet(holder1, servletMapping);
@@ -93,6 +96,8 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             ((AbstractSessionDataStoreFactory)storeFactory2).setSavePeriodSec(0); //always save when the session exits
             TestServer server2 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
             ServletContextHandler context2 = server2.addContext(contextPath);
+            TestContextScopeListener scopeListener2 = new TestContextScopeListener();
+            context2.addEventListener(scopeListener2);
             context2.addServlet(TestServlet.class, servletMapping);
             SessionHandler m2 = context2.getSessionHandler();
 
@@ -105,11 +110,17 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                 try
                 {
                     // Perform one request to server1 to create a session
+                    CountDownLatch synchronizer = new CountDownLatch(1);
+                    scopeListener.setExitSynchronizer(synchronizer);
                     ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
-                    assertEquals("test", response1.getContentAsString());
+                    assertEquals("init", response1.getContentAsString());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
+
+                    //ensure request has finished being handled
+                    synchronizer.await(5, TimeUnit.SECONDS);
+                    
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsCurrent());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsMax());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsTotal());
@@ -130,11 +141,15 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                     long time = start;
                     while (time < end)
                     {
+                        synchronizer = new CountDownLatch(1);
+                        scopeListener2.setExitSynchronizer(synchronizer);
                         Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1));
                         request.header("Cookie", sessionCookie); //use existing session
                         ContentResponse response2 = request.send();
                         assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
                         assertEquals("test", response2.getContentAsString());
+                        //ensure request has finished being handled
+                        synchronizer.await(5, TimeUnit.SECONDS);
                         Thread.sleep(requestInterval);
                         assertSessionCounts(1, 1, 1, m2);
                         time = System.currentTimeMillis();
@@ -210,7 +225,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             if ("init".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                session.setAttribute("test", "test");
+                session.setAttribute("init", "init");
                 sendResult(session, httpServletResponse.getWriter());
             }
             else
