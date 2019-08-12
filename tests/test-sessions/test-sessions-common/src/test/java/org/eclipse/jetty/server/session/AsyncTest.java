@@ -292,10 +292,11 @@ public class AsyncTest
 
         server.start();
         int port = server.getPort();
-
+        HttpClient client = new HttpClient();
+        
         try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
         {
-            HttpClient client = new HttpClient();
+            
             client.start();
             String url = "http://localhost:" + port + "/ctxA/test?action=asyncComplete";
 
@@ -318,6 +319,7 @@ public class AsyncTest
         }
         finally
         {
+            client.stop();
             server.stop();
         }
     }

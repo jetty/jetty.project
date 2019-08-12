@@ -374,7 +374,7 @@ public class Request implements HttpServletRequest
      * 
      * @param s the session
      */
-    public void enterSession(final HttpSession s)
+    public void enterSession(HttpSession s)
     {
         if (s == null)
             return;
@@ -391,12 +391,12 @@ public class Request implements HttpServletRequest
      *
      * @param s the session
      */
-    private void leaveSession(final HttpSession s)
+    private void leaveSession(HttpSession s)
     {
         if (s == null)
             return;
         
-        Session session = Session.class.cast(s);
+        Session session = (Session)s;
         if (LOG.isDebugEnabled())
             LOG.debug("Request {} leaving session {}", this, session);
         session.getSessionHandler().complete(session);
