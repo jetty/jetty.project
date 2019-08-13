@@ -61,6 +61,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
      * just like ServletHolder and FilterHolder,
      * the listener will not be introspected for
      * annotations like Resource etc.
+     * @param listener The listener instance
      */
     public void setListener(EventListener listener)
     {

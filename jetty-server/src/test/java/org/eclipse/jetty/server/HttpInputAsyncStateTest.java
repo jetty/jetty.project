@@ -95,7 +95,7 @@ public class HttpInputAsyncStateTest
     public void before()
     {
         _noReadInDataAvailable = false;
-        _in = new HttpInput(new HttpChannelState(new HttpChannel(null, new HttpConfiguration(), null, null)
+        _in = new HttpInput(new HttpChannelState(new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
         {
             @Override
             public void onAsyncWaitForContent()
@@ -727,5 +727,31 @@ public class HttpInputAsyncStateTest
             "complete",
             "COMPLETE"
         );
+    }
+
+    private static class MockConnector extends AbstractConnector
+    {
+        public MockConnector()
+        {
+            super(new Server() , null, null, null, 0);
+        }
+
+        @Override
+        protected void accept(int acceptorID) throws IOException, InterruptedException
+        {
+
+        }
+
+        @Override
+        public Object getTransport()
+        {
+            return null;
+        }
+
+        @Override
+        public String dumpSelf()
+        {
+            return null;
+        }
     }
 }
