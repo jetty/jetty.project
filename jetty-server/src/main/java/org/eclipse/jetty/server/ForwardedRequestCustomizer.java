@@ -455,11 +455,12 @@ public class ForwardedRequestCustomizer implements Customizer
         int size = 0;
         MethodHandles.Lookup lookup = MethodHandles.lookup();
 
+        // Loop to grow capacity of ArrayTrie for all headers
         while (true)
         {
             try
             {
-                size += 128;
+                size += 128; // experimented good baseline size
                 _handles = new ArrayTrie<>(size);
 
                 if (updateForwardedHandle(lookup, getForwardedCipherSuiteHeader(), "handleCipherSuite"))
