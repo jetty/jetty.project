@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -160,8 +159,6 @@ public class HttpConfiguration implements Dumpable
 
     public List<Customizer> getCustomizers()
     {
-        if (_customizers.isEmpty())
-            return Collections.emptyList();
         return _customizers;
     }
 
