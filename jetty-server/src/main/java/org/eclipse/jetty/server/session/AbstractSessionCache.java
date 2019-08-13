@@ -296,7 +296,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         _removeUnloadableSessions = removeUnloadableSessions;
     }
 
-    
     /**
      * Get a session object.
      *
@@ -311,8 +310,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     {
         return getAndEnter(id, true);
     }
-    
-    
+
     /** Get a session object.
      *
      * If the session object is not in this session store, try getting
@@ -434,7 +432,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
         if (ex != null)
             throw ex;
-        return session;        
+        return session;
     }
 
     /**
@@ -503,17 +501,14 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         }
     }
 
-
-
     /**
      * @deprecated
      */
     @Override
     public void put(String id, Session session) throws Exception
     {
-        release(id,session);
+        release(id, session);
     }
-
 
     /**
      * Finish using the Session object.
@@ -545,7 +540,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 return;
 
             session.complete();
-            
+
             //don't do anything with the session until the last request for it has finished
             if ((session.getRequests() <= 0))
             {
@@ -728,7 +723,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             LOG.debug("Checking for idle {}", session.getId());
         try (Lock s = session.lock())
         {
-            if (getEvictionPolicy() > 0 && session.isIdleLongerThan(getEvictionPolicy()) && session.isValid() && session.isResident() && session.getRequests() <= 0)
+            if (getEvictionPolicy() > 0 && session.isIdleLongerThan(getEvictionPolicy())
+                && session.isValid() && session.isResident() && session.getRequests() <= 0)
             {
                 //Be careful with saveOnInactiveEviction - you may be able to re-animate a session that was
                 //being managed on another node and has expired.
@@ -858,6 +854,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public String toString()
     {
         return String.format("%s@%x[evict=%d,removeUnloadable=%b,saveOnCreate=%b,saveOnInactiveEvict=%b]",
-            this.getClass().getName(), this.hashCode(), _evictionPolicy, _removeUnloadableSessions, _saveOnCreate, _saveOnInactiveEviction);
+            this.getClass().getName(), this.hashCode(), _evictionPolicy,
+            _removeUnloadableSessions, _saveOnCreate, _saveOnInactiveEviction);
     }
 }

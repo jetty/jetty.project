@@ -73,7 +73,8 @@ public class SessionHandler extends ScopedHandler
 {
     static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
-    public static final EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
+    public static final EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,
+        SessionTrackingMode.URL);
 
     /**
      * Session cookie name.
@@ -126,7 +127,8 @@ public class SessionHandler extends ScopedHandler
 
     @SuppressWarnings("unchecked")
     public static final Class<? extends EventListener>[] SESSION_LISTENER_TYPES =
-        new Class[]{
+        new Class[]
+        {
             HttpSessionAttributeListener.class,
             HttpSessionIdListener.class,
             HttpSessionListener.class
@@ -138,7 +140,6 @@ public class SessionHandler extends ScopedHandler
      * max number of minutes that you can set.
      */
     public static final java.math.BigDecimal MAX_INACTIVE_MINUTES = new java.math.BigDecimal(Integer.MAX_VALUE / 60);
-
 
     static final HttpSessionContext __nullSessionContext = new HttpSessionContext()
     {
@@ -196,7 +197,6 @@ public class SessionHandler extends ScopedHandler
     protected Scheduler _scheduler;
     protected boolean _ownScheduler = false;
 
-
     /**
      * Constructor.
      */
@@ -237,9 +237,8 @@ public class SessionHandler extends ScopedHandler
             // Do we need to refresh the cookie?
             if (isUsingCookies() &&
                 (s.isIdChanged() ||
-                    (getSessionCookieConfig().getMaxAge() > 0 && getRefreshCookieAge() > 0 && ((now - s.getCookieSetTime()) / 1000 > getRefreshCookieAge()))
-                )
-            )
+                    (getSessionCookieConfig().getMaxAge() > 0 && getRefreshCookieAge() > 0 
+                        && ((now - s.getCookieSetTime())/1000 > getRefreshCookieAge()))))
             {
                 HttpCookie cookie = getSessionCookie(session, _context == null ? "/" : (_context.getContextPath()), secure);
                 s.cookieSet();
@@ -381,7 +380,6 @@ public class SessionHandler extends ScopedHandler
         //not used
     }
 
-   
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
@@ -521,7 +519,7 @@ public class SessionHandler extends ScopedHandler
     {
         String id = getSessionIdManager().getId(extendedId);
         Session session = getSession(id);
-        
+
         if (session != null && !session.getExtendedId().equals(extendedId))
             session.setIdChanged(true);
         return session;
@@ -849,7 +847,8 @@ public class SessionHandler extends ScopedHandler
     public void setSessionIdPathParameterName(String param)
     {
         _sessionIdPathParameterName = (param == null || "none".equals(param)) ? null : param;
-        _sessionIdPathParameterNamePrefix = (param == null || "none".equals(param)) ? null : (";" + _sessionIdPathParameterName + "=");
+        _sessionIdPathParameterNamePrefix = (param == null || "none".equals(param)) ? 
+                                            null : (";" + _sessionIdPathParameterName + "=");
     }
 
     /**
@@ -890,7 +889,6 @@ public class SessionHandler extends ScopedHandler
                 }
 
                 session.setExtendedId(_sessionIdManager.getExtendedId(id, null));
-                //session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());  //TODO write through the change of node?
             }
             return session;
         }
@@ -1290,7 +1288,8 @@ public class SessionHandler extends ScopedHandler
                 //most efficient if it can be done as a bulk operation to eg reduce
                 //roundtrips to the persistent store. Only do this if the HouseKeeper that
                 //does the scavenging is configured to actually scavenge
-                if (_sessionIdManager.getSessionHouseKeeper() != null && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+                if (_sessionIdManager.getSessionHouseKeeper() != null
+                    && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
                 {
                     _candidateSessionIdsForExpiry.add(session.getId());
                     if (LOG.isDebugEnabled())
@@ -1462,7 +1461,8 @@ public class SessionHandler extends ScopedHandler
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         SessionHandler oldSessionHandler = null;
         HttpSession oldSession = null;
@@ -1471,7 +1471,8 @@ public class SessionHandler extends ScopedHandler
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Entering scope {}, dispatch={} asyncstarted={}", this, baseRequest.getDispatcherType(), baseRequest.isAsyncStarted());
+                LOG.debug("Entering scope {}, dispatch={} asyncstarted={}", this, baseRequest.getDispatcherType(), baseRequest
+                    .isAsyncStarted());
 
             switch (baseRequest.getDispatcherType())
             {
@@ -1494,7 +1495,7 @@ public class SessionHandler extends ScopedHandler
                     //remember previous sessionhandler and session
                     oldSessionHandler = baseRequest.getSessionHandler();
                     oldSession = baseRequest.getSession(false);
-                    
+
                     //find any existing session for this request that has already been accessed
                     existingSession = baseRequest.getSession(this);
                     if (existingSession == null)
@@ -1518,7 +1519,9 @@ public class SessionHandler extends ScopedHandler
             {
                 HttpCookie cookie = access(existingSession, request.isSecure());
                 // Handle changed ID or max-age refresh, but only if this is not a redispatched request
-                if ((cookie != null) && (request.getDispatcherType() == DispatcherType.ASYNC || request.getDispatcherType() == DispatcherType.REQUEST))
+                if ((cookie != null) 
+                    && (request.getDispatcherType() == DispatcherType.ASYNC
+                        || request.getDispatcherType() == DispatcherType.REQUEST))
                     baseRequest.getResponse().replaceCookie(cookie);
             }
 
@@ -1535,8 +1538,9 @@ public class SessionHandler extends ScopedHandler
         finally
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Leaving scope {} dispatch={}, async={}, session={}, oldsession={}, oldsessionhandler={}", 
-                    this, baseRequest.getDispatcherType(), baseRequest.isAsyncStarted(), baseRequest.getSession(false), oldSession, oldSessionHandler);
+                LOG.debug("Leaving scope {} dispatch={}, async={}, session={}, oldsession={}, oldsessionhandler={}",
+                    this, baseRequest.getDispatcherType(), baseRequest.isAsyncStarted(), baseRequest.getSession(false),
+                    oldSession, oldSessionHandler);
 
             // revert the session handler to the previous, unless it was null, in which case remember it as
             // the first session handler encountered.
@@ -1552,7 +1556,8 @@ public class SessionHandler extends ScopedHandler
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         nextHandle(target, baseRequest, request, response);
     }
@@ -1583,7 +1588,7 @@ public class SessionHandler extends ScopedHandler
 
         boolean requestedSessionIdFromCookie = false;
         HttpSession session = null;
-        
+
         //first try getting id from a cookie
         if (isUsingCookies())
         {
@@ -1605,9 +1610,9 @@ public class SessionHandler extends ScopedHandler
                         }
                     }
                 }
-            }  
+            }
         }
-        
+
         //try getting id from a url
         if (isUsingURLs() && (requestedSessionId == null))
         {
