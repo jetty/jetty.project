@@ -627,6 +627,29 @@ public class ForwardedRequestCustomizerTest
         assertThat("requestURL", _requestURL.get(), is("http://example.com/"));
     }
 
+    @Test
+    public void testAllXForwarded() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _connector.getResponse(
+                "GET / HTTP/1.1\n" +
+                    "Host: myhost\n" +
+                    "X-Forwarded-Proto: https\n" +
+                    "X-Forwarded-Host: www.example.com\n" +
+                    "X-Forwarded-Port: 4333\n" +
+                    "X-Forwarded-For: 8.5.4.3:2222\n" +
+                    "X-Forwarded-Server: fw.example.com\n" +
+                    "\n"));
+
+        assertThat("status", response.getStatus(), is(200));
+        assertThat("scheme", _scheme.get(), is("https"));
+        assertThat("serverName", _serverName.get(), is("www.example.com"));
+        assertThat("serverPort", _serverPort.get(), is(4333));
+        assertThat("remoteAddr", _remoteAddr.get(), is("8.5.4.3"));
+        assertThat("remotePort", _remotePort.get(), is(2222));
+        assertThat("requestURL", _requestURL.get(), is("https://www.example.com:4333/"));
+    }
+
     interface RequestTester
     {
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
