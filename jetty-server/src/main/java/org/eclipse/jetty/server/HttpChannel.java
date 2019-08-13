@@ -113,6 +113,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         // Initialize with a readonly preprepared list of listeners
         _listeners = connector.getEventListenerBeans();
+        else
+            _listeners = Collections.emptyList();
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
@@ -139,24 +141,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public boolean addListener(Listener listener)
     {
-        // If this is the first listener, use a singleton
-        if (_listeners == null)
+        if (_listeners instanceof ArrayList)
+            return _listeners.add(listener);
+        if (_listeners.isEmpty())
         {
             _listeners = Collections.singletonList(listener);
             return true;
         }
 
         // If we are adding to a immutable list, copy to an ArrayList
-        if (!(_listeners instanceof ArrayList))
-            _listeners = new ArrayList<>(_listeners);
+        _listeners = new ArrayList<>(_listeners);
         return _listeners.add(listener);
     }
 
     public boolean removeListener(Listener listener)
     {
-        if (_listeners == null)
-            return false;
-
         if (_listeners instanceof ArrayList)
             return _listeners.remove(listener);
 
@@ -165,7 +164,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (_listeners.size() == 1)
         {
-            _listeners = null;
+            _listeners = Collections.emptyList();
             return true;
         }
 
@@ -323,7 +322,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_listeners instanceof ArrayList)
             _listeners.clear();
         else
-            _listeners = null;
+            _listeners = Collections.emptyList();
     }
 
     public void onAsyncWaitForContent()
@@ -1082,8 +1081,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent1(Function<Listener, Consumer<Request>> function, Request request)
     {
-        if (_listeners == null)
-            return;
         for (EventListener listener : _listeners)
         {
             if (listener instanceof Listener)
@@ -1102,8 +1099,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
     {
-        if (_listeners == null)
-            return;
         for (EventListener listener : _listeners)
         {
             if (listener instanceof Listener)
@@ -1123,8 +1118,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, Throwable>> function, Request request, Throwable failure)
     {
-        if (_listeners == null)
-            return;
         for (EventListener listener : _listeners)
         {
             if (listener instanceof Listener)
