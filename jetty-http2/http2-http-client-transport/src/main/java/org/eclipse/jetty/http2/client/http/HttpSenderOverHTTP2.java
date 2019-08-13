@@ -19,17 +19,19 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.net.URI;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -53,23 +55,35 @@ public class HttpSenderOverHTTP2 extends HttpSender
     protected void sendHeaders(HttpExchange exchange, final HttpContent content, final Callback callback)
     {
         HttpRequest request = exchange.getRequest();
-        String path = relativize(request.getPath());
-        HttpURI uri = HttpURI.createHttpURI(request.getScheme(), request.getHost(), request.getPort(), path, null, request.getQuery(), null);
-        MetaData.Request metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
+        boolean isTunnel = HttpMethod.CONNECT.is(request.getMethod());
+        MetaData.Request metaData;
+        if (isTunnel)
+        {
+            metaData = new MetaData.Request(request.getMethod(), null, new HostPortHttpField(request.getPath()), null, HttpVersion.HTTP_2, request.getHeaders());
+        }
+        else
+        {
+            String path = relativize(request.getPath());
+            HttpURI uri = HttpURI.createHttpURI(request.getScheme(), request.getHost(), request.getPort(), path, null, request.getQuery(), null);
+            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
+        }
         Supplier<HttpFields> trailerSupplier = request.getTrailers();
         metaData.setTrailerSupplier(trailerSupplier);
 
         HeadersFrame headersFrame;
         Promise<Stream> promise;
-        if (content.hasContent())
+        if (isTunnel)
         {
             headersFrame = new HeadersFrame(metaData, null, false);
-            promise = new HeadersPromise(request, callback)
+            promise = new HeadersPromise(request, callback, stream -> callback.succeeded());
+        }
+        else
+        {
+            if (content.hasContent())
             {
-                @Override
-                public void succeeded(Stream stream)
+                headersFrame = new HeadersFrame(metaData, null, false);
+                promise = new HeadersPromise(request, callback, stream ->
                 {
-                    super.succeeded(stream);
                     if (expects100Continue(request))
                     {
                         // Don't send the content yet.
@@ -84,26 +98,21 @@ public class HttpSenderOverHTTP2 extends HttpSender
                         else
                             callback.succeeded();
                     }
-                }
-            };
-        }
-        else
-        {
-            HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
-            boolean endStream = trailers == null || trailers.size() == 0;
-            headersFrame = new HeadersFrame(metaData, null, endStream);
-            promise = new HeadersPromise(request, callback)
+                });
+            }
+            else
             {
-                @Override
-                public void succeeded(Stream stream)
+                HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
+                boolean endStream = trailers == null || trailers.size() <= 0;
+                headersFrame = new HeadersFrame(metaData, null, endStream);
+                promise = new HeadersPromise(request, callback, stream ->
                 {
-                    super.succeeded(stream);
                     if (endStream)
                         callback.succeeded();
                     else
                         sendTrailers(stream, trailers, callback);
-                }
-            };
+                });
+            }
         }
         // TODO optimize the send of HEADERS and DATA frames.
         HttpChannelOverHTTP2 channel = getHttpChannel();
@@ -168,26 +177,26 @@ public class HttpSenderOverHTTP2 extends HttpSender
         stream.headers(trailersFrame, callback);
     }
 
-    private class HeadersPromise implements Promise<Stream>
+    private static class HeadersPromise implements Promise<Stream>
     {
         private final HttpRequest request;
         private final Callback callback;
+        private final Consumer<Stream> succeed;
 
-        private HeadersPromise(HttpRequest request, Callback callback)
+        private HeadersPromise(HttpRequest request, Callback callback, Consumer<Stream> succeed)
         {
             this.request = request;
             this.callback = callback;
+            this.succeed = succeed;
         }
 
         @Override
         public void succeeded(Stream stream)
         {
-            HttpChannelOverHTTP2 channel = getHttpChannel();
-            channel.setStream(stream);
-            ((IStream)stream).setAttachment(channel);
             long idleTimeout = request.getIdleTimeout();
             if (idleTimeout >= 0)
                 stream.setIdleTimeout(idleTimeout);
+            succeed.accept(stream);
         }
 
         @Override

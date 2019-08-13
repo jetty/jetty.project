@@ -260,28 +260,27 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        Destination destinationBefore = client.getDestination(scenario.getScheme(), host, port);
-
-        ContentResponse response = client.newRequest(host, port)
-            .scheme(scenario.getScheme())
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-            .send();
+        Request request = client.newRequest(host, port)
+                .scheme(scenario.getScheme())
+                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        Destination destinationBefore = client.resolveDestination(request);
+        ContentResponse response = request.send();
 
         assertEquals(200, response.getStatus());
 
-        Destination destinationAfter = client.getDestination(scenario.getScheme(), host, port);
+        Destination destinationAfter = client.resolveDestination(request);
         assertSame(destinationBefore, destinationAfter);
 
         client.setRemoveIdleDestinations(true);
 
-        response = client.newRequest(host, port)
+        request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-            .send();
+            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        response = request.send();
 
         assertEquals(200, response.getStatus());
 
-        destinationAfter = client.getDestination(scenario.getScheme(), host, port);
+        destinationAfter = client.resolveDestination(request);
         assertNotSame(destinationBefore, destinationAfter);
     }
 

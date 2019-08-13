@@ -155,25 +155,19 @@ public class MetaData implements Iterable<HttpField>
 
         public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields)
         {
-            this(method, new HttpURI(scheme == null ? null : scheme.asString(),
-                hostPort == null ? null : hostPort.getHost(),
-                hostPort == null ? -1 : hostPort.getPort(),
-                uri), version, fields);
+            this(method, scheme, hostPort, uri, version, fields, Long.MIN_VALUE);
         }
 
         public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
         {
-            this(method, new HttpURI(scheme == null ? null : scheme.asString(),
-                hostPort == null ? null : hostPort.getHost(),
-                hostPort == null ? -1 : hostPort.getPort(),
-                uri), version, fields, contentLength);
+            this(method, scheme == null ? null : scheme.asString(), hostPort, uri, version, fields, contentLength);
         }
 
         public Request(String method, String scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
         {
             this(method, new HttpURI(scheme,
-                hostPort == null ? null : hostPort.getHost(),
-                hostPort == null ? -1 : hostPort.getPort(),
+                    hostPort == null ? null : hostPort.getHost(),
+                    hostPort == null ? -1 : hostPort.getPort(),
                 uri), version, fields, contentLength);
         }
 
@@ -222,14 +216,6 @@ public class MetaData implements Iterable<HttpField>
         }
 
         /**
-         * @return the HTTP URI in string form
-         */
-        public String getURIString()
-        {
-            return _uri == null ? null : _uri.toString();
-        }
-
-        /**
          * @param uri the HTTP URI to set
          */
         public void setURI(HttpURI uri)
@@ -237,12 +223,49 @@ public class MetaData implements Iterable<HttpField>
             _uri = uri;
         }
 
+        /**
+         * @return the HTTP URI in string form
+         */
+        public String getURIString()
+        {
+            return _uri == null ? null : _uri.toString();
+        }
+
+        public String getProtocol()
+        {
+            return null;
+        }
+
         @Override
         public String toString()
         {
             HttpFields fields = getFields();
-            return String.format("%s{u=%s,%s,h=%d,cl=%d}",
-                getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength());
+            return String.format("%s{u=%s,%s,h=%d,cl=%d,p=%s}",
+                    getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength(), getProtocol());
+        }
+    }
+
+    public static class ConnectRequest extends Request
+    {
+        private String _protocol;
+
+        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        {
+            super(HttpMethod.CONNECT.asString(), scheme, authority, path, HttpVersion.HTTP_2, fields, Long.MIN_VALUE);
+            _protocol = protocol;
+        }
+
+        @Override
+        public String getProtocol()
+        {
+            return _protocol;
+        }
+
+        @Override
+        public void recycle()
+        {
+            super.recycle();
+            _protocol = null;
         }
     }
 

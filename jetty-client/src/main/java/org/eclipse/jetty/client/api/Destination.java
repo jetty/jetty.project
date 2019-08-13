@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.Promise;
  * {@link Destination} holds a pool of {@link Connection}s, but allows to create unpooled
  * connections if the application wants full control over connection management via {@link #newConnection(Promise)}.
  * <p>
- * {@link Destination}s may be obtained via {@link HttpClient#getDestination(String, String, int)}
+ * {@link Destination}s may be obtained via {@link HttpClient#resolveDestination(Request)}
  */
 public interface Destination
 {

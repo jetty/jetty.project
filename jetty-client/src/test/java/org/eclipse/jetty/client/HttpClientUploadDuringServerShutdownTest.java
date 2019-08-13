@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HttpClientUploadDuringServerShutdown
+public class HttpClientUploadDuringServerShutdownTest
 {
     /**
      * A server used in conjunction with {@link ClientSide}.
@@ -117,8 +117,8 @@ public class HttpClientUploadDuringServerShutdown
                 {
                     int length = 16 * 1024 * 1024 + random.nextInt(16 * 1024 * 1024);
                     client.newRequest("localhost", 8888)
-                        .content(new BytesContentProvider(new byte[length]))
-                        .send(result -> latch.countDown());
+                            .content(new BytesContentProvider(new byte[length]))
+                            .send(result -> latch.countDown());
                     long sleep = 1 + random.nextInt(10);
                     TimeUnit.MILLISECONDS.sleep(sleep);
                 }
@@ -229,10 +229,10 @@ public class HttpClientUploadDuringServerShutdown
         // is being closed is used to send the request.
         assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch completeLatch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        var request = client.newRequest("localhost", connector.getLocalPort())
             .timeout(10, TimeUnit.SECONDS)
-            .onRequestBegin(request ->
+            .onRequestBegin(r ->
             {
                 try
                 {
@@ -243,12 +243,12 @@ public class HttpClientUploadDuringServerShutdown
                 {
                     x.printStackTrace();
                 }
-            })
-            .send(result -> completeLatch.countDown());
+            });
+        request.send(result -> completeLatch.countDown());
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
-        HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool pool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, pool.getConnectionCount());
         assertEquals(0, pool.getIdleConnections().size());
