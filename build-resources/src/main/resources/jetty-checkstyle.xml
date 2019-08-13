@@ -44,18 +44,6 @@
       ===========================================================================================
       -->
 
-    <!-- Check abbreviations(consecutive capital letters) length in identifier name -->
-    <module name="AbbreviationAsWordInName">
-      <property name="ignoreFinal" value="true"/>
-      <property name="allowedAbbreviations" value="RFC, XML, JSON,
-              HTTP, HTTPS, ALPN,
-              CRLDP, OCSP, SPNEGO, LDAP, PKIX,
-              URL, URI, FCGI, IP, ID, ISO8859, UTF8, ASCII,
-              JDBC, JAAS, JMX, RMI, JMXRMI, JNDI, JSTL, JPMS,
-              NCSA, GZIP,
-              CRLF, AWT"/>
-    </module>
-
     <!-- Location of Annotations -->
     <module name="AnnotationLocation">
       <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>

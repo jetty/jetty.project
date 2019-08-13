@@ -258,7 +258,7 @@ public abstract class WriteFlusher
      */
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        callback = Objects.requireNonNull(callback);
+        Objects.requireNonNull(callback);
 
         if (isFailed())
         {
@@ -523,12 +523,22 @@ public abstract class WriteFlusher
 
     boolean isFailed()
     {
-        return _state.get().getType() == StateType.FAILED;
+        return isState(StateType.FAILED);
     }
 
     boolean isIdle()
     {
-        return _state.get().getType() == StateType.IDLE;
+        return isState(StateType.IDLE);
+    }
+
+    public boolean isPending()
+    {
+        return isState(StateType.PENDING);
+    }
+
+    private boolean isState(StateType type)
+    {
+        return _state.get().getType() == type;
     }
 
     public String toStateString()

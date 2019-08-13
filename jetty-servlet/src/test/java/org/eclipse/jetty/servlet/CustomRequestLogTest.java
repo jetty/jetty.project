@@ -47,14 +47,15 @@ public class CustomRequestLogTest
     Server _server;
     LocalConnector _connector;
     BlockingQueue<String> _entries = new BlockingArrayQueue<>();
-    String _tmpDir = System.getProperty("java.io.tmpdir");
+    String _tmpDir;
 
     @BeforeEach
-    public void before()
+    public void before() throws Exception
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
+        _tmpDir = new File(System.getProperty("java.io.tmpdir")).getCanonicalPath();
     }
 
     void testHandlerServerStart(String formatString) throws Exception

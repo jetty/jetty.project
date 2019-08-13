@@ -29,8 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.util.IO;
-
 /**
  * MultiPartTest
  *
@@ -64,17 +62,13 @@ public class MultiPartTest extends HttpServlet
             out.println("<p>");
 
             Collection<Part> parts = request.getParts();
-            out.println("<b>Parts:</b>&nbsp;" + parts.size());
+            out.println("<b>Parts:</b>&nbsp;" + parts.size() + "<br>");
             for (Part p : parts)
             {
-                out.println("<h3>" + p.getName() + "</h3>");
-                out.println("<b>Size:</b>&nbsp;" + p.getSize());
-                if (p.getContentType() == null || p.getContentType().startsWith("text/plain"))
-                {
-                    out.println("<p>");
-                    IO.copy(p.getInputStream(), out);
-                    out.println("</p>");
-                }
+                out.println("<br><b>PartName:</b>&nbsp;" + sanitizeXmlString(p.getName()));
+                out.println("<br><b>Size:</b>&nbsp;" + p.getSize());
+                String contentType = p.getContentType();
+                out.println("<br><b>ContentType:</b>&nbsp;" + contentType);
             }
             out.println("</body>");
             out.println("</html>");
@@ -108,5 +102,69 @@ public class MultiPartTest extends HttpServlet
         {
             throw new ServletException(e);
         }
+    }
+
+    public static String sanitizeXmlString(String html)
+    {
+        if (html == null)
+            return null;
+
+        int i = 0;
+
+        // Are there any characters that need sanitizing?
+        loop:
+        for (; i < html.length(); i++)
+        {
+            char c = html.charAt(i);
+            switch (c)
+            {
+                case '&':
+                case '<':
+                case '>':
+                case '\'':
+                case '"':
+                    break loop;
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        break loop;
+            }
+        }
+        // No characters need sanitizing, so return original string
+        if (i == html.length())
+            return html;
+
+        // Create builder with OK content so far
+        StringBuilder out = new StringBuilder(html.length() * 4 / 3);
+        out.append(html, 0, i);
+
+        // sanitize remaining content
+        for (; i < html.length(); i++)
+        {
+            char c = html.charAt(i);
+            switch (c)
+            {
+                case '&':
+                    out.append("&amp;");
+                    break;
+                case '<':
+                    out.append("&lt;");
+                    break;
+                case '>':
+                    out.append("&gt;");
+                    break;
+                case '\'':
+                    out.append("&apos;");
+                    break;
+                case '"':
+                    out.append("&quot;");
+                    break;
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        out.append('?');
+                    else
+                        out.append(c);
+            }
+        }
+        return out.toString();
     }
 }

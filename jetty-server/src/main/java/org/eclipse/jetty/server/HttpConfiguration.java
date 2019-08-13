@@ -141,6 +141,7 @@ public class HttpConfiguration implements Dumpable
         _minResponseDataRate = config._minResponseDataRate;
         _requestCookieCompliance = config._requestCookieCompliance;
         _responseCookieCompliance = config._responseCookieCompliance;
+        _multiPartCompliance = config._multiPartCompliance;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
     }
 

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -32,5 +33,11 @@ public class EchoSocket
     public void onMessage(Session session, String msg) throws IOException
     {
         session.getRemote().sendString(msg);
+    }
+
+    @OnWebSocketMessage
+    public void onBinaryMessage(Session session, byte[] data, int offset, int len) throws IOException
+    {
+        session.getRemote().sendBytes(ByteBuffer.wrap(data, offset, len));
     }
 }

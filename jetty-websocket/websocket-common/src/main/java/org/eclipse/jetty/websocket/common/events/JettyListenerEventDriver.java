@@ -250,7 +250,10 @@ public class JettyListenerEventDriver extends AbstractEventDriver
             return;
         }
 
-        super.onContinuationFrame(buffer, fin);
+        if (listener instanceof WebSocketListener)
+        {
+            super.onContinuationFrame(buffer, fin);
+        }
     }
 
     @Override

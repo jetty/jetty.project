@@ -390,7 +390,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         return _fillInterest;
     }
 
-    protected WriteFlusher getWriteFlusher()
+    public WriteFlusher getWriteFlusher()
     {
         return _writeFlusher;
     }

@@ -388,7 +388,6 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        // TODO: investigate if SPARSE use for default FileSystem usages is worth it
         return Files.newInputStream(path, StandardOpenOption.READ);
     }
 
@@ -401,7 +400,11 @@ public class PathResource extends Resource
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        // TODO: investigate if SPARSE use for default FileSystem usages is worth it
+        return newSeekableByteChannel();
+    }
+
+    public SeekableByteChannel newSeekableByteChannel() throws IOException
+    {
         return Files.newByteChannel(path, StandardOpenOption.READ);
     }
 
@@ -588,7 +591,7 @@ public class PathResource extends Resource
         try (SeekableByteChannel channel = Files.newByteChannel(path, StandardOpenOption.READ))
         {
             ByteBuffer buffer = BufferUtil.allocate(IO.bufferSize);
-            channel.position(start);
+            skipTo(channel, buffer, start);
 
             // copy from channel to output stream
             long readTotal = 0;
@@ -601,6 +604,57 @@ public class PathResource extends Resource
                 BufferUtil.flipToFlush(buffer, 0);
                 BufferUtil.writeTo(buffer, outputStream);
                 readTotal += readLen;
+            }
+        }
+    }
+
+    private void skipTo(SeekableByteChannel channel, ByteBuffer buffer, long skipTo) throws IOException
+    {
+        try
+        {
+            if (channel.position() != skipTo)
+            {
+                channel.position(skipTo);
+            }
+        }
+        catch (UnsupportedOperationException e)
+        {
+            final int NO_PROGRESS_LIMIT = 3;
+
+            if (skipTo > 0)
+            {
+                long pos = 0;
+                long readLen;
+                int noProgressLoopLimit = NO_PROGRESS_LIMIT;
+                // loop till we reach desired point, break out on lack of progress.
+                while (noProgressLoopLimit > 0 && pos < skipTo)
+                {
+                    BufferUtil.clearToFill(buffer);
+                    int len = (int)Math.min(IO.bufferSize, (skipTo - pos));
+                    buffer.limit(len);
+                    readLen = channel.read(buffer);
+                    if (readLen == 0)
+                    {
+                        noProgressLoopLimit--;
+                    }
+                    else if (readLen > 0)
+                    {
+                        pos += readLen;
+                        noProgressLoopLimit = NO_PROGRESS_LIMIT;
+                    }
+                    else
+                    {
+                        // negative values means the stream was closed or reached EOF
+                        // either way, we've hit a state where we can no longer
+                        // fulfill the requested range write.
+                        throw new IOException("EOF reached before SeekableByteChannel skip destination");
+                    }
+                }
+
+                if (noProgressLoopLimit <= 0)
+                {
+                    throw new IOException("No progress made to reach SeekableByteChannel skip position " + skipTo);
+                }
             }
         }
     }

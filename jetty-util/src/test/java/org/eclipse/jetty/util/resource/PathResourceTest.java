@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +34,7 @@ import java.util.Map;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -46,7 +48,6 @@ public class PathResourceTest
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
         URI uri = new URI("jar", exampleJar.toUri().toASCIIString(), null);
-        System.err.println("URI = " + uri);
 
         Map<String, Object> env = new HashMap<>();
         env.put("multi-release", "runtime");
@@ -71,7 +72,6 @@ public class PathResourceTest
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
         URI uri = new URI("jar", exampleJar.toUri().toASCIIString(), null);
-        System.err.println("URI = " + uri);
 
         Map<String, Object> env = new HashMap<>();
         env.put("multi-release", "runtime");
@@ -96,7 +96,6 @@ public class PathResourceTest
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
         URI uri = new URI("jar", exampleJar.toUri().toASCIIString(), null);
-        System.err.println("URI = " + uri);
 
         Map<String, Object> env = new HashMap<>();
         env.put("multi-release", "runtime");
@@ -109,6 +108,32 @@ public class PathResourceTest
             PathResource resource = new PathResource(manifestPath);
             File file = resource.getFile();
             assertThat("File should be null for non-default FileSystem", file, is(nullValue()));
+        }
+    }
+
+    @Test
+    public void testNonDefaultFileSystem_WriteTo() throws URISyntaxException, IOException
+    {
+        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
+
+        URI uri = new URI("jar", exampleJar.toUri().toASCIIString(), null);
+
+        Map<String, Object> env = new HashMap<>();
+        env.put("multi-release", "runtime");
+
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
+            assertThat(manifestPath, is(not(nullValue())));
+
+            PathResource resource = new PathResource(manifestPath);
+            try (ByteArrayOutputStream out = new ByteArrayOutputStream())
+            {
+                resource.writeTo(out, 2, 10);
+                String actual = new String(out.toByteArray(), UTF_8);
+                String expected = "nifest-Ver";
+                assertThat("writeTo(out, 2, 10)", actual, is(expected));
+            }
         }
     }
 

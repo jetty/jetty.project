@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.tests.client;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -33,6 +34,7 @@ import javax.servlet.DispatcherType;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -168,6 +170,86 @@ public class WebSocketClientTest
             // wait for response from server
             String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Message", received, containsString("Hello World"));
+        }
+    }
+
+    @Test
+    public void testBasicEcho_PartialUsage_FromClient() throws Exception
+    {
+        CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
+
+        client.getPolicy().setIdleTimeout(10000);
+
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("echo");
+        Future<Session> future = client.connect(cliSock, wsUri, request);
+
+        try (Session sess = future.get(30, TimeUnit.SECONDS))
+        {
+            assertThat("Session", sess, notNullValue());
+            assertThat("Session.open", sess.isOpen(), is(true));
+            assertThat("Session.upgradeRequest", sess.getUpgradeRequest(), notNullValue());
+            assertThat("Session.upgradeResponse", sess.getUpgradeResponse(), notNullValue());
+
+            Collection<WebSocketSession> sessions = client.getOpenSessions();
+            assertThat("client.sessions.size", sessions.size(), is(1));
+
+            RemoteEndpoint remote = cliSock.getSession().getRemote();
+            remote.sendPartialString("Hello", false);
+            remote.sendPartialString(" ", false);
+            remote.sendPartialString("World", true);
+
+            // wait for response from server
+            String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
+            assertThat("Message", received, containsString("Hello World"));
+        }
+    }
+
+    @Test
+    public void testBasicEcho_PartialText_WithPartialBinary_FromClient() throws Exception
+    {
+        CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
+
+        client.getPolicy().setIdleTimeout(10000);
+
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("echo");
+        Future<Session> future = client.connect(cliSock, wsUri, request);
+
+        try (Session sess = future.get(30, TimeUnit.SECONDS))
+        {
+            assertThat("Session", sess, notNullValue());
+            assertThat("Session.open", sess.isOpen(), is(true));
+            assertThat("Session.upgradeRequest", sess.getUpgradeRequest(), notNullValue());
+            assertThat("Session.upgradeResponse", sess.getUpgradeResponse(), notNullValue());
+
+            Collection<WebSocketSession> sessions = client.getOpenSessions();
+            assertThat("client.sessions.size", sessions.size(), is(1));
+
+            RemoteEndpoint remote = cliSock.getSession().getRemote();
+            remote.sendPartialString("Hello", false);
+            remote.sendPartialString(" ", false);
+            remote.sendPartialString("World", true);
+
+            String[] parts = {
+                "The difference between the right word ",
+                "and the almost right word is the difference ",
+                "between lightning and a lightning bug."
+            };
+
+            remote.sendPartialBytes(BufferUtil.toBuffer(parts[0]), false);
+            remote.sendPartialBytes(BufferUtil.toBuffer(parts[1]), false);
+            remote.sendPartialBytes(BufferUtil.toBuffer(parts[2]), true);
+
+            // wait for response from server
+            String received = cliSock.messageQueue.poll(5, TimeUnit.SECONDS);
+            assertThat("Message", received, containsString("Hello World"));
+
+            ByteBuffer bufReceived = cliSock.binaryMessageQueue.poll(5, TimeUnit.SECONDS);
+            received = BufferUtil.toUTF8String(bufReceived.slice());
+            assertThat("Message", received, containsString(parts[0] + parts[1] + parts[2]));
         }
     }
 
