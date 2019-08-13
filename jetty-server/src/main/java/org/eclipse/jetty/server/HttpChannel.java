@@ -113,8 +113,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         // Initialize with a readonly preprepared list of listeners
         _listeners = connector.getEventListenerBeans();
-        else
-            _listeners = Collections.emptyList();
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
@@ -143,6 +141,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (_listeners instanceof ArrayList)
             return _listeners.add(listener);
+
         if (_listeners.isEmpty())
         {
             _listeners = Collections.singletonList(listener);
