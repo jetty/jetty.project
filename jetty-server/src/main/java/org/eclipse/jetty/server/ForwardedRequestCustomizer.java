@@ -492,7 +492,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     private boolean updateForwardedHandle(MethodHandles.Lookup lookup, String headerName, String forwardedMethodName) throws NoSuchMethodException, IllegalAccessException
     {
-        final MethodType type = methodType(Void.TYPE, HttpField.class);
+        final MethodType type = methodType(void.class, HttpField.class);
 
         if (StringUtil.isBlank(headerName))
             return false;
