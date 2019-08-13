@@ -705,13 +705,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             {
                 if (arg == null || arg.isEmpty())
                 {
-                    String method = "logRequestCookies";
-                    specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                    specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestCookies", logType);
                 }
                 else
                 {
-                    String method = "logRequestCookie";
-                    specificHandle = lookup.findStatic(CustomRequestLog.class, method, logTypeArg);
+                    specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestCookie", logTypeArg);
                     specificHandle = specificHandle.bindTo(arg);
                 }
                 break;
@@ -719,8 +717,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "D":
             {
-                String method = "logLatencyMicroseconds";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logLatencyMicroseconds", logType);
                 break;
             }
 
@@ -729,23 +726,20 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 if (arg == null || arg.isEmpty())
                     throw new IllegalArgumentException("No arg for %e");
 
-                String method = "logEnvironmentVar";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logEnvironmentVar", logTypeArg);
                 specificHandle = specificHandle.bindTo(arg);
                 break;
             }
 
             case "f":
             {
-                String method = "logFilename";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logFilename", logType);
                 break;
             }
 
             case "H":
             {
-                String method = "logRequestProtocol";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestProtocol", logType);
                 break;
             }
 
@@ -754,23 +748,20 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 if (arg == null || arg.isEmpty())
                     throw new IllegalArgumentException("No arg for %i");
 
-                String method = "logRequestHeader";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestHeader", logTypeArg);
                 specificHandle = specificHandle.bindTo(arg);
                 break;
             }
 
             case "k":
             {
-                String method = "logKeepAliveRequests";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logKeepAliveRequests", logType);
                 break;
             }
 
             case "m":
             {
-                String method = "logRequestMethod";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestMethod", logType);
                 break;
             }
 
@@ -779,37 +770,32 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 if (arg == null || arg.isEmpty())
                     throw new IllegalArgumentException("No arg for %o");
 
-                String method = "logResponseHeader";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logResponseHeader", logTypeArg);
                 specificHandle = specificHandle.bindTo(arg);
                 break;
             }
 
             case "q":
             {
-                String method = "logQueryString";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logQueryString", logType);
                 break;
             }
 
             case "r":
             {
-                String method = "logRequestFirstLine";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestFirstLine", logType);
                 break;
             }
 
             case "R":
             {
-                String method = "logRequestHandler";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestHandler", logType);
                 break;
             }
 
             case "s":
             {
-                String method = "logResponseStatus";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logResponseStatus", logType);
                 break;
             }
 
@@ -846,9 +832,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
                 DateCache logDateCache = new DateCache(format, locale, timeZone);
 
-                String method = "logRequestTime";
                 MethodType logTypeDateCache = methodType(Void.TYPE, DateCache.class, StringBuilder.class, Request.class, Response.class);
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logTypeDateCache);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestTime", logTypeDateCache);
                 specificHandle = specificHandle.bindTo(logDateCache);
                 break;
             }
@@ -892,15 +877,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "U":
             {
-                String method = "logUrlRequestPath";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logUrlRequestPath", logType);
                 break;
             }
 
             case "X":
             {
-                String method = "logConnectionStatus";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logConnectionStatus", logType);
                 break;
             }
 
@@ -909,8 +892,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 if (arg == null || arg.isEmpty())
                     throw new IllegalArgumentException("No arg for %ti");
 
-                String method = "logRequestTrailer";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestTrailer", logTypeArg);
                 specificHandle = specificHandle.bindTo(arg);
                 break;
             }
@@ -920,8 +902,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 if (arg == null || arg.isEmpty())
                     throw new IllegalArgumentException("No arg for %to");
 
-                String method = "logResponseTrailer";
-                specificHandle = lookup.findStatic(CustomRequestLog.class, method, logTypeArg);
+                specificHandle = lookup.findStatic(CustomRequestLog.class, "logResponseTrailer", logTypeArg);
                 specificHandle = specificHandle.bindTo(arg);
                 break;
             }
