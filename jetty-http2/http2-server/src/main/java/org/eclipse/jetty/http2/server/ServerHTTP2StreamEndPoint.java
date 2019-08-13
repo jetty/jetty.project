@@ -49,33 +49,38 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     @Override
     public Runnable onTrailer(HeadersFrame frame)
     {
-        // TODO
+        // We are tunnelling, so there are no trailers.
         return null;
     }
 
     @Override
     public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        // TODO: Consumer not used?
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout on {}: {}", this, failure);
+        offerFailure(failure);
+        boolean result = true;
         Connection connection = getConnection();
         if (connection != null)
-            return connection.onIdleExpired();
-        return true;
+            result = connection.onIdleExpired();
+        consumer.accept(() -> close(failure));
+        return result;
     }
 
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        // TODO
-        return null;
+        if (LOG.isDebugEnabled())
+            LOG.debug("failure on {}: {}", this, failure);
+        offerFailure(failure);
+        close(failure);
+        return callback::succeeded;
     }
 
     @Override
     public boolean isIdle()
     {
-        // TODO
+        // We are tunnelling, so we are never idle.
         return false;
     }
 }

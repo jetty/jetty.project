@@ -50,7 +50,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.HttpCookieStore;
-import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -352,18 +351,23 @@ public abstract class AbstractProxyServlet extends HttpServlet
      */
     protected HttpClient newHttpClient()
     {
-        int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
+        int selectors = 1;
         String value = getServletConfig().getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
-        return newHttpClient(selectors);
+        ClientConnector clientConnector = newClientConnector();
+        clientConnector.setSelectors(selectors);
+        return newHttpClient(clientConnector);
     }
 
-    protected HttpClient newHttpClient(int selectors)
+    protected HttpClient newHttpClient(ClientConnector clientConnector)
     {
-        ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSelectors(selectors);
         return new HttpClient(new HttpClientTransportDynamic(clientConnector));
+    }
+
+    protected ClientConnector newClientConnector()
+    {
+        return new ClientConnector();
     }
 
     protected HttpClient getHttpClient()

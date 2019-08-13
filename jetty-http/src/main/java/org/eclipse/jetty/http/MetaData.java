@@ -135,7 +135,6 @@ public class MetaData implements Iterable<HttpField>
     {
         private String _method;
         private HttpURI _uri;
-        private String _protocol;
 
         public Request(HttpFields fields)
         {
@@ -175,7 +174,7 @@ public class MetaData implements Iterable<HttpField>
         public Request(Request request)
         {
             this(request.getMethod(), new HttpURI(request.getURI()), request.getHttpVersion(), new HttpFields(request.getFields()), request.getContentLength());
-            setProtocol(request.getProtocol());        }
+        }
 
         @Override
         public void recycle()
@@ -184,7 +183,6 @@ public class MetaData implements Iterable<HttpField>
             _method = null;
             if (_uri != null)
                 _uri.clear();
-            _protocol = null;
         }
 
         @Override
@@ -235,12 +233,7 @@ public class MetaData implements Iterable<HttpField>
 
         public String getProtocol()
         {
-            return _protocol;
-        }
-
-        public void setProtocol(String protocol)
-        {
-            _protocol = protocol;
+            return null;
         }
 
         @Override
@@ -249,6 +242,30 @@ public class MetaData implements Iterable<HttpField>
             HttpFields fields = getFields();
             return String.format("%s{u=%s,%s,h=%d,cl=%d,p=%s}",
                     getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength(), getProtocol());
+        }
+    }
+
+    public static class ConnectRequest extends Request
+    {
+        private String _protocol;
+
+        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        {
+            super(HttpMethod.CONNECT.asString(), scheme, authority, path, HttpVersion.HTTP_2, fields, Long.MIN_VALUE);
+            _protocol = protocol;
+        }
+
+        @Override
+        public String getProtocol()
+        {
+            return _protocol;
+        }
+
+        @Override
+        public void recycle()
+        {
+            super.recycle();
+            _protocol = null;
         }
     }
 

@@ -157,17 +157,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                             }
                             else
                             {
-                            HttpFields trailers = retrieveTrailers();
-                            if (trailers != null)
-                            {
-                                if (transportCallback.start(new SendTrailers(callback, trailers), true))
-                                    sendHeadersFrame(response, false, transportCallback);
-                            }
-                            else
-                            {
-                                if (transportCallback.start(callback, true))
-                                    sendHeadersFrame(response, true, transportCallback);
-                            }
+                                HttpFields trailers = retrieveTrailers();
+                                if (trailers != null)
+                                {
+                                    if (transportCallback.start(new SendTrailers(callback, trailers), true))
+                                        sendHeadersFrame(response, false, transportCallback);
+                                }
+                                else
+                                {
+                                    if (transportCallback.start(callback, true))
+                                        sendHeadersFrame(response, true, transportCallback);
+                                }
                             }
                         }
                         else

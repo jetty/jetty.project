@@ -509,7 +509,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
                                     sendErrorOrAbort("Insufficient content written");
                             }
-                            prepareUpgrade();
+                            checkAndPrepareUpgrade();
                             _response.closeOutput();
                         }
                         finally
@@ -761,7 +761,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return result;
     }
 
-    protected void prepareUpgrade()
+    /**
+     * <p>Checks whether the processing of the request resulted in an upgrade,
+     * and if so performs upgrade preparation steps <em>before</em> the upgrade
+     * response is sent back to the client.</p>
+     * <p>This avoids a race where the server is unprepared if the client sends
+     * data immediately after having received the upgrade response.</p>
+     */
+    protected void checkAndPrepareUpgrade()
     {
     }
 

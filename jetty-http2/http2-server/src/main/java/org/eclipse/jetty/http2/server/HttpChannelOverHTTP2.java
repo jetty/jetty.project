@@ -389,7 +389,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     @Override
     public EndPoint getTunnellingEndPoint()
     {
-        // TODO: idle timeout
         return new ServerHTTP2StreamEndPoint(getStream());
     }
 

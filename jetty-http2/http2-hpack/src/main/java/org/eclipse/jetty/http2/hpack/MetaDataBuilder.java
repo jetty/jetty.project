@@ -255,9 +255,10 @@ public class MetaDataBuilder
                     if (_path == null)
                         throw new HpackException.StreamException("No Path");
                 }
-                MetaData.Request request = new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
-                request.setProtocol(_protocol);
-                return request;
+                if (isConnect)
+                    return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
+                else
+                    return new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
             }
             if (_response)
             {

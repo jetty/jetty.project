@@ -19,12 +19,15 @@
 package org.eclipse.jetty.http.client;
 
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,12 +41,22 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
+import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.hpack.AuthorityHttpField;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -62,6 +75,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -160,10 +176,8 @@ public class ProxyWithDynamicTransportTest
         ServletHolder holder = new ServletHolder(new AsyncProxyServlet()
         {
             @Override
-            protected HttpClient newHttpClient(int selectors)
+            protected HttpClient newHttpClient(ClientConnector clientConnector)
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
                 ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
@@ -203,36 +217,36 @@ public class ProxyWithDynamicTransportTest
             client.stop();
     }
 
-    private static Stream<Arguments> testParams()
+    private static java.util.stream.Stream<Arguments> testParams()
     {
         var h1 = List.of("http/1.1");
         var h2c = List.of("h2c");
         var h2 = List.of("h2");
-        return Stream.of(
-                // HTTP/1.1 Proxy with HTTP/1.1 Server.
-                Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_1_1, false),
-                Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_1_1, true),
-                Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_1_1, false),
-                Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_1_1, true),
-                // HTTP/1.1 Proxy with HTTP/2 Server.
-                Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_2, false),
-                Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_2, true),
-                Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_2, false),
-                Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_2, true),
-                // HTTP/2 Proxy with HTTP/1.1 Server.
-                Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, false),
-                Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, true),
-                Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_1_1, false),
-                Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_1_1, true),
-                Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_1_1, false),
-                Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_1_1, true),
-                // HTTP/2 Proxy with HTTP/2 Server.
-                Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_2, false),
-                Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_2, true),
-                Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_2, false),
-                Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_2, true),
-                Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_2, false),
-                Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_2, true)
+        return java.util.stream.Stream.of(
+            // HTTP/1.1 Proxy with HTTP/1.1 Server.
+            Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_1_1, true),
+            Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_1_1, true),
+            // HTTP/1.1 Proxy with HTTP/2 Server.
+            Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_2, false),
+            Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_2, true),
+            Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_2, false),
+            Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_2, true),
+            // HTTP/2 Proxy with HTTP/1.1 Server.
+            Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, true),
+            Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_1_1, true),
+            Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_1_1, true),
+            // HTTP/2 Proxy with HTTP/2 Server.
+            Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_2, false),
+            Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_2, true),
+            Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_2, false),
+            Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_2, true),
+            Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_2, false),
+            Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_2, true)
         );
     }
 
@@ -258,23 +272,23 @@ public class ProxyWithDynamicTransportTest
         String scheme = serverSecure ? "https" : "http";
         int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
         ContentResponse response1 = client.newRequest("localhost", serverPort)
-                .scheme(scheme)
-                .version(serverProtocol)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scheme)
+            .version(serverProtocol)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(status, response1.getStatus());
 
         // Make a second request to be sure it went through the same connection.
         ContentResponse response2 = client.newRequest("localhost", serverPort)
-                .scheme(scheme)
-                .version(serverProtocol)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(scheme)
+            .version(serverProtocol)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(status, response2.getStatus());
 
         List<Destination> destinations = client.getDestinations().stream()
-                .filter(d -> d.getPort() == serverPort)
-                .collect(Collectors.toList());
+            .filter(d -> d.getPort() == serverPort)
+            .collect(Collectors.toList());
         assertEquals(1, destinations.size());
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
@@ -297,27 +311,27 @@ public class ProxyWithDynamicTransportTest
         String serverScheme = "http";
         int serverPort = serverConnector.getLocalPort();
         ContentResponse response = client.newRequest("localhost", serverPort)
-                .scheme(serverScheme)
-                .version(HttpVersion.HTTP_1_1)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(serverScheme)
+            .version(HttpVersion.HTTP_1_1)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // Client will close the HTTP2StreamEndPoint.
         Thread.sleep(2 * idleTimeout);
 
         List<Destination> destinations = client.getDestinations().stream()
-                .filter(d -> d.getPort() == serverPort)
-                .collect(Collectors.toList());
+            .filter(d -> d.getPort() == serverPort)
+            .collect(Collectors.toList());
         assertEquals(1, destinations.size());
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
 
         List<HTTP2Connection> serverConnections = proxyConnector.getConnectedEndPoints().stream()
-                .map(EndPoint::getConnection)
-                .map(HTTP2Connection.class::cast)
-                .collect(Collectors.toList());
+            .map(EndPoint::getConnection)
+            .map(HTTP2Connection.class::cast)
+            .collect(Collectors.toList());
         assertEquals(1, serverConnections.size());
         assertTrue(serverConnections.get(0).getSession().getStreams().isEmpty());
     }
@@ -335,14 +349,14 @@ public class ProxyWithDynamicTransportTest
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
-                .version(HttpVersion.HTTP_1_1)
-                .timeout(5, TimeUnit.SECONDS)
-                .send(result ->
-                {
-                    assertTrue(result.isFailed());
-                    assertThat(result.getFailure(), Matchers.instanceOf(ConnectException.class));
-                    latch.countDown();
-                });
+            .version(HttpVersion.HTTP_1_1)
+            .timeout(5, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                assertTrue(result.isFailed());
+                assertThat(result.getFailure(), Matchers.instanceOf(ConnectException.class));
+                latch.countDown();
+            });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
@@ -369,14 +383,14 @@ public class ProxyWithDynamicTransportTest
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
-                .version(HttpVersion.HTTP_1_1)
-                .timeout(5, TimeUnit.SECONDS)
-                .send(result ->
-                {
-                    assertTrue(result.isFailed());
-                    assertThat(result.getFailure(), Matchers.instanceOf(ClosedChannelException.class));
-                    latch.countDown();
-                });
+            .version(HttpVersion.HTTP_1_1)
+            .timeout(5, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                assertTrue(result.isFailed());
+                assertThat(result.getFailure(), Matchers.instanceOf(ClosedChannelException.class));
+                latch.countDown();
+            });
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -387,5 +401,182 @@ public class ProxyWithDynamicTransportTest
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
+    }
+
+    @Test
+    public void testHTTP2TunnelResetByClient() throws Exception
+    {
+        startServer(new EmptyServerHandler());
+        CountDownLatch closeLatch = new CountDownLatch(2);
+        startProxy(new ConnectHandler()
+        {
+            @Override
+            protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
+            {
+                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
+                {
+                    @Override
+                    protected void close(Throwable failure)
+                    {
+                        super.close(failure);
+                        closeLatch.countDown();
+                    }
+                };
+            }
+
+            @Override
+            protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
+            {
+                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
+                {
+                    @Override
+                    protected void close(Throwable failure)
+                    {
+                        super.close(failure);
+                        closeLatch.countDown();
+                    }
+                };
+            }
+        });
+        startClient();
+
+        FuturePromise<Session> sessionPromise = new FuturePromise<>();
+        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener.Adapter(), sessionPromise);
+        Session session = sessionPromise.get(5, TimeUnit.SECONDS);
+        String serverAddress = "localhost:" + serverConnector.getLocalPort();
+        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, new HttpFields(), null);
+        HeadersFrame frame = new HeadersFrame(connect, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        CountDownLatch tunnelLatch = new CountDownLatch(1);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                if (response.getStatus() == HttpStatus.OK_200)
+                    tunnelLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                ByteBuffer data = frame.getData();
+                String response = BufferUtil.toString(data, StandardCharsets.UTF_8);
+                if (response.startsWith("HTTP/1.1 200"))
+                    responseLatch.countDown();
+            }
+        });
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+        assertTrue(tunnelLatch.await(5, TimeUnit.SECONDS));
+
+        // Tunnel is established, send a HTTP/1.1 request.
+        String h1 = "GET / HTTP/1.1\r\n" +
+            "Host: " + serverAddress + "\r\n" +
+            "\r\n";
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false), Callback.NOOP);
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+
+        // Now reset the stream, tunnel must be closed.
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testHTTP2TunnelProxyStreamTimeout() throws Exception
+    {
+        startServer(new EmptyServerHandler());
+        CountDownLatch closeLatch = new CountDownLatch(2);
+        startProxy(new ConnectHandler()
+        {
+            @Override
+            protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
+            {
+                return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context)
+                {
+                    @Override
+                    protected void close(Throwable failure)
+                    {
+                        super.close(failure);
+                        closeLatch.countDown();
+                    }
+                };
+            }
+
+            @Override
+            protected UpstreamConnection newUpstreamConnection(EndPoint endPoint, ConnectContext connectContext)
+            {
+                return new UpstreamConnection(endPoint, getExecutor(), getByteBufferPool(), connectContext)
+                {
+                    @Override
+                    protected void close(Throwable failure)
+                    {
+                        super.close(failure);
+                        closeLatch.countDown();
+                    }
+                };
+            }
+        });
+        startClient();
+
+        long streamIdleTimeout = 1000;
+        ConnectionFactory h2c = proxyConnector.getConnectionFactory("h2c");
+        ((HTTP2CServerConnectionFactory)h2c).setStreamIdleTimeout(streamIdleTimeout);
+
+        FuturePromise<Session> sessionPromise = new FuturePromise<>();
+        http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener.Adapter(), sessionPromise);
+        Session session = sessionPromise.get(5, TimeUnit.SECONDS);
+        String serverAddress = "localhost:" + serverConnector.getLocalPort();
+        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, new HttpFields(), null);
+        HeadersFrame frame = new HeadersFrame(connect, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        CountDownLatch tunnelLatch = new CountDownLatch(1);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch resetLatch = new CountDownLatch(1);
+        session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                if (response.getStatus() == HttpStatus.OK_200)
+                    tunnelLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                ByteBuffer data = frame.getData();
+                String response = BufferUtil.toString(data, StandardCharsets.UTF_8);
+                if (response.startsWith("HTTP/1.1 200"))
+                    responseLatch.countDown();
+            }
+
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+                resetLatch.countDown();
+            }
+        });
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+        assertTrue(tunnelLatch.await(5, TimeUnit.SECONDS));
+
+        // Tunnel is established, send a HTTP/1.1 request.
+        String h1 = "GET / HTTP/1.1\r\n" +
+            "Host: " + serverAddress + "\r\n" +
+            "\r\n";
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false), Callback.NOOP);
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+
+        // Wait until the proxy stream idle times out.
+        Thread.sleep(2 * streamIdleTimeout);
+
+        // Client should see a RST_STREAM.
+        assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        // Tunnel must be closed.
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 }

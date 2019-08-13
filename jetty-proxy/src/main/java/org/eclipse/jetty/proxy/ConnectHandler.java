@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -507,9 +506,9 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
-            endp.setIdleTimeout(getIdleTimeout());
-            return endp;
+            SocketChannelEndPoint endPoint = new SocketChannelEndPoint(channel, selector, key, getScheduler());
+            endPoint.setIdleTimeout(getIdleTimeout());
+            return endPoint;
         }
 
         @Override

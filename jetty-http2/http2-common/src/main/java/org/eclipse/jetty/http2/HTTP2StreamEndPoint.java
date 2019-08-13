@@ -48,6 +48,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     private final AtomicReference<Callback> readCallback = new AtomicReference<>();
     private final long created = System.currentTimeMillis();
     private final AtomicBoolean eof = new AtomicBoolean();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final IStream stream;
     private Connection connection;
 
@@ -71,7 +72,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     @Override
     public boolean isOpen()
     {
-        return !stream.isClosed();
+        return !closed.get();
     }
 
     @Override
@@ -157,29 +158,41 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     @Override
     public void close(Throwable cause)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("closing {}, cause: {}", this, cause);
-        shutdownOutput();
-        // TODO: do we need this code after the shutdownOutput() callback?
-        stream.close();
-        onClose(cause);
+        if (closed.compareAndSet(false, true))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("closing {}, cause: {}", this, cause);
+            shutdownOutput();
+            stream.close();
+            onClose(cause);
+        }
     }
 
     @Override
-    public int fill(ByteBuffer sink)
+    public int fill(ByteBuffer sink) throws IOException
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("filling {} on {}", BufferUtil.toDetailString(sink), this);
-
         Entry entry;
         synchronized (this)
         {
             entry = dataQueue.poll();
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("filled {} on {}", entry, this);
+
         if (entry == null)
             return 0;
-        if (entry.eof)
+        if (entry.isEOF())
+        {
+            entry.succeed();
             return shutdownInput();
+        }
+        IOException failure = entry.ioFailure();
+        if (failure != null)
+        {
+            entry.fail(failure);
+            throw failure;
+        }
 
         int sinkPosition = BufferUtil.flipToFill(sink);
         ByteBuffer source = entry.buffer;
@@ -200,7 +213,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         }
         else
         {
-            entry.callback.succeeded();
+            entry.succeed();
         }
         return length;
     }
@@ -516,24 +529,30 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         if (frame.isEndStream())
         {
             if (buffer.hasRemaining())
-                offer(buffer, Callback.from(() -> {}, callback::failed), false);
-            offer(BufferUtil.EMPTY_BUFFER, callback, true);
+                offer(buffer, Callback.from(() -> {}, callback::failed), null);
+            offer(BufferUtil.EMPTY_BUFFER, callback, Entry.EOF);
         }
         else
         {
             if (buffer.hasRemaining())
-                offer(buffer, callback, false);
+                offer(buffer, callback, null);
             else
                 callback.succeeded();
         }
         process();
     }
 
-    private void offer(ByteBuffer buffer, Callback callback, boolean eof)
+    protected void offerFailure(Throwable failure)
+    {
+        offer(BufferUtil.EMPTY_BUFFER, Callback.NOOP, failure);
+        process();
+    }
+
+    private void offer(ByteBuffer buffer, Callback callback, Throwable failure)
     {
         synchronized (this)
         {
-            dataQueue.offer(new Entry(buffer, callback, eof));
+            dataQueue.offer(new Entry(buffer, callback, failure));
         }
     }
 
@@ -564,15 +583,46 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 
     private static class Entry
     {
+        private static final Throwable EOF = new Throwable();
+
         private final ByteBuffer buffer;
         private final Callback callback;
-        private final boolean eof;
+        private final Throwable failure;
 
-        private Entry(ByteBuffer buffer, Callback callback, boolean eof)
+        private Entry(ByteBuffer buffer, Callback callback, Throwable failure)
         {
             this.buffer = buffer;
             this.callback = callback;
-            this.eof = eof;
+            this.failure = failure;
+        }
+
+        private boolean isEOF()
+        {
+            return failure == EOF;
+        }
+
+        private IOException ioFailure()
+        {
+            if (failure == null || isEOF())
+                return null;
+            return failure instanceof IOException ? (IOException)failure : new IOException(failure);
+        }
+
+        private void succeed()
+        {
+            callback.succeeded();
+        }
+
+        private void fail(Throwable failure)
+        {
+            callback.failed(failure);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[b=%s,eof=%b,f=%s]", getClass().getSimpleName(), hashCode(),
+                BufferUtil.toDetailString(buffer), isEOF(), isEOF() ? null : failure);
         }
     }
 

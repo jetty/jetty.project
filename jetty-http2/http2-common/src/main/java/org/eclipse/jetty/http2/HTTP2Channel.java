@@ -24,8 +24,17 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 
+/**
+ * <p>A HTTP/2 specific handler of events for normal and tunneled exchanges.</p>
+ */
 public interface HTTP2Channel
 {
+    /**
+     * <p>A client specific handler for events that happen after
+     * a {@code HEADERS} response frame is received.</p>
+     * <p>{@code DATA} frames may be handled as response content
+     * or as opaque tunnelled data.</p>
+     */
     public interface Client
     {
         public void onData(DataFrame frame, Callback callback);
@@ -35,6 +44,12 @@ public interface HTTP2Channel
         public void onFailure(Throwable failure, Callback callback);
     }
 
+    /**
+     * <p>A server specific handler for events that happen after
+     * a {@code HEADERS} request frame is received.</p>
+     * <p>{@code DATA} frames may be handled as request content
+     * or as opaque tunnelled data.</p>
+     */
     public interface Server
     {
         public Runnable onData(DataFrame frame, Callback callback);

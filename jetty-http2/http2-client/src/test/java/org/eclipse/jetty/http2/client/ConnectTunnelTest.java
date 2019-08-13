@@ -131,8 +131,7 @@ public class ConnectTunnelTest extends AbstractTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        MetaData.Request request = new MetaData.Request(HttpMethod.CONNECT.asString(), HttpScheme.HTTP, new HostPortHttpField(authority), "/", HttpVersion.HTTP_2, new HttpFields());
-        request.setProtocol("websocket");
+        MetaData.Request request = new MetaData.ConnectRequest(HttpScheme.HTTP, new HostPortHttpField(authority), "/", new HttpFields(), "websocket");
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener.Adapter()
         {
