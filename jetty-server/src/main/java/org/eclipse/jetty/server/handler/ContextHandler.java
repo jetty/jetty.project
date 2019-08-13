@@ -640,6 +640,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Add a context event listeners.
      *
      * @param listener the event listener to add
+     * @see ContextScopeListener
      * @see ServletContextListener
      * @see ServletContextAttributeListener
      * @see ServletRequestListener
@@ -647,6 +648,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void addEventListener(EventListener listener)
     {
+        super.addEventListener(listener);
+
         _eventListeners.add(listener);
 
         if (!(isStarted() || isStarting()))

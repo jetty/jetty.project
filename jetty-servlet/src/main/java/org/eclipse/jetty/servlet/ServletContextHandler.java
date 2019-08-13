@@ -202,6 +202,12 @@ public class ServletContextHandler extends ContextHandler
      * Also adds any listeners that are session related to the SessionHandler.
      *
      * @param listener the listener to add
+     * @see HttpSessionAttributeListener
+     * @see HttpSessionActivationListener
+     * @see HttpSessionBindingListener
+     * @see HttpSessionListener
+     * @see HttpSessionIdListener
+     * @see ContextHandler#addEventListener(EventListener)
      */
     @Override
     public void addEventListener(EventListener listener)

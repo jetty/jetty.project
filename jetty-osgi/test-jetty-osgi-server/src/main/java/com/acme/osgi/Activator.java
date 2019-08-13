@@ -46,7 +46,7 @@ public class Activator implements BundleActivator
     {
         //For test purposes, use a random port
         Server server = new Server(0);
-        server.getConnectors()[0].addLifeCycleListener(new AbstractLifeCycleListener()
+        server.getConnectors()[0].addEventListener(new AbstractLifeCycleListener()
         {
 
             /**

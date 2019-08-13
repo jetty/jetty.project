@@ -70,7 +70,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
         final HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
             parser, session, client.getInputBufferSize(), promise, listener);
-        connection.addListener(connectionListener);
+        connection.addEventListener(connectionListener);
         return customize(connection, context);
     }
 

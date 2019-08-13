@@ -222,7 +222,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
             endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
-        connection.addListener(sessionContainer);
+        connection.addEventListener(sessionContainer);
         return configure(connection, connector, endPoint);
     }
 

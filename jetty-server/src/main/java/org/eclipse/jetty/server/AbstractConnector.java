@@ -25,7 +25,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EventListener;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,7 +45,6 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
@@ -156,8 +154,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
-    private final List<EventListener> _eventListenerBeans = new ArrayList<>();
-    private final List<EventListener> _eventListenerBeansUnmodifiable = Collections.unmodifiableList(_eventListenerBeans);
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
@@ -192,23 +188,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
 
-        addEventListener(new Container.Listener()
-        {
-            @Override
-            public void beanAdded(Container parent, Object bean)
-            {
-                if (bean instanceof EventListener && !_eventListenerBeans.contains(bean))
-                    _eventListenerBeans.add((EventListener)bean);
-            }
-
-            @Override
-            public void beanRemoved(Container parent, Object bean)
-            {
-                if (bean instanceof EventListener)
-                    _eventListenerBeans.remove((EventListener)bean);
-            }
-        });
-
         addBean(_server, false);
         addBean(_executor);
         if (executor == null)
@@ -227,22 +206,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
-    }
-
-    /**
-     * Get the beans added to the connector that are EventListeners.
-     * This is essentially equivalent to <code>getBeans(EventListener.class);</code>,
-     * except that: <ul>
-     *     <li>The result is precomputed, so it is more efficient</li>
-     *     <li>The result is ordered by the order added.</li>
-     *     <li>The result is immutable.</li>
-     * </ul>
-     * @see #getBeans(Class)
-     * @return An unmodifiable list of EventListener beans
-     */
-    public List<EventListener> getEventListenerBeans()
-    {
-        return _eventListenerBeansUnmodifiable;
     }
 
     @Override

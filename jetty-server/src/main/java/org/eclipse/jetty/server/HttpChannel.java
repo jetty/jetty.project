@@ -111,11 +111,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _executor = connector == null ? null : connector.getServer().getThreadPool();
         _requestLog = connector == null ? null : connector.getServer().getRequestLog();
 
-        if (connector instanceof AbstractConnector)
-            // Initialize with a readonly preprepared list of listeners
-            _listeners = ((AbstractConnector)connector).getEventListenerBeans();
-        else if (connector != null)
-            _listeners = connector.getBeans(EventListener.class);
+        // Initialize with a readonly preprepared list of listeners
+        _listeners = connector.getEventListenerBeans();
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",

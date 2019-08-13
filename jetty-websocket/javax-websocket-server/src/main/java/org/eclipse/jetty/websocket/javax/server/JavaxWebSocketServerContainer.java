@@ -101,7 +101,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
                 WebSocketComponents.ensureWebSocketComponents(servletContext),
                 coreClientSupplier);
             contextHandler.addManaged(container);
-            contextHandler.addLifeCycleListener(container);
+            contextHandler.addEventListener(container);
         }
         // Store a reference to the ServerContainer per - javax.websocket spec 1.0 final - section 6.4: Programmatic Server Deployment
         servletContext.setAttribute(JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE, container);

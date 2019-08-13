@@ -76,7 +76,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
                 WebSocketComponents.ensureWebSocketComponents(servletContext), executor);
             servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
             contextHandler.addManaged(container);
-            contextHandler.addLifeCycleListener(container);
+            contextHandler.addEventListener(container);
         }
 
         return container;
@@ -112,7 +112,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         {
             factory = new JettyServerFrameHandlerFactory(this);
             contextHandler.addManaged(factory);
-            contextHandler.addLifeCycleListener(factory);
+            contextHandler.addEventListener(factory);
         }
         frameHandlerFactory = factory;
 

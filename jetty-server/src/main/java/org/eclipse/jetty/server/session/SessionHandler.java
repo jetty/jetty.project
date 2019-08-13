@@ -309,16 +309,19 @@ public class SessionHandler extends ScopedHandler
      * but they are expected to at least handle HttpSessionActivationListener,
      * HttpSessionAttributeListener, HttpSessionBindingListener and HttpSessionListener.
      * @see #removeEventListener(EventListener)
+     * @see HttpSessionAttributeListener
+     * @see HttpSessionListener
+     * @see HttpSessionIdListener
      */
     public void addEventListener(EventListener listener)
     {
+        super.addEventListener(listener);
         if (listener instanceof HttpSessionAttributeListener)
             _sessionAttributeListeners.add((HttpSessionAttributeListener)listener);
         if (listener instanceof HttpSessionListener)
             _sessionListeners.add((HttpSessionListener)listener);
         if (listener instanceof HttpSessionIdListener)
             _sessionIdListeners.add((HttpSessionIdListener)listener);
-        addBean(listener, false);
     }
 
     /**
@@ -328,10 +331,7 @@ public class SessionHandler extends ScopedHandler
      */
     public void clearEventListeners()
     {
-        for (EventListener e : getBeans(EventListener.class))
-        {
-            removeBean(e);
-        }
+        // TODO should we remove from super?
         _sessionAttributeListeners.clear();
         _sessionListeners.clear();
         _sessionIdListeners.clear();
@@ -835,13 +835,13 @@ public class SessionHandler extends ScopedHandler
      */
     public void removeEventListener(EventListener listener)
     {
+        super.removeEventListener(listener);
         if (listener instanceof HttpSessionAttributeListener)
             _sessionAttributeListeners.remove(listener);
         if (listener instanceof HttpSessionListener)
             _sessionListeners.remove(listener);
         if (listener instanceof HttpSessionIdListener)
             _sessionIdListeners.remove(listener);
-        removeBean(listener);
     }
 
     /**

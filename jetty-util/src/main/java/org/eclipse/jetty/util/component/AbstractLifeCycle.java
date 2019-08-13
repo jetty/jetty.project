@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.component;
 
+import java.util.EventListener;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.Uptime;
@@ -140,13 +141,14 @@ public abstract class AbstractLifeCycle implements LifeCycle
     }
 
     @Override
-    public void addLifeCycleListener(LifeCycle.Listener listener)
+    public void addEventListener(EventListener listener)
     {
-        _listeners.add(listener);
+        if (listener instanceof Listener)
+            _listeners.add((Listener)listener);
     }
 
     @Override
-    public void removeLifeCycleListener(LifeCycle.Listener listener)
+    public void removeEventListener(EventListener listener)
     {
         _listeners.remove(listener);
     }

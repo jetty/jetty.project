@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -79,9 +80,17 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 {
     private static final Logger LOG = Log.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
+    private final List<EventListener> _eventListenerBeans = new ArrayList<>();
+    private final List<EventListener> _eventListenerBeansUnmodifiable = Collections.unmodifiableList(_eventListenerBeans);
     private final List<Container.Listener> _listeners = new CopyOnWriteArrayList<>();
     private boolean _doStarted;
     private boolean _destroyed;
+
+    @Override
+    public List<EventListener> getEventListenerBeans()
+    {
+        return _eventListenerBeansUnmodifiable;
+    }
 
     /**
      * Starts the managed lifecycle beans in the order they were added.
@@ -339,8 +348,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         Bean newBean = new Bean(o);
 
         // if the bean is a Listener
-        if (o instanceof Container.Listener)
-            addEventListener((Container.Listener)o);
+        if (o instanceof EventListener)
+            addEventListener((EventListener)o);
 
         // Add the bean
         _beans.add(newBean);
@@ -446,25 +455,32 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     }
 
     @Override
-    public void addEventListener(Container.Listener listener)
+    public void addEventListener(EventListener listener)
     {
-        if (_listeners.contains(listener))
+        if (_eventListenerBeans.contains(listener))
             return;
 
-        _listeners.add(listener);
+        super.addEventListener(listener);
+        _eventListenerBeans.add(listener);
 
-        // tell it about existing beans
-        for (Bean b : _beans)
+        if (listener instanceof Container.Listener)
         {
-            listener.beanAdded(this, b._bean);
+            Container.Listener cl = (Container.Listener)listener;
+            _listeners.add(cl);
 
-            // handle inheritance
-            if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
+            // tell it about existing beans
+            for (Bean b : _beans)
             {
-                if (b._bean instanceof ContainerLifeCycle)
-                    ((ContainerLifeCycle)b._bean).addBean(listener, false);
-                else
-                    ((Container)b._bean).addBean(listener);
+                cl.beanAdded(this, b._bean);
+
+                // handle inheritance
+                if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
+                {
+                    if (b._bean instanceof ContainerLifeCycle)
+                        ((ContainerLifeCycle)b._bean).addBean(listener, false);
+                    else
+                        ((Container)b._bean).addBean(listener);
+                }
             }
         }
     }
@@ -635,8 +651,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 l.beanRemoved(this, bean._bean);
             }
 
-            if (bean._bean instanceof Container.Listener)
-                removeEventListener((Container.Listener)bean._bean);
+            if (bean._bean instanceof EventListener)
+                removeEventListener((EventListener)bean._bean);
 
             // stop managed beans
             if (wasManaged && bean._bean instanceof LifeCycle)
@@ -660,14 +676,16 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     }
 
     @Override
-    public void removeEventListener(Container.Listener listener)
+    public void removeEventListener(EventListener listener)
     {
+        _eventListenerBeans.remove(listener);
+        super.removeEventListener(listener);
         if (_listeners.remove(listener))
         {
             // remove existing beans
             for (Bean b : _beans)
             {
-                listener.beanRemoved(this, b._bean);
+                ((Container.Listener)listener).beanRemoved(this, b._bean);
 
                 if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
                     ((Container)b._bean).removeBean(listener);

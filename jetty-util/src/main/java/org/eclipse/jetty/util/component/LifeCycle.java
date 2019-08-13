@@ -138,9 +138,9 @@ public interface LifeCycle
      */
     boolean isFailed();
 
-    void addLifeCycleListener(LifeCycle.Listener listener);
+    void addEventListener(EventListener listener);
 
-    void removeLifeCycleListener(LifeCycle.Listener listener);
+    void removeEventListener(EventListener listener);
 
     /**
      * Listener.

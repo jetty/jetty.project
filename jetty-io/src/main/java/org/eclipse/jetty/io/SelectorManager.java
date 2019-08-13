@@ -38,6 +38,7 @@ import java.util.function.IntUnaryOperator;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -389,31 +390,27 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
 
+    /**
+     * @param listener An EventListener
+     * @see AcceptListener
+     * @see Container#addEventListener(EventListener)
+     */
     public void addEventListener(EventListener listener)
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
+        super.addEventListener(listener);
         if (listener instanceof AcceptListener)
-            addAcceptListener(AcceptListener.class.cast(listener));
+            _acceptListeners.add((AcceptListener)listener);
     }
 
     public void removeEventListener(EventListener listener)
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
+        super.removeEventListener(listener);
         if (listener instanceof AcceptListener)
-            removeAcceptListener(AcceptListener.class.cast(listener));
-    }
-
-    public void addAcceptListener(AcceptListener listener)
-    {
-        if (!_acceptListeners.contains(listener))
-            _acceptListeners.add(listener);
-    }
-
-    public void removeAcceptListener(AcceptListener listener)
-    {
-        _acceptListeners.remove(listener);
+            _acceptListeners.remove(listener);
     }
 
     protected void onAccepting(SelectableChannel channel)

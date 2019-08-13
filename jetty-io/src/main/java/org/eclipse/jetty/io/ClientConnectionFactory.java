@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +44,7 @@ public interface ClientConnectionFactory
     {
         ContainerLifeCycle client = (ContainerLifeCycle)context.get(CLIENT_CONTEXT_KEY);
         if (client != null)
-            client.getBeans(Connection.Listener.class).forEach(connection::addListener);
+            client.getBeans(EventListener.class).forEach(connection::addEventListener);
         return connection;
     }
 
