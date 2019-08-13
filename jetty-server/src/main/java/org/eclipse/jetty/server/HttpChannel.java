@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
@@ -84,7 +87,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Response _response;
     private HttpFields _trailers;
     private final Supplier<HttpFields> _trailerSupplier = () -> _trailers;
-    private final List<Listener> _listeners;
+    private Collection<EventListener> _listeners;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
@@ -108,10 +111,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _executor = connector == null ? null : connector.getServer().getThreadPool();
         _requestLog = connector == null ? null : connector.getServer().getRequestLog();
 
-        List<Listener> listeners = new ArrayList<>();
-        if (connector != null)
-            listeners.addAll(connector.getBeans(Listener.class));
-        _listeners = listeners;
+        if (connector instanceof AbstractConnector)
+            // Initialize with a readonly preprepared list of listeners
+            _listeners = ((AbstractConnector)connector).getEventListenerBeans();
+        else if (connector != null)
+            _listeners = connector.getBeans(EventListener.class);
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
@@ -138,11 +142,37 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public boolean addListener(Listener listener)
     {
+        // If this is the first listener, use a singleton
+        if (_listeners == null)
+        {
+            _listeners = Collections.singletonList(listener);
+            return true;
+        }
+
+        // If we are adding to a immutable list, copy to an ArrayList
+        if (!(_listeners instanceof ArrayList))
+            _listeners = new ArrayList<>(_listeners);
         return _listeners.add(listener);
     }
 
     public boolean removeListener(Listener listener)
     {
+        if (_listeners == null)
+            return false;
+
+        if (_listeners instanceof ArrayList)
+            return _listeners.remove(listener);
+
+        if (!_listeners.contains(listener))
+            return false;
+
+        if (_listeners.size() == 1)
+        {
+            _listeners = null;
+            return true;
+        }
+
+        _listeners = new ArrayList<>(_listeners);
         return _listeners.remove(listener);
     }
 
@@ -293,6 +323,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written = 0;
         _trailers = null;
         _oldIdleTimeout = 0;
+        if (_listeners instanceof ArrayList)
+            _listeners.clear();
+        else
+            _listeners = null;
     }
 
     public void onAsyncWaitForContent()
@@ -1051,46 +1085,61 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent1(Function<Listener, Consumer<Request>> function, Request request)
     {
-        for (Listener listener : _listeners)
+        if (_listeners == null)
+            return;
+        for (EventListener listener : _listeners)
         {
-            try
+            if (listener instanceof Listener)
             {
-                function.apply(listener).accept(request);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Failure invoking listener " + listener, x);
+                try
+                {
+                    function.apply((Listener)listener).accept(request);
+                }
+                catch (Throwable x)
+                {
+                    LOG.debug("Failure invoking listener " + listener, x);
+                }
             }
         }
     }
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
     {
-        for (Listener listener : _listeners)
+        if (_listeners == null)
+            return;
+        for (EventListener listener : _listeners)
         {
-            ByteBuffer view = content.slice();
-            try
+            if (listener instanceof Listener)
             {
-                function.apply(listener).accept(request, view);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Failure invoking listener " + listener, x);
+                ByteBuffer view = content.slice();
+                try
+                {
+                    function.apply((Listener)listener).accept(request, view);
+                }
+                catch (Throwable x)
+                {
+                    LOG.debug("Failure invoking listener " + listener, x);
+                }
             }
         }
     }
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, Throwable>> function, Request request, Throwable failure)
     {
-        for (Listener listener : _listeners)
+        if (_listeners == null)
+            return;
+        for (EventListener listener : _listeners)
         {
-            try
+            if (listener instanceof Listener)
             {
-                function.apply(listener).accept(request, failure);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Failure invoking listener " + listener, x);
+                try
+                {
+                    function.apply((Listener)listener).accept(request, failure);
+                }
+                catch (Throwable x)
+                {
+                    LOG.debug("Failure invoking listener " + listener, x);
+                }
             }
         }
     }
@@ -1114,7 +1163,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * performing the request processing, and they should not call blocking code
      * (otherwise the request processing will be blocked as well).</p>
      */
-    public interface Listener
+    public interface Listener extends EventListener
     {
         /**
          * Invoked just after the HTTP request line and headers have been parsed.
