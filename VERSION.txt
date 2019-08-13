@@ -1,3 +1,5 @@
+jetty-9.4.21-SNAPSHOT
+
 jetty-9.4.20.v20190813 - 13 August 2019
  + 300 Implement Deflater / Inflater Object Pool
  + 2061 WebSocket hangs in blockingWrite
