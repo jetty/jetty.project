@@ -100,8 +100,8 @@ public class JettyForkedChild extends AbstractLifeCycle
             //--webprops
             if ("--webprops".equals(args[i]))
             {
-                webAppPropsFile = new File(args[++i].trim());          
-                jetty.setWebApp(null, loadWebAppProps());
+                webAppPropsFile = new File(args[++i].trim());
+                jetty.setWebAppProperties(loadWebAppProps());
                 System.err.println("WEBPROPS="+webAppPropsFile);
                 continue;
             }
@@ -162,21 +162,21 @@ public class JettyForkedChild extends AbstractLifeCycle
                 {
                     try
                     {
-                    scanner.stop();
-                    if (!Objects.isNull(jetty.getWebApp()))
-                    {
-                        //stop the webapp
-                        jetty.getWebApp().stop();
+                        scanner.stop();
+                        if (!Objects.isNull(jetty.getWebApp()))
+                        {
+                            //stop the webapp
+                            jetty.getWebApp().stop();
 
-                        //reload the props
-                        jetty.setWebApp(jetty.getWebApp(), loadWebAppProps());
-                        
-                        //restart the webapp
-                        jetty.getWebApp().start();
+                            //reload the props
+                            jetty.setWebAppProperties(loadWebAppProps());
+                            jetty.setWebApp(jetty.getWebApp());
+                            //restart the webapp
+                            jetty.redeployWebApp();
 
-                        //restart the scanner
-                        scanner.start();
-                    }
+                            //restart the scanner
+                            scanner.start();
+                        }
                     }
                     catch (Exception e)
                     {
@@ -185,13 +185,13 @@ public class JettyForkedChild extends AbstractLifeCycle
                 }
             }
         });
-        
+
         if (!Objects.isNull(webAppPropsFile))
             scanner.watch(webAppPropsFile.toPath());
-        
-        
+
+
         scanner.start();
-        
+
         //wait for jetty to finish
         jetty.join();
     }

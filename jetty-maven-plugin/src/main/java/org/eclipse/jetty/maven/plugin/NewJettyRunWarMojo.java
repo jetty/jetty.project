@@ -106,9 +106,7 @@ public class NewJettyRunWarMojo extends AbstractWebAppMojo
             embedder.setExitVm(true);
             embedder.setStopAtShutdown(true);
             embedder.start();
-
- 
-            
+            startScanner();
             embedder.join();
         }
         catch (Exception e)
@@ -252,7 +250,7 @@ public class NewJettyRunWarMojo extends AbstractWebAppMojo
                     warArtifacts = null;
                     configureScanner();
                 }
-                
+                embedder.getWebApp().stop();
                 configureWebApp();
                 embedder.redeployWebApp();
                 scanner.start();

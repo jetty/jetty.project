@@ -72,8 +72,11 @@ public class JettyEmbedder extends AbstractLifeCycle
     protected int stopPort;
     
     protected String stopKey;
-    
-    protected Properties webAppProperties;
+
+    private String contextXml;
+
+
+    private Properties webAppProperties;
 
    
 
@@ -201,17 +204,36 @@ public class JettyEmbedder extends AbstractLifeCycle
     {
         this.stopKey = stopKey;
     }
-
-    public Properties getWebAppProperties()
-    {
-        return webAppProperties;
-    }
     
-    public void setWebApp (JettyWebAppContext app, Properties properties)
+    public void setWebApp (JettyWebAppContext app)
     throws Exception
     {
         webApp = app;
-        webAppProperties = properties;
+    }
+    
+    public void setWebAppProperties (Properties props)
+    {
+        if (webAppProperties != null)
+            webAppProperties.clear();
+        
+        if (props != null)
+        {
+            if (webAppProperties == null)
+            {
+                webAppProperties = new Properties();
+                webAppProperties.putAll(props);
+            }
+        }
+    }
+    
+    public String getContextXml()
+    {
+        return contextXml;
+    }
+
+    public void setContextXml(String contextXml)
+    {
+        this.contextXml = contextXml;
     }
     
     public void doStart()
@@ -231,9 +253,12 @@ public class JettyEmbedder extends AbstractLifeCycle
     protected void redeployWebApp()
     throws Exception
     {
-        webApp.stop();
+        if (!webApp.isStopped())
+            webApp.stop();
+        
         //regenerate config properties
         applyWebAppProperties();
+        
         webApp.start();
     }
     
@@ -298,6 +323,11 @@ public class JettyEmbedder extends AbstractLifeCycle
     private void applyWebAppProperties () throws Exception
     {
         //apply properties to the webapp if there are any
+        if (contextXml != null)
+        {
+            if (webAppProperties == null)
+                webAppProperties.put("context.xml", contextXml);
+        }
         WebAppPropertyConverter.fromProperties(webApp, webAppProperties, server, jettyProperties);    
     }
     

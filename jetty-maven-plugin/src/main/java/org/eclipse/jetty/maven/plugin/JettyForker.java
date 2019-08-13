@@ -20,21 +20,12 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
-import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ShutdownMonitor;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -55,13 +46,11 @@ public class JettyForker extends AbstractForker
     
     protected JettyWebAppContext webApp;
     
-    protected Properties webAppProperties;
-    
     protected String containerClassPath;
     
-
-    
     protected File webAppPropsFile;
+    
+    protected String contextXml;
 
 
     public File getWebAppPropsFile()
@@ -87,6 +76,16 @@ public class JettyForker extends AbstractForker
         this.forkWebXml = forkWebXml;
     }
 
+    public String getContextXml()
+    {
+        return contextXml;
+    }
+
+    public void setContextXml(String contextXml)
+    {
+        this.contextXml = contextXml;
+    }
+    
     public String getContainerClassPath()
     {
         return containerClassPath;
@@ -99,10 +98,9 @@ public class JettyForker extends AbstractForker
     }
 
 
-    public void setWebApp (JettyWebAppContext app, Properties props)
+    public void setWebApp (JettyWebAppContext app)
     {
         webApp = app;
-        webAppProperties = props;
     }
 
     public Server getServer()
@@ -196,7 +194,7 @@ public class JettyForker extends AbstractForker
             webApp.start(); //just enough to generate the quickstart
 
             //save config of the webapp BEFORE we stop
-            WebAppPropertyConverter.toProperties(webApp, webAppPropsFile, webAppProperties.getProperty("context.xml"));
+            WebAppPropertyConverter.toProperties(webApp, webAppPropsFile, contextXml);
         }
         finally
         {

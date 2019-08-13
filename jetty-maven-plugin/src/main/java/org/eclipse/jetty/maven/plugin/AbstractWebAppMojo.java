@@ -191,9 +191,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
     /**
      * Root directory for all html/jsp etc files
-     *
-     * 
-     * 
      */
     @Parameter (defaultValue="${maven.war.src}")
     protected File webAppSourceDirectory;
@@ -270,9 +267,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected Map<String,String> systemProperties;
     
     /** 
-     * Controls how to run jetty. Valid values are inprocess,forked,distro.
-     * 
-     * 
+     * Controls how to run jetty. Valid values are EMBED,FORKED,DISTRO.
      */
     @Parameter (property="jetty.runType", defaultValue="EMBED") 
     protected RunTypes runType;
@@ -314,10 +309,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected Server server;
-    //End of inprocess only
+    //End of EMBED only
     
 
-    //Start of parameters only valid for forked/distro
+    //Start of parameters only valid for FORKED/DISTRO
     /**
      * Extra environment variables to be passed to the forked process
      */
@@ -346,10 +341,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String stopKey;
-    //End of forked/distro parameters
+    //End of FORKED or DISTRO parameters
     
     
-    //Start of parameters only valid for distro
+    //Start of parameters only valid for DISTRO
     /**
      * Location of jetty home directory
      */
@@ -368,17 +363,17 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String[] modules;
-    //End of distro-only parameters
+    //End of DISTRO only parameters
     
     
-    //Start of parameters only valid for fork
+    //Start of parameters only valid for FORKED
     /**
      * The file into which to generate the quickstart web xml for the forked process to use
      * 
      */
     @Parameter (defaultValue="${project.build.directory}/fork-web.xml")
     protected File forkWebXml;
-    //End of fork-only parameters
+    //End of FORKED only parameters
     
     /**
      * maven-war-plugin reference
@@ -518,14 +513,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setJettyProperties(jettyProperties);
         jetty.setRequestLog(requestLog);
         jetty.setLoginServices(loginServices);
-
-        Properties webAppProperties = null;
-        if (contextXml != null)
-        {
-            webAppProperties = new Properties();
-            webAppProperties.put("context.xml", contextXml);
-        }
-        jetty.setWebApp(webApp, webAppProperties);
+        jetty.setContextXml(contextXml);
+        jetty.setWebApp(webApp);
         return jetty;
     }
 
@@ -547,19 +536,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setJettyXmlFiles(jettyXmls);
         jetty.setJettyProperties(jettyProperties);
         jetty.setForkWebXml(forkWebXml);
-        
+        jetty.setContextXml(contextXml);
         jetty.setWebAppPropsFile(new File(target, "webApp.props"));
         Random random = new Random();
         String token = Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
         jetty.setTokenFile(target.toPath().resolve(token+".txt").toFile());
-        
-        Properties webAppProperties = null;
-        if (contextXml != null)
-        {
-            webAppProperties = new Properties();
-            webAppProperties.put("context.xml", contextXml);
-        }
-        jetty.setWebApp(webApp, webAppProperties);
+        jetty.setWebApp(webApp);
         return jetty;
     }
 
@@ -606,7 +588,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
 
         jetty.setWebApp(webApp);
-        jetty.setContextXmlFile(new File(contextXml));
+        jetty.setContextXml(contextXml);
 
         if (jettyHome == null)
             jetty.setJettyDistro(resolve(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
@@ -658,7 +640,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * @return
      */
-    private List<File> getProjectDependencyFiles()
+    protected List<File> getProjectDependencyFiles()
     {
         List<File> dependencyFiles = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
@@ -693,7 +675,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
 
 
-    private MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
     {
         if ( project.getProjectReferences() == null || project.getProjectReferences().isEmpty() )
         {
@@ -756,7 +738,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
 
 
-    private void unpackOverlays (List<Overlay> overlays)
+    protected void unpackOverlays (List<Overlay> overlays)
     throws Exception
     {
         if (overlays == null || overlays.isEmpty())
@@ -795,7 +777,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
 
 
-    private  Resource unpackOverlay (Overlay overlay)
+    protected  Resource unpackOverlay (Overlay overlay)
     throws IOException
     {        
         if (overlay.getResource() == null)
@@ -1120,85 +1102,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 tmp.mkdirs();            
             webApp.setTempDirectory(tmp);
         }
-        
-        //Set up the location of the webapp.
-        //There are 2 parts to this: setWar() and setBaseResource(). On standalone jetty,
-        //the former could be the location of a packed war, while the latter is the location
-        //after any unpacking. With this mojo, you are running an unpacked, unassembled webapp,
-        //so the two locations should be equal.
-        Resource webAppSourceDirectoryResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
-        if (webApp.getWar() == null)
-            webApp.setWar(webAppSourceDirectoryResource.toString());
 
-        //The first time we run, remember the original base dir
-        if (originalBaseResource == null)
-        {
-            if (webApp.getBaseResource() == null)
-                originalBaseResource = webAppSourceDirectoryResource;
-            else
-                originalBaseResource = webApp.getBaseResource();
-        }
-
-        //On every subsequent re-run set it back to the original base dir before
-        //we might have applied any war overlays onto it
-        webApp.setBaseResource(originalBaseResource);
-
-        if (classesDirectory != null)
-        {
-            webApp.setClasses (classesDirectory);
-            System.err.println("Classes dir="+classesDirectory);
-        }
-        else
-            System.err.println("NO CLASSES DIR");
-        if (useTestScope && (testClassesDirectory != null))
-            webApp.setTestClasses (testClassesDirectory);
-
-        webApp.setWebInfLib(getProjectDependencyFiles());
-
-
-        //if we have not already set web.xml location, need to set one up
-        if (webApp.getDescriptor() == null)
-        {
-            //Has an explicit web.xml file been configured to use?
-            if (webXml != null)
-             {
-                 Resource r = Resource.newResource(webXml);
-                 if (r.exists() && !r.isDirectory())
-                 {
-                     webApp.setDescriptor(r.toString());
-                 }
-             }
-             
-             //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
-             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
-             {
-                 Resource r = webApp.getBaseResource().addPath("WEB-INF/web.xml");
-                 if (r.exists() && !r.isDirectory())
-                 {
-                     webApp.setDescriptor(r.toString());
-                 }
-             }
-             
-             //Still don't have a web.xml file: finally try the configured static resource directory if there is one
-             if (webApp.getDescriptor() == null && (webAppSourceDirectory != null))
-             {
-                 File f = new File (new File (webAppSourceDirectory, "WEB-INF"), "web.xml");
-                 if (f.exists() && f.isFile())
-                 {
-                    webApp.setDescriptor(f.getCanonicalPath());
-                 }
-             }
-        }
-
-        //process any overlays and the war type artifacts
-        unpackOverlays(getOverlays()); //this sets up the base resource collection
-
-        getLog().info("web.xml file = "+webApp.getDescriptor());       
-        getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
         getLog().info("Context path = " + webApp.getContextPath());
         getLog().info("Tmp directory = "+ (webApp.getTempDirectory()== null? " determined at runtime": webApp.getTempDirectory()));
-        getLog().info("Web defaults = "+(webApp.getDefaultsDescriptor()==null?" jetty default":webApp.getDefaultsDescriptor()));
-        getLog().info("Web overrides = "+(webApp.getOverrideDescriptor()==null?" none":webApp.getOverrideDescriptor()));
     }
     
     

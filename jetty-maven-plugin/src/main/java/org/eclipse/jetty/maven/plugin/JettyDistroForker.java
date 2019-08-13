@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -55,7 +56,7 @@ public class JettyDistroForker extends AbstractForker
     protected JettyWebAppContext webApp;
 
 
-    protected File contextXmlFile;
+    protected String contextXml;
 
     /**
      * Location of existing jetty home directory
@@ -128,14 +129,14 @@ public class JettyDistroForker extends AbstractForker
         this.modules = modules;
     }
 
-    public File getContextXmlFile()
+    public String getContextXmlFile()
     {
-        return contextXmlFile;
+        return contextXml;
     }
 
-    public void setContextXmlFile(File contextXmlFile)
+    public void setContextXml (String contextXml)
     {
-        this.contextXmlFile = contextXmlFile;
+        this.contextXml = contextXml;
     }
     
     
@@ -268,14 +269,14 @@ public class JettyDistroForker extends AbstractForker
         generateWebAppPropertiesFile();
         webappPath.resolve("maven.xml").toFile().setLastModified(System.currentTimeMillis());
     }
-    
+
     private void generateWebAppPropertiesFile()
-    throws Exception
+        throws Exception
     {
-        WebAppPropertyConverter.toProperties(webApp, etcPath.resolve("maven.props").toFile(), contextXmlFile.getAbsolutePath());
+        WebAppPropertyConverter.toProperties(webApp, etcPath.resolve("maven.props").toFile(), contextXml);
     }
-    
-    
+
+
     /**
      * Create or configure a jetty base.
      * 
@@ -285,7 +286,7 @@ public class JettyDistroForker extends AbstractForker
     {
         if (jettyBase != null && !jettyBase.exists())
             throw new IllegalStateException(jettyBase.getAbsolutePath() +" does not exist");
-        
+
         File targetJettyBase = new File(baseDir, "jetty-base");
         Path targetBasePath = targetJettyBase.toPath();
         if (Files.exists(targetBasePath))
@@ -300,6 +301,8 @@ public class JettyDistroForker extends AbstractForker
         if (jettyBase != null)
         {
             Path jettyBasePath = jettyBase.toPath();
+            
+            final File contextXmlFile = (contextXml==null?null:FileSystems.getDefault().getPath(contextXml).toFile());
             
             //copy the existing jetty base
             Files.walkFileTree(jettyBasePath,EnumSet.of(FileVisitOption.FOLLOW_LINKS), 
