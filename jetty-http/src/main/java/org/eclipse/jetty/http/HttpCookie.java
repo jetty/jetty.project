@@ -31,7 +31,7 @@ public class HttpCookie
 
     public enum SameSite
     {
-        EXCLUDED("Excluded"), NONE("None"), STRICT("Strict"), LAX("Lax");
+        NONE("None"), STRICT("Strict"), LAX("Lax");
 
         private String attributeValue;
         SameSite(String attributeValue) {
@@ -78,7 +78,7 @@ public class HttpCookie
 
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version)
     {
-        this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, SameSite.EXCLUDED);
+        this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, null);
     }
 
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, SameSite sameSite)
@@ -115,7 +115,7 @@ public class HttpCookie
         _version = cookie.getVersion();
         _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
         // TODO support for SameSite values has not yet been added to java.net.HttpCookie
-        _sameSite = SameSite.EXCLUDED;
+        _sameSite = null;
     }
 
     /**
@@ -398,7 +398,7 @@ public class HttpCookie
             buf.append("; Secure");
         if (_httpOnly)
             buf.append("; HttpOnly");
-        if (_sameSite != SameSite.EXCLUDED)
+        if (_sameSite != null)
         {
             buf.append("; SameSite=");
             buf.append(_sameSite.toString());
