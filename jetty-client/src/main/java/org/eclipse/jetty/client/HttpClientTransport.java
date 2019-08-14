@@ -51,6 +51,15 @@ public interface HttpClientTransport extends ClientConnectionFactory
     public void setHttpClient(HttpClient client);
 
     /**
+     * Creates a new Key with the given request and origin.
+     *
+     * @param request the request that triggers the creation of the Key
+     * @param origin the origin of the server for the request
+     * @return a Key that identifies a destination
+     */
+    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin);
+
+    /**
      * Creates a new, transport-specific, {@link HttpDestination} object.
      * <p>
      * {@link HttpDestination} controls the destination-connection cardinality: protocols like
@@ -78,20 +87,4 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * @param factory the factory for ConnectionPool instances
      */
     public void setConnectionPoolFactory(ConnectionPool.Factory factory);
-
-    /**
-     * Specifies whether a {@link HttpClientTransport} is dynamic.
-     */
-    @FunctionalInterface
-    public interface Dynamic
-    {
-        /**
-         * Creates a new Key with the given request and origin.
-         *
-         * @param request the request that triggers the creation of the Key
-         * @param origin the origin of the server for the request
-         * @return a Key that identifies a destination
-         */
-        public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin);
-    }
 }

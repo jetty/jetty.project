@@ -81,7 +81,13 @@ public interface ClientConnectionFactory
          */
         public boolean matches(List<String> candidates)
         {
-            return protocols.stream().anyMatch(candidates::contains);
+            return protocols.stream().anyMatch(p -> candidates.stream().anyMatch(c -> c.equalsIgnoreCase(p)));
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x%s", getClass().getSimpleName(), hashCode(), protocols);
         }
     }
 }

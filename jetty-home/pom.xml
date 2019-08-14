@@ -689,8 +689,8 @@
       <artifactId>jboss-logging</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.cdi</groupId>
-      <artifactId>cdi-2</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-cdi</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

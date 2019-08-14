@@ -58,6 +58,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
@@ -484,63 +485,46 @@ public class Request implements HttpServletRequest
     {
         try
         {
-            int maxFormContentSize = -1;
-            int maxFormKeys = -1;
+            int maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+            int maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
 
             if (_context != null)
             {
-                maxFormContentSize = _context.getContextHandler().getMaxFormContentSize();
-                maxFormKeys = _context.getContextHandler().getMaxFormKeys();
+                ContextHandler contextHandler = _context.getContextHandler();
+                maxFormContentSize = contextHandler.getMaxFormContentSize();
+                maxFormKeys = contextHandler.getMaxFormKeys();
             }
-
-            if (maxFormContentSize < 0)
+            else
             {
-                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
-                if (obj == null)
-                    maxFormContentSize = 200000;
-                else if (obj instanceof Number)
-                {
-                    Number size = (Number)obj;
-                    maxFormContentSize = size.intValue();
-                }
-                else if (obj instanceof String)
-                {
-                    maxFormContentSize = Integer.parseInt((String)obj);
-                }
-            }
-
-            if (maxFormKeys < 0)
-            {
-                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
-                if (obj == null)
-                    maxFormKeys = 1000;
-                else if (obj instanceof Number)
-                {
-                    Number keys = (Number)obj;
-                    maxFormKeys = keys.intValue();
-                }
-                else if (obj instanceof String)
-                {
-                    maxFormKeys = Integer.parseInt((String)obj);
-                }
+                maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
             }
 
             int contentLength = getContentLength();
-            if (contentLength > maxFormContentSize && maxFormContentSize > 0)
-            {
-                throw new IllegalStateException("Form too large: " + contentLength + " > " + maxFormContentSize);
-            }
+            if (maxFormContentSize >= 0 && contentLength > maxFormContentSize)
+                throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
+
             InputStream in = getInputStream();
             if (_input.isAsync())
                 throw new IllegalStateException("Cannot extract parameters with async IO");
 
-            UrlEncoded.decodeTo(in, params, getCharacterEncoding(), contentLength < 0 ? maxFormContentSize : -1, maxFormKeys);
+            UrlEncoded.decodeTo(in, params, getCharacterEncoding(), maxFormContentSize, maxFormKeys);
         }
         catch (IOException e)
         {
             LOG.debug(e);
             throw new RuntimeIOException(e);
         }
+    }
+
+    private int lookupServerAttribute(String key, int dftValue)
+    {
+        Object attribute = _channel.getServer().getAttribute(key);
+        if (attribute instanceof Number)
+            return ((Number)attribute).intValue();
+        else if (attribute instanceof String)
+            return Integer.parseInt((String)attribute);
+        return dftValue;
     }
 
     @Override
@@ -2137,7 +2121,7 @@ public class Request implements HttpServletRequest
         AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse);
         event.setDispatchContext(getServletContext());
 
-        String uri = ((HttpServletRequest)servletRequest).getRequestURI();
+        String uri = unwrap(servletRequest).getRequestURI();
         if (_contextPath != null && uri.startsWith(_contextPath))
             uri = uri.substring(_contextPath.length());
         else
@@ -2147,6 +2131,19 @@ public class Request implements HttpServletRequest
         event.setDispatchPath(uri);
         state.startAsync(event);
         return _async;
+    }
+
+    public static HttpServletRequest unwrap(ServletRequest servletRequest)
+    {
+        if (servletRequest instanceof HttpServletRequestWrapper)
+        {
+            return (HttpServletRequestWrapper)servletRequest;
+        }
+        if (servletRequest instanceof ServletRequestWrapper)
+        {
+            return unwrap(((ServletRequestWrapper)servletRequest).getRequest());
+        }
+        return ((HttpServletRequest)servletRequest);
     }
 
     @Override

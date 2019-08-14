@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -60,17 +61,19 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private final long timeStamp = System.nanoTime();
     private final ISession session;
     private final int streamId;
+    private final MetaData.Request request;
     private final boolean local;
     private boolean localReset;
     private Listener listener;
     private boolean remoteReset;
     private long dataLength;
 
-    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, boolean local)
+    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
     {
         super(scheduler);
         this.session = session;
         this.streamId = streamId;
+        this.request = request;
         this.local = local;
         this.dataLength = Long.MIN_VALUE;
     }
@@ -237,6 +240,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         notIdle();
         switch (frame.getType())
         {
+            case PREFACE:
+            {
+                onNewStream(callback);
+                break;
+            }
             case HEADERS:
             {
                 onHeaders((HeadersFrame)frame, callback);
@@ -274,6 +282,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
+    private void onNewStream(Callback callback)
+    {
+        notifyNewStream(this);
+        callback.succeeded();
+    }
+
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
         MetaData metaData = frame.getMetaData();
@@ -281,7 +295,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             HttpFields fields = metaData.getFields();
             long length = -1;
-            if (fields != null)
+            if (fields != null && !HttpMethod.CONNECT.is(request.getMethod()))
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
@@ -541,6 +555,22 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private Callback endWrite()
     {
         return writing.getAndSet(null);
+    }
+
+    private void notifyNewStream(Stream stream)
+    {
+        Listener listener = this.listener;
+        if (listener != null)
+        {
+            try
+            {
+                listener.onNewStream(stream);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener " + listener, x);
+            }
+        }
     }
 
     private void notifyData(Stream stream, DataFrame frame, Callback callback)

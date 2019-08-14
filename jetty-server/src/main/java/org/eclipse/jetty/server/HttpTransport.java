@@ -28,17 +28,19 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface HttpTransport
 {
+    String UPGRADE_CONNECTION_ATTRIBUTE = HttpTransport.class.getName() + ".UPGRADE";
+
     /**
      * Asynchronous call to send a response (or part) over the transport
      *
-     * @param info The header info to send, or null if just sending more data.
-     * The first call to send for a response must have a non null info.
-     * @param head True if the response if for a HEAD request (and the data should not be sent).
+     * @param request True if the response if for a HEAD request (and the data should not be sent).
+     * @param response The header info to send, or null if just sending more data.
+     *             The first call to send for a response must have a non null info.
      * @param content A buffer of content to be sent.
      * @param lastContent True if the content is the last content for the current response.
      * @param callback The Callback instance that success or failure of the send is notified on
      */
-    void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback);
+    void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback);
 
     /**
      * @return true if responses can be pushed over this transport
@@ -55,7 +57,7 @@ public interface HttpTransport
      * some time after the last content is sent).
      */
     void onCompleted();
-
+    
     /**
      * Aborts this transport.
      * <p>

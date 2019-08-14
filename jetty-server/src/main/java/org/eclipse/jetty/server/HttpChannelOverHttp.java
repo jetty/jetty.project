@@ -235,7 +235,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (_metadata.getMethod() == null)
             _httpConnection.close();
         else if (onEarlyEOF() || _delayedForContent)
-        {
+        { 
             _delayedForContent = false;
             handle();
         }
@@ -289,6 +289,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
+        onRequest(_metadata);
+
         if (_complianceViolations != null && !_complianceViolations.isEmpty())
         {
             this.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
@@ -369,9 +371,9 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 _upgrade = PREAMBLE_UPGRADE_H2C;
 
                 if (HttpMethod.PRI.is(_metadata.getMethod()) &&
-                    "*".equals(_metadata.getURI().toString()) &&
-                    _fields.size() == 0 &&
-                    upgrade())
+                        "*".equals(_metadata.getURI().getPath()) &&
+                        _fields.size() == 0 &&
+                        upgrade())
                     return true;
 
                 badMessage(new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426));
@@ -387,8 +389,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         if (!persistent)
             _httpConnection.getGenerator().setPersistent(false);
-
-        onRequest(_metadata);
 
         // Should we delay dispatch until we have some content?
         // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
@@ -478,8 +478,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         if (LOG.isDebugEnabled())
             LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
-        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection);
-        getResponse().setStatus(101);
+        getRequest().setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection);
+        getResponse().setStatus(HttpStatus.SWITCHING_PROTOCOLS_101);
         getHttpTransport().onCompleted();
         return true;
     }
@@ -536,10 +536,22 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 _complianceViolations = new ArrayList<>();
             }
             String record = String.format("%s (see %s) in mode %s for %s in %s",
-                violation.getDescription(), violation.getURL(), mode, details, getHttpTransport());
+                    violation.getDescription(), violation.getURL(), mode, details, getHttpTransport());
             _complianceViolations.add(record);
             if (LOG.isDebugEnabled())
                 LOG.debug(record);
         }
+    }
+
+    @Override
+    public boolean isTunnellingSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public EndPoint getTunnellingEndPoint()
+    {
+        return getEndPoint();
     }
 }

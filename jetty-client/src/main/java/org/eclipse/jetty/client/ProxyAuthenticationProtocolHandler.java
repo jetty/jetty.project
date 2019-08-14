@@ -73,7 +73,7 @@ public class ProxyAuthenticationProtocolHandler extends AuthenticationProtocolHa
     @Override
     protected URI getAuthenticationURI(Request request)
     {
-        HttpDestination destination = (HttpDestination)getHttpClient().getDestination(request.getScheme(), request.getHost(), request.getPort());
+        HttpDestination destination = (HttpDestination)getHttpClient().resolveDestination(request);
         ProxyConfiguration.Proxy proxy = destination.getProxy();
         return proxy != null ? proxy.getURI() : request.getURI();
     }

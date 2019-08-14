@@ -138,6 +138,16 @@ public interface Stream
     public interface Listener
     {
         /**
+         * <p>Callback method invoked when a stream is created locally by
+         * {@link Session#newStream(HeadersFrame, Promise, Listener)}.</p>
+         *
+         * @param stream the newly created stream
+         */
+        public default void onNewStream(Stream stream)
+        {
+        }
+
+        /**
          * <p>Callback method invoked when a HEADERS frame representing the HTTP response has been received.</p>
          *
          * @param stream the stream
