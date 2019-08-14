@@ -28,12 +28,10 @@ class ReadState
 {
     private static final Logger LOG = Log.getLogger(ReadState.class);
 
-    public static final ByteBuffer NO_ACTION = BufferUtil.EMPTY_BUFFER;
-
     private State state = State.READING;
     private ByteBuffer buffer;
 
-    public ByteBuffer getBuffer()
+    ByteBuffer getBuffer()
     {
         synchronized (this)
         {
@@ -57,7 +55,7 @@ class ReadState
         }
     }
 
-    public Action getAction(ByteBuffer buffer)
+    Action getAction(ByteBuffer buffer)
     {
         synchronized (this)
         {
@@ -152,7 +150,7 @@ class ReadState
         }
     }
 
-    public void discard()
+    void discard()
     {
         synchronized (this)
         {
@@ -189,7 +187,7 @@ class ReadState
         }
     }
 
-    public enum Action
+    enum Action
     {
         FILL,
         PARSE,
