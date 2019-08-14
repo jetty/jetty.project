@@ -21,6 +21,7 @@ package org.eclipse.jetty.client.dynamic;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -78,7 +79,7 @@ import org.eclipse.jetty.io.EndPoint;
  * version, or request headers, or request attributes, or even request path) by overriding
  * {@link #newDestinationKey(HttpRequest, Origin)}.</p>
  */
-public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTransport implements HttpClientTransport.Dynamic
+public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTransport
 {
     private final List<ClientConnectionFactory.Info> factoryInfos;
     private final List<String> protocols;
@@ -102,42 +103,48 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         super(connector);
         addBean(connector);
         if (factoryInfos.length == 0)
-            throw new IllegalArgumentException("Missing ClientConnectionFactory");
+            factoryInfos = new Info[]{HttpClientConnectionFactory.HTTP11};
         this.factoryInfos = Arrays.asList(factoryInfos);
         this.protocols = Arrays.stream(factoryInfos)
-            .flatMap(info -> info.getProtocols().stream())
-            .distinct()
-            .collect(Collectors.toList());
+                .flatMap(info -> info.getProtocols().stream())
+                .distinct()
+                .map(p -> p.toLowerCase(Locale.ENGLISH))
+                .collect(Collectors.toList());
         for (ClientConnectionFactory.Info factoryInfo : factoryInfos)
         {
             addBean(factoryInfo);
         }
         setConnectionPoolFactory(destination ->
-            new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
+                new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
     }
 
     @Override
     public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
     {
         boolean ssl = HttpScheme.HTTPS.is(request.getScheme());
+        String http1 = "http/1.1";
         String http2 = ssl ? "h2" : "h2c";
         List<String> protocols = List.of();
-        if (request.getVersion() == HttpVersion.HTTP_2)
+        if (request.isVersionExplicit())
         {
-            // The application is explicitly asking for HTTP/2, so exclude HTTP/1.1.
-            if (this.protocols.contains(http2))
-                protocols = List.of(http2);
+            HttpVersion version = request.getVersion();
+            String desired = version == HttpVersion.HTTP_2 ? http2 : http1;
+            if (this.protocols.contains(desired))
+                protocols = List.of(desired);
         }
         else
         {
             // Preserve the order of protocols chosen by the application.
+            // We need to keep multiple protocols in case the protocol
+            // is negotiated: e.g. [http/1.1, h2] negotiates [h2], but
+            // here we don't know yet what will be negotiated.
             protocols = this.protocols.stream()
-                .filter(p -> p.equals("http/1.1") || p.equals(http2))
+                .filter(p -> p.equals(http1) || p.equals(http2))
                 .collect(Collectors.toList());
         }
         if (protocols.isEmpty())
             return new HttpDestination.Key(origin, null);
-        return new HttpDestination.Key(origin, new HttpDestination.Protocol(protocols, ssl));
+        return new HttpDestination.Key(origin, new HttpDestination.Protocol(protocols, ssl && protocols.contains(http2)));
     }
 
     @Override
@@ -166,7 +173,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             else
             {
                 factoryInfo = findClientConnectionFactoryInfo(protocol.getProtocols())
-                    .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for " + protocol));
+                        .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for " + protocol));
             }
         }
         return factoryInfo.getClientConnectionFactory().newConnection(endPoint, context);
@@ -184,7 +191,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
                 throw new IOException("Could not negotiate protocol among " + alpnConnection.getProtocols());
             List<String> protocols = List.of(protocol);
             Info factoryInfo = findClientConnectionFactoryInfo(protocols)
-                .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for negotiated protocol " + protocol));
+                    .orElseThrow(() -> new IOException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " for negotiated protocol " + protocol));
             return factoryInfo.getClientConnectionFactory().newConnection(endPoint, context);
         }
         catch (Throwable failure)
@@ -197,7 +204,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     private Optional<Info> findClientConnectionFactoryInfo(List<String> protocols)
     {
         return factoryInfos.stream()
-            .filter(info -> info.matches(protocols))
-            .findFirst();
+                .filter(info -> info.matches(protocols))
+                .findFirst();
     }
 }

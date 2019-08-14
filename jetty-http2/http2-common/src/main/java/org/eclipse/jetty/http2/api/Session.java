@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.api;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 
@@ -124,6 +125,18 @@ public interface Session
      * @return the stream with the given id, or null if no such stream exist
      */
     public Stream getStream(int streamId);
+
+    /**
+     * @return the local network address this session is bound to,
+     * or {@code null} if this session is not bound to a network address
+     */
+    public InetSocketAddress getLocalAddress();
+
+    /**
+     * @return the remote network address this session is connected to,
+     * or {@code null} if this session is not connected to a network address
+     */
+    public InetSocketAddress getRemoteAddress();
 
     /**
      * <p>A {@link Listener} is the passive counterpart of a {@link Session} and

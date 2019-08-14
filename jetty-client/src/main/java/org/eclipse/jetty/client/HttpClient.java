@@ -509,11 +509,24 @@ public class HttpClient extends ContainerLifeCycle
      * @param port the destination port
      * @return the destination
      * @see #getDestinations()
+     * @deprecated use {@link #resolveDestination(Request)} instead
      */
+    @Deprecated
     public Destination getDestination(String scheme, String host, int port)
     {
         Origin origin = createOrigin(scheme, host, port);
         return resolveDestination(new HttpDestination.Key(origin, null));
+    }
+
+    public Destination resolveDestination(Request request)
+    {
+        Origin origin = createOrigin(request.getScheme(), request.getHost(), request.getPort());
+        HttpClientTransport transport = getTransport();
+        HttpDestination.Key destinationKey = transport.newDestinationKey((HttpRequest)request, origin);
+        HttpDestination destination = resolveDestination(destinationKey);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Resolved {} for {}", destination, request);
+        return destination;
     }
 
     private Origin createOrigin(String scheme, String host, int port)
@@ -529,7 +542,7 @@ public class HttpClient extends ContainerLifeCycle
         return new Origin(scheme, host, port);
     }
 
-    private HttpDestination resolveDestination(HttpDestination.Key key)
+    HttpDestination resolveDestination(HttpDestination.Key key)
     {
         HttpDestination destination = destinations.get(key);
         if (destination == null)
@@ -568,16 +581,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
     {
-        Origin origin = createOrigin(request.getScheme(), request.getHost(), request.getPort());
-        HttpClientTransport transport = getTransport();
-        HttpDestination.Key destinationKey = null;
-        if (transport instanceof HttpClientTransport.Dynamic)
-            destinationKey = ((HttpClientTransport.Dynamic)transport).newDestinationKey(request, origin);
-        if (destinationKey == null)
-            destinationKey = new HttpDestination.Key(origin, null);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Selected {} for {}", destinationKey, request);
-        HttpDestination destination = resolveDestination(destinationKey);
+        HttpDestination destination = (HttpDestination)resolveDestination(request);
         destination.send(request, listeners);
     }
 

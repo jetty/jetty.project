@@ -37,7 +37,7 @@ public abstract class ProxyConnection extends AbstractConnection
     private final IteratingCallback pipe = new ProxyIteratingCallback();
     private final ByteBufferPool bufferPool;
     private final ConcurrentMap<String, Object> context;
-    private Connection connection;
+    private ProxyConnection connection;
 
     protected ProxyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
     {
@@ -61,7 +61,7 @@ public abstract class ProxyConnection extends AbstractConnection
         return connection;
     }
 
-    public void setConnection(Connection connection)
+    public void setConnection(ProxyConnection connection)
     {
         this.connection = connection;
     }
@@ -75,6 +75,11 @@ public abstract class ProxyConnection extends AbstractConnection
     protected abstract int read(EndPoint endPoint, ByteBuffer buffer) throws IOException;
 
     protected abstract void write(EndPoint endPoint, ByteBuffer buffer, Callback callback);
+
+    protected void close(Throwable failure)
+    {
+        getEndPoint().close(failure);
+    }
 
     @Override
     public String toConnectionString()
@@ -92,7 +97,7 @@ public abstract class ProxyConnection extends AbstractConnection
         private int filled;
 
         @Override
-        protected Action process() throws Exception
+        protected Action process()
         {
             buffer = bufferPool.acquire(getInputBufferSize(), true);
             try
@@ -123,7 +128,7 @@ public abstract class ProxyConnection extends AbstractConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug(ProxyConnection.this + " could not fill", x);
                 bufferPool.release(buffer);
-                disconnect();
+                disconnect(x);
                 return Action.SUCCEEDED;
             }
         }
@@ -147,14 +152,14 @@ public abstract class ProxyConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(ProxyConnection.this + " failed to write " + filled + " bytes", x);
-            disconnect();
+            bufferPool.release(buffer);
+            disconnect(x);
         }
 
-        private void disconnect()
+        private void disconnect(Throwable x)
         {
-            bufferPool.release(buffer);
-            ProxyConnection.this.close();
-            connection.close();
+            ProxyConnection.this.close(x);
+            connection.close(x);
         }
     }
 }

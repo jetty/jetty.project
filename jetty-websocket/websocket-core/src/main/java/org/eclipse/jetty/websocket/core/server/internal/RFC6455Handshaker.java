@@ -35,8 +35,8 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
@@ -229,7 +229,7 @@ public final class RFC6455Handshaker implements Handshaker
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={}", connection, coreSession);
 
-        baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
+        baseRequest.setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         return true;
     }
 

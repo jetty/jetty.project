@@ -29,9 +29,11 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -47,7 +49,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, WriteFlusher.Listener
+public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, WriteFlusher.Listener, HTTP2Channel.Server
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
@@ -127,16 +129,16 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             }
 
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
-                !endStream && !_expect100Continue;
+                    !endStream && !_expect100Continue && !HttpMethod.CONNECT.is(request.getMethod());
 
             if (LOG.isDebugEnabled())
             {
                 Stream stream = getStream();
                 LOG.debug("HTTP2 Request #{}/{}, delayed={}:{}{} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    _delayedUntilContent, System.lineSeparator(),
-                    request.getMethod(), request.getURI(), request.getHttpVersion(),
-                    System.lineSeparator(), fields);
+                        stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                        _delayedUntilContent, System.lineSeparator(),
+                        request.getMethod(), request.getURI(), request.getHttpVersion(),
+                        System.lineSeparator(), fields);
             }
 
             return _delayedUntilContent ? null : this;
@@ -166,9 +168,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             {
                 Stream stream = getStream();
                 LOG.debug("HTTP2 PUSH Request #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
-                    request.getMethod(), request.getURI(), request.getHttpVersion(),
-                    System.lineSeparator(), request.getFields());
+                        stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
+                        request.getMethod(), request.getURI(), request.getHttpVersion(),
+                        System.lineSeparator(), request.getFields());
             }
 
             return this;
@@ -208,9 +210,15 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         {
             Stream stream = getStream();
             LOG.debug("HTTP2 Commit Response #{}/{}:{}{} {} {}{}{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getHttpVersion(), info.getStatus(), info.getReason(),
-                System.lineSeparator(), info.getFields());
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getHttpVersion(), info.getStatus(), info.getReason(),
+                    System.lineSeparator(), info.getFields());
         }
+    }
+
+    @Override
+    public Runnable onData(DataFrame frame, Callback callback)
+    {
+        return onRequestContent(frame, callback);
     }
 
     public Runnable onRequestContent(DataFrame frame, final Callback callback)
@@ -260,11 +268,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content, handle: {}",
-                stream.getId(),
-                Integer.toHexString(stream.getSession().hashCode()),
-                length,
-                endStream ? "last" : "some",
-                handle);
+                    stream.getId(),
+                    Integer.toHexString(stream.getSession().hashCode()),
+                    length,
+                    endStream ? "last" : "some",
+                    handle);
         }
 
         boolean wasDelayed = _delayedUntilContent;
@@ -272,7 +280,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         return handle || wasDelayed ? this : null;
     }
 
-    public Runnable onRequestTrailers(HeadersFrame frame)
+    @Override
+    public Runnable onTrailer(HeadersFrame frame)
     {
         HttpFields trailers = frame.getMetaData().getFields();
         if (trailers.size() > 0)
@@ -282,8 +291,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         {
             Stream stream = getStream();
             LOG.debug("HTTP2 Request #{}/{}, trailers:{}{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                System.lineSeparator(), trailers);
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    System.lineSeparator(), trailers);
         }
 
         boolean handle = onRequestComplete();
@@ -293,17 +302,19 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         return handle || wasDelayed ? this : null;
     }
 
-    public boolean isRequestIdle()
+    @Override
+    public boolean isIdle()
     {
         return getState().isIdle();
     }
 
-    public boolean onStreamTimeout(Throwable failure, Consumer<Runnable> consumer)
+    @Override
+    public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
         final boolean delayed = _delayedUntilContent;
         _delayedUntilContent = false;
 
-        boolean result = isRequestIdle();
+        boolean result = isIdle();
         if (result)
             consumeInput();
 
@@ -317,6 +328,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         return result;
     }
 
+    @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
         getHttpTransport().onStreamFailure(failure);
@@ -366,6 +378,18 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
                     throw new IOException("Concurrent commit while trying to send 100-Continue");
             }
         }
+    }
+
+    @Override
+    public boolean isTunnellingSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public EndPoint getTunnellingEndPoint()
+    {
+        return new ServerHTTP2StreamEndPoint(getStream());
     }
 
     @Override

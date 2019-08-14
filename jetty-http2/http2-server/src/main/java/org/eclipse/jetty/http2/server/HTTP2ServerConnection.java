@@ -35,9 +35,11 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
@@ -86,7 +88,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
                 return false;
         }
     }
-
+    
     private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final AtomicLong totalRequests = new AtomicLong();
@@ -176,10 +178,10 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
         if (channel != null)
         {
-            Runnable task = channel.onRequestContent(frame, callback);
+            Runnable task = channel.onData(frame, callback);
             if (task != null)
                 offerTask(task, false);
         }
@@ -193,10 +195,10 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing trailers {} on {}", frame, stream);
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
         if (channel != null)
         {
-            Runnable task = channel.onRequestTrailers(frame);
+            Runnable task = channel.onTrailer(frame);
             if (task != null)
                 offerTask(task, false);
         }
@@ -204,8 +206,8 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public boolean onStreamTimeout(IStream stream, Throwable failure)
     {
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
-        boolean result = channel != null && channel.onStreamTimeout(failure, task -> offerTask(task, true));
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
+        boolean result = channel != null && channel.onTimeout(failure, task -> offerTask(task, true));
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", stream, failure);
         return result;
@@ -215,7 +217,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing failure on {}: {}", stream, failure);
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onFailure(failure, callback);
@@ -233,11 +235,11 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         ISession session = getSession();
         // Compute whether all requests are idle.
         boolean result = session.getStreams().stream()
-            .map(stream -> (IStream)stream)
-            .map(stream -> (HttpChannelOverHTTP2)stream.getAttachment())
-            .filter(Objects::nonNull)
-            .map(HttpChannelOverHTTP2::isRequestIdle)
-            .reduce(true, Boolean::logicalAnd);
+                .map(stream -> (IStream)stream)
+                .map(stream -> (HTTP2Channel.Server)stream.getAttachment())
+                .filter(Objects::nonNull)
+                .map(HTTP2Channel.Server::isIdle)
+                .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
         return result;
@@ -374,12 +376,24 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
+        protected void checkAndPrepareUpgrade()
+        {
+            if (isTunnel())
+                getHttpTransport().prepareUpgrade();
+        }
+
+        @Override
         public void onCompleted()
         {
-            totalResponses.incrementAndGet();
             super.onCompleted();
-            if (!getStream().isReset())
+            totalResponses.incrementAndGet();
+            if (!getStream().isReset() && !isTunnel())
                 recycle();
+        }
+
+        private boolean isTunnel()
+        {
+            return HttpMethod.CONNECT.is(getRequest().getMethod()) && getResponse().getStatus() == HttpStatus.OK_200;
         }
 
         @Override

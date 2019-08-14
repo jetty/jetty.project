@@ -536,13 +536,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                     status == HttpStatus.NO_CONTENT_204 ||
                                     status == HttpStatus.NOT_MODIFIED_304);
                                 if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
-                                {
-                                    if (isCommitted())
-                                        abort(new IOException("insufficient content written"));
-                                    else
-                                        _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, "insufficient content written");
-                                }
+                                    sendErrorOrAbort("Insufficient content written");
                             }
+                            checkAndPrepareUpgrade();
                             _response.closeOutput();
                         }
                         finally
@@ -577,6 +573,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         boolean suspended = action == Action.WAIT;
         return !suspended;
+    }
+
+    public void sendErrorOrAbort(String message)
+    {
+        try
+        {
+            if (isCommitted())
+                abort(new IOException(message));
+            else
+                _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
+        }
+        catch (Throwable x)
+        {
+            LOG.ignore(x);
+            abort(x);
+        }
     }
 
     protected void sendError(int code, String reason)
@@ -671,7 +683,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             int code = 500;
             Integer status = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
             if (status != null)
+            {
                 code = status.intValue();
+            }
             else
             {
                 Throwable cause = unwrap(failure, BadMessageException.class);
@@ -776,6 +790,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return result;
     }
 
+    /**
+     * <p>Checks whether the processing of the request resulted in an upgrade,
+     * and if so performs upgrade preparation steps <em>before</em> the upgrade
+     * response is sent back to the client.</p>
+     * <p>This avoids a race where the server is unprepared if the client sends
+     * data immediately after having received the upgrade response.</p>
+     */
+    protected void checkAndPrepareUpgrade()
+    {
+    }
+
     public void onCompleted()
     {
         if (LOG.isDebugEnabled())
@@ -852,13 +877,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    protected boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete, final Callback callback)
+    protected boolean sendResponse(MetaData.Response response, ByteBuffer content, boolean complete, final Callback callback)
     {
         boolean committing = _committed.compareAndSet(false, true);
 
         if (LOG.isDebugEnabled())
             LOG.debug("sendResponse info={} content={} complete={} committing={} callback={}",
-                info,
+                response,
                 BufferUtil.toDetailString(content),
                 complete,
                 committing,
@@ -867,23 +892,23 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (committing)
         {
             // We need an info to commit
-            if (info == null)
-                info = _response.newResponseMetaData();
-            commit(info);
+            if (response == null)
+                response = _response.newResponseMetaData();
+            commit(response);
 
-            // wrap callback to process 100 responses
-            final int status = info.getStatus();
-            final Callback committed = (status < 200 && status >= 100) ? new Send100Callback(callback) : new SendCallback(callback, content, true, complete);
+            // Wrap the callback to process 1xx responses.
+            Callback committed = HttpStatus.isInformational(response.getStatus())
+                ? new Send100Callback(callback) : new SendCallback(callback, content, true, complete);
 
             notifyResponseBegin(_request);
 
             // committing write
-            _transport.send(info, _request.isHead(), content, complete, committed);
+            _transport.send(_request.getMetaData(), response, content, complete, committed);
         }
-        else if (info == null)
+        else if (response == null)
         {
             // This is a normal write
-            _transport.send(null, _request.isHead(), content, complete, new SendCallback(callback, content, false, complete));
+            _transport.send(_request.getMetaData(), null, content, complete, new SendCallback(callback, content, false, complete));
         }
         else
         {
@@ -1001,6 +1026,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         notifyResponseFailure(_request, failure);
         _transport.abort(failure);
+    }
+
+    public boolean isTunnellingSupported()
+    {
+        return false;
+    }
+
+    public EndPoint getTunnellingEndPoint()
+    {
+        throw new UnsupportedOperationException("Tunnelling not supported");
     }
 
     private void notifyRequestBegin(Request request)
@@ -1338,7 +1373,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             if (x instanceof BadMessageException)
             {
-                _transport.send(HttpGenerator.RESPONSE_500_INFO, false, null, true, new Callback.Nested(this)
+                _transport.send(_request.getMetaData(), HttpGenerator.RESPONSE_500_INFO, null, true, new Callback.Nested(this)
                 {
                     @Override
                     public void succeeded()

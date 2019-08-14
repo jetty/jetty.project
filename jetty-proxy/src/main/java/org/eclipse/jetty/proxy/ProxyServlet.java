@@ -55,9 +55,9 @@ public class ProxyServlet extends AbstractProxyServlet
     private static final String CONTINUE_ACTION_ATTRIBUTE = ProxyServlet.class.getName() + ".continueAction";
 
     @Override
-    protected void service(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        final int requestId = getRequestId(request);
+        int requestId = getRequestId(request);
 
         String rewrittenTarget = rewriteTarget(request);
 
@@ -76,7 +76,7 @@ public class ProxyServlet extends AbstractProxyServlet
             return;
         }
 
-        final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
+        Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
             .method(request.getMethod())
             .version(HttpVersion.fromString(request.getProtocol()));
 
@@ -84,7 +84,7 @@ public class ProxyServlet extends AbstractProxyServlet
 
         addProxyHeaders(request, proxyRequest);
 
-        final AsyncContext asyncContext = request.startAsync();
+        AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
         asyncContext.setTimeout(0);
         proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
@@ -200,7 +200,7 @@ public class ProxyServlet extends AbstractProxyServlet
         }
 
         @Override
-        public void onContent(final Response proxyResponse, ByteBuffer content, final Callback callback)
+        public void onContent(Response proxyResponse, ByteBuffer content, Callback callback)
         {
             byte[] buffer;
             int offset;

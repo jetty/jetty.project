@@ -34,8 +34,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * HTTP Configuration.
@@ -51,8 +49,6 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("HTTP Configuration")
 public class HttpConfiguration implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(HttpConfiguration.class);
-
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
     private final List<Customizer> _customizers = new CopyOnWriteArrayList<>();
     private final Trie<Boolean> _formEncodedMethods = new TreeTrie<>();
@@ -128,6 +124,7 @@ public class HttpConfiguration implements Dumpable
         _requestHeaderSize = config._requestHeaderSize;
         _responseHeaderSize = config._responseHeaderSize;
         _headerCacheSize = config._headerCacheSize;
+        _headerCacheCaseSensitive = config._headerCacheCaseSensitive;
         _secureScheme = config._secureScheme;
         _securePort = config._securePort;
         _idleTimeout = config._idleTimeout;
@@ -140,6 +137,7 @@ public class HttpConfiguration implements Dumpable
         _useDirectByteBuffers = config._useDirectByteBuffers;
         _minRequestDataRate = config._minRequestDataRate;
         _minResponseDataRate = config._minResponseDataRate;
+        _httpCompliance = config._httpCompliance;
         _requestCookieCompliance = config._requestCookieCompliance;
         _responseCookieCompliance = config._responseCookieCompliance;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
@@ -557,7 +555,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return The CookieCompliance used for parsing request <code>Cookie</code> headers.
+     * @return The CookieCompliance used for parsing request {@code Cookie} headers.
      * @see #getResponseCookieCompliance()
      */
     public CookieCompliance getRequestCookieCompliance()
@@ -566,7 +564,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return The CookieCompliance used for generating response <code>Set-Cookie</code> headers
+     * @return The CookieCompliance used for generating response {@code Set-Cookie} headers
      * @see #getRequestCookieCompliance()
      */
     public CookieCompliance getResponseCookieCompliance()
@@ -575,8 +573,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param cookieCompliance The CookieCompliance to use for parsing request <code>Cookie</code> headers.
-     * @see #setRequestCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for parsing request {@code Cookie} headers.
      */
     public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
     {
@@ -584,8 +581,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param cookieCompliance The CookieCompliance to use for generating response <code>Set-Cookie</code> headers
-     * @see #setResponseCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for generating response {@code Set-Cookie} headers
      */
     public void setResponseCookieCompliance(CookieCompliance cookieCompliance)
     {

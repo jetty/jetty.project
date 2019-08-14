@@ -139,13 +139,10 @@ public class ResponseTest
             private Throwable _channelError;
 
             @Override
-            public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
             {
                 if (BufferUtil.hasContent(content))
-                {
                     BufferUtil.append(_content, content);
-                }
-
                 if (_channelError == null)
                     callback.succeeded();
                 else
