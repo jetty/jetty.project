@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.servlet.SessionTrackingMode;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 
 public class SessionHandlerTest
@@ -33,6 +34,7 @@ public class SessionHandlerTest
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionTrackingModes(new HashSet<>(
             Arrays.asList(SessionTrackingMode.COOKIE, SessionTrackingMode.URL)));
+        sessionHandler.setSessionTrackingModes(Collections.singleton(SessionTrackingMode.SSL));
         Assertions.assertThrows(IllegalArgumentException.class,() ->
             sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.SSL, SessionTrackingMode.URL))));
     }
