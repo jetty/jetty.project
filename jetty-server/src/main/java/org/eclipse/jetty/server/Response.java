@@ -85,12 +85,6 @@ public class Response implements HttpServletResponse
      */
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
-    /**
-     * If this string is found within the comment of a cookie added with {@link #addCookie(Cookie)}, then the cookie
-     * will be set as HTTP ONLY.
-     */
-    public static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
-
     private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
     private final AtomicInteger _include = new AtomicInteger();
@@ -236,18 +230,6 @@ public class Response implements HttpServletResponse
 
         String comment = cookie.getComment();
         boolean httpOnly = cookie.isHttpOnly();
-
-        if (comment != null)
-        {
-            int i = comment.indexOf(HTTP_ONLY_COMMENT);
-            if (i >= 0)
-            {
-                httpOnly = true;
-                comment = StringUtil.strip(comment.trim(), HTTP_ONLY_COMMENT);
-                if (comment.length() == 0)
-                    comment = null;
-            }
-        }
 
         addCookie(new HttpCookie(
             cookie.getName(),

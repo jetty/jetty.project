@@ -100,6 +100,22 @@ public class HttpCookieTest
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.STRICT);
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", httpCookie.getRFC6265SetCookie());
 
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, false, true, "comment__HTTP_ONLY__", -1, null);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", httpCookie.getRFC6265SetCookie());
+
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, "__SAME_SITE_NONE__", -1, null);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", httpCookie.getRFC6265SetCookie());
+
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, "__SAME_SITE_LAX__", -1, null);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax", httpCookie.getRFC6265SetCookie());
+
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, "__SAME_SITE_STRICT__", -1, null);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", httpCookie.getRFC6265SetCookie());
+
+        // specified SameSite takes precedence over comment value
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, "comment__SAME_SITE_STRICT__", -1, HttpCookie.SameSite.LAX);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax", httpCookie.getRFC6265SetCookie());
+
         String[] badNameExamples = {
             "\"name\"",
             "name\t",
