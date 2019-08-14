@@ -32,7 +32,9 @@ import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.SendFailure;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.IStream;
@@ -86,6 +88,18 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         activeChannels.add(channel);
 
         return send(channel, exchange);
+    }
+
+    @Override
+    protected void normalizeRequest(Request request)
+    {
+        super.normalizeRequest(request);
+        if (request instanceof HttpUpgrader.Factory)
+        {
+            HttpUpgrader upgrader = ((HttpUpgrader.Factory)request).newHttpUpgrader(HttpVersion.HTTP_2);
+            ((HttpRequest)request).getConversation().setAttribute(HttpUpgrader.class.getName(), upgrader);
+            upgrader.prepare((HttpRequest)request);
+        }
     }
 
     protected HttpChannelOverHTTP2 acquireHttpChannel()

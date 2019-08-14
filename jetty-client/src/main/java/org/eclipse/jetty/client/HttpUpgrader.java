@@ -16,23 +16,19 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.server;
+package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.EndPoint;
 
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
-import org.eclipse.jetty.websocket.core.server.internal.RFC8441Handshaker;
-
-public interface Handshaker
+public interface HttpUpgrader
 {
-    static Handshaker newInstance()
-    {
-        return new HandshakerSelector(new RFC6455Handshaker(), new RFC8441Handshaker());
-    }
+    public void prepare(HttpRequest request);
 
-    boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException;
+    public void upgrade(HttpResponse response, EndPoint endPoint);
+
+    public interface Factory
+    {
+        public HttpUpgrader newHttpUpgrader(HttpVersion version);
+    }
 }

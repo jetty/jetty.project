@@ -340,6 +340,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         Object attachment = stream.getAttachment();
         if (attachment instanceof HttpChannelOverHTTP2)
         {
+            // TODO: we used to "fake" a 101 response to upgrade the endpoint
+            //  but we don't anymore, so this code should be deleted.
             HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)attachment;
             if (channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
             {

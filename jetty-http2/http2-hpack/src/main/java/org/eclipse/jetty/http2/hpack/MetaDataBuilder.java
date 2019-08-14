@@ -175,22 +175,22 @@ public class MetaDataBuilder
                     _contentLength = field.getLongValue();
                     _fields.add(field);
                     break;
-                
+
                 case TE:
                     if ("trailers".equalsIgnoreCase(value))
                         _fields.add(field);
                     else
                         streamException("Unsupported TE value '%s'", value);
                     break;
-            
+
                 case CONNECTION:
                     if ("TE".equalsIgnoreCase(value))
                         _fields.add(field);
                     else
                         streamException("Connection specific field '%s'", header);
-                    break;                
+                    break;
 
-                default:               
+                default:
                     if (name.charAt(0) == ':')
                         streamException("Unknown pseudo header '%s'", name);
                     else
@@ -236,7 +236,7 @@ public class MetaDataBuilder
             _streamException.addSuppressed(new Throwable());
             throw _streamException;
         }
-        
+
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
 
@@ -266,7 +266,7 @@ public class MetaDataBuilder
                     throw new HpackException.StreamException("No Status");
                 return new MetaData.Response(HttpVersion.HTTP_2, _status, fields, _contentLength);
             }
-                
+
             return new MetaData(HttpVersion.HTTP_2, fields, _contentLength);
         }
         finally

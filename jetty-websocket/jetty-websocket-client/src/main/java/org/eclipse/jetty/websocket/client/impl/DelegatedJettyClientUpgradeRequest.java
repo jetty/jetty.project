@@ -232,24 +232,6 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public void setHttpVersion(String httpVersion)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setMethod(String method)
-    {
-
-    }
-
-    @Override
-    public void setRequestURI(URI uri)
-    {
-        // TODO
-    }
-
-    @Override
     public void setSession(Object session)
     {
         // TODO

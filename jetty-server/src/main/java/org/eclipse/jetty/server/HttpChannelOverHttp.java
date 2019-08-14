@@ -407,6 +407,12 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         return true;
     }
 
+    @Override
+    protected void checkAndPrepareUpgrade()
+    {
+        // TODO: move the code from HttpConnection.upgrade() here?
+    }
+
     /**
      * <p>Attempts to perform a HTTP/1.1 upgrade.</p>
      * <p>The upgrade looks up a {@link ConnectionFactory.Upgrading} from the connector

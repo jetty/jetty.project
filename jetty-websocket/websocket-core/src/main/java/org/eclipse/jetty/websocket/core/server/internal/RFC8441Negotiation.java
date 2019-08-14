@@ -16,23 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.server;
+package org.eclipse.jetty.websocket.core.server.internal;
 
-import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
-import org.eclipse.jetty.websocket.core.server.internal.RFC8441Handshaker;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 
-public interface Handshaker
+public class RFC8441Negotiation extends Negotiation
 {
-    static Handshaker newInstance()
+    public RFC8441Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components) throws BadMessageException
     {
-        return new HandshakerSelector(new RFC6455Handshaker(), new RFC8441Handshaker());
+        super(baseRequest, request, response, components);
     }
 
-    boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException;
+    @Override
+    public boolean isUpgrade()
+    {
+        if (!getBaseRequest().hasMetaData())
+            return false;
+
+        return "websocket".equals(getBaseRequest().getMetaData().getProtocol());
+    }
 }

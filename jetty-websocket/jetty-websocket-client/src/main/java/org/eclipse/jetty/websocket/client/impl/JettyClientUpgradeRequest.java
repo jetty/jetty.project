@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -89,18 +88,18 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
     }
 
     @Override
-    protected void customize(EndPoint endp)
+    protected void customize(EndPoint endPoint)
     {
-        super.customize(endp);
-        handshakeRequest.configure(endp);
+        super.customize(endPoint);
+        handshakeRequest.configure(endPoint);
     }
 
     @Override
-    public void upgrade(HttpResponse response, HttpConnectionOverHTTP httpConnection)
+    public void upgrade(HttpResponse response, EndPoint endPoint)
     {
         frameHandler.setUpgradeRequest(new DelegatedJettyClientUpgradeRequest(this));
         frameHandler.setUpgradeResponse(new DelegatedJettyClientUpgradeResponse(response));
-        super.upgrade(response, httpConnection);
+        super.upgrade(response, endPoint);
     }
 
     @Override

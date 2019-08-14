@@ -208,9 +208,9 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
 
         @Override
-        protected void customize(EndPoint endp)
+        protected void customize(EndPoint endPoint)
         {
-            frameCapture.setEndPoint(endp);
+            frameCapture.setEndPoint(endPoint);
             futureCapture.complete(frameCapture);
         }
 

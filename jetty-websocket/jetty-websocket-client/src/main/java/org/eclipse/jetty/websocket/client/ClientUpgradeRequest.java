@@ -26,9 +26,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
@@ -46,7 +48,6 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     private String httpVersion;
     private String method;
     private String host;
-    private boolean secure;
 
     public ClientUpgradeRequest()
     {
@@ -57,12 +58,9 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     {
         this.requestURI = uri;
         String scheme = uri.getScheme();
-        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme))
-        {
+        if (!HttpScheme.WS.is(scheme) || !HttpScheme.WSS.is(scheme))
             throw new IllegalArgumentException("URI scheme must be 'ws' or 'wss'");
-        }
         this.host = this.requestURI.getHost();
-        this.parameters.clear();
     }
 
     @Override
@@ -193,11 +191,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     public String getProtocolVersion()
     {
         String version = getHeader("Sec-WebSocket-Version");
-        if (version == null)
-        {
-            return "13"; // Default
-        }
-        return version;
+        return Objects.requireNonNullElse(version, "13");
     }
 
     @Override
@@ -288,32 +282,13 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     @Override
     public void setHeaders(Map<String, List<String>> headers)
     {
-        headers.clear();
-
+        this.headers.clear();
         for (Map.Entry<String, List<String>> entry : headers.entrySet())
         {
             String name = entry.getKey();
             List<String> values = entry.getValue();
             setHeader(name, values);
         }
-    }
-
-    @Override
-    public void setHttpVersion(String httpVersion)
-    {
-        this.httpVersion = httpVersion;
-    }
-
-    @Override
-    public void setMethod(String method)
-    {
-        this.method = method;
-    }
-
-    @Override
-    public void setRequestURI(URI uri)
-    {
-        this.requestURI = uri;
     }
 
     @Override

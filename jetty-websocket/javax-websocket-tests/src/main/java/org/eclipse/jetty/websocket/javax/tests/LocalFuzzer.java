@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.javax.tests;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -53,7 +54,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 
     public LocalFuzzer(Provider provider, CharSequence requestPath) throws Exception
     {
-        this(provider, requestPath, UpgradeUtils.newDefaultUpgradeRequestHeaders());
+        this(provider, requestPath, new HashMap<>());
     }
 
     public LocalFuzzer(Provider provider, CharSequence requestPath, Map<String, String> headers) throws Exception

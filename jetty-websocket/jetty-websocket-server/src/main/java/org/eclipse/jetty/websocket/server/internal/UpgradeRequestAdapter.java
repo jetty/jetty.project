@@ -198,24 +198,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
-    public void setHttpVersion(String httpVersion)
-    {
-        throw new UnsupportedOperationException("Not supported from Servlet API");
-    }
-
-    @Override
-    public void setMethod(String method)
-    {
-        throw new UnsupportedOperationException("Not supported from Servlet API");
-    }
-
-    @Override
-    public void setRequestURI(URI uri)
-    {
-        throw new UnsupportedOperationException("Not supported from Servlet API");
-    }
-
-    @Override
     public void setSession(Object session)
     {
         throw new UnsupportedOperationException("Not supported from Servlet API");

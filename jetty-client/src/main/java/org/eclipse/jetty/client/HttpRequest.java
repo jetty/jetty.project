@@ -87,6 +87,7 @@ public class HttpRequest implements Request
     private List<RequestListener> requestListeners;
     private BiFunction<Request, Request, Response.CompleteListener> pushListener;
     private Supplier<HttpFields> trailers;
+    private String upgradeProtocol;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -609,6 +610,12 @@ public class HttpRequest implements Request
         return this;
     }
 
+    public HttpRequest upgradeProtocol(String upgradeProtocol)
+    {
+        this.upgradeProtocol = upgradeProtocol;
+        return this;
+    }
+
     @Override
     public ContentProvider getContent()
     {
@@ -763,6 +770,11 @@ public class HttpRequest implements Request
     public Supplier<HttpFields> getTrailers()
     {
         return trailers;
+    }
+
+    public String getUpgradeProtocol()
+    {
+        return upgradeProtocol;
     }
 
     @Override

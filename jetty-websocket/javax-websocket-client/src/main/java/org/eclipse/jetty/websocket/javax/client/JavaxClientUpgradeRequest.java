@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.javax.client;
 import java.net.URI;
 
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -43,11 +43,11 @@ public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
     }
 
     @Override
-    public void upgrade(HttpResponse response, HttpConnectionOverHTTP httpConnection)
+    public void upgrade(HttpResponse response, EndPoint endPoint)
     {
         frameHandler.setUpgradeRequest(new DelegatedJavaxClientUpgradeRequest(this));
         frameHandler.setUpgradeResponse(new DelegatedJavaxClientUpgradeResponse(response));
-        super.upgrade(response, httpConnection);
+        super.upgrade(response, endPoint);
     }
 
     @Override

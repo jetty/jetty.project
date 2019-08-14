@@ -186,24 +186,6 @@ public class DummyUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public void setHttpVersion(String httpVersion)
-    {
-
-    }
-
-    @Override
-    public void setMethod(String method)
-    {
-
-    }
-
-    @Override
-    public void setRequestURI(URI uri)
-    {
-
-    }
-
-    @Override
     public void setSession(Object session)
     {
 

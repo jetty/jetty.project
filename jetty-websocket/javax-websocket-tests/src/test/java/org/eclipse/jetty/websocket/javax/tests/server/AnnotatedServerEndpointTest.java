@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +31,6 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
-import org.eclipse.jetty.websocket.javax.tests.UpgradeUtils;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
 import org.eclipse.jetty.websocket.javax.tests.coders.DateDecoder;
 import org.eclipse.jetty.websocket.javax.tests.coders.TimeEncoder;
@@ -72,8 +72,8 @@ public class AnnotatedServerEndpointTest
 
     private void assertResponse(String message, String expectedText) throws Exception
     {
-        Map<String, String> upgradeRequest = UpgradeUtils.newDefaultUpgradeRequestHeaders();
-        upgradeRequest.put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), "echo");
+        Map<String, String> headers = new HashMap<>();
+        headers.put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), "echo");
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(message));
@@ -83,7 +83,7 @@ public class AnnotatedServerEndpointTest
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedText));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        try (Fuzzer session = server.newNetworkFuzzer("/app/echo", upgradeRequest))
+        try (Fuzzer session = server.newNetworkFuzzer("/app/echo", headers))
         {
             session.sendFrames(send);
             session.expect(expect);
