@@ -260,7 +260,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         dumpObjects(out, indent,
             new ClassLoaderDump(getClassLoader()),
-            new DumpableCollection("eventListeners " + this, _eventListeners),
             new DumpableCollection("handler attributes " + this, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
             new DumpableCollection("context attributes " + this, ((Context)getServletContext()).getAttributeEntrySet()),
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
@@ -688,6 +687,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void removeEventListener(EventListener listener)
     {
+        super.removeEventListener(listener);
+
         _eventListeners.remove(listener);
 
         if (listener instanceof ContextScopeListener)

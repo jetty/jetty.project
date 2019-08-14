@@ -447,6 +447,11 @@ public class ContainerLifeCycleTest
 
         c0.addBean(inherited);
 
+        assertEquals("listener", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(inherited, child.poll());
+
         assertEquals("inherited", handled.poll());
         assertEquals("added", operation.poll());
         assertEquals(c0, parent.poll());
@@ -456,11 +461,6 @@ public class ContainerLifeCycleTest
         assertEquals("added", operation.poll());
         assertEquals(c0, parent.poll());
         assertEquals(listener, child.poll());
-
-        assertEquals("listener", handled.poll());
-        assertEquals("added", operation.poll());
-        assertEquals(c0, parent.poll());
-        assertEquals(inherited, child.poll());
 
         assertEquals("inherited", handled.poll());
         assertEquals("added", operation.poll());

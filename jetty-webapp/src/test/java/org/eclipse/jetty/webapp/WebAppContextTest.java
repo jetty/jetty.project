@@ -90,7 +90,7 @@ public class WebAppContextTest
         server.setHandler(wac);
         wac.addEventListener(new MySessionListener());
 
-        Collection<MySessionListener> listeners = wac.getSessionHandler().getBeans(org.eclipse.jetty.webapp.WebAppContextTest.MySessionListener.class);
+        Collection<MySessionListener> listeners = wac.getSessionHandler().getBeans(MySessionListener.class);
         assertNotNull(listeners);
         assertEquals(1, listeners.size());
     }
