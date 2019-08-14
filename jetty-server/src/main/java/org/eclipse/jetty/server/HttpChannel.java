@@ -107,9 +107,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _state = new HttpChannelState(this);
         _request = new Request(this, newHttpInput(_state));
         _response = new Response(this, newHttpOutput());
-
-        _executor = connector == null ? null : connector.getServer().getThreadPool();
-        _requestLog = connector == null ? null : connector.getServer().getRequestLog();
+        _executor = connector.getServer().getThreadPool();
+        _requestLog = connector.getServer().getRequestLog();
 
         // Initialize with a readonly preprepared list of listeners
         _listeners = connector.getEventListenerBeans();
