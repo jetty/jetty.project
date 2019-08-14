@@ -42,12 +42,13 @@ public class CDITests extends AbstractDistributionTest
     // Tests from here use these parameters
     public static Stream<Arguments> tests()
     {
-        Consumer<DistributionTester> removeJettyWebXml = d ->
+        Consumer<DistributionTester> renameJettyWebOwbXml = d ->
         {
             try
             {
+                Path jettyWebOwbXml = d.getJettyBase().resolve("webapps/demo/WEB-INF/jetty-web-owb.xml");
                 Path jettyWebXml = d.getJettyBase().resolve("webapps/demo/WEB-INF/jetty-web.xml");
-                Files.deleteIfExists(jettyWebXml);
+                Files.move(jettyWebOwbXml, jettyWebXml);
             }
             catch(IOException e)
             {
@@ -62,7 +63,7 @@ public class CDITests extends AbstractDistributionTest
             // TODO Arguments.of("weld", "cdi-decorate", null), // Weld >= 3.1.3
 
             // -- Apache OpenWebBeans --
-            Arguments.of("owb", "cdi-spi", removeJettyWebXml)
+            Arguments.of("owb", "jsp", renameJettyWebOwbXml)
             // Arguments.of("owb", "decorate", null), // Not supported
             // Arguments.of("owb", "cdi-decorate", null) // Not supported
         );
@@ -85,7 +86,7 @@ public class CDITests extends AbstractDistributionTest
         String[] args1 = {
             "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=http,deploy,annotations,jsp,"+integration
+            "--add-to-start=http,deploy,annotations,jsp" + (integration==null?"":(","+integration))
         };
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
