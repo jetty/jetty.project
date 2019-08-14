@@ -63,7 +63,7 @@ public class CDITests extends AbstractDistributionTest
             // TODO Arguments.of("weld", "cdi-decorate", null), // Weld >= 3.1.3
 
             // -- Apache OpenWebBeans --
-            Arguments.of("owb", "jsp", renameJettyWebOwbXml)
+            Arguments.of("owb", "cdi-spi", null)
             // Arguments.of("owb", "decorate", null), // Not supported
             // Arguments.of("owb", "cdi-decorate", null) // Not supported
         );
