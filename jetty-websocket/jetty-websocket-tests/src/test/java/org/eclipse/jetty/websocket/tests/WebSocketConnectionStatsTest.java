@@ -46,6 +46,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -120,6 +121,7 @@ public class WebSocketConnectionStatsTest
         return buffer.position() - pos;
     }
 
+    @Disabled("Flaky test see issue #3982")
     @Test
     public void echoStatsTest() throws Exception
     {
