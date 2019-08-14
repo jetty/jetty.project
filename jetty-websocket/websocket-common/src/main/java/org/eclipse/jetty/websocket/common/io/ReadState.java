@@ -21,9 +21,13 @@ package org.eclipse.jetty.websocket.common.io;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 class ReadState
 {
+    private static final Logger LOG = Log.getLogger(ReadState.class);
+
     public static final ByteBuffer NO_ACTION = BufferUtil.EMPTY_BUFFER;
 
     private State state = State.READING;
@@ -54,6 +58,9 @@ class ReadState
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("suspending {}", state);
+
             switch (state)
             {
                 case READING:
@@ -71,6 +78,9 @@ class ReadState
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("suspend parse {} {}", state, BufferUtil.toDetailString(buffer));
+
             switch (state)
             {
                 case READING:
@@ -94,6 +104,9 @@ class ReadState
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("suspend {}", state);
+
             switch (state)
             {
                 case READING:
@@ -121,6 +134,9 @@ class ReadState
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("resuming {}", state);
+
             switch (state)
             {
                 case SUSPENDING:
@@ -143,6 +159,9 @@ class ReadState
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("eof {}", state);
+
             state = State.EOF;
         }
     }

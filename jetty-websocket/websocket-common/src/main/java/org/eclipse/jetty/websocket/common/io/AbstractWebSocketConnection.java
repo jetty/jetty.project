@@ -124,6 +124,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private enum ReadMode
     {
         PARSE,
+        SUSPEND,
         DISCARD,
         EOF
     }
@@ -424,6 +425,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("{} onFillable()", policy.getBehavior());
         }
         stats.countOnFillableEvents.incrementAndGet();
+
+        // todo assert readstate does not have a buffer
+
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(), true);
         onFillable(buffer);
     }
@@ -431,26 +435,36 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private void onFillable(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("{} onFillable(ByteBuffer): {}", policy.getBehavior(), buffer);
-        }
 
-        try
+        // TODO: can't use readMode because from the point we suspend there may be someone else in onFillable
+        switch (readMode)
         {
-            if (readMode == ReadMode.PARSE)
-                readMode = readParse(buffer);
-            else
+            /*
+            as soon as we transition to suspended state someone can resume
+            */
+            case PARSE:
+                // TODO: if we were suspended we should just return (we don't own buffer anymore)
+                ReadMode read = readParse(buffer);
+                if (read == ReadMode.SUSPEND)
+                    return;
+                readMode = read;
+                break;
+
+            case DISCARD:
                 readMode = readDiscard(buffer);
-        }
-        catch (Throwable t)
-        {
-            bufferPool.release(buffer);
-            throw t;
+                break;
+
+            default:
+                bufferPool.release(buffer);
+                throw new IllegalStateException();
         }
 
+
+        // TODO: combine this into above check
+        bufferPool.release(buffer);
         if (readMode == ReadMode.EOF)
         {
-            bufferPool.release(buffer);
             readState.eof();
 
             // Handle case where the remote connection was abruptly terminated without a close frame
@@ -459,7 +473,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
         else if (!readState.suspend())
         {
-            bufferPool.release(buffer);
             fillInterested();
         }
     }
@@ -532,17 +545,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 else if (filled < 0)
                 {
                     if (LOG.isDebugEnabled())
-                    {
                         LOG.debug("read - EOF Reached (remote: {})", getRemoteAddress());
-                    }
                     return ReadMode.EOF;
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                    {
                         LOG.debug("Discarded {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
-                    }
+                    buffer.clear();
                 }
             }
         }
@@ -566,29 +576,23 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             // Process the content from the Endpoint next
             while (true)
             {
+                if (readState.suspendParse(buffer))
+                    return ReadMode.SUSPEND;
+
                 // We may start with a non empty buffer, consume before filling
                 while (buffer.hasRemaining())
                 {
+                    parser.parseSingleFrame(buffer);
                     if (readState.suspendParse(buffer))
-                    {
-                        if (LOG.isDebugEnabled())
-                        {
-                            LOG.debug("suspending parse {}", buffer);
-                        }
-
-                        return ReadMode.PARSE;
-                    }
-                    else
-                        parser.parseSingleFrame(buffer);
+                        return ReadMode.SUSPEND;
                 }
 
                 int filled = endPoint.fill(buffer);
                 if (filled < 0)
                 {
                     if (LOG.isDebugEnabled())
-                    {
                         LOG.debug("read - EOF Reached (remote: {})", getRemoteAddress());
-                    }
+
                     return ReadMode.EOF;
                 }
                 else if (filled == 0)
@@ -598,9 +602,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 }
 
                 if (LOG.isDebugEnabled())
-                {
                     LOG.debug("Filled {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
-                }
             }
         }
         catch (Throwable t)
