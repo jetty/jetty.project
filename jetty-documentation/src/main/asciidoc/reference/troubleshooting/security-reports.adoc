@@ -28,6 +28,15 @@ If you would like to report a security issue please follow these link:#security-
 |=======================================================================
 |yyyy/mm/dd |ID |Exploitable |Severity |Affects |Fixed Version |Comment
 
+|2019/04/11 |CVE-2019-10247 |Med |Med |< = 9.4.16 |9.2.28, 9.3.27, 9.4.17
+|https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-10247[If no webapp was mounted to the root namespace and a 404 was encountered, an HTML page would be generated displaying the fully qualified base resource location for each context.]
+
+|2019/04/11 |CVE-2019-10246 |High |High |< = 9.4.16 |9.2.28, 9.3.27, 9.4.17
+|https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-10246[Use of `DefaultServlet` or `ResourceHandler` with indexing was vulnerable to XSS behaviors to expose the directory listing on Windows operating systems.]
+
+|2019/04/11 |CVE-2019-10241 |High |High |< = 9.4.15 |9.2.27, 9.3.26, 9.4.16
+|https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-10241[Use of `DefaultServlet` or `ResourceHandler` with indexing was vulnerable to XSS behaviors to expose the directory listing.]
+
 |2018/06/25 |CVE-2018-12538 |High |High |>= 9.4.0, < = 9.4.8 |9.4.9
 |https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-12538[`HttpSessions` present specifically in the FileSystem’s storage could be hijacked/accessed by an unauthorized user.]
 
