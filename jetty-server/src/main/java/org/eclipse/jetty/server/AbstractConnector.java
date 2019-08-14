@@ -154,6 +154,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
+    private final List<HttpChannel.Listener> _channelListeners = new ArrayList<>();
+    private final List<HttpChannel.Listener> _channelListenersUnmodifiable = Collections.unmodifiableList(_channelListeners);
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
@@ -188,6 +190,22 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
 
+        addEventListener(new Container.Listener()
+        {
+            @Override
+            public void beanAdded(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener && !_channelListeners.contains(bean))
+                    _channelListeners.add((HttpChannel.Listener)bean);
+            }
+
+            @Override
+            public void beanRemoved(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _channelListeners.remove(bean);
+            }
+        });
         addBean(_server, false);
         addBean(_executor);
         if (executor == null)
@@ -206,6 +224,22 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
+    }
+
+    /**
+     * Get the {@link HttpChannel.Listener}s added to the connector.
+     * This is equivalent to <code>getBeans(HttpChannel.Listener.class);</code>,
+     * except that: <ul>
+     *     <li>The result is precomputed, so it is more efficient</li>
+     *     <li>The result is ordered by the order added.</li>
+     *     <li>The result is immutable.</li>
+     * </ul>
+     * @see #getBeans(Class)
+     * @return An unmodifiable list of EventListener beans
+     */
+    public List<HttpChannel.Listener> getHttpChannelListeners()
+    {
+        return _channelListenersUnmodifiable;
     }
 
     @Override
