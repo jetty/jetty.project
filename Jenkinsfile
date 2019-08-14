@@ -9,85 +9,90 @@ pipeline {
       parallel {
         stage("Build / Test - JDK8") {
           agent { node { label 'linux' } }
-          options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "-Pmongodb install", "maven3", true)
-            // Collect up the jacoco execution results (only on main build)
-            jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                exclusionPattern: '' +
-                    // build tools
-                    '**/org/eclipse/jetty/ant/**' +
-                    ',**/org/eclipse/jetty/maven/**' +
-                    ',**/org/eclipse/jetty/jspc/**' +
-                    // example code / documentation
-                    ',**/org/eclipse/jetty/embedded/**' +
-                    ',**/org/eclipse/jetty/asyncrest/**' +
-                    ',**/org/eclipse/jetty/demo/**' +
-                    // special environments / late integrations
-                    ',**/org/eclipse/jetty/gcloud/**' +
-                    ',**/org/eclipse/jetty/infinispan/**' +
-                    ',**/org/eclipse/jetty/osgi/**' +
-                    ',**/org/eclipse/jetty/spring/**' +
-                    ',**/org/eclipse/jetty/http/spi/**' +
-                    // test classes
-                    ',**/org/eclipse/jetty/tests/**' +
-                    ',**/org/eclipse/jetty/test/**',
-                execPattern: '**/target/jacoco.exec',
-                classPattern: '**/target/classes',
-                sourcePattern: '**/src/main/java'
-            warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-            junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+            timeout(time: 120, unit: 'MINUTES') {
+              mavenBuild("jdk8", "-Pmongodb install", "maven3", true)
+              // Collect up the jacoco execution results (only on main build)
+              jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+                  exclusionPattern: '' +
+                      // build tools
+                      '**/org/eclipse/jetty/ant/**' +
+                      ',**/org/eclipse/jetty/maven/**' +
+                      ',**/org/eclipse/jetty/jspc/**' +
+                      // example code / documentation
+                      ',**/org/eclipse/jetty/embedded/**' +
+                      ',**/org/eclipse/jetty/asyncrest/**' +
+                      ',**/org/eclipse/jetty/demo/**' +
+                      // special environments / late integrations
+                      ',**/org/eclipse/jetty/gcloud/**' +
+                      ',**/org/eclipse/jetty/infinispan/**' +
+                      ',**/org/eclipse/jetty/osgi/**' +
+                      ',**/org/eclipse/jetty/spring/**' +
+                      ',**/org/eclipse/jetty/http/spi/**' +
+                      // test classes
+                      ',**/org/eclipse/jetty/tests/**' +
+                      ',**/org/eclipse/jetty/test/**',
+                  execPattern: '**/target/jacoco.exec',
+                  classPattern: '**/target/classes',
+                  sourcePattern: '**/src/main/java'
+              warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+              junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+            }
           }
         }
 
         stage("Build / Test - JDK11") {
           agent { node { label 'linux' } }
-          options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk11", "-Pmongodb install", "maven3", true)
-            warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-            junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+            timeout(time: 120, unit: 'MINUTES') {
+              mavenBuild("jdk11", "-Pmongodb install", "maven3", true)
+              warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+              junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+            }
           }
         }
 
         stage("Build / Test - JDK12") {
           agent { node { label 'linux' } }
-          options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk12", "-Pmongodb install", "maven3", true)
-            warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-            junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+            timeout(time: 120, unit: 'MINUTES') {
+              mavenBuild("jdk12", "-Pmongodb install", "maven3", true)
+              warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+              junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+            }
           }
         }
 
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
-          options { timeout(time: 30, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk11", "install javadoc:javadoc javadoc:aggregate-jar -DskipTests", "maven3", true)
-            warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
+            timeout(time: 30, unit: 'MINUTES') {
+              mavenBuild("jdk11", "install javadoc:javadoc javadoc:aggregate-jar -DskipTests", "maven3", true)
+              warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
+            }
           }
         }
 
         stage("Checkstyle ") {
           agent { node { label 'linux' } }
-          options { timeout(time: 30, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk11", "install -f build-resources", "maven3", true)
-            mavenBuild("jdk11", "install checkstyle:check -DskipTests", "maven3", true)
-            recordIssues(
-                    enabledForFailure: true, aggregatingResults: true,
-                    tools: [java(), checkStyle(pattern: '**/target/checkstyle-result.xml', reportEncoding: 'UTF-8')]
-            )
+            timeout(time: 30, unit: 'MINUTES') {
+              mavenBuild("jdk11", "install -f build-resources", "maven3", true)
+              mavenBuild("jdk11", "install checkstyle:check -DskipTests", "maven3", true)
+              recordIssues(
+                      enabledForFailure: true, aggregatingResults: true,
+                      tools: [java(), checkStyle(pattern: '**/target/checkstyle-result.xml', reportEncoding: 'UTF-8')])
+            }
           }
         }
 
         stage("Build Compact3") {
           agent { node { label 'linux' } }
-          options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "-Pcompact3 install -DskipTests", "maven3", true)
-            warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+            timeout(time: 30, unit: 'MINUTES') {
+              mavenBuild("jdk8", "-Pcompact3 install -DskipTests", "maven3", true)
+              warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+            }
           }
         }
       }
