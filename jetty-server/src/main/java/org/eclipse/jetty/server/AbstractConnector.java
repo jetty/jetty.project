@@ -188,8 +188,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
 
-        // TODO move this behaviour to ContainerLifeCycle in jetty-10, where it can be done without a listener and
-        // TODO used in other circumstances.
         addBean(_server, false);
         addBean(_executor);
         if (executor == null)
