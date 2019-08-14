@@ -25,7 +25,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EventListener;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -156,8 +155,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
-    private final List<EventListener> _eventListenerBeans = new ArrayList<>();
-    private final List<EventListener> _eventListenerBeansUnmodifiable = Collections.unmodifiableList(_eventListenerBeans);
+    private final List<HttpChannel.Listener> _channelListeners = new ArrayList<>();
+    private final List<HttpChannel.Listener> _channelListenersUnmodifiable = Collections.unmodifiableList(_channelListeners);
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
@@ -192,22 +191,20 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
 
-        // TODO move this behaviour to ContainerLifeCycle in jetty-10, where it can be done without a listener and
-        // TODO used in other circumstances.
         addEventListener(new Container.Listener()
         {
             @Override
             public void beanAdded(Container parent, Object bean)
             {
-                if (bean instanceof EventListener && !_eventListenerBeans.contains(bean))
-                    _eventListenerBeans.add((EventListener)bean);
+                if (bean instanceof HttpChannel.Listener && !_channelListeners.contains(bean))
+                    _channelListeners.add((HttpChannel.Listener)bean);
             }
 
             @Override
             public void beanRemoved(Container parent, Object bean)
             {
-                if (bean instanceof EventListener)
-                    _eventListenerBeans.remove((EventListener)bean);
+                if (bean instanceof HttpChannel.Listener)
+                    _channelListeners.remove(bean);
             }
         });
 
@@ -232,8 +229,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     /**
-     * Get the beans added to the connector that are EventListeners.
-     * This is essentially equivalent to <code>getBeans(EventListener.class);</code>,
+     * Get the {@link HttpChannel.Listener}s added to the connector.
+     * This is equivalent to <code>getBeans(HttpChannel.Listener.class);</code>,
      * except that: <ul>
      *     <li>The result is precomputed, so it is more efficient</li>
      *     <li>The result is ordered by the order added.</li>
@@ -242,9 +239,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * @see #getBeans(Class)
      * @return An unmodifiable list of EventListener beans
      */
-    public List<EventListener> getEventListenerBeans()
+    public List<HttpChannel.Listener> getHttpChannelListeners()
     {
-        return _eventListenerBeansUnmodifiable;
+        return _channelListenersUnmodifiable;
     }
 
     @Override

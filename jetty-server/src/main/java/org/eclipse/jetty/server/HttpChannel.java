@@ -87,7 +87,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Response _response;
     private HttpFields _trailers;
     private final Supplier<HttpFields> _trailerSupplier = () -> _trailers;
-    private Collection<EventListener> _listeners;
+    private Collection<Listener> _listeners;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
@@ -113,9 +113,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (connector instanceof AbstractConnector)
             // Initialize with a readonly preprepared list of listeners
-            _listeners = ((AbstractConnector)connector).getEventListenerBeans();
+            _listeners = ((AbstractConnector)connector).getHttpChannelListeners();
         else if (connector != null)
-            _listeners = connector.getBeans(EventListener.class);
+            _listeners = connector.getBeans(HttpChannel.Listener.class);
         else
             _listeners = Collections.emptyList();
 
@@ -1086,16 +1086,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         for (EventListener listener : _listeners)
         {
-            if (listener instanceof Listener)
+            try
             {
-                try
-                {
-                    function.apply((Listener)listener).accept(request);
-                }
-                catch (Throwable x)
-                {
-                    LOG.debug("Failure invoking listener " + listener, x);
-                }
+                function.apply((Listener)listener).accept(request);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failure invoking listener " + listener, x);
             }
         }
     }
@@ -1104,17 +1101,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         for (EventListener listener : _listeners)
         {
-            if (listener instanceof Listener)
+            ByteBuffer view = content.slice();
+            try
             {
-                ByteBuffer view = content.slice();
-                try
-                {
-                    function.apply((Listener)listener).accept(request, view);
-                }
-                catch (Throwable x)
-                {
-                    LOG.debug("Failure invoking listener " + listener, x);
-                }
+                function.apply((Listener)listener).accept(request, view);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failure invoking listener " + listener, x);
             }
         }
     }
@@ -1123,16 +1117,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         for (EventListener listener : _listeners)
         {
-            if (listener instanceof Listener)
+            try
             {
-                try
-                {
-                    function.apply((Listener)listener).accept(request, failure);
-                }
-                catch (Throwable x)
-                {
-                    LOG.debug("Failure invoking listener " + listener, x);
-                }
+                function.apply((Listener)listener).accept(request, failure);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failure invoking listener " + listener, x);
             }
         }
     }
