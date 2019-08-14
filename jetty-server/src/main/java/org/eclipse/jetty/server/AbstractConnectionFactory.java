@@ -32,17 +32,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
- * <p>Provides the common handling for {@link ConnectionFactory} implementations including:</p>
- * <ul>
- * <li>Protocol identification</li>
- * <li>Configuration of new Connections:
- * <ul>
- * <li>Setting inputbuffer size</li>
- * <li>Calling {@link Connection#addListener(Connection.Listener)} for all
- * Connection.Listener instances found as beans on the {@link Connector}
- * and this {@link ConnectionFactory}</li>
- * </ul>
- * </ul>
+ * <p>Provides the common handling for {@link ConnectionFactory} implementations.</p>
  */
 @ManagedObject
 public abstract class AbstractConnectionFactory extends ContainerLifeCycle implements ConnectionFactory
