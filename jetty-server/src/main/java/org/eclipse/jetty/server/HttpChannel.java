@@ -138,34 +138,40 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public boolean addListener(Listener listener)
     {
+        // Add normally to a mutable ArrayList?
         if (_listeners instanceof ArrayList)
             return _listeners.add(listener);
 
+        // If it is not mutable and empty then replace with singleton
         if (_listeners.isEmpty())
         {
             _listeners = Collections.singletonList(listener);
             return true;
         }
 
-        // If we are adding to a immutable list, copy to an ArrayList
+        // If we are adding to a immutable non empty list, then copy to an ArrayList
         _listeners = new ArrayList<>(_listeners);
         return _listeners.add(listener);
     }
 
     public boolean removeListener(Listener listener)
     {
+        // remove normally from a mutable ArrayList
         if (_listeners instanceof ArrayList)
             return _listeners.remove(listener);
 
+        // don't remove from an immutable list if it does not contain
         if (!_listeners.contains(listener))
             return false;
 
+        // replace immutable singleton list with empty list
         if (_listeners.size() == 1)
         {
             _listeners = Collections.emptyList();
             return true;
         }
 
+        // Copy to mutable ArrayList and then remove
         _listeners = new ArrayList<>(_listeners);
         return _listeners.remove(listener);
     }
