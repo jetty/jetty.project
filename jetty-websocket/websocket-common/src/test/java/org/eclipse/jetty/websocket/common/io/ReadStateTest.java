@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,7 +37,7 @@ public class ReadStateTest
         ReadState readState = new ReadState();
         assertThat("Initially reading", readState.isReading(), is(true));
 
-        assertThat("No prior suspending", readState.suspend(), is(false));
+        assertThat("Action is reading", readState.getAction(BufferUtil.toBuffer("content")), is(ReadState.Action.PARSE));
         assertThat("No prior suspending", readState.isSuspended(), is(false));
 
         assertThrows(IllegalStateException.class, readState::resume, "No suspending to resume");
@@ -50,10 +53,8 @@ public class ReadStateTest
         assertTrue(readState.suspending());
         assertThat("Suspending doesn't take effect immediately", readState.isSuspended(), is(false));
 
-        assertThat("Resume from suspending requires no followup", readState.resume(), is(ReadState.NO_ACTION));
-        assertThat("Resume from suspending requires no followup", readState.isSuspended(), is(false));
-
-        assertThat("Suspending was discarded", readState.suspend(), is(false));
+        assertNull(readState.resume());
+        assertThat("Action is reading", readState.getAction(BufferUtil.toBuffer("content")), is(ReadState.Action.PARSE));
         assertThat("Suspending was discarded", readState.isSuspended(), is(false));
     }
 
@@ -66,10 +67,11 @@ public class ReadStateTest
         assertThat(readState.suspending(), is(true));
         assertThat("Suspending doesn't take effect immediately", readState.isSuspended(), is(false));
 
-        assertThat("Suspended", readState.suspend(), is(true));
+        ByteBuffer content = BufferUtil.toBuffer("content");
+        assertThat(readState.getAction(content), is(ReadState.Action.SUSPEND));
         assertThat("Suspended", readState.isSuspended(), is(true));
 
-        assertNull(readState.resume(), "Resumed");
+        assertThat(readState.resume(), is(content));
         assertThat("Resumed", readState.isSuspended(), is(false));
     }
 
@@ -77,19 +79,13 @@ public class ReadStateTest
     public void testEof()
     {
         ReadState readState = new ReadState();
+        ByteBuffer content = BufferUtil.toBuffer("content");
         readState.eof();
 
         assertThat(readState.isReading(), is(false));
         assertThat(readState.isSuspended(), is(true));
-        assertThat(readState.suspend(), is(true));
-
         assertThat(readState.suspending(), is(false));
-        assertThat(readState.isSuspended(), is(true));
-
-        assertThat(readState.suspend(), is(true));
-        assertThat(readState.isSuspended(), is(true));
-
-        assertThat(readState.resume(), is(ReadState.NO_ACTION));
-        assertThat(readState.isSuspended(), is(true));
+        assertThat(readState.getAction(content), is(ReadState.Action.EOF));
+        assertNull(readState.resume());
     }
 }

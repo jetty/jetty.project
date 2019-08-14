@@ -121,14 +121,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
-    private enum ReadMode
-    {
-        PARSE,
-        SUSPEND,
-        DISCARD,
-        EOF
-    }
-
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
     private static final AtomicLong ID_GEN = new AtomicLong(0);
 
@@ -149,7 +141,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private WebSocketSession session;
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private ByteBuffer prefillBuffer;
-    private ReadMode readMode = ReadMode.PARSE;
     private Stats stats = new Stats();
     private CloseInfo fatalCloseInfo;
 
@@ -421,13 +412,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("{} onFillable()", policy.getBehavior());
-        }
+
         stats.countOnFillableEvents.incrementAndGet();
-
-        // todo assert readstate does not have a buffer
-
+        if (readState.getBuffer() != null)
+            throw new IllegalStateException();
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(), true);
         onFillable(buffer);
     }
@@ -437,44 +426,89 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         if (LOG.isDebugEnabled())
             LOG.debug("{} onFillable(ByteBuffer): {}", policy.getBehavior(), buffer);
 
-        // TODO: can't use readMode because from the point we suspend there may be someone else in onFillable
-        switch (readMode)
+        while (true)
         {
-            /*
-            as soon as we transition to suspended state someone can resume
-            */
-            case PARSE:
-                // TODO: if we were suspended we should just return (we don't own buffer anymore)
-                ReadMode read = readParse(buffer);
-                if (read == ReadMode.SUSPEND)
+            ReadState.Action action = readState.getAction(buffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("ReadState Action: {}", action);
+
+            switch (action)
+            {
+                case PARSE:
+                    try
+                    {
+                        parser.parseSingleFrame(buffer);
+                    }
+                    catch (Throwable t)
+                    {
+                        close(t);
+                        readState.discard();
+                    }
+                    break;
+
+                case FILL:
+                    try
+                    {
+                        int filled = getEndPoint().fill(buffer);
+                        if (filled < 0)
+                        {
+                            readState.eof();
+                            break;
+                        }
+                        if (filled == 0)
+                        {
+                            // Done reading, wait for next onFillable
+                            bufferPool.release(buffer);
+                            fillInterested();
+                            return;
+                        }
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Filled {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
+                    }
+                    catch (IOException e)
+                    {
+                        close(e);
+                        readState.eof();
+                    }
+                    break;
+
+                case DISCARD:
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Discarded buffer - {}", BufferUtil.toDetailString(buffer));
+                    buffer.clear();
+                    break;
+
+                case SUSPEND:
                     return;
-                readMode = read;
-                break;
 
-            case DISCARD:
-                readMode = readDiscard(buffer);
-                break;
+                case EOF:
+                    bufferPool.release(buffer);
 
-            default:
-                bufferPool.release(buffer);
-                throw new IllegalStateException();
+                    // Handle case where the remote connection was abruptly terminated without a close frame
+                    CloseInfo close = new CloseInfo(StatusCode.SHUTDOWN);
+                    close(close, new DisconnectCallback(this));
+                    return;
+
+                default:
+                    throw new IllegalStateException(action.name());
+            }
         }
+    }
 
+    @Override
+    public void resume()
+    {
+        ByteBuffer resume = readState.resume();
+        if (resume != null)
+            onFillable(resume);
+    }
 
-        // TODO: combine this into above check
-        bufferPool.release(buffer);
-        if (readMode == ReadMode.EOF)
-        {
-            readState.eof();
-
-            // Handle case where the remote connection was abruptly terminated without a close frame
-            CloseInfo close = new CloseInfo(StatusCode.SHUTDOWN);
-            close(close, new DisconnectCallback(this));
-        }
-        else if (!readState.suspend())
-        {
-            fillInterested();
-        }
+    @Override
+    public SuspendToken suspend()
+    {
+        readState.suspending();
+        return this;
     }
 
     @Override
@@ -528,109 +562,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             flusher.iterate();
         }
-    }
-
-    private ReadMode readDiscard(ByteBuffer buffer)
-    {
-        EndPoint endPoint = getEndPoint();
-        try
-        {
-            while (true)
-            {
-                int filled = endPoint.fill(buffer);
-                if (filled == 0)
-                {
-                    return ReadMode.DISCARD;
-                }
-                else if (filled < 0)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("read - EOF Reached (remote: {})", getRemoteAddress());
-                    return ReadMode.EOF;
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Discarded {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
-                    buffer.clear();
-                }
-            }
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
-            return ReadMode.EOF;
-        }
-        catch (Throwable t)
-        {
-            LOG.ignore(t);
-            return ReadMode.DISCARD;
-        }
-    }
-
-    private ReadMode readParse(ByteBuffer buffer)
-    {
-        EndPoint endPoint = getEndPoint();
-        try
-        {
-            // Process the content from the Endpoint next
-            while (true)
-            {
-                if (readState.suspendParse(buffer))
-                    return ReadMode.SUSPEND;
-
-                // We may start with a non empty buffer, consume before filling
-                while (buffer.hasRemaining())
-                {
-                    parser.parseSingleFrame(buffer);
-                    if (readState.suspendParse(buffer))
-                        return ReadMode.SUSPEND;
-                }
-
-                int filled = endPoint.fill(buffer);
-                if (filled < 0)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("read - EOF Reached (remote: {})", getRemoteAddress());
-
-                    return ReadMode.EOF;
-                }
-                else if (filled == 0)
-                {
-                    // Done reading, wait for next onFillable
-                    return ReadMode.PARSE;
-                }
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Filled {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
-            }
-        }
-        catch (Throwable t)
-        {
-            close(t);
-            return ReadMode.DISCARD;
-        }
-    }
-
-    @Override
-    public void resume()
-    {
-        ByteBuffer resume = readState.resume();
-        if (resume == null)
-        {
-            fillInterested();
-        }
-        else if (resume != ReadState.NO_ACTION)
-        {
-            onFillable(resume);
-        }
-    }
-
-    @Override
-    public SuspendToken suspend()
-    {
-        readState.suspending();
-        return this;
     }
 
     /**
