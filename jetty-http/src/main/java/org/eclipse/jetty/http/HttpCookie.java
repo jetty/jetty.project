@@ -22,12 +22,25 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 
 // TODO consider replacing this with java.net.HttpCookie
 public class HttpCookie
 {
     private static final String __COOKIE_DELIM = "\",;\\ \t";
     private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
+
+    /**
+     *If this string is found within the comment parsed with {@link #isHttpOnlyInComment(String)} the check will return true
+     **/
+    private static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
+    /**
+     *These strings are used by {@link #getSameSiteFromComment(String)} to check for a SameSite specifier in the comment
+     **/
+    private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
+    private static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
+    private static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
+    private static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
 
     public enum SameSite
     {
@@ -88,12 +101,13 @@ public class HttpCookie
         _domain = domain;
         _path = path;
         _maxAge = maxAge;
-        _httpOnly = httpOnly;
+        // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+        _httpOnly = httpOnly || isHttpOnlyInComment(comment);
         _secure = secure;
-        _comment = comment;
+        _comment = getCommentWithoutFlags(comment);
         _version = version;
         _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
-        _sameSite = sameSite;
+        _sameSite = sameSite == null ? getSameSiteFromComment(comment) : sameSite;
     }
 
     public HttpCookie(String setCookie)
@@ -109,13 +123,13 @@ public class HttpCookie
         _domain = cookie.getDomain();
         _path = cookie.getPath();
         _maxAge = cookie.getMaxAge();
-        _httpOnly = cookie.isHttpOnly();
+        _httpOnly = cookie.isHttpOnly() || isHttpOnlyInComment(cookie.getComment());
         _secure = cookie.getSecure();
-        _comment = cookie.getComment();
+        _comment = getCommentWithoutFlags(cookie.getComment());
         _version = cookie.getVersion();
         _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
-        // TODO support for SameSite values has not yet been added to java.net.HttpCookie
-        _sameSite = null;
+        // TODO support for SameSite values has not yet been added to java.net.HttpCookie so check comment only
+        _sameSite = getSameSiteFromComment(cookie.getComment());
     }
 
     /**
@@ -405,6 +419,68 @@ public class HttpCookie
         }
 
         return buf.toString();
+    }
+
+    private static boolean isHttpOnlyInComment(String comment)
+    {
+        return comment != null && comment.contains(HTTP_ONLY_COMMENT);
+    }
+
+    private static SameSite getSameSiteFromComment(String comment)
+    {
+        if (comment != null)
+        {
+            if (comment.contains(SAME_SITE_NONE_COMMENT))
+            {
+                return SameSite.NONE;
+            }
+            if (comment.contains(SAME_SITE_LAX_COMMENT))
+            {
+                return SameSite.LAX;
+            }
+            if (comment.contains(SAME_SITE_STRICT_COMMENT))
+            {
+                return SameSite.STRICT;
+            }
+        }
+
+        return null;
+    }
+
+    private static String getCommentWithoutFlags(String comment)
+    {
+        if (comment == null)
+        {
+            return null;
+        }
+
+        String strippedComment = comment.trim();
+
+        if (isHttpOnlyInComment(strippedComment))
+        {
+            strippedComment = StringUtil.strip(strippedComment, HTTP_ONLY_COMMENT);
+        }
+
+        SameSite commentSameSite = getSameSiteFromComment(strippedComment);
+        if (commentSameSite != null)
+        {
+            switch (commentSameSite)
+            {
+                case NONE:
+                    strippedComment = StringUtil.strip(strippedComment, SAME_SITE_NONE_COMMENT);
+                    break;
+                case LAX:
+                    strippedComment = StringUtil.strip(strippedComment, SAME_SITE_LAX_COMMENT);
+                    break;
+                case STRICT:
+                    strippedComment = StringUtil.strip(strippedComment, SAME_SITE_STRICT_COMMENT);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return strippedComment.length() == 0 ? null : strippedComment;
     }
 
     public static class SetCookieHttpField extends HttpField
