@@ -458,12 +458,16 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         }
     }
 
+    public interface SelectorManagerListener extends EventListener
+    {
+    }
+
     /**
      * <p>A listener for accept events.</p>
      * <p>This listener is called from either the selector or acceptor thread
      * and implementations must be non blocking and fast.</p>
      */
-    public interface AcceptListener extends EventListener
+    public interface AcceptListener extends SelectorManagerListener
     {
         /**
          * Called immediately after a new SelectableChannel is accepted, but
