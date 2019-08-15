@@ -106,14 +106,19 @@ public class DirtyAttributeTest
             try
             {
                 // Perform a request to create a session
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
+                
+                //ensure request finished
+                latch.await(5, TimeUnit.SECONDS);
 
                 //do another request to change the session attribute
-                CountDownLatch latch = new CountDownLatch(1);
+                latch = new CountDownLatch(1);
                 scopeListener.setExitSynchronizer(latch);
                 Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=setA");
                 response = request.send();
@@ -126,6 +131,8 @@ public class DirtyAttributeTest
                 A_VALUE.assertActivatesEquals(1);
                 A_VALUE.assertBindsEquals(1);
                 A_VALUE.assertUnbindsEquals(0);
+                
+
 
                 //do another request using the cookie to try changing the session attribute to the same value again  
                 latch = new CountDownLatch(1);
