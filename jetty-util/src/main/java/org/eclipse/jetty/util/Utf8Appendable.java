@@ -105,7 +105,9 @@ public abstract class Utf8Appendable
             _appendable.append(REPLACEMENT);
             int state = _state;
             _state = UTF8_ACCEPT;
-            throw new NotUtf8Exception("char appended in state " + state);
+            Throwable th = new NotUtf8Exception("char appended in state "+state);
+            LOG.warn(th.toString());
+            LOG.debug(th);
         }
     }
 
@@ -251,7 +253,13 @@ public abstract class Utf8Appendable
                     _codep = 0;
                     _state = UTF8_ACCEPT;
                     _appendable.append(REPLACEMENT);
-                    throw new NotUtf8Exception(reason);
+                    if (b > 0) {
+                        _appendable.append((char)(b & 0xFF));
+                    }
+                    Throwable th= new NotUtf8Exception(reason);
+                    LOG.warn(th.toString());
+                    LOG.debug(th);
+                    break;
 
                 default:
                     _state = next;

@@ -36,6 +36,29 @@ public class UrlEncodedUtf8Test
     static final Logger LOG = Log.getLogger(UrlEncodedUtf8Test.class);
 
     @Test
+    public void testIncompleteSequestAtTheBeginning() throws Exception
+    {
+        byte[] bytes= { -50, 97, 98, 61, 99 };
+        String test=new String(bytes,StandardCharsets.UTF_8);
+        String name = ""+Utf8Appendable.REPLACEMENT + "ab";
+        String expected = "c";
+
+        fromString(test,test,name,expected,false);
+        fromInputStream(test,bytes,name,expected,false);
+    }
+
+    @Test
+    public void testIncompleteSequestAtTheMiddle() throws Exception
+    {
+        byte[] bytes= { 97, 98, 61, 99, -50, 97, 98 };
+        String test=new String(bytes,StandardCharsets.UTF_8);
+        String expected = "c"+Utf8Appendable.REPLACEMENT+"ab";
+
+        fromString(test,test,"ab",expected,false);
+        fromInputStream(test,bytes,"ab",expected,false);
+    }
+
+    @Test
     public void testIncompleteSequestAtTheEnd() throws Exception
     {
         byte[] bytes = {97, 98, 61, 99, -50};
@@ -44,6 +67,31 @@ public class UrlEncodedUtf8Test
 
         fromString(test, test, "ab", expected, false);
         fromInputStream(test, bytes, "ab", expected, false);
+    }
+
+    @Test
+    public void testIncompleteSequestAtTheBeginning2() throws Exception
+    {
+        byte[] bytes={ -50, 97, 98, 61 };
+        String test=new String(bytes,StandardCharsets.UTF_8);
+        String name = ""+Utf8Appendable.REPLACEMENT + "ab";
+        String expected = "";
+
+        fromString(test,test,name,expected,false);
+        fromInputStream(test,bytes,name,expected,false);
+
+    }
+
+    @Test
+    public void testIncompleteSequestAtTheMiddle2() throws Exception
+    {
+        byte[] bytes={ 97, 98, 61, -50, 97, 98 };
+        String test=new String(bytes,StandardCharsets.UTF_8);
+        String expected = ""+Utf8Appendable.REPLACEMENT+"ab";
+
+        fromString(test,test,"ab",expected,false);
+        fromInputStream(test,bytes,"ab",expected,false);
+
     }
 
     @Test
@@ -70,6 +118,30 @@ public class UrlEncodedUtf8Test
     }
 
     @Test
+    public void testIncompleteSequestInMiddleName() throws Exception
+    {
+        byte[] bytes= { 101, -50, 101, 61, 102, 103, 38, 97, 98, 61, 99, 100 };
+        String test=new String(bytes,StandardCharsets.UTF_8);
+        String name = "e"+Utf8Appendable.REPLACEMENT+"e";
+        String value = "fg";
+
+        fromString(test,test,name,value,false);
+        fromInputStream(test,bytes,name,value,false);
+    }
+
+    @Test
+    public void testIncompleteSequestInBeginningName() throws Exception
+    {
+        byte[] bytes= { -50, 101, 61, 102, 103, 38, 97, 98, 61, 99, 100 };
+        String test=new String(bytes,StandardCharsets.UTF_8);
+        String name = ""+Utf8Appendable.REPLACEMENT+"e";
+        String value = "fg";
+
+        fromString(test,test,name,value,false);
+        fromInputStream(test,bytes,name,value,false);
+    }
+
+    @Test
     public void testIncompleteSequestInValue() throws Exception
     {
         byte[] bytes = {101, 102, 61, 103, -50, 38, 97, 98, 61, 99, 100};
@@ -79,6 +151,30 @@ public class UrlEncodedUtf8Test
 
         fromString(test, test, name, value, false);
         fromInputStream(test, bytes, name, value, false);
+    }
+
+    @Test
+    public void testIncompleteSequestInBeginningValue() throws Exception
+    {
+        byte[] bytes= { 101, 102, 61, -50, 101, 38, 97, 98, 61, 99, 100 };
+        String test=new String(bytes,StandardCharsets.UTF_8);
+        String name = "ef";
+        String value = ""+Utf8Appendable.REPLACEMENT+"e";
+
+        fromString(test,test,name,value,false);
+        fromInputStream(test,bytes,name,value,false);
+    }
+
+    @Test
+    public void testIncompleteSequestInMiddleValue() throws Exception
+    {
+        byte[] bytes= { 101, 102, 61, 103, -50, 101, 38, 97, 98, 61, 99, 100 };
+        String test=new String(bytes,StandardCharsets.UTF_8);
+        String name = "ef";
+        String value = "g"+Utf8Appendable.REPLACEMENT+"e";
+
+        fromString(test,test,name,value,false);
+        fromInputStream(test,bytes,name,value,false);
     }
 
     // TODO: Split thrown/not-thrown
