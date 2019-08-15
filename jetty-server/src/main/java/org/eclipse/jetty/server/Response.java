@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -229,7 +230,10 @@ public class Response implements HttpServletResponse
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         String comment = cookie.getComment();
-        boolean httpOnly = cookie.isHttpOnly();
+        // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+        boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
+        SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
+        comment = HttpCookie.getCommentWithoutFlags(comment);
 
         addCookie(new HttpCookie(
             cookie.getName(),
@@ -240,7 +244,8 @@ public class Response implements HttpServletResponse
             httpOnly,
             cookie.getSecure(),
             comment,
-            cookie.getVersion()));
+            cookie.getVersion(),
+            sameSite));
     }
 
     @Override
