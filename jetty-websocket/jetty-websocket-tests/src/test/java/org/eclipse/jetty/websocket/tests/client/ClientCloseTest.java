@@ -60,7 +60,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -303,7 +302,7 @@ public class ClientCloseTest
     public void testStopLifecycle() throws Exception
     {
         // Set client timeout
-        final int timeout = 1000;
+        final int timeout = 3000;
         client.setMaxIdleTimeout(timeout);
 
         int sessionCount = 3;
@@ -325,21 +324,41 @@ public class ClientCloseTest
             confirmConnection(clientSocket, clientConnectFuture);
         }
 
-        assertTimeoutPreemptively(ofSeconds(5), () ->
-        {
-            // client lifecycle stop (the meat of this test)
-            client.stop();
-        });
+        assertThat(serverEndpoints.size(), is(sessionCount));
 
-        // clients disconnect
-        for (int i = 0; i < sessionCount; i++)
+        try
         {
-            clientSockets.get(i).assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("Disconnected"));
+            // block all the server threads
+            for (int i = 0; i < sessionCount; i++)
+            {
+                clientSockets.get(i).getSession().getRemote().sendString("block");
+            }
+
+            assertTimeoutPreemptively(ofSeconds(5), () ->
+            {
+                // client lifecycle stop (the meat of this test)
+                client.stop();
+            });
+
+            // clients disconnect
+            for (int i = 0; i < sessionCount; i++)
+            {
+                // The Disconnect callback is succeeded directly after sending the SHUTDOWN close frame so we get ABNORMAL close
+                clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), containsString("Disconnected"));
+            }
+
+            // ensure all Sessions are gone. connections are gone. etc. (client and server)
+            // ensure ConnectionListener onClose is called 3 times
+            clientSessionTracker.assertClosedProperly(client);
+            assertThat(serverEndpoints.size(), is(sessionCount));
         }
-
-        // ensure all Sessions are gone. connections are gone. etc. (client and server)
-        // ensure ConnectionListener onClose is called 3 times
-        clientSessionTracker.assertClosedProperly(client);
+        finally
+        {
+            for (int i = 0; i < sessionCount; i++)
+            {
+                serverEndpoints.get(i).block.countDown();
+            }
+        }
     }
 
     @Test
