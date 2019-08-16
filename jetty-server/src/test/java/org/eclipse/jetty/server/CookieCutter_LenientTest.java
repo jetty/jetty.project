@@ -130,6 +130,7 @@ public class CookieCutter_LenientTest
             Arguments.of("foo=\"bar;baz\"", "foo", "bar;baz"),
             Arguments.of("z=a;b,c:d;e/f[g]", "z", "a"),
             Arguments.of("z=\"a;b,c:d;e/f[g]\"", "z", "a;b,c:d;e/f[g]"),
+            Arguments.of("name=quoted=\"\\\"badly\\\"\"", null, null), // someone attempting to escape a DQUOTE from within a DQUOTED pair)
 
             // Quoted with other Cookie keywords
             Arguments.of("x=\"$Version=0\"", "x", "$Version=0"),
