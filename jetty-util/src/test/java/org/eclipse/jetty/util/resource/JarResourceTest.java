@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -138,9 +140,9 @@ public class JarResourceTest
     @Test
     public void testJarFileCopyToDirectoryTraversal() throws Exception
     {
-        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/extract.zip");
+        Path extractZip = MavenTestingUtils.getTestResourcePathFile("TestData/extract.zip");
 
-        String s = "jar:" + testZip.toUri().toASCIIString() + "!/";
+        String s = "jar:" + extractZip.toUri().toASCIIString() + "!/";
         Resource r = Resource.newResource(s);
 
         assertThat(r, instanceOf(JarResource.class));
@@ -186,6 +188,78 @@ public class JarResourceTest
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt";
         Resource r = Resource.newResource(s);
         assertTrue(r.exists());
+    }
+
+    @Test
+    public void testJarFileResourceList() throws Exception
+    {
+        Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
+        String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
+
+        Resource resource = new JarFileResource(URI.create(uri).toURL());
+        Resource rez = resource.addPath("rez/");
+
+        assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
+
+        List<String> actual = Arrays.asList(rez.list());
+        String[] expected = new String[]{
+            "one",
+            "aaa",
+            "bbb",
+            "oddities/",
+            "another dir/",
+            "ccc",
+            "deep/",
+            };
+        assertThat("Dir contents", actual, containsInAnyOrder(expected));
+    }
+
+    /**
+     * Test getting a file listing of a Directory in a JAR
+     * Where the JAR entries contain names that are URI encoded / escaped
+     */
+    @Test
+    public void testJarFileResourceList_PreEncodedEntries() throws Exception
+    {
+        Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
+        String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
+
+        Resource resource = new JarFileResource(URI.create(uri).toURL());
+        Resource rez = resource.addPath("rez/oddities/");
+
+        assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
+
+        List<String> actual = Arrays.asList(rez.list());
+        String[] expected = new String[]{
+            ";",
+            "#hashcode",
+            "index.html#fragment",
+            "other%2fkind%2Fof%2fslash", // pre-encoded / escaped
+            "a file with a space",
+            ";\" onmousedown=\"alert(document.location)\"",
+            "some\\slash\\you\\got\\there" // not encoded, stored as backslash native
+        };
+        assertThat("Dir contents", actual, containsInAnyOrder(expected));
+    }
+
+    @Test
+    public void testJarFileResourceList_DirWithSpace() throws Exception
+    {
+        Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
+        String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
+
+        Resource resource = new JarFileResource(URI.create(uri).toURL());
+        Resource anotherDir = resource.addPath("rez/another dir/");
+
+        assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
+
+        List<String> actual = Arrays.asList(anotherDir.list());
+        String[] expected = new String[]{
+            "a file.txt",
+            "another file.txt",
+            "..\\a different file.txt",
+            };
+        assertThat("Dir contents", actual, containsInAnyOrder(expected));
     }
 
     private List<Path> listFiles(Path dir) throws IOException
