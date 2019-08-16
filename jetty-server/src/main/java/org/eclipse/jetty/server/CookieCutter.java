@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import javax.servlet.http.Cookie;
-
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import javax.servlet.http.Cookie;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Cookie parser
@@ -321,6 +321,10 @@ public class CookieCutter
                         {
                             case ' ':
                             case '\t':
+                                continue;
+                            case ';':
+                                // in name part but we got a ; not a valid cookie
+                                tokenstart = -1;
                                 continue;
 
                             case '=':
