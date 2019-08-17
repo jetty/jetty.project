@@ -96,6 +96,11 @@ public abstract class BodyParser
         return headerParser.getLength();
     }
 
+    protected int getFrameType()
+    {
+        return headerParser.getFrameType();
+    }
+
     protected void notifyData(DataFrame frame)
     {
         try
@@ -223,9 +228,10 @@ public abstract class BodyParser
         }
     }
 
-    protected void streamFailure(int streamId, int error, String reason)
+    protected boolean streamFailure(int streamId, int error, String reason)
     {
         notifyStreamFailure(streamId, error, reason);
+        return false;
     }
 
     private void notifyStreamFailure(int streamId, int error, String reason)

@@ -25,14 +25,16 @@ import org.eclipse.jetty.http2.frames.PriorityFrame;
 
 public class PriorityBodyParser extends BodyParser
 {
+    private final RateControl rateControl;
     private State state = State.PREPARE;
     private int cursor;
     private boolean exclusive;
     private int parentStreamId;
 
-    public PriorityBodyParser(HeaderParser headerParser, Parser.Listener listener)
+    public PriorityBodyParser(HeaderParser headerParser, Parser.Listener listener, RateControl rateControl)
     {
         super(headerParser, listener);
+        this.rateControl = rateControl;
     }
 
     private void reset()
@@ -103,7 +105,7 @@ public class PriorityBodyParser extends BodyParser
                     if (getStreamId() == parentStreamId)
                         return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_priority_frame");
                     int weight = (buffer.get() & 0xFF) + 1;
-                    return onPriority(parentStreamId, weight, exclusive);
+                    return onPriority(buffer, parentStreamId, weight, exclusive);
                 }
                 default:
                 {
@@ -114,9 +116,11 @@ public class PriorityBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onPriority(int parentStreamId, int weight, boolean exclusive)
+    private boolean onPriority(ByteBuffer buffer, int parentStreamId, int weight, boolean exclusive)
     {
         PriorityFrame frame = new PriorityFrame(getStreamId(), parentStreamId, weight, exclusive);
+        if (rateControl != null && !rateControl.onEvent(frame))
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_priority_frame_rate");
         reset();
         notifyPriority(frame);
         return true;

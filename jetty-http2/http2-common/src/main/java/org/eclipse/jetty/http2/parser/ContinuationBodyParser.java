@@ -23,27 +23,38 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
+import org.eclipse.jetty.http2.frames.ContinuationFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 
 public class ContinuationBodyParser extends BodyParser
 {
     private final HeaderBlockParser headerBlockParser;
     private final HeaderBlockFragments headerBlockFragments;
+    private final RateControl rateControl;
     private State state = State.PREPARE;
     private int length;
 
-    public ContinuationBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser, HeaderBlockFragments headerBlockFragments)
+    public ContinuationBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser, HeaderBlockFragments headerBlockFragments, RateControl rateControl)
     {
         super(headerParser, listener);
         this.headerBlockParser = headerBlockParser;
         this.headerBlockFragments = headerBlockFragments;
+        this.rateControl = rateControl;
     }
 
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
         if (hasFlag(Flags.END_HEADERS))
+        {
             onHeaders();
+        }
+        else
+        {
+            ContinuationFrame frame = new ContinuationFrame(getStreamId(), hasFlag(Flags.END_HEADERS));
+            if (rateControl != null && !rateControl.onEvent(frame))
+                connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
+        }
     }
 
     @Override

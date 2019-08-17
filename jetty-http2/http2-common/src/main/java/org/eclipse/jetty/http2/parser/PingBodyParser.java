@@ -26,13 +26,15 @@ import org.eclipse.jetty.http2.frames.PingFrame;
 
 public class PingBodyParser extends BodyParser
 {
+    private final RateControl rateControl;
     private State state = State.PREPARE;
     private int cursor;
     private byte[] payload;
 
-    public PingBodyParser(HeaderParser headerParser, Parser.Listener listener)
+    public PingBodyParser(HeaderParser headerParser, Parser.Listener listener, RateControl rateControl)
     {
         super(headerParser, listener);
+        this.rateControl = rateControl;
     }
 
     private void reset()
@@ -66,7 +68,7 @@ public class PingBodyParser extends BodyParser
                     if (buffer.remaining() >= 8)
                     {
                         buffer.get(payload);
-                        return onPing(payload);
+                        return onPing(buffer, payload);
                     }
                     else
                     {
@@ -80,7 +82,7 @@ public class PingBodyParser extends BodyParser
                     payload[8 - cursor] = buffer.get();
                     --cursor;
                     if (cursor == 0)
-                        return onPing(payload);
+                        return onPing(buffer, payload);
                     break;
                 }
                 default:
@@ -92,9 +94,11 @@ public class PingBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onPing(byte[] payload)
+    private boolean onPing(ByteBuffer buffer, byte[] payload)
     {
         PingFrame frame = new PingFrame(payload, hasFlag(Flags.ACK));
+        if (rateControl != null && !rateControl.onEvent(frame))
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_ping_frame_rate");
         reset();
         notifyPing(frame);
         return true;

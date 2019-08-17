@@ -26,14 +26,16 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class DataBodyParser extends BodyParser
 {
+    private final RateControl rateControl;
     private State state = State.PREPARE;
     private int padding;
     private int paddingLength;
     private int length;
 
-    public DataBodyParser(HeaderParser headerParser, Parser.Listener listener)
+    public DataBodyParser(HeaderParser headerParser, Parser.Listener listener, RateControl rateControl)
     {
         super(headerParser, listener);
+        this.rateControl = rateControl;
     }
 
     private void reset()
@@ -48,9 +50,17 @@ public class DataBodyParser extends BodyParser
     protected void emptyBody(ByteBuffer buffer)
     {
         if (isPadding())
+        {
             connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_data_frame");
+        }
         else
-            onData(BufferUtil.EMPTY_BUFFER, false, 0);
+        {
+            DataFrame frame = new DataFrame(getStreamId(), BufferUtil.EMPTY_BUFFER, isEndStream());
+            if (!isEndStream() && rateControl != null && !rateControl.onEvent(frame))
+                connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_data_frame_rate");
+            else
+                onData(frame);
+        }
     }
 
     @Override
@@ -134,7 +144,11 @@ public class DataBodyParser extends BodyParser
 
     private void onData(ByteBuffer buffer, boolean fragment, int padding)
     {
-        DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding);
+        onData(new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding));
+    }
+
+    private void onData(DataFrame frame)
+    {
         notifyData(frame);
     }
 

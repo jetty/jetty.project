@@ -54,8 +54,9 @@ public class Parser
     private final HpackDecoder hpackDecoder;
     private final BodyParser[] bodyParsers;
     private UnknownBodyParser unknownBodyParser;
-    private int maxFrameLength;
+    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
+    private RateControl rateControl;
     private boolean continuation;
     private State state = State.HEADER;
 
@@ -65,26 +66,26 @@ public class Parser
         this.listener = listener;
         this.headerParser = new HeaderParser();
         this.hpackDecoder = new HpackDecoder(maxDynamicTableSize, maxHeaderSize);
-        this.maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
     public void init(UnaryOperator<Listener> wrapper)
     {
         Listener listener = wrapper.apply(this.listener);
-        unknownBodyParser = new UnknownBodyParser(headerParser, listener);
+        RateControl rateControl = getRateControl();
+        unknownBodyParser = new UnknownBodyParser(headerParser, listener, rateControl);
         HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, hpackDecoder, unknownBodyParser);
         HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments();
-        bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
-        bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
-        bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
+        bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener, rateControl);
+        bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments, rateControl);
+        bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener, rateControl);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
-        bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener, getMaxSettingsKeys());
+        bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener, getMaxSettingsKeys(), rateControl);
         bodyParsers[FrameType.PUSH_PROMISE.getType()] = new PushPromiseBodyParser(headerParser, listener, headerBlockParser);
-        bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
+        bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener, rateControl);
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
         bodyParsers[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateBodyParser(headerParser, listener);
-        bodyParsers[FrameType.CONTINUATION.getType()] = new ContinuationBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
+        bodyParsers[FrameType.CONTINUATION.getType()] = new ContinuationBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments, rateControl);
     }
 
     private void reset()
@@ -233,6 +234,16 @@ public class Parser
     public void setMaxSettingsKeys(int maxSettingsKeys)
     {
         this.maxSettingsKeys = maxSettingsKeys;
+    }
+
+    public RateControl getRateControl()
+    {
+        return rateControl;
+    }
+
+    public void setRateControl(RateControl rateControl)
+    {
+        this.rateControl = rateControl;
     }
 
     protected void notifyConnectionFailure(int error, String reason)
