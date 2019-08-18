@@ -21,6 +21,9 @@ package org.eclipse.jetty.server.session;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -29,6 +32,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -98,7 +102,10 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
 
         TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
             cacheFactory, storeFactory);
-        server1.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
+        WebAppContext wac1 = server1.addWebAppContext(warDir.getCanonicalPath(), contextPath);
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        wac1.addEventListener(scopeListener);
+        wac1.addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
         try
         {
@@ -119,16 +126,20 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
                 try
                 {
                     // Perform one request to server1 to create a session
+                    CountDownLatch synchronizer = new CountDownLatch(1);
+                    scopeListener.setExitSynchronizer(synchronizer);
                     Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=set");
                     request.method(HttpMethod.GET);
-
                     ContentResponse response = request.send();
                     assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                     String sessionCookie = response.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
+                    
+                    //ensure request has finished being handled
+                    synchronizer.await(5, TimeUnit.SECONDS);
+                    
                     // Perform a request to server2 using the session cookie from the previous request
                     Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
                     request2.method(HttpMethod.GET);
