@@ -21,6 +21,9 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.acme.websocket.IdleTimeoutContextListener;
+import com.acme.websocket.IdleTimeoutOnOpenEndpoint;
+import com.acme.websocket.IdleTimeoutOnOpenSocket;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -29,8 +32,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
-import org.eclipse.jetty.websocket.javax.tests.server.sockets.IdleTimeoutOnOpenEndpoint;
-import org.eclipse.jetty.websocket.javax.tests.server.sockets.IdleTimeoutOnOpenSocket;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -58,12 +59,7 @@ public class IdleTimeoutTest
         server.start();
 
         WebAppContext webapp = server.createWebAppContext();
-        // TODO It's not great that we have to expose these APIs for testing as it can hide other classpath issues!
-        webapp.getSystemClassMatcher().include("org.eclipse.jetty.websocket.javax.");
-        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.websocket.javax.");
-
         server.deployWebapp(webapp);
-        // wsb.dump();
     }
 
     @AfterAll

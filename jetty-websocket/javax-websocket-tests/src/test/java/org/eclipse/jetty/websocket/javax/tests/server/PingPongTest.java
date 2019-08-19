@@ -19,33 +19,17 @@
 package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.MessageHandler;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.PongMessage;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
 
+import com.acme.websocket.PongContextListener;
+import com.acme.websocket.PongMessageEndpoint;
+import com.acme.websocket.PongSocket;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -64,87 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class PingPongTest
 {
-    @ServerEndpoint(value = "/pong-socket", configurator = PongContextListener.Config.class)
-    public static class PongSocket
-    {
-        private static final Logger LOG = Log.getLogger(PongSocket.class);
-        private String path = "?";
-        private Session session;
-
-        @OnOpen
-        public void onOpen(Session session, EndpointConfig config)
-        {
-            this.session = session;
-            this.path = (String)config.getUserProperties().get("path");
-        }
-
-        @OnMessage
-        public void onPong(PongMessage pong)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("PongSocket.onPong(): PongMessage.appData={}", BufferUtil.toDetailString(pong.getApplicationData()));
-            byte[] buf = BufferUtil.toArray(pong.getApplicationData());
-            String message = new String(buf, StandardCharsets.UTF_8);
-            this.session.getAsyncRemote().sendText("PongSocket.onPong(PongMessage)[" + path + "]:" + message);
-        }
-    }
-
-    public static class PongMessageEndpoint extends Endpoint implements MessageHandler.Whole<PongMessage>
-    {
-        private String path = "?";
-        private Session session;
-
-        @Override
-        public void onOpen(Session session, EndpointConfig config)
-        {
-            this.session = session;
-            this.session.addMessageHandler(this);
-            this.path = (String)config.getUserProperties().get("path");
-        }
-
-        @Override
-        public void onMessage(PongMessage pong)
-        {
-            byte[] buf = BufferUtil.toArray(pong.getApplicationData());
-            String message = new String(buf, StandardCharsets.UTF_8);
-            this.session.getAsyncRemote().sendText("PongMessageEndpoint.onMessage(PongMessage):[" + path + "]:" + message);
-        }
-    }
-
-    public static class PongContextListener implements ServletContextListener
-    {
-        public static class Config extends ServerEndpointConfig.Configurator
-        {
-            @Override
-            public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
-            {
-                sec.getUserProperties().put("path", sec.getPath());
-                super.modifyHandshake(sec, request, response);
-            }
-        }
-
-        @Override
-        public void contextDestroyed(ServletContextEvent sce)
-        {
-            /* do nothing */
-        }
-
-        @Override
-        public void contextInitialized(ServletContextEvent sce)
-        {
-            ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
-            try
-            {
-                ServerEndpointConfig.Configurator config = new Config();
-                container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class, "/pong").configurator(config).build());
-            }
-            catch (DeploymentException e)
-            {
-                throw new RuntimeException("Unable to add endpoint directly", e);
-            }
-        }
-    }
-
     private static WSServer server;
     private static WebSocketCoreClient client;
 
@@ -162,11 +65,6 @@ public class PingPongTest
         server.start();
 
         WebAppContext webapp = server.createWebAppContext();
-
-        // TODO It's not great that we have to expose these APIs for testing as it can hide other classpath issues!
-        webapp.getSystemClassMatcher().include("org.eclipse.jetty.websocket.javax.");
-        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.websocket.javax.");
-
         server.deployWebapp(webapp);
     }
 

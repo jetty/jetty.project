@@ -23,12 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
 
+import com.acme.websocket.LargeEchoDefaultSocket;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
@@ -51,33 +47,6 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(WorkDirExtension.class)
 public class LargeContainerTest
 {
-    @ServerEndpoint(value = "/echo/large")
-    public static class LargeEchoDefaultSocket
-    {
-        @OnMessage
-        public void echo(javax.websocket.Session session, String msg)
-        {
-            // reply with echo
-            session.getAsyncRemote().sendText(msg);
-        }
-    }
-
-    public static class LargeEchoContextListener implements ServletContextListener
-    {
-        @Override
-        public void contextDestroyed(ServletContextEvent sce)
-        {
-            /* do nothing */
-        }
-
-        @Override
-        public void contextInitialized(ServletContextEvent sce)
-        {
-            ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
-            container.setDefaultMaxTextMessageBufferSize(128 * 1024);
-        }
-    }
-
     public WorkDir testdir;
 
     @SuppressWarnings("Duplicates")
@@ -94,12 +63,7 @@ public class LargeContainerTest
             URI uri = wsb.getWsUri();
 
             WebAppContext webapp = wsb.createWebAppContext();
-            // TODO It's not great that we have to expose these APIs for testing as it can hide other classpath issues!
-            webapp.getSystemClassMatcher().include("org.eclipse.jetty.websocket.javax.");
-            webapp.getServerClassMatcher().exclude("org.eclipse.jetty.websocket.javax.");
-
             wsb.deployWebapp(webapp);
-            // wsb.dump();
 
             WebSocketCoreClient client = new WebSocketCoreClient();
             try
