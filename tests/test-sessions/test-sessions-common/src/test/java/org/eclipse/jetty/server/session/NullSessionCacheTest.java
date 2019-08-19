@@ -281,6 +281,7 @@ public class NullSessionCacheTest
         cache.release("1234", session);
         assertTrue(store.exists("1234"));
         assertFalse(cache.contains("1234"));
+        assertEquals(2, store._numSaves.get());
 
 
         //simulate a new request using the previously created session
@@ -289,6 +290,7 @@ public class NullSessionCacheTest
         session = cache.get("1234"); //get the session again
         session.access(now); //simulate a request
         assertFalse(session.isNew());
+        assertEquals(2, store._numSaves.get());
         session.setAttribute("spin", "left");
         assertTrue(store.exists("1234"));
         assertEquals(2, store._numSaves.get());
