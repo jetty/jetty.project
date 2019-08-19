@@ -118,6 +118,16 @@ public interface SessionCache extends LifeCycle
     {
         return renewSessionId(oldId, newId);
     }
+    
+    /**
+     * Adds a new Session, with a never-before-used id,
+     *  to the cache.
+     * 
+     * @param id
+     * @param session
+     * @throws Exception
+     */
+    void add(String id, Session session) throws Exception;
 
     /**
      * Get an existing Session. If necessary, the cache will load the data for
@@ -138,9 +148,24 @@ public interface SessionCache extends LifeCycle
      * @param id the session id
      * @param session the current session object
      * @throws Exception if any error occurred
+     * @deprecated @see release
      */
     void put(String id, Session session) throws Exception;
-
+    
+    
+    /**
+     * Finish using a Session. This is called by the SessionHandler
+     * once a request is finished with a Session. SessionCache
+     * implementations may want to delay writing out Session contents
+     * until the last request exits a Session.
+     *
+     * @param id the session id
+     * @param session the current session object
+     * @throws Exception if any error occurred
+     */
+    void release(String id, Session session) throws Exception;
+    
+    
     /**
      * Check to see if a Session is in the cache. Does NOT consult
      * the SessionDataStore.

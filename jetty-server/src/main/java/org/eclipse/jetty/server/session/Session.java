@@ -84,6 +84,7 @@ public class Session implements SessionHandler.SessionIf
     protected final SessionHandler _handler; // the manager of the session
 
     protected String _extendedId; // the _id plus the worker name
+
     protected long _requests;
 
     protected boolean _idChanged;
@@ -127,7 +128,8 @@ public class Session implements SessionHandler.SessionIf
                     {
                         //grab the lock and check what happened to the session: if it didn't get evicted and
                         //it hasn't expired, we need to reset the timer
-                        if (Session.this.isResident() && Session.this.getRequests() <= 0 && Session.this.isValid() && !Session.this.isExpiredAt(now))
+                        if (Session.this.isResident() && Session.this.getRequests() <= 0 && Session.this.isValid() &&
+                            !Session.this.isExpiredAt(now))
                         {
                             //session wasn't expired or evicted, we need to reset the timer
                             SessionInactivityTimer.this.schedule(Session.this.calculateInactivityTimeout(now));
@@ -195,8 +197,6 @@ public class Session implements SessionHandler.SessionIf
         _sessionData = data;
         _newSession = true;
         _sessionData.setDirty(true);
-        _requests = 1; // access will not be called on this new session, but we
-        // are obviously in a request
         _sessionInactivityTimer = new SessionInactivityTimer();
     }
 
@@ -239,11 +239,24 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
+    protected void use()
+    {
+        try (Lock lock = _lock.lock())
+        {
+            _requests++;
+
+            // temporarily stop the idle timer
+            if (LOG.isDebugEnabled())
+                LOG.debug("Session {} in use, stopping timer, active requests={}", getId(), _requests);
+            _sessionInactivityTimer.cancel();
+        }
+    }
+
     protected boolean access(long time)
     {
         try (Lock lock = _lock.lock())
         {
-            if (!isValid())
+            if (!isValid() || !isResident())
                 return false;
             _newSession = false;
             long lastAccessed = _sessionData.getAccessed();
@@ -255,13 +268,6 @@ public class Session implements SessionHandler.SessionIf
                 invalidate();
                 return false;
             }
-            _requests++;
-
-            // temporarily stop the idle timer
-            if (LOG.isDebugEnabled())
-                LOG.debug("Session {} accessed, stopping timer, active requests={}", getId(), _requests);
-            _sessionInactivityTimer.cancel();
-
             return true;
         }
     }
@@ -374,7 +380,7 @@ public class Session implements SessionHandler.SessionIf
     public void didActivate()
     {
         HttpSessionEvent event = new HttpSessionEvent(this);
-        for (Iterator<String> iter = _sessionData.getKeys().iterator(); iter.hasNext(); )
+        for (Iterator<String> iter = _sessionData.getKeys().iterator(); iter.hasNext();)
         {
             Object value = _sessionData.getAttribute(iter.next());
             if (value instanceof HttpSessionActivationListener)
@@ -391,7 +397,7 @@ public class Session implements SessionHandler.SessionIf
     public void willPassivate()
     {
         HttpSessionEvent event = new HttpSessionEvent(this);
-        for (Iterator<String> iter = _sessionData.getKeys().iterator(); iter.hasNext(); )
+        for (Iterator<String> iter = _sessionData.getKeys().iterator(); iter.hasNext();)
         {
             Object value = _sessionData.getAttribute(iter.next());
             if (value instanceof HttpSessionActivationListener)
@@ -407,6 +413,14 @@ public class Session implements SessionHandler.SessionIf
         try (Lock lock = _lock.lock())
         {
             return _state == State.VALID;
+        }
+    }
+
+    public boolean isInvalid()
+    {
+        try (Lock lock = _lock.lock())
+        {
+            return _state == State.INVALID || _state == State.INVALIDATING;
         }
     }
 
@@ -574,7 +588,8 @@ public class Session implements SessionHandler.SessionIf
                     time = (remaining > 0 ? (Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy))) : 0);
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", getId(), maxInactive, evictionPolicy);
+                        LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", getId(),
+                            maxInactive, evictionPolicy);
                 }
             }
         }
@@ -965,6 +980,8 @@ public class Session implements SessionHandler.SessionIf
                     {
                         try
                         {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Session {} waiting for id change to complete", _sessionData.getId());
                             _stateChangeCompleted.await();
                         }
                         catch (InterruptedException e)

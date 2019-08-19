@@ -87,10 +87,11 @@ public class RequestLogBenchmark
         {
             MethodType logType = methodType(Void.TYPE, StringBuilder.class, String.class);
 
-            MethodHandle append = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
-            MethodHandle logURI = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "logURI", logType);
-            MethodHandle logAddr = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "logAddr", logType);
-            MethodHandle logLength = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "logLength", logType);
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            MethodHandle append = lookup.findStatic(RequestLogBenchmark.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
+            MethodHandle logURI = lookup.findStatic(RequestLogBenchmark.class, "logURI", logType);
+            MethodHandle logAddr = lookup.findStatic(RequestLogBenchmark.class, "logAddr", logType);
+            MethodHandle logLength = lookup.findStatic(RequestLogBenchmark.class, "logLength", logType);
 
             // setup iteration
             iteratedLog = new Object[]

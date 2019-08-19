@@ -55,15 +55,18 @@ public class NullSessionCacheTest
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
         Session session = cache.newSession(null, data); //mimic a request making a session
-        session.complete(); //mimic request leaving session
-        cache.put("1234", session); //null cache doesn't store the session
-        assertFalse(cache.contains("1234"));
+        cache.add("1234", session); 
+        assertFalse(cache.contains("1234"));//null cache doesn't actually store the session
+        
+        //mimic releasing the session after the request is finished
+        cache.release("1234", session);
         assertTrue(store.exists("1234"));
+        assertFalse(cache.contains("1234"));
 
+        //simulate a new request using the previously created session
         session = cache.get("1234"); //get the session again
         session.access(now); //simulate a request
-        session.complete(); //simulate a request leaving
-        cache.put("1234", session); //finish with the session
+        cache.release("1234", session); //finish with the session
 
         assertFalse(session.isResident());
     }
