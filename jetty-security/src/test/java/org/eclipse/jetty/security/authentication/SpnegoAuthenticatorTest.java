@@ -125,31 +125,6 @@ public class SpnegoAuthenticatorTest
         public Object getTransport()
         {
             return null;
-    }
-
-    class MockConnector extends AbstractConnector
-    {
-        public MockConnector()
-        {
-            super(new Server() , null, null, null, 0);
-        }
-
-        @Override
-        protected void accept(int acceptorID) throws IOException, InterruptedException
-        {
-        }
-
-        @Override
-        public Object getTransport()
-        {
-            return null;
-        }
-
-        @Override
-        public String dumpSelf()
-        {
-            return null;
-        }
         }
 
         @Override
@@ -158,5 +133,4 @@ public class SpnegoAuthenticatorTest
             return null;
         }
     }
-
 }
