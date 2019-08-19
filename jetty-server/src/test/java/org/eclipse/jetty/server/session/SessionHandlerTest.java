@@ -32,8 +32,7 @@ public class SessionHandlerTest
     public void testSessionTrackingMode()
     {
         SessionHandler sessionHandler = new SessionHandler();
-        sessionHandler.setSessionTrackingModes(new HashSet<>(
-            Arrays.asList(SessionTrackingMode.COOKIE, SessionTrackingMode.URL)));
+        sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.COOKIE, SessionTrackingMode.URL)));
         sessionHandler.setSessionTrackingModes(Collections.singleton(SessionTrackingMode.SSL));
         Assertions.assertThrows(IllegalArgumentException.class,() ->
             sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.SSL, SessionTrackingMode.URL))));

@@ -1088,13 +1088,7 @@ public class SessionHandler extends ScopedHandler
             sessionTrackingModes.size() > 1 &&
             sessionTrackingModes.contains(SessionTrackingMode.SSL))
         {
-            for (SessionTrackingMode sessionTrackingMode:sessionTrackingModes)
-            {
-                if (sessionTrackingMode != SessionTrackingMode.SSL)
-                {
-                    throw new IllegalArgumentException("sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
-                }
-            }
+            throw new IllegalArgumentException ("sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
         }
         _sessionTrackingModes = new HashSet<>(sessionTrackingModes);
         _usingCookies = _sessionTrackingModes.contains(SessionTrackingMode.COOKIE);
