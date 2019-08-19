@@ -18,7 +18,22 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
+
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,20 +72,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.junit.jupiter.api.condition.OS.MAC;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
 public class FileSystemResourceTest
@@ -318,7 +319,39 @@ public class FileSystemResourceTest
             }
         }
     }
-
+    
+    @ParameterizedTest
+    @MethodSource("fsResourceProvider")
+    public void testAccessUniCodeFile(Class resourceClass) throws Exception
+    {
+        Path dir = workDir.getEmptyPathDir();
+        
+        String readableRootDir = findRootDir(dir.getFileSystem());
+        assumeTrue(readableRootDir != null, "Readable Root Dir found");
+        
+        Path subdir = dir.resolve("sub");
+        Files.createDirectories(subdir);
+    
+        touchFile(subdir.resolve("swedish-å.txt"), "hi a-with-circle");
+        touchFile(subdir.resolve("swedish-ä.txt"), "hi a-with-two-dots");
+        touchFile(subdir.resolve("swedish-ö.txt"), "hi o-with-two-dots");
+        
+        try (Resource base = newResource(resourceClass, subdir.toFile()))
+        {
+            Resource refA1 = base.addPath("swedish-å.txt");
+            Resource refA2 = base.addPath("swedish-ä.txt");
+            Resource refO1 = base.addPath("swedish-ö.txt");
+            
+            assertThat("Ref A1", refA1.exists(), is(true));
+            assertThat("Ref A2", refA2.exists(), is(true));
+            assertThat("Ref O1", refO1.exists(), is(true));
+            
+            assertThat("Ref A1 contents", toString(refA1), is("hi a-with-circle"));
+            assertThat("Ref A2 contents", toString(refA2), is("hi a-with-two-dots"));
+            assertThat("Ref O1 contents", toString(refO1), is("hi o-with-two-dots"));
+        }
+    }
+    
     private String findRootDir(FileSystem fs) throws IOException
     {
         // look for a directory off of a root path
@@ -418,12 +451,7 @@ public class FileSystemResourceTest
         Files.createDirectories(dir);
 
         Path file = dir.resolve("foo");
-
-        try (StringReader reader = new StringReader("foo");
-             BufferedWriter writer = Files.newBufferedWriter(file))
-        {
-            IO.copy(reader, writer);
-        }
+        touchFile(file, "foo");
 
         long expected = Files.size(file);
 
@@ -433,7 +461,7 @@ public class FileSystemResourceTest
             assertThat("foo.length", res.length(), is(expected));
         }
     }
-
+    
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
     public void testLength_NotExists(Class resourceClass) throws Exception
@@ -512,12 +540,7 @@ public class FileSystemResourceTest
 
         Path file = dir.resolve("foo");
         String content = "Foo is here";
-
-        try (StringReader reader = new StringReader(content);
-             BufferedWriter writer = Files.newBufferedWriter(file))
-        {
-            IO.copy(reader, writer);
-        }
+        touchFile(file, content);
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
         {
@@ -1504,6 +1527,25 @@ public class FileSystemResourceTest
             assertThat("getURI()", resource.getURI().toASCIIString(), containsString("path/WEB-INF/"));
             assertThat("isAlias()", resource.isAlias(), is(false));
             assertThat("getAlias()", resource.getAlias(), nullValue());
+        }
+    }
+    
+    private String toString(Resource resource) throws IOException
+    {
+        try (InputStream inputStream = resource.getInputStream();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
+        {
+            IO.copy(inputStream, outputStream);
+            return outputStream.toString("utf-8");
+        }
+    }
+    
+    private void touchFile(Path outputFile, String content) throws IOException
+    {
+        try (StringReader reader = new StringReader(content);
+             BufferedWriter writer = Files.newBufferedWriter(outputFile))
+        {
+            IO.copy(reader, writer);
         }
     }
 }
