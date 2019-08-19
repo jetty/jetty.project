@@ -205,7 +205,7 @@ public final class RFC6455Handshaker implements Handshaker
         if (connection == null)
             throw new WebSocketException("not upgraded: no connection");
 
-        connector.getEventListenerBeans().forEach(connection::addEventListener);
+        connector.getEventListeners().forEach(connection::addEventListener);
 
         coreSession.setWebSocketConnection(connection);
 

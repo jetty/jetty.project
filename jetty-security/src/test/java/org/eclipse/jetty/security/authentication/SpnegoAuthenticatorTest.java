@@ -119,7 +119,6 @@ public class SpnegoAuthenticatorTest
         @Override
         protected void accept(int acceptorID) throws IOException, InterruptedException
         {
-
         }
 
         @Override

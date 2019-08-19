@@ -556,15 +556,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
     }
 
-    /*
-     * @see org.eclipse.thread.AbstractLifeCycle#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-    }
-
     @Override
     public void destroy()
     {
@@ -947,7 +938,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
             new DumpableCollection("Context attributes " + name, getServletContext().getAttributeEntrySet()),
-            new DumpableCollection("EventListeners " + this, Arrays.asList(getEventListeners())),
+            new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
     }
@@ -1062,15 +1053,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setDistributable(boolean distributable)
     {
         this._distributable = distributable;
-    }
-
-    @Override
-    public void setEventListeners(EventListener[] eventListeners)
-    {
-        if (_sessionHandler != null)
-            _sessionHandler.clearEventListeners();
-
-        super.setEventListeners(eventListeners);
     }
 
     @Override

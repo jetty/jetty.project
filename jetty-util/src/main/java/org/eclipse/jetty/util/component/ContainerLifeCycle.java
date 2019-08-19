@@ -91,7 +91,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     private boolean _destroyed;
 
     @Override
-    public List<EventListener> getEventListenerBeans()
+    public List<EventListener> getEventListeners()
     {
         return _eventListenerBeansUnmodifiable;
     }

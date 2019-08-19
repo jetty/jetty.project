@@ -370,7 +370,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         HttpClient httpClient = wsClient.getHttpClient();
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
-        wsClient.getEventListenerBeans().forEach(wsConnection::addEventListener);
+        wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
 

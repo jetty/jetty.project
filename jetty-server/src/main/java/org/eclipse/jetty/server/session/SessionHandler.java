@@ -325,19 +325,6 @@ public class SessionHandler extends ScopedHandler
     }
 
     /**
-     * Removes all event listeners for session-related events.
-     *
-     * @see #removeEventListener(EventListener)
-     */
-    public void clearEventListeners()
-    {
-        // TODO should we remove from super?
-        _sessionAttributeListeners.clear();
-        _sessionListeners.clear();
-        _sessionIdListeners.clear();
-    }
-
-    /**
      * Call the session lifecycle listeners
      *
      * @param session the session on which to call the lifecycle listeners

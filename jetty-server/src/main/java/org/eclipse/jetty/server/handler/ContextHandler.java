@@ -198,7 +198,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private boolean _compactPath = false;
     private boolean _usingSecurityManager = System.getSecurityManager() != null;
 
-    private final List<EventListener> _eventListeners = new CopyOnWriteArrayList<>();
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _destroySerletContextListeners = new ArrayList<>();
@@ -206,7 +205,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
-    private final List<EventListener> _durableListeners = new CopyOnWriteArrayList<>();
+    private final Set<EventListener> _durableListeners = new HashSet<>();
     private String[] _protectedTargets;
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
 
@@ -605,34 +604,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return _displayName;
     }
 
-    public EventListener[] getEventListeners()
+    @Override
+    public List<EventListener> getEventListeners()
     {
-        return _eventListeners.toArray(new EventListener[_eventListeners.size()]);
-    }
-
-    /**
-     * Set the context event listeners.
-     *
-     * @param eventListeners the event listeners
-     * @see ServletContextListener
-     * @see ServletContextAttributeListener
-     * @see ServletRequestListener
-     * @see ServletRequestAttributeListener
-     */
-    public void setEventListeners(EventListener[] eventListeners)
-    {
-        _contextListeners.clear();
-        _servletContextListeners.clear();
-        _servletContextAttributeListeners.clear();
-        _servletRequestListeners.clear();
-        _servletRequestAttributeListeners.clear();
-        _eventListeners.clear();
-
-        if (eventListeners != null)
-            for (EventListener listener : eventListeners)
-            {
-                addEventListener(listener);
-            }
+        return super.getEventListeners();
     }
 
     /**
@@ -648,13 +623,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void addEventListener(EventListener listener)
     {
         super.addEventListener(listener);
-
-        _eventListeners.add(listener);
-
-        if (!(isStarted() || isStarting()))
-        {
-            _durableListeners.add(listener);
-        }
 
         if (listener instanceof ContextScopeListener)
         {
@@ -688,8 +656,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void removeEventListener(EventListener listener)
     {
         super.removeEventListener(listener);
-
-        _eventListeners.remove(listener);
 
         if (listener instanceof ContextScopeListener)
             _contextListeners.remove(listener);
@@ -803,6 +769,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (_mimeTypes == null)
             _mimeTypes = new MimeTypes();
+
+        _durableListeners.addAll(getEventListeners());
 
         try
         {
@@ -971,7 +939,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             stopContext();
 
             // retain only durable listeners
-            setEventListeners(_durableListeners.toArray(new EventListener[_durableListeners.size()]));
+            for (EventListener listener : new ArrayList<>(getEventListeners()))
+            {
+                if (!_durableListeners.contains(listener))
+                    removeEventListener(listener);
+            }
             _durableListeners.clear();
 
             if (_errorHandler != null)

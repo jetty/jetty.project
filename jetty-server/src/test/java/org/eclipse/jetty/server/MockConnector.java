@@ -30,7 +30,6 @@ class MockConnector extends AbstractConnector
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-
     }
 
     @Override

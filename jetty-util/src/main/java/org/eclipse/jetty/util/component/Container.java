@@ -30,7 +30,7 @@ import java.util.List;
 public interface Container
 {
     /**
-     * Add a bean.  If the bean is-a {@link Listener}, then also do an implicit {@link #addEventListener(EventListener)}.
+     * Add a bean.  If the bean is-a {@link EventListener}, then also do an implicit {@link #addEventListener(EventListener)}.
      *
      * @param o the bean object to add
      * @return true if the bean was added, false if it was already present
@@ -150,7 +150,7 @@ public interface Container
      * @see #getBeans(Class)
      * @return An unmodifiable list of EventListener beans
      */
-    default List<EventListener> getEventListenerBeans()
+    default List<EventListener> getEventListeners()
     {
         return Collections.unmodifiableList(new ArrayList<>(getBeans(EventListener.class)));
     }

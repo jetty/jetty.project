@@ -109,14 +109,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _response = new Response(this, newHttpOutput());
         _executor = connector.getServer().getThreadPool();
         _requestLog = connector.getServer().getRequestLog();
-
-        if (connector instanceof AbstractConnector)
-            // Initialize with a readonly preprepared list of listeners
-            _listeners = ((AbstractConnector)connector).getHttpChannelListeners();
-        else if (connector != null)
-            _listeners = connector.getBeans(HttpChannel.Listener.class);
-        else
-            _listeners = Collections.emptyList();
+        _listeners = (connector instanceof AbstractConnector)
+            ? ((AbstractConnector)connector).getHttpChannelListeners()
+            : connector.getBeans(HttpChannel.Listener.class);
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",

@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -82,10 +81,10 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
         connection.setInputBufferSize(getInputBufferSize());
 
         // Add Connection.Listeners from Connector
-        connector.getEventListenerBeans().forEach(connection::addEventListener);
+        connector.getEventListeners().forEach(connection::addEventListener);
 
         // Add Connection.Listeners from this factory
-        getEventListenerBeans().forEach(connection::addEventListener);
+        getEventListeners().forEach(connection::addEventListener);
 
         return connection;
     }

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
-import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -434,11 +433,9 @@ public class JettyWebAppContext extends WebAppContext
 
         super.doStop();
 
-        // remove all listeners, servlets and filters. This is because we will
-        // re-apply
-        // any context xml file, which means they would potentially be added
-        // multiple times.
-        setEventListeners(new EventListener[0]);
+        // remove all servlets and filters. This is because we will
+        // re-appy any context xml file, which means they would potentially be
+        // added multiple times.
         getServletHandler().setFilters(new FilterHolder[0]);
         getServletHandler().setFilterMappings(new FilterMapping[0]);
         getServletHandler().setServlets(new ServletHolder[0]);
