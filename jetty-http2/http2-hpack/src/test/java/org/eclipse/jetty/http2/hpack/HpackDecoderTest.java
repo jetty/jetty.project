@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackException.CompressionException;
+import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 import org.eclipse.jetty.http2.hpack.HpackException.StreamException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
@@ -43,6 +44,21 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class HpackDecoderTest
 {
+    /*
+      0   1   2   3   4   5   6   7
+     +---+---+---+---+---+---+---+---+
+     | 0 | 0 | 0 | 0 |       0       |
+     +---+---+-----------------------+
+     | H |     Name Length (7+)      |
+     +---+---------------------------+
+     |  Name String (Length octets)  |
+     +---+---------------------------+
+     | H |     Value Length (7+)     |
+     +---+---------------------------+
+     | Value String (Length octets)  |
+     +-------------------------------+
+     */
+
     @Test
     public void testDecodeD_3() throws Exception
     {
@@ -253,7 +269,7 @@ public class HpackDecoderTest
             decoder.decode(buffer);
             fail();
         }
-        catch (HpackException.SessionException e)
+        catch (SessionException e)
         {
             assertThat(e.getMessage(), Matchers.startsWith("Unknown index"));
         }
@@ -505,5 +521,39 @@ public class HpackDecoderTest
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+    }
+
+    @Test()
+    public void testZeroLengthName() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "00000130";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        SessionException ex = assertThrows(SessionException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Header size 0"));
+    }
+
+    @Test()
+    public void testZeroLengthValue() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "00016800";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        MetaData metaData = decoder.decode(buffer);
+        assertThat(metaData.getFields().size(), is(1));
+        assertThat(metaData.getFields().get("h"), is(""));
+    }
+
+    @Test()
+    public void testUpperCaseName() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "0001480130";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Uppercase header"));
     }
 }

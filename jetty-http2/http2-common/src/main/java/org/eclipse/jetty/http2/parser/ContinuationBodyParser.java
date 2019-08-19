@@ -30,16 +30,14 @@ public class ContinuationBodyParser extends BodyParser
 {
     private final HeaderBlockParser headerBlockParser;
     private final HeaderBlockFragments headerBlockFragments;
-    private final RateControl rateControl;
     private State state = State.PREPARE;
     private int length;
 
-    public ContinuationBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser, HeaderBlockFragments headerBlockFragments, RateControl rateControl)
+    public ContinuationBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser, HeaderBlockFragments headerBlockFragments)
     {
         super(headerParser, listener);
         this.headerBlockParser = headerBlockParser;
         this.headerBlockFragments = headerBlockFragments;
-        this.rateControl = rateControl;
     }
 
     @Override
@@ -52,7 +50,7 @@ public class ContinuationBodyParser extends BodyParser
         else
         {
             ContinuationFrame frame = new ContinuationFrame(getStreamId(), hasFlag(Flags.END_HEADERS));
-            if (rateControl != null && !rateControl.onEvent(frame))
+            if (!rateControlOnEvent(frame))
                 connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
         }
     }

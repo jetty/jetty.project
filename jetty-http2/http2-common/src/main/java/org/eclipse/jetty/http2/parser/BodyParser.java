@@ -245,4 +245,9 @@ public abstract class BodyParser
             LOG.info("Failure while notifying listener " + listener, x);
         }
     }
+
+    protected boolean rateControlOnEvent(Object o)
+    {
+        return headerParser.getRateControl().onEvent(o);
+    }
 }

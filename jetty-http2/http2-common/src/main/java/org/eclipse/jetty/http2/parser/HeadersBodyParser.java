@@ -32,7 +32,6 @@ public class HeadersBodyParser extends BodyParser
 {
     private final HeaderBlockParser headerBlockParser;
     private final HeaderBlockFragments headerBlockFragments;
-    private final RateControl rateControl;
     private State state = State.PREPARE;
     private int cursor;
     private int length;
@@ -41,12 +40,11 @@ public class HeadersBodyParser extends BodyParser
     private int parentStreamId;
     private int weight;
 
-    public HeadersBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser, HeaderBlockFragments headerBlockFragments, RateControl rateControl)
+    public HeadersBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser, HeaderBlockFragments headerBlockFragments)
     {
         super(headerParser, listener);
         this.headerBlockParser = headerBlockParser;
         this.headerBlockFragments = headerBlockFragments;
-        this.rateControl = rateControl;
     }
 
     private void reset()
@@ -71,7 +69,7 @@ public class HeadersBodyParser extends BodyParser
         {
             MetaData metaData = headerBlockParser.parse(BufferUtil.EMPTY_BUFFER, 0);
             HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
-            if (rateControl != null && !rateControl.onEvent(frame))
+            if (!rateControlOnEvent(frame))
                 connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
             else
                 onHeaders(frame);
@@ -193,7 +191,7 @@ public class HeadersBodyParser extends BodyParser
                             else
                             {
                                 HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
-                                if (rateControl != null && !rateControl.onEvent(frame))
+                                if (!rateControlOnEvent(frame))
                                     connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
                             }
                         }

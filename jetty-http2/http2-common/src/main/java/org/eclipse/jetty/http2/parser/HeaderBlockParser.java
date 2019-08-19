@@ -103,6 +103,11 @@ public class HeaderBlockParser
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug(x);
+                if (!headerParser.getRateControl().onEvent(x))
+                {
+                    notifier.connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_header_frame_rate");
+                    return SESSION_FAILURE;
+                }
                 notifier.streamFailure(headerParser.getStreamId(), ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
                 return STREAM_FAILURE;
             }

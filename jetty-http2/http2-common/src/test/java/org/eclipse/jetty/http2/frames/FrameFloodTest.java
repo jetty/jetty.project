@@ -135,8 +135,7 @@ public class FrameFloodTest
             {
                 failed.set(true);
             }
-        }, 4096, 8192);
-        parser.setRateControl(new WindowRateControl(8, Duration.ofSeconds(1)));
+        }, 4096, 8192, new WindowRateControl(8, Duration.ofSeconds(1)));
         parser.init(UnaryOperator.identity());
 
         if (preamble != null)

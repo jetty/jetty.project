@@ -36,7 +36,6 @@ public class SettingsBodyParser extends BodyParser
     private static final Logger LOG = Log.getLogger(SettingsBodyParser.class);
 
     private final int maxKeys;
-    private final RateControl rateControl;
     private State state = State.PREPARE;
     private int cursor;
     private int length;
@@ -47,14 +46,13 @@ public class SettingsBodyParser extends BodyParser
 
     public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
-        this(headerParser, listener, SettingsFrame.DEFAULT_MAX_KEYS, null);
+        this(headerParser, listener, SettingsFrame.DEFAULT_MAX_KEYS);
     }
 
-    public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener, int maxKeys, RateControl rateControl)
+    public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener, int maxKeys)
     {
         super(headerParser, listener);
         this.maxKeys = maxKeys;
-        this.rateControl = rateControl;
     }
 
     protected void reset()
@@ -76,7 +74,7 @@ public class SettingsBodyParser extends BodyParser
     protected void emptyBody(ByteBuffer buffer)
     {
         SettingsFrame frame = new SettingsFrame(Collections.emptyMap(), hasFlag(Flags.ACK));
-        if (rateControl != null && !rateControl.onEvent(frame))
+        if (!rateControlOnEvent(frame))
             connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame");
         else
             onSettings(frame);
@@ -220,7 +218,8 @@ public class SettingsBodyParser extends BodyParser
     public static SettingsFrame parseBody(final ByteBuffer buffer)
     {
         AtomicReference<SettingsFrame> frameRef = new AtomicReference<>();
-        SettingsBodyParser parser = new SettingsBodyParser(new HeaderParser(), new Parser.Listener.Adapter()
+        // TODO should we do rate control here?
+        SettingsBodyParser parser = new SettingsBodyParser(new HeaderParser(RateControl.NO_RATE_CONTROL), new Parser.Listener.Adapter()
         {
             @Override
             public void onSettings(SettingsFrame frame)

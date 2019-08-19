@@ -30,6 +30,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
  */
 public class HeaderParser
 {
+    private final RateControl rateControl;
     private State state = State.LENGTH;
     private int cursor;
 
@@ -37,6 +38,16 @@ public class HeaderParser
     private int type;
     private int flags;
     private int streamId;
+
+    HeaderParser(RateControl rateControl)
+    {
+        this.rateControl = rateControl;
+    }
+
+    public RateControl getRateControl()
+    {
+        return rateControl;
+    }
 
     protected void reset()
     {

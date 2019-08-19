@@ -501,7 +501,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             x.printStackTrace();
                         }
                     }
-                }, 4096, 8192);
+                }, 4096, 8192, null);
                 parser.init(UnaryOperator.identity());
 
                 byte[] bytes = new byte[1024];

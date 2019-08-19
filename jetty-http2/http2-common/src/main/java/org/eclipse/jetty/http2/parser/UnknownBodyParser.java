@@ -21,18 +21,15 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.UnknownFrame;
 
 public class UnknownBodyParser extends BodyParser
 {
-    private final RateControl rateControl;
     private int cursor;
 
-    public UnknownBodyParser(HeaderParser headerParser, Parser.Listener listener, RateControl rateControl)
+    public UnknownBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
         super(headerParser, listener);
-        this.rateControl = rateControl;
     }
 
     @Override
@@ -41,12 +38,9 @@ public class UnknownBodyParser extends BodyParser
         int length = cursor == 0 ? getBodyLength() : cursor;
         cursor = consume(buffer, length);
         boolean parsed = cursor == 0;
-        if (parsed && rateControl != null)
-        {
-            Frame frame = new UnknownFrame(getFrameType());
-            if (!rateControl.onEvent(frame))
-                return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_unknown_frame");
-        }
+        if (parsed && !rateControlOnEvent(new UnknownFrame(getFrameType())))
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_unknown_frame");
+
         return parsed;
     }
 

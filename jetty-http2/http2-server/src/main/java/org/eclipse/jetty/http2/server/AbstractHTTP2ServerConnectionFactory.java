@@ -251,10 +251,9 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
 
-        ServerParser parser = newServerParser(connector, session);
+        ServerParser parser = newServerParser(connector, session, getRateControl());
         parser.setMaxFrameLength(getMaxFrameLength());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
-        parser.setRateControl(getRateControl());
 
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
             endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
@@ -264,9 +263,9 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
 
-    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
+    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
     {
-        return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
+        return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
     }
 
     @ManagedObject("The container of HTTP/2 sessions")

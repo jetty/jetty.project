@@ -46,6 +46,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -747,7 +748,7 @@ public class HTTP2Test extends AbstractTest
         RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), serverListener)
         {
             @Override
-            protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
+            protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
             {
                 return super.newServerParser(connector, new ServerParser.Listener.Wrapper(listener)
                 {
@@ -757,7 +758,7 @@ public class HTTP2Test extends AbstractTest
                         super.onGoAway(frame);
                         goAwayLatch.countDown();
                     }
-                });
+                }, rateControl);
             }
         };
         prepareServer(connectionFactory);

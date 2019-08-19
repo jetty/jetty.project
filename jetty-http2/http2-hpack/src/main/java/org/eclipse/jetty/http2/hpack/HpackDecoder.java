@@ -175,7 +175,7 @@ public class HpackDecoder
                         name = Huffman.decode(buffer, length);
                     else
                         name = toASCIIString(buffer, length);
-                    for (int i = 0; i < name.length(); i++)
+                    for (int i = name.length(); i-- > 0;)
                     {
                         char c = name.charAt(i);
                         if (c >= 'A' && c <= 'Z')

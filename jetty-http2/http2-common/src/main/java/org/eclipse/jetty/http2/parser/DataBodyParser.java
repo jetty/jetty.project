@@ -26,16 +26,14 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class DataBodyParser extends BodyParser
 {
-    private final RateControl rateControl;
     private State state = State.PREPARE;
     private int padding;
     private int paddingLength;
     private int length;
 
-    public DataBodyParser(HeaderParser headerParser, Parser.Listener listener, RateControl rateControl)
+    public DataBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
         super(headerParser, listener);
-        this.rateControl = rateControl;
     }
 
     private void reset()
@@ -56,7 +54,7 @@ public class DataBodyParser extends BodyParser
         else
         {
             DataFrame frame = new DataFrame(getStreamId(), BufferUtil.EMPTY_BUFFER, isEndStream());
-            if (!isEndStream() && rateControl != null && !rateControl.onEvent(frame))
+            if (!isEndStream() && !rateControlOnEvent(frame))
                 connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_data_frame_rate");
             else
                 onData(frame);
