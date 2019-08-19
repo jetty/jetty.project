@@ -80,7 +80,15 @@ public class PathResource extends Resource
         {
             try
             {
-                return Paths.get(uri).toRealPath(FOLLOW_LINKS);
+                Path followed = Paths.get(uri).toRealPath(FOLLOW_LINKS);
+                if (!isSame(path, followed))
+                {
+                    return followed;
+                }
+                else
+                {
+                    return null;
+                }
             }
             catch (IOException ignored)
             {
@@ -137,22 +145,10 @@ public class PathResource extends Resource
                  * We also cannot rely on a.compareTo(b) as this is roughly equivalent
                  * in implementation to a.equals(b)
                  */
-
-                int absCount = abs.getNameCount();
-                int realCount = real.getNameCount();
-                if (absCount != realCount)
+    
+                if (!isSame(abs, real))
                 {
-                    // different number of segments
                     return real;
-                }
-
-                // compare each segment of path, backwards
-                for (int i = realCount - 1; i >= 0; i--)
-                {
-                    if (!abs.getName(i).toString().equals(real.getName(i).toString()))
-                    {
-                        return real;
-                    }
                 }
             }
         }
@@ -165,6 +161,28 @@ public class PathResource extends Resource
             LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
         }
         return null;
+    }
+    
+    private boolean isSame(Path pathA, Path pathB)
+    {
+        int aCount = pathA.getNameCount();
+        int bCount = pathB.getNameCount();
+        if (aCount != bCount)
+        {
+            // different number of segments
+            return false;
+        }
+        
+        // compare each segment of path, backwards
+        for (int i = bCount - 1; i >= 0; i--)
+        {
+            if (!pathA.getName(i).toString().equals(pathB.getName(i).toString()))
+            {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**

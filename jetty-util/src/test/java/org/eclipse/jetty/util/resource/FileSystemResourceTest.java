@@ -342,9 +342,13 @@ public class FileSystemResourceTest
             Resource refA2 = base.addPath("swedish-ä.txt");
             Resource refO1 = base.addPath("swedish-ö.txt");
             
-            assertThat("Ref A1", refA1.exists(), is(true));
-            assertThat("Ref A2", refA2.exists(), is(true));
-            assertThat("Ref O1", refO1.exists(), is(true));
+            assertThat("Ref A1 exists", refA1.exists(), is(true));
+            assertThat("Ref A2 exists", refA2.exists(), is(true));
+            assertThat("Ref O1 exists", refO1.exists(), is(true));
+    
+            assertThat("Ref A1 alias", refA1.isAlias(), is(false));
+            assertThat("Ref A2 alias", refA2.isAlias(), is(false));
+            assertThat("Ref O1 alias", refO1.isAlias(), is(false));
             
             assertThat("Ref A1 contents", toString(refA1), is("hi a-with-circle"));
             assertThat("Ref A2 contents", toString(refA2), is("hi a-with-two-dots"));
@@ -1416,11 +1420,19 @@ public class FileSystemResourceTest
 
             Resource r = base.addPath("//foo.txt");
             assertThat("getURI()", r.getURI().toASCIIString(), containsString("//foo.txt"));
-
-            assertThat("isAlias()", r.isAlias(), is(true));
-            assertThat("getAlias()", r.getAlias(), notNullValue());
-            assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("/foo.txt"));
             assertThat("Exists: " + r, r.exists(), is(true));
+            
+            if (PathResource.class.isAssignableFrom(resourceClass))
+            {
+                assertThat("isAlias()", r.isAlias(), is(false));
+                assertThat("getAlias()", r.getAlias(), nullValue());
+            }
+            else
+            {
+                assertThat("isAlias()", r.isAlias(), is(true));
+                assertThat("getAlias()", r.getAlias(), notNullValue());
+                assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("/foo.txt"));
+            }
         }
         catch (InvalidPathException e)
         {
@@ -1449,10 +1461,19 @@ public class FileSystemResourceTest
 
             Resource r = base.addPath("aa//foo.txt");
             assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa//foo.txt"));
-
-            assertThat("isAlias()", r.isAlias(), is(true));
-            assertThat("getAlias()", r.getAlias(), notNullValue());
-            assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("aa/foo.txt"));
+    
+            if (PathResource.class.isAssignableFrom(resourceClass))
+            {
+                assertThat("isAlias()", r.isAlias(), is(false));
+                assertThat("getAlias()", r.getAlias(), nullValue());
+            }
+            else
+            {
+                assertThat("isAlias()", r.isAlias(), is(true));
+                assertThat("getAlias()", r.getAlias(), notNullValue());
+                assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("aa/foo.txt"));
+            }
+            
             assertThat("Exists: " + r, r.exists(), is(true));
         }
         catch (InvalidPathException e)
