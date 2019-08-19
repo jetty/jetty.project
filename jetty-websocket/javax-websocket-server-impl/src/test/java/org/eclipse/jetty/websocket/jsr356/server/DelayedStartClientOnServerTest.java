@@ -179,8 +179,8 @@ public class DelayedStartClientOnServerTest
             if (threadName.startsWith("HttpClient@") && !threadName.endsWith("-scheduler"))
             {
                 throw new AssertionError("Found non-scheduler HttpClient thread in <" +
-                    threadNames.stream().collect(Collectors.joining("[", ", ", "]"))
-                    + ">");
+                        threadNames.stream().collect(Collectors.joining("[", ", ", "]")) +
+                        ">");
             }
         }
     }

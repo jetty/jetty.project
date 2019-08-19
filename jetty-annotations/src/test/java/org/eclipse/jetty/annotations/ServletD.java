@@ -24,8 +24,8 @@ import javax.servlet.http.HttpServlet;
 
 @WebServlet(urlPatterns = {"/", "/bah/*"}, name = "DServlet", initParams = {
     @WebInitParam(name = "x", value = "y")
-}, loadOnStartup = 1, asyncSupported = false)
+    }, loadOnStartup = 1, asyncSupported = false)
 public class ServletD extends HttpServlet
 {
-
+    // no op
 }

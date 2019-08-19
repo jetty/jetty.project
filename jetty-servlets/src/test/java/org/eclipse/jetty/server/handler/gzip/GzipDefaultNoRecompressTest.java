@@ -42,7 +42,7 @@ public class GzipDefaultNoRecompressTest
 {
     public static Stream<Arguments> data()
     {
-        return Arrays.asList(new Object[][]
+        return Arrays.stream(new Object[][]
             {
                 // Some already compressed files
                 {"test_quotes.gz", "application/gzip", GzipHandler.GZIP},
@@ -64,7 +64,7 @@ public class GzipDefaultNoRecompressTest
                 //qvalue disables compression
                 {"test_quotes.txt", "text/plain", GzipHandler.GZIP + ";q=0"},
                 {"test_quotes.txt", "text/plain", GzipHandler.GZIP + "; q =    0 "},
-                }).stream().map(Arguments::of);
+            }).map(Arguments::of);
     }
 
     public WorkDir testingdir;

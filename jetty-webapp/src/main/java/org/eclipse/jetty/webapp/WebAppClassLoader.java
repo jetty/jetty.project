@@ -605,6 +605,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      * @param name the name of the class to load
      * @param checkSystemResource if true and the class isn't a system class we return it
      * @return the loaded class
+     * @throws ClassNotFoundException if the class cannot be found
      */
     protected Class<?> loadAsResource(final String name, boolean checkSystemResource) throws ClassNotFoundException
     {

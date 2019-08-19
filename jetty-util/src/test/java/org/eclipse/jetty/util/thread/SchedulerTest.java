@@ -70,6 +70,7 @@ public class SchedulerTest
             }
             catch (Exception ignore)
             {
+                // no op
             }
         });
     }

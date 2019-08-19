@@ -244,9 +244,9 @@ public class ServletTester extends ContainerLifeCycle
         else
             connector.open();
 
-        return "http://" + (localhost ? "127.0.0.1" :
-            InetAddress.getLocalHost().getHostAddress()
-        ) + ":" + connector.getLocalPort();
+        return "http://" + (localhost ? "127.0.0.1"
+                : InetAddress.getLocalHost().getHostAddress()) +
+                ":" + connector.getLocalPort();
     }
 
     public LocalConnector createLocalConnector()

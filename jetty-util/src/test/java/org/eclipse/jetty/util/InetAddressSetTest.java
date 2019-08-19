@@ -82,7 +82,7 @@ public class InetAddressSetTest
                 "[::1",
                 "[xxx]",
                 "[:::1]",
-                };
+            };
 
         InetAddressSet set = new InetAddressSet();
 
@@ -159,7 +159,7 @@ public class InetAddressSetTest
                 "255.255.8.0/16",
                 "255.255.8.1/17",
                 "[::1]/129",
-                };
+            };
 
         InetAddressSet set = new InetAddressSet();
 
@@ -214,7 +214,7 @@ public class InetAddressSetTest
             {
                 "10.0.0.0-9.0.0.0",
                 "9.0.0.0-[::10.0.0.0]",
-                };
+            };
 
         InetAddressSet set = new InetAddressSet();
 
@@ -266,7 +266,7 @@ public class InetAddressSetTest
                 "9.0-10.0",
                 "10.0.0--1.1",
                 "10.0.0-256.1",
-                };
+            };
 
         InetAddressSet set = new InetAddressSet();
 

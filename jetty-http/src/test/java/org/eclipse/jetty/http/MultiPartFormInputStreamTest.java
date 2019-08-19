@@ -77,9 +77,9 @@ public class MultiPartFormInputStreamTest
             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
             "Content-Type: application/octet-stream\r\n\r\n" +
             "How now brown cow." +
-            "\r\n--" + boundary + "-\r\n"
-            + "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"
-            + "\r\n";
+            "\r\n--" + boundary + "-\r\n" +
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(str.getBytes()),

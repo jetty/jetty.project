@@ -39,7 +39,7 @@ public class BigEchoSocket
     private static final Logger LOG = Log.getLogger(BigEchoSocket.class);
 
     @OnWebSocketMessage
-    public void onBinary(Session session, byte buf[], int offset, int length) throws IOException
+    public void onBinary(Session session, byte[] buf, int offset, int length) throws IOException
     {
         if (!session.isOpen())
         {

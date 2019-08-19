@@ -44,7 +44,7 @@ public abstract class AbstractThreadPoolTest
         ProcessorUtils.setAvailableProcessors(originalCoreCount);
     }
 
-    abstract protected SizedThreadPool newPool(int max);
+    protected abstract SizedThreadPool newPool(int max);
 
     @Test
     public void testBudget_constructMaxThenLease()

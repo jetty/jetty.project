@@ -392,22 +392,15 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             os.write("\r\n".getBytes("utf-8"));
             os.flush();
         }
-        catch (Exception e)
-        {
-        }
+
         long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
         assertThat(duration, greaterThan(500L));
 
-        try
-        {
-            // read the response
-            String response = IO.toString(is);
-            assertThat(response, startsWith("HTTP/1.1 500 "));
-            assertThat(response, containsString("InterruptedIOException"));
-        }
-        catch (SSLException e)
-        {
-        }
+        // read the response
+        String response = IO.toString(is);
+        assertThat(response, startsWith("HTTP/1.1 500 "));
+        assertThat(response, containsString("InterruptedIOException"));
+
     }
 
     @Test
@@ -498,9 +491,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 if (line == null)
                     break;
             }
-        }
-        catch (Throwable e)
-        {
         }
         long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         long duration = end - start;

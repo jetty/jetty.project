@@ -100,7 +100,7 @@ public class ExtensionStackProcessingTest
         assumeDeflateFrameAvailable();
 
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-            .extensions(Arrays.<Extension>asList(new JsrExtension("deflate-frame")))
+            .extensions(Arrays.asList(new JsrExtension("deflate-frame")))
             .build();
 
         final String content = "deflate_me";
@@ -129,14 +129,7 @@ public class ExtensionStackProcessingTest
         assertTrue(thirdOut instanceof WebSocketClientConnection);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        session.getAsyncRemote().sendText(content, new SendHandler()
-        {
-            @Override
-            public void onResult(SendResult result)
-            {
-                latch.countDown();
-            }
-        });
+        session.getAsyncRemote().sendText(content, result -> latch.countDown());
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
@@ -148,7 +141,7 @@ public class ExtensionStackProcessingTest
         assumeDeflateFrameAvailable();
 
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-            .extensions(Arrays.<Extension>asList(new JsrExtension("permessage-deflate")))
+            .extensions(Arrays.asList(new JsrExtension("permessage-deflate")))
             .build();
 
         final String content = "deflate_me";
@@ -165,20 +158,13 @@ public class ExtensionStackProcessingTest
         }, config, uri);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        session.getAsyncRemote().sendText(content, new SendHandler()
-        {
-            @Override
-            public void onResult(SendResult result)
-            {
-                latch.countDown();
-            }
-        });
+        session.getAsyncRemote().sendText(content, result -> latch.countDown());
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
+    private abstract static class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
     {
         @Override
         public void onOpen(Session session, EndpointConfig config)
