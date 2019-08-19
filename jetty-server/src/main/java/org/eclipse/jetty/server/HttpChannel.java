@@ -108,16 +108,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _request = new Request(this, newHttpInput(_state));
         _response = new Response(this, newHttpOutput());
 
-        _executor = connector == null ? null : connector.getServer().getThreadPool();
-        _requestLog = connector == null ? null : connector.getServer().getRequestLog();
-
-        if (connector instanceof AbstractConnector)
-            // Initialize with a readonly preprepared list of listeners
-            _listeners = ((AbstractConnector)connector).getHttpChannelListeners();
-        else if (connector != null)
-            _listeners = connector.getBeans(HttpChannel.Listener.class);
-        else
-            _listeners = Collections.emptyList();
+        _executor = connector.getServer().getThreadPool();
+        _requestLog = connector.getServer().getRequestLog();
+        _listeners = (connector instanceof AbstractConnector)
+            ? ((AbstractConnector)connector).getHttpChannelListeners()
+            : connector.getBeans(HttpChannel.Listener.class);
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
@@ -144,33 +139,40 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public boolean addListener(Listener listener)
     {
+        // Add normally to a mutable ArrayList?
         if (_listeners instanceof ArrayList)
             return _listeners.add(listener);
+
+        // If it is not mutable and empty then replace with singleton
         if (_listeners.isEmpty())
         {
             _listeners = Collections.singletonList(listener);
             return true;
         }
 
-        // If we are adding to a immutable list, copy to an ArrayList
+        // If we are adding to a immutable non empty list, then copy to an ArrayList
         _listeners = new ArrayList<>(_listeners);
         return _listeners.add(listener);
     }
 
     public boolean removeListener(Listener listener)
     {
+        // remove normally from a mutable ArrayList
         if (_listeners instanceof ArrayList)
             return _listeners.remove(listener);
 
+        // don't remove from an immutable list if it is not contained
         if (!_listeners.contains(listener))
             return false;
 
+        // replace immutable singleton list with empty list
         if (_listeners.size() == 1)
         {
             _listeners = Collections.emptyList();
             return true;
         }
 
+        // Copy to mutable ArrayList and then remove
         _listeners = new ArrayList<>(_listeners);
         return _listeners.remove(listener);
     }
@@ -1084,11 +1086,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent1(Function<Listener, Consumer<Request>> function, Request request)
     {
-        for (EventListener listener : _listeners)
+        for (Listener listener : _listeners)
         {
             try
             {
-                function.apply((Listener)listener).accept(request);
+                function.apply(listener).accept(request);
             }
             catch (Throwable x)
             {
@@ -1099,12 +1101,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
     {
-        for (EventListener listener : _listeners)
+        for (Listener listener : _listeners)
         {
             ByteBuffer view = content.slice();
             try
             {
-                function.apply((Listener)listener).accept(request, view);
+                function.apply(listener).accept(request, view);
             }
             catch (Throwable x)
             {
@@ -1115,11 +1117,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, Throwable>> function, Request request, Throwable failure)
     {
-        for (EventListener listener : _listeners)
+        for (Listener listener : _listeners)
         {
             try
             {
-                function.apply((Listener)listener).accept(request, failure);
+                function.apply(listener).accept(request, failure);
             }
             catch (Throwable x)
             {
