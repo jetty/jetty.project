@@ -87,6 +87,11 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     protected void doStart() throws Exception
     {
         super.doStart();
+        startSelector();
+    }
+
+    protected void startSelector() throws IOException
+    {
         _selector = newSelector();
         _selectorManager.execute(this);
     }
@@ -96,12 +101,25 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         return Selector.open();
     }
 
+    public Selector getSelector()
+    {
+        return _selector;
+    }
+
+    protected void onSelectFailed(Throwable cause)
+    {
+        LOG.warn(toString(), cause);
+    }
+
     public int size()
     {
         Selector s = _selector;
         if (s == null)
             return 0;
-        return s.keys().size();
+        Set<SelectionKey> keys = s.keys();
+        if (keys == null)
+            return 0;
+        return keys.size();
     }
 
     @Override
@@ -258,14 +276,17 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             }
             catch (Throwable x)
             {
+                Selector selector = _selector;
                 if (isRunning())
-                    LOG.warn(x);
+                {
+                    onSelectFailed(x);
+                }
                 else
                 {
                     LOG.warn(x.toString());
                     LOG.debug(x);
                 }
-                closeNoExceptions(_selector);
+                closeNoExceptions(selector);
             }
             return false;
         }
