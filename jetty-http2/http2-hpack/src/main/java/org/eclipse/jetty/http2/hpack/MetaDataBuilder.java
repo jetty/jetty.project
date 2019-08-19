@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -36,6 +37,7 @@ public class MetaDataBuilder
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
     private String _path;
+    private String _protocol;
     private long _contentLength = Long.MIN_VALUE;
     private HttpFields _fields = new HttpFields();
     private HpackException.StreamException _streamException;
@@ -140,6 +142,23 @@ public class MetaDataBuilder
                     _request = true;
                     break;
 
+                case C_PATH:
+                    if (checkPseudoHeader(header, _path))
+                    {
+                        if (value != null && value.length() > 0)
+                            _path = value;
+                        else
+                            streamException("No Path");
+                    }
+                    _request = true;
+                    break;
+
+                case C_PROTOCOL:
+                    if (checkPseudoHeader(header, _protocol))
+                        _protocol = value;
+                    _request = true;
+                    break;
+
                 case HOST:
                     // :authority fields must come first.  If we have one, ignore the host header as far as authority goes.
                     if (_authority == null)
@@ -152,37 +171,26 @@ public class MetaDataBuilder
                     _fields.add(field);
                     break;
 
-                case C_PATH:
-                    if (checkPseudoHeader(header, _path))
-                    {
-                        if (value != null && value.length() > 0)
-                            _path = value;
-                        else
-                            streamException("No Path");
-                    }
-                    _request = true;
-                    break;
-
                 case CONTENT_LENGTH:
                     _contentLength = field.getLongValue();
                     _fields.add(field);
                     break;
-
+                
                 case TE:
                     if ("trailers".equalsIgnoreCase(value))
                         _fields.add(field);
                     else
                         streamException("Unsupported TE value '%s'", value);
                     break;
-
+            
                 case CONNECTION:
                     if ("TE".equalsIgnoreCase(value))
                         _fields.add(field);
                     else
                         streamException("Connection specific field '%s'", header);
-                    break;
+                    break;                
 
-                default:
+                default:               
                     if (name.charAt(0) == ':')
                         streamException("Unknown pseudo header '%s'", name);
                     else
@@ -228,7 +236,7 @@ public class MetaDataBuilder
             _streamException.addSuppressed(new Throwable());
             throw _streamException;
         }
-
+        
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
 
@@ -239,11 +247,18 @@ public class MetaDataBuilder
             {
                 if (_method == null)
                     throw new HpackException.StreamException("No Method");
-                if (_scheme == null)
-                    throw new HpackException.StreamException("No Scheme");
-                if (_path == null)
-                    throw new HpackException.StreamException("No Path");
-                return new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
+                boolean isConnect = HttpMethod.CONNECT.is(_method);
+                if (!isConnect || _protocol != null)
+                {
+                    if (_scheme == null)
+                        throw new HpackException.StreamException("No Scheme");
+                    if (_path == null)
+                        throw new HpackException.StreamException("No Path");
+                }
+                if (isConnect)
+                    return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
+                else
+                    return new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
             }
             if (_response)
             {
@@ -251,7 +266,7 @@ public class MetaDataBuilder
                     throw new HpackException.StreamException("No Status");
                 return new MetaData.Response(HttpVersion.HTTP_2, _status, fields, _contentLength);
             }
-
+                
             return new MetaData(HttpVersion.HTTP_2, fields, _contentLength);
         }
         finally
@@ -264,6 +279,7 @@ public class MetaDataBuilder
             _scheme = null;
             _authority = null;
             _path = null;
+            _protocol = null;
             _size = 0;
             _contentLength = Long.MIN_VALUE;
         }

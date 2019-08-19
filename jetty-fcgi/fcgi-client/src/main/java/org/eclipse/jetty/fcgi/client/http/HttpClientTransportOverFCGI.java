@@ -19,6 +19,7 @@
 package org.eclipse.jetty.fcgi.client.http;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
@@ -26,6 +27,8 @@ import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
@@ -69,6 +72,12 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     public String getScriptRoot()
     {
         return scriptRoot;
+    }
+
+    @Override
+    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+    {
+        return new HttpDestination.Key(origin, new HttpDestination.Protocol(List.of("fastcgi/1.1"), false));
     }
 
     @Override

@@ -20,14 +20,17 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
@@ -102,6 +105,13 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     {
         super.doStop();
         removeBean(client);
+    }
+
+    @Override
+    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+    {
+        String protocol = HttpScheme.HTTPS.is(origin.getScheme()) ? "h2" : "h2c";
+        return new HttpDestination.Key(origin, new HttpDestination.Protocol(List.of(protocol), false));
     }
 
     @Override

@@ -946,7 +946,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
-            new DumpableCollection("Context attributes " + name, ((Context)getServletContext()).getAttributeEntrySet()),
+            new DumpableCollection("Context attributes " + name, getServletContext().getAttributeEntrySet()),
+            new DumpableCollection("EventListeners " + this, Arrays.asList(getEventListeners())),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
     }

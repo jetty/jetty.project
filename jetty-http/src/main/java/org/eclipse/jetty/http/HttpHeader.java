@@ -133,6 +133,7 @@ public enum HttpHeader
     C_AUTHORITY(":authority"),
     C_PATH(":path"),
     C_STATUS(":status"),
+    C_PROTOCOL(":protocol"),
 
     UNKNOWN("::UNKNOWN::");
 

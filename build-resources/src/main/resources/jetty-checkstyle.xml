@@ -33,22 +33,16 @@
   </module>
 
   <module name="TreeWalker">
-    <!--
-      Eclipse Jetty Specific.
-      ===========================================================================================
-      -->
-
     <module name="SuppressionCommentFilter">
       <property name="offCommentFormat" value="@checkstyle-disable-check : ([\w\|]+)"/>
       <property name="onCommentFormat" value="@checkstyle-enable-check : ([\w\|]+)"/>
       <property name="checkFormat" value="$1"/>
     </module>
 
-    <!-- Check abbreviations(consecutive capital letters) length in identifier name -->
-    <module name="AbbreviationAsWordInName">
-      <property name="ignoreFinal" value="true"/>
-      <property name="allowedAbbreviations" value="ALPN, ASCII, AWT, CRLDP, CRLF, FCGI, GZIP, HTTP, HTTPS, ID, IP, ISO8859, JAAS, JDBC, JMXRMI, JNDI, JPMS, JSON, JSTL, LDAP, PROXY, RFC, SPNEGO, URI, URL, UTF8, XML"/>
-    </module>
+    <!--
+      Eclipse Jetty Specific.
+      ===========================================================================================
+      -->
 
     <!-- Location of Annotations -->
     <module name="AnnotationLocation">
@@ -90,7 +84,7 @@
 
     <!-- Indentation Rules -->
     <module name="Indentation">
-      <property name="throwsIndent" value="0"/>
+      <property name="arrayInitIndent" value="8"/>
     </module>
 
     <!-- Interface Type Parameter Name -->
@@ -215,7 +209,9 @@
     </module>
 
     <!-- all switch statements should have "default" label declared -->
+    <!-- Disabled: Is super noisy
     <module name="MissingSwitchDefault"/>
+     -->
 
     <!-- prevent line wrapping of import / package statements -->
     <module name="NoLineWrap"/>
@@ -225,9 +221,6 @@
 
     <!-- Filename and Classname match -->
     <module name="OuterTypeFilename"/>
-
-    <!-- Checks that overload methods are grouped together -->
-    <module name="OverloadMethodsDeclarationOrder"/>
 
     <!--
        Checks based on the Java Language Specification recommendations.
@@ -283,9 +276,6 @@
     <!-- checks that long constants are defined with an upper ell. That is 'L' and not 'l' -->
     <module name="UpperEll"/>
     <!-- TODO: look for float / double version of above -->
-
-    <!-- Checks the distance between declaration of variable and its first usage -->
-    <module name="VariableDeclarationUsageDistance"/>
 
   </module>
 </module>

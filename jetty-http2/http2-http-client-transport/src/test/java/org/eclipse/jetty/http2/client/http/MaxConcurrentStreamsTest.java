@@ -159,7 +159,6 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             }
         });
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
 
@@ -212,15 +211,15 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         // This request will be queued and establish the connection,
         // which will trigger the send of the second request.
-        ContentResponse response1 = client.newRequest(host, port)
-            .path("/1")
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        var request = client.newRequest(host, port)
+                .path("/1")
+                .timeout(5, TimeUnit.SECONDS);
+        ContentResponse response = request.send();
 
-        assertEquals(HttpStatus.OK_200, response1.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS), failures.toString());
         assertEquals(2, connections.get());
-        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(2, connectionPool.getConnectionCount());
     }
@@ -253,16 +252,15 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         // Send the request in excess.
         CountDownLatch latch = new CountDownLatch(1);
         String path = "/excess";
-        client.newRequest("localhost", connector.getLocalPort())
-            .path(path)
-            .send(result ->
-            {
-                if (result.getResponse().getStatus() == HttpStatus.OK_200)
-                    latch.countDown();
-            });
+        var request = client.newRequest("localhost", connector.getLocalPort()).path(path);
+        request.send(result ->
+        {
+            if (result.getResponse().getStatus() == HttpStatus.OK_200)
+                latch.countDown();
+        });
 
         // The last exchange should remain in the queue.
-        HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         assertEquals(1, destination.getHttpExchanges().size());
         assertEquals(path, destination.getHttpExchanges().peek().getRequest().getPath());
 

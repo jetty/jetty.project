@@ -45,12 +45,12 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
     {
         start(scenario, new EmptyServerHandler());
 
-        Destination destination = client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
+        Destination destination = client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scenario.getScheme());
             FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
             ContentResponse response = listener.get(5, TimeUnit.SECONDS);
@@ -71,11 +71,11 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
     {
         start(scenario, new EmptyServerHandler());
 
-        Destination destination = client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
+        Destination destination = client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
-        Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scenario.getScheme());
         FutureResponseListener listener = new FutureResponseListener(request);
         connection.send(request, listener);
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
@@ -105,14 +105,14 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
     {
         start(scenario, new EmptyServerHandler());
 
-        Destination destination = client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .onResponseSuccess(response -> responseLatch.countDown());
+        Destination destination = client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
-        CountDownLatch responseLatch = new CountDownLatch(1);
-        Request request = client.newRequest(destination.getHost(), destination.getPort())
-            .scheme(scenario.getScheme())
-            .onResponseSuccess(response -> responseLatch.countDown());
 
         FutureResponseListener listener = new FutureResponseListener(request);
         connection.send(request, listener);

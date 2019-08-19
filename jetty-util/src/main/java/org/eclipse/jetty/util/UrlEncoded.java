@@ -155,7 +155,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         boolean delim = false;
         for (Map.Entry<String, List<String>> entry : map.entrySet())
         {
-            String key = entry.getKey().toString();
+            String key = entry.getKey();
             List<String> list = entry.getValue();
             int s = list.size();
 
@@ -181,7 +181,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
 
                     if (val != null)
                     {
-                        String str = val.toString();
+                        String str = val;
                         if (str.length() > 0)
                         {
                             result.append('=');
@@ -232,7 +232,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         synchronized (map)
         {
             String key = null;
-            String value = null;
+            String value;
             int mark = -1;
             boolean encoded = false;
             for (int i = 0; i < content.length(); i++)
@@ -269,8 +269,6 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                     case '%':
                         encoded = true;
                         break;
-                    default:
-                        break;
                 }
             }
 
@@ -289,146 +287,6 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                 {
                     map.add(key, "");
                 }
-            }
-        }
-    }
-
-    /**
-     * Decoded parameters to Map.
-     *
-     * @param in the stream containing the encoded parameters
-     * @param map the MultiMap to decode into
-     * @param charset the charset to use for decoding
-     * @param maxLength the maximum length of the form to decode
-     * @param maxKeys the maximum number of keys to decode
-     * @throws IOException if unable to decode input stream
-     */
-    public static void decodeTo(InputStream in, MultiMap<String> map, String charset, int maxLength, int maxKeys)
-        throws IOException
-    {
-        if (charset == null)
-        {
-            if (ENCODING.equals(StandardCharsets.UTF_8))
-                decodeUtf8To(in, map, maxLength, maxKeys);
-            else
-                decodeTo(in, map, ENCODING, maxLength, maxKeys);
-        }
-        else if (StringUtil.__UTF8.equalsIgnoreCase(charset))
-            decodeUtf8To(in, map, maxLength, maxKeys);
-        else if (StringUtil.__ISO_8859_1.equalsIgnoreCase(charset))
-            decode88591To(in, map, maxLength, maxKeys);
-        else if (StringUtil.__UTF16.equalsIgnoreCase(charset))
-            decodeUtf16To(in, map, maxLength, maxKeys);
-        else
-            decodeTo(in, map, Charset.forName(charset), maxLength, maxKeys);
-    }
-
-    /**
-     * Decoded parameters to Map.
-     *
-     * @param in the stream containing the encoded parameters
-     * @param map the MultiMap to decode into
-     * @param charset the charset to use for decoding
-     * @param maxLength the maximum length of the form to decode
-     * @param maxKeys the maximum number of keys to decode
-     * @throws IOException if unable to decode input stream
-     */
-    public static void decodeTo(InputStream in, MultiMap<String> map, Charset charset, int maxLength, int maxKeys)
-        throws IOException
-    {
-        //no charset present, use the configured default
-        if (charset == null)
-            charset = ENCODING;
-
-        if (StandardCharsets.UTF_8.equals(charset))
-        {
-            decodeUtf8To(in, map, maxLength, maxKeys);
-            return;
-        }
-
-        if (StandardCharsets.ISO_8859_1.equals(charset))
-        {
-            decode88591To(in, map, maxLength, maxKeys);
-            return;
-        }
-
-        if (StandardCharsets.UTF_16.equals(charset)) // Should be all 2 byte encodings
-        {
-            decodeUtf16To(in, map, maxLength, maxKeys);
-            return;
-        }
-
-        synchronized (map)
-        {
-            String key = null;
-            String value = null;
-
-            int c;
-
-            int totalLength = 0;
-
-            try (ByteArrayOutputStream2 output = new ByteArrayOutputStream2();)
-            {
-                int size = 0;
-
-                while ((c = in.read()) > 0)
-                {
-                    switch ((char)c)
-                    {
-                        case '&':
-                            size = output.size();
-                            value = size == 0 ? "" : output.toString(charset);
-                            output.setCount(0);
-                            if (key != null)
-                            {
-                                map.add(key, value);
-                            }
-                            else if (value != null && value.length() > 0)
-                            {
-                                map.add(value, "");
-                            }
-                            key = null;
-                            value = null;
-                            if (maxKeys > 0 && map.size() > maxKeys)
-                                throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", map.size(), maxKeys));
-                            break;
-                        case '=':
-                            if (key != null)
-                            {
-                                output.write(c);
-                                break;
-                            }
-                            size = output.size();
-                            key = size == 0 ? "" : output.toString(charset);
-                            output.setCount(0);
-                            break;
-                        case '+':
-                            output.write(' ');
-                            break;
-                        case '%':
-                            int code0 = in.read();
-                            int code1 = in.read();
-                            output.write(decodeHexChar(code0, code1));
-                            break;
-                        default:
-                            output.write(c);
-                            break;
-                    }
-
-                    totalLength++;
-                    if (maxLength >= 0 && totalLength > maxLength)
-                        throw new IllegalStateException("Form is too large");
-                }
-
-                size = output.size();
-                if (key != null)
-                {
-                    value = size == 0 ? "" : output.toString(charset);
-                    output.setCount(0);
-                    map.add(key, value);
-                }
-                else if (size > 0)
-                    map.add(output.toString(charset), "");
             }
         }
     }
@@ -522,13 +380,95 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     }
 
     /**
+     * Decoded parameters to MultiMap, using ISO8859-1 encodings.
+     *
+     * @param in InputSteam to read
+     * @param map MultiMap to add parameters to
+     * @param maxLength maximum length of form to read or -1 for no limit
+     * @param maxKeys maximum number of keys to read or -1 for no limit
+     * @throws IOException if unable to decode the InputStream as ISO8859-1
+     */
+    public static void decode88591To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
+        throws IOException
+    {
+        synchronized (map)
+        {
+            StringBuilder buffer = new StringBuilder();
+            String key = null;
+            String value = null;
+
+            int b;
+
+            int totalLength = 0;
+            while ((b = in.read()) >= 0)
+            {
+                switch ((char)b)
+                {
+                    case '&':
+                        value = buffer.length() == 0 ? "" : buffer.toString();
+                        buffer.setLength(0);
+                        if (key != null)
+                        {
+                            map.add(key, value);
+                        }
+                        else if (value.length() > 0)
+                        {
+                            map.add(value, "");
+                        }
+                        key = null;
+                        value = null;
+                        checkMaxKeys(map, maxKeys);
+                        break;
+
+                    case '=':
+                        if (key != null)
+                        {
+                            buffer.append((char)b);
+                            break;
+                        }
+                        key = buffer.toString();
+                        buffer.setLength(0);
+                        break;
+
+                    case '+':
+                        buffer.append(' ');
+                        break;
+
+                    case '%':
+                        int code0 = in.read();
+                        int code1 = in.read();
+                        buffer.append(decodeHexChar(code0, code1));
+                        break;
+
+                    default:
+                        buffer.append((char)b);
+                        break;
+                }
+                checkMaxLength(++totalLength, maxLength);
+            }
+
+            if (key != null)
+            {
+                value = buffer.length() == 0 ? "" : buffer.toString();
+                buffer.setLength(0);
+                map.add(key, value);
+            }
+            else if (buffer.length() > 0)
+            {
+                map.add(buffer.toString(), "");
+            }
+            checkMaxKeys(map, maxKeys);
+        }
+    }
+
+    /**
      * Decoded parameters to Map.
      *
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum form length to decode
+     * @param maxLength maximum form length to decode or -1 for no limit
      * @param maxKeys the maximum number of keys to read or -1 for no limit
-     * @throws IOException if unable to decode input stream
+     * @throws IOException if unable to decode the input stream
      */
     public static void decodeUtf8To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
         throws IOException
@@ -559,8 +499,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         }
                         key = null;
                         value = null;
-                        if (maxKeys > 0 && map.size() > maxKeys)
-                            throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", map.size(), maxKeys));
+                        checkMaxKeys(map, maxKeys);
                         break;
 
                     case '=':
@@ -587,8 +526,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         buffer.append((byte)b);
                         break;
                 }
-                if (maxLength >= 0 && (++totalLength > maxLength))
-                    throw new IllegalStateException("Form is too large");
+                checkMaxLength(++totalLength, maxLength);
             }
 
             if (key != null)
@@ -601,6 +539,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             {
                 map.add(buffer.toReplacedString(), "");
             }
+            checkMaxKeys(map, maxKeys);
         }
     }
 
@@ -615,86 +554,155 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     }
 
     /**
-     * Decoded parameters to MultiMap, using ISO8859-1 encodings.
+     * Decoded parameters to Map.
      *
-     * @param in InputSteam to read
-     * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of form to read
-     * @param maxKeys maximum number of keys to read or -1 for no limit
-     * @throws IOException if unable to decode inputstream as ISO8859-1
+     * @param in the stream containing the encoded parameters
+     * @param map the MultiMap to decode into
+     * @param charset the charset to use for decoding
+     * @param maxLength the maximum length of the form to decode or -1 for no limit
+     * @param maxKeys the maximum number of keys to decode or -1 for no limit
+     * @throws IOException if unable to decode the input stream
      */
-    public static void decode88591To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
+    public static void decodeTo(InputStream in, MultiMap<String> map, String charset, int maxLength, int maxKeys)
         throws IOException
     {
+        if (charset == null)
+        {
+            if (ENCODING.equals(StandardCharsets.UTF_8))
+                decodeUtf8To(in, map, maxLength, maxKeys);
+            else
+                decodeTo(in, map, ENCODING, maxLength, maxKeys);
+        }
+        else if (StringUtil.__UTF8.equalsIgnoreCase(charset))
+            decodeUtf8To(in, map, maxLength, maxKeys);
+        else if (StringUtil.__ISO_8859_1.equalsIgnoreCase(charset))
+            decode88591To(in, map, maxLength, maxKeys);
+        else if (StringUtil.__UTF16.equalsIgnoreCase(charset))
+            decodeUtf16To(in, map, maxLength, maxKeys);
+        else
+            decodeTo(in, map, Charset.forName(charset), maxLength, maxKeys);
+    }
+
+    /**
+     * Decoded parameters to Map.
+     *
+     * @param in the stream containing the encoded parameters
+     * @param map the MultiMap to decode into
+     * @param charset the charset to use for decoding
+     * @param maxLength the maximum length of the form to decode
+     * @param maxKeys the maximum number of keys to decode
+     * @throws IOException if unable to decode input stream
+     */
+    public static void decodeTo(InputStream in, MultiMap<String> map, Charset charset, int maxLength, int maxKeys)
+        throws IOException
+    {
+        //no charset present, use the configured default
+        if (charset == null)
+            charset = ENCODING;
+
+        if (StandardCharsets.UTF_8.equals(charset))
+        {
+            decodeUtf8To(in, map, maxLength, maxKeys);
+            return;
+        }
+
+        if (StandardCharsets.ISO_8859_1.equals(charset))
+        {
+            decode88591To(in, map, maxLength, maxKeys);
+            return;
+        }
+
+        if (StandardCharsets.UTF_16.equals(charset)) // Should be all 2 byte encodings
+        {
+            decodeUtf16To(in, map, maxLength, maxKeys);
+            return;
+        }
+
         synchronized (map)
         {
-            StringBuffer buffer = new StringBuffer();
             String key = null;
             String value = null;
 
-            int b;
+            int c;
 
             int totalLength = 0;
-            while ((b = in.read()) >= 0)
+
+            try (ByteArrayOutputStream2 output = new ByteArrayOutputStream2())
             {
-                switch ((char)b)
+                int size = 0;
+
+                while ((c = in.read()) > 0)
                 {
-                    case '&':
-                        value = buffer.length() == 0 ? "" : buffer.toString();
-                        buffer.setLength(0);
-                        if (key != null)
-                        {
-                            map.add(key, value);
-                        }
-                        else if (value != null && value.length() > 0)
-                        {
-                            map.add(value, "");
-                        }
-                        key = null;
-                        value = null;
-                        if (maxKeys > 0 && map.size() > maxKeys)
-                            throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", map.size(), maxKeys));
-                        break;
-
-                    case '=':
-                        if (key != null)
-                        {
-                            buffer.append((char)b);
+                    switch ((char)c)
+                    {
+                        case '&':
+                            size = output.size();
+                            value = size == 0 ? "" : output.toString(charset);
+                            output.setCount(0);
+                            if (key != null)
+                            {
+                                map.add(key, value);
+                            }
+                            else if (value != null && value.length() > 0)
+                            {
+                                map.add(value, "");
+                            }
+                            key = null;
+                            value = null;
+                            checkMaxKeys(map, maxKeys);
                             break;
-                        }
-                        key = buffer.toString();
-                        buffer.setLength(0);
-                        break;
-
-                    case '+':
-                        buffer.append(' ');
-                        break;
-
-                    case '%':
-                        int code0 = in.read();
-                        int code1 = in.read();
-                        buffer.append(decodeHexChar(code0, code1));
-                        break;
-
-                    default:
-                        buffer.append((char)b);
-                        break;
+                        case '=':
+                            if (key != null)
+                            {
+                                output.write(c);
+                                break;
+                            }
+                            size = output.size();
+                            key = size == 0 ? "" : output.toString(charset);
+                            output.setCount(0);
+                            break;
+                        case '+':
+                            output.write(' ');
+                            break;
+                        case '%':
+                            int code0 = in.read();
+                            int code1 = in.read();
+                            output.write(decodeHexChar(code0, code1));
+                            break;
+                        default:
+                            output.write(c);
+                            break;
+                    }
+                    checkMaxLength(++totalLength, maxLength);
                 }
-                if (maxLength >= 0 && (++totalLength > maxLength))
-                    throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", map.size(), maxKeys));
-            }
 
-            if (key != null)
-            {
-                value = buffer.length() == 0 ? "" : buffer.toString();
-                buffer.setLength(0);
-                map.add(key, value);
-            }
-            else if (buffer.length() > 0)
-            {
-                map.add(buffer.toString(), "");
+                size = output.size();
+                if (key != null)
+                {
+                    value = size == 0 ? "" : output.toString(charset);
+                    output.setCount(0);
+                    map.add(key, value);
+                }
+                else if (size > 0)
+                {
+                    map.add(output.toString(charset), "");
+                }
+                checkMaxKeys(map, maxKeys);
             }
         }
+    }
+
+    private static void checkMaxKeys(MultiMap<String> map, int maxKeys)
+    {
+        int size = map.size();
+        if (maxKeys >= 0 && size > maxKeys)
+            throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", size, maxKeys));
+    }
+
+    private static void checkMaxLength(int length, int maxLength)
+    {
+        if (maxLength >= 0 && length > maxLength)
+            throw new IllegalStateException("Form is larger than max length " + maxLength);
     }
 
     /**

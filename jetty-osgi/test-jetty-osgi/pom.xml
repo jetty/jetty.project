@@ -14,8 +14,8 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <pax.exam.version>4.13.0</pax.exam.version>
-    <pax.url.version>2.5.4</pax.url.version>
+    <pax.exam.version>4.13.1</pax.exam.version>
+    <pax.url.version>2.6.1</pax.url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
   </properties>
   <dependencies>
@@ -477,6 +477,7 @@
             <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+              <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
           </configuration>

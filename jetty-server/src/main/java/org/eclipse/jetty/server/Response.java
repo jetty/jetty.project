@@ -32,8 +32,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.CookieCompliance;
@@ -719,6 +722,11 @@ public class Response implements HttpServletResponse
         return _outputType == OutputType.WRITER;
     }
 
+    public boolean isStreaming()
+    {
+        return _outputType == OutputType.STREAM;
+    }
+
     @Override
     public PrintWriter getWriter() throws IOException
     {
@@ -1285,6 +1293,19 @@ public class Response implements HttpServletResponse
             if (et != null)
                 response.setHeader(HttpHeader.ETAG.asString(), et);
         }
+    }
+
+    public static HttpServletResponse unwrap(ServletResponse servletResponse)
+    {
+        if (servletResponse instanceof HttpServletResponseWrapper)
+        {
+            return (HttpServletResponseWrapper)servletResponse;
+        }
+        if (servletResponse instanceof ServletResponseWrapper)
+        {
+            return unwrap(((ServletResponseWrapper)servletResponse).getResponse());
+        }
+        return (HttpServletResponse)servletResponse;
     }
 
     private static class HttpFieldsSupplier implements Supplier<HttpFields>

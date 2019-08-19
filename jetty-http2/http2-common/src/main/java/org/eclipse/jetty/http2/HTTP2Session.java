@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -43,6 +45,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -561,6 +564,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             // Synchronization is necessary to atomically create
             // the stream id and enqueue the frame to be sent.
+            IStream stream;
             boolean queued;
             synchronized (this)
             {
@@ -573,12 +577,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         priority.getWeight(), priority.isExclusive());
                     frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
                 }
-                IStream stream = createLocalStream(streamId);
+                stream = createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
                 stream.setListener(listener);
 
                 ControlEntry entry = new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream));
                 queued = flusher.append(entry);
             }
+            stream.process(new PrefaceFrame(), Callback.NOOP);
             // Iterate outside the synchronized block.
             if (queued)
                 flusher.iterate();
@@ -589,9 +594,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected IStream newStream(int streamId, boolean local)
+    protected IStream newStream(int streamId, MetaData.Request request, boolean local)
     {
-        return new HTTP2Stream(scheduler, this, streamId, local);
+        return new HTTP2Stream(scheduler, this, streamId, request, local);
     }
 
     @Override
@@ -622,7 +627,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 int streamId = localStreamIds.getAndAdd(2);
                 frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
 
-                IStream pushStream = createLocalStream(streamId);
+                IStream pushStream = createLocalStream(streamId, frame.getMetaData());
                 pushStream.setListener(listener);
 
                 ControlEntry entry = new ControlEntry(frame, pushStream, new StreamPromiseCallback(promise, pushStream));
@@ -778,7 +783,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected IStream createLocalStream(int streamId)
+    protected IStream createLocalStream(int streamId, MetaData.Request request)
     {
         while (true)
         {
@@ -791,7 +796,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 break;
         }
 
-        IStream stream = newStream(streamId, true);
+        IStream stream = newStream(streamId, request, true);
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             stream.setIdleTimeout(getStreamIdleTimeout());
@@ -807,7 +812,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected IStream createRemoteStream(int streamId)
+    protected IStream createRemoteStream(int streamId, MetaData.Request request)
     {
         // SPEC: exceeding max concurrent streams is treated as stream error.
         while (true)
@@ -825,7 +830,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 break;
         }
 
-        IStream stream = newStream(streamId, false);
+        IStream stream = newStream(streamId, request, false);
 
         // SPEC: duplicate stream is treated as connection error.
         if (streams.putIfAbsent(streamId, stream) == null)
@@ -882,6 +887,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public IStream getStream(int streamId)
     {
         return streams.get(streamId);
+    }
+
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return endPoint.getLocalAddress();
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return endPoint.getRemoteAddress();
     }
 
     @ManagedAttribute(value = "The flow control send window", readonly = true)
@@ -1556,6 +1573,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             complete();
         }
 
@@ -1576,6 +1595,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             complete();
         }
 
@@ -1612,6 +1633,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             complete();
         }
 
@@ -1632,6 +1655,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             complete();
         }
 

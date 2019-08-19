@@ -147,7 +147,7 @@ public class ServerConnectionCloseTest
                 Thread.sleep(1000);
 
                 // Connection should have been removed from pool.
-                HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", port);
+                HttpDestination destination = (HttpDestination)client.resolveDestination(request);
                 DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
                 assertEquals(0, connectionPool.getConnectionCount());
                 assertEquals(0, connectionPool.getIdleConnectionCount());

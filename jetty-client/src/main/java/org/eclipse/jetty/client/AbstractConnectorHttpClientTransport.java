@@ -72,7 +72,7 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, destination.getClientConnectionFactory());
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, promise);
         connector.connect(address, context);
     }
 }
