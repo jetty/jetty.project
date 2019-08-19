@@ -125,14 +125,13 @@ public class DirtyAttributeTest
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
                 //ensure request fully finished processing
-                latch.await(5, TimeUnit.SECONDS);
+                System.err.println("await " + latch);
+                assertTrue(latch.await(5, TimeUnit.SECONDS));
 
                 A_VALUE.assertPassivatesEquals(1);
                 A_VALUE.assertActivatesEquals(1);
                 A_VALUE.assertBindsEquals(1);
                 A_VALUE.assertUnbindsEquals(0);
-                
-
 
                 //do another request using the cookie to try changing the session attribute to the same value again  
                 latch = new CountDownLatch(1);
