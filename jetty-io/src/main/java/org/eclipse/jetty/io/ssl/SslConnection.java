@@ -403,7 +403,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
 
         @Override
-        protected WriteFlusher getWriteFlusher()
+        public WriteFlusher getWriteFlusher()
         {
             return super.getWriteFlusher();
         }

@@ -1,0 +1,35 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+[[client]]
+== Jetty Client Libraries
+
+The Eclipse Jetty Project provides not only server-side libraries so that you
+can embed a server in your code, but it also provides client-side libraries
+that allow you to embed a client - for example a HTTP client invoking a third
+party HTTP service - in your application.
+
+The client libraries are designed to be non-blocking and offer both synchronous
+and asynchronous APIs and come with a large number of configuration options.
+
+There are primarily two client libraries:
+
+* link:#client-http[The HTTP client library]
+* link:#client-websocket[The WebSocket client library]
+
+include::client-concepts.adoc[]

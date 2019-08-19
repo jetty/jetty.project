@@ -124,7 +124,7 @@ public class PushPromiseBodyParser extends BodyParser
                 }
                 case HEADERS:
                 {
-                    MetaData metaData = headerBlockParser.parse(buffer, length);
+                    MetaData.Request metaData = (MetaData.Request)headerBlockParser.parse(buffer, length);
                     if (metaData == HeaderBlockParser.SESSION_FAILURE)
                         return false;
                     if (metaData != null)
@@ -157,7 +157,7 @@ public class PushPromiseBodyParser extends BodyParser
         return false;
     }
 
-    private void onPushPromise(int streamId, MetaData metaData)
+    private void onPushPromise(int streamId, MetaData.Request metaData)
     {
         PushPromiseFrame frame = new PushPromiseFrame(getStreamId(), streamId, metaData);
         notifyPushPromise(frame);

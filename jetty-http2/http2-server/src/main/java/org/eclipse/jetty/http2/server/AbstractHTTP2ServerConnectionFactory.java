@@ -210,9 +210,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         // the typical case is that the connection will be busier and the
         // stream idle timeout will expire earlier than the connection's.
         long streamIdleTimeout = getStreamIdleTimeout();
-        if (streamIdleTimeout <= 0)
-            streamIdleTimeout = endPoint.getIdleTimeout();
-        session.setStreamIdleTimeout(streamIdleTimeout);
+        if (streamIdleTimeout > 0)
+            session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
 

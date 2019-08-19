@@ -136,6 +136,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
 
+    public static final String MAX_FORM_KEYS_KEY = "org.eclipse.jetty.server.Request.maxFormKeys";
+    public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
+    public static final int DEFAULT_MAX_FORM_KEYS = 1000;
+    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+
     /**
      * Get the current ServletContext implementation.
      *
@@ -188,8 +193,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private Logger _logger;
     private boolean _allowNullPathInfo;
-    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys", -1).intValue();
-    private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize", -1).intValue();
+    private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
+    private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
     private boolean _compactPath = false;
     private boolean _usingSecurityManager = System.getSecurityManager() != null;
 
@@ -784,9 +789,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             throw new IllegalStateException("Null contextPath");
 
         if (_logger == null)
-        {
             _logger = Log.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
-        }
 
         ClassLoader oldClassloader = null;
         Thread currentThread = null;

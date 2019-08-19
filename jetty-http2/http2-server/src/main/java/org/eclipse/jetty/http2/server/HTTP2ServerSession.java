@@ -104,7 +104,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 }
                 else
                 {
-                    stream = createRemoteStream(streamId);
+                    stream = createRemoteStream(streamId, (MetaData.Request)metaData);
                     if (stream != null)
                     {
                         onStreamOpened(stream);

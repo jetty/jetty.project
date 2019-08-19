@@ -558,8 +558,8 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         final String target = baseRequest.getPathInfo();
-        final HttpServletRequest request = (HttpServletRequest)event.getSuppliedRequest();
-        final HttpServletResponse response = (HttpServletResponse)event.getSuppliedResponse();
+        final HttpServletRequest request = Request.unwrap(event.getSuppliedRequest());
+        final HttpServletResponse response = Response.unwrap(event.getSuppliedResponse());
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} on {}", request.getDispatcherType(), request.getMethod(), target, channel);

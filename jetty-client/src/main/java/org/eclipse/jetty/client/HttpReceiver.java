@@ -609,7 +609,7 @@ public abstract class HttpReceiver
         }
 
         @Override
-        protected Action process() throws Throwable
+        protected Action process()
         {
             while (true)
             {

@@ -329,13 +329,14 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     {
         try
         {
-            return BufferUtil.toBuffer(resource, true);
+            return BufferUtil.toBuffer(resource, false);
         }
         catch (IOException | IllegalArgumentException e)
         {
-            LOG.warn(e);
-            return null;
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
         }
+        return null;
     }
 
     protected ByteBuffer getMappedBuffer(Resource resource)
@@ -349,7 +350,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
         catch (IOException | IllegalArgumentException e)
         {
-            LOG.warn(e);
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
         }
         return null;
     }
@@ -362,7 +364,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
         catch (IOException | IllegalArgumentException e)
         {
-            LOG.warn(e);
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
         }
         return null;
     }
@@ -380,7 +383,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     {
         private final String _key;
         private final Resource _resource;
-        private final int _contentLengthValue;
+        private final long _contentLengthValue;
         private final HttpField _contentType;
         private final String _characterEncoding;
         private final MimeTypes.Type _mimeType;
@@ -409,7 +412,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _lastModified = _lastModifiedValue == -1 ? null
                 : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
 
-            _contentLengthValue = exists ? (int)resource.length() : 0;
+            _contentLengthValue = exists ? resource.length() : 0;
             _contentLength = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, Long.toString(_contentLengthValue));
 
             if (_cachedFiles.incrementAndGet() > _maxCachedFiles)
@@ -546,25 +549,34 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public ByteBuffer getIndirectBuffer()
         {
+            if (_resource.length() > _maxCachedFileSize)
+            {
+                return null;
+            }
+
             ByteBuffer buffer = _indirectBuffer.get();
             if (buffer == null)
             {
                 ByteBuffer buffer2 = CachedContentFactory.this.getIndirectBuffer(_resource);
-
                 if (buffer2 == null)
-                    LOG.warn("Could not load " + this);
-                else if (_indirectBuffer.compareAndSet(null, buffer2))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Could not load indirect buffer from " + this);
+                    return null;
+                }
+
+                if (_indirectBuffer.compareAndSet(null, buffer2))
                 {
                     buffer = buffer2;
                     if (_cachedSize.addAndGet(BufferUtil.length(buffer)) > _maxCacheSize)
                         shrinkCache();
                 }
                 else
+                {
                     buffer = _indirectBuffer.get();
+                }
             }
-            if (buffer == null)
-                return null;
-            return buffer.slice();
+            return buffer == null ? null : buffer.asReadOnlyBuffer();
         }
 
         @Override
@@ -583,7 +595,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     else
                         buffer = _mappedBuffer.get();
                 }
-                else
+                // Since MappedBuffers don't use heap, we don't care about the resource.length
+                else if (_resource.length() < _maxCachedFileSize)
                 {
                     ByteBuffer direct = CachedContentFactory.this.getDirectBuffer(_resource);
                     if (direct != null)
@@ -601,7 +614,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     }
                     else
                     {
-                        LOG.warn("Could not load " + this);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Could not load " + this);
                     }
                 }
             }

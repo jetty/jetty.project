@@ -55,18 +55,17 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 
         Exception failure = new Exception("oops");
 
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS);
+            request.timeout(5, TimeUnit.SECONDS);
             request.abort(failure);
             request.send();
         });
 
         assertSame(failure, x.getCause());
         // Make sure the pool is in a sane state.
-        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(1, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -79,32 +78,29 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        final Throwable cause = new Exception();
-        final AtomicBoolean aborted = new AtomicBoolean();
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicBoolean begin = new AtomicBoolean();
+        Throwable cause = new Exception();
+        AtomicBoolean aborted = new AtomicBoolean();
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicBoolean begin = new AtomicBoolean();
 
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .listener(new Request.Listener.Adapter()
+            request.listener(new Request.Listener.Adapter()
+            {
+                @Override
+                public void onQueued(Request request)
                 {
-                    @Override
-                    public void onQueued(Request request)
-                    {
-                        aborted.set(request.abort(cause));
-                        latch.countDown();
-                    }
+                    aborted.set(request.abort(cause));
+                    latch.countDown();
+                }
 
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        begin.set(true);
-                    }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                @Override
+                public void onBegin(Request request)
+                {
+                    begin.set(true);
+                }
+            }).timeout(5, TimeUnit.SECONDS).send();
         });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -112,7 +108,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             assertSame(cause, x.getCause());
         assertFalse(begin.get());
 
-        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -130,34 +126,31 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch committed = new CountDownLatch(1);
 
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .listener(new Request.Listener.Adapter()
+            request.listener(new Request.Listener.Adapter()
+            {
+                @Override
+                public void onBegin(Request request)
                 {
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        aborted.set(request.abort(cause));
-                        latch.countDown();
-                    }
+                    aborted.set(request.abort(cause));
+                    latch.countDown();
+                }
 
-                    @Override
-                    public void onCommit(Request request)
-                    {
-                        committed.countDown();
-                    }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                @Override
+                public void onCommit(Request request)
+                {
+                    committed.countDown();
+                }
+            }).timeout(5, TimeUnit.SECONDS).send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())
             assertSame(cause, x.getCause());
         assertFalse(committed.await(1, TimeUnit.SECONDS));
 
-        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -175,34 +168,31 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch committed = new CountDownLatch(1);
 
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .listener(new Request.Listener.Adapter()
+            request.listener(new Request.Listener.Adapter()
+            {
+                @Override
+                public void onHeaders(Request request)
                 {
-                    @Override
-                    public void onHeaders(Request request)
-                    {
-                        aborted.set(request.abort(cause));
-                        latch.countDown();
-                    }
+                    aborted.set(request.abort(cause));
+                    latch.countDown();
+                }
 
-                    @Override
-                    public void onCommit(Request request)
-                    {
-                        committed.countDown();
-                    }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                @Override
+                public void onCommit(Request request)
+                {
+                    committed.countDown();
+                }
+            }).timeout(5, TimeUnit.SECONDS).send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())
             assertSame(cause, x.getCause());
         assertFalse(committed.await(1, TimeUnit.SECONDS));
 
-        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -219,26 +209,24 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         // A) the request is failed before the response arrived
         // B) the request is failed after the response arrived
 
-        final Throwable cause = new Exception();
-        final AtomicBoolean aborted = new AtomicBoolean();
-        final CountDownLatch latch = new CountDownLatch(1);
+        Throwable cause = new Exception();
+        AtomicBoolean aborted = new AtomicBoolean();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onRequestCommit(request ->
-                {
-                    aborted.set(request.abort(cause));
-                    latch.countDown();
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            request.onRequestCommit(r ->
+            {
+                aborted.set(r.abort(cause));
+                latch.countDown();
+            }).timeout(5, TimeUnit.SECONDS).send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())
             assertSame(cause, x.getCause());
 
-        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -249,11 +237,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAbortOnCommitWithContent(Scenario scenario) throws Exception
     {
-        final AtomicReference<IOException> failure = new AtomicReference<>();
+        AtomicReference<IOException> failure = new AtomicReference<>();
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 try
                 {
@@ -269,35 +257,31 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        final Throwable cause = new Exception();
-        final AtomicBoolean aborted = new AtomicBoolean();
-        final CountDownLatch latch = new CountDownLatch(1);
+        Throwable cause = new Exception();
+        AtomicBoolean aborted = new AtomicBoolean();
+        CountDownLatch latch = new CountDownLatch(1);
 
+        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onRequestCommit(request ->
+            request.onRequestCommit(r ->
+            {
+                aborted.set(r.abort(cause));
+                latch.countDown();
+            }).content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+            {
+                @Override
+                public long getLength()
                 {
-                    aborted.set(request.abort(cause));
-                    latch.countDown();
-                })
-                .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
-                {
-                    @Override
-                    public long getLength()
-                    {
-                        return -1;
-                    }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                    return -1;
+                }
+            }).timeout(5, TimeUnit.SECONDS).send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())
             assertSame(cause, x.getCause());
 
-        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -314,7 +298,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             start(scenario, new EmptyServerHandler()
             {
                 @Override
-                protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
                 {
                     try
                     {
@@ -328,28 +312,25 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 }
             });
 
-            final Throwable cause = new Exception();
-            final AtomicBoolean aborted = new AtomicBoolean();
-            final CountDownLatch latch = new CountDownLatch(1);
+            Throwable cause = new Exception();
+            AtomicBoolean aborted = new AtomicBoolean();
+            CountDownLatch latch = new CountDownLatch(1);
+
+            Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
             ExecutionException x = assertThrows(ExecutionException.class, () ->
             {
-                client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .onRequestContent((request, content) ->
+                request.onRequestContent((r, c) ->
+                {
+                    aborted.set(r.abort(cause));
+                    latch.countDown();
+                }).content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+                {
+                    @Override
+                    public long getLength()
                     {
-                        aborted.set(request.abort(cause));
-                        latch.countDown();
-                    })
-                    .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
-                    {
-                        @Override
-                        public long getLength()
-                        {
-                            return -1;
-                        }
-                    })
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                        return -1;
+                    }
+                }).timeout(5, TimeUnit.SECONDS).send();
             });
             assertTrue(latch.await(5, TimeUnit.SECONDS));
             if (aborted.get())
@@ -357,7 +338,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
 
             assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
 
-            HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+            HttpDestination destination = (HttpDestination)client.resolveDestination(request);
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
             assertEquals(0, connectionPool.getConnectionCount());
             assertEquals(0, connectionPool.getActiveConnections().size());
@@ -369,11 +350,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testInterrupt(Scenario scenario) throws Exception
     {
-        final long delay = 1000;
+        long delay = 1000;
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 try
                 {
@@ -389,10 +370,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest("localhost", connector.getLocalPort())
-            .timeout(3 * delay, TimeUnit.MILLISECONDS)
-            .scheme(scenario.getScheme());
+                .timeout(3 * delay, TimeUnit.MILLISECONDS)
+                .scheme(scenario.getScheme());
 
-        final Thread thread = Thread.currentThread();
+        Thread thread = Thread.currentThread();
         new Thread(() ->
         {
             try
@@ -406,7 +387,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         }).start();
 
-        assertThrows(InterruptedException.class, () -> request.send());
+        assertThrows(InterruptedException.class, request::send);
     }
 
     @ParameterizedTest
@@ -417,7 +398,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 try
                 {
@@ -432,13 +413,13 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        final Request request = client.newRequest("localhost", connector.getLocalPort())
-            .timeout(3 * delay, TimeUnit.MILLISECONDS)
-            .scheme(scenario.getScheme());
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .timeout(3 * delay, TimeUnit.MILLISECONDS)
+                .scheme(scenario.getScheme());
 
-        final Throwable cause = new Exception();
-        final AtomicBoolean aborted = new AtomicBoolean();
-        final CountDownLatch latch = new CountDownLatch(1);
+        Throwable cause = new Exception();
+        AtomicBoolean aborted = new AtomicBoolean();
+        CountDownLatch latch = new CountDownLatch(1);
         new Thread(() ->
         {
             try
@@ -464,7 +445,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 assertSame(cause, x.getCause());
         }
 
-        HttpDestination destination = (HttpDestination)client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
@@ -479,7 +460,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 try
                 {
@@ -497,8 +478,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final Throwable cause = new Exception();
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
-            .timeout(3 * delay, TimeUnit.MILLISECONDS);
+                .scheme(scenario.getScheme())
+                .timeout(3 * delay, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
             assertTrue(result.isFailed());
@@ -520,7 +501,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 if (!"/done".equals(request.getRequestURI()))
@@ -555,10 +536,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         ExecutionException e = assertThrows(ExecutionException.class, () ->
         {
             client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/redirect")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                    .scheme(scenario.getScheme())
+                    .path("/redirect")
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         if (aborted.get())

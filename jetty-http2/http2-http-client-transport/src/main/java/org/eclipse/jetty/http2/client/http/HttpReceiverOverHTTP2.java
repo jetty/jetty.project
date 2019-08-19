@@ -35,21 +35,24 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Retainable;
 
-public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listener
+public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.Client
 {
     private final ContentNotifier contentNotifier = new ContentNotifier();
 
@@ -71,8 +74,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         contentNotifier.reset();
     }
 
-    @Override
-    public void onHeaders(Stream stream, HeadersFrame frame)
+    void onHeaders(Stream stream, HeadersFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -94,6 +96,19 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
                         return;
                 }
 
+                HttpRequest httpRequest = exchange.getRequest();
+                if (HttpMethod.CONNECT.is(httpRequest.getMethod()) && httpResponse.getStatus() == HttpStatus.OK_200)
+                {
+                    ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((IStream)stream);
+                    long idleTimeout = httpRequest.getIdleTimeout();
+                    if (idleTimeout > 0)
+                        endPoint.setIdleTimeout(idleTimeout);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Successful HTTP2 tunnel on {} via {}", stream, endPoint);
+                    ((IStream)stream).setAttachment(endPoint);
+                    httpRequest.getConversation().setAttribute(EndPoint.class.getName(), endPoint);
+                }
+
                 if (responseHeaders(exchange))
                 {
                     int status = response.getStatus();
@@ -111,15 +126,14 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         }
     }
 
-    @Override
-    public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+    Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return null;
 
         HttpRequest request = exchange.getRequest();
-        MetaData.Request metaData = (MetaData.Request)frame.getMetaData();
+        MetaData.Request metaData = frame.getMetaData();
         HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getURIString());
         // TODO: copy PUSH_PROMISE headers into pushRequest.
 
@@ -146,7 +160,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public void onData(Stream stream, DataFrame frame, Callback callback)
+    public void onData(DataFrame frame, Callback callback)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -159,8 +173,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         }
     }
 
-    @Override
-    public void onReset(Stream stream, ResetFrame frame)
+    void onReset(Stream stream, ResetFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -170,23 +183,22 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public boolean onIdleTimeout(Stream stream, Throwable x)
+    public boolean onTimeout(Throwable failure)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return false;
-        return !exchange.abort(x);
+        return !exchange.abort(failure);
     }
 
     @Override
-    public void onFailure(Stream stream, int error, String reason, Callback callback)
+    public void onFailure(Throwable failure, Callback callback)
     {
-        responseFailure(new IOException(String.format("%s/%s", ErrorCode.toString(error, null), reason)));
+        responseFailure(failure);
         callback.succeeded();
     }
 
-    @Override
-    public void onClosed(Stream stream)
+    void onClosed(Stream stream)
     {
         getHttpChannel().onStreamClosed((IStream)stream);
     }
