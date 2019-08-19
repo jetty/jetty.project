@@ -229,6 +229,7 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiParts _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
+    private List<HttpSession> _sessions; //list of sessions used during lifetime of request
 
     public Request(HttpChannel channel, HttpInput input)
     {
@@ -352,6 +353,39 @@ public class Request implements HttpServletRequest
             _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
+    }
+    
+    /**
+     * Remember a session that this request has just entered.
+     * 
+     * @param s the session
+     */
+    public void enterSession(HttpSession s)
+    {
+        if (s == null)
+            return;
+
+        if (_sessions == null)
+            _sessions = new ArrayList<>();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Request {} entering session={}", this, s);
+        _sessions.add(s);
+    }
+
+    /**
+     * Complete this request's access to a session.
+     *
+     * @param s the session
+     */
+    private void leaveSession(HttpSession s)
+    {
+        if (s == null)
+            return;
+        
+        Session session = (Session)s;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Request {} leaving session {}", this, session);
+        session.getSessionHandler().complete(session);
     }
 
     private MultiMap<String> getParameters()
@@ -1432,6 +1466,46 @@ public class Request implements HttpServletRequest
         return session.getId();
     }
 
+    /**
+     * Called when the request is fully finished being handled.
+     * For every session in any context that the session has
+     * accessed, ensure that the session is completed.
+     */
+    public void onCompleted()
+    {
+        if (_sessions != null && _sessions.size() > 0)
+        {
+            for (HttpSession s:_sessions)
+                leaveSession(s);
+        }
+    }
+    
+    /**
+     * Find a session that this request has already entered for the
+     * given SessionHandler 
+     *
+     * @param sessionHandler the SessionHandler (ie context) to check
+     * @return
+     */
+    public HttpSession getSession(SessionHandler sessionHandler)
+    {
+        if (_sessions == null || _sessions.size() == 0 || sessionHandler == null)
+            return null;
+        
+        HttpSession session = null;
+        
+        for (HttpSession s:_sessions)
+        {
+            Session ss =  Session.class.cast(s);
+            if (sessionHandler == ss.getSessionHandler())
+            {
+                session = s;
+                break;
+            }
+        }
+        return session;
+    }
+    
     /*
      * @see javax.servlet.http.HttpServletRequest#getSession()
      */
@@ -1770,6 +1844,7 @@ public class Request implements HttpServletRequest
         _inputState = INPUT_NONE;
         _multiParts = null;
         _remote = null;
+        _sessions = null;
         _input.recycle();
         _requestAttributeListeners.clear();
     }

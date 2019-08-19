@@ -16,7 +16,7 @@
   </properties>
 
   <build>
-    <finalName>weld-owb-demo</finalName>
+    <finalName>owb-cdi-demo</finalName>
   </build>
 
   <dependencies>

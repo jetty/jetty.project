@@ -39,6 +39,11 @@
       <property name="checkFormat" value="$1"/>
     </module>
 
+    <!--
+      Eclipse Jetty Specific.
+      ===========================================================================================
+      -->
+
     <!-- Location of Annotations -->
     <module name="AnnotationLocation">
       <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
