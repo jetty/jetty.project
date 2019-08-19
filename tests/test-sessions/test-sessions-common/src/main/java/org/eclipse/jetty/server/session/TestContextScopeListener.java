@@ -22,7 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.HttpChannel.Listener;
-import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.ContextHandler.ContextScopeListener;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.server.handler.ContextHandler.ContextScopeListener;
 public class TestContextScopeListener implements ContextScopeListener
 {
     AtomicReference<CountDownLatch> _exitSynchronizer = new AtomicReference<>();
-    boolean listenerAdded = false;
 
     /**
      * @return the exitSynchronizer
@@ -57,19 +55,16 @@ public class TestContextScopeListener implements ContextScopeListener
     @Override
     public void exitScope(final Context context, final org.eclipse.jetty.server.Request request)
     {
-        if (request != null && !listenerAdded)
+        if (request != null)
         {
-            listenerAdded=true;
             request.getHttpChannel().addListener(new Listener()
             {
                 @Override
                 public void onComplete(Request request)
                 {
-                    Listener.super.onComplete(request);
                     if (_exitSynchronizer.get() != null)
                         _exitSynchronizer.get().countDown();
                 }
-                
             });
         }
     }
