@@ -160,7 +160,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_listeners instanceof ArrayList)
             return _listeners.remove(listener);
 
-        // don't remove from an immutable list if it does not contain
+        // don't remove from an immutable list if it is not contained
         if (!_listeners.contains(listener))
             return false;
 
@@ -1120,11 +1120,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent1(Function<Listener, Consumer<Request>> function, Request request)
     {
-        for (EventListener listener : _listeners)
+        for (Listener listener : _listeners)
         {
             try
             {
-                function.apply((Listener)listener).accept(request);
+                function.apply(listener).accept(request);
             }
             catch (Throwable x)
             {
@@ -1135,12 +1135,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
     {
-        for (EventListener listener : _listeners)
+        for (Listener listener : _listeners)
         {
             ByteBuffer view = content.slice();
             try
             {
-                function.apply((Listener)listener).accept(request, view);
+                function.apply(listener).accept(request, view);
             }
             catch (Throwable x)
             {
@@ -1151,11 +1151,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, Throwable>> function, Request request, Throwable failure)
     {
-        for (EventListener listener : _listeners)
+        for (Listener listener : _listeners)
         {
             try
             {
-                function.apply((Listener)listener).accept(request, failure);
+                function.apply(listener).accept(request, failure);
             }
             catch (Throwable x)
             {
