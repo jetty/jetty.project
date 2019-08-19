@@ -75,7 +75,7 @@ public class SettingsBodyParser extends BodyParser
     {
         SettingsFrame frame = new SettingsFrame(Collections.emptyMap(), hasFlag(Flags.ACK));
         if (!rateControlOnEvent(frame))
-            connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame");
+            connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame_rate");
         else
             onSettings(frame);
     }
