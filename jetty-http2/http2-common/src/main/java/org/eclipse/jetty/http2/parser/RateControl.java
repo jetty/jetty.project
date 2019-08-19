@@ -23,6 +23,8 @@ package org.eclipse.jetty.http2.parser;
  */
 public interface RateControl
 {
+    RateControl NO_RATE_CONTROL = event -> true;
+
     /**
      * <p>Applications should call this method when they want to signal an
      * event that is subject to rate control.</p>
@@ -30,8 +32,8 @@ public interface RateControl
      * the desired rate, or false to signal that the event exceeded the
      * desired rate.</p>
      *
-     * @param event the event subject to rate control
-     * @return whether the rate is within limits
+     * @param event the event subject to rate control.
+     * @return true IFF the rate is within limits
      */
     public boolean onEvent(Object event);
 }

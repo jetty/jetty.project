@@ -21,18 +21,21 @@ package org.eclipse.jetty.http2.parser;
 import java.time.Duration;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>An implementation of {@link RateControl} that limits the number of
  * events within a time period.</p>
  * <p>Events are kept in a queue and for each event the queue is first
  * drained of the old events outside the time window, and then the new
- * event is added to the queue. If the size of the queue exceeds the max
+ * event is added to the queue. The size of the queue is maintained
+ * separately in an AtomicInteger and if it exceeds the max
  * number of events then {@link #onEvent(Object)} returns {@code false}.</p>
  */
 public class WindowRateControl implements RateControl
 {
     private final Queue<Long> events = new ConcurrentLinkedQueue<>();
+    private final AtomicInteger size = new AtomicInteger();
     private final int maxEvents;
     private final long window;
 
@@ -51,11 +54,12 @@ public class WindowRateControl implements RateControl
             Long time = events.peek();
             if (time == null)
                 break;
-            if (now - time < window)
+            if (now < time)
                 break;
-            events.poll();
+            if (events.remove(time))
+                size.decrementAndGet();
         }
-        events.add(now);
-        return events.size() <= maxEvents;
+        events.add(now + window);
+        return size.incrementAndGet() <= maxEvents;
     }
 }
