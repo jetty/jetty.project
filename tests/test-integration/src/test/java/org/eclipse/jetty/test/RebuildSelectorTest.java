@@ -11,6 +11,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +42,7 @@ import org.eclipse.jetty.util.thread.strategy.ProduceConsume;
 import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -51,19 +56,24 @@ import static org.junit.Assert.assertTrue;
 public class RebuildSelectorTest
 {
     @Parameterized.Parameters(name = "{0}")
-    public static ExecutionStrategy.Factory[] params()
+    public static Object[][] params()
     {
-        return new ExecutionStrategy.Factory[]
+        return new Object[][]
             {
-                new ExecuteProduceConsume.Factory(),
-                new ProduceExecuteConsume.Factory(),
-                new ProduceConsume.Factory()
+                {"EPC", new ExecuteProduceConsume.Factory()},
+                {"PEC", new ProduceExecuteConsume.Factory()},
+                {"PC", new ProduceConsume.Factory()}
             };
     }
 
     private HttpClient client;
     private Server server;
+    private AsyncCloseSelectorServlet asyncCloseSelectorServlet;
+
     @Parameterized.Parameter(0)
+    public String testMode;
+
+    @Parameterized.Parameter(1)
     public ExecutionStrategy.Factory executionStrategy;
 
     @After
@@ -101,8 +111,10 @@ public class RebuildSelectorTest
         ServletHolder closeHolder = new ServletHolder(new CloseSelectorServlet(connector));
         context.addServlet(closeHolder, "/selector/close");
 
-//        ServletHolder asyncCloseHolder = new ServletHolder(new AsyncCloseSelectorServlet(connector));
-//        context.addServlet(asyncCloseHolder, "/selector/async-close");
+        asyncCloseSelectorServlet = new AsyncCloseSelectorServlet(connector);
+        ServletHolder asyncCloseHolder = new ServletHolder(asyncCloseSelectorServlet);
+        asyncCloseHolder.setAsyncSupported(true);
+        context.addServlet(asyncCloseHolder, "/selector/async-close");
 
         HandlerList handlers = new HandlerList();
         handlers.addHandler(context);
@@ -114,7 +126,7 @@ public class RebuildSelectorTest
     }
 
     @Test
-    public void testRebuildServerSelector() throws Exception
+    public void testRebuildServerSelectorNormal() throws Exception
     {
         CountDownLatch failedLatch = new CountDownLatch(1);
 
@@ -129,7 +141,7 @@ public class RebuildSelectorTest
         assertRequestHello();
 
         // Request /selector/close
-        assertRequestSelectorClose();
+        assertRequestSelectorClose("/selector/close");
 
         // Wait for selectors to close from action above
         assertTrue(failedLatch.await(2, TimeUnit.SECONDS));
@@ -138,9 +150,38 @@ public class RebuildSelectorTest
         assertRequestHello();
     }
 
-    private void assertRequestSelectorClose() throws InterruptedException, ExecutionException, TimeoutException
+    @Test
+    @Ignore
+    public void testRebuildServerSelectorAsync() throws Exception
     {
-        ContentResponse response = client.newRequest(server.getURI().resolve("/selector/close"))
+        CountDownLatch failedLatch = new CountDownLatch(1);
+
+        startServer((server) ->
+        {
+            CustomServerConnector connector = new CustomServerConnector(server, executionStrategy, failedLatch, 1, 1);
+            connector.setPort(0);
+            return connector;
+        });
+
+        // Request /hello
+        assertRequestHello();
+
+        // Request /selector/async-close
+        assertRequestSelectorClose("/selector/async-close");
+
+        // Wait for selectors to close from action above
+        assertTrue(failedLatch.await(2, TimeUnit.SECONDS));
+
+        // Ensure that Async Listener onError was called
+        assertTrue(asyncCloseSelectorServlet.onErrorLatch.await(2, TimeUnit.SECONDS));
+
+        // Request /hello
+        assertRequestHello();
+    }
+
+    private void assertRequestSelectorClose(String path) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        ContentResponse response = client.newRequest(server.getURI().resolve(path))
             .method(HttpMethod.GET)
             .header(HttpHeader.CONNECTION, "close")
             .send();
@@ -230,19 +271,44 @@ public class RebuildSelectorTest
         }
     }
 
+    private static class InterruptSelector implements Runnable
+    {
+        private static final Logger LOG = Log.getLogger(InterruptSelector.class);
+        private final ServerConnector connector;
+
+        public InterruptSelector(ServerConnector connector)
+        {
+            this.connector = connector;
+        }
+
+        @Override
+        public void run()
+        {
+            SelectorManager selectorManager = connector.getSelectorManager();
+            Collection<ManagedSelector> managedSelectors = selectorManager.getBeans(ManagedSelector.class);
+            for (ManagedSelector managedSelector : managedSelectors)
+            {
+                if (managedSelector instanceof CustomManagedSelector)
+                {
+                    CustomManagedSelector customManagedSelector = (CustomManagedSelector)managedSelector;
+                    Selector selector = customManagedSelector.getSelector();
+                    LOG.debug("Closing selector {}}", selector);
+                    IO.close(selector);
+                }
+            }
+        }
+    }
+
     public static class CloseSelectorServlet extends HttpServlet
     {
-        private static final Logger LOG = Log.getLogger(CloseSelectorServlet.class);
         private static final int DELAY_MS = 500;
         private ServerConnector connector;
         private ScheduledExecutorService scheduledExecutorService;
-        private InterruptSelector interruptSelectorRunnable;
 
         public CloseSelectorServlet(ServerConnector connector)
         {
             this.connector = connector;
             scheduledExecutorService = Executors.newScheduledThreadPool(5);
-            interruptSelectorRunnable = new InterruptSelector();
         }
 
         @Override
@@ -251,27 +317,76 @@ public class RebuildSelectorTest
             resp.setContentType("text/plain");
             resp.setCharacterEncoding("utf-8");
             resp.getWriter().printf("Closing selectors in %,d ms%n", DELAY_MS);
-            scheduledExecutorService.schedule(interruptSelectorRunnable, DELAY_MS, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.schedule(new InterruptSelector(connector), DELAY_MS, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    public static class AsyncCloseSelectorServlet extends HttpServlet
+    {
+        private static final int DELAY_MS = 200;
+        private ServerConnector connector;
+        private ScheduledExecutorService scheduledExecutorService;
+        public CountDownLatch onErrorLatch = new CountDownLatch(1);
+
+        public AsyncCloseSelectorServlet(ServerConnector connector)
+        {
+            this.connector = connector;
+            scheduledExecutorService = Executors.newScheduledThreadPool(5);
         }
 
-        private class InterruptSelector implements Runnable
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
-            @Override
-            public void run()
+            resp.setContentType("text/plain");
+            resp.setCharacterEncoding("utf-8");
+            ServletOutputStream out = resp.getOutputStream();
+            out.print("Closing selectors " + DELAY_MS);
+
+            AsyncContext asyncContext = req.startAsync();
+            asyncContext.setTimeout(0);
+            asyncContext.addListener(new AsyncListener()
             {
-                SelectorManager selectorManager = connector.getSelectorManager();
-                Collection<ManagedSelector> managedSelectors = selectorManager.getBeans(ManagedSelector.class);
-                for (ManagedSelector managedSelector : managedSelectors)
+                @Override
+                public void onComplete(AsyncEvent event)
                 {
-                    if (managedSelector instanceof CustomManagedSelector)
-                    {
-                        CustomManagedSelector customManagedSelector = (CustomManagedSelector)managedSelector;
-                        Selector selector = customManagedSelector.getSelector();
-                        LOG.debug("Closing selector {}}", selector);
-                        IO.close(selector);
-                    }
                 }
-            }
+
+                @Override
+                public void onTimeout(AsyncEvent event)
+                {
+                }
+
+                @Override
+                public void onError(AsyncEvent event)
+                {
+                    resp.setStatus(500);
+                    event.getAsyncContext().complete();
+                    onErrorLatch.countDown();
+                }
+
+                @Override
+                public void onStartAsync(AsyncEvent event)
+                {
+                }
+            });
+
+            scheduledExecutorService.schedule(new InterruptSelector(connector), DELAY_MS, TimeUnit.MILLISECONDS);
+            /* trigger EofException after selector close
+            scheduledExecutorService.schedule(() ->
+            {
+                byte[] b = new byte[128 * 1024 * 1024];
+                Arrays.fill(b, (byte)'x');
+                try
+                {
+                    out.write(b);
+                    out.flush();
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace(System.out);
+                }
+            }, DELAY_MS * 2, TimeUnit.MILLISECONDS);
+             */
         }
     }
 }
