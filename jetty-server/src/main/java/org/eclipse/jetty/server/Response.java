@@ -233,7 +233,7 @@ public class Response implements HttpServletResponse
         // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
         boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
         SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
-        comment = HttpCookie.getCommentWithoutFlags(comment);
+        comment = HttpCookie.getCommentWithoutAttributes(comment);
 
         addCookie(new HttpCookie(
             cookie.getName(),

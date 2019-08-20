@@ -212,10 +212,10 @@ public class HttpCookieTest
     }
 
     @Test
-    public void getCommentWithoutFlags()
+    public void getCommentWithoutAttributes()
     {
-        assertEquals(HttpCookie.getCommentWithoutFlags("comment__SAME_SITE_NONE__"), "comment");
-        assertEquals(HttpCookie.getCommentWithoutFlags("comment__HTTP_ONLY____SAME_SITE_NONE__"), "comment");
-        assertNull(HttpCookie.getCommentWithoutFlags("__SAME_SITE_LAX__"));
+        assertEquals(HttpCookie.getCommentWithoutAttributes("comment__SAME_SITE_NONE__"), "comment");
+        assertEquals(HttpCookie.getCommentWithoutAttributes("comment__HTTP_ONLY____SAME_SITE_NONE__"), "comment");
+        assertNull(HttpCookie.getCommentWithoutAttributes("__SAME_SITE_LAX__"));
     }
 }

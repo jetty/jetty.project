@@ -47,12 +47,14 @@ public class HttpCookie
         NONE("None"), STRICT("Strict"), LAX("Lax");
 
         private String attributeValue;
-        SameSite(String attributeValue) {
+
+        SameSite(String attributeValue)
+        {
             this.attributeValue = attributeValue;
         }
 
-        @Override
-        public String toString(){
+        public String getAttributeValue()
+        {
             return this.attributeValue;
         }
     }
@@ -127,7 +129,7 @@ public class HttpCookie
         _comment = cookie.getComment();
         _version = cookie.getVersion();
         _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
-        // TODO support for SameSite values has not yet been added to java.net.HttpCookie
+        // support for SameSite values has not yet been added to java.net.HttpCookie
         _sameSite = getSameSiteFromComment(cookie.getComment());
     }
 
@@ -414,7 +416,7 @@ public class HttpCookie
         if (_sameSite != null)
         {
             buf.append("; SameSite=");
-            buf.append(_sameSite.toString());
+            buf.append(_sameSite.getAttributeValue());
         }
 
         return buf.toString();
@@ -446,7 +448,7 @@ public class HttpCookie
         return null;
     }
 
-    public static String getCommentWithoutFlags(String comment)
+    public static String getCommentWithoutAttributes(String comment)
     {
         if (comment == null)
         {
