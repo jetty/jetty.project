@@ -38,6 +38,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -87,6 +88,11 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     protected void doStart() throws Exception
     {
         super.doStart();
+        startSelector();
+    }
+
+    protected void startSelector() throws IOException
+    {
         _selector = newSelector();
         _selectorManager.execute(this);
     }
@@ -96,12 +102,26 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         return Selector.open();
     }
 
+    public Selector getSelector()
+    {
+        return _selector;
+    }
+
+    protected void onSelectFailed(Throwable cause) throws IOException
+    {
+        LOG.info("Restarting selector: " + toString(), cause);
+        startSelector();
+    }
+
     public int size()
     {
         Selector s = _selector;
         if (s == null)
             return 0;
-        return s.keys().size();
+        Set<SelectionKey> keys = s.keys();
+        if (keys == null)
+            return 0;
+        return keys.size();
     }
 
     @Override
@@ -258,14 +278,17 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             }
             catch (Throwable x)
             {
+                Selector selector = _selector;
                 if (isRunning())
-                    LOG.warn(x);
+                {
+                    notifySelectFailed(x);
+                }
                 else
                 {
                     LOG.warn(x.toString());
                     LOG.debug(x);
                 }
-                closeNoExceptions(_selector);
+                IO.close(selector);
             }
             return false;
         }
@@ -306,13 +329,13 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                     {
                         LOG.debug("Ignoring cancelled key for channel {}", key.channel());
                         if (attachment instanceof EndPoint)
-                            closeNoExceptions((EndPoint)attachment);
+                            IO.close((EndPoint)attachment);
                     }
                     catch (Throwable x)
                     {
                         LOG.warn("Could not process key for channel " + key.channel(), x);
                         if (attachment instanceof EndPoint)
-                            closeNoExceptions((EndPoint)attachment);
+                            IO.close((EndPoint)attachment);
                     }
                 }
                 else
@@ -321,7 +344,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                         LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
-                        closeNoExceptions((EndPoint)attachment);
+                        IO.close((EndPoint)attachment);
                 }
             }
             return null;
@@ -339,6 +362,18 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             Object attachment = key.attachment();
             if (attachment instanceof SelectableEndPoint)
                 ((SelectableEndPoint)attachment).updateKey();
+        }
+    }
+
+    private void notifySelectFailed(Throwable cause)
+    {
+        try
+        {
+            onSelectFailed(cause);
+        }
+        catch (IOException e)
+        {
+            LOG.info("Failure while calling onSelectFailed()", e);
         }
     }
 
@@ -400,21 +435,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
         catch (Throwable x)
         {
-            closeNoExceptions(channel);
+            IO.close(channel);
             LOG.warn("Accept failed for channel " + channel, x);
-        }
-    }
-
-    private void closeNoExceptions(Closeable closeable)
-    {
-        try
-        {
-            if (closeable != null)
-                closeable.close();
-        }
-        catch (Throwable x)
-        {
-            LOG.ignore(x);
         }
     }
 
@@ -538,7 +560,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             }
             catch (Throwable x)
             {
-                closeNoExceptions(_channel);
+                IO.close(_channel);
                 LOG.warn(x);
             }
         }
@@ -559,7 +581,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         public void close()
         {
             LOG.debug("closed accept of {}", channel);
-            closeNoExceptions(channel);
+            IO.close(channel);
         }
 
         @Override
@@ -572,7 +594,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             }
             catch (Throwable x)
             {
-                closeNoExceptions(channel);
+                IO.close(channel);
                 LOG.debug(x);
             }
         }
@@ -607,12 +629,12 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         public void close()
         {
             LOG.debug("closed creation of {}", channel);
-            closeNoExceptions(channel);
+            IO.close(channel);
         }
 
         protected void failed(Throwable failure)
         {
-            closeNoExceptions(channel);
+            IO.close(channel);
             LOG.debug(failure);
         }
     }
@@ -649,7 +671,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             if (failed.compareAndSet(false, true))
             {
                 timeout.cancel();
-                closeNoExceptions(channel);
+                IO.close(channel);
                 ManagedSelector.this._selectorManager.connectionFailed(channel, failure, attachment);
             }
         }
@@ -738,7 +760,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         @Override
         public void run()
         {
-            closeNoExceptions(_endPoint.getConnection());
+            IO.close(_endPoint.getConnection());
             _latch.countDown();
         }
     }
@@ -752,7 +774,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         {
             Selector selector = _selector;
             _selector = null;
-            closeNoExceptions(selector);
+            IO.close(selector);
             _latch.countDown();
         }
 
