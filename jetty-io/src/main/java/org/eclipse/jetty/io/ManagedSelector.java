@@ -106,9 +106,10 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         return _selector;
     }
 
-    protected void onSelectFailed(Throwable cause)
+    protected void onSelectFailed(Throwable cause) throws IOException
     {
-        LOG.warn(toString(), cause);
+        LOG.info("Restarting selector: " + toString(), cause);
+        startSelector();
     }
 
     public int size()
@@ -279,7 +280,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                 Selector selector = _selector;
                 if (isRunning())
                 {
-                    onSelectFailed(x);
+                    notifySelectFailed(x);
                 }
                 else
                 {
@@ -360,6 +361,18 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             Object attachment = key.attachment();
             if (attachment instanceof SelectableEndPoint)
                 ((SelectableEndPoint)attachment).updateKey();
+        }
+    }
+
+    private void notifySelectFailed(Throwable cause)
+    {
+        try
+        {
+            onSelectFailed(cause);
+        }
+        catch (IOException e)
+        {
+            LOG.info("Failure while calling onSelectFailed()", e);
         }
     }
 
