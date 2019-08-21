@@ -18,20 +18,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.junit.jupiter.api.condition.OS.MAC;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
-
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -72,6 +58,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
 public class FileSystemResourceTest
@@ -465,7 +465,7 @@ public class FileSystemResourceTest
             assertThat("foo.length", res.length(), is(expected));
         }
     }
-    
+
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
     public void testLength_NotExists(Class resourceClass) throws Exception
@@ -1420,19 +1420,11 @@ public class FileSystemResourceTest
 
             Resource r = base.addPath("//foo.txt");
             assertThat("getURI()", r.getURI().toASCIIString(), containsString("//foo.txt"));
+
+            assertThat("isAlias()", r.isAlias(), is(true));
+            assertThat("getAlias()", r.getAlias(), notNullValue());
+            assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("/foo.txt"));
             assertThat("Exists: " + r, r.exists(), is(true));
-            
-            if (PathResource.class.isAssignableFrom(resourceClass))
-            {
-                assertThat("isAlias()", r.isAlias(), is(false));
-                assertThat("getAlias()", r.getAlias(), nullValue());
-            }
-            else
-            {
-                assertThat("isAlias()", r.isAlias(), is(true));
-                assertThat("getAlias()", r.getAlias(), notNullValue());
-                assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("/foo.txt"));
-            }
         }
         catch (InvalidPathException e)
         {
@@ -1461,19 +1453,10 @@ public class FileSystemResourceTest
 
             Resource r = base.addPath("aa//foo.txt");
             assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa//foo.txt"));
-    
-            if (PathResource.class.isAssignableFrom(resourceClass))
-            {
-                assertThat("isAlias()", r.isAlias(), is(false));
-                assertThat("getAlias()", r.getAlias(), nullValue());
-            }
-            else
-            {
-                assertThat("isAlias()", r.isAlias(), is(true));
-                assertThat("getAlias()", r.getAlias(), notNullValue());
-                assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("aa/foo.txt"));
-            }
-            
+
+            assertThat("isAlias()", r.isAlias(), is(true));
+            assertThat("getAlias()", r.getAlias(), notNullValue());
+            assertThat("getAlias()", r.getAlias().toASCIIString(), containsString("aa/foo.txt"));
             assertThat("Exists: " + r, r.exists(), is(true));
         }
         catch (InvalidPathException e)

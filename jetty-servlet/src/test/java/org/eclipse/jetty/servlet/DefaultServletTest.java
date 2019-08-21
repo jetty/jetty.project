@@ -18,20 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeader;
-import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -49,7 +35,6 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -69,12 +54,14 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.SameFileAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -87,6 +74,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeader;
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletTest
@@ -2012,34 +2014,73 @@ public class DefaultServletTest
     }
     
     @Test
-    public void testGetUnicodeFile() throws Exception
+    public void testGetUtf8NfcFile() throws Exception
     {
         FS.ensureEmpty(docRoot);
-        System.err.printf("docRoot is %s%n", docRoot);
-    
+
         context.addServlet(DefaultServlet.class, "/");
-    
-        createFile(docRoot.resolve("swedish-å.txt"), "hi a-with-circle");
-        createFile(docRoot.resolve("swedish-ä.txt"), "hi a-with-two-dots");
-        createFile(docRoot.resolve("swedish-ö.txt"), "hi o-with-two-dots");
-    
+        context.addAliasCheck(new SameFileAliasChecker());
+
+        // UTF-8 NFC format
+        String filename = "swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt";
+        createFile(docRoot.resolve(filename), "hi a-with-circle");
+
         String rawResponse;
         HttpTester.Response response;
-        
+
+        // Request as UTF-8 NFC
         rawResponse = connector.getResponse("GET /context/swedish-%C3%A5.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("hi a-with-circle"));
-        
-        rawResponse = connector.getResponse("GET /context/swedish-%C3%A4.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+
+        // Request as UTF-8 NFD
+        rawResponse = connector.getResponse("GET /context/swedish-a%CC%8A.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        if (OS.MAC.isCurrentOs())
+        {
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("hi a-with-circle"));
+        }
+        else
+        {
+            assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        }
+    }
+
+    @Test
+    public void testGetUtf8NfdFile() throws Exception
+    {
+        FS.ensureEmpty(docRoot);
+
+        context.addServlet(DefaultServlet.class, "/");
+        context.addAliasCheck(new SameFileAliasChecker());
+
+        // UTF-8 NFD format
+        String filename = "swedish-" + new String(TypeUtil.fromHexString("61CC8A"), UTF_8) + ".txt";
+        createFile(docRoot.resolve(filename), "hi a-with-circle");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        // Request as UTF-8 NFD
+        rawResponse = connector.getResponse("GET /context/swedish-a%CC%8A.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), is("hi a-with-two-dots"));
-        
-        rawResponse = connector.getResponse("GET /context/swedish-%C3%B6.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        assertThat(response.getContent(), is("hi a-with-circle"));
+
+        // Request as UTF-8 NFC
+        rawResponse = connector.getResponse("GET /context/swedish-%C3%A5.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), is("hi o-with-two-dots"));
+        if (OS.MAC.isCurrentOs())
+        {
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("hi a-with-circle"));
+        }
+        else
+        {
+            assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        }
     }
 
     public static class OutputFilter implements Filter
