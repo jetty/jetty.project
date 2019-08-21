@@ -104,7 +104,7 @@ public class PathResource extends Resource
             {
                 Path real = abs.toRealPath(FOLLOW_LINKS);
 
-                if (!isSame(abs, real))
+                if (!isSameName(abs, real))
                 {
                     return real;
                 }
@@ -122,7 +122,7 @@ public class PathResource extends Resource
     }
 
     /**
-     * Test if the paths are the same.
+     * Test if the paths are the same name.
      *
      * <p>
      * If the real path is not the same as the absolute path
@@ -175,7 +175,7 @@ public class PathResource extends Resource
      * in implementation to a.equals(b)
      * </p>
      */
-    public static boolean isSame(Path pathA, Path pathB)
+    public static boolean isSameName(Path pathA, Path pathB)
     {
         int aCount = pathA.getNameCount();
         int bCount = pathB.getNameCount();

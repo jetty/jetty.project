@@ -52,7 +52,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
             Path path = pathResource.getPath();
             Path alias = pathResource.getAliasPath();
 
-            if (PathResource.isSame(alias, path))
+            if (PathResource.isSameName(alias, path))
                 return false; // Unknown why this is an alias
 
             if (hasSymbolicLink(path) && Files.isSameFile(path, alias))
