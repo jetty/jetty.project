@@ -62,6 +62,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -547,6 +548,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         catch (Throwable t)
         {
+            if (t instanceof TerminateStartupException)
+            {
+                setAvailable(false);
+                throw t;
+            }
+            
             // start up of the webapp context failed, make sure it is not started
             LOG.warn("Failed startup of context " + this, t);
             _unavailableException = t;
@@ -1290,6 +1297,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _metadata.resolve(this);
             super.startContext();
         }
+        else
+            throw new TerminateStartupException();
     }
 
     @Override

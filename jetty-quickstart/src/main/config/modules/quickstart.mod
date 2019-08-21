@@ -8,6 +8,23 @@ deployment of preconfigured webapplications.
 server
 plus
 annotations
+deploy
+
 
 [lib]
 lib/jetty-quickstart-${jetty.version}.jar
+
+[xml]
+etc/jetty-quickstart.xml
+
+[files]
+basehome:modules/jetty-quickstart.d/quickstart-webapp.xml|etc/quickstart-webapp.xml
+
+
+[ini-template]
+
+# Modes are AUTO, GENERATE, QUICKSTART
+# jetty.quickstart.mode=AUTO
+# jetty.quickstart.generateOrigin=true
+# jetty.quickstart.origin=origin
+# jetty.quickstart.xml=

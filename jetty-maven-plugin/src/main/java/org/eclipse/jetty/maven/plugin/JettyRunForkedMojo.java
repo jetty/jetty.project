@@ -43,8 +43,11 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -209,22 +212,19 @@ public class JettyRunForkedMojo extends JettyRunMojo
             configureWebApplication();
 
             //set the webapp up to do very little other than generate the quickstart-web.xml
+            if (forkWebXml == null)
+                forkWebXml = new File(target, "fork-web.xml");
+
+            if (!forkWebXml.getParentFile().exists())
+                forkWebXml.getParentFile().mkdirs();
+            if (!forkWebXml.exists())
+                forkWebXml.createNewFile();
+            
+            webApp.addConfiguration(new QuickStartConfiguration());
+            webApp.setAttribute(QuickStartConfiguration.MODE, Mode.GENERATE);
+            webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(forkWebXml));
             webApp.setCopyWebDir(false);
-            webApp.setCopyWebInf(false);
-            webApp.setGenerateQuickStart(true);
-
-            if (webApp.getQuickStartWebDescriptor() == null)
-            {
-                if (forkWebXml == null)
-                    forkWebXml = new File(target, "fork-web.xml");
-
-                if (!forkWebXml.getParentFile().exists())
-                    forkWebXml.getParentFile().mkdirs();
-                if (!forkWebXml.exists())
-                    forkWebXml.createNewFile();
-
-                webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
-            }
+            webApp.setCopyWebInf(false);       
 
             //add webapp to our fake server instance
             ServerSupport.addWebApplication(server, webApp);
@@ -240,10 +240,16 @@ public class JettyRunForkedMojo extends JettyRunMojo
             //leave everything unpacked for the forked process to use
             webApp.setPersistTempDirectory(true);
 
-            webApp.start(); //just enough to generate the quickstart
-
-            //save config of the webapp BEFORE we stop
-            final File props = prepareConfiguration();
+            File props = null;
+            try
+            {
+                webApp.start(); //just enough to generate the quickstart
+            }
+            catch (TerminateStartupException e)
+            {
+                //save config of the webapp BEFORE we stop
+                props = prepareConfiguration();
+            }
 
             webApp.stop();
 
@@ -311,7 +317,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
             if (PluginLog.getLog().isDebugEnabled())
                 PluginLog.getLog().debug("Forked cli:" + Arrays.toString(cmd.toArray()));
-
+            
             PluginLog.getLog().info("Forked process starting");
 
             //set up extra environment vars if there are any

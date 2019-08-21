@@ -64,7 +64,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlAppendable;
 
 /**
- * QuickStartDescriptorGenerator
+ * QuickStartGeneratorConfiguration
  * <p>
  * Generate an effective web.xml from a WebAppContext, including all components
  * from web.xml, web-fragment.xmls annotations etc.
@@ -163,8 +163,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         if (context.getBaseResource() == null)
             throw new IllegalArgumentException("No base resource for " + this);
 
-        LOG.info("Quickstart generating");
-
         MetaData md = context.getMetaData();
 
         Map<String, String> webappAttr = new HashMap<>();
@@ -195,7 +193,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         //the META-INF/resources discovered
         addContextParamFromAttribute(context, out, MetaInfConfiguration.METAINF_RESOURCES, normalizer);
 
-        // the default-context-path, if presernt
+        // the default-context-path, if present
         String defaultContextPath = (String)context.getAttribute("default-context-path");
         if (defaultContextPath != null)
             out.tag("default-context-path", defaultContextPath);

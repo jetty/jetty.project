@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.annotations.AnnotationDecorator;
 import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -39,8 +40,7 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
 /**
  * QuickStartConfiguration
  * <p>
- * Re-inflate a deployable webapp from a saved effective-web.xml
- * which combines all pre-parsed web xml descriptors and annotations.
+ * Generate a quickstart file or use an already-generated quickstart file to run a webapp.
  */
 public class QuickStartConfiguration extends AbstractConfiguration
 {
@@ -50,6 +50,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
     public static final String ORIGIN_ATTRIBUTE = "org.eclipse.jetty.quickstart.ORIGIN_ATTRIBUTE";
     public static final String GENERATE_ORIGIN = "org.eclipse.jetty.quickstart.GENERATE_ORIGIN";
     public static final String QUICKSTART_WEB_XML = "org.eclipse.jetty.quickstart.QUICKSTART_WEB_XML";
+    public static final String MODE = "org.eclipse.jetty.quickstart.QUICKSTART_MODE";
 
     static
     {
@@ -63,10 +64,10 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     public enum Mode
     {
-        DISABLED,  // No Quick start
-        GENERATE,  // Generate quickstart-web.xml and then stop
-        AUTO,      // use or generate depending on the existance of quickstart-web.xml
-        QUICKSTART // Use quickstart-web.xml
+        DISABLED,  // No Quick start, do normal start
+        GENERATE,  // Generate quickstart and then stop
+        AUTO,      // Use a quickstart if present, normal start otherwise
+        QUICKSTART // Use quickstart
     }
 
     ;
@@ -81,19 +82,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
         addDependents(WebXmlConfiguration.class);
     }
 
-    public void setMode(Mode mode)
-    {
-        _mode = mode;
-    }
-
-    public Mode getMode()
-    {
-        return _mode;
-    }
-
-    /**
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
@@ -106,16 +94,29 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Resource quickStartWebXml = getQuickStartWebXml(context);
         LOG.debug("quickStartWebXml={} exists={}", quickStartWebXml, quickStartWebXml.exists());
 
+        //Get the mode
+        Mode mode = (Mode)context.getAttribute(MODE);
+        if (mode != null)
+            _mode = mode;
+        
         _quickStart = false;
+        
         switch (_mode)
         {
             case DISABLED:
+                LOG.info("Quickstart disabled, starting {} normally", context);
                 super.preConfigure(context);
                 break;
 
             case GENERATE:
             {
+                if (quickStartWebXml.exists())
+                    LOG.info("Regenerating quickstart xml for {}", context);
+                else
+                    LOG.info("Generating quickstart xml for {}", context);
+                
                 super.preConfigure(context);
+                //generate the quickstart file then abort
                 QuickStartGeneratorConfiguration generator = new QuickStartGeneratorConfiguration(true);
                 configure(generator, context);
                 context.addConfiguration(generator);
@@ -125,20 +126,20 @@ public class QuickStartConfiguration extends AbstractConfiguration
             case AUTO:
             {
                 if (quickStartWebXml.exists())
-                    quickStart(context, quickStartWebXml);
+                {
+                    quickStart(context);
+                }
                 else
                 {
+                    LOG.info("No quickstart xml file, starting webapp {} normally", context);
                     super.preConfigure(context);
-                    QuickStartGeneratorConfiguration generator = new QuickStartGeneratorConfiguration(false);
-                    configure(generator, context);
-                    context.addConfiguration(generator);
                 }
                 break;
             }
 
             case QUICKSTART:
                 if (quickStartWebXml.exists())
-                    quickStart(context, quickStartWebXml);
+                    quickStart(context);
                 else
                     throw new IllegalStateException("No " + quickStartWebXml);
                 break;
@@ -157,21 +158,17 @@ public class QuickStartConfiguration extends AbstractConfiguration
         attr = context.getAttribute(ORIGIN_ATTRIBUTE);
         if (attr != null)
             generator.setOriginAttribute(attr.toString());
-        attr = context.getAttribute(QUICKSTART_WEB_XML);
-        if (attr instanceof Resource)
-            generator.setQuickStartWebXml((Resource)attr);
-        else if (attr != null)
-            generator.setQuickStartWebXml(Resource.newResource(attr.toString()));
+
+        generator.setQuickStartWebXml((Resource)context.getAttribute(QUICKSTART_WEB_XML));
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void configure(WebAppContext context) throws Exception
     {
         if (!_quickStart)
+        {
             super.configure(context);
+        }
         else
         {
             //add the processor to handle normal web.xml content
@@ -195,14 +192,15 @@ public class QuickStartConfiguration extends AbstractConfiguration
         }
     }
 
-    protected void quickStart(WebAppContext context, Resource quickStartWebXml)
+    protected void quickStart(WebAppContext context)
         throws Exception
     {
+        LOG.info("Quickstarting {}", context);
         _quickStart = true;
         context.setConfigurations(context.getWebAppConfigurations().stream()
             .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
             .collect(Collectors.toList()).toArray(new Configuration[]{}));
-        context.getMetaData().setWebXml(quickStartWebXml);
+        context.getMetaData().setWebXml((Resource)context.getAttribute(QUICKSTART_WEB_XML));
         context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebXml().getMajorVersion());
         context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebXml().getMinorVersion());
     }
@@ -216,12 +214,27 @@ public class QuickStartConfiguration extends AbstractConfiguration
      */
     public Resource getQuickStartWebXml(WebAppContext context) throws Exception
     {
+
+        Object attr = context.getAttribute(QUICKSTART_WEB_XML);
+        if (attr instanceof Resource)
+            return (Resource)attr;
+
+        if (attr != null)
+        {
+            String tmp = attr.toString();
+            if (!StringUtil.isBlank(tmp))
+            {
+                Resource qstart = (Resource.newResource(attr.toString()));
+                context.setAttribute(QUICKSTART_WEB_XML, qstart);
+            }
+        }
+
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
             throw new IllegalStateException("No WEB-INF");
         LOG.debug("webinf={}", webInf);
-
-        Resource quickStartWebXml = webInf.addPath("quickstart-web.xml");
-        return quickStartWebXml;
+        Resource qstart = webInf.addPath("quickstart-web.xml");
+        context.setAttribute(QUICKSTART_WEB_XML, qstart);
+        return  qstart;
     }
 }

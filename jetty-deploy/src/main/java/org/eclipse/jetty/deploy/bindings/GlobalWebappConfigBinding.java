@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
@@ -47,6 +50,7 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
     private static final Logger LOG = Log.getLogger(GlobalWebappConfigBinding.class);
 
     private String _jettyXml;
+    private Map<String,String> _properties = new HashMap<>();
 
     public String getJettyXml()
     {
@@ -62,6 +66,14 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
     public String[] getBindingTargets()
     {
         return new String[]{"deploying"};
+    }
+    
+    /**
+     * @return a modifiable list of properties
+     */
+    public Map<String,String> getProperties()
+    {
+        return _properties;
     }
 
     @Override
@@ -96,6 +108,7 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
                 app.getDeploymentManager().scope(jettyXmlConfig, resource);
                 WebAppClassLoader.runWithServerClassAccess(() ->
                 {
+                    jettyXmlConfig.getProperties().putAll(_properties);
                     jettyXmlConfig.configure(context);
                     return null;
                 });

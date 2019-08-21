@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;

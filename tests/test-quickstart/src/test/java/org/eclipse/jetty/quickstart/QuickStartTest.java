@@ -24,6 +24,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -31,6 +34,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
@@ -47,6 +51,7 @@ public class QuickStartTest
     @Test
     public void testStandardTestWar() throws Exception
     {
+        //Generate the quickstart
         PreconfigureStandardTestWar.main(new String[]{});
 
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"));
@@ -65,8 +70,12 @@ public class QuickStartTest
 
         Server server = new Server(0);
 
-        QuickStartWebApp webapp = new QuickStartWebApp();
-        webapp.setMode(QuickStartConfiguration.Mode.AUTO);
+        WebAppContext webapp = new WebAppContext();
+        webapp.addConfiguration(new QuickStartConfiguration(),
+                                    new EnvConfiguration(),
+                                    new PlusConfiguration(),
+                                    new AnnotationConfiguration());
+        webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setWar(war);
         webapp.setContextPath("/");
 
@@ -93,6 +102,7 @@ public class QuickStartTest
     @Test
     public void testSpecWar() throws Exception
     {
+        //Generate the quickstart xml
         PreconfigureSpecWar.main(new String[]{});
 
         Path webXmlPath = MavenTestingUtils.getTargetPath().resolve("test-spec-preconfigured/WEB-INF/quickstart-web.xml");
@@ -114,8 +124,12 @@ public class QuickStartTest
 
         Server server = new Server(0);
 
-        QuickStartWebApp webapp = new QuickStartWebApp();
-        webapp.setMode(QuickStartConfiguration.Mode.AUTO);
+        WebAppContext webapp = new WebAppContext();
+        webapp.addConfiguration(new QuickStartConfiguration(),
+                                new EnvConfiguration(),
+                                new PlusConfiguration(),
+                                new AnnotationConfiguration());
+        webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setWar(war);
         webapp.setContextPath("/");
 
@@ -142,6 +156,7 @@ public class QuickStartTest
     @Test
     public void testJNDIWar() throws Exception
     {
+        //Generate the quickstart
         PreconfigureJNDIWar.main(new String[]{});
 
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"));
@@ -160,8 +175,12 @@ public class QuickStartTest
 
         Server server = new Server(0);
 
-        QuickStartWebApp webapp = new QuickStartWebApp();
-        webapp.setMode(QuickStartConfiguration.Mode.AUTO);
+        WebAppContext webapp = new WebAppContext();
+        webapp.addConfiguration(new QuickStartConfiguration(),
+                                new EnvConfiguration(),
+                                new PlusConfiguration(),
+                                new AnnotationConfiguration());
+        webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setWar(war);
         webapp.setContextPath("/");
 

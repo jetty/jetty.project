@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -1799,10 +1800,39 @@ public class XmlConfiguration
                 return null;
             });
         }
-        catch (Error | Exception e)
+        catch (Error e)
         {
             LOG.warn(e);
             throw e;
         }
+        catch (Exception e)
+        {
+            if (! isTerminateStartup(e))
+            {
+                LOG.warn(e);
+                throw e;
+            }
+        }
+    }
+    
+    public static boolean isTerminateStartup (Exception e)
+    {
+        if (e instanceof TerminateStartupException)
+            return true;
+        
+        if (e instanceof MultiException)
+        {
+            for (Throwable t: ((MultiException)e).getThrowables())
+            {
+                if (t instanceof TerminateStartupException)
+                    return true;
+            }
+            return false;
+        }
+        
+        if (e.getCause() instanceof TerminateStartupException)
+            return true;
+        
+        return false;
     }
 }
