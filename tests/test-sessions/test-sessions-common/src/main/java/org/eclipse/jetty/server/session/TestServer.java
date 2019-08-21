@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -91,6 +92,11 @@ public class TestServer
         c.setSessionDataStore(s);
         h.setSessionCache(c);
         return h;
+    }
+
+    public ServerConnector getConnector()
+    {
+        return _server.getBean(ServerConnector.class);
     }
 
     public void start() throws Exception

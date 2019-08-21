@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -85,9 +84,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
+    private final Collection<Listener> _durableListeners;
+    @Deprecated
+    private final List<Listener> _cyclicListeners = new ArrayList<>();
     private HttpFields _trailers;
     private final Supplier<HttpFields> _trailerSupplier = () -> _trailers;
-    private Collection<Listener> _listeners;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
@@ -110,7 +111,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         _executor = connector.getServer().getThreadPool();
         _requestLog = connector.getServer().getRequestLog();
-        _listeners = (connector instanceof AbstractConnector)
+        _durableListeners = (connector instanceof AbstractConnector)
             ? ((AbstractConnector)connector).getHttpChannelListeners()
             : connector.getBeans(HttpChannel.Listener.class);
 
@@ -137,44 +138,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state;
     }
 
+    @Deprecated
     public boolean addListener(Listener listener)
     {
-        // Add normally to a mutable ArrayList?
-        if (_listeners instanceof ArrayList)
-            return _listeners.add(listener);
-
-        // If it is not mutable and empty then replace with singleton
-        if (_listeners.isEmpty())
-        {
-            _listeners = Collections.singletonList(listener);
-            return true;
-        }
-
-        // If we are adding to a immutable non empty list, then copy to an ArrayList
-        _listeners = new ArrayList<>(_listeners);
-        return _listeners.add(listener);
+        return _cyclicListeners.add(listener);
     }
 
+    @Deprecated
     public boolean removeListener(Listener listener)
     {
-        // remove normally from a mutable ArrayList
-        if (_listeners instanceof ArrayList)
-            return _listeners.remove(listener);
-
-        // don't remove from an immutable list if it is not contained
-        if (!_listeners.contains(listener))
-            return false;
-
-        // replace immutable singleton list with empty list
-        if (_listeners.size() == 1)
-        {
-            _listeners = Collections.emptyList();
-            return true;
-        }
-
-        // Copy to mutable ArrayList and then remove
-        _listeners = new ArrayList<>(_listeners);
-        return _listeners.remove(listener);
+        return _cyclicListeners.remove(listener);
     }
 
     public long getBytesWritten()
@@ -324,10 +297,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written = 0;
         _trailers = null;
         _oldIdleTimeout = 0;
-        if (_listeners instanceof ArrayList)
-            _listeners.clear();
-        else
-            _listeners = Collections.emptyList();
+        _cyclicListeners.clear();
     }
 
     public void onAsyncWaitForContent()
@@ -1086,7 +1056,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent1(Function<Listener, Consumer<Request>> function, Request request)
     {
-        for (Listener listener : _listeners)
+        for (Listener listener : _durableListeners)
+        {
+            try
+            {
+                function.apply(listener).accept(request);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failure invoking listener " + listener, x);
+            }
+        }
+        for (Listener listener : _cyclicListeners)
         {
             try
             {
@@ -1101,7 +1082,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
     {
-        for (Listener listener : _listeners)
+        for (Listener listener : _durableListeners)
+        {
+            ByteBuffer view = content.slice();
+            try
+            {
+                function.apply(listener).accept(request, view);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failure invoking listener " + listener, x);
+            }
+        }
+        for (Listener listener : _cyclicListeners)
         {
             ByteBuffer view = content.slice();
             try
@@ -1117,7 +1110,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, Throwable>> function, Request request, Throwable failure)
     {
-        for (Listener listener : _listeners)
+        for (Listener listener : _durableListeners)
+        {
+            try
+            {
+                function.apply(listener).accept(request, failure);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failure invoking listener " + listener, x);
+            }
+        }
+        for (Listener listener : _cyclicListeners)
         {
             try
             {

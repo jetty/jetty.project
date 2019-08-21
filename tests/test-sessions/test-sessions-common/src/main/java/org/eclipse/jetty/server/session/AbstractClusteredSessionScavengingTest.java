@@ -77,8 +77,8 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
         TestServlet servlet1 = new TestServlet();
         ServletHolder holder1 = new ServletHolder(servlet1);
         ServletContextHandler context = server1.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        context.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getConnector().addBean(scopeListener);
         TestSessionListener listener1 = new TestSessionListener();
         context.getSessionHandler().addEventListener(listener1);
         context.addServlet(holder1, servletMapping);
@@ -96,8 +96,8 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             ((AbstractSessionDataStoreFactory)storeFactory2).setSavePeriodSec(0); //always save when the session exits
             TestServer server2 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
             ServletContextHandler context2 = server2.addContext(contextPath);
-            TestContextScopeListener scopeListener2 = new TestContextScopeListener();
-            context2.addEventListener(scopeListener2);
+            TestHttpChannelCompleteListener scopeListener2 = new TestHttpChannelCompleteListener();
+            server2.getConnector().addBean(scopeListener2);
             context2.addServlet(TestServlet.class, servletMapping);
             SessionHandler m2 = context2.getSessionHandler();
 
