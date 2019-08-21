@@ -218,7 +218,6 @@ public class SettingsBodyParser extends BodyParser
     public static SettingsFrame parseBody(final ByteBuffer buffer)
     {
         AtomicReference<SettingsFrame> frameRef = new AtomicReference<>();
-        // TODO should we do rate control here?
         SettingsBodyParser parser = new SettingsBodyParser(new HeaderParser(RateControl.NO_RATE_CONTROL), new Parser.Listener.Adapter()
         {
             @Override
