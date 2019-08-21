@@ -43,6 +43,7 @@ import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -85,12 +86,6 @@ public class Response implements HttpServletResponse
      * {@link #addHeader(String, String)}.
      */
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
-
-    /**
-     * If this string is found within the comment of a cookie added with {@link #addCookie(Cookie)}, then the cookie
-     * will be set as HTTP ONLY.
-     */
-    public static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
 
     private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
@@ -186,19 +181,10 @@ public class Response implements HttpServletResponse
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         String comment = cookie.getComment();
-        boolean httpOnly = cookie.isHttpOnly();
-
-        if (comment != null)
-        {
-            int i = comment.indexOf(HTTP_ONLY_COMMENT);
-            if (i >= 0)
-            {
-                httpOnly = true;
-                comment = StringUtil.strip(comment.trim(), HTTP_ONLY_COMMENT);
-                if (comment.length() == 0)
-                    comment = null;
-            }
-        }
+        // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+        boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
+        SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
+        comment = HttpCookie.getCommentWithoutAttributes(comment);
 
         addCookie(new HttpCookie(
             cookie.getName(),
@@ -209,7 +195,8 @@ public class Response implements HttpServletResponse
             httpOnly,
             cookie.getSecure(),
             comment,
-            cookie.getVersion()));
+            cookie.getVersion(),
+            sameSite));
     }
 
     /**
