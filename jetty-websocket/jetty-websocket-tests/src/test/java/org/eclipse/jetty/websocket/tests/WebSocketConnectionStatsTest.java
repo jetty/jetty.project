@@ -123,7 +123,6 @@ public class WebSocketConnectionStatsTest
 
     @Disabled("Flaky test see issue #3982")
     @Test
-    @Disabled // TODO this is a flakey test
     public void echoStatsTest() throws Exception
     {
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/testPath");
