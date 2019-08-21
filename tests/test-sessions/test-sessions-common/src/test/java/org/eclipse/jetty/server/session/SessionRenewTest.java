@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.HttpCookie;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -41,7 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -118,8 +116,8 @@ public class SessionRenewTest
         String contextPathA = "";
         String servletMapping = "/server";
         WebAppContext contextA = _server.addWebAppContext(".", contextPathA);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextA.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        _server.getConnector().addBean(scopeListener);
         contextA.setParentLoaderPriority(true);
         contextA.addServlet(TestServlet.class, servletMapping);
         
@@ -184,8 +182,8 @@ public class SessionRenewTest
         String contextPath = "";
         String servletMapping = "/server";
         WebAppContext context = _server.addWebAppContext(".", contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        context.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        _server.getConnector().addBean(scopeListener);
         context.setParentLoaderPriority(true);
         context.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionIdListener testListener = new TestHttpSessionIdListener();

@@ -23,7 +23,6 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -104,8 +103,8 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
         TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
             cacheFactory, storeFactory);
         WebAppContext wac1 = server1.addWebAppContext(warDir.getCanonicalPath(), contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        wac1.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getConnector().addBean(scopeListener);
         wac1.addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
         try

@@ -75,8 +75,8 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
         context1.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionListener listener = new TestHttpSessionListener();
         context1.getSessionHandler().addEventListener(listener);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        context1.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getConnector().addBean(scopeListener);
 
         try
         {
@@ -144,8 +144,8 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
         TestServer server = new TestServer(0, maxInactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        context.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getConnector().addBean(scopeListener);
         _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
 
         context.addServlet(TestServlet.class, servletMapping);
@@ -208,8 +208,8 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
         TestServer server = new TestServer(0, maxInactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        context.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getConnector().addBean(scopeListener);
         _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "/";

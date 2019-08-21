@@ -94,8 +94,8 @@ public class DirtyAttributeTest
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestDirtyServlet.class, "/test");
 
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        ctxA.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getConnector().addBean(scopeListener);
 
         server.start();
         int port = server.getPort();
