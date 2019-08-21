@@ -21,13 +21,23 @@ package org.eclipse.jetty.websocket.common.io;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 class ReadState
 {
-    public static final ByteBuffer NO_ACTION = BufferUtil.EMPTY_BUFFER;
+    private static final Logger LOG = Log.getLogger(ReadState.class);
 
     private State state = State.READING;
     private ByteBuffer buffer;
+
+    ByteBuffer getBuffer()
+    {
+        synchronized (this)
+        {
+            return buffer;
+        }
+    }
 
     boolean isReading()
     {
@@ -45,8 +55,38 @@ class ReadState
         }
     }
 
+    Action getAction(ByteBuffer buffer)
+    {
+        synchronized (this)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} getAction({})", this, BufferUtil.toDetailString(buffer));
+
+            switch (state)
+            {
+                case READING:
+                    return buffer.hasRemaining() ? Action.PARSE : Action.FILL;
+
+                case SUSPENDING:
+                    this.buffer = buffer;
+                    this.state = State.SUSPENDED;
+                    return Action.SUSPEND;
+
+                case EOF:
+                    return Action.EOF;
+
+                case DISCARDING:
+                    return buffer.hasRemaining() ? Action.DISCARD : Action.FILL;
+
+                case SUSPENDED:
+                default:
+                    throw new IllegalStateException(toString(state));
+            }
+        }
+    }
+
     /**
-     * Requests that reads from the connection be suspended when {@link #suspend()} is called.
+     * Requests that reads from the connection be suspended.
      *
      * @return whether the suspending was successful
      */
@@ -54,6 +94,9 @@ class ReadState
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("suspending {}", state);
+
             switch (state)
             {
                 case READING:
@@ -61,52 +104,6 @@ class ReadState
                     return true;
                 case EOF:
                     return false;
-                default:
-                    throw new IllegalStateException(toString(state));
-            }
-        }
-    }
-
-    public boolean suspendParse(ByteBuffer buffer)
-    {
-        synchronized (this)
-        {
-            switch (state)
-            {
-                case READING:
-                    return false;
-                case SUSPENDING:
-                    this.buffer = buffer;
-                    this.state = State.SUSPENDED;
-                    return true;
-                default:
-                    throw new IllegalStateException(toString(state));
-            }
-        }
-    }
-
-    /**
-     * Suspends reads from the connection if {@link #suspending()} was called.
-     *
-     * @return whether reads from the connection should be suspended
-     */
-    boolean suspend()
-    {
-        synchronized (this)
-        {
-            switch (state)
-            {
-                case READING:
-                    return false;
-                case SUSPENDING:
-                    state = State.SUSPENDED;
-                    return true;
-                case SUSPENDED:
-                    if (buffer == null)
-                        throw new IllegalStateException();
-                    return true;
-                case EOF:
-                    return true;
                 default:
                     throw new IllegalStateException(toString(state));
             }
@@ -121,18 +118,21 @@ class ReadState
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("resuming {}", state);
+
             switch (state)
             {
                 case SUSPENDING:
                     state = State.READING;
-                    return NO_ACTION;
+                    return null;
                 case SUSPENDED:
                     state = State.READING;
                     ByteBuffer bb = buffer;
                     buffer = null;
                     return bb;
                 case EOF:
-                    return NO_ACTION;
+                    return null;
                 default:
                     throw new IllegalStateException(toString(state));
             }
@@ -143,7 +143,33 @@ class ReadState
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("eof {}", state);
+
             state = State.EOF;
+        }
+    }
+
+    void discard()
+    {
+        synchronized (this)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("discard {}", state);
+
+            switch (state)
+            {
+                case READING:
+                case SUSPENDED:
+                case SUSPENDING:
+                    state = State.DISCARDING;
+                    break;
+
+                case DISCARDING:
+                case EOF:
+                default:
+                    throw new IllegalStateException(toString(state));
+            }
         }
     }
 
@@ -159,6 +185,15 @@ class ReadState
         {
             return toString(state);
         }
+    }
+
+    enum Action
+    {
+        FILL,
+        PARSE,
+        DISCARD,
+        SUSPEND,
+        EOF
     }
 
     private enum State
@@ -177,6 +212,11 @@ class ReadState
          * Suspended, won't read from the connection until resumed.
          */
         SUSPENDED,
+
+        /**
+         * Reading from connection and discarding bytes until EOF.
+         */
+        DISCARDING,
 
         /**
          * Won't read from the connection (terminal state).

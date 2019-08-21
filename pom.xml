@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.20-SNAPSHOT</version>
+  <version>9.4.21-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -318,7 +318,7 @@
             <id>attach-sources</id>
             <phase>process-classes</phase>
             <goals>
-              <goal>jar-no-fork</goal>
+              <goal>jar</goal>
             </goals>
             <configuration>
               <archive>
@@ -458,6 +458,7 @@
             <configLocation>jetty-checkstyle.xml</configLocation>
             <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
             <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
           </configuration>
           <dependencies>
             <dependency>
@@ -560,11 +561,6 @@
               </manifestEntries>
             </archive>
           </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-gpg-plugin</artifactId>
-          <version>1.6</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1304,16 +1300,28 @@
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
+            <artifactId>maven-source-plugin</artifactId>
             <executions>
               <execution>
+                <id>attach-sources</id>
                 <goals>
                   <goal>jar</goal>
                 </goals>
               </execution>
             </executions>
           </plugin>
-          <!-- already part of the release-jetty.sh script
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
@@ -1328,7 +1336,6 @@
               </execution>
             </executions>
           </plugin>
-          -->
         </plugins>
       </build>
     </profile>

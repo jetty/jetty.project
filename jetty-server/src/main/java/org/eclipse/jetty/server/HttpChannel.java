@@ -725,8 +725,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
 
+        _request.onCompleted();
         notifyComplete(_request);
-
         _transport.onCompleted();
     }
 

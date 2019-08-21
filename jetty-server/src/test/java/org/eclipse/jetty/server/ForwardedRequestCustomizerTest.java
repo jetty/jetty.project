@@ -21,6 +21,9 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,602 +32,630 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ForwardedRequestCustomizerTest
 {
-    private Server _server;
-    private LocalConnector _connector;
-    private RequestHandler _handler;
-    final AtomicBoolean _wasSecure = new AtomicBoolean(false);
-    final AtomicReference<String> _sslSession = new AtomicReference<>();
-    final AtomicReference<String> _sslCertificate = new AtomicReference<>();
-    final AtomicReference<String> _scheme = new AtomicReference<>();
-    final AtomicReference<String> _serverName = new AtomicReference<>();
-    final AtomicReference<Integer> _serverPort = new AtomicReference<>();
-    final AtomicReference<String> _remoteAddr = new AtomicReference<>();
-    final AtomicReference<Integer> _remotePort = new AtomicReference<>();
-    final AtomicReference<String> _requestURL = new AtomicReference<>();
+    private Server server;
+    private RequestHandler handler;
+    private LocalConnector connector;
+    private LocalConnector connectorConfigured;
+    private ForwardedRequestCustomizer customizer;
+    private ForwardedRequestCustomizer customizerConfigured;
 
-    ForwardedRequestCustomizer _customizer;
+    private static class Actual
+    {
+        final AtomicReference<String> scheme = new AtomicReference<>();
+        final AtomicBoolean wasSecure = new AtomicBoolean(false);
+        final AtomicReference<String> serverName = new AtomicReference<>();
+        final AtomicReference<Integer> serverPort = new AtomicReference<>();
+        final AtomicReference<String> requestURL = new AtomicReference<>();
+        final AtomicReference<String> remoteAddr = new AtomicReference<>();
+        final AtomicReference<Integer> remotePort = new AtomicReference<>();
+        final AtomicReference<String> sslSession = new AtomicReference<>();
+        final AtomicReference<String> sslCertificate = new AtomicReference<>();
+    }
+
+    private Actual actual;
 
     @BeforeEach
     public void init() throws Exception
     {
-        _server = new Server();
+        server = new Server();
+
+        // Default behavior Connector
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.setInputBufferSize(1024);
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);
         http.getHttpConfiguration().setOutputBufferSize(2048);
-        http.getHttpConfiguration().addCustomizer(_customizer = new ForwardedRequestCustomizer());
-        _connector = new LocalConnector(_server, http);
-        _server.addConnector(_connector);
-        _handler = new RequestHandler();
-        _server.setHandler(_handler);
+        customizer = new ForwardedRequestCustomizer();
+        http.getHttpConfiguration().addCustomizer(customizer);
+        connector = new LocalConnector(server, http);
+        server.addConnector(connector);
 
-        _handler._checker = (request, response) ->
+        // Configured behavior Connector
+        http = new HttpConnectionFactory();
+        http.setInputBufferSize(1024);
+        http.getHttpConfiguration().setRequestHeaderSize(512);
+        http.getHttpConfiguration().setResponseHeaderSize(512);
+        http.getHttpConfiguration().setOutputBufferSize(2048);
+        customizerConfigured = new ForwardedRequestCustomizer();
+        customizerConfigured.setForwardedHeader("Jetty-Forwarded");
+        customizerConfigured.setForwardedHostHeader("Jetty-Forwarded-Host");
+        customizerConfigured.setForwardedServerHeader("Jetty-Forwarded-Server");
+        customizerConfigured.setForwardedProtoHeader("Jetty-Forwarded-Proto");
+        customizerConfigured.setForwardedForHeader("Jetty-Forwarded-For");
+        customizerConfigured.setForwardedPortHeader("Jetty-Forwarded-Port");
+        customizerConfigured.setForwardedHttpsHeader("Jetty-Proxied-Https");
+        customizerConfigured.setForwardedCipherSuiteHeader("Jetty-Proxy-Auth-Cert");
+        customizerConfigured.setForwardedSslSessionIdHeader("Jetty-Proxy-Ssl-Id");
+
+        http.getHttpConfiguration().addCustomizer(customizerConfigured);
+        connectorConfigured = new LocalConnector(server, http);
+        server.addConnector(connectorConfigured);
+
+        handler = new RequestHandler();
+        server.setHandler(handler);
+
+        handler.requestTester = (request, response) ->
         {
-            _wasSecure.set(request.isSecure());
-            _sslSession.set(String.valueOf(request.getAttribute("javax.servlet.request.ssl_session_id")));
-            _sslCertificate.set(String.valueOf(request.getAttribute("javax.servlet.request.cipher_suite")));
-            _scheme.set(request.getScheme());
-            _serverName.set(request.getServerName());
-            _serverPort.set(request.getServerPort());
-            _remoteAddr.set(request.getRemoteAddr());
-            _remotePort.set(request.getRemotePort());
-            _requestURL.set(request.getRequestURL().toString());
+            actual = new Actual();
+            actual.wasSecure.set(request.isSecure());
+            actual.sslSession.set(String.valueOf(request.getAttribute("javax.servlet.request.ssl_session_id")));
+            actual.sslCertificate.set(String.valueOf(request.getAttribute("javax.servlet.request.cipher_suite")));
+            actual.scheme.set(request.getScheme());
+            actual.serverName.set(request.getServerName());
+            actual.serverPort.set(request.getServerPort());
+            actual.remoteAddr.set(request.getRemoteAddr());
+            actual.remotePort.set(request.getRemotePort());
+            actual.requestURL.set(request.getRequestURL().toString());
             return true;
         };
 
-        _server.start();
+        server.start();
     }
 
     @AfterEach
     public void destroy() throws Exception
     {
-        _server.stop();
+        server.stop();
     }
 
-    @Test
-    public void testHostIpv4() throws Exception
+    public static Stream<Arguments> cases()
     {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: 1.2.3.4:2222\n" +
-                    "\n"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("1.2.3.4"));
-        assertThat("serverPort", _serverPort.get(), is(2222));
-        assertThat("requestURL", _requestURL.get(), is("http://1.2.3.4:2222/"));
+        return Stream.of(
+            // Host IPv4
+            Arguments.of(
+                new Request("IPv4 Host Only")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: 1.2.3.4:2222"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("1.2.3.4").serverPort(2222)
+                    .requestURL("http://1.2.3.4:2222/")
+            ),
+            Arguments.of(new Request("IPv6 Host Only")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: [::1]:2222"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("[::1]").serverPort(2222)
+                    .requestURL("http://[::1]:2222/")
+            ),
+            Arguments.of(new Request("IPv4 in Request Line")
+                    .headers(
+                        "GET http://1.2.3.4:2222/ HTTP/1.1",
+                        "Host: wrong"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("1.2.3.4").serverPort(2222)
+                    .requestURL("http://1.2.3.4:2222/")
+            ),
+            Arguments.of(new Request("IPv6 in Request Line")
+                    .headers(
+                        "GET http://[::1]:2222/ HTTP/1.1",
+                        "Host: wrong"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("[::1]").serverPort(2222)
+                    .requestURL("http://[::1]:2222/")
+            ),
+
+            // =================================================================
+            // https://tools.ietf.org/html/rfc7239#section-4  - examples of syntax
+            Arguments.of(new Request("RFC7239 Examples: Section 4")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: for=\"_gazonk\"",
+                        "Forwarded: For=\"[2001:db8:cafe::17]:4711\"",
+                        "Forwarded: for=192.0.2.60;proto=http;by=203.0.113.43",
+                        "Forwarded: for=192.0.2.43, for=198.51.100.17"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("[2001:db8:cafe::17]").remotePort(4711)
+            ),
+
+            // https://tools.ietf.org/html/rfc7239#section-7  - Examples of syntax with regards to HTTP header fields
+            Arguments.of(new Request("RFC7239 Examples: Section 7")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: for=192.0.2.43,for=\"[2001:db8:cafe::17]\",for=unknown"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("192.0.2.43").remotePort(0)
+            ),
+
+            // (same as above, but with spaces, as shown in RFC section 7.1)
+            Arguments.of(new Request("RFC7239 Examples: Section 7 (spaced)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("192.0.2.43").remotePort(0)
+            ),
+
+            // (same as above, but as multiple headers, as shown in RFC section 7.1)
+            Arguments.of(new Request("RFC7239 Examples: Section 7 (multi header)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: for=192.0.2.43",
+                        "Forwarded: for=\"[2001:db8:cafe::17]\", for=unknown"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("192.0.2.43").remotePort(0)
+            ),
+
+            // https://tools.ietf.org/html/rfc7239#section-7.4  - Transition
+            Arguments.of(new Request("RFC7239 Examples: Section 7.4 (old syntax)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 192.0.2.43, 2001:db8:cafe::17"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("192.0.2.43").remotePort(0)
+            ),
+            Arguments.of(new Request("RFC7239 Examples: Section 7.4 (new syntax)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: for=192.0.2.43, for=\"[2001:db8:cafe::17]\""
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("192.0.2.43").remotePort(0)
+            ),
+
+            // https://tools.ietf.org/html/rfc7239#section-7.5  - Example Usage
+            Arguments.of(new Request("RFC7239 Examples: Section 7.5")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: for=192.0.2.43,for=198.51.100.17;by=203.0.113.60;proto=http;host=example.com"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("example.com").serverPort(80)
+                    .requestURL("http://example.com/")
+                    .remoteAddr("192.0.2.43").remotePort(0)
+            ),
+
+            // Forwarded, proto only
+            Arguments.of(new Request("RFC7239: Forwarded proto only")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: proto=https"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("myhost").serverPort(443)
+                    .requestURL("https://myhost/")
+            ),
+
+            // =================================================================
+            // X-Forwarded-* usages
+            Arguments.of(new Request("X-Forwarded-Proto (old syntax)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-Proto: https"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("myhost").serverPort(443)
+                    .requestURL("https://myhost/")
+            ),
+            Arguments.of(new Request("X-Forwarded-For (multiple headers)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 10.9.8.7,6.5.4.3",
+                        "X-Forwarded-For: 8.9.8.7,7.5.4.3"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("10.9.8.7").remotePort(0)
+            ),
+            Arguments.of(new Request("X-Forwarded-For (IPv4 with port)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 10.9.8.7:1111,6.5.4.3:2222"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("10.9.8.7").remotePort(1111)
+            ),
+            Arguments.of(new Request("X-Forwarded-For (IPv6 with port)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: [2001:db8:cafe::17]:1111,6.5.4.3:2222"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("[2001:db8:cafe::17]").remotePort(1111)
+            ),
+            Arguments.of(new Request("X-Forwarded-For and X-Forwarded-Port (once)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 1:2:3:4:5:6:7:8",
+                        "X-Forwarded-Port: 2222"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(2222)
+                    .requestURL("http://myhost:2222/")
+                    .remoteAddr("[1:2:3:4:5:6:7:8]").remotePort(0)
+            ),
+            Arguments.of(new Request("X-Forwarded-For and X-Forwarded-Port (multiple times)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-Port: 2222", // this wins
+                        "X-Forwarded-For: 1:2:3:4:5:6:7:8", // this wins
+                        "X-Forwarded-For: 7:7:7:7:7:7:7:7", // ignored
+                        "X-Forwarded-Port: 3333" // ignored
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(2222)
+                    .requestURL("http://myhost:2222/")
+                    .remoteAddr("[1:2:3:4:5:6:7:8]").remotePort(0)
+            ),
+            Arguments.of(new Request("X-Forwarded-Port")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-Port: 4444", // resets server port
+                        "X-Forwarded-For: 192.168.1.200"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(4444)
+                    .requestURL("http://myhost:4444/")
+                    .remoteAddr("192.168.1.200").remotePort(0)
+            ),
+            Arguments.of(new Request("X-Forwarded-Port (ForwardedPortAsAuthority==false)")
+                    .configureCustomizer((customizer) -> customizer.setForwardedPortAsAuthority(false))
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-Port: 4444",
+                        "X-Forwarded-For: 192.168.1.200"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("192.168.1.200").remotePort(4444)
+            ),
+            Arguments.of(new Request("X-Forwarded-Port for Late Host header")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "X-Forwarded-Port: 4444", // this order is intentional
+                        "X-Forwarded-For: 192.168.1.200",
+                        "Host: myhost" // leave this as last header
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(4444)
+                    .requestURL("http://myhost:4444/")
+                    .remoteAddr("192.168.1.200").remotePort(0)
+            ),
+            Arguments.of(new Request("X-Forwarded-* (all headers)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-Proto: https",
+                        "X-Forwarded-Host: www.example.com",
+                        "X-Forwarded-Port: 4333",
+                        "X-Forwarded-For: 8.5.4.3:2222",
+                        "X-Forwarded-Server: fw.example.com"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("www.example.com").serverPort(4333)
+                    .requestURL("https://www.example.com:4333/")
+                    .remoteAddr("8.5.4.3").remotePort(2222)
+            ),
+
+            // =================================================================
+            // Mixed Behavior
+            Arguments.of(new Request("RFC7239 mixed with X-Forwarded-* headers")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222",
+                        "X-Forwarded-Port: 3333",
+                        "Forwarded: for=192.0.2.43,for=198.51.100.17;by=203.0.113.60;proto=http;host=example.com",
+                        "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("example.com").serverPort(80)
+                    .requestURL("http://example.com/")
+                    .remoteAddr("192.0.2.43").remotePort(0)
+            ),
+
+            // =================================================================
+            // Legacy Headers
+            Arguments.of(new Request("X-Proxied-Https")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Proxied-Https: on"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("myhost").serverPort(443)
+                    .requestURL("https://myhost/")
+                    .remoteAddr("0.0.0.0").remotePort(0)
+            ),
+            Arguments.of(new Request("Proxy-Ssl-Id (setSslIsSecure==false)")
+                    .configureCustomizer((customizer) -> customizer.setSslIsSecure(false))
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Proxy-Ssl-Id: Wibble"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("0.0.0.0").remotePort(0)
+                    .sslSession("Wibble")
+            ),
+            Arguments.of(new Request("Proxy-Ssl-Id (setSslIsSecure==true)")
+                    .configureCustomizer((customizer) -> customizer.setSslIsSecure(true))
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Proxy-Ssl-Id: 0123456789abcdef"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("myhost").serverPort(443)
+                    .requestURL("https://myhost/")
+                    .remoteAddr("0.0.0.0").remotePort(0)
+                    .sslSession("0123456789abcdef")
+            ),
+            Arguments.of(new Request("Proxy-Auth-Cert (setSslIsSecure==false)")
+                    .configureCustomizer((customizer) -> customizer.setSslIsSecure(false))
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Proxy-auth-cert: Wibble"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("0.0.0.0").remotePort(0)
+                    .sslCertificate("Wibble")
+            ),
+            Arguments.of(new Request("Proxy-Auth-Cert (setSslIsSecure==true)")
+                    .configureCustomizer((customizer) -> customizer.setSslIsSecure(true))
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Proxy-auth-cert: 0123456789abcdef"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("myhost").serverPort(443)
+                    .requestURL("https://myhost/")
+                    .remoteAddr("0.0.0.0").remotePort(0)
+                    .sslCertificate("0123456789abcdef")
+            )
+        );
     }
 
-    @Test
-    public void testHostIpv6() throws Exception
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("cases")
+    @SuppressWarnings("unused")
+    public void testDefaultBehavior(Request request, Expectations expectations) throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: [::1]:2222\n" +
-                    "\n"));
+        request.configure(customizer);
+
+        String rawRequest = request.getRawRequest((header) -> header);
+        System.out.println(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("[::1]"));
-        assertThat("serverPort", _serverPort.get(), is(2222));
-        assertThat("requestURL", _requestURL.get(), is("http://[::1]:2222/"));
+
+        expectations.accept(actual);
     }
 
-    @Test
-    public void testURIIpv4() throws Exception
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("cases")
+    @SuppressWarnings("unused")
+    public void testConfiguredBehavior(Request request, Expectations expectations) throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET http://1.2.3.4:2222/ HTTP/1.1\n" +
-                    "Host: wrong\n" +
-                    "\n"));
+        request.configure(customizerConfigured);
+
+        String rawRequest = request.getRawRequest((header) -> header
+            .replaceFirst("X-Forwarded-", "Jetty-Forwarded-")
+            .replaceFirst("Forwarded:", "Jetty-Forwarded:")
+            .replaceFirst("X-Proxied-Https:", "Jetty-Proxied-Https:")
+            .replaceFirst("Proxy-Ssl-Id:", "Jetty-Proxy-Ssl-Id:")
+            .replaceFirst("Proxy-auth-cert:", "Jetty-Proxy-Auth-Cert:"));
+        System.out.println(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(connectorConfigured.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("1.2.3.4"));
-        assertThat("serverPort", _serverPort.get(), is(2222));
-        assertThat("requestURL", _requestURL.get(), is("http://1.2.3.4:2222/"));
+
+        expectations.accept(actual);
     }
 
-    @Test
-    public void testURIIpv6() throws Exception
+    private static class Request
     {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET http://[::1]:2222/ HTTP/1.1\n" +
-                    "Host: wrong\n" +
-                    "\n"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("[::1]"));
-        assertThat("serverPort", _serverPort.get(), is(2222));
-        assertThat("requestURL", _requestURL.get(), is("http://[::1]:2222/"));
+        String description;
+        String[] requestHeaders;
+        Consumer<ForwardedRequestCustomizer> forwardedRequestCustomizerConsumer;
+
+        public Request(String description)
+        {
+            this.description = description;
+        }
+
+        public Request headers(String... headers)
+        {
+            this.requestHeaders = headers;
+            return this;
+        }
+
+        public Request configureCustomizer(Consumer<ForwardedRequestCustomizer> forwardedRequestCustomizerConsumer)
+        {
+            this.forwardedRequestCustomizerConsumer = forwardedRequestCustomizerConsumer;
+            return this;
+        }
+
+        public void configure(ForwardedRequestCustomizer customizer)
+        {
+            if (forwardedRequestCustomizerConsumer != null)
+            {
+                forwardedRequestCustomizerConsumer.accept(customizer);
+            }
+        }
+
+        public String getRawRequest(Function<String, String> headerManip)
+        {
+            StringBuilder request = new StringBuilder();
+            for (String header : requestHeaders)
+            {
+                request.append(headerManip.apply(header)).append('\n');
+            }
+            request.append('\n');
+            return request.toString();
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.description;
+        }
     }
 
-    /**
-     * <a href="https://tools.ietf.org/html/rfc7239#section-4">RFC 7239: Section 4</a>
-     *
-     * Examples of syntax.
-     */
-    @Test
-    public void testRFC7239_Examples_4() throws Exception
+    private static class Expectations implements Consumer<Actual>
     {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Forwarded: for=\"_gazonk\"\n" +
-                    "Forwarded: For=\"[2001:db8:cafe::17]:4711\"\n" +
-                    "Forwarded: for=192.0.2.60;proto=http;by=203.0.113.43\n" +
-                    "Forwarded: for=192.0.2.43, for=198.51.100.17\n" +
-                    "\n"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("[2001:db8:cafe::17]"));
-        assertThat("remotePort", _remotePort.get(), is(4711));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
-    }
+        String expectedScheme;
+        String expectedServerName;
+        int expectedServerPort;
+        String expectedRequestURL;
+        String expectedRemoteAddr = "0.0.0.0";
+        int expectedRemotePort = 0;
+        String expectedSslSession;
+        String expectedSslCertificate;
 
-    /**
-     * <a href="https://tools.ietf.org/html/rfc7239#section-7.1">RFC 7239: Section 7.1</a>
-     *
-     * Examples of syntax with regards to HTTP header fields
-     */
-    @Test
-    public void testRFC7239_Examples_7_1() throws Exception
-    {
-        // Without spaces
-        HttpTester.Response response1 = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Forwarded: for=192.0.2.43,for=\"[2001:db8:cafe::17]\",for=unknown\n" +
-                    "\n"));
+        @Override
+        public void accept(Actual actual)
+        {
+            assertThat("scheme", actual.scheme.get(), is(expectedScheme));
+            if (actual.scheme.equals("https"))
+            {
+                assertTrue(actual.wasSecure.get(), "wasSecure");
+            }
+            assertThat("serverName", actual.serverName.get(), is(expectedServerName));
+            assertThat("serverPort", actual.serverPort.get(), is(expectedServerPort));
+            assertThat("requestURL", actual.requestURL.get(), is(expectedRequestURL));
+            if (expectedRemoteAddr != null)
+            {
+                assertThat("remoteAddr", actual.remoteAddr.get(), is(expectedRemoteAddr));
+                assertThat("remotePort", actual.remotePort.get(), is(expectedRemotePort));
+            }
+            if (expectedSslSession != null)
+            {
+                assertThat("sslSession", actual.sslSession.get(), is(expectedSslSession));
+            }
+            if (expectedSslCertificate != null)
+            {
+                assertThat("sslCertificate", actual.sslCertificate.get(), is(expectedSslCertificate));
+            }
+        }
 
-        assertThat("status", response1.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
+        public Expectations scheme(String scheme)
+        {
+            this.expectedScheme = scheme;
+            return this;
+        }
 
-        // With spaces
-        HttpTester.Response response2 = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Forwarded: for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown\n" +
-                    "\n"));
-        assertThat("status", response2.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
+        public Expectations serverName(String name)
+        {
+            this.expectedServerName = name;
+            return this;
+        }
 
-        // As multiple headers
-        HttpTester.Response response3 = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Forwarded: for=192.0.2.43\n" +
-                    "Forwarded: for=\"[2001:db8:cafe::17]\", for=unknown\n" +
-                    "\n"));
+        public Expectations serverPort(int port)
+        {
+            this.expectedServerPort = port;
+            return this;
+        }
 
-        assertThat("status", response3.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
-    }
+        public Expectations requestURL(String requestURL)
+        {
+            this.expectedRequestURL = requestURL;
+            return this;
+        }
 
-    /**
-     * <a href="https://tools.ietf.org/html/rfc7239#section-7.4">RFC 7239: Section 7.4</a>
-     *
-     * Transition
-     */
-    @Test
-    public void testRFC7239_Examples_7_4() throws Exception
-    {
-        // Old syntax
-        HttpTester.Response response1 = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-For: 192.0.2.43, 2001:db8:cafe::17\n" +
-                    "\n"));
+        public Expectations remoteAddr(String remoteAddr)
+        {
+            this.expectedRemoteAddr = remoteAddr;
+            return this;
+        }
 
-        assertThat("status", response1.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
+        public Expectations remotePort(int remotePort)
+        {
+            this.expectedRemotePort = remotePort;
+            return this;
+        }
 
-        // New syntax
-        HttpTester.Response response2 = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Forwarded: for=192.0.2.43, for=\"[2001:db8:cafe::17]\"\n" +
-                    "\n"));
+        public Expectations sslSession(String sslSession)
+        {
+            this.expectedSslSession = sslSession;
+            return this;
+        }
 
-        assertThat("status", response2.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
-    }
-
-    /**
-     * <a href="https://tools.ietf.org/html/rfc7239#section-7.5">RFC 7239: Section 7.5</a>
-     *
-     * Example Usage
-     */
-    @Test
-    public void testRFC7239_Examples_7_5() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Forwarded: for=192.0.2.43,for=198.51.100.17;by=203.0.113.60;proto=http;host=example.com\n" +
-                    "\n"));
-
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("example.com"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://example.com/"));
-    }
-
-    @Test
-    public void testProto_OldSyntax() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-Proto: https\n" +
-                    "\n"));
-
-        assertTrue(_wasSecure.get(), "wasSecure");
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("https"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(443));
-        assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
-    }
-
-    @Test
-    public void testRFC7239_Proto() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Forwarded: proto=https\n" +
-                    "\n"));
-
-        assertTrue(_wasSecure.get(), "wasSecure");
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("https"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(443));
-        assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
-    }
-
-    @Test
-    public void testFor() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-For: 10.9.8.7,6.5.4.3\n" +
-                    "X-Forwarded-For: 8.9.8.7,7.5.4.3\n" +
-                    "\n"));
-
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("10.9.8.7"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
-    }
-
-    @Test
-    public void testForIpv4WithPort() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-For: 10.9.8.7:1111,6.5.4.3:2222\n" +
-                    "\n"));
-
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("10.9.8.7"));
-        assertThat("remotePort", _remotePort.get(), is(1111));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
-    }
-
-    @Test
-    public void testForIpv6WithPort() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-For: [2001:db8:cafe::17]:1111,6.5.4.3:2222\n" +
-                    "\n"));
-
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("[2001:db8:cafe::17]"));
-        assertThat("remotePort", _remotePort.get(), is(1111));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
-    }
-
-    @Test
-    public void testForIpv6AndPort() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-For: 1:2:3:4:5:6:7:8\n" +
-                    "X-Forwarded-Port: 2222\n" +
-                    "\n"));
-
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(2222));
-        assertThat("remoteAddr", _remoteAddr.get(), is("[1:2:3:4:5:6:7:8]"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost:2222/"));
-    }
-
-    @Test
-    public void testForIpv6AndPort_MultiField() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-Port: 2222\n" +
-                    "X-Forwarded-For: 1:2:3:4:5:6:7:8\n" +
-                    "X-Forwarded-For: 7:7:7:7:7:7:7:7\n" +
-                    "X-Forwarded-Port: 3333\n" +
-                    "\n"));
-
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(2222));
-        assertThat("remoteAddr", _remoteAddr.get(), is("[1:2:3:4:5:6:7:8]"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost:2222/"));
-    }
-
-    @Test
-    public void testLegacyProto() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Proxied-Https: on\n" +
-                    "\n"));
-        assertTrue(_wasSecure.get(), "wasSecure");
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("https"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(443));
-        assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
-    }
-
-    @Test
-    public void testSslSession() throws Exception
-    {
-        _customizer.setSslIsSecure(false);
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Proxy-Ssl-Id: Wibble\n" +
-                    "\n"));
-
-        assertFalse(_wasSecure.get(), "wasSecure");
-        assertThat("sslSession", _sslSession.get(), is("Wibble"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
-
-        _customizer.setSslIsSecure(true);
-        response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Proxy-Ssl-Id: 0123456789abcdef\n" +
-                    "\n"));
-
-        assertTrue(_wasSecure.get(), "wasSecure");
-        assertThat("sslSession", _sslSession.get(), is("0123456789abcdef"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("https"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(443));
-        assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
-    }
-
-    @Test
-    public void testSslCertificate() throws Exception
-    {
-        _customizer.setSslIsSecure(false);
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Proxy-auth-cert: Wibble\n" +
-                    "\n"));
-
-        assertFalse(_wasSecure.get(), "wasSecure");
-        assertThat("sslCertificate", _sslCertificate.get(), is("Wibble"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
-
-        _customizer.setSslIsSecure(true);
-        response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "Proxy-auth-cert: 0123456789abcdef\n" +
-                    "\n"));
-
-        assertTrue(_wasSecure.get(), "wasSecure");
-        assertThat("sslCertificate", _sslCertificate.get(), is("0123456789abcdef"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("https"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(443));
-        assertThat("remoteAddr", _remoteAddr.get(), is("0.0.0.0"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("https://myhost/"));
-    }
-
-    /**
-     * Resetting the server port via a forwarding header
-     */
-    @Test
-    public void testPort_For() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-Port: 4444\n" +
-                    "X-Forwarded-For: 192.168.1.200\n" +
-                    "\n"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(4444));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.168.1.200"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost:4444/"));
-    }
-
-    /**
-     * Resetting the server port via a forwarding header
-     */
-    @Test
-    public void testRemote_Port_For() throws Exception
-    {
-        _customizer.setForwardedPortAsAuthority(false);
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-Port: 4444\n" +
-                    "X-Forwarded-For: 192.168.1.200\n" +
-                    "\n"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.168.1.200"));
-        assertThat("remotePort", _remotePort.get(), is(4444));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost/"));
-    }
-
-    /**
-     * Test setting the server Port before the "Host" header has been seen.
-     */
-    @Test
-    public void testPort_For_LateHost() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "X-Forwarded-Port: 4444\n" + // this order is intentional
-                    "X-Forwarded-For: 192.168.1.200\n" +
-                    "Host: myhost\n" + // leave this as the last header
-                    "\n"));
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("myhost"));
-        assertThat("serverPort", _serverPort.get(), is(4444));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.168.1.200"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://myhost:4444/"));
-    }
-
-    @Test
-    public void testMixed_For_Port_RFC_For() throws Exception
-    {
-        HttpTester.Response response = HttpTester.parseResponse(
-            _connector.getResponse(
-                "GET / HTTP/1.1\n" +
-                    "Host: myhost\n" +
-                    "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222\n" +
-                    "X-Forwarded-Port: 3333\n" +
-                    "Forwarded: for=192.0.2.43,for=198.51.100.17;by=203.0.113.60;proto=http;host=example.com\n" +
-                    "X-Forwarded-For: 11.9.8.7:1111,8.5.4.3:2222\n" +
-                    "\n"));
-
-        assertThat("status", response.getStatus(), is(200));
-        assertThat("scheme", _scheme.get(), is("http"));
-        assertThat("serverName", _serverName.get(), is("example.com"));
-        assertThat("serverPort", _serverPort.get(), is(80));
-        assertThat("remoteAddr", _remoteAddr.get(), is("192.0.2.43"));
-        assertThat("remotePort", _remotePort.get(), is(0));
-        assertThat("requestURL", _requestURL.get(), is("http://example.com/"));
+        public Expectations sslCertificate(String sslCertificate)
+        {
+            this.expectedSslCertificate = sslCertificate;
+            return this;
+        }
     }
 
     interface RequestTester
@@ -634,14 +665,15 @@ public class ForwardedRequestCustomizerTest
 
     private class RequestHandler extends AbstractHandler
     {
-        private RequestTester _checker;
+        private RequestTester requestTester;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, org.eclipse.jetty.server.Request baseRequest,
+                           HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
 
-            if (_checker != null && _checker.check(request, response))
+            if (requestTester != null && requestTester.check(request, response))
                 response.setStatus(200);
             else
                 response.sendError(500);

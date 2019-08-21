@@ -786,6 +786,8 @@ public class MultiPartFormInputStreamTest
         assertThat(stuff.getContentType(), is("text/plain"));
         assertThat(stuff.getHeader("Content-Type"), is("text/plain"));
         assertThat(stuff.getHeaders("content-type").size(), is(1));
+        assertNotNull(stuff.getHeaders("non existing part"));
+        assertThat(stuff.getHeaders("non existing part").size(), is(0));
         assertThat(stuff.getHeader("content-disposition"), is("form-data; name=\"stuff\"; filename=\"" + filename + "\""));
         assertThat(stuff.getHeaderNames().size(), is(2));
         assertThat(stuff.getSize(), is(51L));

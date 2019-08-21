@@ -121,6 +121,7 @@ public class WebSocketConnectionStatsTest
         return buffer.position() - pos;
     }
 
+    @Disabled("Flaky test see issue #3982")
     @Test
     @Disabled // TODO this is a flakey test
     public void echoStatsTest() throws Exception

@@ -1,11 +1,56 @@
-jetty-9.4.20-SNAPSHOT
+jetty-9.4.21-SNAPSHOT
+
+jetty-9.4.20.v20190813 - 13 August 2019
+ + 300 Implement Deflater / Inflater Object Pool
+ + 2061 WebSocket hangs in blockingWrite
+ + 3601 HTTP2 stall on reset streams
+ + 3648 javax.websocket client container incorrectly creates Server
+   SslContextFactory
+ + 3698 Missing WebSocket ServerContainer after server restart
+ + 3700 stackoverflow in WebAppClassLoaderUrlStreamTest
+ + 3708 Swap various java.lang.String replace() methods for better performant
+   ones
+ + 3731 Add testing of CDI behaviors
+ + 3736 NPE from WebAppClassLoader during CDI
+ + 3746 ClassCastException in WriteFlusher.java - IdleState cannot be cast to
+   FailedState
+ + 3749 Memory leak while processing AsyncListener annotations
+ + 3755 ServerWithAnnotations doesn't do anything
+ + 3758 Avoid sending empty trailer frames for http/2 requests
+ + 3782 X-Forwarded-Port overrides X-Forwarded-For
+ + 3786 ALPN support for Java 14
+ + 3798 ClasspathPattern match method throws NPE. URI can be null
+ + 3799 Programmatically added listeners from
+   ServletContextListener.contextInitialzed() are not called
+ + 3804 Weld/CDI XML backwards compat
+ + 3805 XmlConfiguration odd behavior for numbers
+ + 3806 The error page handler didn't process correctly in proxy
+ + 3815 PropertyFileLoginModule adds user principle as a role
+ + 3822 trustAll will not work on some servers
+ + 3829 Avoid sending empty trailer frames for http/2 responses
+ + 3835 WebSocketSession are not being stopped properly
+ + 3840 Byte-range request performance problems with large files
+ + 3856 Different behaviour with maxFormContentSize=0 if Content-Length header
+   is present/missing
+ + 3876 WebSocketPartialListener is only called for initial frames, not for
+   continuation frames
+ + 3884 @WebSocket without @OnWebSocketMessage handler fails when receiving a
+   continuation frame
+ + 3888 BufferUtil.toBuffer(Resource resource,boolean direct) does not like
+   large (4G+) Resources
+ + 3906 Fix for #3840 breaks Path encapsulation in PathResource
+ + 3929 Deadlock between new HTTP2Connection() and Server.stop()
+ + 3940 Double initialization of Log
+ + 3957 CustomRequestLog bad usage of MethodHandles.lookup()
+ + 3960 Fix HttpConfiguration copy constructor
+ + 3969 X-Forwarded-Port header customization isn't possible
 
 jetty-9.4.19.v20190610 - 10 June 2019
  + 2909 Remove B64Code
  + 3332 jetty-maven-plugin - transitive dependencies not loaded from
    "target/classes"
- + 3498 WebSocket Session.suspend() now suspends incoming frames instead
-   of reads
+ + 3498 WebSocket Session.suspend() now suspends incoming frames instead of
+   reads
  + 3534 Use System nanoTime, not currentTimeMillis for IdleTimeout
  + 3550 Server becomes unresponsive after sitting idle from a load spike
  + 3562 InetAccessHandler should be able to apply to a certain port or
