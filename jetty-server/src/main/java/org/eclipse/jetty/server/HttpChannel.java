@@ -85,8 +85,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Request _request;
     private final Response _response;
     private final Collection<Listener> _durableListeners;
-    @Deprecated
-    private final List<Listener> _cyclicListeners = new ArrayList<>();
     private HttpFields _trailers;
     private final Supplier<HttpFields> _trailerSupplier = () -> _trailers;
     private MetaData.Response _committedMetaData;
@@ -135,18 +133,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public HttpChannelState getState()
     {
         return _state;
-    }
-
-    @Deprecated
-    public boolean addListener(Listener listener)
-    {
-        return _cyclicListeners.add(listener);
-    }
-
-    @Deprecated
-    public boolean removeListener(Listener listener)
-    {
-        return _cyclicListeners.remove(listener);
     }
 
     public long getBytesWritten()
@@ -296,7 +282,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written = 0;
         _trailers = null;
         _oldIdleTimeout = 0;
-        _cyclicListeners.clear();
     }
 
     public void onAsyncWaitForContent()
@@ -1101,17 +1086,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 LOG.debug("Failure invoking listener " + listener, x);
             }
         }
-        for (Listener listener : _cyclicListeners)
-        {
-            try
-            {
-                function.apply(listener).accept(request);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Failure invoking listener " + listener, x);
-            }
-        }
     }
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
@@ -1128,34 +1102,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 LOG.debug("Failure invoking listener " + listener, x);
             }
         }
-        for (Listener listener : _cyclicListeners)
-        {
-            ByteBuffer view = content.slice();
-            try
-            {
-                function.apply(listener).accept(request, view);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Failure invoking listener " + listener, x);
-            }
-        }
     }
 
     private void notifyEvent2(Function<Listener, BiConsumer<Request, Throwable>> function, Request request, Throwable failure)
     {
         for (Listener listener : _durableListeners)
-        {
-            try
-            {
-                function.apply(listener).accept(request, failure);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Failure invoking listener " + listener, x);
-            }
-        }
-        for (Listener listener : _cyclicListeners)
         {
             try
             {
