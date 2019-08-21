@@ -115,11 +115,10 @@ public class JarFileResource extends JarResource
         _jarFile = null;
         _list = null;
 
-        // Work with encoded URL path
-        String urlFilePath = _url.getPath();
-        int sep = urlFilePath.lastIndexOf("!/");
-        _jarUrl = urlFilePath.substring(0, sep + 2);
-        _path = URIUtil.decodePath(urlFilePath.substring(sep + 2));
+        // Work with encoded URL path (_urlString is assumed to be encoded)
+        int sep = _urlString.lastIndexOf("!/");
+        _jarUrl = _urlString.substring(0, sep + 2);
+        _path = URIUtil.decodePath(_urlString.substring(sep + 2));
         if (_path.length() == 0)
             _path = null;
         _jarFile = _jarConnection.getJarFile();
@@ -130,7 +129,6 @@ public class JarFileResource extends JarResource
      * Returns true if the represented resource exists.
      */
     @Override
-
     public boolean exists()
     {
         if (_exists)
