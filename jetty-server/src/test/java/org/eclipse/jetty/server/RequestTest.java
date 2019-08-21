@@ -1515,7 +1515,9 @@ public class RequestTest
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertEquals(0, cookies.size()); // this is an invalid cookie
+        assertEquals(1, cookies.size());
+        assertEquals("name", cookies.get(0).getName());
+        assertEquals("quoted=\"\\\"badly\\\"\"", cookies.get(0).getValue());
 
         cookies.clear();
         response = _connector.getResponse(

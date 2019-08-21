@@ -314,11 +314,7 @@ public class CookieCutter
 
                                 if (_compliance == CookieCompliance.RFC6265)
                                 {
-                                    // Rejected cookie-octet characters
-                                    // US-ASCII characters excluding CTLs,
-                                    // whitespace DQUOTE, comma, semicolon,
-                                    // and backslash
-                                    if (Character.isISOControl(c) || Character.isWhitespace(c) || c == '\\')
+                                    if (isRFC6265RejectedCharacter(c))
                                     {
                                         reject = true;
                                     }
@@ -372,12 +368,7 @@ public class CookieCutter
 
                                 if (_compliance == CookieCompliance.RFC6265)
                                 {
-                                    // Rejected cookie-octet characters
-                                    // US-ASCII characters excluding CTLs,
-                                    // whitespace DQUOTE, comma, semicolon,
-                                    // and backslash
-                                    if (Character.isISOControl(c) || Character.isWhitespace(c) ||
-                                        c == ',' || c == '\\')
+                                    if (isRFC6265RejectedCharacter(c))
                                     {
                                         reject = true;
                                     }
@@ -395,5 +386,23 @@ public class CookieCutter
 
         _cookies = cookies.toArray(new Cookie[0]);
         _lastCookies = _cookies;
+    }
+
+    protected boolean isRFC6265RejectedCharacter(char c)
+    {
+        // We only reject if a Control Character is encountered
+        if (Character.isISOControl(c))
+        {
+            return true;
+        }
+
+        /* TODO: Should we also reject for the complete list of invalid characters in RFC6265?
+         *
+         * US-ASCII characters excluding CTLs,
+         * whitespace DQUOTE, comma, semicolon,
+         * and backslash
+         */
+
+        return false;
     }
 }
