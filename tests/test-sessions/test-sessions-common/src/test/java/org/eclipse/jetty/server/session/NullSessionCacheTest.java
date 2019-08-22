@@ -140,6 +140,7 @@ public class NullSessionCacheTest
         assertEquals(1, SerializableTestObject.activates);
         assertEquals(0, SerializableTestObject.passivates);
     }
+    
     @Test
     public void testChangeWriteThroughMode() throws Exception
     {
@@ -228,14 +229,15 @@ public class NullSessionCacheTest
         cache.release("1234", session);
         assertTrue(store.exists("1234"));
         assertFalse(cache.contains("1234"));
-
+        assertEquals(2, store._numSaves.get());
+        
         //simulate a new request using the previously created session
         //the session should not now be new
         session = cache.get("1234"); //get the session again
         session.access(now); //simulate a request
         session.setAttribute("spin", "left");
         assertTrue(store.exists("1234"));
-        assertEquals(2, store._numSaves.get());
+        assertEquals(3, store._numSaves.get());
         cache.release("1234", session); //finish with the session
 
         assertFalse(session.isResident());
@@ -281,7 +283,7 @@ public class NullSessionCacheTest
         cache.release("1234", session);
         assertTrue(store.exists("1234"));
         assertFalse(cache.contains("1234"));
-        assertEquals(2, store._numSaves.get());
+        assertEquals(3, store._numSaves.get()); //even if the session isn't dirty, we will save the access time
 
 
         //simulate a new request using the previously created session
@@ -290,14 +292,14 @@ public class NullSessionCacheTest
         session = cache.get("1234"); //get the session again
         session.access(now); //simulate a request
         assertFalse(session.isNew());
-        assertEquals(2, store._numSaves.get());
+        assertEquals(3, store._numSaves.get());
         session.setAttribute("spin", "left");
         assertTrue(store.exists("1234"));
-        assertEquals(2, store._numSaves.get());
+        assertEquals(3, store._numSaves.get());
         session.setAttribute("flavor", "charm");
-        assertEquals(2, store._numSaves.get());
+        assertEquals(3, store._numSaves.get());
         cache.release("1234", session); //finish with the session
-        assertEquals(3, store._numSaves.get());//release session should write it out
+        assertEquals(4, store._numSaves.get());//release session should write it out
         assertFalse(session.isResident());  
     }
     
