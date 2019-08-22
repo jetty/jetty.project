@@ -66,6 +66,7 @@ public class SecureWebSocketContainerExample
              * want to either close/stop the client, or exit the JVM
              * via a System.exit(), otherwise the threads this client keeps
              * open will prevent the JVM from terminating naturally.
+             * @see https://github.com/eclipse-ee4j/websocket-api/issues/212
              */
             LifeCycle.stop(client);
         }
