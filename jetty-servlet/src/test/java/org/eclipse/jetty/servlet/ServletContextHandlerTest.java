@@ -63,10 +63,13 @@ import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.RoleInfo;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -711,6 +714,74 @@ public class ServletContextHandlerTest
         assertThat("Response", response, containsString("Hello World"));
     }
 
+    @Test
+    public void testSetSecurityHandler() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS|ServletContextHandler.SECURITY|ServletContextHandler.GZIP);
+        assertNotNull(context.getSessionHandler());
+        SessionHandler sessionHandler = context.getSessionHandler();
+        assertNotNull(context.getSecurityHandler());
+        SecurityHandler securityHandler = context.getSecurityHandler();
+        assertNotNull(context.getGzipHandler());
+        GzipHandler gzipHandler = context.getGzipHandler();
+        
+        //check the handler linking order
+        HandlerWrapper h = (HandlerWrapper)context.getHandler();
+        assertTrue(h == sessionHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertTrue(h == securityHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertTrue(h == gzipHandler);
+
+        //replace the security handler
+        SecurityHandler myHandler = new SecurityHandler()
+        {
+            @Override
+            protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
+            {
+                return null;
+            }
+
+            @Override
+            protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response,
+                                                       RoleInfo constraintInfo) throws IOException
+            {
+                return false;
+            }
+
+            @Override
+            protected boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo)
+            {
+                return false;
+            }
+
+            @Override
+            protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response,
+                                                          Object constraintInfo, UserIdentity userIdentity)
+                                                              throws IOException
+            {
+                return false;
+            }
+        };
+        
+        //check the linking order
+        context.setSecurityHandler(myHandler);
+        assertTrue(myHandler == context.getSecurityHandler());
+        
+        h = (HandlerWrapper)context.getHandler();
+        assertTrue(h == sessionHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertTrue(h == myHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertTrue(h == gzipHandler);
+    }
+    
+    
+    
     @Test
     public void testReplaceServletHandlerWithoutServlet() throws Exception
     {
