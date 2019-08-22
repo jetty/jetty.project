@@ -18,17 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -84,6 +73,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class ServletContextHandlerTest
 {
     private Server _server;
@@ -119,15 +119,8 @@ public class ServletContextHandlerTest
         {
             super.doStart();
             //call the SCI
-            try
-            {
-                _ctx.setExtendedListenerTypes(true);
-                _sci.onStartup(Collections.emptySet(), _ctx);
-            }
-            finally
-            {
-
-            }
+            _ctx.setExtendedListenerTypes(true);
+            _sci.onStartup(Collections.emptySet(), _ctx);
         }
     }
 
@@ -268,8 +261,8 @@ public class ServletContextHandlerTest
     
     public static class MySListener implements HttpSessionListener
     {
-       public static int creates = 0;
-       public static int destroys = 0;
+        public static int creates = 0;
+        public static int destroys = 0;
 
         @Override
         public void sessionCreated(HttpSessionEvent se)
@@ -309,8 +302,7 @@ public class ServletContextHandlerTest
             ++replaces;
         }   
     }
-    
-    
+
     public static class MySIListener implements HttpSessionIdListener
     {
         public static int changes = 0;
@@ -485,7 +477,7 @@ public class ServletContextHandlerTest
         StringBuffer request = new StringBuffer();
         request.append("GET /test?session=replace HTTP/1.0\n");
         request.append("Host: localhost\n");
-        request.append("Cookie: "+sessionid+"\n");
+        request.append("Cookie: " + sessionid + "\n");
         request.append("\n");
         response = _connector.getResponse(request.toString());
         assertThat(response, Matchers.containsString("200 OK"));
@@ -496,7 +488,7 @@ public class ServletContextHandlerTest
         request = new StringBuffer();
         request.append("GET /test?session=remove HTTP/1.0\n");
         request.append("Host: localhost\n");
-        request.append("Cookie: "+sessionid+"\n");
+        request.append("Cookie: " + sessionid + "\n");
         request.append("\n");
         response = _connector.getResponse(request.toString());
         assertThat(response, Matchers.containsString("200 OK"));
@@ -509,7 +501,7 @@ public class ServletContextHandlerTest
         request = new StringBuffer();
         request.append("GET /test?session=change HTTP/1.0\n");
         request.append("Host: localhost\n");
-        request.append("Cookie: "+sessionid+"\n");
+        request.append("Cookie: " + sessionid + "\n");
         request.append("\n");
         response = _connector.getResponse(request.toString());
         assertThat(response, Matchers.containsString("200 OK"));
@@ -520,7 +512,7 @@ public class ServletContextHandlerTest
         request = new StringBuffer();
         request.append("GET /test?session=delete HTTP/1.0\n");
         request.append("Host: localhost\n");
-        request.append("Cookie: "+sessionid+"\n");
+        request.append("Cookie: " + sessionid + "\n");
         request.append("\n");
         response = _connector.getResponse(request.toString());
         assertThat(response, Matchers.containsString("200 OK"));
@@ -982,8 +974,6 @@ public class ServletContextHandlerTest
                 //change and remove context attribute
                 req.getServletContext().setAttribute("foo", "foo");
                 req.getServletContext().removeAttribute("foo");
-                
-                return;
             }
         }
     }

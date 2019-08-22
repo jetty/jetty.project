@@ -59,10 +59,9 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         final CountDownLatch latch = new CountDownLatch(requestCount);
 
         configureServer(new HelloWorldHandler());
-
         URI uri = _server.getURI();
-        Socket client = newSocket(uri.getHost(), uri.getPort());
-        try
+
+        try (Socket client = newSocket(uri.getHost(), uri.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -119,10 +118,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             reader.setDone();
             runner.join();
         }
-        finally
-        {
-            client.close();
-        }
     }
 
     private int iterations(int cnt)
@@ -136,8 +131,8 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         configureServer(new EchoHandler());
 
         URI uri = _server.getURI();
-        Socket client = newSocket(uri.getHost(), uri.getPort());
-        try
+
+        try (Socket client = newSocket(uri.getHost(), uri.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -181,10 +176,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             String in = reader.getResponse().toString();
             assertTrue(in.indexOf(__content.substring(__length - 64)) > 0);
         }
-        finally
-        {
-            client.close();
-        }
     }
 
     public class ResponseReader implements Runnable
@@ -226,11 +217,9 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                     count = doRead();
                 }
             }
-            catch (IOException ex)
+            catch (IOException | InterruptedException e)
             {
-            }
-            catch (InterruptedException ex)
-            {
+                // ignore
             }
             finally
             {
@@ -240,6 +229,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 }
                 catch (IOException e)
                 {
+                    // ignore
                 }
             }
         }

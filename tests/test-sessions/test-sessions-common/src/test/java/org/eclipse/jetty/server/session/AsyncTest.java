@@ -102,6 +102,7 @@ public class AsyncTest
             server.stop();
         }
     }
+
     @Test
     public void testSessionWithAsyncComplete() throws Exception
     {
@@ -262,10 +263,7 @@ public class AsyncTest
             server.stop();
         }   
     }
-    
-    
-    
-    
+
     @Test
     public void testSessionWithCrossContextAsyncComplete() throws Exception
     {

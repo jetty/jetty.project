@@ -38,6 +38,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class PartialRFC2616Test
 {
@@ -316,7 +317,7 @@ public class PartialRFC2616Test
                 "Content-Length: 5\n" +
                 "\n" +
                 "123\r\n" +
-
+                "123\015\012" +
                 "GET /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Transfer-Encoding: other\n" +
@@ -458,7 +459,6 @@ public class PartialRFC2616Test
         response = endp.getResponse();
         offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "8.1.2 default") + 1;
         offset = checkContains(response, offset, "/R1", "8.1.2 default") + 1;
-
         offset = 0;
         response = endp.getResponse();
         offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "8.1.2.2 pipeline") + 11;
@@ -518,9 +518,7 @@ public class PartialRFC2616Test
         String infomational = endp.getResponse();
         offset = checkContains(infomational, offset, "HTTP/1.1 100 ", "8.2.3 expect 100") + 1;
         checkNotContained(infomational, offset, "HTTP/1.1 200", "8.2.3 expect 100");
-
         endp.addInput("654321\r\n");
-
         String response = endp.getResponse();
         offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200", "8.2.3 expect 100") + 1;
@@ -666,7 +664,6 @@ public class PartialRFC2616Test
             response = endp.getResponse();
             offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 Keep-alive 2") + 11;
             offset = checkContains(response, offset, "/R2", "19.6.2 Keep-alive close") + 3;
-
             offset = 0;
             response = endp.getResponse();
             assertThat("19.6.2 closed", response, nullValue());
@@ -674,7 +671,7 @@ public class PartialRFC2616Test
         catch (Exception e)
         {
             e.printStackTrace();
-            assertTrue(false);
+            fail(e.getMessage());
         }
     }
 

@@ -2120,6 +2120,7 @@ public class DefaultServletTest
         }
         catch (InvalidPathException | IOException ignore)
         {
+            // ignore
         }
 
         assumeTrue(ret != null, "Directory creation not supported on OS: " + path + File.separator + subpath);

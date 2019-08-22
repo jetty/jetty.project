@@ -225,6 +225,7 @@ public class ErrorPageTest
             }
             catch (Throwable ignore)
             {
+                // no opEchoSocket
             }
         }
     }
