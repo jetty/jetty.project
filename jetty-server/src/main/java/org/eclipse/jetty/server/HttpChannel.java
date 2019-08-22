@@ -503,11 +503,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         // TODO that is done.
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.getHttpOutput().setClosedCallback(Callback.from(_state::completed));
-                        _response.closeOutput();
-                        // ensure the callback actually got called
-                        if (_response.getHttpOutput().getClosedCallback() != null)
-                            _response.getHttpOutput().getClosedCallback().succeeded();
+                        _response.closeOutput(Callback.from(_state::completed));
 
                         break;
                     }

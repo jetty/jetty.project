@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
@@ -57,6 +58,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -799,6 +801,11 @@ public class Response implements HttpServletResponse
             _writer.close();
         if (!_out.isClosed())
             _out.close();
+    }
+
+    public void closeOutput(Callback callback)
+    {
+        _out.close((_outputType == OutputType.WRITER) ? _writer : _out, callback);
     }
 
     public long getLongContentLength()

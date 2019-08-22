@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -284,27 +285,36 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    /**
-     * Make {@link #close()} am asynchronous method
-     * @param closeCallback The callback to use when close() is called.
-     */
-    public void setClosedCallback(Callback closeCallback)
+    public void close(Closeable wrapper, Callback callback)
     {
-        _closeCallback = closeCallback;
-    }
-
-    public Callback getClosedCallback()
-    {
-        return _closeCallback;
+        _closeCallback = callback;
+        try
+        {
+            if (wrapper != null)
+                wrapper.close();
+            if (!isClosed())
+                close();
+        }
+        catch (Throwable th)
+        {
+            closed();
+            if (_closeCallback == null)
+                LOG.ignore(th);
+            else
+                callback.failed(th);
+        }
+        finally
+        {
+            if (_closeCallback != null)
+                callback.succeeded();
+            _closeCallback = null;
+        }
     }
 
     @Override
     public void close()
     {
-        Callback closeCallback = _closeCallback;
-        _closeCallback = null;
-        if (closeCallback == null)
-            closeCallback = BLOCKING_CLOSE_CALLBACK;
+        Callback closeCallback = _closeCallback == null ? BLOCKING_CLOSE_CALLBACK : _closeCallback;
 
         while (true)
         {
@@ -314,6 +324,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case CLOSING:
                 case CLOSED:
                 {
+                    _closeCallback = null;
                     closeCallback.succeeded();
                     return;
                 }
@@ -342,6 +353,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     LOG.warn(ex.toString());
                     LOG.debug(ex);
                     abort(ex);
+                    _closeCallback = null;
                     closeCallback.failed(ex);
                     return;
                 }
@@ -359,16 +371,19 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         {
                             // Do a blocking close
                             write(content, !_channel.getResponse().isIncluding());
+                            _closeCallback = null;
                             closeCallback.succeeded();
                         }
                         else
                         {
+                            _closeCallback = null;
                             write(content, !_channel.getResponse().isIncluding(), closeCallback);
                         }
                     }
                     catch (IOException x)
                     {
                         LOG.ignore(x); // Ignore it, it's been already logged in write().
+                        _closeCallback = null;
                         closeCallback.failed(x);
                     }
                     return;
