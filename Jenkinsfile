@@ -111,7 +111,6 @@ pipeline {
   }
 }
 
-
 def slackNotif() {
     script {
       try
@@ -131,7 +130,6 @@ def slackNotif() {
       }
     }
 }
-
 
 /**
  * To other developers, if you are using this method above, please use the following syntax.
